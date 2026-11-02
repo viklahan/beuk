@@ -3057,8 +3057,496 @@ async function wave4bParity(origin) {
   note('wave4b page parity (fixture × device: 1.0 / 2.0 desk total):');
   for (const f of books) note(`  ${f.name}: ` + [...W4B_DEVICES, 'hardcover'].map((d) => { const r = w4bParity.rows.find((x) => x.fixture === f.name && x.device === d); return `${d} ${r?.one}/${r?.two}${r?.same ? '' : ' ≠'}${r?.prov ? ' (provisional)' : ''}`; }).join(', '));
 }
+/** A book made to attack the preview: markup, script URLs, remote requests and CSS that would close the preview's
+ *  scope, in every book value 1.0's preview takes (title, author, the section's names and text, a picture's type and
+ *  bytes, the theme's fonts, indent, header style and header design, the book colour). */
+function w4bHostileBook(base) {
+  const b = JSON.parse(JSON.stringify(base));
+  const tag = (n) => `<img src="https://evil.example/${n}.png" onerror="window.__pw=${n}">"'</style><script>window.__pw=${n}</script>`;
+  b.meta.title = 'Hostile ' + tag(1);
+  b.meta.author = 'Writer ' + tag(2);
+  const s = b.sections.find((x) => x.kind === 'body' && x.type === 'chapter');
+  s.title = 'Chapter ' + tag(3);
+  s.subtitle = 'Sub ' + tag(4);
+  s.number = '1' + tag(5);
+  s.content = ['A paragraph <script>window.__pw=6</script> and <iframe src="https://evil.example/f"></iframe> and <img src=https://evil.example/i.png onerror=window.__pw=7>.',
+    '[click](javascript:window.__pw=8) and [away](https://evil.example/a) and <a href="javascript:window.__pw=9">raw</a>.',
+    '<style>#topbar{display:none}</style><link rel="stylesheet" href="https://evil.example/s.css">',
+    String(s.content || '')].join('\n\n');
+  b.images = [...(b.images || []), { id: 'hostile-pic', name: 'x', mediaType: 'image/png" onerror="window.__pw=10', ext: 'png', data: 'iVBORw0KGgo=" onerror="window.__pw=11' }];
+  s.plateId = 'hostile-pic';
+  const evil = "EB Garamond'; } body { display: none } #topbar { background: url(https://evil.example/t.png) } .x { font-family: '";
+  b.theme = { ...b.theme, bodyFont: evil, headFont: 'x"); background: url(https://evil.example/h.png); x: ("', indentDepth: '1em; } #topbar { background: red } .fc-page p {', headerStyle: 'classic_centered" onmouseover="window.__pw=12' };
+  if (b.theme.header) for (const k of ['number', 'title', 'subtitle']) if (b.theme.header[k]) b.theme.header[k].font = evil;
+  b.colour = { accent: 'red; } #topbar { background: red } x {', tint: 'url(https://evil.example/c.png)' };
+  return b;
+}
+const W4B_LOOK = () => {
+  const props = ['display', 'visibility', 'background-color', 'background-image', 'color', 'font-family', 'font-size', 'height', 'width', 'opacity', 'transform'];
+  const out = {};
+  for (const sel of ['body', '#topbar', '#panes', '#pane-structure', '#pane-center', '.center-tabs', '#btnExport', '#structureList']) {
+    const el = document.querySelector(sel);
+    if (!el) continue;
+    const cs = getComputedStyle(el);
+    out[sel] = props.map((p) => cs.getPropertyValue(p)).join('|');
+  }
+  return out;
+};
+async function wave4bIsolation(origin) {
+  const base = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const book = w4bHostileBook(base.book);
+  const file = w4File('hostile.beuk-backup.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book }));
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const away = [];
+  try {
+    const page = await openNext(ctx, origin);
+    page.on('request', (r) => {
+      const u = r.url();
+      if (!u.startsWith(origin) && !/^(data|blob):/.test(u)) away.push(u);
+    });
+    // the app's look on the same book's honest twin, preview drawn (the baseline)
+    await openBackup(page, base.file);
+    await page.waitForFunction(() => !!window.beukPreview && document.getElementById('pageFlow').childElementCount > 0, null, { timeout: 60_000 });
+    await page.waitForTimeout(500);
+    const before = await page.evaluate(W4B_LOOK);
+    const ctx2 = await newContext({ serviceWorkers: 'block' });
+    try {
+      const p2 = await openNext(ctx2, origin);
+      p2.on('request', (r) => {
+        const u = r.url();
+        if (!u.startsWith(origin) && !/^(data|blob):/.test(u)) away.push(u);
+      });
+      await openBackup(p2, file);
+      await p2.waitForFunction(() => !!window.beukPreview && document.getElementById('pageFlow').childElementCount > 0, null, { timeout: 60_000 });
+      // the hostile chapter on screen, every device, the hardcover opened and turned, full screen on and off
+      const i = sectionsOf(expected(book)).findIndex((x) => x.kind === 'body' && x.type === 'chapter');
+      await choose(p2, i);
+      await p2.waitForTimeout(400);
+      await previewBrowse(p2);
+      await choose(p2, i);
+      await p2.waitForTimeout(400);
+      const after = await p2.evaluate(W4B_LOOK);
+      const diff = Object.keys(before).filter((k) => before[k] !== after[k]);
+      check(diff.length === 0, `wave4b isolation (constraint 36): a hostile book's preview (every device, the hardcover open, full screen) leaves the app's computed styles as an honest book's (${Object.keys(before).length} elements × 11 properties${diff.length ? '; differ: ' + diff.join(', ') : ''})`);
+      const dom = await p2.evaluate(() => {
+        const roots = [document.getElementById('pane-preview'), document.getElementById('pivMeasure'), ...['bookStyle', 'pivBookStyle'].map((id) => document.getElementById(id))].filter(Boolean);
+        const bad = [];
+        for (const r of roots) for (const el of [r, ...r.querySelectorAll('*')]) {
+          for (const a of el.attributes) if (/^on/i.test(a.name) || /javascript:/i.test(a.value) || /evil\.example/.test(a.value)) bad.push(el.tagName + '[' + a.name + ']');
+          if (/^(SCRIPT|IFRAME|LINK|OBJECT|EMBED)$/.test(el.tagName)) bad.push(el.tagName);
+        }
+        const css = ['bookStyle', 'pivBookStyle'].map((id) => document.getElementById(id)?.textContent || '').join('\n');
+        return { bad, pw: window.__pw ?? null, cssEvil: /evil\.example|#topbar|body\s*\{/.test(css), title: document.getElementById('rhBook')?.textContent ?? '', dropped: window.beukPreview.safety.droppedRules, flows: document.getElementById('pageFlow').innerHTML.length };
+      });
+      check(dom.bad.length === 0 && dom.pw === null && !dom.cssEvil, `wave4b isolation: no handler, script URL, remote source or script element in the preview, the print measurer or the book stylesheets (${dom.bad.slice(0, 6).join(', ') || 'none'}); window.__pw ${dom.pw}; the stylesheets name nothing outside the preview (${!dom.cssEvil}); ${dom.dropped} CSS rule(s) dropped at the sink`);
+      check(/Hostile <img/.test(dom.title), `wave4b isolation: the hostile title is shown as text in the running head ("${dom.title.slice(0, 40)}…")`);
+      const out = (await exportBackup(p2)).json.book;
+      check(JSON.stringify(out) === JSON.stringify(expected(book, out)), 'wave4b isolation: the hostile book, previewed, exports exactly as readBook reads it (the values are hidden from 1.0\'s code, never rewritten)');
+      await harvestCsp(p2);
+    } finally {
+      await ctx2.close();
+    }
+    check(away.length === 0, `wave4b isolation: no request leaves the page (${away.length}${away.length ? ': ' + away.slice(0, 4).join(', ') : ''})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** Wave 4b: the preview's chrome and behaviour beside 1.0's, and 1.0's preview self-checks re-expressed. */
+const W4B_DEVICE_LOOK = async ([devs, two]) => {
+  const call = two ? (n, ...a) => window.beukPreview.call(n, ...a) : (n, ...a) => window[n](...a);
+  const frame = document.getElementById('deviceFrame');
+  frame.style.transition = 'none';
+  const out = {};
+  for (const d of devs) {
+    call('setDevice', d);
+    const note = document.getElementById('deviceDisplayNote');
+    out[d] = {
+      cls: frame.className, maxW: getComputedStyle(frame).maxWidth, foot: document.getElementById('footDevice').textContent, display: frame.getAttribute('data-display'),
+      filter: getComputedStyle(document.getElementById('deviceScreen')).filter, note: note.hidden ? '' : note.textContent,
+      active: document.querySelector('#deviceBar .dev-btn.active')?.getAttribute('data-device'), facts: document.getElementById('deskFacts').textContent,
+      hc: { mode: document.getElementById('pane-preview').classList.contains('hc-mode'), stage: !document.getElementById('hcStage').hidden, bar: !document.getElementById('hcBar').hidden, frame: getComputedStyle(frame).display },
+    };
+  }
+  call('setDevice', 'kindle');
+  frame.style.transition = '';
+  return { bar: [...document.querySelectorAll('#deviceBar .dev-btn')].map((b) => b.getAttribute('data-device') + ':' + b.textContent.trim()), devices: out };
+};
+/** The hardcover beside 1.0's: closed (its parts, spine, counter, facts), then opened and turned. */
+const W4B_HC = async (two) => {
+  const call = two ? (n, ...a) => window.beukPreview.call(n, ...a) : (n, ...a) => window[n](...a);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  call('setDevice', 'hardcover');
+  await wait(400);
+  const stage = document.getElementById('hcStage');
+  const shape = (el) => [...el.querySelectorAll('*')].map((x) => x.tagName + '.' + [...x.classList].sort().join('.')).join(' ');
+  const closed = { shape: shape(stage), spine: stage.querySelector('.hc-s-title')?.textContent ?? null, art: !!stage.querySelector('.hc-front img'), counter: document.getElementById('hcCounter').textContent, facts: document.getElementById('hcFacts').textContent, toggle: document.getElementById('hcToggleLabel').textContent, book: document.getElementById('hcBook')?.getAttribute('style') ?? '' };
+  document.getElementById('hcToggle').click();
+  await wait(900);
+  const spreads = [];
+  for (let i = 0; i < 3; i++) {
+    const pages = document.getElementById('hcPages');
+    spreads.push({ counter: document.getElementById('hcCounter').textContent, text: pages ? pages.innerText.replace(/\s+/g, ' ').slice(0, 400) : null, n: pages ? pages.querySelectorAll('.piv-page').length : 0 });
+    document.getElementById('hcNext').click();
+    await wait(900);
+  }
+  document.getElementById('hcPrev').click();
+  await wait(900);
+  const back = document.getElementById('hcCounter').textContent;
+  document.getElementById('hcToggle').click();
+  await wait(700);
+  call('setDevice', 'kindle');
+  await wait(400);
+  return { closed, spreads, back, after: { mode: document.getElementById('pane-preview').classList.contains('hc-mode'), frame: document.getElementById('deviceFrame').className } };
+};
+async function wave4bChrome(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-print');
+  for (const ui of ['en', 'ar']) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    if (ui === 'ar') await ctx.addInitScript(() => localStorage.setItem('beuk.uiLang.v1', 'ar'));
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
+      const start = (await exportBackup(page)).json.book;
+      const one = await openOne(ctx, origin);
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+      // the same section open in both: 2.0's first, picked in 1.0
+      await page.bringToFront();
+      const id = await page.evaluate(() => window.beukPreview.state().activeId);
+      await one.bringToFront();
+      await one.evaluate((x) => selectSection(x), id);
+      await page.bringToFront();
+      const two = await page.evaluate(W4B_DEVICE_LOOK, [W4B_DEVICES, true]);
+      await one.bringToFront();
+      const oneL = await one.evaluate(W4B_DEVICE_LOOK, [W4B_DEVICES, false]);
+      check(JSON.stringify(two.bar) === JSON.stringify(oneL.bar) && two.bar.length === 11, `wave4b (${ui}) preview.devices.expanded: the device bar reads as 1.0's (${two.bar.length} buttons: ${two.bar.map((x) => x.split(':')[0]).join(', ')})`);
+      const bad = W4B_DEVICES.filter((d) => JSON.stringify(two.devices[d]) !== JSON.stringify(oneL.devices[d]));
+      check(bad.length === 0, `wave4b (${ui}) preview.devices.expanded + preview.devices.display-truth: every profile's frame, size, footer, display type, screen filter, truth note and facts equal 1.0's${bad.length ? ' — differ: ' + bad.map((d) => d + ' ' + JSON.stringify(two.devices[d]).slice(0, 160) + ' / 1.0 ' + JSON.stringify(oneL.devices[d]).slice(0, 160)).join('; ') : ''}`);
+      // the visible chrome around the page and the typeset page itself, on the open section
+      const chrome = (p) => p.evaluate(() => ({ counter: document.getElementById('pageCounter').textContent, name: document.getElementById('previewSectionName').textContent, rh: document.getElementById('rhBook').textContent + '|' + document.getElementById('rhChapter').textContent, total: document.getElementById('deskTotal').textContent, basis: document.getElementById('deskBasis').textContent, rail: document.getElementById('deskRail').innerText, flow: document.getElementById('pageFlow').innerHTML, prev: document.getElementById('btnPrevPage').disabled, next: document.getElementById('btnNextPage').disabled, dir: document.getElementById('pageFlow').dir, lang: document.getElementById('pageFlow').getAttribute('lang') }));
+      await page.bringToFront();
+      await page.waitForTimeout(900);
+      const c2 = await chrome(page);
+      await one.bringToFront();
+      await one.waitForTimeout(900);
+      const c1 = await chrome(one);
+      const cbad = Object.keys(c1).filter((k) => c1[k] !== c2[k]);
+      check(cbad.length === 0, `wave4b (${ui}) look parity: the page counter, section line, running head, desk total, basis and rail, the page flow's typeset HTML (${c2.flow.length} characters) and the page buttons equal 1.0's${cbad.length ? ' — differ: ' + cbad.map((k) => `${k} "${String(c2[k]).slice(0, 80)}" / 1.0 "${String(c1[k]).slice(0, 80)}"`).join('; ') : ''}`);
+      // E2: the hardcover, closed and open, beside 1.0's
+      await page.bringToFront();
+      const h2 = await page.evaluate(W4B_HC, true);
+      await one.bringToFront();
+      const h1 = await one.evaluate(W4B_HC, false);
+      const hbad = ['closed', 'spreads', 'back', 'after'].filter((k) => JSON.stringify(h1[k]) !== JSON.stringify(h2[k]));
+      check(hbad.length === 0, `wave4b (${ui}) preview.hardcover.device / page-block / binding-look / trim-proportions / spread-print / turn-jump: the closed hardback (its parts, art ${h2.closed.art}, spine "${h2.closed.spine}", "${h2.closed.counter}"), three open spreads (${h2.spreads.map((s) => s.counter).join(' → ')}) and the turn back ("${h2.back}") equal 1.0's${hbad.length ? ' — differ: ' + hbad.map((k) => k + ' ' + JSON.stringify(h2[k]).slice(0, 200) + ' / 1.0 ' + JSON.stringify(h1[k]).slice(0, 200)).join('; ') : ''}`);
+      for (const p of [page, one]) await harvestCsp(p);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
+/** 1.0's reader, desk, full-screen and RTL self-checks, re-expressed on 2.0 (driven through its own pane and editor). */
+async function wave4bReader(origin) {
+  const f = fixtures.find((x) => x.name === 'real/oz-14-glinda');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx, origin);
+    await openBackup(page, f.file);
+    await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
+    const st = () => page.evaluate(() => { const s = window.beukPreview.state(); return { page: s.page, count: s.pageCount, id: s.activeId, counter: document.getElementById('pageCounter').textContent }; });
+    const book = expected(f.book);
+    const secs = sectionsOf(book);
+    const chapters = secs.map((s, i) => ({ s, i })).filter((x) => x.s.kind === 'body' && x.s.type === 'chapter' && String(x.s.content || '').length > 9000);
+    const [a, b] = chapters;
+    await choose(page, a.i);
+    await page.waitForTimeout(500);
+    const turn = async (n) => { for (let k = 1; k < n; k++) await page.click('#btnNextPage'); await page.waitForTimeout(450); };
+    await turn(4);
+    const was = await st();
+    await choose(page, b.i);
+    await page.waitForTimeout(500);
+    const nb = await st();
+    await turn(2);
+    await choose(page, a.i);
+    await page.waitForTimeout(500);
+    const na = await st();
+    check(was.page === 4 && nb.page === 1 && na.page === 1 && /^\D*1\D/.test(nb.counter), `wave4b preview.new-section-page-one: from page ${was.page} of "${a.s.title}", "${b.s.title}" opens at page ${nb.page} (${nb.counter}); back to the first at page ${na.page}`);
+    // preview.keeps-page-on-edit (its style half): on page 4, turned by hand, the base font size raised in the Style
+    // tab — the preview stands on the page now holding page 4's first words (1.0's pvPageAnchor)
+    await turn(4);
+    const anc = await page.evaluate(() => window.beukPreview.call('pvPageAnchor', document.getElementById('pageFlow')));
+    await page.click('#tabBtnType');
+    await page.waitForFunction(() => document.querySelectorAll('#presetGrid [data-preset]').length === 15, null, { timeout: 60_000 });
+    await page.$eval('#rngSize', (el) => { el.value = String(Number(el.value) + 3); el.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.waitForTimeout(700);
+    const kept = await page.evaluate((x) => ({ want: window.beukPreview.call('pvPageOfAnchor', x), page: window.beukPreview.state().page, count: window.beukPreview.state().pageCount, counter: document.getElementById('pageCounter').textContent }), anc);
+    check(!!anc && kept.want > 0 && kept.page === kept.want, `wave4b preview.keeps-page-on-edit (style half): page 4 turned by hand, the font raised 3 px in the Style tab → page ${kept.page} of ${kept.count} ("${kept.counter}"), where page 4's first words now stand (${kept.want})`);
+    await page.click('#tabBtnContent');
+    // preview.follows-caret: a keystroke at a later paragraph turns the preview to the caret's page
+    await choose(page, a.i);
+    await page.waitForTimeout(500);
+    const target = await page.evaluate(() => {
+      const ed = document.getElementById('manuscript').beukEditor;
+      const doc = ed.state.doc;
+      let pos = 1, k = 0;
+      const want = Math.floor(doc.childCount * 0.6);
+      doc.forEach((n, off) => { if (k++ === want) pos = off + 1 + Math.floor(n.content.size / 2); });
+      ed.commands.setTextSelection(pos);
+      ed.commands.focus();
+      return pos;
+    });
+    await focused(page);
+    await page.keyboard.type('x');
+    await page.waitForTimeout(900);
+    const caret = await page.evaluate(() => {
+      const st = window.beukPreview.state();
+      const s = st.sections.find((x) => x.id === st.activeId);
+      const c = window.beukPreview.call('pvCaretAnchor', s);
+      return { want: c ? window.beukPreview.call('pvPageOfAnchor', c) : 0, page: window.beukPreview.state().page };
+    });
+    await page.keyboard.press('Backspace');
+    check(caret.want > 1 && caret.page === caret.want, `wave4b preview.follows-caret: a keystroke at a paragraph 60% into "${a.s.title}" (position ${target}) turns the preview to page ${caret.page}, the caret's page (${caret.want})`);
+    // preview.desk.totals + desk.rail: the total is the rail's sum on two profiles; a rail row moves the preview there
+    for (const d of ['kindle', 'android']) {
+      await page.click(`#deviceBar [data-device="${d}"]`);
+      await page.waitForFunction((name) => document.getElementById('deskTotal').textContent.includes(name) && window.beukPreview.get('deskState').sig === window.beukPreview.call('deskSignature'), d === 'kindle' ? 'Kindle Paperwhite' : 'Android Tablet', { timeout: 60_000 });
+      const t = await page.evaluate(() => ({ total: window.beukPreview.get('deskState').total, sum: Object.values(window.beukPreview.get('deskState').counts).reduce((x, y) => x + y, 0), text: document.getElementById('deskTotal').textContent }));
+      check(t.total > 0 && t.total === t.sum && t.text.includes(String(t.total)), `wave4b preview.desk.totals on ${d}: the total (${t.total}) is the sections' sum (${t.sum}) and the desk says it ("${t.text}")`);
+    }
+    await page.click('#deviceBar [data-device="kindle"]');
+    const row = await page.$$('#deskRail .desk-item');
+    const pick = row[Math.min(row.length - 1, b.i)];
+    const pickId = await pick.getAttribute('data-desk-id');
+    await pick.click();
+    await page.waitForTimeout(600);
+    const railed = await page.evaluate(() => ({ id: window.beukPreview.state().activeId, current: document.querySelector('#deskRail .desk-item.current')?.getAttribute('data-desk-id'), editor: document.getElementById('manuscript')?.getAttribute('data-section') }));
+    check(railed.id === pickId && railed.current === pickId, `wave4b preview.desk.rail: a rail row moves the preview to its section (${railed.id === pickId}) and marks it current (${railed.current === pickId}); the editor opened it too (section ${railed.editor})`);
+    // preview.pagecount.fixed-geometry + desk.space: the counts do not follow the window; the frame grows with the column
+    const counts = () => page.evaluate(() => JSON.stringify(window.beukPreview.call('computeDeskCountsSync')?.counts));
+    const w1 = await page.evaluate(() => document.getElementById('deviceFrame').getBoundingClientRect().width);
+    const c1 = await counts();
+    await page.setViewportSize({ width: 1280, height: 1100 });
+    await page.waitForTimeout(700);
+    const w2 = await page.evaluate(() => document.getElementById('deviceFrame').getBoundingClientRect().width);
+    const c2 = await counts();
+    await page.setViewportSize({ width: 1100, height: 640 });
+    await page.waitForTimeout(700);
+    const c3 = await counts();
+    await page.setViewportSize({ width: 1280, height: 800 });
+    check(c1 === c2 && c2 === c3, 'wave4b preview.pagecount.fixed-geometry: every section\'s count is the same at 1280×800, 1280×1100 and 1100×640');
+    check(w2 > w1 + 20, `wave4b preview.desk.space: the frame grows with the column's height (${w1.toFixed(0)} px at 800 tall, ${w2.toFixed(0)} px at 1100)`);
+    // fullscreen.controls + fullscreen.fill-window (the device preview's half; the print view's is wave 5)
+    const FS = async (two) => {
+      const fsState = two ? window.beukPreview.get('fsState') : window.fsState;
+      const sync = () => (two ? window.beukPreview.call('syncFsButtons') : window.syncFsButtons());
+      const b = document.getElementById('pvFull'), stage = document.getElementById('previewStage');
+      const words = { label: b.getAttribute('aria-label'), title: b.getAttribute('title') ?? b.getAttribute('data-tip-text'), pressed: b.getAttribute('aria-pressed'), keys: b.getAttribute('aria-keyshortcuts') };
+      fsState.fill = true;
+      sync();
+      const offer = b.getAttribute('aria-label');
+      b.click();
+      await new Promise((r) => setTimeout(r, 300));
+      const r = stage.getBoundingClientRect();
+      const on = { imm: stage.classList.contains('fs-immersive'), pos: getComputedStyle(stage).position, rect: [r.left, r.top, r.width - innerWidth, r.height - innerHeight].map(Math.round).join(','), pressed: b.getAttribute('aria-pressed'), label: b.getAttribute('aria-label'), lock: document.documentElement.classList.contains('fs-lock') };
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      await new Promise((r2) => setTimeout(r2, 300));
+      const off = { imm: stage.classList.contains('fs-immersive'), lock: document.documentElement.classList.contains('fs-lock'), pressed: b.getAttribute('aria-pressed') };
+      fsState.fill = false;
+      sync();
+      return { words, offer, on, off };
+    };
+    const fs = await page.evaluate(FS, true);
+    const one = await openOne(ctx, origin);
+    const fs1 = await one.evaluate(FS, false);
+    const native = await page.evaluate(() => !!document.fullscreenEnabled);
+    check(JSON.stringify(fs.words) === JSON.stringify(fs1.words) && fs.words.pressed === 'false' && fs.words.keys === 'F' && fs.words.label === (native ? 'Full screen' : 'Fill the window') && fs.words.title === fs.words.label + ' (F)',
+      `wave4b fullscreen.controls (the device preview's half): aria-pressed false, the F shortcut, "${fs.words.title}" for a browser ${native ? 'with' : 'without'} element full screen, as 1.0's${JSON.stringify(fs.words) === JSON.stringify(fs1.words) ? '' : ' — 1.0: ' + JSON.stringify(fs1.words) + ' 2.0: ' + JSON.stringify(fs.words)}`);
+    check(JSON.stringify(fs) === JSON.stringify(fs1) && fs.offer === 'Fill the window' && fs.on.imm && fs.on.pos === 'fixed' && fs.on.pressed === 'true' && fs.on.label === 'Exit full window' && fs.on.lock && !fs.off.imm && !fs.off.lock && fs.off.pressed === 'false',
+      `wave4b fullscreen.fill-window (the device preview's half): offered as "${fs.offer}", the stage fixed over the window (offset from the window ${fs.on.rect}), pressed, "${fs.on.label}", the page locked; Escape leaves it and unlocks the page — as 1.0's${JSON.stringify(fs) === JSON.stringify(fs1) ? '' : ' — 1.0: ' + JSON.stringify(fs1) + ' 2.0: ' + JSON.stringify(fs)}`);
+    await harvestCsp(one);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** preview.rtl-ui-same-pages: an Arabic interface lays the pages out as an English one; preview.rtl-book-pages-turn and
+ *  pagination.ornament.keep: an Arabic book, and a chapter with pictures beside scene breaks, paginate as in 1.0. */
+async function wave4bRtl(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const looks = {};
+  for (const ui of ['en', 'ar']) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    if (ui === 'ar') await ctx.addInitScript(() => localStorage.setItem('beuk.uiLang.v1', 'ar'));
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      await page.waitForFunction(() => !!window.beukPreview && document.getElementById('pageFlow').childElementCount > 0, null, { timeout: 60_000 });
+      await page.waitForTimeout(800);
+      looks[ui] = await page.evaluate(() => ({ n: window.beukPreview.state().pageCount, dir: getComputedStyle(document.getElementById('deviceScreen')).direction, x: document.getElementById('flowWrap').scrollLeft, first: document.getElementById('pageFlow').innerText.slice(0, 60), counts: JSON.stringify(window.beukPreview.call('computeDeskCountsSync')?.counts) }));
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+  check(looks.en.n > 0 && looks.ar.n === looks.en.n && looks.ar.dir === 'ltr' && looks.ar.x === looks.en.x && looks.ar.first === looks.en.first && looks.ar.counts === looks.en.counts,
+    `wave4b preview.rtl-ui-same-pages: English interface ${looks.en.n} pages, Arabic ${looks.ar.n}; the device screen ${looks.ar.dir}; page 1 starts the same; every desk count the same`);
+  // an Arabic book, and a chapter whose scene breaks stand beside pictures, against 1.0
+  const base = JSON.parse(JSON.stringify(f.book));
+  const ar = JSON.parse(JSON.stringify(base));
+  ar.meta = { ...ar.meta, language: 'ar' };
+  const para = 'كان لجدّتي بيتٌ أبيضُ صغير على صخرةٍ فوق البحر. ';
+  const arSec = ar.sections.find((x) => x.kind === 'body');
+  arSec.content = Array.from({ length: 30 }, () => para.repeat(4)).join('\n\n');
+  arSec.included = true;
+  const orn = JSON.parse(JSON.stringify(base));
+  const pic = (orn.images || []).find((im) => /^image\/(png|jpeg)$/.test(im.mediaType));
+  const ornSec = orn.sections.find((x) => x.kind === 'body');
+  const lines = [];
+  for (let k = 1; k <= 28; k++) {
+    lines.push(Array.from({ length: k % 5 + 1 }, (_, j) => `Paragraph ${k}.${j} runs on for a line or two of plain prose so the page fills at its own pace.`).join('\n\n'));
+    lines.push(pic && k % 3 === 0 ? `![a picture](${pic.id})\n\n***` : '***');
+  }
+  ornSec.content = lines.join('\n\n');
+  for (const [name, bk] of [['an Arabic book (preview.rtl-book-pages-turn)', ar], ['scene breaks beside pictures (pagination.ornament.keep)', orn]]) {
+    const file = w4File('w4b-' + (bk === ar ? 'ar' : 'orn') + '.beuk-backup.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book: bk }));
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, file);
+      await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
+      const start = (await exportBackup(page)).json.book;
+      const one = await openOne(ctx, origin);
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+      await page.bringToFront();
+      const two = await page.evaluate(W4B_COUNTS, [['kindle', 'phone', 'ipad'], true]);
+      await one.bringToFront();
+      const oneC = await one.evaluate(W4B_COUNTS, [['kindle', 'phone', 'ipad'], false]);
+      check(JSON.stringify(two) === JSON.stringify(oneC), `wave4b ${name}: every section's page count on Kindle, phone and iPad and the hardcover's pages equal 1.0's (${['kindle', 'phone', 'ipad'].map((d) => two[d]?.total + '/' + oneC[d]?.total).join(', ')})`);
+      const idx = sectionsOf(start).findIndex((x) => x.kind === 'body');
+      await page.bringToFront();
+      await choose(page, idx);
+      await page.waitForTimeout(400);
+      await one.bringToFront();
+      await one.evaluate((id) => selectSection(id), sectionsOf(start)[idx].id);
+      for (const d of ['kindle', 'phone']) {
+        await one.bringToFront();
+        const a = await one.evaluate(W4B_BREAKS, [d, false]);
+        await page.bringToFront();
+        const b = await page.evaluate(W4B_BREAKS, [d, true]);
+        check(JSON.stringify(a) === JSON.stringify(b), `wave4b ${name} on ${d}: ${b.pageCount} pages, each block's page equals 1.0's`);
+      }
+      // every page shows its own text (RTL turns the right way); no ornament stands alone on a page
+      await page.bringToFront();
+      const pages = await page.evaluate(async () => {
+        const P = window.beukPreview;
+        P.call('setDevice', 'kindle');
+        await new Promise((r) => setTimeout(r, 700));
+        const flow = document.getElementById('pageFlow'), wr = document.getElementById('flowWrap').getBoundingClientRect();
+        const n = P.state().pageCount, seen = [];
+        for (let p = 1; p <= n; p++) {
+          P.call('goToPage', p, true);
+          let hit = 0;
+          for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) { const el = document.elementFromPoint(wr.left + wr.width * i / 6, wr.top + wr.height * j / 6); if (el && el !== flow && flow.contains(el)) hit++; }
+          seen.push(hit);
+        }
+        P.call('goToPage', 1, true);
+        const step = parseFloat(flow.style.columnWidth) + 64, fr = flow.getBoundingClientRect(), rtl = flow.dir === 'rtl';
+        const scale = fr.width / flow.offsetWidth || 1;
+        const colOf = (r) => Math.floor(((rtl ? fr.right - r.right : r.left - fr.left) / scale) / step);
+        const alone = [...flow.querySelectorAll('.scene-break')].filter((o) => {
+          const r = o.getBoundingClientRect(); if (!r.width && !r.height) return false;
+          const c = colOf(r);
+          return ![...flow.querySelectorAll('p')].some((p) => !p.closest('.chapter-opening') && [...p.getClientRects()].some((x) => x.width > 0 && colOf(x) === c));
+        }).length;
+        return { n, empty: seen.filter((h) => h === 0).length, alone, dir: flow.dir };
+      });
+      check(pages.empty === 0 && pages.alone === 0, `wave4b ${name}: all ${pages.n} pages show the book (${pages.empty} empty, flow ${pages.dir}); ${pages.alone} ornament(s) alone on a page`);
+      for (const p of [page, one]) await harvestCsp(p);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
+/** The preview region next to 1.0's (Paper, Candlelight, Arabic): the device frame gated, the whole pane reported. */
+async function wave4bScreens(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  try {
+    for (const run of [{ theme: 'paper' }, { theme: 'candlelight' }, { theme: 'paper', lang: 'ar' }]) {
+      const tag = run.theme + (run.lang ? '-' + run.lang : '');
+      const ctx = await newContext({ serviceWorkers: 'block' });
+      await ctx.addInitScript(([t, l]) => { localStorage.setItem('beuk.theme.v1', t); if (l) localStorage.setItem('beuk.uiLang.v1', l); }, [run.theme, run.lang]);
+      try {
+        const page = await openNext(ctx, origin);
+        await openBackup(page, f.file);
+        await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
+        const start = (await exportBackup(page)).json.book;
+        const id = await page.evaluate(() => window.beukPreview.state().activeId);
+        const one = await openOne(ctx, origin);
+        await one.evaluate(([b, x]) => { applyBookDoc(JSON.parse(JSON.stringify(b))); selectSection(x); }, [start, id]);
+        await one.addStyleTag({ content: ONE_HIDE });
+        for (const p of [one, page]) {
+          await p.bringToFront();
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(3800);
+        }
+        for (const [sel, gated] of [['#deviceFrame', true], ['#pane-preview', false]]) {
+          await one.bringToFront();
+          const a = await one.locator(sel).screenshot();
+          await page.bringToFront();
+          const b = await page.locator(sel).screenshot();
+          writeFileSync(path.join(OUT, `preview-one-${tag}-${sel.slice(1)}.png`), a);
+          writeFileSync(path.join(OUT, `preview-two-${tag}-${sel.slice(1)}.png`), b);
+          const d = await pixelDiff(diffPage, a, b);
+          const msg = `wave4b screenshots ${tag}: ${sel} differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}]`;
+          if (gated) check(d.ratio <= PIXEL_TOLERANCE, msg + ` (max ${PIXEL_TOLERANCE * 100}%)`);
+          else note(msg + ' (reported, not gated)');
+        }
+        for (const p of [page, one]) await harvestCsp(p);
+      } finally {
+        await ctx.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+}
+
 async function wave4bChecks(origin) {
-  await wave4bParity(origin);
+  const only = (process.env.W4B_PARTS || 'parity,chrome,reader,rtl,isolation,gate,screens').split(',');
+  if (only.includes('parity')) await wave4bParity(origin);
+  if (only.includes('chrome')) await wave4bChrome(origin);
+  if (only.includes('reader')) await wave4bReader(origin);
+  if (only.includes('rtl')) await wave4bRtl(origin);
+  if (only.includes('isolation')) await wave4bIsolation(origin);
+  if (only.includes('gate')) {
+    // constraint 38: the preview browsed (every device, the hardcover, full screen, a desk row) writes nothing
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      for (const name of ['real/lantern-coast-print', 'real/dartagnan-01-three-musketeers']) {
+        const f = fixtures.find((x) => x.name === name);
+        const page = await openNext(ctx, origin);
+        await openBackup(page, f.file);
+        const start = (await exportBackup(page)).json.book;
+        const did = await previewBrowse(page);
+        const out = (await exportBackup(page)).json.book;
+        check(JSON.stringify(out) === JSON.stringify(start) && JSON.stringify(out) === JSON.stringify(expected(f.book, out)), `wave4b no-edit gate (constraint 38) ${name}: ${did} — the export is unchanged`);
+        const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /device|preview|hc|fs/i.test(k)));
+        check(keys.length === 0, `wave4b constraint 38: the preview keeps no per-device key, as 1.0 keeps none (state.device is session-only; ${keys.join(', ') || 'none'})`);
+        await harvestCsp(page);
+        await page.close();
+      }
+    } finally {
+      await ctx.close();
+    }
+  }
+  if (only.includes('screens')) await wave4bScreens(origin);
 }
 
 const srv = await startServer({ repo: REPO });

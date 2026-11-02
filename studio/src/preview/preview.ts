@@ -318,6 +318,7 @@ export function startPreview(): void {
   // drives 2.0 with them exactly as it drives 1.0)
   (window as unknown as { beukPreview?: unknown }).beukPreview = {
     call: (name: string, ...args: unknown[]) => pvRun((p) => p.api[name]!(...args)),
+    get: (name: string) => (loaded?.api as Rec | undefined)?.[name],
     state: () => loaded?.getState() ?? null,
     safety: previewSafety,
   };
