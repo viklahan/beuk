@@ -2,6 +2,7 @@ import * as Y from 'yjs';
 import { BLOB_ORIGIN, exportBook, setMetaValue } from '@book/editor/index.js';
 import { pictureEnv, type BookImage, type Closure, type ImageUse, type ImglibRec, type State } from '../closure/index';
 import { live, repackHistory, takeSnapshot, type Live } from '../history/history';
+import { styleSettle } from '../style/session';
 import { writeSections } from '../chapters/chop';
 import { sampleLoaded, deskIsUntouchedSample } from '../sample/sample';
 
@@ -98,6 +99,7 @@ export type Removal = ImglibRec & { ydoc: Y.Doc };
 /** 1.0's imglibRemove on the open book: History first ("Before removing a picture", shared by a run), every use
  *  cleared, the pictures out of the library; one transaction. Null when nothing was removed (an unknown or sample id). */
 export function removePictures(c: Closure, ydoc: Y.Doc, ids: string[]): Removal | null {
+  styleSettle(); // a Style edit held in its pause is written first: this write reads the book after it (wave 4a review)
   const seq = editSeqOf(ydoc);
   const L: Live = live(c, ydoc);
   const st = libraryState(L.book, L.state.history);
@@ -129,6 +131,7 @@ export function removePictures(c: Closure, ydoc: Y.Doc, ids: string[]): Removal 
 /** 1.0's imglibUndo on the open book: the pictures back where they stood and every use whose place still stands empty;
  *  one transaction. False when the record is spent or belongs to another book (or another generation of it). */
 export function undoRemoval(c: Closure, ydoc: Y.Doc, rec: Removal, isLive: (y: Y.Doc) => boolean): boolean {
+  styleSettle();
   if (rec.undone || rec.ydoc !== ydoc || !isLive(ydoc)) return false;
   const L = live(c, ydoc);
   const st = libraryState(L.book, L.state.history);

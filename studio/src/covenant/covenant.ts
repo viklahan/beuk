@@ -7,6 +7,7 @@ import { repackHistory } from '../history/history';
 import { desk } from '../environment/page';
 import { onSettleWrites } from '../book/store';
 import { activeEditorSectionId } from '../editor/active';
+import { styleSettle } from '../style/session';
 
 /* Step 5 wave 3b (inventory C6): the Covenant — the data side.
 
@@ -140,6 +141,7 @@ export function covEnter(): Closure | null {
     /* what 1.0 changed in the session so far is written BEFORE the state is built again: a call that sets off another
        (1.0's popover handing the caret back to the editor, whose own code reads the book) must not lose it */
     if (s && (s.ydoc === ydoc || held)) covFlush();
+    styleSettle(); // a Style edit held in its pause is written before the Covenant reads the book (wave 4a review)
     session = build(c, ydoc);
   }
   else {
