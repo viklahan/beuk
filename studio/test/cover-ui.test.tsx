@@ -174,6 +174,24 @@ describe('the cover maker in the studio', { timeout: 60_000 }, () => {
     await waitFor(() => expect(Array.from(document.querySelectorAll('#toasts .toast')).map((x) => x.textContent)).toContain(t('toast.coverMade')));
   });
 
+  it('review, Important 1: the maker opened again after its markup is drawn anew (another book, then back) dresses the 3D book and starts with the guides on', async () => {
+    const doc = LANTERN();
+    const r = await studioWith(doc);
+    await openSettingsAndMaker();
+    await waitFor(() => expect($('cm3dFaceFront').style.backgroundImage).toMatch(/^url\(/));
+    await click($('btnCmWrapGuides')); // guides off in this markup
+    await click($('btnCmCancel'));
+    await act(async () => void fireEvent.keyDown(document, { key: 'Escape' }));
+    r.unmount();
+    // the same book drawn again: the 3D state 1.0 keeps (its signatures) must not stand for the new markup
+    render(<LocaleProvider initial="en"><App /></LocaleProvider>);
+    await waitFor(() => expect(document.querySelectorAll('#cmElFont option').length).toBeGreaterThan(10), { timeout: 20_000 });
+    await openSettingsAndMaker();
+    await waitFor(() => expect($('cm3dFaceFront').style.backgroundImage).toMatch(/^url\(/));
+    expect(c.vars.cmWrapGuides).toBe(true);
+    expect($('btnCmWrapGuides').getAttribute('aria-pressed')).toBe('true');
+  });
+
   it("Upload Cover and Remove in Project Settings: 1.0's handlers, the row redrawn", async () => {
     const doc = LANTERN();
     await studioWith(doc);
@@ -199,7 +217,9 @@ describe('the cover maker in the studio', { timeout: 60_000 }, () => {
     r.title = 'Title ' + tag;
     r.elements.title!.font = "x'; } body { display:none } .y { font-family: '";
     r.bgColor = 'red" onmouseover="window.__pw=2';
-    doc.images = [...((doc.images as Rec[]) ?? []), { id: 'bad" onclick="window.__pw=3', name: 'n' + tag, mediaType: 'image/png" onerror="window.__pw=4', ext: 'png', data: PNG_1PX }];
+    doc.images = [...((doc.images as Rec[]) ?? []), { id: 'bad" onclick="window.__pw=3', name: 'n' + tag, mediaType: 'image/png" onerror="window.__pw=4', ext: 'png', data: PNG_1PX },
+      // review, Important 2: an id that would put ids of the maker's own into the page
+      { id: 'x" id="cmWrapCanvas', name: 'm', mediaType: 'image/png', ext: 'png', data: PNG_1PX }, { id: 'y" id="cmPhotoQuery" value="evil', name: 'q', mediaType: 'image/png', ext: 'png', data: PNG_1PX }];
     await studioWith(doc);
     await openSettingsAndMaker();
     await click(document.querySelector('[data-cmbg="image"]'));
@@ -212,6 +232,8 @@ describe('the cover maker in the studio', { timeout: 60_000 }, () => {
     expect(root.querySelectorAll('script, iframe, object, embed, link').length).toBe(0);
     expect((window as unknown as { __pw?: unknown }).__pw).toBeUndefined();
     expect($('cmTitle').value).toContain('Title');
+    for (const id of ['cmWrapCanvas', 'cmPhotoQuery']) expect(document.querySelectorAll('#' + id).length, id).toBe(1);
+    expect(document.getElementById('cmWrapCanvas')!.tagName).toBe('CANVAS');
     expect(await exported()).toEqual(want(doc));
   });
 });

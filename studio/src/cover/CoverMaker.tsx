@@ -83,6 +83,17 @@ export function loadLucide(): Promise<void> {
   return lucideLoad;
 }
 
+/** 1.0's view state that belongs to one drawing of the maker's markup: the 3D book's signatures and frame, the
+ *  guides (1.0's initial `cmWrapGuides = true`). */
+export function resetMakerState(c: Closure): void {
+  const w3 = c.api.w3;
+  if (w3.raf) cancelAnimationFrame(w3.raf);
+  w3.raf = 0;
+  w3.sig = '';
+  (w3 as Record<string, unknown>).geomSig = '';
+  c.vars.cmWrapGuides = true;
+}
+
 /** Open 1.0's cover maker (Project Settings' "Make a Cover", 1.0's #btnCoverMake). */
 export function coverOpen(): void {
   styleRun((c) => c.api.openCoverMaker());
@@ -130,6 +141,9 @@ export function CoverMaker() {
         pageEnv.$ = (id) => (id === 'btnCoverMake' ? stub : page$(id));
         try {
           c.vars.cmRecipe = null;
+          // 1.0 draws its markup once; here it is drawn anew per book: 1.0's state for the old markup goes (the 3D
+          // book's signatures, else the new faces are never dressed; the guides, which the new button shows on)
+          resetMakerState(c);
           styleRun((cc) => cc.api.initCoverMaker());
         } finally {
           pageEnv.$ = page$;
@@ -147,7 +161,10 @@ export function CoverMaker() {
       setOpen(false);
       el.innerHTML = '';
       el.remove();
-      if (closure.current) closure.current.vars.cmRecipe = null;
+      if (closure.current) {
+        closure.current.vars.cmRecipe = null;
+        resetMakerState(closure.current);
+      }
     };
   }, [ydoc]); // eslint-disable-line react-hooks/exhaustive-deps
 
