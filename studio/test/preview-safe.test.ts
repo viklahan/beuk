@@ -147,6 +147,31 @@ describe('review round (final review, Important 1 and 2)', () => {
 });
 
 describe('review round 2', () => {
+  it('Minor 4: the hardcover\'s whole stylesheet (1.0\'s pivEnsureStyle: the book CSS, print type, footnotes, cuts, layout, colour, tints) loses nothing at the sink, on every fixture', async () => {
+    const c = await loadClosure();
+    const pv = await loadPreview();
+    const { previewSafety } = await import('../src/preview/preview');
+    let el = document.getElementById('pivBookStyle');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'pivBookStyle';
+      document.head.appendChild(el);
+    }
+    let sheets = 0;
+    for (const f of fixtures('all')) {
+      if (!Array.isArray(f.book.sections)) continue;
+      const ydoc = new Y.Doc();
+      importBook(f.book, ydoc);
+      pv.setState(stateFromBook(c, exportBook(ydoc)));
+      const before = previewSafety.droppedRules, through = previewSafety.sheets;
+      pv.api.pivEnsureStyle();
+      expect(previewSafety.sheets - through, f.name + ': the sheet went through the sink').toBe(1);
+      expect(previewSafety.droppedRules - before, f.name).toBe(0);
+      expect(el.textContent!.length).toBeGreaterThan(1000);
+      sheets++;
+    }
+    expect(sheets).toBe(23);
+  });
   it('Important 1a: fontSize, lineHeight, dropDepth and smallCapsWords become finite numbers (the preset default otherwise), in the theme and every custom theme', async () => {
     const c = await loadClosure();
     const { sourceSafe } = await import('../src/style/session');

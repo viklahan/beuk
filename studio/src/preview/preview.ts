@@ -45,7 +45,7 @@ const INERT = new Set(['modalPrintView', 'modalPrint', 'pivModalBox', 'printModa
 const inert = new Map<string, HTMLElement>();
 const proxies = new WeakMap<Element, Element>();
 /** The CSS rules cleanBookCss dropped (0 for an honest book: the e2e reads it). */
-export const previewSafety = { droppedRules: 0, cleanedFlows: 0 };
+export const previewSafety = { droppedRules: 0, cleanedFlows: 0, sheets: 0 };
 
 function guardFlow(el: Element): Element {
   let p = proxies.get(el);
@@ -84,6 +84,7 @@ function guardSheet(el: Element, scope: string): Element {
       set(t, k, v) {
         if (k === 'textContent' || k === 'innerHTML' || k === 'innerText') {
           const r = cleanBookCss(String(v ?? ''), scope);
+          previewSafety.sheets++;
           previewSafety.droppedRules += r.dropped;
           t.textContent = r.css;
         } else Reflect.set(t, k, v, t);
