@@ -163,6 +163,7 @@ export const EXTRA_ROOTS = [
   'TRIM_SIZES', 'trimSize', 'printPageEstimate', 'slug', 'downloadWrap', 'downloadCoverRender', 'buildWrapPdfDoc', 'wrapFileName',
   'w3', 'wrap3dFaces', 'wrap3dSource', 'refreshWrap3d', 'wrap3dPaint', 'sampleWrapRecipe', 'w3rot', 'w3proj', 'W3D_PERSP',
   'cmComputeBlocks', 'cmTitleKeywords', 'searchStockPhotos', 'cmRenderStockResults', 'choosePexelsPhoto', 'imCoverFollowBook', 'imBookCoverText',
+  'hcTrimOffered', 'HC_SPEC', 'spineDirection', 'normalizeWrapSpine', 'normalizeWrapBack', 'wrapDefaults', 'stableJson',
   'setElText', 'sbBuildControls', 'sbSync', 'sbIconSvg', 'SB_CURATED_ICONS', 'hcSyncPanel', 'hcLegendHtml', 'updateWrapDims', 'drawWrapPreview', 'paintCoverScene',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK

@@ -581,6 +581,12 @@ export type ClosureApi = {
   // wave 4c (D3, D4): the cover maker, spine, back, hardcover flaps and guides, the wrap and its 3D stand (src/cover)
   defaultCoverRecipe: () => Record<string, unknown> & { elements: Record<string, Record<string, unknown>> };
   setElText: (el: Element, str: string) => void;
+  hcTrimOffered: (binding: string, trim: string) => boolean;
+  HC_SPEC: Record<string, unknown> & { trims: Record<string, string[]> };
+  spineDirection: (lang: unknown, override?: string) => 'ttb' | 'btt';
+  normalizeWrapSpine: (s: unknown) => Record<string, unknown>;
+  normalizeWrapBack: (b: unknown) => Record<string, unknown>;
+  wrapDefaults: () => Record<string, unknown>;
   initCoverMaker: () => void;
   openCoverMaker: () => void;
   drawMakerPreview: () => void;
