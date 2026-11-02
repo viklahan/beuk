@@ -81,8 +81,28 @@ export function idsOk(secs: unknown[]): boolean {
  *  the same step). Each section of `after` is matched to a stored one by its 1.0 id (each stored section used once);
  *  a matched one keeps its Y.Map and gets only its changed keys written, an unmatched one is inserted, a stored one
  *  `after` does not hold is removed; then the order is set, a new position only for a section whose place changed.
- *  Call inside a transaction. */
+ *  A book whose section ids repeat or are missing (readBook accepts one) can't be matched by id: structure and chapter
+ *  operations refuse it first, but the picture library and the sample's sweep only change fields, so there the
+ *  sections are matched BY POSITION (each keeps its Y.Map; test/write-ordered-ids.test.ts). Call inside a transaction. */
 export function writeOrdered(ydoc: Y.Doc, after: Rec[], prev: Rec[]): void {
+  if (!idsOk(after) || !idsOk(prev)) {
+    const keys = sectionKeys(ydoc);
+    const want: string[] = [];
+    after.forEach((s, i) => {
+      const k = keys[i];
+      const m = k === undefined ? undefined : sectionByKey(ydoc, k);
+      if (k !== undefined && m instanceof Y.Map) {
+        writeFields(m as Y.Map<unknown>, s, prev[i]);
+        want.push(k);
+      } else {
+        if (k !== undefined) removeSection(ydoc, k);
+        want.push(insertSectionsAt(ydoc, i, [clone(s)])[0]!);
+      }
+    });
+    for (const k of keys.slice(after.length)) removeSection(ydoc, k);
+    setSectionOrder(ydoc, want);
+    return;
+  }
   const prevById = new Map(prev.map((s) => [String(s.id), s]));
   const byId = new Map<string, string>();
   for (const k of sectionKeys(ydoc)) {

@@ -233,15 +233,16 @@ export function moveSection(ydoc: Y.Doc, key: string, toIndex: number): void {
   ydoc.transact(() => place(ydoc, keys));
 }
 
-/** Put the sections in the order `keys` gives (every key of the book; a key not in it keeps its place relative to the
- *  ones before it). Only the sections whose place changed get a new position. One transaction. */
+/** Put the sections in the order `keys` gives (normally every key of the book). A key named twice counts once, at its
+ *  first place; a key of the book not named keeps its slot (its index) while the named ones fill the other slots in
+ *  the order given. Only the sections whose place changed get a new position. One transaction. */
 export function setSectionOrder(ydoc: Y.Doc, keys: readonly string[]): void {
   migrateSections(ydoc);
   const secs = secsOf(ydoc);
-  const want = keys.filter((k) => secs.has(k));
+  const want = [...new Set(keys)].filter((k) => secs.has(k));
   const named = new Set(want);
   const all = sectionKeys(ydoc);
-  // keys left out stand right after the key standing before them now
+  // keys left out keep their slot; the named ones fill the remaining slots in the order given
   const full: string[] = [];
   let wi = 0;
   for (const k of all) {
