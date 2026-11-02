@@ -3,6 +3,7 @@ import { Collaboration } from '@tiptap/extension-collaboration';
 import type * as Y from 'yjs';
 import { BookBehaviour } from './behaviour';
 import { bookExtensions } from './schema';
+import { CovenantMarks } from '../covenant/marks';
 
 /* One TipTap editor on one chapter's Y fragment (one instance per open
    chapter, the spike's A1 shape). Collaboration binds it through
@@ -26,7 +27,7 @@ export type ChapterEditorOptions = {
 export function createChapterEditor(o: ChapterEditorOptions): Editor {
   return new Editor({
     element: o.element,
-    extensions: [...bookExtensions(), Collaboration.configure({ fragment: o.fragment }), BookBehaviour.configure({ onRefuse: o.onRefuse })],
+    extensions: [...bookExtensions(), Collaboration.configure({ fragment: o.fragment }), BookBehaviour.configure({ onRefuse: o.onRefuse }), CovenantMarks],
     injectCSS: false,
     enableInputRules: false,
     enablePasteRules: false,

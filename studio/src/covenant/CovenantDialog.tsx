@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type * as Y from 'yjs';
 import { TextSelection } from '@tiptap/pm/state';
 import { textOffsetToPos } from '@book/editor/index.js';
 import { useBook } from '../book/BookProvider';
@@ -12,7 +13,7 @@ import { toBook } from '../editor/bridge';
 import { desk } from '../environment/page';
 import { covEnv, covRun, covUi } from './covenant';
 import { installSeriesNet } from './net';
-import { covenantDesk } from './marks';
+import { covenantDesk, setMarksClosure } from './marks';
 import { drawIcons } from '../insights/insights';
 
 /* 1.0's Covenant room (client/index.html #modalBible: its markup, ids, classes and keys), drawn by 1.0's own renderers
@@ -60,12 +61,20 @@ export function CovenantHost() {
       .then((c) => {
         if (!alive) return;
         installSeriesNet(c);
+        setMarksClosure(c);
         covRun((cc) => cc.api.bibleBookArrived());
-        covenantDesk.refresh();
+        covenantDesk.refresh(true);
       })
       .catch(() => undefined);
+    // the Covenant or the book's language changed in the book (another tab, an undo, History): the marks follow
+    const m = ydoc.getMap('meta');
+    const onMeta = (e: Y.YMapEvent<unknown>) => {
+      if (e.keysChanged.has('bible') || e.keysChanged.has('meta')) covenantDesk.schedule();
+    };
+    m.observe(onMeta);
     return () => {
       alive = false;
+      m.unobserve(onMeta);
       setOpen(null);
     };
   }, [ydoc]);

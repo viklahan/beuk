@@ -166,7 +166,7 @@ export type ClosureApi = {
   rsHas: () => boolean;
   rsNamed: () => Set<string>;
   rsTotal: () => number;
-  bibleAllEntries: () => { id: string; name?: string }[];
+  bibleAllEntries: () => BibleEntry[];
   bibleScan: (text: string, m: unknown) => { hits: { s: number; e: number; id: string }[]; ambiguous: { s: number; e: number; ids: string[] }[] };
   bibleMatcherNow: () => unknown;
   bibleName: (e: unknown) => string;
@@ -637,6 +637,8 @@ let currentLang = 'en';
 export function setClosureT(t: T): void {
   currentT = t;
 }
+/** The studio's t() as 1.0's code reads it now. */
+export const closureT = (): T => currentT;
 /** The interface language 1.0's getUiLang() answers (its number formats, Insights' cache key). */
 export function setClosureLang(lang: string): void {
   currentLang = lang;

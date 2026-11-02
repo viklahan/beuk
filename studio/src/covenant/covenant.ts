@@ -216,49 +216,108 @@ type Toast = (msg: string, icon?: string, action?: ToastAction) => void;
 export const covUi: { toast: Toast; confirm: (o: Rec) => Promise<unknown> } = { toast: () => undefined, confirm: async () => false };
 
 let depth = 0;
-/** 1.0's Covenant code on the open book: `fn` runs on 1.0's state of it; what it changed is written when it returns.
- *  Undefined without a book or a closure. */
-export function covRun<T>(fn: (c: Closure) => T): T | undefined {
+let kept: { toast: typeof structEnv.toast; edited: typeof writeEnv.noteBookEdited; confirm: typeof writeEnv.confirm } | null = null;
+/** The first half of covRun, for 1.0's own listeners and continuations: 1.0's state of the open book stands, its toast,
+ *  save and confirm are caught; the returned function (once) writes what changed. Null without a book or a closure. */
+export function covBegin(): (() => void) | null {
   const c = covEnter();
-  if (!c) return undefined;
+  if (!c) return null;
   depth++;
-  const keepToast = structEnv.toast;
-  const keepEdited = writeEnv.noteBookEdited;
-  const keepConfirm = writeEnv.confirm;
   if (depth === 1) {
+    kept = { toast: structEnv.toast, edited: writeEnv.noteBookEdited, confirm: writeEnv.confirm };
     structEnv.toast = (msg, icon, action) => covUi.toast(msg, icon, action ? { ...action, onClick: () => void covRun(() => action.onClick()) } : undefined);
     writeEnv.noteBookEdited = () => undefined; // 1.0's save: covFlush writes when the call returns
     writeEnv.confirm = (o) => Promise.resolve(covUi.confirm(o)).then((r) => (resume(), r));
   }
-  try {
-    return fn(c);
-  } finally {
+  let done = false;
+  return () => {
+    if (done) return;
+    done = true;
     if (depth === 1) {
-      structEnv.toast = keepToast;
-      writeEnv.noteBookEdited = keepEdited;
-      writeEnv.confirm = keepConfirm;
-      covFlush();
-      adoptTimers(c);
+      if (kept) {
+        structEnv.toast = kept.toast;
+        writeEnv.noteBookEdited = kept.edited;
+        writeEnv.confirm = kept.confirm;
+        kept = null;
+      }
+      try {
+        covFlush();
+      } finally {
+        adoptTimers(c);
+        depth--;
+        covEnv.deskSchedule(); // the marks follow what changed (1.0: bibleTouched → bibleDeskSchedule)
+      }
+      return;
     }
     depth--;
+  };
+}
+
+/** 1.0's Covenant code on the open book: `fn` runs on 1.0's state of it; what it changed is written when it returns.
+ *  Undefined without a book or a closure. */
+export function covRun<T>(fn: (c: Closure) => T): T | undefined {
+  const end = covBegin();
+  if (!end) return undefined;
+  try {
+    return fn(closureIfLoaded()!);
+  } finally {
+    end();
   }
 }
 
 /** A promise 1.0's code waits on came back (the shelf answered, the writer chose): the book's state stands again for
- *  its continuation, and what it changes is written once the continuation has run. */
-let resumeTimer: ReturnType<typeof setTimeout> | null = null;
+ *  its continuation (which runs in the microtasks right after), and what it changes is written once it has run. */
+let resumeEnd: (() => void) | null = null;
 function resume(): void {
-  covEnter();
-  if (resumeTimer) return;
-  resumeTimer = setTimeout(() => {
-    resumeTimer = null;
-    covRun(() => undefined);
+  if (resumeEnd) return;
+  resumeEnd = covBegin();
+  if (!resumeEnd) return;
+  setTimeout(() => {
+    const end = resumeEnd;
+    resumeEnd = null;
+    end?.();
   }, 0);
 }
 /** Wrap a value 1.0's code may wait on (bibleThen): a promise resumes the book's state before 1.0 continues. */
 export function resumeOn<T>(v: T): T {
   if (v && typeof (v as { then?: unknown }).then === 'function') return (v as unknown as Promise<unknown>).then((r) => (resume(), r)) as unknown as T;
   return v;
+}
+
+/* 1.0's own listeners on the parts it builds in <body> (the card, the change menu and popover): a capture listener on
+   the document opens covBegin before 1.0's listener runs, and the event's arrival back at the window closes it (a
+   timer closes it too, should 1.0's listener stop the event). */
+const HOSTS = ['bibleCard', 'bibleMarkMenu', 'bibleMarkPop'];
+let guarded = false;
+export function guardHosts(): void {
+  if (guarded || typeof document === 'undefined') return;
+  guarded = true;
+  for (const type of ['click', 'keydown', 'change', 'input', 'mousedown']) {
+    let end: (() => void) | null = null;
+    document.addEventListener(
+      type,
+      (e) => {
+        const el = e.target as Element | null;
+        if (!el || !el.closest || !HOSTS.some((id) => el.closest('#' + id))) return;
+        end?.();
+        end = covBegin();
+        const mine = end;
+        // (not a microtask: one runs between this listener and 1.0's own)
+        setTimeout(() => {
+          if (end === mine) {
+            end = null;
+            mine?.();
+          }
+        }, 0);
+      },
+      true,
+    );
+    window.addEventListener(type, () => {
+      const e2 = end;
+      end = null;
+      e2?.();
+    });
+  }
 }
 
 /** The entries the open book reads (its own, and a series' when one is loaded), as 1.0 lists them. */
