@@ -520,7 +520,70 @@ export type ClosureApi = {
   bibleSeriesChangeAsk: (name: string) => boolean;
   bibleSeriesSettingsNote: () => void;
   bibleSeriesFree: () => unknown;
+  // wave 4a (D1, D2): the Style tab and the theme creator — 1.0's own, drawing into the tab's ids (src/style)
+  PRESETS: Preset[];
+  ORNAMENTS: { id: string; name: string; body: string }[];
+  ornamentSvg: (id: string, cls?: string) => string;
+  renderStudio: () => void;
+  syncStudioControls: () => void;
+  initStudio: () => void;
+  customTheme: () => void;
+  renderFlourishes: () => void;
+  flourishImages: () => BookImage[];
+  handleFlourishFile: (file: Blob | null | undefined) => void;
+  removeFlourishImage: (id: string) => void;
+  renderMyThemes: () => void;
+  applyCustomTheme: (id: string) => void;
+  duplicateCustomTheme: (id: string) => void;
+  deleteCustomTheme: (id: string) => void;
+  tcBaseOptions: () => string;
+  openThemeCreator: (id: string | null) => void;
+  closeThemeCreator: () => void;
+  tcReseedFromBase: () => void;
+  buildCreatorControls: () => void;
+  fillCreatorControls: () => void;
+  tcSet: (key: string, prop: string, val: unknown) => void;
+  renderTcPreview: () => void;
+  saveThemeCreator: () => void;
+  renderFonts: () => void;
+  fontFamilyFromFile: (name: string) => string;
+  handleFontFile: (file: Blob | null | undefined) => void;
+  removeUploadedFont: (id: string) => void;
+  fillFontSelects: () => void;
+  refreshFontPickers: () => void;
+  registerUploadedFont: (f: unknown) => Promise<boolean>;
+  registerAllFonts: () => void;
+  fontOptionsHtml: (list: string[]) => string;
+  uploadedFonts: () => BookFont[];
+  normalizeCustomTheme: (ct: unknown) => CustomTheme | null;
+  normalizeCustomFont: (f: unknown) => BookFont | null;
+  normalizeCoverRecipe: (r: unknown) => Record<string, unknown>;
+  normalizeHeaderDesign: (hd: unknown, theme?: unknown) => Record<string, unknown> | null;
+  defaultHeaderDesign: (theme: unknown) => Record<string, unknown>;
+  COLOUR_ACCENTS: { id: string; hex: string }[];
+  COLOUR_TINTS: { id: string; hex: string }[];
+  bookColour: () => { accent: string; tint: string; printBlack?: boolean };
+  bookColourSet: () => boolean;
+  bookColourNormalize: (c: unknown) => { accent: string; tint: string; printBlack?: boolean };
+  bookColourCheck: (kind: string, hex: string, base?: unknown) => { ok: boolean; key: string; params: Record<string, unknown>; next?: Record<string, unknown> };
+  setBookColour: (kind: string, hex: string) => { ok: boolean; key: string };
+  setBookPrintBlack: (on: boolean) => boolean;
+  renderBookColour: () => void;
+  initBookColour: () => void;
+  BODY_FONTS: string[];
+  HEAD_FONTS: string[];
+  ALL_LIBRARY_FONTS: string[];
+  TEXT_HEAD_FONTS: string[];
+  DISPLAY_FONTS: { family: string; dir: string; file: string; sha256: string; script: boolean }[];
+  HD_KEYS: string[];
+  FLOURISH_PREFIX: string;
 };
+/** One of 1.0's built-in themes (PRESETS). */
+export type Preset = { id: string; genre: string; name: string; desc: string; sampleHead: string; sampleBody: string; theme: Record<string, unknown> };
+/** A theme the writer saved (state.customThemes[], normalizeCustomTheme). */
+export type CustomTheme = { id: string; name: string; theme: Record<string, unknown> };
+/** A face the writer uploaded (state.fonts[], normalizeCustomFont). */
+export type BookFont = { id: string; name: string; family: string; ext: 'ttf' | 'otf'; mediaType: string; data: string };
 /** 1.0's Covenant entry, normalised (bibleNormalizeEntry). */
 export type BibleEntry = { id: string; type: string; name: string; aliases: string[]; description: string; notes: string; imageId: string | null; tags: string[]; exactCase: boolean; exclude: string[]; facts?: Record<string, string>; links?: { to: string; label: string }[]; changes?: { id: string; anchor: { sec: string; quote: string; at: number; book?: string; pos?: number[] }; text: string; fact?: { field: string; value: string } }[]; ai?: string; scope?: string };
 /** 1.0's matcher (bibleBuildMatcher): the names' regex, the exclusions' regex and their tables. */
@@ -610,6 +673,9 @@ export type ClosureVars = {
   bibleSeries: (Record<string, unknown> & { key: string; name: string; doc: { entries: BibleEntry[]; fields?: Record<string, unknown> }; revision: number | null }) | null;
   bibleAllVer: number;
   bibleSeriesArriveTimer: unknown;
+  // wave 4a: the theme creator's draft (null: closed) and the font pickers' signature
+  tcDraft: { id: string | null; name: string; theme: Record<string, unknown>; header: Record<string, unknown> } | null;
+  fontPickerSig: string | null;
 };
 
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
@@ -719,6 +785,35 @@ export function fmtDateIntl(d: Date): string {
   }
 }
 
+/** Wave 4a (D1): what 1.0's Style tab code reaches around its own: `run` puts a callback of the page's FileReader (1.0's
+ *  flourish and font uploads read their file, then edit the book's state) inside the Style tab's session; set by
+ *  src/style/session.ts. */
+export const styleEnv: { run: (fn: () => void) => void } = { run: (fn) => fn() };
+/** The browser's FileReader, its load / error callbacks run through styleEnv.run (undefined where there is none). */
+function sessionFileReader(): unknown {
+  const Base = (globalThis as { FileReader?: typeof FileReader }).FileReader;
+  if (!Base) return undefined;
+  const wrap = (fn: unknown, self: FileReader) =>
+    typeof fn === 'function' ? (e: ProgressEvent<FileReader>) => styleEnv.run(() => (fn as (e: ProgressEvent<FileReader>) => void).call(self, e)) : fn;
+  const desc = (k: string) => Object.getOwnPropertyDescriptor(Base.prototype, k);
+  const onload = desc('onload'), onerror = desc('onerror');
+  class SessionFileReader extends Base {
+    set onload(fn: ((this: FileReader, e: ProgressEvent<FileReader>) => unknown) | null) {
+      onload?.set?.call(this, wrap(fn, this) as never);
+    }
+    get onload() {
+      return (onload?.get?.call(this) ?? null) as never;
+    }
+    set onerror(fn: ((this: FileReader, e: ProgressEvent<FileReader>) => unknown) | null) {
+      onerror?.set?.call(this, wrap(fn, this) as never);
+    }
+    get onerror() {
+      return (onerror?.get?.call(this) ?? null) as never;
+    }
+  }
+  return SessionFileReader;
+}
+
 const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitledBook ?? [];
 
 let loading: Promise<Closure> | null = null;
@@ -784,6 +879,10 @@ export function loadClosure(): Promise<Closure> {
         bibleDeskSchedule: () => covEnv.deskSchedule(),
         bibleCardHide: () => covEnv.cardHide(),
         bibleOffsetY: (area: unknown, offset: number) => covEnv.offsetY(area, offset),
+        // wave 4a (D1): the chapter-art pickers' redraw (React's re-render) and the page's FileReader, whose callbacks run
+        // in the Style tab's session (styleEnv.run, src/style/session.ts)
+        refreshImagePickers: () => undefined,
+        FileReader: sessionFileReader(),
       });
       share = c.share;
       loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, sample: null, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };

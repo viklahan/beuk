@@ -142,11 +142,25 @@ export const EXTRA_ROOTS = [
   'bibleSeriesForget', 'bibleAuthSignedOut', 'bibleSeriesResolve', 'bibleSeriesRaise', 'bibleSeriesFlushOnHide', 'bibleJoinStart', 'bibleJoinDismiss',
   'bibleJoinOffered', 'bibleJoinMembers', 'bibleMergePlan', 'bibleMergeSave', 'bibleSetOnlyBook', 'bibleSeriesLeave', 'bibleSeriesRename',
   'bibleSeriesChangeAsk', 'bibleSeriesSettingsNote', 'bibleSeriesFree',
+  // wave 4a (D1, D2): the Style tab (1.0's Typography Studio) and the theme creator / My themes — 1.0's own renderers and
+  // handlers, drawing into the tab's ids and wired by 1.0's own initStudio (src/style); the presets, ornaments, fonts,
+  // the book colour and its guard, flourish and font uploads, the header design
+  'PRESETS', 'ORNAMENTS', 'ornamentSvg', 'renderStudio', 'syncStudioControls', 'initStudio', 'customTheme', 'renderFlourishes', 'flourishImages',
+  'handleFlourishFile', 'removeFlourishImage', 'renderMyThemes', 'applyCustomTheme', 'duplicateCustomTheme', 'deleteCustomTheme', 'tcBaseOptions',
+  'openThemeCreator', 'closeThemeCreator', 'tcReseedFromBase', 'buildCreatorControls', 'fillCreatorControls', 'tcSet', 'renderTcPreview',
+  'saveThemeCreator', 'renderFonts', 'fontFamilyFromFile', 'handleFontFile', 'removeUploadedFont', 'fillFontSelects', 'refreshFontPickers',
+  'registerUploadedFont', 'registerAllFonts', 'fontOptionsHtml', 'uploadedFonts', 'normalizeCustomTheme', 'normalizeHeaderDesign', 'defaultHeaderDesign',
+  'COLOUR_ACCENTS', 'COLOUR_TINTS', 'bookColour', 'bookColourSet', 'bookColourNormalize', 'bookColourCheck', 'setBookColour', 'setBookPrintBlack',
+  'renderBookColour', 'initBookColour', 'BODY_FONTS', 'HEAD_FONTS', 'ALL_LIBRARY_FONTS', 'TEXT_HEAD_FONTS', 'DISPLAY_FONTS', 'HD_KEYS', 'FLOURISH_PREFIX',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
  *  lifted too, in 1.0's order, after the declarations (ONE SOURCE: nothing retyped). */
-export const ATTACH = ['TYPE_TITLES'];
+export const ATTACH = ['TYPE_TITLES',
+  // wave 4a: HEAD_FONTS gains the display faces (BEUK:displayfaces `HEAD_FONTS.push.apply(HEAD_FONTS, DISPLAY_FAMILIES)`),
+  // between TEXT_HEAD_FONTS (taken before it) and ALL_LIBRARY_FONTS (taken after it): each ATTACH statement stands
+  // where 1.0 has it, among the lifted declarations
+  'HEAD_FONTS'];
 /** Test oracle only (wave 2a, constraint 11): 1.0's dialog handlers, which read and write their dialog's fields
  *  through `$`. Emitted as a THIRD module, src/generated/closure-oracle.js, that only the tests import (never the
  *  app): each test hands it a stand-in `$` and textarea and compares 2.0's result with 1.0's own. Like the sample
@@ -182,7 +196,9 @@ export const VARS = ['insVarPick', 'insCache', 'insFacts',
   // wave 3a: Zen's and dictation's test overrides and transition flag, 1.0's centre tab
   'zenTransitioning', 'zenReducedOverride', 'zdHiddenOv', 'dictCtorOverride', 'currentCenterTab',
   // wave 3a: the day cycle's clock state (1.0's window.beukZen.dayTimerActive / dayRunning)
-  'zdTimer', 'zdStart'];
+  'zdTimer', 'zdStart',
+  // wave 4a: the theme creator's draft and the font pickers' signature
+  'tcDraft', 'fontPickerSig'];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
   // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads
@@ -205,7 +221,13 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // the room closes (olOnStructure: React re-renders), and the desk mirror's entry points — 2.0 has no mirror, its marks
   // are ProseMirror decorations: bibleDeskRender / bibleDeskSchedule redraw them, bibleCardHide hides 2.0's card,
   // bibleOffsetY measures a text offset on the editor's page
-  'apiFetch', 'net', 'cloudDirty', 'uiLangState', 'openBible', 'olOnStructure', 'bibleDeskRender', 'bibleDeskSchedule', 'bibleCardHide', 'bibleOffsetY'];
+  'apiFetch', 'net', 'cloudDirty', 'uiLangState', 'openBible', 'olOnStructure', 'bibleDeskRender', 'bibleDeskSchedule', 'bibleCardHide', 'bibleOffsetY',
+  // wave 4a (D1): the chapter-art pickers' redraw after a flourish leaves the library (React re-renders them from the
+  // Y.Doc), and the page's FileReader — the browser's own, whose load and error callbacks run inside the Style tab's
+  // session (src/style/session.ts): 1.0's flourish and font uploads read their file and then edit the book's state
+  'refreshImagePickers', 'FileReader'];
+/** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
+export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile'];
 /** Lifted declarations that may read UI_STRINGS: each reads only every pack's "misc.untitledBook". */
 export const UI_STRINGS_READERS = ['imIsPlaceholderTitle'];
 /** Top-level names of 1.0 that the lifted code uses only as LOCAL names (the reachability walk is by name, not by
@@ -296,6 +318,22 @@ export async function buildClosureModule(html, epubSource) {
   }
   const strayReaders = readers.filter((n) => !UI_STRINGS_READERS.includes(n));
   if (strayReaders.length) fail(`UI_STRINGS is read by ${strayReaders.join(', ')}: only ${UI_STRINGS_READERS.join(', ')} may (the browser supplies a table of "misc.untitledBook" alone)`);
+  // wave 4a: the supplied FileReader runs its callbacks in the Style tab's session: only the Style tab's uploads may read it
+  const fileReaders = [];
+  for (const st of lifted.statements) {
+    let hit = false;
+    const walk = (n) => {
+      if (hit) return;
+      if (ts.isIdentifier(n) && n.text === 'FileReader') hit = true;
+      else ts.forEachChild(n, walk);
+    };
+    walk(st);
+    if (hit) fileReaders.push(declName(st.getText(lifted)) || '(unnamed)');
+  }
+  const strayFile = fileReaders.filter((n) => !FILEREADER_READERS.includes(n));
+  if (strayFile.length) fail(`FileReader is read by ${strayFile.join(', ')}: only ${FILEREADER_READERS.join(', ')} may (its callbacks run in the Style tab's session)`);
+  // each ATTACH statement where 1.0 has it, among the lifted declarations (extractStudioSource keeps them in 1.0's order)
+  const code = attach.place(src.code, src.names);
   const api = [...new Set(roots)].filter((n) => src.names.includes(n));
   const sample = sampleModule(extractStudioSource, html, sampleNames, src.names, supplied);
   const oracle = subModule(extractStudioSource, html, oracleNames, src.names, supplied, {
@@ -328,7 +366,7 @@ export async function buildClosureModule(html, epubSource) {
   ].join('\n');
   const missingAttach = ATTACH.filter((n) => !src.names.includes(n) || !attach.byName[n]);
   if (missingAttach.length) fail(`ATTACH names no lifted declaration filled by a top-level statement: ${missingAttach.join(', ')}`);
-  return { code: head + '\n' + src.code + '\n' + attach.code + tail, names: src.names, roots: api, supplied, sample, oracle };
+  return { code: head + '\n' + code + tail, names: src.names, roots: api, supplied, sample, oracle };
 }
 
 /** The top-level expression statements that assign into an ATTACH name (in studio order), and the names they read. */
@@ -340,17 +378,21 @@ async function attachStatements(html) {
     return ts.isIdentifier(x) ? x.text : '';
   };
   const parts = [], refs = new Set(), byName = {};
+  const isAttach = new Set();
   for (const st of sf.statements) {
     if (!ts.isExpressionStatement(st)) continue;
     let target = null;
     const walk = (n) => {
       if (target) return;
       if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && ATTACH.includes(rootOf(n.left))) target = rootOf(n.left);
+      // wave 4a: a push into one (HEAD_FONTS.push.apply(HEAD_FONTS, …))
+      else if (ts.isCallExpression(n) && ATTACH.includes(rootOf(n.expression)) && /\.push(\.apply)?$/.test(n.expression.getText(sf))) target = rootOf(n.expression);
       else ts.forEachChild(n, walk);
     };
     walk(st);
     if (!target) continue;
     byName[target] = true;
+    isAttach.add(st);
     parts.push(st.getText(sf));
     const collect = (n) => {
       if (ts.isIdentifier(n)) {
@@ -362,7 +404,28 @@ async function attachStatements(html) {
     };
     collect(st);
   }
-  return { code: parts.join('\n'), refs: [...refs], byName };
+  const declOf = (st) => {
+    if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st)) && st.name) return [st.name.text];
+    if (ts.isVariableStatement(st)) return st.declarationList.declarations.flatMap((d) => (ts.isIdentifier(d.name) ? [d.name.text] : []));
+    return [];
+  };
+  /** The lifted code (extractStudioSource's: its statements joined by "\n", in 1.0's order) with each ATTACH statement
+   *  put back between the lifted declarations that stand around it in 1.0. Fails if the lifted statements, re-read
+   *  here, are not exactly what extractStudioSource emitted. */
+  const place = (liftedCode, names) => {
+    const want = new Set(names);
+    const all = [], own = [];
+    for (const st of sf.statements) {
+      if (isAttach.has(st)) all.push(st.getText(sf));
+      else if (declOf(st).some((n) => want.has(n))) {
+        all.push(st.getText(sf));
+        own.push(st.getText(sf));
+      }
+    }
+    if (own.join('\n') !== liftedCode) fail('the lifted declarations, re-read to place the ATTACH statements, differ from what extractStudioSource emitted');
+    return all.join('\n');
+  };
+  return { code: parts.join('\n'), refs: [...refs], byName, place };
 }
 
 function sampleModule(extractStudioSource, html, sampleNames, mainNames, supplied) {
@@ -431,7 +494,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 
