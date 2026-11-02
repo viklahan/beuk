@@ -556,6 +556,10 @@ export type ClosureApi = {
   registeredFontIds: Record<string, boolean>;
   fontOptionsHtml: (list: string[]) => string;
   uploadedFonts: () => BookFont[];
+  // per-user themes (My themes): what a saved theme carries, resolved as 1.0 resolves it
+  uploadedFontByFamily: (fam: unknown) => BookFont | null;
+  flourishOf: (ornamentId: unknown) => BookImage | null;
+  fontStack: (name: unknown) => string;
   normalizeCustomTheme: (ct: unknown) => CustomTheme | null;
   normalizeCustomFont: (f: unknown) => BookFont | null;
   normalizeCoverRecipe: (r: unknown) => Record<string, unknown>;
