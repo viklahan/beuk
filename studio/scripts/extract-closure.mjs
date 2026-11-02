@@ -226,6 +226,33 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // Y.Doc), and the page's FileReader — the browser's own, whose load and error callbacks run inside the Style tab's
   // session (src/style/session.ts): 1.0's flourish and font uploads read their file and then edit the book's state
   'refreshImagePickers', 'FileReader'];
+/** Wave 4b (E1, E2): the preview's OWN module, src/generated/closure-preview.js (createPreviewClosure). 1.0's preview
+ *  pane, its pagination and reading desk, the device frames and truth notes, the hardcover and full screen — lifted
+ *  whole, beside their own copy of what they reach (sectionHtml, buildBookCss, the print view's model), with their own
+ *  `state`, which only src/preview/preview.ts sets (the book read through the Style session's safe path). 1.0's
+ *  timers in this code (the desk's chunks, the reader's frames, the font reloads, the hardcover's turns) therefore
+ *  always run on the preview's state, never on a state another part of the studio set into the main closure. The
+ *  main closure's renderPreview, deskState and deskSignature are this module's (BROWSER_SUPPLIED there). */
+export const PREVIEW_ROOTS = ['renderPreview', 'queuePreview', 'initPreview', 'setDevice', 'measurePages', 'goToPage', 'fitDeviceFrame', 'renderDeviceDisplayNote',
+  'deviceReadingArea', 'scheduleDeskUpdate', 'updateDesk', 'renderDesk', 'renderDeskFacts', 'computeDeskCountsSync', 'deskState', 'deskSignature', 'deskGoToSection',
+  'pvLeaving', 'pvResume', 'pvShowTitle', 'pvFlush', 'pvPageOfAnchor', 'pvCaretAnchor', 'pvPageAnchor', 'previewPageAtX', 'keepOrnamentsWithText', 'undoOrnamentRepairs',
+  'insGlancePages', 'statsPages', 'statsDeskReady', 'pageCountCache',
+  'COL_GAP', 'DEVICE_FOOTERS', 'DEVICE_FACTS', 'DEVICE_NAMES', 'PAGE_GEOMETRY', 'DEVICE_DISPLAY', 'DISPLAY_RENDER',
+  // E2: the hardcover and full screen
+  'hc', 'hcInit', 'hcRender', 'hcOnDevice', 'hcOnPreview', 'hcSetOpen', 'hcTurn', 'hcKey', 'hcEnsureModel', 'hcSignature', 'hcLook',
+  'fsInit', 'fsToggle', 'fsExit', 'fsIsOn', 'fsActive', 'fsState', 'fsLabelFor', 'fsScaleFrame', 'FS_TARGETS'];
+/** What the preview module takes from its page and from the main studio (src/preview/preview.ts). */
+export const PREVIEW_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'uiLangState', 'fmtDateIntl', 'icons',
+  // the page: `$` (the preview's ids, 1.0's #editorArea as a read-only view of the open editor), the open section
+  '$', 'activeSection',
+  // the main studio after a desk jump (deskGoToSection: 2.0 selects the section), Read Aloud and dictation (the main
+  // closure's, stopped there), the print view (wave 5: nothing to redraw), and what 1.0's desk refreshes when it has
+  // measured (statsPagesRefresh, insGlancePagesRefresh: 2.0 re-renders the sidebar and the Insights glance)
+  'renderSidebar', 'syncEditor', 'raStop', 'dictDiscard', 'renderPrintView', 'statsPagesRefresh', 'insGlancePagesRefresh',
+  'noteBookEdited', 'autoSnapshot', 'local', 'cloud', 'refreshImagePickers', 'FileReader'];
+/** 1.0's top-level lets of the preview module the studio reads or sets. */
+export const PREVIEW_VARS = ['editorSyncedSectionId', 'editorTypedAt', 'pvFollow', 'pcFontGen'];
+
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile'];
 /** Lifted declarations that may read UI_STRINGS: each reads only every pack's "misc.untitledBook". */
@@ -369,6 +396,72 @@ export async function buildClosureModule(html, epubSource) {
   return { code: head + '\n' + code + tail, names: src.names, roots: api, supplied, sample, oracle };
 }
 
+/** Wave 4b: the preview's own module (PREVIEW_ROOTS): createPreviewClosure(env) → { api, vars, setState, getState }. */
+export async function buildPreviewModule(html, epubSource) {
+  const { extractStudioSource, reachableFrom } = await studioClosure();
+  const spec = epubSpec(epubSource);
+  const supplied = [...spec.EPUB_SUPPLIED, ...PREVIEW_SUPPLIED];
+  const attach = await attachStatements(html);
+  let names = reachableFrom(html, PREVIEW_ROOTS, [...supplied, ...LOCAL_ONLY]);
+  // an ATTACH declaration the preview reaches brings the statements that fill it, and what those read
+  const reached = ATTACH.filter((n) => names.includes(n));
+  if (reached.length) names = reachableFrom(html, [...PREVIEW_ROOTS, ...reached.flatMap((n) => attach.refsOf[n] || [])], [...supplied, ...LOCAL_ONLY]);
+  const forbidden = names.filter((n) => FORBIDDEN.test(n));
+  if (forbidden.length) fail(`the preview module reaches ${forbidden.join(', ')}, which the browser studio does not lift (supply it in PREVIEW_SUPPLIED)`);
+  let src;
+  try {
+    src = extractStudioSource(html, [...new Set([...PREVIEW_ROOTS, ...names])], { listRef: 'studio/scripts/extract-closure.mjs PREVIEW_ROOTS', api: '', stringTables: false });
+  } catch (e) {
+    fail(e.message);
+  }
+  for (const n of LOCAL_ONLY) {
+    if (src.names.includes(n) || new RegExp('(^|[^\\w$.])' + n + '\\s*\\(').test(src.code)) fail(`${n} is in LOCAL_ONLY but the preview code declares or calls it`);
+  }
+  const lifted = ts.createSourceFile('closure-preview.js', src.code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  for (const [name, allowed] of [['UI_STRINGS', UI_STRINGS_READERS], ['FileReader', []]]) {
+    const readers = [];
+    for (const st of lifted.statements) {
+      let hit = false;
+      const walk = (n) => {
+        if (hit) return;
+        if (ts.isIdentifier(n) && n.text === name) hit = true;
+        else ts.forEachChild(n, walk);
+      };
+      walk(st);
+      if (hit) readers.push(declName(st.getText(lifted)) || '(unnamed)');
+    }
+    const stray = readers.filter((n) => !allowed.includes(n));
+    if (stray.length) fail(`the preview module reads ${name} in ${stray.join(', ')}`);
+  }
+  const code = attach.place(src.code, src.names);
+  const api = PREVIEW_ROOTS.filter((n) => src.names.includes(n));
+  const missingRoots = PREVIEW_ROOTS.filter((n) => !src.names.includes(n));
+  if (missingRoots.length) fail(`PREVIEW_ROOTS names no lifted declaration: ${missingRoots.join(', ')}`);
+  const vars = PREVIEW_VARS.filter((n) => src.names.includes(n));
+  const unlifted = PREVIEW_VARS.filter((n) => !src.names.includes(n));
+  if (unlifted.length) fail(`PREVIEW_VARS names no lifted declaration: ${unlifted.join(', ')}`);
+  const head = [
+    '/* GENERATED by studio/scripts/extract-closure.mjs from client/index.html — do not edit.',
+    `   The preview (wave 4b): ${src.names.length} top-level declarations (${src.lines} lines) of 1.0's own code, reached from PREVIEW_ROOTS;`,
+    `   studio sha256 ${src.studioSha}. */`,
+    '/* eslint-disable */',
+    `export const PREVIEW_NAMES = ${JSON.stringify(src.names)};`,
+    `export const PREVIEW_API = ${JSON.stringify(api)};`,
+    `export const PREVIEW_SUPPLIED_NAMES = ${JSON.stringify(supplied)};`,
+    'export function createPreviewClosure(env) {',
+    '  let state = env.state;',
+    ...supplied.filter((n) => n !== 'state').map((n) => `  const ${n} = env.${n};`),
+  ].join('\n');
+  const tail = [
+    '',
+    `  const vars = { ${vars.map((v) => `get ${v}() { return ${v}; }, set ${v}(v) { ${v} = v; }`).join(', ')} };`,
+    `  return { api: { ${api.join(', ')} }, vars, setState: (s) => { state = s; }, getState: () => state };`,
+    '}',
+    '',
+  ].join('\n');
+  return { code: head + '\n' + code + tail, names: src.names, roots: api, supplied };
+}
+
 /** The top-level expression statements that assign into an ATTACH name (in studio order), and the names they read. */
 async function attachStatements(html) {
   const { studioScript } = await studioClosure();
@@ -377,8 +470,9 @@ async function attachStatements(html) {
     while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) x = x.expression;
     return ts.isIdentifier(x) ? x.text : '';
   };
-  const parts = [], refs = new Set(), byName = {};
+  const parts = [], refs = new Set(), byName = {}, refsOf = {};
   const isAttach = new Set();
+  const targetOf = new Map();
   for (const st of sf.statements) {
     if (!ts.isExpressionStatement(st)) continue;
     let target = null;
@@ -393,12 +487,16 @@ async function attachStatements(html) {
     if (!target) continue;
     byName[target] = true;
     isAttach.add(st);
+    targetOf.set(st, target);
     parts.push(st.getText(sf));
     const collect = (n) => {
       if (ts.isIdentifier(n)) {
         const p = n.parent;
         const isKey = (ts.isPropertyAccessExpression(p) && p.name === n) || (ts.isPropertyAssignment(p) && p.name === n);
-        if (!isKey) refs.add(n.text);
+        if (!isKey) {
+          refs.add(n.text);
+          (refsOf[target] ||= []).push(n.text);
+        }
       }
       ts.forEachChild(n, collect);
     };
@@ -416,7 +514,9 @@ async function attachStatements(html) {
     const want = new Set(names);
     const all = [], own = [];
     for (const st of sf.statements) {
-      if (isAttach.has(st)) all.push(st.getText(sf));
+      if (isAttach.has(st)) {
+        if (want.has(targetOf.get(st))) all.push(st.getText(sf)); // wave 4b: only where its declaration is lifted
+      }
       else if (declOf(st).some((n) => want.has(n))) {
         all.push(st.getText(sf));
         own.push(st.getText(sf));
@@ -425,7 +525,7 @@ async function attachStatements(html) {
     if (own.join('\n') !== liftedCode) fail('the lifted declarations, re-read to place the ATTACH statements, differ from what extractStudioSource emitted');
     return all.join('\n');
   };
-  return { code: parts.join('\n'), refs: [...refs], byName, place };
+  return { code: parts.join('\n'), refs: [...refs], refsOf, byName, place };
 }
 
 function sampleModule(extractStudioSource, html, sampleNames, mainNames, supplied) {
@@ -503,6 +603,13 @@ export declare const SAMPLE_NAMES: string[];
 export declare function createSample(share: Record<string, unknown>): { buildSampleBook: () => any; sampleCoverDoc: () => any };
 `;
 
+const PREVIEW_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. The preview (wave 4b). */
+export declare const PREVIEW_NAMES: string[];
+export declare const PREVIEW_API: string[];
+export declare const PREVIEW_SUPPLIED_NAMES: string[];
+export declare function createPreviewClosure(env: Record<string, unknown>): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; setState(s: unknown): void; getState(): any };
+`;
+
 const ORACLE_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. Test oracle only. */
 export declare const ORACLE_NAMES: string[];
 export declare function createOracle(share: Record<string, unknown>, env: Record<string, unknown>): Record<string, (...args: any[]) => any>;
@@ -520,12 +627,16 @@ export async function writeClosure() {
   writeFileSync(path.join(dir, 'closure-sample.d.ts'), SAMPLE_DTS);
   writeFileSync(path.join(dir, 'closure-oracle.js'), out.oracle.code);
   writeFileSync(path.join(dir, 'closure-oracle.d.ts'), ORACLE_DTS);
+  const pv = await buildPreviewModule(html, epub);
+  writeFileSync(path.join(dir, 'closure-preview.js'), pv.code);
+  writeFileSync(path.join(dir, 'closure-preview.d.ts'), PREVIEW_DTS);
+  out.preview = pv;
   return out;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   writeClosure()
-    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js; the sample: ${o.sample.names.length} → closure-sample.js; the test oracle: ${o.oracle.names.length} → closure-oracle.js`))
+    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js; the sample: ${o.sample.names.length} → closure-sample.js; the test oracle: ${o.oracle.names.length} → closure-oracle.js; the preview: ${o.preview.names.length} → closure-preview.js`))
     .catch((e) => {
       console.error(e.message);
       process.exit(1);
