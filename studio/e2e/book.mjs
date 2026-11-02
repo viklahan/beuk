@@ -3264,6 +3264,26 @@ async function wave4bChrome(origin) {
       const c1 = await chrome(one);
       const cbad = Object.keys(c1).filter((k) => c1[k] !== c2[k]);
       check(cbad.length === 0, `wave4b (${ui}) look parity: the page counter, section line, running head, desk total, basis and rail, the page flow's typeset HTML (${c2.flow.length} characters) and the page buttons equal 1.0's; the sidebar's pages are the desk's (${c2.statPages}: "${c2.statsNote}")${cbad.length ? ' — differ: ' + cbad.map((k) => `${k} "${String(c2[k]).slice(0, 80)}" / 1.0 "${String(c1[k]).slice(0, 80)}"`).join('; ') : ''}`);
+      // every section's typeset page beside 1.0's (generated.*: the generated pages' preview markup — the half title, the
+      // title page, the copyright, the contents, the cover), moved to through the desk rail in both (1.0's deskGoToSection)
+      if (ui === 'en') {
+        const ids = sectionsOf(start).map((s) => s.id);
+        const flowOf = async (p, two, id) => {
+          await p.bringToFront();
+          return p.evaluate(async ([x, t]) => {
+            if (t) window.beukPreview.call('deskGoToSection', x);
+            else deskGoToSection(x);
+            await new Promise((r) => setTimeout(r, 450));
+            return { flow: document.getElementById('pageFlow').innerHTML, counter: document.getElementById('pageCounter').textContent, name: document.getElementById('previewSectionName').textContent };
+          }, [id, two]);
+        };
+        const differ = [];
+        for (const id of ids) {
+          const a = await flowOf(one, false, id), b = await flowOf(page, true, id);
+          if (JSON.stringify(a) !== JSON.stringify(b)) differ.push(`${id} (${b.name} / 1.0 ${a.name}; ${b.counter} / ${a.counter})`);
+        }
+        check(differ.length === 0, `wave4b look parity, every section (${ids.length}, generated.halftitle.editor / generated.cover.editor / generated.no-message-pages: their preview half): the typeset page, its counter and its line equal 1.0's${differ.length ? ' — differ: ' + differ.slice(0, 5).join('; ') : ''}`);
+      }
       // E2: the hardcover, closed and open, beside 1.0's
       await page.bringToFront();
       const h2 = await page.evaluate(W4B_HC, true);

@@ -33,3 +33,20 @@ describe('the preview module (wave 4b)', () => {
     expect(src).not.toMatch(/\beval\s*\(|new Function\s*\(/);
   });
 });
+
+describe('1.0 self-check preview.hardcover.i18n (and the full-screen words, fullscreen.controls)', () => {
+  it('every hcp.* and fs.* key 1.0 has ships in all 13 interface languages, and the preview pane’s keys too', async () => {
+    const meta = JSON.parse(readFileSync(fileURLToPath(new URL('../src/generated/strings-meta.json', import.meta.url)), 'utf8')) as { order: string[] };
+    const pack = (l: string) => JSON.parse(readFileSync(fileURLToPath(new URL(`../src/generated/packs/${l}.json`, import.meta.url)), 'utf8')) as Record<string, string>;
+    const en = pack('en');
+    const keys = Object.keys(en).filter((k) => /^(hcp|fs)\./.test(k) || /^preview\./.test(k));
+    expect(meta.order.length).toBe(13);
+    expect(keys.filter((k) => k.startsWith('hcp.')).length).toBeGreaterThan(10);
+    const missing: string[] = [];
+    for (const l of meta.order) {
+      const p = pack(l);
+      for (const k of keys) if (!p[k] || !String(p[k]).trim()) missing.push(l + ':' + k);
+    }
+    expect(missing).toEqual([]);
+  });
+});
