@@ -9,7 +9,7 @@ import { StackEntry } from '../shell/Dialog';
 import { useToast } from '../shell/Toasts';
 import { guardRoots, styleBegin, styleRun, styleSettle } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
-import { coverReady, coverUi } from './cover';
+import { coverReady, coverUi, lucideArrived } from './cover';
 
 /* Step 5 wave 4c (inventory D3, D4): 1.0's cover maker — its dialog's markup, verbatim (client/index.html
    #modalCoverMaker, extracted at build time into src/generated/cover-markup.json): the cover preview and its layouts,
@@ -74,8 +74,11 @@ export function loadLucide(): Promise<void> {
     lucideLoad = new Promise<void>((resolve) => {
       const s = document.createElement('script');
       s.src = '/assets/vendor/lucide.min.js';
-      s.integrity = markup.lucideSri;
-      s.onload = () => resolve();
+      s.setAttribute('integrity', markup.lucideSri);
+      s.onload = () => {
+        lucideArrived(); // 1.0's lucideKey reads it: a session built before reads the book anew
+        resolve();
+      };
       s.onerror = () => resolve(); // no icons: 1.0's sbLib() is then {} and its icon grids stay empty
       document.head.appendChild(s);
     });

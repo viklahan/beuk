@@ -1,8 +1,8 @@
 import { exportBook } from '@book/editor/index.js';
-import { closureIfLoaded, closureT, coverEnv, structEnv, type Closure, type StockPhoto } from '../closure/index';
+import { closureIfLoaded, closureT, coverEnv, pageToast, type Closure, type StockPhoto } from '../closure/index';
 import { desk } from '../environment/page';
 import { allowedStockUrl } from '../pictures/stock';
-import { styleCoverCleared, styleRun } from '../style/session';
+import { styleCoverCleared, styleReset, styleRun, styleSettle } from '../style/session';
 
 /* Step 5 wave 4c (inventory D3, D4): the cover maker, the spine and back, the hardcover's flaps and guides, the wrap
    and its 3D stand, and Project Settings' cover row — the data side.
@@ -169,11 +169,14 @@ export function coverReady(c: Closure | null = closureIfLoaded()): Closure | nul
     // 1.0's serializeBook: the open book as book format (exportBook writes what readBook reads: what 1.0 writes)
     // (1.0's serializeBook writes formatVersion: 1 first, BEUK:bookformat; the meta's keys stand in the book's own order)
     coverEnv.serializeBook = () => (desk.ydoc ? { formatVersion: 1, ...(exportBook(desk.ydoc) as Record<string, unknown>) } : {});
-    // a toast raised outside any session (1.0's downloadWrap after its request) reaches the page
-    const base = structEnv.toast;
-    if (base === defaultToast.fn) structEnv.toast = (msg, icon) => coverUi.toast(msg, icon);
   }
   return c;
 }
 const installed = new WeakSet<Closure>();
-const defaultToast: { fn: unknown } = { fn: structEnv.toast };
+/** Lucide is in (1.0's lucideKey now checks names against it): a session built before reads the recipe anew. */
+export function lucideArrived(): void {
+  styleSettle();
+  styleReset();
+}
+// a toast raised outside any session (1.0's downloadWrap after its request) reaches the page
+pageToast.fn = (msg, icon) => coverUi.toast(msg, icon);

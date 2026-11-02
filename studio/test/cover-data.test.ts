@@ -5,11 +5,11 @@ import { exportBook, importBook } from '../../src/book/editor/index';
 import { readBook } from '../../src/book/read';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
-import { loadClosure, setClosureLang, setClosureT, type Closure } from '../src/closure/index';
+import { loadClosure, setClosureLang, setClosureT, structEnv, type Closure } from '../src/closure/index';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { styleRelease, styleReset, styleRun, styleState } from '../src/style/session';
-import { coverClear, coverUpload } from '../src/cover/cover';
+import { coverClear, coverReady, coverUi, coverUpload, lucideArrived } from '../src/cover/cover';
 import { fixtures } from './fixtures';
 import { PNG_1PX } from './style-fixture';
 
@@ -173,5 +173,45 @@ describe('wave 4c: the recipe on the safe path (constraint 43)', () => {
     // the coverImgCache has no prototype (a picture id is a key: never Object.prototype's), as the server's
     expect(Object.getPrototypeOf(c.api.coverImgCache)).toBeNull();
     y.destroy();
+  });
+});
+
+describe('wave 4c review (Minors 1, 2)', () => {
+  it("Lucide arriving after a session was built does not make the next write rewrite the recipe (1.0's lucideKey reads window.lucide)", () => {
+    const doc = book('real/lantern-coast-book-one');
+    const r = doc.coverRecipe as Rec & { wrap: Rec };
+    r.wrap = { ...r.wrap, spine: { iconTop: { kind: 'lucide', name: 'NoSuchIconAnywhere' } } };
+    const w = window as unknown as { lucide?: unknown };
+    const keep = w.lucide;
+    delete w.lucide;
+    try {
+      const y = onDesk(doc);
+      styleRun(() => undefined); // a session built before Lucide is in
+      w.lucide = { icons: { Feather: [] } };
+      lucideArrived();
+      const before = Y.encodeStateVector(y);
+      styleRun((cc) => {
+        (cc.getState() as unknown as Rec & { theme: Rec }).theme.fontSize = 19;
+      });
+      const out = exportBook(y);
+      expect(out.coverRecipe).toEqual(want(doc).coverRecipe);
+      expect((out.theme as Rec).fontSize).toBe(19);
+      void before;
+      y.destroy();
+    } finally {
+      if (keep === undefined) delete w.lucide;
+      else w.lucide = keep;
+    }
+  });
+
+  it('a toast 1.0 raises outside any session reaches the page even when another part swapped structEnv.toast around coverReady', () => {
+    const seen: string[] = [];
+    coverUi.toast = (m) => seen.push(m);
+    const keep = structEnv.toast;
+    structEnv.toast = () => undefined; // another part's call in progress
+    coverReady(c);
+    structEnv.toast = keep; // and restored
+    structEnv.toast('after the request');
+    expect(seen).toEqual(['after the request']);
   });
 });

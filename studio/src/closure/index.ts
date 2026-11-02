@@ -844,9 +844,12 @@ export const pictureEnv: { autoSnapshot: (kind: string) => unknown; editSeq: () 
 /** Wave 2c: what 1.0's structure and outline functions call around their own code (BROWSER_SUPPLIED): selectSection
  *  (2.0 selects the section once the change is written) and toast (with 1.0's action: an outline Undo). Set by
  *  src/structure/structure.ts for the call it makes. */
+/** Wave 4c: where a toast 1.0's code raises outside any part's call goes (the wrap download's answer, after its
+ *  request): the page's toaster, set by src/cover/cover.ts. structEnv.toast stands at this between calls. */
+export const pageToast: { fn: (msg: string, icon?: string) => void } = { fn: () => undefined };
 export const structEnv: { select: (id: string) => void; toast: (msg: string, icon?: string, action?: { label: string; ms?: number; onClick: () => void }) => void } = {
   select: () => undefined,
-  toast: () => undefined,
+  toast: (msg, icon) => pageToast.fn(msg, icon),
 };
 /** Wave 3a adds what 1.0's streak reads of `cloud`: the server's streak (signed in) and when the last heartbeat went. */
 /** Wave 3a: 1.0's page as Zen, Read Aloud and dictation reach it (BROWSER_SUPPLIED `$`, activeSection, setCenterTab,
