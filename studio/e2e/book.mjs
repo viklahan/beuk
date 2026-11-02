@@ -39,6 +39,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServer } from './serve.mjs';
+import { covenantDumas } from './covenant-fixture.mjs';
 
 const STUDIO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.resolve(STUDIO, '..');
@@ -284,6 +285,25 @@ async function readOnlyRooms(page) {
   await page.click('#btnCloseGoals');
   await page.waitForSelector('#modalGoals', { state: 'detached', timeout: 10_000 });
   done.push('Goals');
+  // wave 3b (review focus #5): the Covenant room — every entry chosen, the Story Insights and Fact fields views opened
+  // and left, a search — then closed; nothing added
+  await page.click('#btnBible');
+  await page.waitForSelector('#modalBible #bibList', { timeout: 60_000 });
+  const nEntries = (await page.$$('#bibList .bib-item')).length;
+  for (let k = 0; k < Math.min(nEntries, 12); k++) {
+    await page.locator('#bibList .bib-item').nth(k).click();
+    await page.waitForSelector('#bibDetail #bibFName', { timeout: 10_000 });
+  }
+  for (const v of ['#btnBibSeed', '#btnBibFields']) {
+    await page.click(v);
+    // (1.0's back button shows only at phone widths; Cancel leaves the Story Insights view)
+    await page.waitForSelector('#btnBibBack', { state: 'attached', timeout: 10_000 });
+    await page.$eval('#btnBibSeedCancel, #btnBibBack', (b) => b.click());
+  }
+  await page.fill('#bibSearch', 'a');
+  await page.click('#btnCloseBible');
+  await page.waitForSelector('#modalBible', { state: 'detached', timeout: 10_000 });
+  done.push('the Covenant (' + nEntries + ' entries browsed)');
   // …and, on an open chapter, Zen entered and left by Escape, the Read Aloud popover and the dictation language picker
   // opened and closed (nothing played, nothing dictated); the language bar is drawn on every chapter mounted above
   if (await page.$('#btnZen')) {
@@ -307,6 +327,20 @@ async function readOnlyRooms(page) {
     await page.waitForSelector('#dictPop.open', { timeout: 10_000 });
     await escUntil(() => !document.querySelector('#dictPop.open'));
     done.push('Zen, Read Aloud, the dictation picker');
+  }
+  // wave 3b: on the open chapter, a mark hovered until its card shows, then left
+  const mark = await page.$('#manuscript .bm');
+  if (mark) {
+    await mark.scrollIntoViewIfNeeded();
+    const r = await mark.boundingBox();
+    if (r) {
+      await page.mouse.move(r.x - 200, r.y);
+      await page.mouse.move(r.x + Math.min(4, r.width / 2), r.y + r.height / 2);
+      const shown = await page.waitForSelector('#bibleCard:not([hidden])', { timeout: 5000 }).then(() => true, () => false);
+      await page.mouse.move(2, 2);
+      await page.waitForTimeout(400);
+      done.push('a Covenant mark hovered' + (shown ? ' (its card shown)' : ' (no card)'));
+    }
   }
   return done.join(' + ');
 }
@@ -2442,6 +2476,260 @@ async function wave3aChecks(origin) {
   }
 }
 
+/* ---- step 5 wave 3b: the Covenant (C6) ---- */
+/** 1.0 on its own page with this book, that section on its desk, its underline mirror drawn: 1.0's desk hits. */
+async function oneDeskHits(one, book, secId) {
+  return one.evaluate(([b, id]) => {
+    applyBookDoc(JSON.parse(JSON.stringify(b)));
+    selectSection(id);
+    bibleDeskRender(true);
+    return { hits: window.beukBible.desk.hits.map((h) => ({ s: h.s, e: h.e, id: h.id })), text: document.getElementById('editorArea').value };
+  }, [book, secId]);
+}
+/** 2.0's marks on the open chapter, once they have settled (the closure loads, the matcher is read, the plugin draws). */
+async function twoRanges(page) {
+  await page.waitForFunction(() => !!window.beukCovenant, null, { timeout: 30_000 });
+  let last = '', same = 0;
+  for (let i = 0; i < 40 && same < 3; i++) {
+    const now = JSON.stringify(await page.evaluate(() => window.beukCovenant.ranges()));
+    same = now === last ? same + 1 : 0;
+    last = now;
+    await page.waitForTimeout(100);
+  }
+  return JSON.parse(last);
+}
+async function openOne(ctx, origin) {
+  const one = await watch(await ctx.newPage());
+  await one.goto(origin + '/studio');
+  await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+  return one;
+}
+async function wave3bChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  for (const ui of ['en', 'ar']) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    if (ui === 'ar') await ctx.addInitScript(() => localStorage.setItem('beuk.uiLang.v1', 'ar'));
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      const start = (await exportBackup(page)).json.book;
+      const one = await openOne(ctx, origin);
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+      // ---- the room, beside 1.0's: the list, the first entry's form and mentions, the signed-out series line ----
+      await page.bringToFront();
+      await page.click('#btnBible');
+      await page.waitForSelector('#modalBible #bibList .bib-item', { timeout: 30_000 });
+      const read = (p) => p.evaluate(() => ({
+        list: document.getElementById('bibList')?.innerText ?? '',
+        detail: document.getElementById('bibDetail')?.innerText ?? '',
+        series: (() => { const el = document.getElementById('bibSeriesLine'); return el && !el.hidden ? el.textContent : ''; })(),
+        marks: document.getElementById('tglBibMarks')?.getAttribute('aria-pressed'),
+      }));
+      const two = await read(page);
+      await one.evaluate(() => openBible());
+      const oneSaw = await read(one);
+      for (const k of ['list', 'series', 'marks']) check(two[k] === oneSaw[k], `wave3b (${ui}) the room's ${k} reads as 1.0's: "${String(two[k]).replace(/\s+/g, ' ').slice(0, 90)}"${two[k] === oneSaw[k] ? '' : ` — 1.0: "${String(oneSaw[k]).replace(/\s+/g, ' ').slice(0, 90)}"`}`);
+      check(!!two.series, `wave3b (${ui}) signed out, a book that names a series says so in one line (1.0's bible.seriesSignIn): "${two.series}"`);
+      const firstId = start.bible.entries[0].id;
+      await page.click(`.bib-item[data-bib-id="${firstId}"]`);
+      await page.waitForSelector('#bibMentions .ins-h', { timeout: 10_000 });
+      await one.evaluate((id) => { bibleUi.sel = id; bibleUi.mode = 'entry'; bibleUi.detail = true; bibleRender(); }, firstId);
+      const twoD = (await read(page)).detail, oneD = (await read(one)).detail;
+      check(twoD === oneD, `wave3b (${ui}) the first entry's form and mentions read as 1.0's (${twoD.length} characters)${twoD === oneD ? '' : ` — 2.0: "${twoD.replace(/\s+/g, ' ').slice(0, 200)}" / 1.0: "${oneD.replace(/\s+/g, ' ').slice(0, 200)}"`}`);
+      await closeByEscape(page, '#modalBible');
+      await one.evaluate(() => bibleClose());
+      check(JSON.stringify((await exportBackup(page)).json.book) === JSON.stringify(start), `wave3b (${ui}) the room opened, browsed and closed: the export is unchanged`);
+      // ---- the marks, chapter by chapter, against 1.0's desk ----
+      let secs = 0, hits = 0;
+      const bad = [];
+      for (const [i, s] of start.sections.entries()) {
+        if (s.kind !== 'body' || !String(s.content || '').trim()) continue;
+        await page.bringToFront();
+        await choose(page, i);
+        const ranges = await twoRanges(page);
+        const ref = await oneDeskHits(one, start, s.id);
+        const want = await page.evaluate((h) => window.beukCovenant.expected(h), ref.hits);
+        const text = await page.evaluate(() => window.beukCovenant.text());
+        secs++;
+        hits += ref.hits.length;
+        if (text !== ref.text || JSON.stringify(ranges) !== JSON.stringify(want)) bad.push(`${s.id} (2.0 ${ranges.length} / 1.0 ${ref.hits.length}${text === ref.text ? '' : ', TEXT DIFFERS'})`);
+      }
+      check(!bad.length && hits > 0, `wave3b (${ui}) review focus #2: the marks on all ${secs} chapters are 1.0's desk spans, ${hits} marks${bad.length ? ' — differ: ' + bad.join(', ') : ''}`);
+      // ---- the card: hover, a click on a name, Alt+Enter at the caret, Escape ----
+      const ch = start.sections.findIndex((s) => s.kind === 'body' && s.type === 'chapter');
+      await page.bringToFront();
+      await choose(page, ch);
+      await twoRanges(page);
+      const box = await page.$eval('#manuscript .bm', (el) => { el.scrollIntoView({ block: 'center' }); const r = el.getClientRects()[0]; return { x: r.left + r.width / 2, y: r.top + r.height / 2, id: el.getAttribute('data-bib-id'), bottom: r.bottom, left: r.left }; });
+      await page.mouse.move(box.x - 300, box.y);
+      await page.mouse.move(box.x, box.y);
+      await page.waitForSelector('#bibleCard:not([hidden])', { timeout: 5000 });
+      const card = await page.$eval('#bibleCard', (el) => ({ text: el.innerText, how: el.getAttribute('data-how'), top: parseFloat(el.style.top), icons: el.querySelectorAll('svg').length }));
+      const oneCard = await one.evaluate(([b, id, secId]) => {
+        selectSection(secId); bibleDeskRender(true);
+        const i = window.beukBible.desk.hits.findIndex((h) => h.id === id);
+        window.beukBible.card(i, false);
+        const el = document.getElementById('bibleCard');
+        const out = el ? el.innerText : '';
+        bibleCardHide();
+        return out;
+      }, [start, box.id, start.sections[ch].id]);
+      check(card.how === 'hover' && card.text === oneCard && card.top >= box.bottom, `wave3b (${ui}) hover on a name: 1.0's card (${card.icons} icons), below the name, the same text as 1.0's ("${card.text.replace(/\s+/g, ' ').slice(0, 80)}")${card.text === oneCard ? '' : ` — 1.0: "${oneCard.replace(/\s+/g, ' ').slice(0, 80)}"`}`);
+      await page.mouse.move(5, 5);
+      await page.waitForSelector('#bibleCard', { state: 'hidden', timeout: 5000 });
+      const ref = await oneDeskHits(one, start, start.sections[ch].id);
+      const h0 = ref.hits[0];
+      await page.bringToFront();
+      await page.evaluate((o) => { const m = document.getElementById('manuscript'); m.beukText.select(o, o); m.beukEditor.view.focus(); }, h0.s + 1);
+      await page.keyboard.press('Alt+Enter');
+      await page.waitForSelector('#bibleCard:not([hidden])', { timeout: 5000 });
+      const how = await page.$eval('#bibleCard', (el) => el.getAttribute('data-how'));
+      await page.keyboard.press('Escape');
+      await page.waitForSelector('#bibleCard', { state: 'hidden', timeout: 5000 });
+      check(how === 'caret', `wave3b (${ui}) Alt+Enter with the caret on a name opens its card (data-how ${how}); Escape closes it`);
+      check(JSON.stringify((await exportBackup(page)).json.book) === JSON.stringify(start), `wave3b (${ui}) review focus #5: hovering marks and opening cards: the export is unchanged`);
+      if (ui === 'ar') {
+        // the no-edit gate's rooms (readOnlyRooms, with the Covenant room and a hovered mark), once here, on this book
+        const rooms = await readOnlyRooms(page);
+        check(/Covenant/.test(rooms) && JSON.stringify((await exportBackup(page)).json.book) === JSON.stringify(start), `wave3b: the no-edit gate's rooms on this book (${rooms}): the export is unchanged`);
+      }
+      if (ui === 'en') {
+        // ---- Alt+M: a change pinned to a selection near a name, saved as 1.0 saves it; its margin dot opens the entry ----
+        await page.evaluate(([s, e]) => { const m = document.getElementById('manuscript'); m.beukText.select(s, e); m.beukEditor.view.focus(); }, [h0.s, h0.e + 12]);
+        await page.keyboard.press('Alt+M');
+        await page.waitForFunction(() => !document.getElementById('bibleMarkPop')?.hidden || !document.getElementById('bibleMarkMenu')?.hidden, null, { timeout: 5000 });
+        if (await page.$('#bibleMarkMenu:not([hidden])')) await page.keyboard.press('Enter');
+        await page.waitForSelector('#bibleMarkPop:not([hidden]) #bibMarkText', { timeout: 5000 });
+        await page.keyboard.type('w3b change at the quay');
+        await page.keyboard.press('Enter');
+        await page.waitForSelector('#bibleMarkPop', { state: 'hidden', timeout: 5000 });
+        const after = (await exportBackup(page)).json.book;
+        const ent = after.bible.entries.find((e) => (e.changes || []).some((c) => c.text === 'w3b change at the quay'));
+        const chg = ent && ent.changes.find((c) => c.text === 'w3b change at the quay');
+        const oneRead = await one.evaluate(([b, eid]) => {
+          applyBookDoc(JSON.parse(JSON.stringify(b)));
+          const e = bibleById(eid); const c = e && (e.changes || []).find((x) => x.text === 'w3b change at the quay');
+          return { found: !!(c && bibleAnchorFind(c.anchor, state.sections)), same: JSON.stringify(serializeBook().bible) === JSON.stringify(b.bible) };
+        }, [after, ent ? ent.id : '']);
+        check(!!chg && chg.anchor.sec === start.sections[ch].id && chg.anchor.at === h0.s && oneRead.found && oneRead.same && JSON.stringify(after.sections) === JSON.stringify(start.sections),
+          `wave3b Alt+M: the change is saved on ${ent ? ent.name : '(none)'} pinned at ${chg ? chg.anchor.sec + ':' + chg.anchor.at + ' "' + chg.anchor.quote + '"' : '(none)'}; 1.0 finds its passage and serializes the Covenant the same; the text is untouched`);
+        await page.waitForSelector('#manuscript .bm-dotmark', { timeout: 5000 });
+        await page.click('#manuscript .bm-dotmark');
+        await page.waitForSelector('#modalBible #bibFName', { timeout: 10_000 });
+        const opened = await page.$eval('#bibFName', (el) => el.value);
+        check(opened === (ent ? ent.name : '?'), `wave3b a margin dot stands at the change and opens its entry ("${opened}")`);
+        await closeByEscape(page, '#modalBible');
+        // ---- a 2.0 edit read back by 1.0; a 1.0 Covenant with links, fields, facts and changes opens in 2.0 unchanged ----
+        await page.click('#btnBible');
+        await page.waitForSelector('#modalBible #btnBibNew', { timeout: 10_000 });
+        await page.click('#btnBibNew');
+        await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'bibFName', null, { timeout: 5000 });
+        await page.keyboard.type('Wren Tallow');
+        await closeByEscape(page, '#modalBible');
+        const ed2 = (await exportBackup(page)).json.book;
+        const back = await one.evaluate((b) => { applyBookDoc(JSON.parse(JSON.stringify(b))); return JSON.stringify(serializeBook().bible); }, ed2);
+        check(back === JSON.stringify(ed2.bible) && ed2.bible.entries.some((e) => e.name === 'Wren Tallow'), `wave3b review focus #1: an entry made in 2.0's room reads back in 1.0 the same (${ed2.bible.entries.length} entries)`);
+        const big = await one.evaluate((b) => {
+          applyBookDoc(JSON.parse(JSON.stringify(b)));
+          const es = bibleEntries();
+          state.bible.fields = { character: [{ id: 'age', label: 'Age' }], place: [{ id: 'pop', label: 'Population' }] };
+          es[0].facts = { age: '31' };
+          es[0].links = [{ to: es[1].id, label: 'sails with' }];
+          const sec = state.sections.find((s) => s.kind === 'body' && String(s.content).length > 200);
+          es[0].changes = [{ id: 'w3bc1', anchor: { sec: sec.id, quote: sec.content.slice(40, 70), at: 40 }, text: 'grows up', fact: { field: 'age', value: '32' } }];
+          state.bible = bibleNormalize(state.bible);
+          return JSON.parse(JSON.stringify(serializeBook()));
+        }, start);
+        const bigFile = path.join(OUT, 'wave3b-one-covenant.beuk-backup.json');
+        writeFileSync(bigFile, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book: big }));
+        const ctx2 = await newContext({ serviceWorkers: 'block' });
+        try {
+          const p2 = await openNext(ctx2, origin);
+          await openBackup(p2, bigFile);
+          const got = (await exportBackup(p2)).json.book;
+          check(JSON.stringify(got) === JSON.stringify(expected(big, got)) && !!got.bible.fields && !!got.bible.entries[0].changes, `wave3b review focus #1: a 1.0 Covenant with fields, facts, links and a change opens in 2.0 and exports unchanged (${big.bible.entries.length} entries)`);
+          await harvestCsp(p2);
+        } finally {
+          await ctx2.close();
+        }
+      }
+      await harvestCsp(page);
+      await harvestCsp(one);
+    } finally {
+      await ctx.close();
+    }
+  }
+  // ---- Dumas with a full Covenant (constraint 27): the marks equal 1.0's, and typing stays fast ----
+  const fullBook = covenantDumas(expected(DUMAS.book));
+  const fullFile = path.join(OUT, 'wave3b-dumas-covenant.beuk-backup.json');
+  writeFileSync(fullFile, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book: fullBook }));
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx, origin);
+    await openBackup(page, fullFile);
+    const book = (await exportBackup(page)).json.book;
+    check(JSON.stringify(book) === JSON.stringify(expected(fullBook, book)), `wave3b Dumas with the generated Covenant (${fullBook.bible.entries.length} entries) opens and exports unchanged`);
+    const secs = sectionsOf(book);
+    let big = -1;
+    secs.forEach((s, i) => { if (typeof s.content === 'string' && (big < 0 || s.content.length > secs[big].content.length)) big = i; });
+    await choose(page, big);
+    const ranges = await twoRanges(page);
+    const one = await openOne(ctx, origin);
+    const ref = await oneDeskHits(one, book, secs[big].id);
+    await one.close();
+    await page.bringToFront();
+    const want = await page.evaluate((h) => window.beukCovenant.expected(h), ref.hits);
+    check(JSON.stringify(ranges) === JSON.stringify(want) && ranges.length > 100, `wave3b Dumas, the longest chapter, ${fullBook.bible.entries.length} entries: 2.0's ${ranges.length} marks are 1.0's ${ref.hits.length} desk spans`);
+    const dots = await page.$$eval('#manuscript .bm-dotmark', (els) => els.length);
+    note(`wave3b Dumas: ${dots} margin dots on the longest chapter`);
+    // typing latency, as #5 measures it, with every mark live
+    await page.evaluate(() => {
+      const ed = document.getElementById('manuscript').beukEditor;
+      const doc = ed.state.doc;
+      let pos = 1, target = Math.floor(doc.childCount / 2), k = 0;
+      doc.forEach((b, off) => { if (k++ === target) pos = off + 1 + Math.floor(b.content.size / 2); });
+      ed.commands.setTextSelection(pos);
+      ed.commands.focus();
+      window.__lat = [];
+      document.addEventListener('keydown', (e) => {
+        const t0 = e.timeStamp;
+        requestAnimationFrame(() => {
+          const ch = new MessageChannel();
+          ch.port1.onmessage = () => window.__lat.push(performance.now() - t0);
+          ch.port2.postMessage(0);
+        });
+      }, true);
+    });
+    const words = 'the quick brown fox jumps over Athos and the lazy dog keeps on running ';
+    await focused(page);
+    await page.keyboard.type(words.slice(0, 20), { delay: 30 });
+    await page.evaluate(() => { window.__lat = []; });
+    let text = '';
+    while (text.length < 300) text += words;
+    await page.keyboard.type(text.slice(0, 300), { delay: 30 });
+    await page.waitForTimeout(400);
+    const lat = (await page.evaluate(() => window.__lat)).slice().sort((x, y) => x - y);
+    const q = (p) => lat[Math.min(lat.length - 1, Math.ceil(p * lat.length) - 1)];
+    const p50 = q(0.5), p95 = q(0.95), max = lat[lat.length - 1];
+    note(`wave3b latency, Dumas section ${big} ("${secs[big].title}"), ${fullBook.bible.entries.length} Covenant entries, ${ranges.length} marks: ${lat.length} keystrokes: p50 ${p50.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, max ${max.toFixed(1)} ms`);
+    check(lat.length >= 290 && p95 < 16, `wave3b constraint 27: typing p95 ${p95.toFixed(1)} ms (p50 ${p50.toFixed(1)} ms) with a full Covenant, under 16 ms`);
+    const after = await twoRanges(page);
+    const ref2 = await (async () => {
+      const o = await openOne(ctx, origin);
+      const exp2 = (await exportBackup(page)).json.book;
+      const r = await oneDeskHits(o, exp2, secs[big].id);
+      await o.close();
+      return r;
+    })();
+    await page.bringToFront();
+    const want2 = await page.evaluate((h) => window.beukCovenant.expected(h), ref2.hits);
+    check(JSON.stringify(after) === JSON.stringify(want2), `wave3b after 320 keystrokes (incremental re-scans only), the marks are still 1.0's spans (${after.length})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
 /* ---- the bundle: one yjs ---- */
 function bundle() {
   const dir = path.join(REPO, 'client', 'next', 'assets');
@@ -2472,6 +2760,7 @@ try {
   if (run('wave2b')) await wave2bChecks(srv.origin);
   if (run('wave2c')) await wave2cChecks(srv.origin);
   if (run('wave3a')) await wave3aChecks(srv.origin);
+  if (run('wave3b')) await wave3bChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);

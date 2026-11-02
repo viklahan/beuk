@@ -657,3 +657,23 @@ export const CovenantMarks = Extension.create({
 export function setMarksClosure(c: Closure): void {
   closureRef = c;
 }
+
+/* The page's seam for the e2e (as 1.0 publishes window.beukBible): the open editor's marks as ranges, and 1.0's desk
+   hits (text offsets) as the ranges they cover on the same page, so the two apps' marks are compared span for span. */
+if (typeof window !== 'undefined') {
+  (window as unknown as { beukCovenant?: unknown }).beukCovenant = {
+    ranges: () => {
+      const v = activeEditor()?.editor.view;
+      return v ? rangesOf(v.state) : [];
+    },
+    expected: (hits: Hit[]) => {
+      const v = activeEditor()?.editor.view;
+      return v ? rangesFor(v.state.doc, hits) : [];
+    },
+    text: () => {
+      const v = activeEditor()?.editor.view;
+      return v ? toText(toBook(v.state.doc)) : '';
+    },
+    refresh: () => covenantDesk.refresh(true),
+  };
+}

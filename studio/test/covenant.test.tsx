@@ -484,6 +484,19 @@ describe('the Covenant room in the studio', { timeout: 60_000 }, () => {
   });
 });
 
+describe('a call that sets off another', () => {
+  it("1.0's edit made before the book changes under it (the editor taking the caret back) is written, not lost to the state built again", () => {
+    const y = onDesk(book('Nested', { bible: { entries: [{ id: 'n1', type: 'character', name: 'Mara' }] } }));
+    covRun((cc) => {
+      cc.api.bibleById('n1')!.description = 'keeper';
+      // something else writes the book mid-call, and 1.0's code runs again inside (covEnter builds the state afresh)
+      y.getMap('meta').set('zzTouched', 1);
+      covRun((c2) => c2.api.bibleAllEntries());
+    });
+    expect((exportBook(y).bible as { entries: Rec[] }).entries[0]!.description).toBe('keeper');
+  });
+});
+
 describe('the toast the Covenant raises outside a call', () => {
   it('structEnv.toast is put back after covRun', () => {
     onDesk(book('Toast'));

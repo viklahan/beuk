@@ -120,7 +120,12 @@ export function covEnter(): Closure | null {
   const ydoc = desk.ydoc;
   if (!c || !ydoc) return null;
   const s = session;
-  if (!(s && s.ydoc === ydoc && s.ver === verOf(ydoc).n && c.getState() === s.state)) session = build(c, ydoc);
+  if (!(s && s.ydoc === ydoc && s.ver === verOf(ydoc).n && c.getState() === s.state)) {
+    /* what 1.0 changed in the session so far is written BEFORE the state is built again: a call that sets off another
+       (1.0's popover handing the caret back to the editor, whose own code reads the book) must not lose it */
+    if (s && s.ydoc === ydoc) covFlush();
+    session = build(c, ydoc);
+  }
   else {
     // the desk may have moved to another section without a book change
     const sec = desk.active === null ? undefined : s.state.sections[desk.active];
@@ -134,7 +139,10 @@ export function covEnter(): Closure | null {
 export function covFlush(): void {
   const c = closureIfLoaded();
   const s = session;
-  if (!c || !s || c.getState() !== s.state) return;
+  if (!c || !s) return;
+  /* the session's own state is the one 1.0 edited, even if something the call set off (the editor taking focus back:
+     the language bar, the word counts) has since set a state of its own into the shared closure */
+  if (c.getState() !== s.state) c.setState(s.state);
   const out = serialized(c);
   const json = JSON.stringify(out ?? null);
   const img = imagesSig(s.state as Rec);
