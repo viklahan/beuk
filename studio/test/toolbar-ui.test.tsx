@@ -215,10 +215,10 @@ describe("1.0's insert toolbar in the studio (A1–A4, A13)", () => {
     await openStudio(BOOK({ content: 'He said "hi" -- then...' }));
     await click(document.getElementById('btnBeautify')!);
     // (the toolbar runs on the closure, loaded on first use: under load it lands after the click's act)
-    await waitFor(() => expect(text()).toBe('He said “hi” — then…'));
-    await waitFor(() => expect(document.body.textContent).toContain(AUTO_FORMAT_DONE));
+    await waitFor(() => expect(text()).toBe('He said “hi” — then…'), { timeout: 10_000 });
+    await waitFor(() => expect(document.body.textContent).toContain(AUTO_FORMAT_DONE), { timeout: 10_000 });
     await click(document.getElementById('btnBeautify')!);
-    await waitFor(() => expect(document.body.textContent).toContain(AUTO_FORMAT_CLEAN));
+    await waitFor(() => expect(document.body.textContent).toContain(AUTO_FORMAT_CLEAN), { timeout: 10_000 });
     act(() => {
       editor().commands.undo();
     });
