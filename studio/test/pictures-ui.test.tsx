@@ -556,7 +556,8 @@ describe('pictures in the studio (A6–A8)', { timeout: 60_000 }, () => {
     expect(document.querySelector('#imgLib [data-libimg="bad1"] img')).toBeNull();
     const sv = document.querySelector('#imgLib [data-libimg="svg1"] img')!;
     expect(sv.getAttribute('src')!.startsWith('data:image/svg+xml;base64,')).toBe(true);
-    expect(document.querySelectorAll('script').length).toBe(0);
+    // (wave 4c: the one script the studio itself adds is 1.0's vendored Lucide, same-origin with its integrity)
+    expect(document.querySelectorAll('script:not([src="/assets/vendor/lucide.min.js"][integrity])').length).toBe(0);
     expect(document.querySelector('#imgLib svg:not(.lucide)')).toBeNull();
     expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
     // the oversized one (no size cap in 1.0) is shown and its size stated
