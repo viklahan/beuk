@@ -578,7 +578,81 @@ export type ClosureApi = {
   DISPLAY_FONTS: { family: string; dir: string; file: string; sha256: string; script: boolean }[];
   HD_KEYS: string[];
   FLOURISH_PREFIX: string;
+  // wave 4c (D3, D4): the cover maker, spine, back, hardcover flaps and guides, the wrap and its 3D stand (src/cover)
+  defaultCoverRecipe: () => Record<string, unknown> & { elements: Record<string, Record<string, unknown>> };
+  initCoverMaker: () => void;
+  openCoverMaker: () => void;
+  drawMakerPreview: () => void;
+  syncMakerControls: () => void;
+  syncWrapControls: () => void;
+  renderCoverSettings: () => void;
+  clearCover: () => void;
+  adoptCoverRecipe: (recipe: unknown, canvas: HTMLCanvasElement) => void;
+  drawCoverTo: (canvas: HTMLCanvasElement, recipe: unknown) => CoverItem[];
+  renderCoverCanvas: (recipe: unknown, W: number, H: number) => HTMLCanvasElement;
+  coverPrintSize: () => { w: number; h: number };
+  COVER_EBOOK_W: number;
+  COVER_EBOOK_H: number;
+  COVER_LAYOUTS: string[];
+  COVER_BG_TYPES: string[];
+  COVER_TEXTURES: string[];
+  COVER_FONTS: string[];
+  COVER_PALETTE: string[];
+  COVER_FREE_POS: Record<string, { x: number; y: number }>;
+  CM_ELEMENTS: string[];
+  coverImgCache: Record<string, HTMLImageElement>;
+  ensureCoverBgImage: (recipe: unknown) => Promise<unknown>;
+  ensureWrapIcons: (recipe: unknown) => Promise<unknown>;
+  hcEnsureFlapPhoto: (recipe: unknown) => Promise<unknown>;
+  coverLines: (ctx: CanvasRenderingContext2D, recipe: unknown, key: string, text: string, maxW: number, u: number, transform?: string) => { lines: string[]; size: number; lh: number };
+  drawWrapTo: (canvas: HTMLCanvasElement, recipe: unknown, opts?: Record<string, unknown>) => Record<string, unknown>;
+  renderWrapCanvas: (recipe: unknown, opts?: Record<string, unknown>) => HTMLCanvasElement;
+  wrapDims: (recipe: unknown) => WrapDims;
+  wrapPictureIds: (recipe: unknown) => string[];
+  normalizeWrap: (w: unknown) => Record<string, unknown> & { spine: Record<string, unknown>; back: Record<string, unknown>; binding: string };
+  WRAP_PAPERS: Record<string, number>;
+  HC_BINDINGS: string[];
+  hcLayout: (...args: unknown[]) => Record<string, unknown>;
+  hcDrawFlaps: (...args: unknown[]) => unknown;
+  hcDrawGuides: (...args: unknown[]) => unknown;
+  TRIM_SIZES: { id: string; label: string; w: number; h: number }[];
+  trimSize: () => { id: string; label: string; w: number; h: number };
+  printPageEstimate: () => number;
+  slug: (s: unknown) => string;
+  downloadWrap: (kind: 'pdf' | 'jpg') => Promise<void>;
+  downloadCoverRender: (kind: 'ebook' | 'print') => void;
+  buildWrapPdfDoc: (recipe: unknown, jpegUrl: string) => unknown;
+  wrapFileName: (headers: unknown, fallback: string) => string;
+  w3: Record<string, unknown> & { rotY: number; rotX: number; auto: boolean; sample: boolean; sig: string; raf: number; dims: WrapDims | null; faces: Record<string, unknown> | null; pristine: string };
+  wrap3dFaces: (recipe: unknown) => { dims: WrapDims; front: string; spine: string; back: string; px: Record<string, number> };
+  wrap3dSource: () => { recipe: Record<string, unknown>; sample: boolean };
+  refreshWrap3d: () => void;
+  wrap3dPaint: () => void;
+  sampleWrapRecipe: () => Record<string, unknown>;
+  w3rot: (x: number, y: number, z: number) => { x: number; y: number; z: number };
+  w3proj: (p: { x: number; y: number; z: number }, cx: number, cy: number) => { x: number; y: number };
+  W3D_PERSP: number;
+  cmComputeBlocks: (c: HTMLCanvasElement) => { key: string; left: number; top: number; right: number; bottom: number; cx: number }[];
+  cmTitleKeywords: (title: unknown) => string;
+  searchStockPhotos: () => void;
+  cmRenderStockResults: (res: unknown) => string;
+  choosePexelsPhoto: (ph: StockPhoto) => void;
+  imCoverFollowBook: (recipe: unknown) => string[];
+  imBookCoverText: () => Record<string, string>;
+  sbBuildControls: () => void;
+  sbSync: () => void;
+  sbIconSvg: (name: string) => string;
+  SB_CURATED_ICONS: string[];
+  hcSyncPanel: (d: WrapDims) => void;
+  hcLegendHtml: (binding: string) => string;
+  updateWrapDims: () => void;
+  drawWrapPreview: () => void;
+  paintCoverScene: (...args: unknown[]) => unknown;
 };
+/** One text line drawCoverTo painted (1.0's cmItems). */
+export type CoverItem = { key: string; text: string; x: number; y: number };
+/** 1.0's wrapDims: the wrap's sizes in inches. */
+export type WrapDims = Record<string, unknown> & { totalW: number; totalH: number; spine: number; binding: string; spineText: boolean; trim: { id: string; label: string; w: number; h: number }; panel: { w: number; h: number }; layout: Record<string, number> & { frontX: number; spineX: number; backX: number; topY: number; panelW: number; panelH: number } };
 /** One of 1.0's built-in themes (PRESETS). */
 export type Preset = { id: string; genre: string; name: string; desc: string; sampleHead: string; sampleBody: string; theme: Record<string, unknown> };
 /** A theme the writer saved (state.customThemes[], normalizeCustomTheme). */
@@ -677,6 +751,17 @@ export type ClosureVars = {
   // wave 4a: the theme creator's draft (null: closed) and the font pickers' signature
   tcDraft: { id: string | null; name: string; theme: Record<string, unknown>; header: Record<string, unknown> } | null;
   fontPickerSig: string | null;
+  // wave 4c: the cover maker's working recipe (null: never opened), its chosen element and the wrap's guides; the
+  // functions whose continuations run in the Style session, and the stock results' renderer (src/cover/cover.ts)
+  cmRecipe: Record<string, unknown> | null;
+  cmElement: string;
+  cmWrapGuides: boolean;
+  cmItems: CoverItem[];
+  cmBlocks: unknown[];
+  ensureCoverBgImage: (recipe: unknown) => Promise<unknown>;
+  hcEnsureFlapPhoto: (recipe: unknown) => Promise<unknown>;
+  ensureWrapIcons: (recipe: unknown) => Promise<unknown>;
+  cmRenderStockResults: (res: unknown) => string;
 };
 
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
@@ -842,6 +927,15 @@ function sessionFileReader(): unknown {
   return SessionFileReader;
 }
 
+/** Wave 4c (D3, D4): what 1.0's cover maker reaches around its own code, set by src/cover/cover.ts: 1.0's
+ *  serializeBook (the wrap download's book: the open book as book format), downloadBlob, and the page's fetch as the
+ *  stock search and the chosen photo reach it (held to the served policy there; same-origin unchanged). */
+export const coverEnv: { serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch } = {
+  serializeBook: () => ({}),
+  downloadBlob: () => undefined,
+  fetch: (input, init) => globalThis.fetch(input, init),
+};
+
 const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitledBook ?? [];
 /** The UI_STRINGS 1.0's code is given: every pack's "misc.untitledBook" alone (imIsPlaceholderTitle reads it). */
 export const untitledStrings = (): Record<string, Record<string, string>> => Object.fromEntries(UNTITLED.map((s, i) => [String(i), { 'misc.untitledBook': s }]));
@@ -913,8 +1007,15 @@ export function loadClosure(): Promise<Closure> {
         // in the Style tab's session (styleEnv.run, src/style/session.ts)
         refreshImagePickers: () => undefined,
         FileReader: sessionFileReader(),
+        // wave 4c (D3, D4): the cover maker's surroundings (coverEnv, src/cover/cover.ts)
+        samplePicsHold: () => false,
+        serializeBook: () => coverEnv.serializeBook(),
+        downloadBlob: (blob: Blob, name: string) => coverEnv.downloadBlob(blob, name),
+        fetch: ((input: RequestInfo | URL, init?: RequestInit) => coverEnv.fetch(input, init)) as typeof fetch,
       });
       share = c.share;
+      // wave 4c: a picture id is a key of 1.0's coverImgCache: never Object.prototype's (as the server's WRAP_API)
+      Object.setPrototypeOf((c.api as unknown as ClosureApi).coverImgCache, null);
       loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, sample: null, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };
       return loaded;
     });

@@ -34,17 +34,19 @@ type Rec = Record<string, unknown>;
 const isRec = (x: unknown): x is Rec => typeof x === 'object' && x !== null && !Array.isArray(x);
 
 /** The keys the Style tab's code can change, as serializeBook writes them. */
-export const STYLE_KEYS = ['theme', 'activePreset', 'colour', 'fonts', 'customThemes', 'images', 'coverRecipe'] as const;
+export const STYLE_KEYS = ['theme', 'activePreset', 'colour', 'fonts', 'customThemes', 'images', 'coverRecipe',
+  // wave 4c: the cover maker's "Use as My Cover", Project Settings' Upload Cover and Remove (1.0's state.cover)
+  'cover'] as const;
 type Key = (typeof STYLE_KEYS)[number];
 type Out = Partial<Record<Key, unknown>>;
 
 type Session = { ydoc: Y.Doc; state: State; ver: number; base: Sig; hidden: Hidden };
 /** The book values the session hides from 1.0's code (sourceSafe), each with what the book stores, put back whenever
  *  the session writes that list: the book keeps them exactly. */
-type Hidden = { images: Map<unknown, Rec>; fonts: Map<unknown, Rec> };
+type Hidden = { images: Map<unknown, Rec>; fonts: Map<unknown, Rec>; cover?: Rec };
 /** Each key's serialized form: JSON for the small ones; for `images` and `fonts`, their fields with the bytes held
  *  by reference (compared with ===: no copy, no hash of megabytes per event). */
-type Sig = { json: Partial<Record<Key, string>>; images: unknown[][]; fonts: unknown[][] };
+type Sig = { json: Partial<Record<Key, string>>; images: unknown[][]; fonts: unknown[][]; cover: unknown[][] };
 
 let session: Session | null = null;
 const versions = new WeakMap<Y.Doc, { n: number }>();
@@ -78,6 +80,9 @@ export function serializedStyle(c: Closure): Out {
     customThemes: serializeThemes(c, st.customThemes),
     images: h && h.images.size ? back(st.images, h.images) : st.images,
     coverRecipe: st.coverRecipe ? a.normalizeCoverRecipe(st.coverRecipe) : null,
+    // wave 4c: serializeBook's `cover: state.cover` — a cover hidden from 1.0's code (sourceSafe) is the book's own
+    // while 1.0 has not replaced or removed it
+    cover: st.cover === null && h?.cover ? h.cover : st.cover,
   };
 }
 const SMALL: Key[] = ['theme', 'activePreset', 'colour', 'customThemes', 'coverRecipe'];
@@ -85,7 +90,12 @@ function sigOf(out: Out): Sig {
   const json: Sig['json'] = {};
   for (const k of SMALL) json[k] = out[k] === undefined ? 'undefined' : JSON.stringify(out[k]);
   const list = (v: unknown, fields: string[]) => (Array.isArray(v) ? v.map((x) => (isRec(x) ? fields.map((f) => x[f]) : [x])) : []);
-  return { json, images: list(out.images, ['id', 'name', 'mediaType', 'ext', 'data', 'flourish', 'credit']), fonts: list(out.fonts, ['id', 'name', 'family', 'ext', 'mediaType', 'data']) };
+  return {
+    json,
+    images: list(out.images, ['id', 'name', 'mediaType', 'ext', 'data', 'flourish', 'credit']),
+    fonts: list(out.fonts, ['id', 'name', 'family', 'ext', 'mediaType', 'data']),
+    cover: out.cover === undefined ? [['undefined']] : list([out.cover], ['data', 'mediaType', 'ext', 'name']),
+  };
 }
 const sameRows = (a: unknown[][], b: unknown[][]) =>
   a.length === b.length && a.every((r, i) => r.length === b[i]!.length && r.every((v, j) => (isRec(v) ? JSON.stringify(v) === JSON.stringify(b[i]![j]) : v === b[i]![j])));
@@ -93,6 +103,7 @@ function changedKeys(a: Sig, b: Sig): Key[] {
   const out: Key[] = SMALL.filter((k) => a.json[k] !== b.json[k]);
   if (!sameRows(a.images, b.images)) out.push('images');
   if (!sameRows(a.fonts, b.fonts)) out.push('fonts');
+  if (!sameRows(a.cover, b.cover)) out.push('cover');
   return out;
 }
 
@@ -107,7 +118,7 @@ function build(c: Closure, ydoc: Y.Doc): Session {
   st.customThemes = readThemes(c, book.customThemes);
   const hidden = sourceSafe(c, st, book); // book values 1.0's code takes unescaped (below)
   c.setState(st);
-  const s: Session = { ydoc, state: st, ver: verOf(ydoc).n, base: { json: {}, images: [], fonts: [] }, hidden };
+  const s: Session = { ydoc, state: st, ver: verOf(ydoc).n, base: { json: {}, images: [], fonts: [], cover: [] }, hidden };
   session = s;
   s.base = sigOf(serializedStyle(c));
   return s;
@@ -147,7 +158,7 @@ export function styleFlush(): void {
   const y = s.ydoc;
   const write = () => {
     for (const k of keys) {
-      if (k === 'images' || k === 'fonts') continue;
+      if (k === 'images' || k === 'fonts' || k === 'cover') continue;
       const v = out[k];
       if (k === 'customThemes') {
         writeThemes(y, v);
@@ -163,11 +174,11 @@ export function styleFlush(): void {
   };
   flushing = true;
   try {
-    if (keys.includes('images') || keys.includes('fonts')) {
-      // History names the book's pictures and fonts: packed again in the same transaction (wave 1a ruling 2)
+    if (keys.includes('images') || keys.includes('fonts') || keys.includes('cover')) {
+      // History names the book's pictures, fonts and cover: packed again in the same transaction (wave 1a ruling 2)
       repackHistory(c, y, () => {
         write();
-        for (const k of ['images', 'fonts'] as const) {
+        for (const k of ['images', 'fonts', 'cover'] as const) {
           if (!keys.includes(k)) continue;
           placeKey(y, k);
           setMeta(y, k as never, out[k] as never);
@@ -180,6 +191,12 @@ export function styleFlush(): void {
   }
   s.base = sig;
   s.ver = verOf(y).n;
+  if (keys.includes('cover')) delete s.hidden.cover;
+}
+
+/** Wave 4c: 1.0's clearCover was run (Project Settings' Remove): a cover the session hid is removed too. */
+export function styleCoverCleared(): void {
+  if (session) delete session.hidden.cover;
 }
 
 /* ---- the toast 1.0's code raises ---- */
@@ -463,7 +480,11 @@ export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
   // review round 2: the cover (1.0's sectionHtml writes its mediaType unescaped into an <img src>; the hardcover's
   // board wears it) — hidden from 1.0's code when its data is not base64 or its media type not plain. The Style
   // session never writes `cover` (STYLE_KEYS), so the book keeps it exactly.
-  if (isRec(st.cover) && !((typeof st.cover.data !== 'string' || B64.test(st.cover.data)) && (typeof st.cover.mediaType !== 'string' || MEDIA.test(st.cover.mediaType)))) st.cover = null;
+  if (isRec(st.cover) && !((typeof st.cover.data !== 'string' || B64.test(st.cover.data)) && (typeof st.cover.mediaType !== 'string' || MEDIA.test(st.cover.mediaType)))) {
+    // wave 4c: the session writes `cover` now: the stored cover is put back whenever 1.0 has not replaced it
+    hidden.cover = isRec(book.cover) ? book.cover : { ...st.cover };
+    st.cover = null;
+  }
   // theme font names: a library face or a shown uploaded family, else 1.0's default
   const a = c.api;
   const shown = new Set((Array.isArray(st.fonts) ? st.fonts : []).filter((f) => isRec(f) && f.family).map((f) => String((f as Rec).family).trim()));
@@ -489,7 +510,39 @@ export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
   };
   fix(st.theme);
   if (Array.isArray(st.customThemes)) for (const ct of st.customThemes) if (isRec(ct)) fix(ct.theme);
+  coverSafe(c, st, shown);
   return hidden;
+}
+
+/** Wave 4c (constraint 43): the cover recipe as 1.0's painters and the maker's controls take it. ARRIVE's
+ *  normalizeCoverRecipe already holds its layout, background type, texture, sizes, positions and the wrap's numbers,
+ *  colours and enums to 1.0's shapes; it keeps an element's font when it names an uploaded family, and its colours as
+ *  any string. So, in the session's state only (written with the next cover write, as R15):
+ *  - an element's font that is neither a cover face (COVER_FONTS) nor a shown uploaded family becomes the default
+ *    recipe's font for that element; the spine's and back's become "" (1.0's "follow the front");
+ *  - a background or element colour that is not a plain hex colour becomes the default recipe's. */
+export const PLAIN_HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+function coverSafe(c: Closure, st: Rec, shown: Set<string>): void {
+  const r = st.coverRecipe;
+  if (!isRec(r)) return;
+  const a = c.api;
+  const d = a.defaultCoverRecipe() as Rec & { elements: Record<string, Rec> };
+  const ok = (v: unknown) => typeof v === 'string' && (a.COVER_FONTS.includes(v) || shown.has(v));
+  for (const k of ['bgColor', 'bgColor2'] as const) if (!(typeof r[k] === 'string' && PLAIN_HEX.test(r[k] as string))) r[k] = d[k];
+  const els = isRec(r.elements) ? r.elements : null;
+  if (els)
+    for (const k of a.CM_ELEMENTS) {
+      const e = els[k];
+      if (!isRec(e)) continue;
+      if (!ok(e.font)) e.font = d.elements[k]!.font;
+      if (!(typeof e.color === 'string' && PLAIN_HEX.test(e.color))) e.color = d.elements[k]!.color;
+    }
+  const w = isRec(r.wrap) ? r.wrap : null;
+  if (w)
+    for (const part of ['spine', 'back'] as const) {
+      const p = w[part];
+      if (isRec(p) && p.font !== '' && !ok(p.font)) p.font = '';
+    }
 }
 
 /** The book went (or another arrives): a held edit is written, the faces it added leave the page, 1.0's record of

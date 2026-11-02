@@ -152,6 +152,18 @@ export const EXTRA_ROOTS = [
   'registerUploadedFont', 'registerAllFonts', 'fontOptionsHtml', 'uploadedFonts', 'normalizeCustomTheme', 'normalizeHeaderDesign', 'defaultHeaderDesign',
   'COLOUR_ACCENTS', 'COLOUR_TINTS', 'bookColour', 'bookColourSet', 'bookColourNormalize', 'bookColourCheck', 'setBookColour', 'setBookPrintBlack',
   'renderBookColour', 'initBookColour', 'registeredFontIds', 'BODY_FONTS', 'HEAD_FONTS', 'ALL_LIBRARY_FONTS', 'TEXT_HEAD_FONTS', 'DISPLAY_FONTS', 'HD_KEYS', 'FLOURISH_PREFIX',
+  // wave 4c (D3, D4): the cover maker, the spine and back, the hardcover's flaps and guides, the wrap, its 3D stand and
+  // its download — 1.0's own painters (the same text the server's WRAP_CLOSURE lifts: test/cover-closure.test.ts), its
+  // renderers and handlers, drawing into the maker's ids and wired by 1.0's own initCoverMaker (src/cover); Project
+  // Settings' cover row (renderCoverSettings, clearCover)
+  'initCoverMaker', 'openCoverMaker', 'drawMakerPreview', 'syncMakerControls', 'syncWrapControls', 'renderCoverSettings', 'clearCover', 'adoptCoverRecipe',
+  'drawCoverTo', 'renderCoverCanvas', 'coverPrintSize', 'COVER_EBOOK_W', 'COVER_EBOOK_H', 'COVER_LAYOUTS', 'COVER_BG_TYPES', 'COVER_TEXTURES', 'COVER_FONTS',
+  'COVER_PALETTE', 'COVER_FREE_POS', 'CM_ELEMENTS', 'coverImgCache', 'ensureCoverBgImage', 'ensureWrapIcons', 'hcEnsureFlapPhoto', 'coverLines',
+  'drawWrapTo', 'renderWrapCanvas', 'wrapDims', 'wrapPictureIds', 'normalizeWrap', 'WRAP_PAPERS', 'HC_BINDINGS', 'hcLayout', 'hcDrawFlaps', 'hcDrawGuides',
+  'TRIM_SIZES', 'trimSize', 'printPageEstimate', 'slug', 'downloadWrap', 'downloadCoverRender', 'buildWrapPdfDoc', 'wrapFileName',
+  'w3', 'wrap3dFaces', 'wrap3dSource', 'refreshWrap3d', 'wrap3dPaint', 'sampleWrapRecipe', 'w3rot', 'w3proj', 'W3D_PERSP',
+  'cmComputeBlocks', 'cmTitleKeywords', 'searchStockPhotos', 'cmRenderStockResults', 'choosePexelsPhoto', 'imCoverFollowBook', 'imBookCoverText',
+  'sbBuildControls', 'sbSync', 'sbIconSvg', 'SB_CURATED_ICONS', 'hcSyncPanel', 'hcLegendHtml', 'updateWrapDims', 'drawWrapPreview', 'paintCoverScene',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -198,7 +210,11 @@ export const VARS = ['insVarPick', 'insCache', 'insFacts',
   // wave 3a: the day cycle's clock state (1.0's window.beukZen.dayTimerActive / dayRunning)
   'zdTimer', 'zdStart',
   // wave 4a: the theme creator's draft and the font pickers' signature
-  'tcDraft', 'fontPickerSig'];
+  'tcDraft', 'fontPickerSig',
+  // wave 4c: the cover maker's working recipe, its element and guides; and 1.0's functions whose promises resolve
+  // later (a decoded picture), wrapped so their continuations run in the Style session (src/cover/cover.ts), and the
+  // stock results' renderer, wrapped so a thumbnail the policy refuses is never asked for
+  'cmRecipe', 'cmElement', 'cmWrapGuides', 'cmItems', 'cmBlocks', 'ensureCoverBgImage', 'hcEnsureFlapPhoto', 'ensureWrapIcons', 'cmRenderStockResults'];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
   // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads
@@ -225,7 +241,13 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // wave 4a (D1): the chapter-art pickers' redraw after a flourish leaves the library (React re-renders them from the
   // Y.Doc), and the page's FileReader — the browser's own, whose load and error callbacks run inside the Style tab's
   // session (src/style/session.ts): 1.0's flourish and font uploads read their file and then edit the book's state
-  'refreshImagePickers', 'FileReader'];
+  'refreshImagePickers', 'FileReader',
+  // wave 4c (D3, D4): the sample's pictures are always on 2.0's desk (1.0's BEUK:slim samplePicsHold: never holds),
+  // 1.0's serializeBook (the wrap download sends the book as book format: 2.0's exportBook of the open book), its
+  // downloadBlob (the cover and wrap files), and the page's fetch — the stock search and the chosen photo's download,
+  // held to the addresses the served policy allows, a picture's bytes checked as 2.0's scene picker checks them
+  // (src/cover/cover.ts coverFetch); same-origin requests pass through unchanged
+  'samplePicsHold', 'serializeBook', 'downloadBlob', 'fetch'];
 /** Wave 4b (E1, E2): the preview's OWN module, src/generated/closure-preview.js (createPreviewClosure). 1.0's preview
  *  pane, its pagination and reading desk, the device frames and truth notes, the hardcover and full screen — lifted
  *  whole, beside their own copy of what they reach (sectionHtml, buildBookCss, the print view's model), with their own
@@ -259,7 +281,9 @@ export const PREVIEW_VARS = ['editorSyncedSectionId', 'editorTypedAt', 'pvFollow
   'printUnlink', 'sidewaysPrintPages'];
 
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
-export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile'];
+export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile',
+  // wave 4c: the cover maker's uploads (its art, the back flap's photo, an uploaded spine icon) and the chosen stock photo
+  'initCoverMaker', 'hcWireControls', 'sbWire', 'choosePexelsPhoto'];
 /** Lifted declarations that may read UI_STRINGS: each reads only every pack's "misc.untitledBook". */
 export const UI_STRINGS_READERS = ['imIsPlaceholderTitle'];
 /** Top-level names of 1.0 that the lifted code uses only as LOCAL names (the reachability walk is by name, not by
@@ -599,7 +623,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 
