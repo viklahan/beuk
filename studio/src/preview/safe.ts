@@ -29,20 +29,31 @@ const DROP_ATTRS = new Set(['srcset', 'srcdoc', 'ping', 'formaction', 'action', 
   'attributename', 'from', 'to', 'values', 'by', 'http-equiv']);
 /** A data: picture, base64 (what 1.0's sectionHtml writes for every book picture). */
 const DATA_PIC = /^data:image\/[\w.+-]+;base64,[A-Za-z0-9+/=\s]*$/i;
-/** A same-origin path (no scheme, no //host). */
-const SAME_ORIGIN = /^(?![a-z][\w+.-]*:)(?!\s*[\\/]{2})[^\s]*$/i;
+/** A URL that resolves to this page's own origin (review round 2: resolved as the browser resolves it, so leading
+ *  control characters or a protocol-relative form cannot pass for a path; controls, spaces and backslashes, which
+ *  nothing 1.0 writes has in a path, are refused outright). */
+function sameOrigin(v: string): boolean {
+  // eslint-disable-next-line no-control-regex -- the controls are what this refuses
+  if (/[\x00-\x20\\]/.test(v)) return false;
+  try {
+    const u = new URL(v, location.href);
+    return u.origin === location.origin && /^https?:$/.test(u.protocol);
+  } catch {
+    return false;
+  }
+}
 const LINK_HREF = /^(#|https?:|mailto:)/i;
 /** Every url(…) / image-set(…) / src(…) argument in a CSS text. */
 const URL_FN = /(?:url|src)\(\s*(['"]?)([^'")]*)\1\s*\)/gi;
 const LOADERS = /expression\s*\(|-moz-binding|behavior\s*:|image-set\s*\(|@import/i;
 
 /** A CSS text loads nothing but data: pictures (and, when `paths` is set, same-origin files). */
-function cssLoadsOnlySafe(text: string, paths = false): boolean {
+export function cssLoadsOnlySafe(text: string, paths = false): boolean {
   if (LOADERS.test(text)) return false;
   for (const m of text.matchAll(URL_FN)) {
     const u = (m[2] ?? '').trim();
     if (DATA_PIC.test(u) || (/^data:/i.test(u) && paths)) continue;
-    if (paths && SAME_ORIGIN.test(u)) continue;
+    if (paths && sameOrigin(u)) continue;
     return false;
   }
   // a url( the pattern above could not read (a nested quote, a bracket) is not taken
@@ -66,7 +77,7 @@ function cleanElement(el: Element): void {
       const tag = el.tagName.toLowerCase();
       if (!((tag === 'a' || tag === 'area') && LINK_HREF.test(v.trim()))) el.removeAttribute(at.name);
     } else if (n === 'src') {
-      if (!(DATA_PIC.test(v.trim()) || SAME_ORIGIN.test(v.trim()))) el.removeAttribute(at.name);
+      if (!(DATA_PIC.test(v.trim()) || sameOrigin(v))) el.removeAttribute(at.name);
     } else if (n === 'style') {
       if (v.includes('\\') || !cssLoadsOnlySafe(v)) {
         const c = cleanStyleAttr(v);

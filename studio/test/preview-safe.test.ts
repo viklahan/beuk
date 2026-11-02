@@ -3,7 +3,7 @@ import * as Y from 'yjs';
 import { importBook } from '../../src/book/editor/index';
 import { loadClosure, stateFromBook, type Closure } from '../src/closure/index';
 import { exportBook } from '@book/editor/index.js';
-import { cleanBookCss, cleanFlowHtml } from '../src/preview/safe';
+import { cleanBookCss, cleanFlowHtml, cssLoadsOnlySafe } from '../src/preview/safe';
 import { loadPreview, type PreviewClosure } from '../src/preview/preview';
 import { fixtures } from './fixtures';
 
@@ -213,5 +213,23 @@ describe('review round 2', () => {
     obs.disconnect();
     expect(out + seen.join('')).not.toMatch(/onerror|onclick/);
     expect(out).toContain('ok');
+  });
+
+  it('Minor 3 (HTML): a src that resolves to another origin is removed, whatever control characters lead it; @font-face loads only same-origin or data:', () => {
+    for (const src of ['\x01//evil.example/p.png', '\x1f\x00//evil.example/p.png', ' //evil.example/p.png', '\t//evil.example/p.png', String.raw`/\evil.example/p.png`, String.raw`\evil.example/p.png`])
+      expect(cleanFlowHtml('<img src="' + src + '">'), JSON.stringify(src)).not.toMatch(/evil/);
+    expect(cleanFlowHtml('<img src="assets/zen/x.webp">')).toContain('src="assets/zen/x.webp"');
+    // @font-face's src, as the stylesheet sink reads it (jsdom's CSS parser drops @font-face, so its check is tested directly)
+    expect([cssLoadsOnlySafe('src: url("\x01//evil.example/f.woff2")', true), cssLoadsOnlySafe('src: url("//evil.example/f.woff2")', true), cssLoadsOnlySafe('src: url("/assets/fonts/x.woff2")', true)]).toEqual([false, false, true]);
+  });
+  it('Minor 3 (HTML): the cover is hidden from 1.0’s code when its data or media type is not plain (the book keeps it)', async () => {
+    const c = await loadClosure();
+    const { sourceSafe } = await import('../src/style/session');
+    const st = { theme: structuredClone(c.api.PRESETS[0]!.theme), customThemes: [], fonts: [], images: [], cover: { mediaType: 'image/png" onerror="x', data: 'iVBORw0KGgo=' } };
+    sourceSafe(c, st as never, { fonts: [] });
+    expect(st.cover).toBeNull();
+    const ok = { theme: structuredClone(c.api.PRESETS[0]!.theme), customThemes: [], fonts: [], images: [], cover: { mediaType: 'image/png', data: 'iVBORw0KGgo=' } };
+    sourceSafe(c, ok as never, { fonts: [] });
+    expect(ok.cover).not.toBeNull();
   });
 });

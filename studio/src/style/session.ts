@@ -460,6 +460,10 @@ export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
       im.ext = '';
       im.flourish = false;
     }
+  // review round 2: the cover (1.0's sectionHtml writes its mediaType unescaped into an <img src>; the hardcover's
+  // board wears it) — hidden from 1.0's code when its data is not base64 or its media type not plain. The Style
+  // session never writes `cover` (STYLE_KEYS), so the book keeps it exactly.
+  if (isRec(st.cover) && !((typeof st.cover.data !== 'string' || B64.test(st.cover.data)) && (typeof st.cover.mediaType !== 'string' || MEDIA.test(st.cover.mediaType)))) st.cover = null;
   // theme font names: a library face or a shown uploaded family, else 1.0's default
   const a = c.api;
   const shown = new Set((Array.isArray(st.fonts) ? st.fonts : []).filter((f) => isRec(f) && f.family).map((f) => String((f as Rec).family).trim()));
