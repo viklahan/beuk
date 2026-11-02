@@ -152,6 +152,8 @@ export const EXTRA_ROOTS = [
   'registerUploadedFont', 'registerAllFonts', 'fontOptionsHtml', 'uploadedFonts', 'normalizeCustomTheme', 'normalizeHeaderDesign', 'defaultHeaderDesign',
   'COLOUR_ACCENTS', 'COLOUR_TINTS', 'bookColour', 'bookColourSet', 'bookColourNormalize', 'bookColourCheck', 'setBookColour', 'setBookPrintBlack',
   'renderBookColour', 'initBookColour', 'registeredFontIds', 'BODY_FONTS', 'HEAD_FONTS', 'ALL_LIBRARY_FONTS', 'TEXT_HEAD_FONTS', 'DISPLAY_FONTS', 'HD_KEYS', 'FLOURISH_PREFIX',
+  // per-user themes (My themes): what a saved theme wears, resolved as 1.0 resolves it (already lifted for the tab)
+  'uploadedFontByFamily', 'flourishOf', 'fontStack',
   // wave 4c (D3, D4): the cover maker, the spine and back, the hardcover's flaps and guides, the wrap, its 3D stand and
   // its download — 1.0's own painters (the same text the server's WRAP_CLOSURE lifts: test/cover-closure.test.ts), its
   // renderers and handlers, drawing into the maker's ids and wired by 1.0's own initCoverMaker (src/cover); Project

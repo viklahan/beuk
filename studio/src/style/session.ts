@@ -509,32 +509,38 @@ export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
     st.cover = null;
   }
   // theme font names: a library face or a shown uploaded family, else 1.0's default
-  const a = c.api;
   const shown = new Set((Array.isArray(st.fonts) ? st.fonts : []).filter((f) => isRec(f) && f.family).map((f) => String((f as Rec).family).trim()));
-  const ok = (v: unknown) => typeof v === 'string' && (a.ALL_LIBRARY_FONTS.includes(v) || shown.has(v));
-  const fix = (th: unknown) => {
-    if (!isRec(th)) return;
-    if (!ok(th.bodyFont)) th.bodyFont = 'EB Garamond';
-    if (!ok(th.headFont)) th.headFont = 'Libre Baskerville';
-    if (isRec(th.header)) for (const k of a.HD_KEYS) { const e = th.header[k]; if (isRec(e) && !ok(e.font)) e.font = th.headFont; }
-    // wave 4b: 1.0 writes these two into the preview's markup and CSS as they are (chapterOpeningHtml's class
-    // attribute, buildBookCss's text-indent): a value that is not a plain one becomes 1.0's default
-    if (typeof th.headerStyle === 'string' && !PLAIN_ID.test(th.headerStyle)) th.headerStyle = 'classic_centered';
-    if (typeof th.indentDepth === 'string' && !PLAIN_LEN.test(th.indentDepth)) th.indentDepth = '1.5em';
-    // review round 2: the numbers 1.0's CSS and markup builders interpolate as they are (buildBookCss's font-size,
-    // line-height, the drop cap's size and initial-letter; sectionHtml's small-caps count): a finite number, else the
-    // default theme's (PRESETS[0], 1.0's starting theme)
-    const def = a.PRESETS[0]!.theme as Rec;
-    for (const k of NUMERIC_THEME) {
-      if (!(k in th)) continue;
-      const n = typeof th[k] === 'number' ? (th[k] as number) : typeof th[k] === 'string' && PLAIN_NUM.test(th[k] as string) ? Number(th[k]) : NaN;
-      th[k] = Number.isFinite(n) ? n : def[k];
-    }
-  };
+  const fix = (th: unknown) => themeSafe(c, th, shown);
   fix(st.theme);
   if (Array.isArray(st.customThemes)) for (const ct of st.customThemes) if (isRec(ct)) fix(ct.theme);
   coverSafe(c, st, shown);
   return hidden;
+}
+
+/** A theme's values 1.0's code interpolates unchecked, corrected in place (sourceSafe's rules, for the book's theme, its
+ *  custom themes and — per-user themes, constraint 48 — a My theme before it is listed or applied): a font name that is
+ *  neither a library face nor one of `shown` (the uploaded families the theme may wear) becomes 1.0's default, a header
+ *  style or indent that is not a plain value 1.0's default, a number that is not a finite number the default theme's. */
+export function themeSafe(c: Closure, th: unknown, shown: Set<string>): void {
+  if (!isRec(th)) return;
+  const a = c.api;
+  const ok = (v: unknown) => typeof v === 'string' && (a.ALL_LIBRARY_FONTS.includes(v) || shown.has(v));
+  if (!ok(th.bodyFont)) th.bodyFont = 'EB Garamond';
+  if (!ok(th.headFont)) th.headFont = 'Libre Baskerville';
+  if (isRec(th.header)) for (const k of a.HD_KEYS) { const e = th.header[k]; if (isRec(e) && !ok(e.font)) e.font = th.headFont; }
+  // wave 4b: 1.0 writes these two into the preview's markup and CSS as they are (chapterOpeningHtml's class
+  // attribute, buildBookCss's text-indent): a value that is not a plain one becomes 1.0's default
+  if (typeof th.headerStyle === 'string' && !PLAIN_ID.test(th.headerStyle)) th.headerStyle = 'classic_centered';
+  if (typeof th.indentDepth === 'string' && !PLAIN_LEN.test(th.indentDepth)) th.indentDepth = '1.5em';
+  // review round 2: the numbers 1.0's CSS and markup builders interpolate as they are (buildBookCss's font-size,
+  // line-height, the drop cap's size and initial-letter; sectionHtml's small-caps count): a finite number, else the
+  // default theme's (PRESETS[0], 1.0's starting theme)
+  const def = a.PRESETS[0]!.theme as Rec;
+  for (const k of NUMERIC_THEME) {
+    if (!(k in th)) continue;
+    const n = typeof th[k] === 'number' ? (th[k] as number) : typeof th[k] === 'string' && PLAIN_NUM.test(th[k] as string) ? Number(th[k]) : NaN;
+    th[k] = Number.isFinite(n) ? n : def[k];
+  }
 }
 
 /** Wave 4c (constraint 43): the cover recipe as 1.0's painters and the maker's controls take it. ARRIVE's
