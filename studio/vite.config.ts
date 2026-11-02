@@ -2,7 +2,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -100,6 +100,26 @@ function precacheList(): Plugin {
   };
 }
 
+/* Wave 3a: 1.0's Zen code (lifted whole, one source) asks for its paintings and sounds RELATIVE to the page
+   ("assets/zen/<id>.webp" as a background image; new URL("assets/sound/<scene>.mp3", document.baseURI)), which at
+   /studio is /assets/…; at /next/ the same words name /next/assets/…. The build copies 1.0's files there, byte for
+   byte (test/environment.test.tsx compares them): the same files, fetched same-origin, nothing synthesised. */
+export const ZEN_MEDIA = ['zen/bliss.webp', 'zen/calm.webp', 'zen/mind.webp', 'zen/sakura.webp', 'sound/rain.mp3', 'sound/waves.mp3', 'sound/wind.mp3'];
+function zenMedia(): Plugin {
+  return {
+    name: 'beuk-zen-media',
+    apply: 'build',
+    writeBundle(options) {
+      const outDir = options.dir!;
+      for (const f of ZEN_MEDIA) {
+        const to = path.join(outDir, 'assets', f);
+        mkdirSync(path.dirname(to), { recursive: true });
+        copyFileSync(here('../client/assets/' + f), to);
+      }
+    },
+  };
+}
+
 /** 1.0's tab icon (client/index.html <link rel="icon">). */
 export const ICON_FILE = '/assets/logo.webp';
 
@@ -128,7 +148,7 @@ export const BOOK_DEPS = ['yjs', 'y-prosemirror', 'prosemirror-model', 'prosemir
 
 export default defineConfig({
   base: '/next/',
-  plugins: [react(), ...beukHtml(), precacheList()],
+  plugins: [react(), ...beukHtml(), precacheList(), zenMedia()],
   resolve: {
     alias: [
       /* The book-format code is imported straight from the server's

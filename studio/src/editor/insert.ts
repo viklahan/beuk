@@ -107,11 +107,13 @@ function changedRange(old: PMNode, next: PMNode): { pre: number; oldEnd: number;
   return { pre, oldEnd: a - suf, newEnd: b - suf };
 }
 
-const undoManager = (editor: Editor) => yUndoPluginKey.getState(editor.state)?.undoManager as { stopCapturing: () => void } | undefined;
+const undoManager = (editor: Editor) => yUndoPluginKey.getState(editor.state)?.undoManager as { stopCapturing: () => void; lastChange: number } | undefined;
 
 /** Write `next` (a whole new text and its selection) into the editor: one transaction, one undo step. Returns false when
  *  the editor is gone. */
-export function applyTextEdit(editor: Editor, next: TextEdit): boolean {
+/** `merge` (wave 3a, dictation): this edit joins the undo step of the edit before it — one recogniser session's
+ *  rewrites of its span are ONE undo step, as 1.0's textarea gives one per phrase. */
+export function applyTextEdit(editor: Editor, next: TextEdit, opts: { merge?: boolean } = {}): boolean {
   if (editor.isDestroyed) return false;
   const { state } = editor;
   const old = toBook(state.doc);
@@ -140,7 +142,8 @@ export function applyTextEdit(editor: Editor, next: TextEdit): boolean {
   const clamp = (o: number) => Math.max(0, Math.min(len, o));
   tr.setSelection(TextSelection.create(tr.doc, textOffsetToPos(nb, clamp(next.start)), textOffsetToPos(nb, clamp(next.end))));
   const um = undoManager(editor);
-  um?.stopCapturing();
+  if (opts.merge && um) um.lastChange = Date.now();
+  else um?.stopCapturing();
   editor.view.dispatch(tr);
   um?.stopCapturing();
   const st = editor.state; // after the dispatch (and anything appended to it)

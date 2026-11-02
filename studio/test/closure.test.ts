@@ -56,8 +56,13 @@ describe('the browser closure (spec decision 3)', () => {
     expect(CLOSURE_SUPPLIED).toEqual(expect.arrayContaining(['t', 'UI_STRINGS']));
     // every EPUB declaration except the string machinery the studio supplies itself
     const own = ['t', 'tCountForm', 'UI_STRINGS', 'UI_PLURAL_FORMS', 'uiLangState', 'uiPluralCategory', 'uiPluralRulesCache'];
-    expect(EPUB_CLOSURE.filter((n) => !own.includes(n) && !CLOSURE_NAMES.includes(n))).toEqual([]);
-    expect(CLOSURE_NAMES.filter((n) => own.includes(n))).toEqual([]);
+    /* wave 3a: and 1.0's `$` (1.0: `(id) => document.getElementById(id)`), which the studio supplies itself
+       (src/environment/page.ts) — getElementById, except 1.0's #editorArea / #panelContent / #app, which 2.0's page
+       does not have as 1.0 does. Supplied, never lifted: */
+    const page = ['$'];
+    expect(CLOSURE_SUPPLIED).toEqual(expect.arrayContaining(page));
+    expect(EPUB_CLOSURE.filter((n) => !own.includes(n) && !page.includes(n) && !CLOSURE_NAMES.includes(n))).toEqual([]);
+    expect(CLOSURE_NAMES.filter((n) => own.includes(n) || page.includes(n))).toEqual([]);
   });
 
   const books = fixtures('real');

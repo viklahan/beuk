@@ -11,6 +11,7 @@ import './styles/pictures.css';
 import './styles/structure.css';
 import './styles/outline.css';
 import './styles/goals.css';
+import './generated/environment.css';
 import { BookProvider } from './book/BookProvider';
 import { StatsProvider } from './book/stats';
 import { DialogStackProvider } from './shell/Dialog';

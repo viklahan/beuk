@@ -5,6 +5,7 @@ import { bookState, closureIfLoaded, loadClosure, type Closure, type ClosureApi 
 import type { UiKey } from '../i18n/strings';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Dialog } from '../shell/Dialog';
+import { envRun } from '../environment/page';
 import { Icon, type IconName } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import { applyTextEdit, editorText, textArea } from './insert';
@@ -183,13 +184,94 @@ export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorTo
             <Icon name="ImagePlus" />
             <span className="tl">{t('tool.insertImage')}</span>
           </button>
-          {/* Dictate (wave 3) stands here, before Auto-Format, in 1.0 */}
+          {/* wave 3a: 1.0's Dictate (dictToggle; right-click: the language picker); dictSyncUi keeps its state */}
+          <button
+            type="button"
+            className="tool-btn"
+            data-collapse={3}
+            id="btnDictate"
+            aria-pressed="false"
+            title={t('dict.titleIdleLang')}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => {
+              const b = e.currentTarget;
+              envRun((c) => c.api.dictToggle(b));
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              const b = e.currentTarget;
+              envRun((c) => c.api.dictOpenLangPicker(b));
+            }}
+          >
+            <Icon name="Mic" />
+            <span className="tl" id="dictBtnLabel">
+              {t('dict.label')}
+            </span>
+          </button>
           <button type="button" className="tool-btn accent" id="btnBeautify" title={t('tool.autoFormatTitle')} onMouseDown={(e) => e.preventDefault()} onClick={() => run('autoformat')}>
             <Icon name="WandSparkles" />
             <span className="tl">{t('tool.autoFormat')}</span>
           </button>
         </div>
-        {/* the Focus cluster (Read Aloud, Zen) is wave 3 */}
+        <span className="tool-break" aria-hidden="true" />
+        {/* wave 3a: 1.0's read & focus cluster — Read Aloud (its popover, drawn by 1.0's raRefresh) and Zen */}
+        <div className="tool-group focus-cluster" data-tg="focus">
+          <span className="tool-sep" aria-hidden="true" />
+          <div className="ra-wrap">
+            <button
+              type="button"
+              className="tool-btn"
+              id="btnReadAloud"
+              data-tip="tips.readAloud"
+              aria-haspopup="dialog"
+              aria-expanded="false"
+              aria-label={t('top.readAloudAria')}
+              onClick={() => envRun((c) => c.api.raTogglePop())}
+            >
+              <Icon name="Volume2" />
+              <span>{t('top.readAloud')}</span>
+            </button>
+            <div id="raPop" role="dialog" aria-label={t('top.readAloud')} hidden>
+              <div className="ra-head">
+                <span>{t('top.readAloud')}</span>
+                <span className="ra-status" id="raStatus" />
+              </div>
+              <div className="ra-controls">
+                <button className="tb-btn ra-ctl" id="raPlay" type="button" onClick={() => envRun((c) => c.api.raPlay())}>
+                  <Icon name="Play" />
+                  <span id="raPlayLabel">{t('ra.play')}</span>
+                </button>
+                <button className="tb-btn ra-ctl" id="raPause" type="button" onClick={() => envRun((c) => c.api.raPause())}>
+                  <Icon name="Pause" />
+                  <span>{t('ra.pause')}</span>
+                </button>
+                <button className="tb-btn ra-ctl" id="raStop" type="button" onClick={() => envRun((c) => c.api.raStop())}>
+                  <Icon name="Square" />
+                  <span>{t('ra.stop')}</span>
+                </button>
+              </div>
+              <label className="ra-voice-lab" htmlFor="raVoice">
+                {t('ra.voice')}
+              </label>
+              <select
+                className="txt-input"
+                id="raVoice"
+                onChange={(e) => {
+                  const v = e.currentTarget.value;
+                  envRun((c) => {
+                    c.api.ra.voiceSel = v;
+                  });
+                }}
+              />
+              <p className="ra-note" id="raNote" hidden />
+              <div id="raLangSug" hidden />
+            </div>
+          </div>
+          <button type="button" className="tool-btn" id="btnZen" data-tip="tips.zen" aria-label="Zen mode — hide everything but the page" onClick={() => envRun((c) => c.api.setZenMode(true))}>
+            <Icon name="Leaf" />
+            <span>{t('top.zen')}</span>
+          </button>
+        </div>
       </div>
 
       {img && ydoc && (

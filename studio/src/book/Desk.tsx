@@ -89,6 +89,14 @@ export function Desk() {
           <span>{t('next.textWarning', { n: warning.count, chapter })}</span>
         </p>
       ))}
+      {/* wave 3a: 1.0's Zen calm fold (BEUK:zencalm) before #secSettings: shown only in Zen (1.0's .zen-fold CSS); 1.0's
+          setZenMode wires its click and zenFoldSync writes its summary and aria-expanded */}
+      <button type="button" className="zen-fold" id="zenDetailsToggle" aria-expanded="false" aria-controls="secSettings editorMeta">
+        <span className="zf-sum" id="zenDetailsSum" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
       {sec instanceof Y.Map && <SecTypeControl key="sectype" section={sec} />}
       {fragment && bk.active !== null ? (
         <ChapterEditor

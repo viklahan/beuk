@@ -111,6 +111,20 @@ export const EXTRA_ROOTS = [
   'markWritingActivity', 'renderStreak', 'saveStreak', 'loadStreak', 'streakState', 'STREAK_KEY', 'WLOG_KEY', 'goalStreakNow', 'goalJustWrite', 'goalSetJustWrite',
   'goalClearTracking', 'goalAskClearTracking', 'goalEnsureStart', 'goalsApply', 'commitGoals', 'renderGoalLines', 'renderGoalsProgress',
   'renderGoalKept', 'renderGoalCalendar', 'renderGoalRoad', 'roadShow', 'roadHide', 'roadNearest', 'syncGoalInputs', 'goalsRenderRoom',
+  // wave 3a (A11): Zen, the day cycle, the painted scenes and the ambient sound — 1.0's own, building its layers in the
+  // page as 1.0 does (setZenMode, zenBuildLayer); `$` is supplied so 1.0's #editorArea is the open editor's stand-in
+  'setZenMode', 'zenSettle', 'zenSoundStart', 'zenSoundStop', 'zenSoundSetScene', 'zenSoundPref', 'zenScenePref', 'zenSoundGraph', 'zenSoundUrl',
+  'zenSceneMigrate', 'zenSound', 'zenStep', 'zenGoTo', 'zenIndexClose', 'zenRenderSurface', 'zdPhase', 'zdSetPhase', 'zdSetClock', 'zdTick', 'zdLight',
+  'zdBody', 'zdVisibility', 'ZEN_PAINTINGS', 'zenPaintPref', 'ZEN_SCENES', 'ZEN_SOUND_FILES',
+  // wave 3a (A10, A9): Read Aloud, dictation, the dictation language and the language suggestion bar
+  'raTogglePop', 'raClosePop', 'raPlay', 'raPause', 'raStop', 'raRefresh', 'raLangVoices', 'raSuggested', 'raLang', 'raSupported', 'ra',
+  'raBuildChunks', 'raCleanText', 'raChosenVoice', 'raSyncUi', 'tbPlaceRaPop',
+  'dictToggle', 'dictBegin', 'dictStop', 'dictDiscard', 'dictOpenLangPicker', 'dictPopClose', 'dictSyncUi', 'dictLangInfo', 'dictSetLang',
+  'dictSupported', 'dict', 'DICT_SEEN_KEY', 'dictOnLangChange', 'dictNormalize',
+  'langBarRefresh', 'langBarLater', 'langSugReset', 'raLangSugRender', 'langSetBookLanguage', 'langSuggestion', 'langSug', 'detectLanguageInText',
+  'langDisplayName',
+  // wave 3a: what 1.0's window.beukDictation / beukZen test seams reach (src/environment/EnvironmentHost.tsx)
+  'dictLangChoices', 'DICT_LANGS', 'zenFoldSync',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -145,7 +159,11 @@ export const SAMPLE_ROOTS = ['buildSampleBook', 'sampleCoverDoc'];
 /** 1.0's top-level `let`s a caller reads or sets (emitted as accessors on the closure's `vars`). */
 export const VARS = ['insVarPick', 'insCache', 'insFacts',
   // wave 3a: the writing log, its clock and the Goals room's view state
-  'wlog', 'wlogRebase', 'wlogLastTick', 'wlogFgOverride', 'goalJustWriteCache', 'goalKeptPeriod', 'goalCalCursor', 'roadState'];
+  'wlog', 'wlogRebase', 'wlogLastTick', 'wlogFgOverride', 'goalJustWriteCache', 'goalKeptPeriod', 'goalCalCursor', 'roadState',
+  // wave 3a: Zen's and dictation's test overrides and transition flag, 1.0's centre tab
+  'zenTransitioning', 'zenReducedOverride', 'zdHiddenOv', 'dictCtorOverride', 'currentCenterTab',
+  // wave 3a: the day cycle's clock state (1.0's window.beukZen.dayTimerActive / dayRunning)
+  'zdTimer', 'zdStart'];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
   // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads
@@ -158,7 +176,10 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   'renderSidebar', 'syncEditor', 'renderPreview', 'updateStats', 'refreshExportTree', 'selectSection', 'olRender',
   // wave 3a (C2): the shelf's heartbeat (1.0's cloudHeartbeat, src/goals/streak.ts), the calm confirm (2.0's useConfirm),
   // 1.0's icons() (drawIcons) and fmtDateIntl (it reads uiLangState, which the browser studio never lifts)
-  'cloudHeartbeat', 'cloudConfirm', 'icons', 'fmtDateIntl'];
+  'cloudHeartbeat', 'cloudConfirm', 'icons', 'fmtDateIntl',
+  // wave 3a (A9-A11): 1.0's `$` (src/environment/page.ts: #editorArea is the open editor's stand-in, #panelContent the
+  // desk's), activeSection (the open section of 1.0's state), setCenterTab (Zen is always the desk) and closeUiLangMenu
+  '$', 'activeSection', 'setCenterTab', 'closeUiLangMenu'];
 /** Lifted declarations that may read UI_STRINGS: each reads only every pack's "misc.untitledBook". */
 export const UI_STRINGS_READERS = ['imIsPlaceholderTitle'];
 /** Top-level names of 1.0 that the lifted code uses only as LOCAL names (the reachability walk is by name, not by
@@ -384,7 +405,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; bibleSeriesTouched: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; bibleSeriesTouched: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 

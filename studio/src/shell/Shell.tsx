@@ -12,6 +12,7 @@ import { HistoryDialog } from '../history/HistoryDialog';
 import { InsightsDialog } from '../insights/InsightsDialog';
 import { NotebookDialog } from '../notebook/NotebookDialog';
 import { GoalsDialog } from '../goals/GoalsDialog';
+import { EnvironmentHost } from '../environment/EnvironmentHost';
 import { cloudLoadStreak } from '../goals/goals';
 import { probeCloud } from '../pictures/stock';
 import { SettingsDialog } from '../settings/SettingsDialog';
@@ -285,6 +286,7 @@ export function Shell() {
       <InsightsDialog open={dialog === 'insights' && bookOpen} onClose={() => setDialog(null)} />
       <NotebookDialog open={dialog === 'notebook' && bookOpen} onClose={() => setDialog(null)} />
       <GoalsDialog open={dialog === 'goals' && bookOpen} onClose={() => setDialog(null)} />
+      <EnvironmentHost setCenter={setCenter} />
     </div>
   );
 }

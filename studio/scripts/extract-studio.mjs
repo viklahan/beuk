@@ -53,7 +53,9 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // step 5 wave 2b: pictures (Insert Image, the section card, the scene bar and picker, the image library)
   'ImagePlus', 'Images', 'Upload', 'Eraser', 'Sparkles', 'Search', 'Expand', 'Shrink', 'RotateCcw',
   // wave 2c: the row's eye, the matter library, the starters, the outline board
-  'Eye', 'Library', 'BookmarkPlus', 'FilePlus2', 'LayoutGrid', 'Table2', 'Filter', 'Tag', 'Move', 'PencilLine'];
+  'Eye', 'Library', 'BookmarkPlus', 'FilePlus2', 'LayoutGrid', 'Table2', 'Filter', 'Tag', 'Move', 'PencilLine',
+  // step 5 wave 3a: Dictate, Read Aloud and Zen
+  'Mic', 'Volume2', 'Play', 'Pause', 'Square', 'Leaf'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);
@@ -213,6 +215,92 @@ export function extractTokens(html) {
   return { css, paper: [...paperNames], candlelight: [...candleNames] };
 }
 
+/* ---- the writing environment's stylesheet (wave 3a) ----
+   1.0's own rules for Zen (BEUK:zencalm, the day cycle, the sound popover, the dock, the stage), Read Aloud and
+   dictation (the popover, the language picker, the language bar), lifted verbatim from the <head> stylesheet into
+   src/generated/environment.css: one source, nothing retyped. A rule is taken when one of its selectors names a part
+   of these features (ENV_SELECTOR); inside @media / @supports the same test runs rule by rule; an @keyframes or
+   @property is taken when the taken rules use it. Fails loudly when 1.0 no longer has the anchor rules. */
+export const ENV_SELECTOR = /zen|#zd|\.zd-|\bzs-|\.zi-|#zenIndex|\.zn-|\.zp-|\.zt-|\.zf-|\.zd-label|#raPop|\.ra-|#btnReadAloud|#raLangSug|dict|#dictPop|\.dp-|#langBar|\.lb-|focus-cluster|#editorWordBar/;
+const BACKSLASH = String.fromCharCode(92);
+const ENV_ANCHORS =['#zenPill', 'body.zen #topbar', '#raPop', '#dictPop', '#langBar'];
+
+/** The stylesheet as a tree: rules and at-rules (with children for @media / @supports, whole otherwise). */
+function cssTree(css) {
+  const out = [];
+  let i = 0;
+  const n = css.length;
+  const parseList = (end, list) => {
+    let start = i;
+    while (i < end) {
+      const c = css[i];
+      if (c === '/' && css[i + 1] === '*') { i = css.indexOf('*/', i + 2) + 2; if (i < 2) i = end; start = i; continue; }
+      if (/\s/.test(c) && start === i) { start++; i++; continue; }
+      if (c === '"' || c === "'") { i++; while (i < end && css[i] !== c) i += css[i] === BACKSLASH ? 2 : 1; i++; continue; }
+      if (c === ';') { i++; start = i; continue; }
+      if (c === '}') { i++; start = i; continue; }
+      if (c === '{') {
+        const prelude = css.slice(start, i).trim();
+        const open = i;
+        // the matching brace
+        let depth = 0, j = i;
+        for (; j < end; j++) {
+          const d = css[j];
+          if (d === '/' && css[j + 1] === '*') { j = css.indexOf('*/', j + 2) + 1; continue; }
+          if (d === '"' || d === "'") { j++; while (j < end && css[j] !== d) j += css[j] === BACKSLASH ? 2 : 1; continue; }
+          if (d === '{') depth++;
+          else if (d === '}') { depth--; if (depth === 0) break; }
+        }
+        const close = j;
+        const text = css.slice(start, close + 1);
+        if (/^@(media|supports)\b/.test(prelude)) {
+          const kids = [];
+          i = open + 1;
+          parseList(close, kids);
+          list.push({ kind: 'group', prelude, kids, text });
+        } else if (prelude.startsWith('@')) list.push({ kind: 'at', prelude, text });
+        else list.push({ kind: 'rule', prelude, text });
+        i = close + 1;
+        start = i;
+        continue;
+      }
+      i++;
+    }
+  };
+  parseList(n, out);
+  return out;
+}
+
+export function extractEnvironmentCss(html) {
+  const tree = cssTree(headStyle(html));
+  const taken = [];
+  const hit = (sel) => sel.split(',').some((s) => ENV_SELECTOR.test(s));
+  for (const node of tree) {
+    if (node.kind === 'rule' && hit(node.prelude)) taken.push(node.text.trim());
+    else if (node.kind === 'group') {
+      const kids = node.kids.filter((k) => k.kind === 'rule' && hit(k.prelude)).map((k) => '  ' + k.text.trim());
+      if (kids.length) taken.push(node.prelude + ' {\n' + kids.join('\n') + '\n}');
+    }
+  }
+  const used = taken.join('\n');
+  const extras = [];
+  for (const node of tree) {
+    if (node.kind !== 'at') continue;
+    const k = /^@(?:-webkit-)?keyframes\s+([\w-]+)/.exec(node.prelude);
+    const p = /^@property\s+(--[\w-]+)/.exec(node.prelude);
+    if ((k && new RegExp('(^|[^' + BACKSLASH + 'w-])' + k[1] + '(?![' + BACKSLASH + 'w-])').test(used)) || (p && used.includes(p[1]))) extras.push(node.text.trim());
+  }
+  const missing = ENV_ANCHORS.filter((a) => !taken.some((t) => t.startsWith(a) || t.includes('\n  ' + a) || t.includes(', ' + a)));
+  if (missing.length) fail(`the writing environment's stylesheet no longer has a rule for: ${missing.join(', ')}`);
+  const css =
+    '/* GENERATED by studio/scripts/extract-studio.mjs from client/index.html — do not edit.\n' +
+    "   1.0's rules for Zen, Read Aloud, dictation and the language bar (ENV_SELECTOR), verbatim, in 1.0's order,\n" +
+    '   then the @property / @keyframes they use. */\n' +
+    [...extras, ...taken].join('\n') +
+    '\n';
+  return { css, rules: taken.length, extras: extras.length };
+}
+
 /* ---- icons ---- */
 
 export function extractIcons(lucideSource) {
@@ -254,11 +342,13 @@ async function main() {
      load on demand as their own chunks (and are precached for offline). */
   for (const code of strings.order) writeFileSync(path.join(out, 'packs', `${code}.json`), JSON.stringify(packs[code]));
   writeFileSync(path.join(out, 'tokens.css'), tokens.css);
+  const env = extractEnvironmentCss(html);
+  writeFileSync(path.join(out, 'environment.css'), env.css);
   writeFileSync(path.join(out, 'icons.json'), JSON.stringify(icons));
   /* 1.0's render code as a browser module (scripts/extract-closure.mjs), written here so the rmSync above never takes it */
   const closure = await writeClosure();
   const keys = Object.keys(strings.packs.en).length;
-  console.log(`extract-studio: ${strings.order.length} interface languages × ${keys} keys, RTL: ${strings.rtl.join(', ') || 'none'}; tokens: ${tokens.paper.length} Paper / ${tokens.candlelight.length} Candlelight; ${Object.keys(icons).length} icons; closure: ${closure.names.length} declarations → src/generated/`);
+  console.log(`extract-studio: ${strings.order.length} interface languages × ${keys} keys, RTL: ${strings.rtl.join(', ') || 'none'}; tokens: ${tokens.paper.length} Paper / ${tokens.candlelight.length} Candlelight; ${Object.keys(icons).length} icons; closure: ${closure.names.length} declarations; environment.css: ${env.rules} rules + ${env.extras} at-rules → src/generated/`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

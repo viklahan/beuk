@@ -87,7 +87,7 @@ describe("1.0's insert toolbar in the studio (A1–A4, A13)", () => {
   it('the groups, kinds, keys and fold levels of 1.0 (editor.no-instruction-paragraph: the toolbar half)', async () => {
     await openStudio(BOOK());
     const groups = [...document.querySelectorAll('#insertToolbar > .tool-group')].map((g) => g.getAttribute('data-tg'));
-    expect(groups).toEqual(['format', 'structure', 'blocks', 'assist']);
+    expect(groups).toEqual(['format', 'structure', 'blocks', 'assist', 'focus']); // wave 3a: 1.0's Focus cluster (Read Aloud, Zen) is ported
     const kinds = [...document.querySelectorAll('#insertToolbar [data-insert]')].map((b) => b.getAttribute('data-insert'));
     expect(kinds).toEqual(['bold', 'italic', 'link', 'redact', 'blockquote', 'attribution', 'ul', 'ol', 'scenebreak', 'emdash', 'endnote',
       'columns', 'hanging', 'verse', 'center', 'right', 'texts', 'letter', 'transcript', 'log', 'insert', 'margin', 'sideways', 'upsidedown']);

@@ -345,6 +345,76 @@ export type ClosureApi = {
   roadNearest: (clientX: number) => number;
   syncGoalInputs: () => void;
   goalsRenderRoom: () => void;
+  // wave 3a (A11): Zen — 1.0's own, building its layers in the page (src/environment)
+  setZenMode: (on: boolean) => void;
+  zenSettle: () => void;
+  zenSoundStart: () => Promise<unknown>;
+  zenSoundStop: () => void;
+  zenSoundSetScene: (name: string) => void;
+  zenSoundPref: () => boolean;
+  zenScenePref: () => string;
+  zenSoundGraph: () => Record<string, unknown> | null;
+  zenSoundUrl: (scene: string) => string;
+  zenSceneMigrate: (v: unknown) => string;
+  zenSound: Record<string, unknown> & { status: string; playing: boolean; ctx: unknown; settle: Promise<unknown> | null };
+  zenStep: (d: number) => void;
+  zenGoTo: (id: string) => void;
+  zenIndexClose: () => void;
+  zenRenderSurface: () => void;
+  zdPhase: () => number;
+  zdSetPhase: (p: number) => void;
+  zdSetClock: (fn: (() => number) | null) => void;
+  zdTick: () => void;
+  zdLight: (theme: string, p: number) => Record<string, unknown>;
+  zdBody: (night: boolean, p: number) => { x: number; y: number; op: number; glint: number };
+  zdVisibility: () => void;
+  ZEN_PAINTINGS: { id: string; name: string }[];
+  zenPaintPref: () => string;
+  ZEN_SCENES: string[];
+  ZEN_SOUND_FILES: Record<string, { file: string; pad: number; loop: number }>;
+  // wave 3a (A10, A9): Read Aloud, dictation and the language bar
+  raTogglePop: () => void;
+  raClosePop: () => void;
+  raPlay: () => void;
+  raPause: () => void;
+  raStop: () => void;
+  raRefresh: () => void;
+  raLangVoices: () => { name: string; lang: string; voiceURI: string }[];
+  raSuggested: (voices?: unknown[]) => { female: unknown; male: unknown };
+  raLang: () => string;
+  raSupported: () => boolean;
+  ra: { status: string; chunks: string[]; idx: number; sectionId: unknown; session: number; voiceSel: string; langFor: Record<string, string>; sugDismissed: Record<string, boolean> };
+  raBuildChunks: () => { id: unknown; chunks: string[] };
+  raCleanText: (raw: unknown) => string;
+  raChosenVoice: () => unknown;
+  raSyncUi: () => void;
+  tbPlaceRaPop: () => void;
+  dictToggle: (anchor?: unknown) => void;
+  dictBegin: () => void;
+  dictStop: () => void;
+  dictDiscard: () => void;
+  dictOpenLangPicker: (anchor?: unknown) => void;
+  dictPopClose: () => void;
+  dictSyncUi: () => void;
+  dictLangInfo: () => { lang: string; fallback: boolean; book: string; code: string; chosen: boolean };
+  dictSetLang: (code: string) => boolean;
+  dictSupported: () => boolean;
+  dict: Record<string, unknown> & { want: boolean; seen: boolean; applying: boolean; spanStart: number; gen: number; rec: unknown };
+  DICT_SEEN_KEY: string;
+  dictOnLangChange: () => void;
+  dictNormalize: (d: unknown) => { lang: string; recent: string[] };
+  langBarRefresh: () => void;
+  langBarLater: () => void;
+  langSugReset: () => void;
+  raLangSugRender: () => void;
+  langSetBookLanguage: (code: string) => boolean;
+  langSuggestion: () => { kind: string; code: string; sectionId?: string } | null;
+  langSug: { dismissed: Record<string, boolean>; timer: unknown; last: { kind: string; code: string; sectionId?: string } | null };
+  detectLanguageInText: (text: string) => { code: string; strong: boolean } | null;
+  langDisplayName: (code: string) => string;
+  dictLangChoices: () => string[];
+  DICT_LANGS: Record<string, string>;
+  zenFoldSync: (s: unknown) => void;
 };
 /** 1.0's state.goals, normalised (normalizeGoals). */
 export type Goals = { daily: number; project: number; deadline: string; days?: number[]; dlDay?: boolean; auto?: boolean; start?: { day: string; w: number } };
@@ -419,6 +489,13 @@ export type ClosureVars = {
   goalKeptPeriod: string;
   goalCalCursor: Date | null;
   roadState: { model: unknown; geom: unknown; px: number[]; idx: number; width: number };
+  zenTransitioning: boolean;
+  zenReducedOverride: boolean | null;
+  zdHiddenOv: boolean | null;
+  dictCtorOverride: unknown;
+  currentCenterTab: string;
+  zdTimer: unknown;
+  zdStart: number | null;
 };
 
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
@@ -470,6 +547,14 @@ export const structEnv: { select: (id: string) => void; toast: (msg: string, ico
   toast: () => undefined,
 };
 /** Wave 3a adds what 1.0's streak reads of `cloud`: the server's streak (signed in) and when the last heartbeat went. */
+/** Wave 3a: 1.0's page as Zen, Read Aloud and dictation reach it (BROWSER_SUPPLIED `$`, activeSection, setCenterTab,
+ *  closeUiLangMenu), filled in by src/environment/page.ts; before that, `$` is plain getElementById. */
+export const pageEnv: { $: (id: string) => unknown; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void } = {
+  $: (id) => (typeof document === 'undefined' ? null : document.getElementById(id)),
+  activeSection: () => null,
+  setCenterTab: () => undefined,
+  closeUiLangMenu: () => undefined,
+};
 export const cloudFacts: { available: boolean; user: unknown; serverStreak: unknown; lastHeartbeatAt: number } = { available: false, user: null, serverStreak: null, lastHeartbeatAt: 0 };
 /** Wave 3a: what 1.0's goals and streak code call around their own code (BROWSER_SUPPLIED), set by src/goals/goals.ts:
  *  noteBookEdited (1.0 saves the book: 2.0 writes 1.0's state.goals to the Y meta map, goals.ts goalsRun), the shelf's
@@ -539,6 +624,11 @@ export function loadClosure(): Promise<Closure> {
         cloudConfirm: (o: Record<string, unknown>) => writeEnv.confirm(o),
         icons: () => drawIcons(document),
         fmtDateIntl,
+        // wave 3a (A9-A11): the page 1.0's Zen, Read Aloud and dictation code reaches (src/environment/page.ts)
+        $: (id: string) => pageEnv.$(id),
+        activeSection: () => pageEnv.activeSection(),
+        setCenterTab: (tab: string) => pageEnv.setCenterTab(tab),
+        closeUiLangMenu: () => pageEnv.closeUiLangMenu(),
       });
       share = c.share;
       loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, sample: null, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };
