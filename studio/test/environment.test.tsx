@@ -96,6 +96,12 @@ async function exported(): Promise<Rec> {
 }
 
 describe('Zen (A11)', () => {
+  it('ui.tooltips: outside Zen the hidden details fold (an icon, so the tip scan counts it) is already named', async () => {
+    await studioWith(bookOf([words(20)]));
+    expect(document.body.classList.contains('zen')).toBe(false);
+    expect($('zenDetailsSum').textContent).toBe(t('zen.details'));
+  }, 60_000);
+
   it('zen.transition / no-edit: enter builds 1.0\'s layers, opens no audio; Escape leaves; the export is unchanged', async () => {
     const AC = vi.fn();
     vi.stubGlobal('AudioContext', AC);

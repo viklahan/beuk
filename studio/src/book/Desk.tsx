@@ -92,7 +92,17 @@ export function Desk() {
       {/* wave 3a: 1.0's Zen calm fold (BEUK:zencalm) before #secSettings: shown only in Zen (1.0's .zen-fold CSS); 1.0's
           setZenMode wires its click and zenFoldSync writes its summary and aria-expanded */}
       <button type="button" className="zen-fold" id="zenDetailsToggle" aria-expanded="false" aria-controls="secSettings editorMeta">
-        <span className="zf-sum" id="zenDetailsSum" />
+        {/* Outside Zen the fold is hidden but still carries its icon, so the tooltip scan counts it: it gets 1.0's own
+            base summary (zenFoldSync's t("zen.details")) as its name until Zen writes the full one. 1.0's span starts
+            empty and is named only once Zen has run (reported to V). React owns no children here, so 1.0's
+            textContent writes never fight a render. */}
+        <span
+          className="zf-sum"
+          id="zenDetailsSum"
+          ref={(el) => {
+            if (el && !document.body.classList.contains('zen')) el.textContent = t('zen.details');
+          }}
+        />
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="m6 9 6 6 6-6" />
         </svg>
