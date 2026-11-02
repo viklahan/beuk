@@ -449,6 +449,8 @@ pageEnv.$ = (id: string) => {
      fallbacks: EB Garamond, Libre Baskerville, the heading face), written only with the next theme write;
    - a font stored without an id gets a stable one (its place: "fx<n>"), not 1.0's random uid on every read. */
 export const B64 = /^[A-Za-z0-9+/=\s]*$/;
+/** A picture id as 1.0 makes them (uid: letters and digits), or as the sample and imports name them (with - and _). */
+export const PICTURE_ID = /^[\w-]+$/;
 /** A family name safe in a quoted CSS string, a style attribute and a FontFace: letters (any script), digits, spaces
  *  and . , & ( ) + _ - only. */
 export const SAFE_FAMILY = /^[\p{L}\p{M}\p{N} _.,&()+-]+$/u;
@@ -485,10 +487,14 @@ export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
       f.data = '';
     }
   if (Array.isArray(st.images))
-    for (const im of st.images) {
+    for (const [k, im] of st.images.entries()) {
       if (!isRec(im)) continue;
-      if ((typeof im.data !== 'string' || B64.test(im.data)) && (typeof im.mediaType !== 'string' || MEDIA.test(im.mediaType))) continue;
+      // wave 4c review (Important 2): an id 1.0 writes unescaped into an attribute (the maker's art grid) must be a
+      // plain one (1.0's uid: "s" and base-36), else the picture is hidden and its id replaced in the session's state
+      const plainId = typeof im.id !== 'string' || PICTURE_ID.test(im.id);
+      if (plainId && (typeof im.data !== 'string' || B64.test(im.data)) && (typeof im.mediaType !== 'string' || MEDIA.test(im.mediaType))) continue;
       hidden.images.set(im, { ...im });
+      if (!plainId) im.id = 'hidden-picture-' + k;
       im.data = '';
       im.mediaType = 'application/octet-stream';
       im.ext = '';
