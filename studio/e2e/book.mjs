@@ -342,6 +342,19 @@ async function readOnlyRooms(page) {
       done.push('a Covenant mark hovered' + (shown ? ' (its card shown)' : ' (no card)'));
     }
   }
+  // wave 4a (review focus #4): the Style tab — every preset hovered, the theme creator opened (its controls moved: the
+  // draft only), Start from a preset, closed — then back to the desk; nothing applied
+  await page.click('#tabBtnType');
+  await page.waitForFunction(() => document.querySelectorAll('#presetGrid [data-preset]').length === 15, null, { timeout: 60_000 });
+  for (const b of await page.$$('#presetGrid [data-preset]')) await b.hover();
+  await page.click('#btnNewTheme');
+  await page.waitForSelector('#tcElements [data-tc-font="title"]', { timeout: 10_000 });
+  await page.click('[data-tc-case="title"] [data-val="upper"]');
+  await page.selectOption('#tcBase', 'preset:noir');
+  await page.click('#btnTcBase');
+  await page.click('#btnTcClose');
+  await page.click('#tabBtnContent');
+  done.push('the Style tab (15 presets hovered, the creator opened and closed)');
   return done.join(' + ');
 }
 
@@ -724,7 +737,7 @@ async function latency(origin) {
 
 /* ---- screenshots, next to 1.0 ---- */
 const ONE_HIDE =
-  '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, #tabBtnType, .pane-fold, #tipLayer, .beuk-tip,' +
+  '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, .pane-fold, #tipLayer, .beuk-tip,' +
   ' #bulkHint, #importSummary, #irReopen { display: none !important; }' + // wave 1c: the sample bar and its tour link are in both
   ' @media (max-width: 1023px) { html[dir="rtl"] #panes .pane { border: none !important; } }';
 
@@ -2739,6 +2752,162 @@ function bundle() {
   check(!/node:crypto/.test(js), 'bundle: no node:crypto');
 }
 
+/* ---- wave 4a: the Style tab and themes (D1, D2) ----
+   Beside 1.0 with the same book: the tab reads as 1.0's (presets, My themes, pickers, ornaments, swatches) in English
+   and Arabic chrome; browsing writes nothing; a preset, a book colour and a theme designed in 2.0 read back in 1.0
+   exactly as 2.0 exported them (review focus #1); a book made in 1.0 with an uploaded font, a flourish and a custom
+   theme opens in 2.0 and exports exactly, and the font is a FontFace in 2.0's document (CSP: data: fonts); a family
+   that is not a CSS identifier ("Garamond 3") registers under exactly that name (fonts.upload.family-names); the tab
+   is screenshotted next to 1.0's (reported, not gated). */
+const W4_TTF = path.join(REPO, 'client', 'assets', 'fonts', 'pinyonscript', 'Pinyon_Script-normal-400.ttf');
+function w4File(name, bytes) {
+  const f = path.join(OUT, name);
+  writeFileSync(f, bytes);
+  return f;
+}
+async function w4OpenTab(page) {
+  await page.click('#tabBtnType');
+  await page.waitForFunction(() => document.querySelectorAll('#presetGrid [data-preset]').length === 15, null, { timeout: 60_000 });
+}
+const w4Read = (p) => p.evaluate(() => ({
+  presets: document.getElementById('presetGrid')?.innerText ?? '',
+  active: document.querySelector('#presetGrid .preset-card.active')?.getAttribute('data-preset') ?? '',
+  mine: document.getElementById('myThemeGrid')?.innerText ?? '',
+  body: [...document.querySelectorAll('#selBodyFont option')].map((o) => o.value).join('|'),
+  head: [...document.querySelectorAll('#selHeadFont optgroup')].map((g) => g.getAttribute('label') + ':' + [...g.querySelectorAll('option')].map((o) => o.value).join(',')).join('|'),
+  values: ['selBodyFont', 'selHeadFont', 'rngSize', 'rngLeading', 'selHeaderStyle', 'selIndentDepth', 'selDropDepth', 'rngSmallCaps'].map((id) => document.getElementById(id)?.value).join('|'),
+  ornaments: [...document.querySelectorAll('#ornamentGrid [data-orn]')].map((b) => b.getAttribute('data-orn') + (b.classList.contains('active') ? '*' : '')).join(','),
+  swatches: [...document.querySelectorAll('#colourAccentRow [data-colour], #colourTintRow [data-colour]')].map((b) => b.getAttribute('data-colour') + b.getAttribute('aria-pressed')).join(','),
+  fonts: document.getElementById('fontList')?.innerText ?? '',
+  flourishes: document.getElementById('flourishList')?.innerText ?? '',
+}));
+async function wave4aChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  for (const ui of ['en', 'ar']) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    if (ui === 'ar') await ctx.addInitScript(() => localStorage.setItem('beuk.uiLang.v1', 'ar'));
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      const start = (await exportBackup(page)).json.book;
+      const one = await openOne(ctx, origin);
+      await one.evaluate((b) => { applyBookDoc(JSON.parse(JSON.stringify(b))); currentCenterTab = 'type'; setCenterTab('type'); }, start);
+      await page.bringToFront();
+      await w4OpenTab(page);
+      const two = await w4Read(page), oneSaw = await w4Read(one);
+      for (const k of Object.keys(two)) check(two[k] === oneSaw[k], `wave4a (${ui}) the tab's ${k} reads as 1.0's: "${String(two[k]).replace(/\s+/g, ' ').slice(0, 80)}"${two[k] === oneSaw[k] ? '' : ` — 1.0: "${String(oneSaw[k]).replace(/\s+/g, ' ').slice(0, 80)}"`}`);
+      // browsing writes nothing (review focus #4): every preset hovered, the creator opened, moved, Started from, closed
+      for (const b of await page.$$('#presetGrid [data-preset]')) await b.hover();
+      await page.click('#btnNewTheme');
+      await page.waitForSelector('#tcElements [data-tc-font="title"]', { timeout: 10_000 });
+      await page.selectOption('#tcFont-title', 'Cinzel');
+      await page.click('[data-tc-case="title"] [data-val="upper"]');
+      await page.selectOption('#tcBase', 'preset:noir');
+      await page.click('#btnTcBase');
+      await page.click('#btnTcClose');
+      await page.waitForTimeout(400);
+      check(JSON.stringify((await exportBackup(page)).json.book) === JSON.stringify(start), `wave4a (${ui}) the tab browsed (presets hovered, the creator opened and closed): the export is unchanged`);
+      if (ui === 'en') {
+        // ---- review focus #1: a preset, a colour, a body face, a range and a designed theme, read back in 1.0 ----
+        await page.click('#presetGrid [data-preset="noir"]');
+        await page.click('#colourAccentRow [data-colour="#1f3a64"]');
+        await page.click('#colourTintRow [data-colour="#fbf5e6"]');
+        await page.selectOption('#selBodyFont', 'Lora');
+        await page.$eval('#rngSize', (el) => { el.value = '18.5'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+        await page.waitForTimeout(400);
+        await page.click('#btnNewTheme');
+        await page.fill('#tcName', 'Harbour Test');
+        await page.selectOption('#tcFont-number', 'Cinzel');
+        await page.click('[data-tc-case="title"] [data-val="upper"]');
+        await page.click('#btnTcSave');
+        await page.click('#btnTcClose');
+        const edited = (await exportBackup(page)).json.book;
+        const ct = edited.customThemes[0];
+        check(edited.customThemes.length === 1 && ct.name === 'Harbour Test' && ct.theme.header.title.casing === 'upper' && ct.theme.header.number.font === 'Cinzel' && edited.activePreset === 'custom:' + ct.id,
+          `wave4a the designed theme is saved and worn ("${ct && ct.name}", activePreset ${edited.activePreset})`);
+        const back = await one.evaluate((b) => { applyBookDoc(JSON.parse(JSON.stringify(b))); const s = serializeBook(); return { theme: s.theme, activePreset: s.activePreset, colour: s.colour, customThemes: s.customThemes, mine: (renderMyThemes(), document.getElementById('myThemeGrid').innerText) }; }, edited);
+        for (const k of ['theme', 'activePreset', 'colour', 'customThemes']) check(JSON.stringify(back[k]) === JSON.stringify(edited[k]), `wave4a review focus #1: 1.0 reads 2.0's ${k} back exactly (${JSON.stringify(edited[k]).slice(0, 90)})`);
+        check(/Harbour Test/.test(back.mine), `wave4a 1.0's My themes lists the theme 2.0 saved`);
+        // deleted in 2.0: 1.0 reads it gone, the book keeps its look
+        await page.click('#myThemeGrid [data-mine-del]');
+        const del = (await exportBackup(page)).json.book;
+        const back2 = await one.evaluate((b) => { applyBookDoc(JSON.parse(JSON.stringify(b))); const s = serializeBook(); return { customThemes: s.customThemes, activePreset: s.activePreset, theme: s.theme }; }, del);
+        check(back2.customThemes.length === 0 && back2.activePreset === null && JSON.stringify(back2.theme) === JSON.stringify(edited.theme), 'wave4a a theme deleted in 2.0: 1.0 reads it gone, the book keeps the look it wears');
+
+        // ---- a book made in 1.0: an uploaded font, a flourish, a custom theme, opened in 2.0 ----
+        await one.bringToFront();
+        await one.evaluate((b) => { applyBookDoc(JSON.parse(JSON.stringify(b))); currentCenterTab = 'type'; setCenterTab('type'); }, start);
+        await one.setInputFiles('#fontFileInput', w4File('Writer-Hand.ttf', readFileSync(W4_TTF)));
+        await one.waitForFunction(() => (state.fonts || []).length === 1, null, { timeout: 10_000 });
+        await one.fill('#flourishName', 'Harbour star');
+        await one.setInputFiles('#flourishFileInput', w4File('star.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 24"><path d="M60 3 L66 12 L60 21 L54 12 Z"/></svg>'));
+        await one.waitForFunction(() => (state.images || []).some((im) => im.flourish), null, { timeout: 10_000 });
+        const madeIn1 = await one.evaluate(() => {
+          const fl = state.images.find((im) => im.flourish);
+          state.theme.ornament = 'fl:' + fl.id; state.theme.headingFlourish = fl.id; state.theme.headFont = 'Writer Hand';
+          openThemeCreator(null); $('tcName').value = 'Made in one'; saveThemeCreator(); closeThemeCreator();
+          setBookColour('accent', '#6b2d5c');
+          return serializeBook();
+        });
+        const file1 = w4File('made-in-one.beuk-backup.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book: madeIn1 }));
+        const ctx2 = await newContext({ serviceWorkers: 'block' });
+        try {
+          const p2 = await openNext(ctx2, origin);
+          await openBackup(p2, file1);
+          await w4OpenTab(p2);
+          const reg = await p2.evaluate(async () => {
+            await new Promise((r) => setTimeout(r, 300));
+            const faces = [...document.fonts].filter((x) => x.family.replace(/"/g, '') === 'Writer Hand');
+            await Promise.all(faces.map((x) => x.loaded.catch(() => undefined)));
+            return { n: faces.length, status: faces.map((x) => x.status).join(','), listed: document.getElementById('fontList').innerText.trim(), head: document.getElementById('selHeadFont').value, orn: document.querySelector('#ornamentGrid .orn-btn.active')?.getAttribute('data-orn') ?? '' };
+          });
+          check(reg.n >= 1 && /loaded/.test(reg.status) && /Writer Hand/.test(reg.listed) && reg.head === 'Writer Hand' && reg.orn.startsWith('fl:'),
+            `wave4a a book made in 1.0 (uploaded font, flourish, theme): the face is a FontFace in 2.0 (${reg.status}), listed, worn; the flourish is the ornament (${reg.orn})`);
+          const out = (await exportBackup(p2)).json.book;
+          check(JSON.stringify(out) === JSON.stringify(expected(madeIn1, out)), 'wave4a review focus #1: the 1.0-made styled book, opened and its Style tab browsed in 2.0, exports exactly as readBook reads it');
+          // fonts.upload.family-names: a family that is not a CSS identifier registers under exactly that name
+          await p2.setInputFiles('#fontFileInput', w4File('Garamond 3.ttf', readFileSync(W4_TTF)));
+          const fam = await p2.evaluate(async () => {
+            for (let i = 0; i < 100; i++) {
+              const faces = [...document.fonts].filter((x) => x.family.replace(/"/g, '') === 'Garamond 3');
+              if (faces.length) {
+                await Promise.all(faces.map((x) => x.loaded.catch(() => undefined)));
+                return faces.map((x) => x.status).join(',') + ' / check ' + document.fonts.check("16px 'Garamond 3'");
+              }
+              await new Promise((r) => setTimeout(r, 100));
+            }
+            return null;
+          });
+          check(/loaded/.test(fam), `wave4a fonts.upload.family-names: "Garamond 3" registers under exactly that name (${fam})`);
+          const shot = path.join(OUT, 'style-two-made-in-one.png');
+          writeFileSync(shot, await p2.locator('#panelType').screenshot());
+          note('wave4a screenshot: ' + shot);
+          await harvestCsp(p2);
+        } finally {
+          await ctx2.close();
+        }
+      }
+      // ---- the tab next to 1.0's (reported, not gated: the panes' widths differ until wave 4b brings the preview) ----
+      await one.evaluate((b) => { applyBookDoc(JSON.parse(JSON.stringify(b))); currentCenterTab = 'type'; setCenterTab('type'); }, start);
+      await one.addStyleTag({ content: ONE_HIDE });
+      const ctxS = await newContext({ serviceWorkers: 'block' });
+      if (ui === 'ar') await ctxS.addInitScript(() => localStorage.setItem('beuk.uiLang.v1', 'ar'));
+      const two2 = await openNext(ctxS, origin);
+      await openBackup(two2, f.file);
+      await w4OpenTab(two2);
+      for (const p of [one, two2]) await p.evaluate(() => document.fonts.ready);
+      const a = path.join(OUT, `style-one-${ui}.png`), b = path.join(OUT, `style-two-${ui}.png`);
+      writeFileSync(a, await one.locator('#presetGrid').screenshot());
+      writeFileSync(b, await two2.locator('#presetGrid').screenshot());
+      note(`wave4a (${ui}) the preset grid, 1.0 / 2.0: ${a} / ${b}`);
+      for (const p of [page, one, two2]) await harvestCsp(p);
+      await ctxS.close();
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -2761,6 +2930,7 @@ try {
   if (run('wave2c')) await wave2cChecks(srv.origin);
   if (run('wave3a')) await wave3aChecks(srv.origin);
   if (run('wave3b')) await wave3bChecks(srv.origin);
+  if (run('wave4a')) await wave4aChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);

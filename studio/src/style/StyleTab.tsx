@@ -103,6 +103,25 @@ export function StyleTab({ shown }: Props) {
     };
   }, [ydoc, seen.current]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 1.0's applyBookDoc: the book's own faces register on arrival (registerAllFonts), so the studio sets type in them
+  // from the first render — whether or not the tab is shown
+  useEffect(() => {
+    if (!ydoc) return;
+    let alive = true;
+    void loadClosure()
+      .then(() => {
+        if (alive)
+          styleRun((c) => {
+            c.vars.fontPickerSig = null;
+            c.api.registerAllFonts();
+          });
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [ydoc]);
+
   // the book's style changed elsewhere (another tab, an undo, History): the controls follow
   useEffect(() => {
     if (!ydoc || !seen.current) return;
