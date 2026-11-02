@@ -12,7 +12,7 @@ import { useToast } from '../shell/Toasts';
 import { activeEditor } from '../editor/active';
 import { toBook } from '../editor/bridge';
 import { desk } from '../environment/page';
-import { covEnv, covRun, covRunPaused, covSettle, covUi } from './covenant';
+import { covEnv, covReset, covRun, covRunPaused, covSettle, covUi } from './covenant';
 import { installSeriesNet, installSeriesRetry } from './net';
 import { probeCloud } from '../pictures/stock';
 import { covenantDesk, setMarksClosure } from './marks';
@@ -46,8 +46,15 @@ export function CovenantHost() {
   const confirm = useConfirm();
   const ydoc = bk.book?.ydoc ?? null;
   const bookOpen = bk.phase === 'open';
-  covUi.toast = (msg, icon, action) => toast(msg, (icon ? pascal(icon) : undefined) as never, action);
-  covUi.confirm = (o) => confirm(o as never);
+  // the toast and confirm 1.0's Covenant code raises, set after the render (never during it), taken back on unmount
+  useEffect(() => {
+    covUi.toast = (msg, icon, action) => toast(msg, (icon ? pascal(icon) : undefined) as never, action);
+    covUi.confirm = (o) => confirm(o as never);
+    return () => {
+      covUi.toast = () => undefined;
+      covUi.confirm = async () => false;
+    };
+  }, [toast, confirm]);
   useEffect(() => {
     setOpenNow = setOpen;
     pendingOpen = null;
@@ -85,6 +92,10 @@ export function CovenantHost() {
       alive = false;
       unRetry();
       m.unobserve(onMeta);
+      // the book went (closed, replaced, another opened): what the room still holds is written, then the session and
+      // its state (the whole book) are let go
+      covSettle();
+      covReset();
       setOpen(null);
     };
   }, [ydoc]);

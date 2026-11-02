@@ -215,8 +215,8 @@ let closureRef: Closure | null = null;
 const closure = (): Closure | null => closureRef;
 
 /** The range of the new document a transaction changed, or null. */
-function changedRange(tr: Transaction): { from: number; to: number } | null {
-  let from = Infinity, to = -Infinity;
+function changedRange(tr: Transaction): { from: number; to: number; attr: boolean } | null {
+  let from = Infinity, to = -Infinity, attr = false;
   const maps = tr.mapping.maps;
   maps.forEach((map, i) => {
     map.forEach((_os, _oe, ns, ne) => {
@@ -225,7 +225,16 @@ function changedRange(tr: Transaction): { from: number; to: number } | null {
       to = Math.max(to, rest.map(ne, 1));
     });
   });
-  return from === Infinity ? null : { from: Math.max(0, from), to: Math.min(tr.doc.content.size, to) };
+  // a step that changes a node's attributes in place (its `pre`: the spacing in front of a block) maps no position
+  tr.steps.forEach((step, i) => {
+    const pos = (step as { pos?: unknown }).pos;
+    if (typeof pos !== 'number') return;
+    attr = true;
+    const p = tr.mapping.slice(i + 1).map(pos, 1);
+    from = Math.min(from, p);
+    to = Math.max(to, p + 1);
+  });
+  return from === Infinity ? null : { from: Math.max(0, from), to: Math.min(tr.doc.content.size, to), attr };
 }
 
 function incremental(prev: DecorationSet, tr: Transaction): DecorationSet {
@@ -243,6 +252,13 @@ function incremental(prev: DecorationSet, tr: Transaction): DecorationSet {
   first = Math.min(first, doc.childCount - 1);
   last = Math.min(Math.max(last, first), doc.childCount - 1);
   while (first > 0 && !breaksRun(doc, first)) first--;
+  /* the run before too: a change to a block's own spacing (its `pre` gaining a blank line) makes it a run start, and a
+     name that ran across the old join keeps its mark in the run before; re-scanning that run takes it off (only
+     then: typing never pays for it) */
+  if (r.attr && first > 0) {
+    first--;
+    while (first > 0 && !breaksRun(doc, first)) first--;
+  }
   while (last + 1 < doc.childCount && !breaksRun(doc, last + 1)) last++;
   let start = 0;
   for (let i = 0; i < first; i++) start += doc.child(i).nodeSize;

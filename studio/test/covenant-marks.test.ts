@@ -115,6 +115,31 @@ describe('the marks equal 1.0\'s spans', () => {
     check('a selection');
   });
 
+  it("a block's own spacing changed (pre: one line break becomes a blank line) re-scans the run it left: no half of a two-word name stays marked (review of wave 3b, nit 4)", () => {
+    const { m } = onDesk({
+      meta: { title: 'Pre', language: 'en', langSource: 'manual' },
+      sections: [{ id: 's1', kind: 'body', type: 'chapter', number: '1', title: 'One', subtitle: '', content: 'x' }],
+      bible: { entries: [{ id: 'e1', type: 'character', name: 'Captain Hale', aliases: ['Hale'] }] },
+    });
+    const NL = '\n';
+    // two blocks, the second opened by a single line break (one run: 1.0 reads "Captain\nHale" as the name)
+    const S = bookSchema;
+    const doc = S.node('doc', null, [S.node('paragraph', { pre: null, post: '' }, [S.text('The tide came in. Captain')]), S.node('paragraph', { pre: NL, post: '' }, [S.text('Hale waited on the quay.')])]);
+    let st = EditorState.create({ schema: S, doc, plugins: [covenantPlugin()] });
+    expect(toText(st.doc)).toBe('The tide came in. Captain' + NL + 'Hale waited on the quay.');
+    const check = (why: string) => expect(rangesOf(st), why + ': ' + JSON.stringify(toText(st.doc))).toEqual(rangesFor(st.doc, scan(toText(st.doc), m)));
+    check('start');
+    // the block that starts after the single line break
+    let at = -1;
+    st.doc.forEach((n, off, i) => {
+      if (i > 0 && at < 0 && n.attrs && n.attrs.pre === NL) at = off;
+    });
+    if (at < 0) return expect.unreachable('the text has no block opened by a single line break: ' + JSON.stringify(st.doc.toJSON()));
+    st = st.apply(st.tr.setNodeAttribute(at, 'pre', NL + NL));
+    expect(toText(st.doc)).toBe('The tide came in. Captain' + NL + NL + 'Hale waited on the quay.');
+    check('the line break became a blank line');
+  });
+
   it('a move (section order v2) keeps the marks: the moved chapter draws the same marks; the export text never holds a mark', () => {
     const lantern = fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!;
     const { y, m } = onDesk(lantern.book);
