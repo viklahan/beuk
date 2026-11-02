@@ -92,7 +92,9 @@ const CSP_LISTENER = () => {
 const csp = { violations: [], errors: [] };
 
 async function newContext(opts = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true, deviceScaleFactor: 1, ...opts });
+  const { on = browser, ...rest } = opts;
+  opts = rest;
+  const ctx = await on.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true, deviceScaleFactor: 1, ...opts });
   await ctx.addInitScript(CSP_LISTENER);
   await ctx.addInitScript(() => {
     try {
@@ -3688,20 +3690,6 @@ const W4C_PAINT = async ([recipes, two]) => {
       spine: hashOf(full, L.spineX * px, L.topY * px, Math.max(1, d.spine * px), L.panelH * px),
       back: hashOf(full, L.backX * px, L.topY * px, L.panelW * px, L.panelH * px),
       frontPanel: hashOf(full, L.frontX * px, L.topY * px, L.panelW * px, L.panelH * px),
-      // the 300 DPI wrap box-averaged to 600 px wide (as tests/book-wrap-parity.test.ts compares the server's): where
-      // Chrome itself does not paint the same 300 DPI canvas twice alike, the closeness is measured on this
-      down: (() => {
-        const W = full.width, H = full.height, tw = 600, th = Math.round(tw * H / W);
-        const d = full.getContext('2d').getImageData(0, 0, W, H).data;
-        const sum = new Float64Array(tw * th * 3), cnt = new Uint32Array(tw * th);
-        for (let y = 0; y < H; y++) {
-          const row = Math.min(th - 1, Math.floor(y * th / H)) * tw;
-          for (let x = 0, i = y * W * 4; x < W; x++, i += 4) { const t = row + Math.min(tw - 1, Math.floor(x * tw / W)); sum[t * 3] += d[i]; sum[t * 3 + 1] += d[i + 1]; sum[t * 3 + 2] += d[i + 2]; cnt[t]++; }
-        }
-        let s = '';
-        for (let t = 0; t < tw * th; t++) for (let k = 0; k < 3; k++) s += String.fromCharCode(Math.round(sum[t * 3 + k] / cnt[t]));
-        return btoa(s);
-      })(),
     };
   };
   const out = [];
@@ -3793,14 +3781,6 @@ function w4cBackup(name, book) {
   return w4File(name.replace(/[^\w.-]+/g, '-') + '.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book }));
 }
 const w4cParity = { rows: [], dims: [] };
-/** Two 600 px box-averaged renders (RGB bytes, base64): mean and max absolute channel difference. */
-function w4cNear(a, b) {
-  const x = Buffer.from(a, 'base64'), y = Buffer.from(b, 'base64');
-  if (x.length !== y.length) return { mean: Infinity, max: 255 };
-  let sum = 0, max = 0;
-  for (let i = 0; i < x.length; i++) { const d = Math.abs(x[i] - y[i]); sum += d; if (d > max) max = d; }
-  return { mean: sum / x.length, max };
-}
 /** 2.0 with a book open and its cover maker wired (the closure loaded, 1.0's initCoverMaker run, Lucide in). */
 async function w4cOpen(ctx, origin, file) {
   const page = await openNext(ctx, origin);
@@ -3808,14 +3788,26 @@ async function w4cOpen(ctx, origin, file) {
   await page.waitForFunction(() => !!window.beukCover && !!window.lucide && document.querySelectorAll('#cmElFont option').length > 10 && document.getElementById('cmSpineBody')?.getAttribute('data-built') === '1', null, { timeout: 60_000 });
   return page;
 }
+/** Review round 2 (Important 1): Chrome's GPU-accelerated 2D canvas does not paint a 300 DPI wrap alike twice, even in
+ *  1.0's own page (±1/255 on the front panel); its software canvas does, every part, every time (measured: 0 of 30 parts
+ *  differ, 1.0 against itself). The parity check runs in a browser of its own on the software canvas, bit-exact. */
+const W4C_SOFTWARE_ARGS = ['--disable-gpu', '--disable-accelerated-2d-canvas'];
 async function wave4cParity(origin) {
+  const sw = await pw.chromium.launch({ headless: true, ...(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {}), args: W4C_SOFTWARE_ARGS });
+  try {
+    await wave4cParityOn(sw, origin);
+  } finally {
+    await sw.close();
+  }
+}
+async function wave4cParityOn(sw, origin) {
   const narrow = (process.env.W4C_BOOKS || '').split(',').filter(Boolean);
   const books = [
     ...fixtures.filter((f) => f.book.coverRecipe).map((f) => ({ name: f.name, book: f.book, file: f.file, set: f.name === 'real/lantern-coast-book-one' })),
     ...w4cCaptureBooks().map((b) => ({ ...b, file: w4cBackup(b.name, b.book), set: false })),
   ].filter((b) => !narrow.length || narrow.some((n) => b.name.includes(n)));
   for (const b of books) {
-    const ctx = await newContext({ serviceWorkers: 'block' });
+    const ctx = await newContext({ serviceWorkers: 'block', on: sw });
     try {
       const page = await w4cOpen(ctx, origin, b.file);
       const start = (await exportBackup(page)).json.book;
@@ -3833,19 +3825,16 @@ async function wave4cParity(origin) {
       const A2 = await one.evaluate(W4C_PAINT, [recipes, false]);
       let bad = 0;
       set.forEach((x, i) => {
-        const near = w4cNear(A[i].down, B[i].down), noise = w4cNear(A[i].down, A2[i].down);
         for (const part of ['front', 'preview', 'wrap', 'spine', 'back', 'frontPanel']) {
           const a = A[i][part], c = B[i][part];
           const same = a.size === c.size && a.hash === c.hash;
           const tiles = a.tiles.filter((t, k) => t !== c.tiles[k]).length;
           const selfSame = A2[i][part].hash === a.hash;
-          // exact where 1.0 paints the part alike twice; where it does not (Chrome's 300 DPI canvas), 2.0's distance
-          // from 1.0 is held to 1.0's distance from itself
-          // (measured: 1.0 against itself differs at 300 DPI in 130 of 141 front-panel renders, by at most 1 in 255 at
-          // 600 px, mean 0.000; never at the maker's sizes, nor in the spine or back panels)
-          const ok = same || (a.size === c.size && (part === 'wrap' || part === 'frontPanel') && near.max <= 1 && near.mean <= 0.01);
-          w4cParity.rows.push({ book: b.name, recipe: x.name, part, size: c.size, same, ok, selfSame, tiles, near, noise });
-          if (!ok) { bad++; check(false, `wave4c pixel parity ${b.name} · ${x.name} · ${part}: 1.0 ${a.size} ${a.hash} / 2.0 ${c.size} ${c.hash} (${tiles} of 16 tiles differ; 600 px: mean ${near.mean.toFixed(3)} max ${near.max}; 1.0 against itself: ${selfSame ? 'equal' : `mean ${noise.mean.toFixed(3)} max ${noise.max}`})`); }
+          // every part bit-exact (review round 2, Important 1): on Chrome's software canvas (W4C_SOFTWARE_ARGS) 1.0 paints
+          // every part alike twice, so nothing needs a tolerance; and 1.0 must reproduce itself, else the run is no proof
+          const ok = same && selfSame;
+          w4cParity.rows.push({ book: b.name, recipe: x.name, part, size: c.size, same, ok, selfSame, tiles });
+          if (!ok) { bad++; check(false, `wave4c pixel parity ${b.name} · ${x.name} · ${part}: 1.0 ${a.size} ${a.hash} / 2.0 ${c.size} ${c.hash} (${tiles} of 16 tiles differ; 1.0 against itself: ${selfSame ? 'equal' : 'NOT equal ' + A2[i][part].hash})`); }
         }
         for (const k of ['dims', 'items', 'pitems']) if (A[i][k] !== B[i][k]) { bad++; check(false, `wave4c ${b.name} · ${x.name}: ${k} differ (1.0 ${A[i][k].slice(0, 160)} / 2.0 ${B[i][k].slice(0, 160)})`); }
       });
@@ -3869,10 +3858,8 @@ async function wave4cParity(origin) {
   note('wave4c pixel parity: "equal" counts parts equal to the last bit');
   note('wave4c pixel parity (book: equal/total per part):');
   for (const [k, v] of Object.entries(byBook)) note(`  ${k}: ` + Object.entries(v.parts).map(([p, [s, d]]) => `${p} ${s}/${s + d}`).join(', '));
-  const near = w4cParity.rows.filter((r) => !r.same && r.ok);
   const selfNoisy = w4cParity.rows.filter((r) => !r.selfSame);
-  note(`  1.0 against itself (the same recipes painted again in its page): ${selfNoisy.length} of ${w4cParity.rows.length} parts differ — ` + ([...new Set(selfNoisy.map((r) => r.part))].join(', ') || 'none') + (selfNoisy.length ? `; worst 600 px distance mean ${Math.max(...selfNoisy.map((r) => r.noise.mean)).toFixed(3)} max ${Math.max(...selfNoisy.map((r) => r.noise.max))}` : ''));
-  if (near.length) note(`  2.0 not equal to the last bit but within Chrome's 300 DPI noise: ${near.length} — ` + [...new Set(near.map((r) => r.part))].join(', ') + `; worst 600 px distance mean ${Math.max(...near.map((r) => r.near.mean)).toFixed(3)} max ${Math.max(...near.map((r) => r.near.max))}`);
+  note(`  (on the software canvas, ${W4C_SOFTWARE_ARGS.join(' ')}) 1.0 against itself, the same recipes painted again in its page: ${selfNoisy.length} of ${w4cParity.rows.length} parts differ`);
   for (const d of w4cParity.dims) note(`  wrapDims ${d.book}: ${d.n} combinations ${d.same ? 'equal' : 'DIFFER'}`);
 }
 
