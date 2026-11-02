@@ -331,6 +331,27 @@ describe('review (Important 2): the writer\'s own earlier save is never a confli
   });
 });
 
+describe('review round 2 (Important 1): jsonb does not keep key order', () => {
+  it('a lost create answered 428 with the stored copy, its keys reordered at every depth: taken, nothing split', async () => {
+    signIn('ua');
+    acct.of(acct.pictures).set(fontSha, { mediaType: 'font/ttf', data: FONT });
+    acct.of(acct.pictures).set(svgSha, { mediaType: 'image/svg+xml', data: SVG });
+    await mineLoad();
+    await mineSave(doc('t10', 'Reordered'), bytes());
+    const reorder = (v: unknown): unknown => {
+      if (Array.isArray(v)) return v.map(reorder);
+      if (v && typeof v === 'object') return Object.fromEntries(Object.keys(v as Rec).reverse().map((k) => [k, reorder((v as Rec)[k])]));
+      return v;
+    };
+    const stored = reorder(JSON.parse(JSON.stringify(mineList()[0]!.doc)));
+    expect(JSON.stringify(stored)).not.toBe(JSON.stringify(mineList()[0]!.doc));
+    acct.of(acct.themes).set('t10', { name: 'Reordered', doc: stored, revision: 1 });
+    await mineSync();
+    expect(mineList().map((r) => [r.key, r.revision, r.dirty])).toEqual([['t10', 1, false]]);
+    expect(conflicts).toEqual([]);
+  });
+});
+
 describe('review (Minor): a stale delete whose answer carries no theme does not retry forever', () => {
   it('the tombstone goes and the list is read again', async () => {
     signIn('ua');

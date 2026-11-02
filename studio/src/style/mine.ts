@@ -476,10 +476,25 @@ async function sendPut(r: MineRec): Promise<void> {
   return refuse(r, 'other');
 }
 
+/** JSON with every object's keys sorted, at every depth: the account stores docs as Postgres jsonb, which does not keep
+ *  key order, so "the same doc" is compared this way (review round 2, Important 1). Arrays keep their order. */
+export function canonJson(v: unknown): string {
+  const walk = (x: unknown): unknown => {
+    if (Array.isArray(x)) return x.map(walk);
+    if (x && typeof x === 'object') {
+      const out: Rec = {};
+      for (const k of Object.keys(x as Rec).sort()) out[k] = walk((x as Rec)[k]);
+      return out;
+    }
+    return x;
+  };
+  return JSON.stringify(walk(v));
+}
+
 /** A stale write: the account's copy keeps the key; this device's edit is kept as a theme of its own, sent next. */
 async function keepBoth(r: MineRec, server: unknown): Promise<void> {
   const theirs = fromAccount(r.owner, server, r.at);
-  if (theirs && JSON.stringify(theirs.doc) === JSON.stringify(r.doc) && theirs.name === r.name) {
+  if (theirs && canonJson(theirs.doc) === canonJson(r.doc) && theirs.name === r.name) {
     // the account already holds exactly this (a save whose answer was lost): take its revision, nothing to split
     await putRec(theirs);
     setRec(theirs);
