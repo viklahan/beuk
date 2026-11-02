@@ -384,7 +384,7 @@ export function extractStyleCss(html) {
    one of these (PREVIEW_SELECTOR) and no earlier extraction took it (Zen's, the Covenant's, the Style tab's); inside
    @media / @supports the same test runs rule by rule. Fails loudly when 1.0 no longer has the anchor rules. */
 export const PREVIEW_SELECTOR =
-  /#pane-preview|\.device-bar|\.dev-btn|#previewStage|#frameZone|#deviceFrame|\.frame-|#deviceScreen|(?<![\w-])\.screen(?![\w-])|\.notch|\.run-head|\.run-foot|\.home-bar|#flowWrap|#pageFlow|\.page-controls|\.page-btn|#pageCounter|#previewSectionName|#previewDesk|\.desk-|#deskMeasure|#deskFlow|\.hc-|#hc[A-Z]|\.fs-|\.device-display-note|(?<![\w-])\.pv-|\.piv-|\.fc-page/;
+  /#pane-preview\.hc-mode|\.device-bar|\.dev-btn|#previewStage|#frameZone|#deviceFrame|\.frame-|#deviceScreen|(?<![\w-])\.screen(?![\w-])|\.notch|\.run-head|\.run-foot|\.home-bar|#flowWrap|#pageFlow|\.page-controls|\.page-btn|#pageCounter|#previewSectionName|#previewDesk|\.desk-|#deskMeasure|#deskFlow|\.hc-|#hc[A-Z]|\.fs-|\.device-display-note|(?<![\w-])\.pv-|\.piv-|\.fc-page/;
 const PREVIEW_ANCHORS = ['.device-bar', '.dev-btn', '#deviceFrame', '#flowWrap', '#pageFlow', '.page-controls', '.desk-rail', '#deskMeasure', '.hc-stage', '.piv-page'];
 
 export function extractPreviewCss(html) {

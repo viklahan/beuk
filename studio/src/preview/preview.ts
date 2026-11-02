@@ -1,5 +1,6 @@
 import type * as Y from 'yjs';
-import { closureLang, closureT, cloudFacts, fmtDateIntl, previewEnv, structEnv, untitledStrings, type DeskState, type State } from '../closure/index';
+import { META, SECTIONS } from '@book/editor/index.js';
+import { closureIfLoaded, closureLang, closureT, cloudFacts, fmtDateIntl, previewEnv, stateFromBook, structEnv, untitledStrings, type DeskState, type State } from '../closure/index';
 import { drawIcons } from '../insights/insights';
 import { activeEditor, activeEditorSectionId } from '../editor/active';
 import { editorText } from '../editor/insert';
@@ -118,6 +119,20 @@ const editorArea = {
     /* 1.0's preview never removes them */
   },
 };
+/** 1.0's `document`, as the preview's code reads it: the page's own, except that focus in the open editor reads as
+ *  1.0's textarea (#editorArea). 1.0's page-turning keys (initPreview, pvInit, hcKey, fsInit) leave a key typed in
+ *  the editor alone by its tag; 2.0's editor is a contenteditable page, not a TEXTAREA. */
+const editorFocus = { tagName: 'TEXTAREA', nodeName: 'TEXTAREA', isContentEditable: false, closest: () => null, contains: () => false };
+export const previewDocument: Document = new Proxy(document, {
+  get(t, k) {
+    if (k === 'activeElement') {
+      const a = t.activeElement;
+      return a && typeof a.closest === 'function' && a.closest('#manuscript') ? editorFocus : a;
+    }
+    const v = Reflect.get(t, k, t);
+    return typeof v === 'function' ? v.bind(t) : v;
+  },
+});
 export function preview$(id: string): unknown {
   if (id === 'editorArea') return editorArea;
   const el = document.getElementById(id);
@@ -158,6 +173,7 @@ export function loadPreview(): Promise<PreviewClosure> {
         fmtDateIntl,
         icons: () => drawIcons(document),
         $: preview$,
+        document: previewDocument,
         activeSection,
         // 1.0's deskGoToSection set state.activeId: the studio opens that section (its editor follows)
         renderSidebar: () => undefined,
@@ -191,6 +207,14 @@ export function loadPreview(): Promise<PreviewClosure> {
 
 /* ---- the preview's state ---- */
 let shownDoc: Y.Doc | null = null;
+/** 1.0 always holds a book (an empty desk at least): the preview's state with no book open is 1.0's blank book. */
+let emptyState: State | null = null;
+function noBookState(): State | null {
+  const c = closureIfLoaded();
+  if (!c) return null;
+  emptyState ??= stateFromBook(c, c.api.buildEmptyBook());
+  return emptyState;
+}
 /** The preview module's state, current: the Style session's state of the open book, with 1.0's view fields and the
  *  open section. False without a book, a closure or the preview module. */
 export function pvRefresh(): boolean {
@@ -198,8 +222,7 @@ export function pvRefresh(): boolean {
   if (!pc) return false;
   const prev = pc.getState() as (State & Rec) | null;
   if (prev) Object.assign(view, { device: prev.device ?? view.device, page: prev.page ?? view.page, pageCount: prev.pageCount ?? view.pageCount });
-  if (!styleEnter()) return false;
-  const st = styleState() as (State & Rec) | null;
+  const st = ((desk.ydoc && styleEnter() ? styleState() : null) ?? noBookState()) as (State & Rec) | null;
   if (!st) return false;
   if (st !== prev) {
     st.device = view.device;
@@ -235,7 +258,7 @@ export function requestRender(): void {
   renderQueued = true;
   queueMicrotask(() => {
     renderQueued = false;
-    if (previewMounted()) pvRun((pc) => pc.api.renderPreview());
+    if (previewMounted()) renderNow();
   });
 }
 const mounted = { on: false };
@@ -246,3 +269,100 @@ export function setPreviewMounted(on: boolean): void {
 previewEnv.render = requestRender;
 previewEnv.deskSignature = () => (loaded && loaded.getState() ? String(loaded.api.deskSignature()) : '');
 previewEnv.desk = () => ((loaded?.api.deskState as unknown as DeskState) ?? { counts: {}, total: 0, sig: '', words: 0, run: null });
+
+/* ---- the pane's life ---- */
+let started = false;
+export const previewStarted = (): boolean => started;
+/** The two book stylesheets 1.0 creates in the head on first use, made here first (so 1.0's code reaches them only
+ *  through the sink, preview$). */
+function ensureSheets(): void {
+  for (const id of Object.keys(SHEETS)) {
+    if (document.getElementById(id)) continue;
+    const el = document.createElement('style');
+    el.id = id;
+    document.head.appendChild(el);
+  }
+}
+/** Before 1.0's own listeners in the pane (and its page keys) run, its state is the book as it stands. */
+function installRefresh(): void {
+  const pane = document.getElementById('pane-preview');
+  for (const type of ['click', 'pointerdown', 'pointerup', 'keydown']) pane?.addEventListener(type, () => void pvRefresh(), true);
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (/^(ArrowLeft|ArrowRight|f|F|Escape|Enter| )$/.test(e.key)) pvRefresh();
+    },
+    true,
+  );
+}
+/** 1.0's init: initPreview, hcInit, fsInit on the pane's markup, then the first render. */
+export function startPreview(): void {
+  const pc = loaded;
+  if (!pc || started || !document.getElementById('pageFlow')) return;
+  ensureSheets();
+  if (!pvRefresh()) return;
+  installRefresh();
+  pc.api.initPreview();
+  pc.api.hcInit();
+  pc.api.fsInit();
+  started = true;
+  renderNow();
+}
+/** 1.0's renderPreview now, on the book as it stands. With no book open, the page is empty (1.0's empty desk). */
+export function renderNow(): void {
+  if (!started) return;
+  clearTimeout(typedTimer);
+  pvRun((pc) => {
+    if (!activeSection()) {
+      for (const id of ['pageFlow', 'rhBook', 'rhChapter', 'previewSectionName']) document.getElementById(id)?.replaceChildren();
+      pc.api.scheduleDeskUpdate(60);
+      return;
+    }
+    pc.api.renderPreview();
+    pc.api.syncFsButtons();
+  });
+}
+/* 1.0's own timer for the preview after typing: queuePreview, 120 ms after the last keystroke; every other change
+   (a style, a structure edit, a setting) draws at once, as 1.0's handlers call renderPreview. 1.0's queuePreview is
+   not used as it is: its timer would draw the state of the moment it was set, so 2.0 keeps the same 120 ms and reads
+   the book when it fires. */
+export const PREVIEW_TYPING_MS = 120;
+let typedTimer: ReturnType<typeof setTimeout> | undefined;
+/** Watch the open book: a keystroke queues the preview (and marks 1.0's editorTypedAt, which the desk's measuring
+ *  yields to), anything else draws at once. Returns the unwatcher. */
+export function queueTyped(ydoc: Y.Doc): () => void {
+  const meta = ydoc.getMap(META) as unknown as never;
+  const secs = ydoc.getArray(SECTIONS) as unknown as never;
+  const on = (tr: Y.Transaction) => {
+    if (!started || !tr.changed.size) return;
+    if (tr.changed.has(meta) || tr.changed.has(secs)) {
+      requestRender();
+      return;
+    }
+    if (loaded) loaded.vars.editorTypedAt = performance.now();
+    clearTimeout(typedTimer);
+    typedTimer = setTimeout(renderNow, PREVIEW_TYPING_MS);
+  };
+  ydoc.on('afterTransaction', on);
+  return () => {
+    ydoc.off('afterTransaction', on);
+    clearTimeout(typedTimer);
+  };
+}
+let shownOnPhone = false;
+/** 1.0's setMobilePane for the preview: leaving keeps the page being read; coming back makes the owed turn. */
+export function pvMobile(on: boolean): void {
+  if (!started || on === shownOnPhone) return;
+  shownOnPhone = on;
+  if (!on) {
+    pvRun((pc) => pc.api.pvLeaving());
+    return;
+  }
+  requestAnimationFrame(() =>
+    pvRun((pc) => {
+      pc.api.fitDeviceFrame();
+      pc.api.pvResume();
+      pc.api.scheduleDeskUpdate(60);
+    }),
+  );
+}

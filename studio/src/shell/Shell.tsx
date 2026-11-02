@@ -21,6 +21,7 @@ import { useLocale } from '../i18n/LocaleProvider';
 import { syncClosureLocale } from '../closure/index';
 import { TourHost } from '../tour/TourHost';
 import { StyleTab } from '../style/StyleTab';
+import { PreviewPane } from '../preview/PreviewPane';
 import { Icon } from './Icon';
 import { LangMenu } from './LangMenu';
 import { ThemeButton } from './ThemeButton';
@@ -294,7 +295,7 @@ export function Shell() {
         </section>
 
         <section id="pane-preview" className="pane" aria-label={t('tabs.preview')}>
-          <div id="previewStage" />
+          <PreviewPane mobile={mobile} />
         </section>
       </main>
       {ops.menu}

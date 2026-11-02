@@ -130,6 +130,9 @@ export const FONT_FILES = [
   '/assets/fonts/karla/karla-latin-normal-400_500_600_700.woff2',
   '/assets/fonts/ebgaramond/ebgaramond-latin-normal-400_500_600.woff2',
   '/assets/fonts/fonts.css',
+  // wave 4b (constraint 39): 1.0's script and display faces (BEUK:scriptfonts, BEUK:displayfaces), linked as 1.0 links them
+  '/assets/fonts/fonts-scripts.css',
+  '/assets/fonts/fonts-display.css',
 ];
 
 /** A package's ESM entry in the studio's node_modules (exports["."].import, else module, else main). */
