@@ -99,6 +99,7 @@ function build(c: Closure, ydoc: Y.Doc): Session {
   // applyBookDoc's lines ARRIVE (the EPUB build's arrival) leaves out
   st.activePreset = book.activePreset || (book.theme ? null : a.PRESETS[0]!.id);
   st.customThemes = Array.isArray(book.customThemes) ? book.customThemes.map((ct) => a.normalizeCustomTheme(ct)).filter(Boolean) : [];
+  sourceSafe(st); // book values 1.0's markup takes unescaped (below)
   c.setState(st);
   return { ydoc, state: st, ver: verOf(ydoc).n, base: sigOf(serializedStyle(c)) };
 }
@@ -249,50 +250,108 @@ export function styleReset(): void {
 /** The session's state, for the tests. */
 export const styleState = (): State | null => session?.state ?? null;
 
-/* ---- 1.0's HTML, made safe before it reaches the tab ---- */
-const DROP = new Set(['SCRIPT', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'BASE', 'FORM', 'STYLE', 'FRAME', 'FRAMESET', 'NOSCRIPT', 'TEMPLATE']);
-const URL_ATTRS = ['href', 'xlink:href', 'action', 'formaction', 'srcset', 'poster', 'background'];
-/** Clean a parsed (inert) fragment in place: no script-bearing element, no event handler, no URL attribute except an
- *  <img src> that is 2.0's own checked data: URL for the picture it names. */
-export function cleanFragment(root: DocumentFragment | Element): void {
-  const all = Array.from(root.querySelectorAll('*'));
-  for (const el of all) {
-    if (DROP.has(el.tagName.toUpperCase())) {
-      el.remove();
-      continue;
-    }
-    for (const at of Array.from(el.attributes)) {
-      const n = at.name.toLowerCase();
-      if (n.startsWith('on') || URL_ATTRS.includes(n)) el.removeAttribute(at.name);
-    }
-    if (el.hasAttribute('src')) {
-      const src = el.getAttribute('src') || '';
-      const m = el.tagName === 'IMG' ? /^data:([^;,]*);base64,([A-Za-z0-9+/=]*)$/.exec(src) : null;
-      const url = m ? pictureSrc({ mediaType: m[1], data: m[2] }) : null;
-      if (url) el.setAttribute('src', url);
-      else el.removeAttribute('src');
-    }
+/* ---- 1.0's HTML, made safe before it reaches the tab ----
+   An ALLOWLIST of what 1.0's Style renderers write (renderStudio, renderFlourishes, renderMyThemes, renderFonts,
+   renderBookColour, fontOptionsHtml, tcBaseOptions, buildCreatorControls, renderTcPreview, ORNAMENTS' SVG): anything
+   else — SVG animation (animate, set, animateMotion, animateTransform), use, a, foreignObject, math, style
+   elements, scripts, frames — is dropped with its content; an attribute not on the list goes (so are SVG animation
+   attributes: values, to, from, by, attributeName). A style attribute keeps only the typographic properties 1.0 sets
+   (font-family, size, alignment, casing, margins…, and the swatch's --sw), each with a plain value: no url(), no
+   expression, no escape. SVG presentation values are checked by shape. An <img src> stands only as 2.0's own checked
+   data: URL for the picture its bytes are (pictureSrc). */
+const TAGS = new Set(['div', 'span', 'p', 'b', 'i', 'em', 'strong', 'small', 'br', 'h4', 'button', 'img', 'label', 'select', 'option', 'optgroup', 'input',
+  'svg', 'g', 'path', 'rect', 'circle']);
+const ATTRS = new Set(['class', 'id', 'title', 'alt', 'role', 'tabindex', 'type', 'value', 'label', 'for', 'min', 'max', 'step', 'checked', 'disabled', 'selected',
+  'placeholder', 'xmlns', 'viewbox', 'focusable', 'width', 'height', 'x', 'y', 'cx', 'cy', 'r', 'rx', 'ry', 'd', 'fill', 'stroke', 'stroke-width',
+  'stroke-linecap', 'stroke-linejoin', 'opacity', 'src', 'style']);
+const STYLE_PROPS = new Set(['font-family', 'font-size', 'font-weight', 'font-style', 'font-variant', 'text-align', 'text-transform', 'letter-spacing',
+  'line-height', 'opacity', 'margin', 'margin-top', 'margin-bottom', 'display', '--sw']);
+/** A plain CSS value: words, numbers, units, quotes, commas, hashes — nothing that loads or escapes. */
+const PLAIN_CSS = /^[\w\s#.,%'"+-]*$/;
+const SVG_PAINT = /^(none|currentColor|#[0-9a-f]{3,8}|var\(--[\w-]+(,\s*#[0-9a-f]{3,8})?\))$/i;
+const SVG_NUM = /^[-\d.\s,]*$/;
+const SVG_PATH = /^[\d\s.,MLHVCSQTAZmlhvcsqtaz+-]*$/;
+const MEDIA = /^[\w.+-]+\/[\w.+-]+$/;
+
+function cleanStyle(v: string): string {
+  const out: string[] = [];
+  for (const decl of v.split(';')) {
+    const m = /^\s*(--sw|[a-z-]+)\s*:\s*([\s\S]*?)\s*$/i.exec(decl);
+    if (!m) continue;
+    const prop = m[1]!.toLowerCase(), val = m[2]!;
+    if (STYLE_PROPS.has(prop) && PLAIN_CSS.test(val) && !/url|expression|javascript/i.test(val)) out.push(prop + ':' + val);
   }
+  return out.length ? out.join(';') + (/;\s*$/.test(v) ? ';' : '') : '';
 }
-/** Put 1.0's HTML into `el`: parsed inert, cleaned, then moved in. */
-export function safeHtml(el: Element, html: string): void {
+function cleanAttr(el: Element, name: string, value: string): string | null {
+  const n = name.toLowerCase();
+  if (n.startsWith('data-') || n.startsWith('aria-')) return /^[\w-]+$/.test(n.slice(5)) ? value : null;
+  if (!ATTRS.has(n)) return null;
+  if (n === 'style') return cleanStyle(value) || null;
+  if (n === 'src') {
+    if (el.tagName.toLowerCase() !== 'img') return null;
+    const m = /^data:([^;,]*);base64,([A-Za-z0-9+/=]*)$/.exec(value);
+    return (m && pictureSrc({ mediaType: m[1], data: m[2] })) || null;
+  }
+  if (n === 'fill' || n === 'stroke') return SVG_PAINT.test(value) ? value : null;
+  if (n === 'd') return SVG_PATH.test(value) ? value : null;
+  if (['viewbox', 'x', 'y', 'cx', 'cy', 'r', 'rx', 'ry', 'width', 'height', 'stroke-width', 'opacity'].includes(n)) return SVG_NUM.test(value) ? value : null;
+  return value;
+}
+/** Clean a parsed (inert) fragment in place, by the allowlist. */
+export function cleanFragment(root: DocumentFragment | Element): void {
+  const walk = (parent: ParentNode) => {
+    for (const el of Array.from(parent.children)) {
+      if (!TAGS.has(el.tagName.toLowerCase())) {
+        el.remove(); // with everything inside it
+        continue;
+      }
+      for (const at of Array.from(el.attributes)) {
+        const v = cleanAttr(el, at.name, at.value);
+        if (v === null) el.removeAttribute(at.name);
+        else if (v !== at.value) el.setAttribute(at.name, v);
+      }
+      walk(el);
+    }
+  };
+  walk(root);
+}
+/** 1.0's HTML, parsed inert (a <template>: nothing loads, no handler runs) and cleaned. */
+function safeFragment(html: string): DocumentFragment {
   const tpl = document.createElement('template');
   tpl.innerHTML = String(html);
   cleanFragment(tpl.content);
-  el.replaceChildren(tpl.content);
+  return tpl.content;
+}
+/** Put 1.0's HTML into `el`: parsed inert, cleaned, then moved in. */
+export function safeHtml(el: Element, html: string): void {
+  el.replaceChildren(safeFragment(html));
+}
+/** insertAdjacentHTML, cleaned: the nodes placed where the HTML would go. */
+function safeAdjacent(el: Element, pos: string, html: string): void {
+  const frag = safeFragment(html);
+  const p = pos.toLowerCase();
+  if (p === 'beforebegin') el.before(frag);
+  else if (p === 'afterbegin') el.prepend(frag);
+  else if (p === 'beforeend') el.append(frag);
+  else if (p === 'afterend') el.after(frag);
 }
 const proxies = new WeakMap<Element, Element>();
-/** An element of the Style tab as 1.0's code reaches it: writing its innerHTML goes through safeHtml. */
+/** An element of the Style tab as 1.0's code reaches it: every way of writing HTML into it (innerHTML, outerHTML,
+ *  insertAdjacentHTML, setHTMLUnsafe) goes through the cleaner. */
 function guarded(el: Element): Element {
   let p = proxies.get(el);
   if (!p) {
     p = new Proxy(el, {
       get(t, k) {
+        if (k === 'insertAdjacentHTML') return (pos: string, html: string) => safeAdjacent(t, pos, html);
+        if (k === 'setHTMLUnsafe' || k === 'setHTML') return (html: string) => safeHtml(t, html);
         const v = Reflect.get(t, k, t);
         return typeof v === 'function' ? v.bind(t) : v;
       },
       set(t, k, v) {
         if (k === 'innerHTML') safeHtml(t, String(v));
+        else if (k === 'outerHTML') t.replaceWith(safeFragment(String(v)));
         else Reflect.set(t, k, v, t);
         return true;
       },
@@ -308,3 +367,21 @@ pageEnv.$ = (id: string) => {
   const el = page$(id);
   return el instanceof Element && styleRoot.el && styleRoot.el.contains(el) ? guarded(el) : el;
 };
+
+/* ---- at the source: book values 1.0's markup takes unescaped ----
+   1.0 puts an uploaded face's family into style attributes and @font-face rules unescaped (renderFonts,
+   renderMyThemes, fontStack) and a flourish's mediaType into an <img src> (renderStudio, renderFlourishes): a book
+   could carry markup there (1.0 has the same gap: reported to V). In the session's state, a font whose family is not
+   a plain name is refused (left out: never registered, never offered, gone from the book at its next fonts write),
+   and a picture's mediaType that is not a plain media type is replaced by what its bytes are (the picture stays;
+   written only at the library's next write). Names 1.0 does escape (esc) are left as they are. */
+export const PLAIN_FAMILY = /^[\w .-]+$/;
+export function sourceSafe(st: Rec): void {
+  if (Array.isArray(st.fonts)) st.fonts = st.fonts.filter((f) => isRec(f) && typeof f.family === 'string' && PLAIN_FAMILY.test(f.family.trim()));
+  if (Array.isArray(st.images))
+    for (const im of st.images) {
+      if (!isRec(im) || typeof im.mediaType !== 'string' || MEDIA.test(im.mediaType)) continue;
+      const url = pictureSrc(im);
+      im.mediaType = url ? url.slice(5, url.indexOf(';')) : 'application/octet-stream';
+    }
+}
