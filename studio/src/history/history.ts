@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { insertSections, SECTIONS } from '@book/editor/index.js';
+import { insertSectionsAt, removeSection, sectionKeys } from '@book/editor/index.js';
 import { TOP_LEVEL_KEYS } from '@book/schema.js';
 import { bookState, stateFromBook, type Closure, type HistoryEntry, type SnapDoc, type State } from '../closure/index';
 import { setMetaMany } from '../book/hooks';
@@ -242,11 +242,12 @@ export function restoreSection(c: Closure, ydoc: Y.Doc, snapId: string, secId: s
     if (at < 0) at = Math.min(sIdx, now.length);
   }
   const p = packed(c, L.state, L.state.history);
-  const arr = ydoc.getArray<unknown>(SECTIONS);
+  const keys = sectionKeys(ydoc);
   ydoc.transact(() => {
     setMetaMany(ydoc, { history: p.history as never, historyPool: p.historyPool as never });
-    if (cur >= 0) arr.delete(cur, 1);
-    insertSections(arr, at, [restored]);
+    // the restored section replaces its namesake whole (1.0's restore: the snapshot's section, its keys as 1.0 lays them)
+    if (cur >= 0) removeSection(ydoc, keys[cur]!);
+    insertSectionsAt(ydoc, at, [restored]);
   });
   return at;
 }

@@ -1,6 +1,6 @@
 import { useRef, useState, type DragEvent } from 'react';
 import * as Y from 'yjs';
-import { BODY, SECTIONS, escKey, fragmentText } from '@book/editor/index.js';
+import { BODY, escKey, fragmentText, sectionList, sectionAt } from '@book/editor/index.js';
 import { ChapterEditor } from '../editor/ChapterEditor';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
@@ -18,7 +18,7 @@ import { SecTypeControl } from '../structure/StructureUi';
    interface's (an Arabic chrome around an English book). */
 /** Every section's text, in book order (a section without a text body counts as ""). */
 function sectionTexts(ydoc: Y.Doc): string[] {
-  return ydoc.getArray<unknown>(SECTIONS).toArray().map((s) => {
+  return sectionList(ydoc).map((s) => {
     const b = s instanceof Y.Map ? s.get(BODY) : undefined;
     return b instanceof Y.XmlFragment ? fragmentText(b) : '';
   });
@@ -76,7 +76,7 @@ export function Desk() {
     );
   }
 
-  const sec = bk.active === null ? undefined : bk.book!.ydoc.getArray<unknown>(SECTIONS).get(bk.active);
+  const sec = bk.active === null ? undefined : sectionAt(bk.book!.ydoc, bk.active);
   const body = sec instanceof Y.Map ? sec.get(BODY) : undefined;
   const fragment = body instanceof Y.XmlFragment ? body : null;
   const row = bk.rows.find((r) => r.index === bk.active);

@@ -1,7 +1,8 @@
 import * as Y from 'yjs';
-import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
+import { yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
 import { readBook, type ReadResult } from '../read.js';
-import { toDoc, toText } from './convert.js';
+import { toText } from './convert.js';
+import { BODY, escKey, insertSectionsAt, LAYOUT, MODEL, sectionList } from './sections.js';
 import { bookSchema } from './schema.js';
 import { sha256Hex } from './sha256.js';
 
@@ -10,7 +11,8 @@ import { sha256Hex } from './sha256.js';
    Layout:
    - `meta` (Y.Map): every top-level field of the book except `sections`,
      each stored as a JSON value, untouched.
-   - `sections` (Y.Array): one Y.Map per section. Every attribute is a JSON
+   - the sections (model v2, sections.ts: `secs` + `order`, the one door;
+     a v1 doc held them in the `sections` Y.Array): one Y.Map per section. Every attribute is a JSON
      value (scenes included) except `content`, which lives as `body`, a
      Y.XmlFragment the chapter's editor binds to. A section whose content is
      not a string keeps it as a JSON `content`; an array entry that is not an
@@ -51,9 +53,7 @@ import { sha256Hex } from './sha256.js';
    the writer. Nothing else is ever changed. */
 
 export const META = 'meta';
-export const SECTIONS = 'sections';
-export const LAYOUT = 'layout';
-export const BODY = 'body';
+export { SECTIONS, SECS, ORDER, LAYOUT, BODY, MODEL, MIGRATE_ORIGIN, escKey } from './sections.js';
 export const BLOBS = 'blobs';
 /** 1.0's PIC_REF / PIC_MIN (BEUK:pics, BEUK:localpics). */
 export const PIC_REF = 'beuk-pic:';
@@ -67,8 +67,6 @@ const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !
 const setOwn = (o: Rec, k: string, v: unknown): void => {
   Object.defineProperty(o, k, { value: v, writable: true, enumerable: true, configurable: true });
 };
-/** The Y.Map key a section's book key is stored under ("body" and "~…" gain a leading "~"). */
-export const escKey = (k: string): string => (k === BODY || k.startsWith('~') ? '~' + k : k);
 const unescKey = (k: string): string => (k.startsWith('~') ? k.slice(1) : k);
 const plain = (v: unknown): unknown => (v instanceof Y.AbstractType ? v.toJSON() : v === undefined ? v : structuredClone(v));
 
@@ -150,12 +148,12 @@ export function importBook(doc: unknown, ydoc: Y.Doc = new Y.Doc()): ImportResul
   if (read.status !== 'ok') throw new BookImportError(read);
   const { book, textWarnings } = forYjs(read.book as unknown as Rec);
   const meta = ydoc.getMap<unknown>(META);
-  const sections = ydoc.getArray<unknown>(SECTIONS);
   const layout = ydoc.getMap<unknown>(LAYOUT);
   ydoc.transact(() => {
     for (const [k, v] of Object.entries(book)) if (k !== 'sections') meta.set(k, packValue(ydoc, v, true));
     layout.set('keys', Object.keys(book));
-    insertSections(sections, 0, Array.isArray(book.sections) ? book.sections : []);
+    layout.set('model', MODEL);
+    insertSectionsAt(ydoc, 0, Array.isArray(book.sections) ? book.sections : []);
   });
   const { book: _book, ...rest } = read;
   return { ...rest, ydoc, textWarnings };
@@ -188,24 +186,7 @@ export function fragmentText(frag: Y.XmlFragment, where = 'section'): string {
   return toText(yXmlFragmentToProseMirrorRootNode(frag, bookSchema));
 }
 
-/** Insert book-format sections into the `sections` Y.Array at `index`, exactly as importBook stores them (each section a
- *  Y.Map, its string `content` a `body` fragment). Each section is inserted and then filled, in order; call it inside a
- *  transaction to make the whole insert one change. */
-export function insertSections(sections: Y.Array<unknown>, index: number, list: readonly unknown[]): void {
-  let at = index;
-  for (const s of list) {
-    if (!isRec(s)) { sections.insert(at++, [s]); continue; }
-    const m = new Y.Map<unknown>();
-    for (const [k, v] of Object.entries(s)) {
-      if (k === 'content' && typeof v === 'string') m.set(BODY, new Y.XmlFragment());
-      else m.set(escKey(k), v);
-    }
-    sections.insert(at++, [m]);
-    if (typeof s.content === 'string') prosemirrorToYXmlFragment(toDoc(s.content), m.get(BODY) as Y.XmlFragment);
-  }
-}
-
-/** One entry of the `sections` Y.Array as book-format v1 (what exportBook writes for it). */
+/** One section (sections.ts: its Y.Map, or a JSON entry) as book-format v1 (what exportBook writes for it). */
 export function sectionPlain(s: unknown, where = 'section'): unknown {
   if (!(s instanceof Y.Map)) return plain(s);
   const o: Rec = {};
@@ -219,7 +200,6 @@ export function sectionPlain(s: unknown, where = 'section'): unknown {
 /** The Y.Doc -> a book-format v1 document (the `book` of a backup), keys in the order the book had them. */
 export function exportBook(ydoc: Y.Doc): Rec {
   const meta = ydoc.getMap<unknown>(META);
-  const sections = ydoc.getArray<unknown>(SECTIONS);
   const order = ydoc.getMap<unknown>(LAYOUT).get('keys');
   const keys = Array.isArray(order) ? order.filter((k): k is string => typeof k === 'string') : [];
   for (const k of meta.keys()) if (!keys.includes(k)) keys.push(k);
@@ -227,7 +207,7 @@ export function exportBook(ydoc: Y.Doc): Rec {
   const out: Rec = {};
   for (const k of keys) {
     if (k === 'sections') {
-      setOwn(out, k, sections.toArray().map((s, i) => sectionPlain(s, `sections[${i}]`)));
+      setOwn(out, k, sectionList(ydoc).map((s, i) => sectionPlain(s, `sections[${i}]`)));
     } else if (meta.has(k)) {
       setOwn(out, k, unpackValue(ydoc, plain(meta.get(k))));
     }

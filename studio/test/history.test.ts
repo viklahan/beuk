@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
-import { exportBook, importBook, META, sectionPlain, insertSections, SECTIONS } from '../../src/book/editor/index';
+import { exportBook, importBook, META, sectionPlain, insertSectionsAt, removeSection, sectionKeys, sectionByKey, sectionsCount } from '../../src/book/editor/index';
 import { readBook } from '../../src/book/read';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
@@ -56,17 +56,17 @@ const sections = (ydoc: Y.Doc) => exportBook(ydoc).sections as Rec[];
 const sec = (ydoc: Y.Doc, id: string) => sections(ydoc).find((s) => s.id === id);
 /** Change one section (as typing would: the section, nothing else), one transaction. */
 function edit(ydoc: Y.Doc, id: string, patch: Rec): void {
-  const arr = ydoc.getArray<unknown>(SECTIONS);
   const i = sections(ydoc).findIndex((s) => s.id === id);
-  const s = { ...(sectionPlain(arr.get(i)) as Rec), ...patch };
+  const k = sectionKeys(ydoc)[i]!;
+  const s = { ...(sectionPlain(sectionByKey(ydoc, k)) as Rec), ...patch };
   ydoc.transact(() => {
-    arr.delete(i, 1);
-    insertSections(arr, i, [s]);
+    removeSection(ydoc, k);
+    insertSectionsAt(ydoc, i, [s]);
   });
 }
 function dropSection(ydoc: Y.Doc, id: string): void {
   const i = sections(ydoc).findIndex((s) => s.id === id);
-  ydoc.getArray(SECTIONS).delete(i, 1);
+  removeSection(ydoc, sectionKeys(ydoc)[i]!);
 }
 /** The new generation a whole restore (or a backup) opens: the document, through importBook. */
 function reopen(doc: Rec): Y.Doc {
@@ -188,9 +188,9 @@ describe("1.0's history self-checks, on the Y.Doc", () => {
 
   it('history.delta.words: +N / −N / same length against the book now, with each language\'s plural (Polish słowo / słowa / słów)', async () => {
     const y = desk();
-    y.getArray(SECTIONS).delete(0, y.getArray(SECTIONS).length);
+    y.transact(() => sectionKeys(y).forEach((k) => removeSection(y, k)));
     const one = ch('', '1', words(100));
-    y.transact(() => insertSections(y.getArray(SECTIONS), 0, [one]));
+    insertSectionsAt(y, 0, [one]);
     const snap = saveNamed(c, y, 'Delta check');
     const tt = t as unknown as Parameters<typeof histDeltaText>[2];
     edit(y, one.id, { content: words(140) });
@@ -208,15 +208,14 @@ describe("1.0's history self-checks, on the Y.Doc", () => {
   it('history.delta.sections: added, no longer in the book, changed (or edited at the same length), left out, brought in; the rows add up to the chip', () => {
     const A = ch('Alpha', '1', words(50)), B = ch('Beta', '2', words(30)), C = ch('Gamma', '3', words(20)), D = ch('Delta', '4', words(10, 'old'));
     const y = desk();
-    const arr = y.getArray(SECTIONS);
     y.transact(() => {
-      arr.delete(0, arr.length);
-      insertSections(arr, 0, [A, B, C, D]);
+      sectionKeys(y).forEach((k) => removeSection(y, k));
+      insertSectionsAt(y, 0, [A, B, C, D]);
     });
     const snap = saveNamed(c, y, 'Sections check');
     const E = ch('Epsilon', '5', words(25));
     dropSection(y, B.id);
-    y.transact(() => insertSections(arr, arr.length, [E]));
+    insertSectionsAt(y, sectionsCount(y), [E]);
     edit(y, A.id, { content: words(55) });
     edit(y, D.id, { content: words(10, 'new') });
     const L = live(c, y);

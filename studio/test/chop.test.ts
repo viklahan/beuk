@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
-import { exportBook, importBook, insertSections, posToTextOffset, SECTIONS, textOffsetToPos, toDoc, toText } from '../../src/book/editor/index';
+import { exportBook, importBook, insertSectionsAt, keyOfId, posToTextOffset, removeSection, sectionKeys, sectionList, textOffsetToPos, toDoc, toText } from '../../src/book/editor/index';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import { chopDelete, chopDuplicate, chopMenuItems, chopMerge, chopSplit, chopSplitWhy, chopUndo, type ChopEnv } from '../src/chapters/chop';
@@ -460,27 +460,27 @@ function stateSec(ydoc: Y.Doc, id: unknown): Rec {
   return state.sections.find((s) => s.id === id)!;
 }
 function mapOf(ydoc: Y.Doc, id: unknown): Y.Map<unknown> {
-  return ydoc.getArray<Y.Map<unknown>>(SECTIONS).toArray().find((m) => m.get('id') === id)!;
+  return (sectionList(ydoc) as Y.Map<unknown>[]).find((m) => m.get('id') === id)!;
 }
 function editText(ydoc: Y.Doc, id: unknown, f: (s: string) => string): void {
   // the section with new text, in its place (as an editor's writes would leave it)
   const plain = { ...find(ydoc, id) };
   plain.content = f(String(plain.content));
-  const arr = ydoc.getArray(SECTIONS);
-  const i = arr.toArray().indexOf(mapOf(ydoc, id));
+  const k = keyOfId(ydoc, String(id))!;
+  const i = sectionKeys(ydoc).indexOf(k);
   ydoc.transact(() => {
-    arr.delete(i, 1);
-    insertSections(arr, i, [plain]);
+    removeSection(ydoc, k);
+    insertSectionsAt(ydoc, i, [plain]);
   });
 }
 function setField(ydoc: Y.Doc, id: unknown, k: string, v: unknown): void {
   mapOf(ydoc, id).set(k, v);
 }
 function importInto(ydoc: Y.Doc, at: number, sec: Rec): void {
-  ydoc.transact(() => insertSections(ydoc.getArray(SECTIONS), at, [sec]));
+  insertSectionsAt(ydoc, at, [sec]);
 }
 /** Set the chapters' numbers, in order (chapters past the list keep theirs). */
 function renumber(ydoc: Y.Doc, list: string[]): void {
-  const ch = ydoc.getArray<Y.Map<unknown>>(SECTIONS).toArray().filter((m) => m.get('type') === 'chapter');
+  const ch = (sectionList(ydoc) as Y.Map<unknown>[]).filter((m) => m.get('type') === 'chapter');
   ydoc.transact(() => ch.forEach((m, i) => { if (i < list.length) m.set('number', list[i]); }));
 }

@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
-import { BLOBS, META, exportBook, setMetaValue } from '../../src/book/editor/index';
+import { BLOBS, META, exportBook, sectionAt, setMetaValue } from '../../src/book/editor/index';
 import { BLOB_GC_MS, importToDevice, openStoredBook } from '../src/book/store';
 import { fixtures } from './fixtures';
 
@@ -129,7 +129,7 @@ describe('the picture store in IndexedDB', () => {
     let runs = 0;
     const orig = b.collect.bind(b);
     (b as unknown as { collect: () => Promise<number> }).collect = () => (runs++, orig());
-    const s = b.ydoc.getArray<Y.Map<unknown>>('sections').get(2);
+    const s = (sectionAt(b.ydoc, 2) as Y.Map<unknown>);
     const frag = s.get('body') as Y.XmlFragment;
     for (let i = 0; i < 5; i++) b.ydoc.transact(() => frag.insert(0, [new Y.XmlText('x')]));
     await new Promise((r) => setTimeout(r, BLOB_GC_MS + 200));

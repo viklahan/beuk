@@ -8,7 +8,8 @@ import { prosemirrorToYXmlFragment } from 'y-prosemirror';
 import { fixturePath } from './book-fixtures.js';
 import { readBook } from '../src/book/read.js';
 import { toDoc } from '../src/book/editor/convert.js';
-import { BODY, BookImportError, LAYOUT, META, SECTIONS, exportBook, fragmentText, importBook } from '../src/book/editor/model.js';
+import { BODY, BookImportError, LAYOUT, META, MODEL, ORDER, SECS, SECTIONS, exportBook, fragmentText, importBook } from '../src/book/editor/model.js';
+import { sectionAt, sectionsCount } from '../src/book/editor/sections.js';
 
 /* BEUK:editor-model — a book goes into one Y.Doc and comes back as the same
    book: readBook(exportAny(importBook(doc))).book deep-equals
@@ -41,7 +42,7 @@ const contentIndexes = (book: Rec): number[] =>
 
 /** Replace a section's text the way an editor does: y-prosemirror diffs the new document into the existing fragment. */
 function editSection(ydoc: Y.Doc, i: number, text: string): void {
-  const m = ydoc.getArray<Y.Map<unknown>>(SECTIONS).get(i);
+  const m = sectionAt(ydoc, i) as Y.Map<unknown>;
   prosemirrorToYXmlFragment(toDoc(text), m.get(BODY) as Y.XmlFragment);
 }
 
@@ -71,14 +72,19 @@ test('model: every fixture book round-trips through the Y.Doc (readBook(exportBo
   t.diagnostic(`books ${books}`);
 });
 
-test('model: the Y.Doc layout is meta (JSON values), sections (Y.Maps with a body fragment), scenes as attributes', () => {
+test('model: the Y.Doc layout is meta (JSON values), sections (model 2: secs + order, Y.Maps with a body fragment), scenes as attributes', () => {
   const env = JSON.parse(readFileSync(fixturePath('real', 'reads-you.json'), 'utf8')) as Rec;
   const { ydoc } = importBook(env.book);
-  const meta = ydoc.getMap(META), sections = ydoc.getArray(SECTIONS);
+  const meta = ydoc.getMap(META);
   assert.ok(!meta.has('sections'));
   assert.deepStrictEqual(meta.get('meta'), readBook(env.book).book.meta);
   assert.ok(Array.isArray(ydoc.getMap(LAYOUT).get('keys')));
-  const s0 = sections.get(0) as Y.Map<unknown>;
+  assert.equal(ydoc.getMap(LAYOUT).get('model'), MODEL);
+  assert.equal(ydoc.getArray(SECTIONS).length, 0);
+  assert.equal(ydoc.getMap(SECS).size, env.book.sections.length);
+  assert.equal(ydoc.getMap(ORDER).size, env.book.sections.length);
+  assert.equal(sectionsCount(ydoc), env.book.sections.length);
+  const s0 = sectionAt(ydoc, 0) as Y.Map<unknown>;
   assert.ok(s0 instanceof Y.Map);
   assert.ok(s0.get(BODY) instanceof Y.XmlFragment);
   assert.equal(s0.has('content'), false);

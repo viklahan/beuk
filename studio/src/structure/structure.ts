@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { exportBook, insertSections, setMetaValue, SECTIONS } from '@book/editor/index.js';
+import { exportBook, insertSectionsAt, removeSection, sectionByKey, sectionKeys, setMetaValue, setSectionOrder } from '@book/editor/index.js';
 import { stateFromBook, structEnv, type Closure, type State } from '../closure/index';
 import { writeFields } from '../chapters/chop';
 import icons from '../generated/icons.json';
@@ -23,11 +23,13 @@ import type { IconName } from '../shell/Icon';
    only what changed, in ONE transaction (constraint 19: one Y transaction,
    one undo step):
    - a top-level value that differs, through setMetaValue;
-   - the sections through writeOrdered: sections gone deleted, a moved
-     section taken out and put in again at its new place, new ones inserted
-     (insertSections), and in a section that stays only the keys whose value
-     changed (chop.ts writeFields: its text through y-prosemirror's diffing
-     update, so an open chapter editor stays bound).
+   - the sections through writeOrdered: sections gone removed, new ones
+     inserted, and every section that stays keeps its Y.Map: only the keys
+     whose value changed are written (chop.ts writeFields: its text through
+     y-prosemirror's diffing update, so an open chapter editor stays bound),
+     and only a section whose place changed gets a new position (the
+     sections door, spec 2026-11-01: a move or a cross-tier retype never
+     re-creates a section, so a tab typing in it keeps its keystrokes).
    For the board, the stored form is 1.0's serializeBook's: `outline` only
    when olBookSet() (olBookPack), and an edited section's planning fields as
    olSectionFields gives them, last (1.0's normalizeSection).
@@ -75,42 +77,32 @@ export function idsOk(secs: unknown[]): boolean {
   return true;
 }
 
-/** Make the `sections` Y.Array hold `after` (book format), against `prev` (the sections as the Y.Doc held them, read
- *  in the same step). Handles a changed order (a move): where the section wanted at a place stands later, either it
- *  moved up (the sections in between follow it in `after`: it is taken out and put in again here) or the one standing
- *  here moved down (it is taken out, and put in again when its new place comes). Call inside a transaction. */
+/** Make the book's sections hold `after` (book format), against `prev` (the sections as the Y.Doc held them, read in
+ *  the same step). Each section of `after` is matched to a stored one by its 1.0 id (each stored section used once);
+ *  a matched one keeps its Y.Map and gets only its changed keys written, an unmatched one is inserted, a stored one
+ *  `after` does not hold is removed; then the order is set, a new position only for a section whose place changed.
+ *  Call inside a transaction. */
 export function writeOrdered(ydoc: Y.Doc, after: Rec[], prev: Rec[]): void {
-  const arr = ydoc.getArray<unknown>(SECTIONS);
   const prevById = new Map(prev.map((s) => [String(s.id), s]));
-  const keep = new Set(after.map((s) => String(s.id)));
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const id = idOf(arr.get(i));
-    if (!id || !keep.has(id)) arr.delete(i, 1);
+  const byId = new Map<string, string>();
+  for (const k of sectionKeys(ydoc)) {
+    const id = idOf(sectionByKey(ydoc, k));
+    if (id !== null && !byId.has(id)) byId.set(id, k);
   }
-  let i = 0;
-  while (i < after.length) {
-    const want = String(after[i]!.id);
-    const m = i < arr.length ? arr.get(i) : undefined;
-    if (m instanceof Y.Map && idOf(m) === want) {
-      writeFields(m, after[i]!, prevById.get(want));
-      i++;
-      continue;
-    }
-    let j = -1;
-    for (let k = i + 1; k < arr.length; k++) if (idOf(arr.get(k)) === want) { j = k; break; }
-    if (j < 0) {
-      insertSections(arr, i, [clone(after[i]!)]);
-      i++;
-      continue;
-    }
-    let follows = true;
-    for (let k = i; k < j; k++) if (idOf(arr.get(k)) !== String(after[i + 1 + (k - i)]?.id)) { follows = false; break; }
-    if (follows) {
-      arr.delete(j, 1);
-      insertSections(arr, i, [clone(after[i]!)]);
-      i++;
-    } else arr.delete(i, 1);
-  }
+  const used = new Set<string>();
+  const want: (string | null)[] = after.map((s) => {
+    const k = byId.get(String(s.id));
+    if (k === undefined || used.has(k) || !(sectionByKey(ydoc, k) instanceof Y.Map)) return null;
+    used.add(k);
+    return k;
+  });
+  for (const k of sectionKeys(ydoc)) if (!used.has(k)) removeSection(ydoc, k);
+  after.forEach((s, i) => {
+    const k = want[i];
+    if (k) writeFields(sectionByKey(ydoc, k) as Y.Map<unknown>, s, prevById.get(String(s.id)));
+    else want[i] = insertSectionsAt(ydoc, i, [clone(s)])[0]!;
+  });
+  setSectionOrder(ydoc, want as string[]);
 }
 
 /** Write what changed from `before` to `after` (book format). False when nothing did. One transaction. */
@@ -202,14 +194,14 @@ export function runOnBook<R>(c: Closure, ydoc: Y.Doc, fn: (st: State) => R, opts
 /** The index of the section with this id in the Y.Doc (null when gone). */
 export function indexOfId(ydoc: Y.Doc, id: string | null): number | null {
   if (!id) return null;
-  const i = ydoc.getArray<unknown>(SECTIONS).toArray().findIndex((m) => idOf(m) === id);
+  const i = sectionKeys(ydoc).findIndex((k) => idOf(sectionByKey(ydoc, k)) === id);
   return i < 0 ? null : i;
 }
 /** The id of the section at this index, read now. */
 export function idAt(ydoc: Y.Doc, index: number | null): string | null {
   if (index === null) return null;
-  const arr = ydoc.getArray<unknown>(SECTIONS);
-  return index >= 0 && index < arr.length ? idOf(arr.get(index)) : null;
+  const keys = sectionKeys(ydoc);
+  return index >= 0 && index < keys.length ? idOf(sectionByKey(ydoc, keys[index]!)) : null;
 }
 
 /* ---- B3: the section type, the matter library, Add Chapter / Add Part, move, the include eye ---- */

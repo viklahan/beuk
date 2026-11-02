@@ -1,6 +1,6 @@
 import * as Y from 'yjs';
 import { IndexeddbPersistence, clearDocument, storeState } from 'y-indexeddb';
-import { BLOB_ORIGIN, collectBlobs, exportBook, importBook, LAYOUT, META, packBlobs, SECTIONS, type TextWarning } from '@book/editor/index.js';
+import { BLOB_ORIGIN, collectBlobs, exportBook, importBook, LAYOUT, META, migrateSections, packBlobs, sectionsCount, type TextWarning } from '@book/editor/index.js';
 
 /* The books on this device, as Y.Docs (step 4 part C).
 
@@ -100,7 +100,7 @@ export const bookIdOf = (ydoc: Y.Doc): string | null => {
 };
 
 const isEmptyDoc = (ydoc: Y.Doc): boolean =>
-  ydoc.getArray(SECTIONS).length === 0 && ydoc.getMap(META).size === 0 && ydoc.getMap(LAYOUT).size === 0;
+  sectionsCount(ydoc) === 0 && ydoc.getMap(META).size === 0 && ydoc.getMap(LAYOUT).size === 0;
 
 /** y-indexeddb's whenSynced never settles when the database cannot be opened (storage blocked): fail instead. */
 function synced(p: IndexeddbPersistence): Promise<unknown> {
@@ -260,7 +260,10 @@ async function openGeneration(id: string, epoch: string): Promise<OpenBook | nul
   }
   // a book stored before the picture store (waves 1a-1c held pictures inline in meta): packed once, then the old
   // updates compacted away so the inline copies leave IndexedDB (a storage change only: the export is the same)
-  if (packBlobs(ydoc)) await storeState(persistence, true).catch(() => undefined);
+  // a book stored before the section order was kept apart (model v1, one Y.Array): migrated once, in one transaction
+  // (sections.ts migrateSections: deterministic keys, so two tabs migrating at once converge), then compacted
+  const migrated = migrateSections(ydoc);
+  if (packBlobs(ydoc) || migrated) await storeState(persistence, true).catch(() => undefined);
   remember(id, epoch, String(bookMeta(ydoc).title ?? ''));
   return new OpenBook(id, epoch, ydoc, persistence);
 }

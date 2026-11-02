@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
-import { BLOBS, collectBlobs, exportBook, importBook, META, SECTIONS } from '../../src/book/editor/index';
+import { BLOBS, collectBlobs, exportBook, importBook, META, sectionsCount } from '../../src/book/editor/index';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import { createOracle } from '../src/generated/closure-oracle.js';
@@ -655,6 +655,6 @@ describe('the pickers and the no-edit rule', () => {
     expect(rec.ids.length).toBe(4);
     expect(undoRemoval(c, y, rec, alive)).toBe(true);
     expect((exportBook(y).images as Rec[]).map((im) => im.id).slice(-4)).toEqual(['bad1', 'bad2', 'bad3', 'bad4']);
-    expect(y.getArray(SECTIONS).length).toBeGreaterThan(0);
+    expect(sectionsCount(y)).toBeGreaterThan(0);
   });
 });

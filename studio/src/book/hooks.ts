@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Y from 'yjs';
-import { insertSections, sectionPlain, setMetaValue, META, SECTIONS } from '@book/editor/index.js';
+import { insertSectionsAt, moveSection, observeSections, removeSection, sectionAt, sectionKeys, sectionList, sectionPlain, sectionsCount, setMetaValue, META } from '@book/editor/index.js';
 import type { BookV1 } from '@book/schema.js';
 import { useBook } from './BookProvider';
 
@@ -9,8 +9,10 @@ import { useBook } from './BookProvider';
      as a JSON value. setMeta always stores a NEW value (a structured
      clone), never the object a reader was handed, and never mutates in
      place (step 4: "ported features must set new JSON values");
-   - sections change only through structural operations on the `sections`
-     Y.Array, each one Y transaction (one undo step, one update).
+   - sections change only through structural operations through the
+     sections door (src/book/editor/sections.ts: a move is one position
+     write, the section itself stays), each one Y transaction (one undo
+     step, one update).
    Keys and value types come from the book format (src/book/schema.ts). */
 
 export type MetaKey = Exclude<keyof BookV1, 'sections'>;
@@ -61,7 +63,7 @@ export function useMeta<K extends MetaKey>(key: K): MetaValue<K> | undefined {
 
 /** The sections as book format (content as text), for reading. */
 export function sectionsPlain(ydoc: Y.Doc): unknown[] {
-  return ydoc.getArray<unknown>(SECTIONS).toArray().map((s, i) => sectionPlain(s, `sections[${i}]`));
+  return sectionList(ydoc).map((s, i) => sectionPlain(s, `sections[${i}]`));
 }
 
 export type SectionOps = {
@@ -78,25 +80,25 @@ export type SectionOps = {
 
 /** The structural operations on a book's sections, each one Y transaction. */
 export function sectionOps(ydoc: Y.Doc): SectionOps {
-  const arr = ydoc.getArray<unknown>(SECTIONS);
   return {
     get length() {
-      return arr.length;
+      return sectionsCount(ydoc);
     },
-    insert: (index, list) => ydoc.transact(() => insertSections(arr, index, list)),
-    remove: (index, count = 1) => ydoc.transact(() => arr.delete(index, count)),
+    insert: (index, list) => void insertSectionsAt(ydoc, index, list),
+    remove: (index, count = 1) => {
+      const gone = sectionKeys(ydoc).slice(Math.max(0, index), Math.max(0, index) + count);
+      ydoc.transact(() => gone.forEach((k) => removeSection(ydoc, k)));
+    },
     move: (from, to) => {
-      if (from === to || from < 0 || from >= arr.length) return;
-      ydoc.transact(() => {
-        const s = sectionPlain(arr.get(from), `sections[${from}]`);
-        arr.delete(from, 1);
-        insertSections(arr, Math.max(0, Math.min(to, arr.length)), [s]);
-      });
+      const keys = sectionKeys(ydoc);
+      if (from === to || from < 0 || from >= keys.length) return;
+      // the section's position only: its Y.Map, its text and an editor bound to it stay (spec 2026-11-01)
+      moveSection(ydoc, keys[from]!, to);
     },
     duplicate: (index, patch) => {
-      const s = sectionPlain(arr.get(index), `sections[${index}]`);
+      const s = sectionPlain(sectionAt(ydoc, index), `sections[${index}]`);
       const copy = s && typeof s === 'object' && !Array.isArray(s) ? { ...(s as Rec), ...patch } : s;
-      ydoc.transact(() => insertSections(arr, index + 1, [copy]));
+      insertSectionsAt(ydoc, index + 1, [copy]);
     },
   };
 }
@@ -108,11 +110,9 @@ export function useSections(): SectionOps | null {
   const [n, setN] = useState(0);
   useEffect(() => {
     if (!ydoc) return;
-    const a = ydoc.getArray<unknown>(SECTIONS);
-    const on = () => setN(a.length);
+    const on = () => setN(sectionsCount(ydoc));
     on();
-    a.observe(on);
-    return () => a.unobserve(on);
+    return observeSections(ydoc, on);
   }, [ydoc]);
   const ops = useMemo(() => (ydoc ? sectionOps(ydoc) : null), [ydoc]);
   void n;

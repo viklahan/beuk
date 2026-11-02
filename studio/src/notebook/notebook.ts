@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { BODY, getMetaValue, LAYOUT, META, packValue, SECTIONS, setMetaValue } from '@book/editor/index.js';
+import { BODY, getMetaValue, LAYOUT, META, packValue, setMetaValue, sectionList } from '@book/editor/index.js';
 import { TOP_LEVEL_KEYS } from '@book/schema.js';
 import type { Closure, Note, ResearchFile, State } from '../closure/index';
 import { repackHistory } from '../history/history';
@@ -35,7 +35,7 @@ const NOTE_ID = /^[\w-]{1,64}$/;
 
 /** The sections as 1.0's notebook reads them (ids, kinds, types, numbers, titles): every field but the text. */
 export function lightSections(ydoc: Y.Doc): Rec[] {
-  return ydoc.getArray<unknown>(SECTIONS).toArray().map((s) => {
+  return sectionList(ydoc).map((s) => {
     const o: Rec = {};
     if (!(s instanceof Y.Map)) return o;
     for (const [k, v] of s.entries()) {

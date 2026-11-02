@@ -1,6 +1,6 @@
 import * as Y from 'yjs';
 import { prosemirrorToYXmlFragment } from 'y-prosemirror';
-import { BODY, escKey, insertSections, META, sectionPlain, SECTIONS, toDoc } from '@book/editor/index.js';
+import { BODY, escKey, META, sectionList, sectionPlain, toDoc } from '@book/editor/index.js';
 import type { Closure, HistoryEntry } from '../closure/index';
 import { live, takeSnapshot, writeHistory } from '../history/history';
 import { writeOrdered } from '../structure/structure';
@@ -31,10 +31,13 @@ import { writeOrdered } from '../structure/structure';
    How the change reaches the Y.Doc: each operation works on the book's
    sections as book format (exportBook's sections, a copy), exactly as 1.0's
    apply works on state.sections; then writeSections lays the result over the
-   `sections` Y.Array — removed sections deleted, new ones inserted
-   (insertSections), and in a section that stays only the keys whose value
-   changed are set (its text through y-prosemirror's diffing update, so an
-   open chapter editor stays bound to its fragment).
+   book's sections (structure.ts writeOrdered, through the sections door) —
+   removed sections removed, new ones inserted, and a section that stays
+   keeps its Y.Map: only the keys whose value changed are set (its text
+   through y-prosemirror's diffing update, so an open chapter editor stays
+   bound to its fragment) and it gets a new position only when its place
+   changed. An Undo puts the order back the same way: a section that still
+   stands is moved, never re-created; only one really deleted is inserted.
 
    Differences, each a consequence of 2.0's rules (see the wave report):
    - activeId is not written (wave 1a ruling 9: 2.0 never writes it on a
@@ -117,23 +120,11 @@ function idsOk(secs: unknown[]): boolean {
   return true;
 }
 
-/** Make the `sections` Y.Array hold `after` (book format). Sections keep their relative order in every operation, so:
- *  delete the ones gone, then walk `after`, updating the one standing there or inserting the new one. `prev`: the
- *  sections as the Y.Doc holds them now (read in the same synchronous step). Call inside a transaction. */
+/** Make the book's sections hold `after` (book format): structure.ts writeOrdered (matched by id, kept sections keep
+ *  their Y.Map, only a changed place gets a new position). `prev`: the sections as the Y.Doc holds them now (read in
+ *  the same synchronous step). Call inside a transaction. */
 export function writeSections(ydoc: Y.Doc, after: Rec[], prev: Rec[]): void {
-  const prevById = new Map(prev.map((s) => [String(s.id), s]));
-  const arr = ydoc.getArray<unknown>(SECTIONS);
-  const keep = new Set(after.map((s) => String(s.id)));
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const m = arr.get(i);
-    const id = m instanceof Y.Map ? m.get('id') : isRec(m) ? m.id : undefined;
-    if (typeof id !== 'string' || !keep.has(id)) arr.delete(i, 1);
-  }
-  after.forEach((s, i) => {
-    const m = i < arr.length ? arr.get(i) : undefined;
-    if (m instanceof Y.Map && m.get('id') === s.id) writeFields(m, s, prevById.get(String(s.id)));
-    else insertSections(arr, i, [clone(s)]);
-  });
+  writeOrdered(ydoc, after, prev);
 }
 
 /** 1.0's state.audio.include rides along with a duplicate (a top-level `audio` value in 2.0's meta). */
@@ -161,7 +152,7 @@ type Spec = {
  *  would convert every chapter's text). */
 type Now = { ids: string[]; get: (id: unknown) => Rec | undefined; numbers: () => Record<string, string> };
 function nowOf(ydoc: Y.Doc): Now {
-  const list = ydoc.getArray<unknown>(SECTIONS).toArray();
+  const list = sectionList(ydoc);
   const idOf = (m: unknown): string => String(m instanceof Y.Map ? m.get('id') : isRec(m) ? m.id : '');
   const ids = list.map(idOf);
   return {
@@ -194,7 +185,7 @@ function chopRun(env: ChopEnv, spec: Spec): ChopDone | null {
   snap.chop = { op: spec.op, a: spec.a || '', b: spec.b || '' };
   if (pre.style) chaptersOf(secs).forEach((s, i) => { s.number = pre.style!(i + 1); });
   ydoc.transact(() => {
-    (spec.op === 'move' ? writeOrdered : writeSections)(ydoc, secs, before);
+    writeSections(ydoc, secs, before);
     spec.extra?.(data);
     writeHistory(c, ydoc, L);
   });
@@ -236,7 +227,7 @@ export function chopUndo(env: ChopEnv, rec: ChopRec, isLive: (y: Y.Doc) => boole
     });
   if (!idsOk(secs)) return { ok: false, changed: null };
   ydoc.transact(() => {
-    (rec.op === 'move' ? writeOrdered : writeSections)(ydoc, secs, prev);
+    writeSections(ydoc, secs, prev);
     if (rec.op === 'duplicate') {
       const a = audioInclude(ydoc);
       const copyId = String(rec.data.copyId);

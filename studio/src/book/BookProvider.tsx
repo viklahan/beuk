@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as Y from 'yjs';
-import { BODY, BookImportError, META, SECTIONS, unwrapBackup, type TextWarning } from '@book/editor/index.js';
+import { BODY, BookImportError, META, observeSections, sectionList, sectionsCount, unwrapBackup, type TextWarning } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import { LANG_CODES } from '@book/upgrade.js';
 import { loadClosure } from '../closure/index';
@@ -77,7 +77,7 @@ const BookContext = createContext<BookApi | null>(null);
 
 /** The section the desk opens on: the first body section with text, else the first section with text. */
 function firstChapter(b: OpenBook): number | null {
-  const list = b.ydoc.getArray<unknown>(SECTIONS).toArray();
+  const list = sectionList(b.ydoc);
   const editable = (s: unknown): s is Y.Map<unknown> => s instanceof Y.Map && s.get(BODY) instanceof Y.XmlFragment;
   const body = list.findIndex((s) => editable(s) && s.get('kind') === 'body');
   if (body >= 0) return body;
@@ -114,7 +114,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
     setBook(b);
     setActive((a) => {
       if (!b) return null;
-      if (keepActive && a !== null && a < b.ydoc.getArray(SECTIONS).length) return a;
+      if (keepActive && a !== null && a < sectionsCount(b.ydoc)) return a;
       return firstChapter(b);
     });
     setPhase(b ? 'open' : 'empty');
@@ -177,15 +177,11 @@ export function BookProvider({ children }: { children: ReactNode }) {
     if (!book) return;
     const bump = () => setRev((r) => r + 1);
     const m = book.ydoc.getMap(META);
-    const s = book.ydoc.getArray(SECTIONS);
-    const deep = (events: Y.YEvent<Y.AbstractType<unknown>>[]) => {
-      if (events.some((e) => e.target === s || (e.target instanceof Y.Map && e.target.parent === s))) bump();
-    };
     m.observe(bump);
-    s.observeDeep(deep);
+    const off = observeSections(book.ydoc, bump);
     return () => {
       m.unobserve(bump);
-      s.unobserveDeep(deep);
+      off();
     };
   }, [book]);
 

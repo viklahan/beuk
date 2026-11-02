@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type ReactNode } from 'react';
 import * as Y from 'yjs';
-import { SECTIONS } from '@book/editor/index.js';
+import { sectionList } from '@book/editor/index.js';
 import { useBook } from '../book/BookProvider';
 import { chopMessage, chopMove, chopUndo, type ChopEnv, type ChopRec } from '../chapters/chop';
 import { closureIfLoaded, loadClosure, type Closure, type OlField, type State } from '../closure/index';
@@ -238,7 +238,7 @@ export function OutlineBoard({ shown, onOpen }: { shown: boolean; onOpen: (id: s
   };
   /** 1.0's olMoveStep: the neighbour in the book, same tier only. */
   const moveStep = (id: string, d: number, sel: string | null) => {
-    const list = ydoc.getArray<unknown>(SECTIONS).toArray().map((m) => (m instanceof Y.Map ? { id: m.get('id'), kind: m.get('kind') || 'body' } : { id: null, kind: '' }));
+    const list = sectionList(ydoc).map((m) => (m instanceof Y.Map ? { id: m.get('id'), kind: m.get('kind') || 'body' } : { id: null, kind: '' }));
     const i = list.findIndex((x) => x.id === id), j = i + (d < 0 ? -1 : 1);
     if (i < 0 || j < 0 || j >= list.length || list[j]!.kind !== list[i]!.kind) return;
     moveTo(id, String(list[j]!.id), d > 0, sel);

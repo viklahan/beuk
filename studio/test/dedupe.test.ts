@@ -8,7 +8,7 @@ import { Node as TTNode, Schema as TTSchema } from '@tiptap/pm/model';
 import { EditorState } from '@tiptap/pm/state';
 import { ySyncPluginKey } from '@tiptap/y-tiptap';
 import { IndexeddbPersistence } from 'y-indexeddb';
-import { bookSchema, importBook } from '@book/editor/index.js';
+import { bookSchema, importBook, sectionAt } from '@book/editor/index.js';
 import { getSchema } from '@tiptap/core';
 import { bookExtensions } from '../src/editor/schema';
 
@@ -51,7 +51,7 @@ describe('one Yjs, one ProseMirror (constraint 2)', () => {
   it('at run time the book core, TipTap and the bindings share the classes', () => {
     const { ydoc } = importBook({ meta: { title: 'x' }, sections: [{ id: 'a', content: 'Hi *there*.' }] });
     expect(ydoc).toBeInstanceOf(Y.Doc);
-    expect(ydoc.getArray('sections').get(0)).toBeInstanceOf(Y.Map);
+    expect(sectionAt(ydoc, 0)).toBeInstanceOf(Y.Map);
     expect(bookSchema).toBeInstanceOf(Schema);
     expect(Schema).toBe(TTSchema);
     expect(PMNode).toBe(TTNode);

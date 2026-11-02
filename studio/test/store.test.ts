@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
 import { prosemirrorToYXmlFragment } from 'y-prosemirror';
-import { BODY, BookImportError, SECTIONS, toDoc } from '@book/editor/index.js';
+import { BODY, BookImportError, sectionAt, toDoc } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import { LEGACY_DB } from '../src/book/legacy10';
 import { LEGACY_EPOCH, REGISTRY_KEY, dbNameFor, importToDevice, openLastBook, openStoredBook, parseDbName, readRegistry, startBook, type OpenBook } from '../src/book/store';
@@ -40,7 +40,7 @@ const expectedOf = (book: unknown, exported: Record<string, unknown>): unknown =
   return want;
 };
 
-const chapterFragment = (b: OpenBook, i: number): Y.XmlFragment => (b.ydoc.getArray(SECTIONS).get(i) as Y.Map<unknown>).get(BODY) as Y.XmlFragment;
+const chapterFragment = (b: OpenBook, i: number): Y.XmlFragment => (sectionAt(b.ydoc, i) as Y.Map<unknown>).get(BODY) as Y.XmlFragment;
 
 describe('the store (y-indexeddb)', () => {
   it('no-edit gate, model level: every fixture imports, reopens from its database, and exports exactly what readBook read', async () => {

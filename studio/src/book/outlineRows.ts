@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { BODY, SECTIONS } from '@book/editor/index.js';
+import { BODY, sectionList } from '@book/editor/index.js';
 
 /* The outline's rows: each section's name by 1.0's sidebar rule
    (client/index.html renderSidebar):
@@ -37,7 +37,7 @@ export function chopName(s: SectionLike, t: T): string {
 
 /** The outline rows of a book's Y.Doc. `editable`: the section's content is text (it has a fragment). */
 export function outlineRows(ydoc: Y.Doc, t: T): OutlineRow[] {
-  return ydoc.getArray<unknown>(SECTIONS).toArray().map((s, index) => {
+  return sectionList(ydoc).map((s, index) => {
     if (!(s instanceof Y.Map)) return { index, id: String(index), name: '', chopName: '', kind: '', type: '', isPart: false, editable: false, isSection: false };
     const get = (k: string): unknown => s.get(k);
     const sec: SectionLike = { title: get('title'), number: get('number'), type: get('type'), kind: get('kind') };

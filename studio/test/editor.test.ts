@@ -4,7 +4,7 @@ import { TextSelection } from '@tiptap/pm/state';
 import type { Editor } from '@tiptap/core';
 import { prosemirrorToYXmlFragment as ytPmToFrag, yXmlFragmentToProseMirrorRootNode as ytFragToPm } from '@tiptap/y-tiptap';
 import { prosemirrorToYXmlFragment as ypPmToFrag } from 'y-prosemirror';
-import { BODY, SECTIONS, bookSchema, exportBook, fragmentText, importBook, toDoc, toText } from '@book/editor/index.js';
+import { BODY, sectionList, bookSchema, exportBook, fragmentText, importBook, toDoc, toText } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import { createChapterEditor } from '../src/editor/createEditor';
 import { flushNormalize, pendingBlocks, toggleBookMark } from '../src/editor/behaviour';
@@ -100,7 +100,7 @@ describe('the no-edit gate with real editors (review focus #1, jsdom)', () => {
       const { ydoc } = importBook(f.book);
       const updates: Uint8Array[] = [];
       ydoc.on('update', (u: Uint8Array) => updates.push(u));
-      const sections = ydoc.getArray<unknown>(SECTIONS).toArray();
+      const sections = sectionList(ydoc);
       for (const s of sections) {
         if (!(s instanceof Y.Map) || !(s.get(BODY) instanceof Y.XmlFragment)) continue;
         const ed = mount(s.get(BODY) as Y.XmlFragment);

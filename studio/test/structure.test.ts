@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
-import { exportBook, importBook, META, SECTIONS } from '../../src/book/editor/index';
+import { exportBook, importBook, META, sectionList, sectionTypes } from '../../src/book/editor/index';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import { loadClosure, setClosureT, stateFromBook, type Closure } from '../src/closure/index';
@@ -46,7 +46,7 @@ beforeAll(async () => {
 });
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const secs = (y: Y.Doc) => exportBook(y).sections as Rec[];
-const undoer = (y: Y.Doc) => new Y.UndoManager([y.getArray(SECTIONS), y.getMap(META)], { captureTimeout: 0 });
+const undoer = (y: Y.Doc) => new Y.UndoManager([...sectionTypes(y), y.getMap(META)], { captureTimeout: 0 });
 
 /** 1.0's own function run directly on 1.0's state of `book` (the oracle): the sections it leaves, normalised. */
 function oracle(book: Rec, fn: () => unknown): Rec[] {
@@ -262,7 +262,7 @@ describe("1.0's structure self-checks, re-expressed", () => {
 });
 
 describe('writeOrdered (a moved section)', () => {
-  it('moves one section up or down with one section put in again, every text kept', () => {
+  it('moves one section up or down: every section keeps its Y.Map, only the moved one gets a new position (spec 2026-11-01)', () => {
     const book = c.api.buildEmptyBook();
     const mk = c.api.mkSection;
     const list = ['A', 'B', 'C', 'D', 'E'].map((n) => mk('body', 'chapter', n, { content: n + ' text.' }));
@@ -274,12 +274,16 @@ describe('writeOrdered (a moved section)', () => {
       const next = prev.slice();
       const [m] = next.splice(from, 1);
       next.splice(to, 0, m!);
-      const maps = y.getArray<Y.Map<unknown>>(SECTIONS).toArray();
+      const maps = sectionList(y);
+      const order = y.getMap<unknown>('order');
+      const was = new Map(order.entries());
       y.transact(() => writeOrdered(y, next, prev));
+      const rewritten = [...order.entries()].filter(([k, v]) => was.get(k) !== v).length;
+      expect(rewritten).toBe(from === to ? 0 : 1);
       expect(secs(y).map((s) => s.title)).toEqual(next.map((s) => s.title));
       expect(secs(y).map((s) => s.content)).toEqual(next.map((s) => s.content));
-      const kept = y.getArray<Y.Map<unknown>>(SECTIONS).toArray().filter((x) => maps.includes(x)).length;
-      expect(kept).toBe(from === to ? 5 : 4);
+      const kept = sectionList(y).filter((x) => maps.includes(x)).length;
+      expect(kept).toBe(5);
     }
   });
 });

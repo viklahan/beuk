@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import * as Y from 'yjs';
-import { SECTIONS } from '@book/editor/index.js';
+import { sectionList } from '@book/editor/index.js';
 import { useBook } from '../book/BookProvider';
 import type { OutlineRow } from '../book/outlineRows';
 import { closureIfLoaded, loadClosure } from '../closure/index';
@@ -77,7 +77,7 @@ export function useChapterOps({ openHistory }: { openHistory: () => void }): { t
   const idAt = (index: number | null): string | null => (index === null ? null : bkRef.current.rows.find((r) => r.index === index)?.id ?? null);
   const indexOf = (y: Y.Doc, id: string | null): number | null => {
     if (!id) return null;
-    const i = y.getArray<unknown>(SECTIONS).toArray().findIndex((m) => m instanceof Y.Map && m.get('id') === id);
+    const i = sectionList(y).findIndex((m) => m instanceof Y.Map && m.get('id') === id);
     return i < 0 ? null : i;
   };
   const env = (): ChopEnv | null => {

@@ -5,7 +5,9 @@
 export { bookSchema, DELIMITED_MARKS, LINE_BLOCKS, textblockPrefix } from './schema.js';
 export { toDoc, toText, blockText, blocksText, inlineText, blockCoverage, normalizeBlock, normalizeDoc, canApplyMark, canSetLink } from './convert.js';
 export type { ConvertStats, BlockFix } from './convert.js';
-export { importBook, exportBook, fragmentText, insertSections, sectionPlain, escKey, unwrapBackup, BookImportError, BookExportError, META, SECTIONS, LAYOUT, BODY } from './model.js';
+export { importBook, exportBook, fragmentText, sectionPlain, escKey, unwrapBackup, BookImportError, BookExportError, META, SECTIONS, LAYOUT, BODY } from './model.js';
+export { SECS, ORDER, MODEL, MIGRATE_ORIGIN, isV1, sectionKeys, sectionByKey, sectionAt, sectionList, sectionsCount, keyOfId, sectionTypes, migrateSections, insertSectionsAt, removeSection, moveSection, setSectionOrder, observeSections } from './sections.js';
+export { between, spread, isPosition } from './order.js';
 export { BLOBS, BLOB_ORIGIN, PIC_REF, PIC_MIN, isPicRef, picSwapValue, shaOfData, packValue, unpackValue, setMetaValue, getMetaValue, picRefsInMeta, collectBlobs, packBlobs } from './model.js';
 export { sha256Hex } from './sha256.js';
 export type { ImportResult, TextWarning } from './model.js';

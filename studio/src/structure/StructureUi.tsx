@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import type * as Y from 'yjs';
+import { sectionAt } from '@book/editor/index.js';
 import { useBook } from '../book/BookProvider';
 import type { OutlineRow } from '../book/outlineRows';
 import { closureIfLoaded, loadClosure, type Closure } from '../closure/index';
@@ -86,7 +87,7 @@ export function useStructure(): StructureUi {
   const rowTools = (row: OutlineRow): ReactNode => {
     if (!row.isSection || !c || !ydoc) return null;
     const included = (() => {
-      const m = ydoc.getArray<unknown>('sections').get(row.index) as Y.Map<unknown> | undefined;
+      const m = sectionAt(ydoc, row.index) as Y.Map<unknown> | undefined;
       return m && typeof m.get === 'function' ? m.get('included') !== false : true;
     })();
     return (

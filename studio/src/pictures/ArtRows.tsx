@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Y from 'yjs';
+import { observeSections } from '@book/editor/index.js';
 import { closureIfLoaded, loadClosure, type BookImage, type Closure } from '../closure/index';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useToast } from '../shell/Toasts';
@@ -44,15 +45,11 @@ export function ArtRows({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unknown
     meta.observe(onMeta);
     // another section's plate, backdrop or scenes is in the pickers' list too
     // (only the list itself and the sections' own keys: a keystroke in a chapter's text redraws nothing here)
-    const arr = ydoc.getArray<unknown>('sections');
-    const onArr = (evs: Y.YEvent<Y.AbstractType<unknown>>[]) => {
-      if (evs.some((e) => e.target === arr || (e.target instanceof Y.Map && e.target.parent === arr))) on();
-    };
-    arr.observeDeep(onArr);
+    const off = observeSections(ydoc, on);
     return () => {
       section.unobserve(on);
       meta.unobserve(onMeta);
-      arr.unobserveDeep(onArr);
+      off();
     };
   }, [section, ydoc]);
 

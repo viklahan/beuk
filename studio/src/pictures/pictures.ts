@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { escKey, META, SECTIONS, unpackValue } from '@book/editor/index.js';
+import { escKey, META, unpackValue, sectionList } from '@book/editor/index.js';
 import type { BookImage, Closure } from '../closure/index';
 import { repackHistory } from '../history/history';
 import { setMeta } from '../book/hooks';
@@ -207,7 +207,7 @@ export const nameWords = (name: unknown, dash = false): string =>
 
 /** The section's Y map, by its id (null when it is gone). */
 export function sectionMapById(ydoc: Y.Doc, id: unknown): Y.Map<unknown> | null {
-  for (const m of ydoc.getArray<unknown>(SECTIONS).toArray()) if (m instanceof Y.Map && m.get('id') === id) return m;
+  for (const m of sectionList(ydoc)) if (m instanceof Y.Map && m.get('id') === id) return m;
   return null;
 }
 
@@ -259,7 +259,7 @@ export function imageById(ydoc: Y.Doc, id: unknown): BookImage | null {
  *  the library's own pictures: the sections are handed over without their text (reading every chapter's text would
  *  find nothing more). The pictures as stored (names, not bytes): the pickers show names. */
 export function pickerList(c: Closure, ydoc: Y.Doc): { id: string; name: string }[] {
-  const sections = ydoc.getArray<unknown>(SECTIONS).toArray().map((m) => (m instanceof Y.Map ? { plateId: m.get(escKey('plateId')), backdropId: m.get(escKey('backdropId')), scenes: m.get(escKey('scenes')) } : {}));
+  const sections = sectionList(ydoc).map((m) => (m instanceof Y.Map ? { plateId: m.get(escKey('plateId')), backdropId: m.get(escKey('backdropId')), scenes: m.get(escKey('scenes')) } : {}));
   c.setState({ images: storedImages(ydoc), sections, meta: {} } as never);
   return c.api.pickerImages() as unknown as { id: string; name: string }[];
 }
