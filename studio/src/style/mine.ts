@@ -79,8 +79,11 @@ export function cleanMineDoc(raw: unknown, key?: string): MineDoc | null {
       out.id = a.id;
     }
     if (a.name !== undefined) {
-      if (typeof a.name !== 'string' || a.name.length > FIELD_MAX || /[<>"'`\\]/.test(a.name)) return null;
-      out.name = a.name;
+      if (typeof a.name !== 'string' || a.name.length > FIELD_MAX) return null;
+      // review round 2 (Minor a): a file name is display text — a quote or a bracket is cleaned, never a refusal
+      // ("Writer's Hand.ttf" → "Writer’s Hand.ttf")
+      const nm = a.name.replace(/'/g, '’').replace(/[<>"`\\]/g, '').replace(/\s+/g, ' ').trim();
+      if (nm) out.name = nm;
     }
     if (a.ext !== undefined) {
       if (typeof a.ext !== 'string' || !ASSET_EXT[a.kind]!.test(a.ext)) return null;
@@ -293,21 +296,27 @@ function setRec(r: MineRec): void {
 /** A uid as 1.0 makes them ("s" + 7 base-36 characters). */
 const uid = () => 's' + Math.random().toString(36).slice(2, 9).padEnd(7, '0');
 
+/** True when the last mineSave that failed already told the writer why (a cap, through mineUi.refused): the UI then
+ *  says nothing more (review round 2, Minor a). */
+export let mineSaid = false;
 /** Keep a theme: its doc (cleanMineDoc's shape) and the bytes of every asset it names. Written on the device first;
  *  signed in, sent after. A theme of the same key is replaced (its account revision kept). Returns false when the
  *  device could not keep it or a cap refuses it (said through mineUi.refused). */
 export async function mineSave(rawDoc: MineDoc, bytes: Map<string, Bytes>): Promise<boolean> {
+  mineSaid = false;
   const doc = cleanMineDoc(rawDoc);
   if (!doc) return false;
   if (stale()) await mineLoad(); // kept for whoever is signed in now
   const prev = recs.find((r) => r.key === doc.id) ?? null;
   if (!prev || prev.deleted) {
     if (mineList().length >= MINE_MAX) {
+      mineSaid = true;
       mineUi.refused(doc.name, 'full');
       return false;
     }
   }
   if (new TextEncoder().encode(JSON.stringify(doc)).length > MINE_DOC_MAX) {
+    mineSaid = true;
     mineUi.refused(doc.name, 'large');
     return false;
   }

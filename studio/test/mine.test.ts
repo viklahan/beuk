@@ -403,6 +403,17 @@ describe('review round 2 (Important 2): an expired session is not a refusal', ()
   });
 });
 
+describe('review round 2 (Minor a): an asset name with a quote or a bracket is cleaned, not refused', () => {
+  it('"Writer\'s Hand.ttf" is kept, named as text without those characters', async () => {
+    signOut();
+    await mineLoad();
+    const d = doc('t13', 'Quotes');
+    d.assets[0]!.name = 'Writer\'s <Hand> "x" `y` \\z.ttf';
+    expect(await mineSave(d, bytes())).toBe(true);
+    expect(mineList()[0]!.doc.assets[0]!.name).toBe('Writer’s Hand x y z.ttf');
+  });
+});
+
 describe('review (Minor): a stale delete whose answer carries no theme does not retry forever', () => {
   it('the tombstone goes and the list is read again', async () => {
     signIn('ua');
@@ -469,7 +480,8 @@ describe('untrusted both ways: nothing kept that is not a theme', () => {
     expect(bad((d) => ((d.assets as Rec[])[0]!.family = "x'); } * { background: url(https://evil.example/"))).toBeNull();
     expect(bad((d) => ((d.assets as Rec[])[0]!.mediaType = 'text/html'))).toBeNull();
     expect(bad((d) => ((d.assets as Rec[])[1]!.id = 'a" onload="x'))).toBeNull();
-    expect(bad((d) => ((d.assets as Rec[])[1]!.name = '<svg onload=alert(1)>'))).toBeNull();
+    // review round 2 (Minor a): a file name is display text — its brackets and quotes are cleaned, not a refusal
+    expect(bad((d) => ((d.assets as Rec[])[1]!.name = '<svg onload="alert(1)">'))!.assets[1]!.name).toBe('svg onload=alert(1)');
     expect(bad((d) => ((d.assets as Rec[])[0]!.sha256 = 'nothex'))).toBeNull();
     expect(bad((d) => ((d.assets as Rec[])[0]!.kind = 'cover'))).toBeNull();
     // the name is text (React and 1.0's esc() write it as text); a long one is cut to the cap

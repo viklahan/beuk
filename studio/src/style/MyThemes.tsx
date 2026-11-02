@@ -5,7 +5,7 @@ import { desk } from '../environment/page';
 import type { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
 import icons from '../generated/icons.json';
-import { mineDelete, mineDeviceThemes, mineList, mineLoad, mineLoaded, mineMoveToAccount, mineOwner, ownerNow, mineSubscribe, mineUi, mineVersion, DEVICE, type MineRec } from './mine';
+import { mineDelete, mineDeviceThemes, mineList, mineLoad, mineLoaded, mineMoveToAccount, mineOwner, ownerNow, mineSaid, mineSubscribe, mineUi, mineVersion, DEVICE, type MineRec } from './mine';
 import { styleState, styleUi, themeSafe } from './session';
 import { applyMine, bookThemesNotInMine, listThemes, saveTheme, saveToMine } from './themeActions';
 
@@ -90,7 +90,7 @@ function decorate(grid: HTMLElement, t: T): () => void {
       b.addEventListener('click', (e) => {
         e.stopPropagation();
         const name = listThemes().find((x) => x.id === id)?.name ?? '';
-        void saveToMine(id).then((ok) => ok && toast(t('next.themes.kept', { name })));
+        void saveToMine(id).then((ok) => keptOrNot(t, ok, name));
       });
       actions.append(b);
     }
@@ -101,12 +101,19 @@ function decorate(grid: HTMLElement, t: T): () => void {
   return () => mo.disconnect();
 }
 
+/** After a keep: "kept", or — when the store could not keep it and has not said why — 1.0's "Not saved" (review round
+ *  2, Minor a: a keep never fails silently). */
+function keptOrNot(t: T, ok: boolean, name: string): void {
+  if (ok) toast(t('next.themes.kept', { name }));
+  else if (!mineSaid) toast(t('local.notSavedShort'), 'alert-triangle');
+}
+
 /** The theme creator's "Keep for every book": 1.0's Save (into the book, worn), then kept for every book. */
 export function keepFromCreator(t: T): void {
   const id = saveTheme();
   if (!id) return;
   const name = listThemes().find((x) => x.id === id)?.name ?? '';
-  void saveToMine(id).then((ok) => ok && toast(t('next.themes.kept', { name })));
+  void saveToMine(id).then((ok) => keptOrNot(t, ok, name));
 }
 
 export function MyThemes({ t }: { t: T }) {
@@ -162,8 +169,14 @@ export function MyThemes({ t }: { t: T }) {
 
   const answerOffer = async (yes: boolean) => {
     if (!bookId) return;
-    writeKey(offerKey(bookId), yes ? 'kept' : 'declined');
-    if (yes) for (const ct of bookThemesNotInMine()) await saveToMine(ct.id);
+    if (!yes) writeKey(offerKey(bookId), 'declined');
+    else {
+      // review round 2 (Minor b): answered only once every keep succeeded; otherwise the offer stands, and it is said
+      let all = true;
+      for (const ct of bookThemesNotInMine()) if (!(await saveToMine(ct.id))) all = false;
+      if (all) writeKey(offerKey(bookId), 'kept');
+      else if (!mineSaid) toast(t('local.notSavedShort'), 'alert-triangle');
+    }
     bump();
   };
   const answerMove = async (yes: boolean) => {

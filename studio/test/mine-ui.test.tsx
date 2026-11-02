@@ -140,6 +140,53 @@ describe('the list and its one-time offer', () => {
   });
 });
 
+describe('review round 2 (Minors a, b): a keep that fails says so; the offer is answered only when its keeps succeed', () => {
+  /** This device's storage refusing (a private window, a full disk): the store cannot keep anything. */
+  function storageRefuses(): () => void {
+    const open = indexedDB.open.bind(indexedDB);
+    mineReset();
+    (indexedDB as unknown as { open: unknown }).open = () => {
+      throw new Error('blocked');
+    };
+    return () => {
+      (indexedDB as unknown as { open: unknown }).open = open;
+    };
+  }
+
+  it('Keep on a card, storage refusing: the existing "Not saved" toast, nothing claimed kept', async () => {
+    const { y, root } = open(styledBook());
+    const btn = await vi.waitFor(() => {
+      const el = root.querySelector('#myThemeGrid [data-mine-keep="ctHarbour"]') as HTMLElement | null;
+      expect(el).not.toBeNull();
+      return el!;
+    });
+    const undo = storageRefuses();
+    try {
+      fireEvent.click(btn);
+      await vi.waitFor(() => expect(toasts).toContain(t('local.notSavedShort')));
+      expect(toasts).not.toContain(t('next.themes.kept', { name: 'Harbour Lights' }));
+    } finally {
+      undo();
+    }
+    y.destroy();
+  });
+
+  it('Keep them, storage refusing: the offer stays unanswered (shown again), "Not saved" said', async () => {
+    const book = styledBook();
+    const { y, root } = open(book);
+    await vi.waitFor(() => expect(root.querySelector('#btnMineOfferYes')).not.toBeNull());
+    const undo = storageRefuses();
+    try {
+      fireEvent.click(root.querySelector('#btnMineOfferYes')!);
+      await vi.waitFor(() => expect(toasts).toContain(t('local.notSavedShort')));
+      expect(localStorage.getItem(offerKey(String((book.meta as Rec).bookId)))).toBeNull();
+    } finally {
+      undo();
+    }
+    y.destroy();
+  });
+});
+
 describe('keep, apply, remove', () => {
   it("keep from a book theme's card (not applying it), then apply in another book, then remove: the book keeps the theme", async () => {
     const a = open(styledBook());
