@@ -24,6 +24,8 @@ export function apiFetch(path: string, opts: Record<string, unknown> = {}): Prom
       const f = fetcher ?? globalThis.fetch.bind(globalThis);
       const res = await f(path, { method: (opts.method as string) || 'GET', credentials: 'same-origin', headers, body: opts.body === undefined ? undefined : (opts.body as string) });
       if (res.status === 204) return {};
+      // wave 4c: 1.0's BEUK:epub-server line — a file, not JSON (the wrap download, POST /api/wrap)
+      if (opts.blob && res.ok) return { __blob: await res.blob(), __headers: res.headers };
       const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
       if (!res.ok) return { __error: (data && data.error) || 'HTTP ' + res.status, __status: res.status, __body: data };
       return data || {};

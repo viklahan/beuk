@@ -22,6 +22,7 @@ import { syncClosureLocale } from '../closure/index';
 import { TourHost } from '../tour/TourHost';
 import { StyleTab } from '../style/StyleTab';
 import { PreviewPane } from '../preview/PreviewPane';
+import { CoverMaker } from '../cover/CoverMaker';
 import { Icon } from './Icon';
 import { LangMenu } from './LangMenu';
 import { ThemeButton } from './ThemeButton';
@@ -316,6 +317,7 @@ export function Shell() {
       <GoalsDialog open={dialog === 'goals' && bookOpen} onClose={() => setDialog(null)} />
       <EnvironmentHost setCenter={setCenter} />
       <CovenantHost />
+      {bookOpen ? <CoverMaker key={bk.book!.id + ':' + bk.book!.epoch} /> : null}
     </div>
   );
 }

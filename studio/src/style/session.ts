@@ -313,9 +313,16 @@ const TAGS = new Set(['div', 'span', 'p', 'b', 'i', 'em', 'strong', 'small', 'br
   'svg', 'g', 'path', 'rect', 'circle']);
 const ATTRS = new Set(['class', 'id', 'title', 'alt', 'role', 'tabindex', 'type', 'value', 'label', 'for', 'min', 'max', 'step', 'checked', 'disabled', 'selected',
   'placeholder', 'xmlns', 'viewbox', 'focusable', 'width', 'height', 'x', 'y', 'cx', 'cy', 'r', 'rx', 'ry', 'd', 'fill', 'stroke', 'stroke-width',
-  'stroke-linecap', 'stroke-linejoin', 'opacity', 'src', 'style']);
+  'stroke-linecap', 'stroke-linejoin', 'opacity', 'src', 'style',
+  // wave 4c: the cover maker's spine and back controls (sbBuildControls: a text's maxlength, a file input's accept)
+  'maxlength', 'accept']);
 const STYLE_PROPS = new Set(['font-family', 'font-size', 'font-weight', 'font-style', 'font-variant', 'text-align', 'text-transform', 'letter-spacing',
-  'line-height', 'opacity', 'margin', 'margin-top', 'margin-bottom', 'display', '--sw']);
+  'line-height', 'opacity', 'margin', 'margin-top', 'margin-bottom', 'display', '--sw',
+  // wave 4c: the cover maker's swatches (background) and the hardcover legend (color, background), paint values only
+  'color', 'background', 'background-color']);
+/** Wave 4c: a paint value — a hex colour, rgb()/rgba() of plain numbers, a custom property of the app, or a keyword. */
+const PAINT_CSS = /^(#[0-9a-f]{3,8}|rgba?\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?\s*(,\s*[\d.]+%?\s*)?\)|var\(--[\w-]+\)|[a-z]+)$/i;
+const PAINT_PROPS = new Set(['color', 'background', 'background-color']);
 /** A plain CSS value: words, numbers, units, quotes, commas, hashes — nothing that loads or escapes. */
 const PLAIN_CSS = /^[\p{L}\p{M}\p{N}\s#.,%'"+_-]*$/u;
 const SVG_PAINT = /^(none|currentColor|#[0-9a-f]{3,8}|var\(--[\w-]+(,\s*#[0-9a-f]{3,8})?\))$/i;
@@ -329,7 +336,9 @@ function cleanStyle(v: string): string {
     const m = /^\s*(--sw|[a-z-]+)\s*:\s*([\s\S]*?)\s*$/i.exec(decl);
     if (!m) continue;
     const prop = m[1]!.toLowerCase(), val = m[2]!;
-    if (STYLE_PROPS.has(prop) && PLAIN_CSS.test(val) && !/url|expression|javascript/i.test(val)) out.push(prop + ':' + val);
+    if (PAINT_PROPS.has(prop)) {
+      if (PAINT_CSS.test(val.trim())) out.push(prop + ':' + val);
+    } else if (STYLE_PROPS.has(prop) && PLAIN_CSS.test(val) && !/url|expression|javascript/i.test(val)) out.push(prop + ':' + val);
   }
   return out.length ? out.join(';') + (/;\s*$/.test(v) ? ';' : '') : '';
 }
@@ -412,10 +421,18 @@ function guarded(el: Element): Element {
 }
 /** The Style tab's root (StyleTab sets it while mounted). */
 export const styleRoot: { el: HTMLElement | null } = { el: null };
+/** Wave 4c: more roots whose descendants 1.0's code writes HTML into (the cover maker, Project Settings' cover row):
+ *  each one's descendants are reached through the cleaner (the root itself is handed over as it is: 1.0 compares a
+ *  click's target with it), a canvas never (1.0 only paints them, and draws one canvas into another). */
+export const guardRoots = new Set<Element>();
 const page$ = pageEnv.$;
 pageEnv.$ = (id: string) => {
   const el = page$(id);
-  return el instanceof Element && styleRoot.el && styleRoot.el.contains(el) ? guarded(el) : el;
+  if (!(el instanceof Element)) return el;
+  if (styleRoot.el && styleRoot.el.contains(el)) return guarded(el);
+  if (typeof HTMLCanvasElement !== 'undefined' && el instanceof HTMLCanvasElement) return el;
+  for (const r of guardRoots) if (r !== el && r.contains(el)) return guarded(el);
+  return el;
 };
 
 /* ---- at the source: book values 1.0's code takes unescaped ----

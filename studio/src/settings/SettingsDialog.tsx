@@ -8,6 +8,7 @@ import { Dialog } from '../shell/Dialog';
 import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import { covRun } from '../covenant/covenant';
+import { CoverRow } from '../cover/CoverRow';
 import { bookLanguages, formFromMeta, langHint, rightsPreviewLine, settingsChange, supportEmailFrom, type SettingsForm } from './settings';
 
 /* Project Settings (1.0 #modalSettings), with 1.0's markup, ids and keys:
@@ -19,8 +20,7 @@ import { bookLanguages, formFromMeta, langHint, rightsPreviewLine, settingsChang
    1.0's beukSupportLoad).
 
    Not here yet, each in its own wave (their places are marked below):
-   "Detect from my text" (language detection, wave 3), the cover row (the
-   cover maker, wave 4), the install button (wave 7 with the app shell) and
+   "Detect from my text" (language detection, wave 3), the install button (wave 7 with the app shell) and
    the error-report toggle (error reporting, wave 7).
 
    Save writes the book's `meta` once, through Yjs, and only when it
@@ -272,7 +272,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               {t('set.a11ySummaryNote')}
             </p>
           </div>
-          {/* the cover row (Upload / Make a Cover / Remove) comes with the cover maker, wave 4 */}
+          {/* wave 4c: the cover row (Upload Cover / Make a Cover / Remove), 1.0's markup and handlers */}
+          <CoverRow />
         </div>
       ) : null}
       <div className="about-box">

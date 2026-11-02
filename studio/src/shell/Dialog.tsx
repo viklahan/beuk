@@ -114,13 +114,19 @@ export function Dialog(props: DialogProps) {
   return createPortal(<DialogBody {...props} />, document.body);
 }
 
-function DialogBody({ onClose, id, z, labelledBy, describedBy, role = 'dialog', className, modalStyle, children }: DialogProps) {
+/** Wave 4c: a modal whose markup 1.0's own code opens and closes (`.modal-back.open`: the cover maker) takes its place
+ *  on the stack while it is open — Escape closes only the top one, Tab stays inside it, focus moves in and returns to
+ *  the opener — exactly as a <Dialog>. Render it while the modal is open. */
+export function StackEntry({ box, onClose }: { box: { current: HTMLElement | null }; onClose: () => void }) {
+  useStackEntry(box, onClose);
+  return null;
+}
+
+function useStackEntry(box: { current: HTMLElement | null }, onClose: () => void) {
   const stack = useContext(StackContext);
   if (!stack) throw new Error('<Dialog> outside <DialogStackProvider>');
-  const box = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
-
   useLayoutEffect(() => {
     const opener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
     const pop = stack.push({ id: ++seq, close: () => close.current(), el: () => box.current });
@@ -147,6 +153,13 @@ function DialogBody({ onClose, id, z, labelledBy, describedBy, role = 'dialog', 
       }
     };
   }, [stack]);
+}
+
+function DialogBody({ onClose, id, z, labelledBy, describedBy, role = 'dialog', className, modalStyle, children }: DialogProps) {
+  const box = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useStackEntry(box, onClose);
 
   return (
     <div

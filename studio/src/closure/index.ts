@@ -580,6 +580,7 @@ export type ClosureApi = {
   FLOURISH_PREFIX: string;
   // wave 4c (D3, D4): the cover maker, spine, back, hardcover flaps and guides, the wrap and its 3D stand (src/cover)
   defaultCoverRecipe: () => Record<string, unknown> & { elements: Record<string, Record<string, unknown>> };
+  setElText: (el: Element, str: string) => void;
   initCoverMaker: () => void;
   openCoverMaker: () => void;
   drawMakerPreview: () => void;
