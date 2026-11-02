@@ -9,7 +9,7 @@ import { useToast } from '../shell/Toasts';
 import { guardRoots, styleRun } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
 import { coverClear, coverReady, coverUpload } from './cover';
-import { coverOpen, translateCover } from './CoverMaker';
+import { COVER_BUILT_EVENT, coverMakerBuilt, coverOpen, translateCover } from './CoverMaker';
 
 /* Wave 4c: Project Settings' cover row (1.0 #modalSettings "Cover Image · JPG or PNG"), its markup verbatim
    (src/generated/cover-markup.json), drawn by 1.0's own renderCoverSettings (through the session's cleaner: its
@@ -30,6 +30,7 @@ export function CoverRow() {
     let alive = true;
     let row: HTMLElement | null = null;
     let unobserve: (() => void) | null = null;
+    let offBuilt: (() => void) | null = null;
     void loadClosure().then((c) => {
       if (!alive) return;
       coverReady(c);
@@ -47,7 +48,15 @@ export function CoverRow() {
         input.value = '';
         if (file) void coverUpload(file, say).then(draw);
       });
-      row.querySelector('#btnCoverMake')!.addEventListener('click', () => coverOpen());
+      // the maker's own markup may still be on its way (Lucide, the closure): the button waits for it
+      const make = row.querySelector<HTMLButtonElement>('#btnCoverMake')!;
+      const ready = () => {
+        make.disabled = !coverMakerBuilt();
+      };
+      ready();
+      window.addEventListener(COVER_BUILT_EVENT, ready);
+      offBuilt = () => window.removeEventListener(COVER_BUILT_EVENT, ready);
+      make.addEventListener('click', () => coverOpen());
       row.querySelector('#btnCoverRemove')!.addEventListener('click', () => {
         coverClear(say);
         draw();
@@ -62,6 +71,7 @@ export function CoverRow() {
     return () => {
       alive = false;
       unobserve?.();
+      offBuilt?.();
       if (row) guardRoots.delete(row);
       host.innerHTML = '';
     };

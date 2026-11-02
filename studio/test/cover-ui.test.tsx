@@ -12,6 +12,7 @@ import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { styleReset } from '../src/style/session';
 import { coverFetch, policyPhotos } from '../src/cover/cover';
+import { allowedStockUrl } from '../src/pictures/stock';
 import { readBook } from '../../src/book/read';
 import { fixtures } from './fixtures';
 import { PNG_1PX } from './style-fixture';
@@ -238,6 +239,33 @@ describe('the cover maker in the studio', { timeout: 60_000 }, () => {
   });
 });
 
+describe('review round 2, Minor 2: "Make a Cover" before the maker is built', { timeout: 60_000 }, () => {
+  it('does nothing (the button waits) while the maker is not yet in place: no error, no working recipe left set', async () => {
+    const w = window as unknown as { lucide?: unknown };
+    const keep = w.lucide;
+    delete w.lucide; // jsdom never runs the script: the maker waits for Lucide, as a slow network would make it
+    try {
+      await importToDevice(LANTERN());
+      render(<LocaleProvider initial="en"><App /></LocaleProvider>);
+      await waitFor(() => expect($('tabBtnType').getAttribute('aria-disabled')).toBeNull(), { timeout: 20_000 });
+      await click($('btnSettings2'));
+      await waitFor(() => expect($('btnCoverMake')).toBeTruthy(), { timeout: 10_000 });
+      expect(document.getElementById('cmTitle')).toBeNull();
+      expect(($('btnCoverMake') as unknown as HTMLButtonElement).disabled).toBe(true);
+      const errors: unknown[] = [];
+      const onErr = (e: ErrorEvent) => errors.push(e.error);
+      window.addEventListener('error', onErr);
+      ($('btnCoverMake') as unknown as HTMLButtonElement).disabled = false; // even if it were clicked
+      await click($('btnCoverMake'));
+      window.removeEventListener('error', onErr);
+      expect(errors).toEqual([]);
+      expect(c.vars.cmRecipe).toBeNull();
+    } finally {
+      w.lucide = keep;
+    }
+  });
+});
+
 describe('the stock search under the served policy (constraint 44)', () => {
   it('results keep only the addresses the policy allows; a refused address is never fetched', async () => {
     const out = policyPhotos({ photos: [
@@ -256,5 +284,18 @@ describe('the stock search under the served policy (constraint 44)', () => {
     f.mockImplementation(async () => new Response('<html>not a picture</html>'));
     const bad = await coverFetch('https://images.pexels.com/p.png');
     await expect(bad.blob()).rejects.toThrow(/JPEG or a PNG/);
+  });
+
+  it('review round 2, Minor 3: a result naming this origin (absolute or relative) is not a stock address; a same-origin body read as a picture is sniffed too', async () => {
+    const here = location.origin;
+    for (const u of [here + '/api/me.png', '/api/me.png', 'me.png', '//images.pexels.com/x.jpg']) expect(allowedStockUrl(u), u).toBe(false);
+    expect(allowedStockUrl('https://images.pexels.com/photos/1/x.jpeg')).toBe(true); // the shelf's proxy hands Pexels' own addresses
+    const out = policyPhotos({ photos: [{ photographer: 'S', src: { medium: '/api/account', large: here + '/x.png' } }] }) as { photos: unknown[] };
+    expect(out.photos).toEqual([]);
+    const f = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('{"secret":1}', { headers: { 'content-type': 'image/png' } }));
+    const r = await coverFetch(here + '/assets/x.png');
+    await expect(r.blob()).rejects.toThrow(/JPEG or a PNG/);
+    f.mockImplementation(async () => new Response(Uint8Array.from(atob(PNG_1PX), (ch) => ch.charCodeAt(0))));
+    expect((await (await coverFetch(here + '/assets/x.png')).blob()).type).toBe('image/png');
   });
 });

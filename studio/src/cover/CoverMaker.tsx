@@ -97,8 +97,19 @@ export function resetMakerState(c: Closure): void {
   c.vars.cmWrapGuides = true;
 }
 
-/** Open 1.0's cover maker (Project Settings' "Make a Cover", 1.0's #btnCoverMake). */
+/** Whether the maker's markup is in place and wired (review round 2, Minor 2: until then 1.0's openCoverMaker would
+ *  throw at its first control and leave its working recipe set). A change is announced on the window. */
+let built = false;
+export const coverMakerBuilt = (): boolean => built;
+export const COVER_BUILT_EVENT = 'beuk:covermaker';
+function setBuilt(v: boolean): void {
+  built = v;
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(COVER_BUILT_EVENT));
+}
+
+/** Open 1.0's cover maker (Project Settings' "Make a Cover", 1.0's #btnCoverMake); nothing before it is built. */
 export function coverOpen(): void {
+  if (!built) return;
   styleRun((c) => c.api.openCoverMaker());
 }
 
@@ -152,10 +163,12 @@ export function CoverMaker() {
           pageEnv.$ = page$;
         }
         (window as unknown as { beukCover?: unknown }).beukCover = coverSeam;
+        setBuilt(true);
       })
       .catch(() => undefined);
     return () => {
       alive = false;
+      if (built) setBuilt(false);
       styleSettle();
       unguard?.();
       mo?.disconnect();
