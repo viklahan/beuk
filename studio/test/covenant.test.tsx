@@ -405,6 +405,32 @@ describe('the Covenant room in the studio', { timeout: 60_000 }, () => {
     expect(document.querySelector(`.bib-item[data-bib-id="${e.id as string}"] .bib-item-name`)?.textContent).toBe('Mara Quill');
   });
 
+  it("the room's typing is written after 300 ms of quiet, as 1.0 saves (one write for a burst, not one per keystroke); closing the room writes at once (review of wave 3b, should-fix 2)", async () => {
+    await studioWith(book('Paused', { bible: { entries: [{ id: 'p1', type: 'character', name: 'Mara' }] } }));
+    await openRoom();
+    act(() => document.querySelector<HTMLElement>('.bib-item[data-bib-id="p1"]')!.click());
+    await waitFor(() => expect(document.getElementById('bibFDesc')).not.toBeNull());
+    const y = desk.ydoc!;
+    let writes = 0;
+    const count = (e: Y.YMapEvent<unknown>) => {
+      if (e.keysChanged.has('bible')) writes++;
+    };
+    y.getMap('meta').observe(count);
+    try {
+      for (const v of ['k', 'ke', 'kee', 'keep', 'keeper']) typeIn($('bibFDesc'), v);
+      expect(writes).toBe(0);
+      await waitFor(() => expect(writes).toBe(1), { timeout: 2000 });
+      expect(((exportBook(y).bible as { entries: Rec[] }).entries[0]!).description).toBe('keeper');
+      typeIn($('bibFDesc'), 'keeper of the light');
+      expect(writes).toBe(1);
+      act(() => $('btnCloseBible').click());
+      expect(writes).toBe(2);
+      expect(((exportBook(y).bible as { entries: Rec[] }).entries[0]!).description).toBe('keeper of the light');
+    } finally {
+      y.getMap('meta').unobserve(count);
+    }
+  });
+
   it('bible.seed.frominsights: "Add from Story Insights" offers exactly the names Names on stage found, with their counts; opening it or Add with nothing chosen creates nothing; a forged name is never added', async () => {
     await studioWith(book('A Test of Tides'));
     const found = covRun((cc) => cc.api.castVisible(cc.api.castCompute((cc.getState() as Rec).sections as unknown[], 'en', 'A Test of Tides'), []))!;
@@ -513,14 +539,14 @@ describe("1.0's editorSyncedSectionId: the section the editor holds, by the sect
     const y = onDesk(book('Guard', { bible: { entries: [{ id: 'g1', type: 'character', name: 'Mara' }] } }));
     const maps = sectionList(y);
     const fake = { isDestroyed: false } as unknown as Editor;
-    setActiveEditor(fake, 1, maps[0]!); // mounted at index 1, but it holds the first section
+    setActiveEditor(fake, 1, maps[0] as Y.Map<unknown>); // mounted at index 1, but it holds the first section
     desk.active = 1;
     try {
       const c = covRun((cc) => cc)!;
       expect((c.getState() as Rec).activeId).toBe('bibc2');
       expect(c.vars.editorSyncedSectionId).toBe('bibc1');
       // and once the editor holds the desk's section, they agree
-      setActiveEditor(fake, 1, maps[1]!);
+      setActiveEditor(fake, 1, maps[1] as Y.Map<unknown>);
       covReset();
       const c2 = covRun((cc) => cc)!;
       expect(c2.vars.editorSyncedSectionId).toBe((c2.getState() as Rec).activeId);

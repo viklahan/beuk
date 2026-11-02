@@ -225,14 +225,17 @@ export class OpenBook {
     this.control?.postMessage({ replaced: this.epoch });
   }
 
-  /** The book as book-format v1 (the `book` of a backup file). */
+  /** The book as book-format v1 (the `book` of a backup file). What a feature still holds unwritten (the Covenant
+   *  room's 300 ms pause) is written first. */
   export(): Rec {
+    settleWrites();
     return exportBook(this.ydoc);
   }
 
   /** Close this book here (the data stays on the device). */
   async close(): Promise<void> {
     if (this.closed) return;
+    settleWrites();
     this.closed = true;
     this.onStale = null;
     this.ydoc.off('update', this.relay);
@@ -389,4 +392,17 @@ export async function forgetBook(id: string): Promise<void> {
   const known = r.books.filter((b) => b.id === id).map((b) => b.epoch);
   writeRegistry({ v: 1, last: r.last === id ? null : r.last, books: r.books.filter((b) => b.id !== id) });
   await dropOlderGenerations(id, '', [LEGACY_EPOCH, ...known]);
+}
+
+/* Writes a feature holds back for a pause (1.0 saved the book a moment after an edit; the Covenant room writes after
+   300 ms of quiet): every one is written before the book is exported or closed. */
+const settlers = new Set<() => void>();
+/** Register a writer to settle before an export or a close; returns the unregister. */
+export function onSettleWrites(fn: () => void): () => void {
+  settlers.add(fn);
+  return () => settlers.delete(fn);
+}
+/** Write everything held back now. */
+export function settleWrites(): void {
+  for (const fn of settlers) fn();
 }

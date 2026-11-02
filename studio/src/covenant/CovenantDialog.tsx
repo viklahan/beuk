@@ -12,7 +12,7 @@ import { useToast } from '../shell/Toasts';
 import { activeEditor } from '../editor/active';
 import { toBook } from '../editor/bridge';
 import { desk } from '../environment/page';
-import { covEnv, covRun, covUi } from './covenant';
+import { covEnv, covRun, covRunPaused, covSettle, covUi } from './covenant';
 import { installSeriesNet, installSeriesRetry } from './net';
 import { probeCloud } from '../pictures/stock';
 import { covenantDesk, setMarksClosure } from './marks';
@@ -337,7 +337,8 @@ function CovenantWiring({ openId, openN, onClose }: { openId?: string; openN: nu
       on(det, 'input', (e) => {
         const el = e.target as HTMLElement | null;
         if (!el || !el.getAttribute) return;
-        run(() => {
+        // typing: written after 300 ms of quiet, as 1.0 saves (covenant.ts covRunPaused)
+        covRunPaused(() => {
           if (el.hasAttribute('data-fact')) a.bibleOnFact(el);
           else if (el.hasAttribute('data-fld-id')) a.bibleRenameField(el.getAttribute('data-fld-type'), el.getAttribute('data-fld-id'), (el as HTMLInputElement).value);
           else if (el.getAttribute('data-f') && el.tagName !== 'SELECT') a.bibleOnField(el);
@@ -510,6 +511,7 @@ function CovenantWiring({ openId, openN, onClose }: { openId?: string; openN: nu
     return () => {
       alive = false;
       off.forEach((f) => f());
+      covSettle(); // the room's last typing is written as it closes
       // 1.0's bibleClose (its olOnStructure is the Outline's own re-render from the book); the desk redraws its marks
       covenantDesk.refresh();
     };

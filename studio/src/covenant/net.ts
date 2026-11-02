@@ -1,5 +1,5 @@
 import { cloudFacts, covEnv, type Closure } from '../closure/index';
-import { covRun, resumeOn } from './covenant';
+import { covRun, covSettle, resumeOn } from './covenant';
 
 /* 1.0's apiFetch / apiFetchReal (client/index.html "transport"), for the series Covenant: the guards run first and
    synchronously (no shelf: null; signed out: null unless opts.auth === false), then the same request (same-origin
@@ -68,6 +68,7 @@ export function seriesRetryTick(): void {
 }
 /** The page hides: an edit still in its pause is taken, and the series save goes. */
 export function seriesOnHide(): void {
+  covSettle(); // the room's last typing reaches the book too (store.ts persists it)
   covRun((c) => {
     c.api.bibleSeriesFlushOnHide();
     const sy = c.api.bibleSeriesSync as unknown as SyncState;

@@ -5,6 +5,7 @@ import { getMeta, setMeta } from '../book/hooks';
 import { placeKey } from '../notebook/notebook';
 import { repackHistory } from '../history/history';
 import { desk } from '../environment/page';
+import { onSettleWrites } from '../book/store';
 import { activeEditorSectionId } from '../editor/active';
 
 /* Step 5 wave 3b (inventory C6): the Covenant — the data side.
@@ -138,7 +139,7 @@ export function covEnter(): Closure | null {
   if (!(s && s.ydoc === ydoc && s.ver === verOf(ydoc).n && c.getState() === s.state)) {
     /* what 1.0 changed in the session so far is written BEFORE the state is built again: a call that sets off another
        (1.0's popover handing the caret back to the editor, whose own code reads the book) must not lose it */
-    if (s && s.ydoc === ydoc) covFlush();
+    if (s && (s.ydoc === ydoc || held)) covFlush();
     session = build(c, ydoc);
   }
   else {
@@ -152,6 +153,10 @@ export function covEnter(): Closure | null {
 
 /** Write what 1.0 changed: the Covenant as serializeBook writes it, and the pictures an import added. */
 export function covFlush(): void {
+  if (held) {
+    clearTimeout(held);
+    held = null;
+  }
   const c = closureIfLoaded();
   const s = session;
   if (!c || !s) return;
@@ -274,7 +279,8 @@ export function covBegin(): (() => void) | null {
         kept = null;
       }
       try {
-        covFlush();
+        if (pauseWrite) hold();
+        else covFlush();
       } finally {
         adoptTimers(c);
         depth--;
@@ -284,6 +290,41 @@ export function covBegin(): (() => void) | null {
     }
     depth--;
   };
+}
+
+/* ---- the room's typing: written after a pause ----
+   1.0 saves the book 300 ms after the last edit in the room (bibleTouched → saveTimer). Writing the whole Covenant
+   into the Y.Doc on every keystroke would send it (all its entries, notes included) through Yjs, the device store
+   and every synced tab per keystroke: the room's typing (covRunPaused) is written after 300 ms of quiet instead.
+   Until then the session's state holds it, and every reader of the Covenant reads it there (covEnter keeps the
+   state while the book is unchanged). It is written at once when anything rebuilds the state (the book changed:
+   covEnter flushes first), when the room closes, when the page hides, and before the book is exported or closed
+   (store.ts settleWrites). Review of wave 3b, should-fix 2. */
+const PAUSE_MS = 300;
+let held: ReturnType<typeof setTimeout> | null = null;
+let pauseWrite = false;
+function hold(): void {
+  if (held) clearTimeout(held);
+  held = setTimeout(() => {
+    held = null;
+    if (depth > 0) return hold(); // a call is running: it writes when it returns
+    covFlush();
+  }, PAUSE_MS);
+}
+/** Write a held edit now (nothing when none is held). */
+export function covSettle(): void {
+  if (held && depth === 0) covFlush();
+}
+onSettleWrites(covSettle);
+/** covRun for the room's typing: what `fn` changed is written after a pause in typing. */
+export function covRunPaused<T>(fn: (c: Closure) => T): T | undefined {
+  if (depth > 0) return covRun(fn);
+  pauseWrite = true;
+  try {
+    return covRun(fn);
+  } finally {
+    pauseWrite = false;
+  }
 }
 
 /** 1.0's Covenant code on the open book: `fn` runs on 1.0's state of it; what it changed is written when it returns.
@@ -360,6 +401,8 @@ export function covEntries(): BibleEntry[] {
 
 /** Forget the session (a test, or the book went). */
 export function covReset(): void {
+  if (held) clearTimeout(held);
+  held = null;
   session = null;
 }
 
