@@ -4095,7 +4095,10 @@ function w4cHostileBook(base) {
   r.wrap = { ...r.wrap, blurb: tag(7), quote: tag(8), imprint: tag(9), flapFront: tag(10), flapBack: tag(11), binding: 'jacket" onclick="window.__pw=12', trim: '<b>', spine: { font: evil, color: 'red', text: tag(13), iconTop: { kind: 'lucide', name: '__proto__' }, iconBottom: { kind: 'upload', picId: 'constructor' } }, back: { font: evil, color: 'url(x)' } };
   r.bgImageId = 'hostile-pic';
   b.images = [...(b.images || []), { id: 'hostile-pic', name: 'x' + tag(14), mediaType: 'image/png" onerror="window.__pw=15', ext: 'png', data: 'iVBORw0KGgo=" onerror="window.__pw=16' },
-    { id: 'x" onclick="window.__pw=17', name: 'n', mediaType: 'image/png', ext: 'png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' }];
+    { id: 'x" onclick="window.__pw=17', name: 'n', mediaType: 'image/png', ext: 'png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' },
+    // review, Important 2: ids that would add the maker's own ids to the page
+    { id: 'x" id="cmWrapCanvas', name: 'w', mediaType: 'image/png', ext: 'png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' },
+    { id: 'y" id="cmPhotoQuery" value="evil', name: 'q', mediaType: 'image/png', ext: 'png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' }];
   b.cover = { data: '/9j/" onerror="window.__pw=18', mediaType: 'image/jpeg"><script>window.__pw=19</script>', ext: 'jpg', name: tag(20) };
   b.fonts = [{ id: 'fbad', name: 'b.ttf', family: evil, ext: 'ttf', mediaType: 'font/ttf', data: 'AAAA' }];
   return b;
@@ -4131,9 +4134,11 @@ async function wave4cHostile(origin) {
       const src = els.flatMap((el) => [...el.attributes].filter((a) => /^(src|href|srcset|xlink:href)$/i.test(a.name) && !/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]*$/.test(a.value) && !/^blob:/.test(a.value)).map((a) => el.tagName + ' ' + a.name + '=' + a.value.slice(0, 60)));
       const scripts = root.querySelectorAll('script, iframe, object, embed, link, style').length;
       const css = [...document.styleSheets].flatMap((s) => { try { return [...s.cssRules].map((r) => r.cssText); } catch { return []; } }).filter((x) => /evil\.example/.test(x)).length;
-      return { on, src, scripts, css, pw: window.__pw ?? null, fonts: [...document.fonts].filter((f) => /evil|display: none/.test(f.family)).length };
+      const dupIds = ['cmWrapCanvas', 'cmPhotoQuery', 'cmCanvas', 'coverThumb'].filter((id) => document.querySelectorAll('#' + id).length > 1);
+      return { on, src, scripts, css, dupIds, pw: window.__pw ?? null, fonts: [...document.fonts].filter((f) => /evil|display: none/.test(f.family)).length };
     });
     const look = await page.evaluate(W4B_LOOK);
+    check(scan.dupIds.length === 0, `wave4c review (Important 2): no picture id adds an id of the maker's own (${scan.dupIds.join(', ') || 'none doubled'})`);
     check(scan.on.length === 0 && scan.src.length === 0 && scan.scripts === 0 && scan.pw === null, `wave4c constraint 43: the hostile cover (fonts, colours, markup in every text, picture data, the cover itself) gives no handler, no foreign source, no script in the maker or the cover row; nothing ran (${JSON.stringify(scan).slice(0, 300)})`);
     check(scan.css === 0 && scan.fonts === 0, `wave4c constraint 43: no stylesheet and no face names anything of the hostile book (${scan.css} rules, ${scan.fonts} faces)`);
     check(JSON.stringify(look) === JSON.stringify(lookHonest), 'wave4c constraint 43: the app outside the maker looks exactly as with the honest book (8 elements × 11 computed properties)');
