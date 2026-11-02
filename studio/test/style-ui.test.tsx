@@ -210,7 +210,7 @@ describe('the Style tab in the studio', { timeout: 60_000 }, () => {
     await openTab();
     const bad: string[] = [];
     styleRun((cc) => {
-      const st = cc.getState() as Rec & { theme: Rec };
+      const st = cc.getState() as unknown as Rec & { theme: Rec };
       const keep = st.theme;
       try {
         for (const f of cc.api.BODY_FONTS) {
