@@ -2766,7 +2766,7 @@ async function wave3bChecks(origin) {
     await page.evaluate(() => { window.__lat = []; });
     let text = '';
     while (text.length < 300) text += words;
-    await page.keyboard.type(text.slice(0, count), { delay });
+    await page.keyboard.type(text.slice(0, 300), { delay: 30 });
     await page.waitForTimeout(400);
     const lat = (await page.evaluate(() => window.__lat)).slice().sort((x, y) => x - y);
     const q = (p) => lat[Math.min(lat.length - 1, Math.ceil(p * lat.length) - 1)];
