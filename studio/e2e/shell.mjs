@@ -175,9 +175,9 @@ async function cspAndOffline() {
 
 /** 1.0's parts 2.0 has not ported yet (step 5): hidden before comparing. */
 const ONE_HIDE =
-  '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, #tabBtnType, #tabBtnOutline, .pane-fold, #tipLayer, .beuk-tip,' +
+  '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, #tabBtnType, .pane-fold, #tipLayer, .beuk-tip,' +
   /* the sidebar's content below its two action buttons (step 5) */
-  ' #bulkHint, #importSummary, #irReopen { display: none !important; }' + // wave 1c: the sample bar and its tour link are in both
+  ' #bulkHint, #importSummary, #irReopen { display: none !important; }' + // wave 2c: Outline is ported, so 1.0 shows it too; wave 1c: the sample bar and its tour link are in both
   /* KNOWN 1.0 QUIRK, not reproduced: at phone widths 1.0 drops the pane
      borders (#panes .pane { border: none }), but its RTL swap rule
      (html[dir=rtl] #pane-structure { border-left: 1px … }) is more
