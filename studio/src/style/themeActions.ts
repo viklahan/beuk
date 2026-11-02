@@ -162,6 +162,9 @@ export async function applyMine(key: string): Promise<boolean> {
   // the book's own image ids (a picture the session hides from 1.0's code keeps its stored id there)
   const stored = ydoc ? getMetaValue(ydoc, 'images') : undefined;
   const bookIds = new Set(Array.isArray(stored) ? stored.filter(isRec).map((im) => String(im.id)) : []);
+  // the book's own families as stored (a face the session hides from 1.0's code keeps its family there)
+  const storedFonts = ydoc ? getMetaValue(ydoc, 'fonts') : undefined;
+  const bookFamilies = new Set(Array.isArray(storedFonts) ? storedFonts.filter(isRec).map((f) => String(f.family ?? '').trim()).filter(Boolean) : []);
   return (
     styleRun((c) => {
       const st = c.getState() as unknown as Rec & { fonts: Rec[]; images: Rec[]; customThemes: CustomTheme[] };
@@ -180,21 +183,24 @@ export async function applyMine(key: string): Promise<boolean> {
           continue;
         }
         const mediaType = FONT_EXT_MEDIA[a.ext]!;
-        const byFam = c.api.uploadedFontByFamily(a.family) as unknown as Rec | null;
-        if (byFam) {
-          // 1.0's handleFontFile: a face of the same family takes the new bytes
-          byFam.data = b.data;
-          byFam.ext = a.ext;
-          byFam.mediaType = mediaType;
-          if (a.name) byFam.name = a.name;
-          delete c.api.registeredFontIds[String(byFam.id)];
-        } else {
-          let id = a.id && !fontIds.has(a.id) ? a.id : c.api.uid();
-          while (fontIds.has(id)) id = c.api.uid();
-          fontIds.add(id);
-          st.fonts.push({ id, name: a.name || a.family + '.' + a.ext, family: a.family, ext: a.ext, mediaType, data: b.data });
+        // review round 2 (Important 3, overruling the first round's "same family takes the new bytes"): a click on a
+        // card is not an upload. A face of the same family with other bytes stays exactly as the book holds it — every
+        // other theme and text naming it keeps it, and removing the kept theme can never take it away — and the
+        // carried face joins under the first free "<family> 2", "<family> 3"… (the form 1.0's fontFamilyFromFile
+        // gives a file named "<family>-2.ttf"), the applied theme naming it as a deduped face is renamed
+        let family = a.family;
+        if (c.api.uploadedFontByFamily(a.family) || bookFamilies.has(a.family)) {
+          let n = 2;
+          const taken = (f: string) => !!c.api.uploadedFontByFamily(f) || bookFamilies.has(f) || c.api.ALL_LIBRARY_FONTS.includes(f);
+          while (taken(a.family + ' ' + n)) n++;
+          family = a.family + ' ' + n;
         }
-        fam.set(a.family, a.family);
+        let id = a.id && !fontIds.has(a.id) ? a.id : c.api.uid();
+        while (fontIds.has(id)) id = c.api.uid();
+        fontIds.add(id);
+        st.fonts.push({ id, name: a.name || family + '.' + a.ext, family, ext: a.ext, mediaType, data: b.data });
+        bookFamilies.add(family);
+        fam.set(a.family, family);
       }
       const ids = new Map<string, string>();
       const imageIds = new Set([...bookIds, ...st.images.filter(isRec).map((im) => String(im.id))]);

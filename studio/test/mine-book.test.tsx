@@ -183,7 +183,7 @@ describe('apply a My theme to another book (constraint 46: the book stays a 1.0 
     y.destroy();
   });
 
-  it("a book face of the same family with other bytes takes the theme's bytes (1.0's own upload rule, handleFontFile)", async () => {
+  it("review round 2 (Important 3): a book face of the same family with other bytes is kept untouched; the carried face joins as \"<family> 2\" and the applied theme names it", async () => {
     const a = onDesk(styledBook());
     tab();
     await saveToMine('ctHarbour');
@@ -191,14 +191,34 @@ describe('apply a My theme to another book (constraint 46: the book stays a 1.0 
     a.destroy();
     styleRelease();
     const b = LANTERN();
-    b.fonts = [{ id: 'old1', name: 'old.ttf', family: 'Writer Hand', ext: 'ttf', mediaType: 'font/ttf', data: ttfData(1600, 11) }];
+    const own = { id: 'old1', name: 'old.ttf', family: 'Writer Hand', ext: 'ttf', mediaType: 'font/ttf', data: ttfData(1600, 11) };
+    b.fonts = [own];
+    // the book wears its own Writer Hand, and a theme of its own names it too
+    b.theme = { ...(b.theme as Rec), headFont: 'Writer Hand' };
+    b.customThemes = [{ id: 'ctOwn', name: 'Own', theme: { ...(b.theme as Rec) } }];
     const y = onDesk(b);
     tab();
-    await applyMine('ctHarbour');
-    const fonts = exact(y).fonts as Rec[];
-    expect(fonts.length).toBe(1);
-    expect(fonts[0]!.id).toBe('old1');
-    expect(fonts[0]!.data).toBe((styledBook().fonts as Rec[])[0]!.data);
+    const ownTheme = JSON.parse(JSON.stringify((exact(y).customThemes as Rec[])[0]));
+    expect(await applyMine('ctHarbour')).toBe(true);
+    const out = exact(y);
+    const fonts = out.fonts as Rec[];
+    const carried = (styledBook().fonts as Rec[])[0]!;
+    expect(fonts[0]).toEqual(own); // the book's own face, untouched
+    expect(fonts.length).toBe(2);
+    expect(fonts[1]).toEqual({ ...carried, family: 'Writer Hand 2' });
+    // the book's own theme still names its own face (as 1.0's serializeBook writes a rewritten list: "header": null)
+    expect((out.customThemes as Rec[]).find((x) => x.id === 'ctOwn')).toEqual(JSON.parse(JSON.stringify(c.api.normalizeCustomTheme(ownTheme))));
+    expect((((out.customThemes as Rec[]).find((x) => x.id === 'ctOwn')!.theme) as Rec).headFont).toBe('Writer Hand');
+    const th = out.theme as Rec;
+    expect(th.headFont).toBe('Writer Hand 2');
+    expect(((th.header as Rec).number as Rec).font).toBe('Writer Hand 2');
+    expect(JSON.stringify(th)).not.toMatch(/"Writer Hand"/);
+    // applied again: the carried face (same bytes) is reused, nothing more added
+    expect(await applyMine('ctHarbour')).toBe(true);
+    expect((exact(y).fonts as Rec[]).length).toBe(2);
+    // deleting the kept theme leaves the book's own face as it was
+    await mineDelete('ctHarbour');
+    expect((exact(y).fonts as Rec[])[0]).toEqual(own);
     y.destroy();
   });
 
