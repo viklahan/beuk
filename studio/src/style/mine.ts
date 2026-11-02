@@ -229,7 +229,11 @@ export function ownerNow(): string {
   const u = cloudFacts.user as { id?: unknown } | null;
   return u && typeof u.id === 'string' && u.id ? 'u:' + u.id : DEVICE;
 }
-const signedIn = (owner: string) => owner !== DEVICE && cloudFacts.available && !!cloudFacts.user;
+/** Signed in as `o` now. 1.0 signs in and out inside the page (cloudSignOut, the sign-in dialog), so the owner the store
+ *  was loaded for is checked against the account signed in at every use (review, Important 1). */
+const signedIn = (o: string) => o !== DEVICE && cloudFacts.available && ownerNow() === o;
+/** The store was loaded for someone who is not the one signed in now: nothing of theirs is listed, applied or sent. */
+const stale = () => ownerNow() !== owner;
 
 let owner = DEVICE;
 let recs: MineRec[] = [];
@@ -248,11 +252,12 @@ export function mineSubscribe(fn: () => void): () => void {
 export const mineVersion = (): number => ver;
 /** The writer's themes, in the order they were first kept (deleted ones left out). */
 export function mineList(): MineRec[] {
+  if (stale()) return [];
   return recs.filter((r) => !r.deleted).sort((a, b) => a.at - b.at || (a.key < b.key ? -1 : 1));
 }
-export const mineGet = (key: string): MineRec | null => recs.find((r) => r.key === key && !r.deleted) ?? null;
+export const mineGet = (key: string): MineRec | null => (stale() ? null : recs.find((r) => r.key === key && !r.deleted) ?? null);
 export const mineOwner = (): string => owner;
-export const mineLoaded = (): boolean => loadedFor === owner;
+export const mineLoaded = (): boolean => loadedFor === owner && !stale();
 
 /** What the store tells the writer (MyThemes.tsx sets these from the string table). */
 export const mineUi: {
@@ -264,6 +269,11 @@ export const mineUi: {
 /** Read the current owner's themes from the device (and, signed in, refresh from the account). */
 export async function mineLoad(): Promise<void> {
   const o = ownerNow();
+  if (owner !== o) {
+    // another owner: the last one's list leaves memory at once (never listed, applied or sent as this one's)
+    recs = [];
+    loadedFor = null;
+  }
   owner = o;
   const raw = await idbOwnerThemes(o);
   if (owner !== o) return; // the owner changed while reading
@@ -289,6 +299,7 @@ const uid = () => 's' + Math.random().toString(36).slice(2, 9).padEnd(7, '0');
 export async function mineSave(rawDoc: MineDoc, bytes: Map<string, Bytes>): Promise<boolean> {
   const doc = cleanMineDoc(rawDoc);
   if (!doc) return false;
+  if (stale()) await mineLoad(); // kept for whoever is signed in now
   const prev = recs.find((r) => r.key === doc.id) ?? null;
   if (!prev || prev.deleted) {
     if (mineList().length >= MINE_MAX) {
@@ -320,6 +331,7 @@ export async function mineSave(rawDoc: MineDoc, bytes: Map<string, Bytes>): Prom
 /** Remove a theme from the list. Never touches a book. Signed in, the account's delete names the revision it saw: a
  *  theme changed on another device meanwhile comes back (its change wins over this delete; nothing is lost). */
 export async function mineDelete(key: string): Promise<boolean> {
+  if (stale()) return false;
   const r = recs.find((x) => x.key === key && !x.deleted);
   if (!r) return false;
   if (r.revision === null) {
@@ -342,7 +354,7 @@ export async function mineBytes(sha: string): Promise<Bytes | null> {
   const local = await idbAsset(o, sha);
   const lb = isRec(local) ? cleanBytes(sha, local) : null;
   if (lb) return lb;
-  if (!signedIn(o) || !SHA.test(sha)) return null;
+  if (stale() || !signedIn(o) || !SHA.test(sha)) return null;
   const r = await apiFetch('/api/pictures/' + sha);
   const pic = r && !r.__error && isRec(r.picture) ? r.picture : null;
   const b = pic ? cleanBytes(sha, pic) : null;
@@ -355,6 +367,7 @@ let running: Promise<void> | null = null;
 let again = false;
 /** Send what waits and read what changed on the account. One at a time; a call while one runs runs once more after. */
 export function mineSync(): Promise<void> {
+  if (stale()) return mineLoad(); // another account (or none) now: its own list, read and synced
   if (running) {
     again = true;
     return running;
@@ -429,7 +442,18 @@ async function sendPut(r: MineRec): Promise<void> {
   if (!res) return; // offline: waits, sent again later
   const st = status(res);
   const cur = recs.find((x) => x.key === r.key);
-  if (cur !== r) return; // changed here meanwhile: the next round sends the newer copy
+  if (cur !== r) {
+    // changed here meanwhile: the next round sends the newer copy — based on what this save made the account hold, so
+    // the writer's own earlier save is never taken for another device's change (review, Important 2)
+    const saved = !res.__error ? fromAccount(r.owner, res.theme, r.at) : null;
+    if (saved && cur && cur.revision === r.revision) {
+      const next: MineRec = { ...cur, revision: saved.revision };
+      await putRec(next);
+      setRec(next);
+    }
+    again = true;
+    return;
+  }
   if (!res.__error) {
     const saved = fromAccount(r.owner, res.theme, r.at);
     if (!saved) return;
@@ -455,6 +479,13 @@ async function sendPut(r: MineRec): Promise<void> {
 /** A stale write: the account's copy keeps the key; this device's edit is kept as a theme of its own, sent next. */
 async function keepBoth(r: MineRec, server: unknown): Promise<void> {
   const theirs = fromAccount(r.owner, server, r.at);
+  if (theirs && JSON.stringify(theirs.doc) === JSON.stringify(r.doc) && theirs.name === r.name) {
+    // the account already holds exactly this (a save whose answer was lost): take its revision, nothing to split
+    await putRec(theirs);
+    setRec(theirs);
+    emit();
+    return;
+  }
   let key = uid();
   while (recs.some((x) => x.key === key)) key = uid();
   const suffix = mineUi.deviceSuffix();
@@ -489,6 +520,11 @@ async function sendDelete(r: MineRec): Promise<void> {
       setRec(theirs);
       emit();
       mineUi.conflict(r.name);
+    } else {
+      // no usable copy came back: the delete is let go (never retried with a stale revision) and the list read again
+      await idbDelete(r.owner, r.key);
+      recs = recs.filter((x) => x.key !== r.key);
+      emit();
     }
   }
 }
@@ -555,7 +591,8 @@ const RETRY_MS = 30_000;
 const waiting = () => recs.some((r) => r.dirty && !r.refused);
 /** One retry: what waits is sent (nothing when nothing waits or signed out). */
 export function mineRetryTick(): void {
-  if (waiting() && signedIn(owner)) void mineSync();
+  if (stale()) void mineLoad();
+  else if (waiting() && signedIn(owner)) void mineSync();
 }
 /** While the studio runs: the retries, the send on page hide. Returns the cleanup. */
 export function installMineRetry(): () => void {

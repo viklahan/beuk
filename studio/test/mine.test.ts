@@ -12,6 +12,7 @@ import {
   mineLoad,
   mineMoveToAccount,
   mineReset,
+  mineRetryTick,
   mineSave,
   mineSync,
   mineUi,
@@ -258,6 +259,93 @@ describe('signed in: the account, with a device copy', () => {
     await mineSync();
     expect(mineList().map((r) => [r.key, r.refused])).toEqual([['t6', 'full']]);
     expect(refusals).toEqual(['Six:full']);
+  });
+});
+
+describe('review (Important 1): the account changes inside the page (1.0 signs in and out without a reload)', () => {
+  it("A's waiting theme is never sent to B, B's never kept under A, and nobody signed out lists A's", async () => {
+    signIn('ua');
+    await mineLoad();
+    acct.offline = true;
+    await mineSave(doc('ta1', 'Alice Waiting'), bytes());
+    await mineSync();
+    acct.offline = false;
+    // A signs out, in the page: the list is not A's any more
+    cloudFacts.user = null;
+    expect(mineList()).toEqual([]);
+    // B signs in, in the page, and a retry tick comes
+    signIn('ub');
+    acct.of(acct.themes).set('tb1', { name: 'Bob Theme', doc: doc('tb1', 'Bob Theme', false), revision: 1 });
+    mineRetryTick();
+    await mineSync();
+    expect(acct.of(acct.themes).has('ta1')).toBe(false);
+    expect(acct.of(acct.pictures).size).toBe(0);
+    expect(mineList().map((r) => r.name)).toEqual(['Bob Theme']);
+    // back to A: A's own list, B's never in it, A's waiting theme sent to A
+    signIn('ua');
+    await mineSync();
+    expect(mineList().map((r) => r.name)).toEqual(['Alice Waiting']);
+    expect(acct.of(acct.themes).get('ta1')?.name).toBe('Alice Waiting');
+  });
+});
+
+describe('review (Important 2): the writer\'s own earlier save is never a conflict', () => {
+  it('a second keep while the first PUT is in flight: one theme, sent at the newer revision, no "(this device)"', async () => {
+    signIn('ua');
+    await mineLoad();
+    const orig = acct.fetch;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((r) => (release = r));
+    let held = false;
+    acct.fetch = async (p, init) => {
+      if (!held && p === '/api/themes/t7' && init?.method === 'PUT') {
+        held = true;
+        await gate;
+      }
+      return orig(p, init);
+    };
+    setCovenantFetch(acct.fetch as typeof fetch);
+    await mineSave(doc('t7', 'First'), bytes());
+    const first = mineSync();
+    await new Promise((r) => setTimeout(r, 50));
+    await mineSave(doc('t7', 'Second'), bytes());
+    release();
+    await first;
+    await mineSync();
+    expect(mineList().map((r) => [r.key, r.name, r.dirty])).toEqual([['t7', 'Second', false]]);
+    expect(acct.of(acct.themes).get('t7')?.name).toBe('Second');
+    expect(acct.of(acct.themes).get('t7')?.revision).toBe(2);
+    expect(conflicts).toEqual([]);
+  });
+
+  it('a create whose answer was lost (428 with the same doc): the account copy is taken, nothing split', async () => {
+    signIn('ua');
+    acct.of(acct.pictures).set(fontSha, { mediaType: 'font/ttf', data: FONT });
+    acct.of(acct.pictures).set(svgSha, { mediaType: 'image/svg+xml', data: SVG });
+    await mineLoad();
+    await mineSave(doc('t8', 'Lost Answer'), bytes());
+    acct.of(acct.themes).set('t8', { name: 'Lost Answer', doc: JSON.parse(JSON.stringify(mineList()[0]!.doc)), revision: 1 });
+    await mineSync();
+    expect(mineList().map((r) => [r.key, r.revision, r.dirty])).toEqual([['t8', 1, false]]);
+    expect(conflicts).toEqual([]);
+  });
+});
+
+describe('review (Minor): a stale delete whose answer carries no theme does not retry forever', () => {
+  it('the tombstone goes and the list is read again', async () => {
+    signIn('ua');
+    await mineLoad();
+    await mineSave(doc('t9', 'Nine'), bytes());
+    await mineSync();
+    const orig = acct.fetch;
+    acct.fetch = async (p, init) => (p === '/api/themes/t9' && init?.method === 'DELETE' ? new Response(JSON.stringify({ error: 'revision conflict' }), { status: 409 }) : orig(p, init));
+    setCovenantFetch(acct.fetch as typeof fetch);
+    await mineDelete('t9');
+    await mineSync();
+    acct.log.length = 0;
+    await mineSync();
+    expect(acct.log.filter((l) => l.startsWith('DELETE'))).toEqual([]);
+    expect(mineList().map((r) => r.key)).toEqual(['t9']); // the account still holds it: listed again
   });
 });
 

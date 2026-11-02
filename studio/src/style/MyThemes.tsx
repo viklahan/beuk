@@ -5,7 +5,7 @@ import { desk } from '../environment/page';
 import type { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
 import icons from '../generated/icons.json';
-import { mineDelete, mineDeviceThemes, mineList, mineLoaded, mineMoveToAccount, mineOwner, mineSubscribe, mineUi, mineVersion, DEVICE, type MineRec } from './mine';
+import { mineDelete, mineDeviceThemes, mineList, mineLoad, mineLoaded, mineMoveToAccount, mineOwner, ownerNow, mineSubscribe, mineUi, mineVersion, DEVICE, type MineRec } from './mine';
 import { styleState, styleUi, themeSafe } from './session';
 import { applyMine, bookThemesNotInMine, listThemes, saveTheme, saveToMine } from './themeActions';
 
@@ -116,6 +116,11 @@ export function MyThemes({ t }: { t: T }) {
   const list = mineList();
   const owner = mineOwner();
   const signedIn = owner !== DEVICE && !!cloudFacts.user;
+
+  // review (Important 1): 1.0 signs in and out inside the page — the list drawn is always the signed-in account's
+  useEffect(() => {
+    if (ownerNow() !== mineOwner()) void mineLoad();
+  });
 
   // what the store says, in the interface language
   useEffect(() => {
