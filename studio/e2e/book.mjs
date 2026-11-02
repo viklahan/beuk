@@ -660,7 +660,7 @@ async function latency(origin) {
 
 /* ---- screenshots, next to 1.0 ---- */
 const ONE_HIDE =
-  '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, #tabBtnType, #tabBtnOutline, .pane-fold, #tipLayer, .beuk-tip,' +
+  '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, #tabBtnType, .pane-fold, #tipLayer, .beuk-tip,' +
   ' #bulkHint, #importSummary, #irReopen { display: none !important; }' + // wave 1c: the sample bar and its tour link are in both
   ' @media (max-width: 1023px) { html[dir="rtl"] #panes .pane { border: none !important; } }';
 
