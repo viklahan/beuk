@@ -285,6 +285,76 @@ export const PREVIEW_VARS = ['editorSyncedSectionId', 'editorTypedAt', 'pvFollow
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile',
   // wave 4c: the cover maker's uploads (its art, the back flap's photo, an uploaded spine icon) and the chosen stock photo
   'initCoverMaker', 'hcWireControls', 'sbWire', 'choosePexelsPhoto'];
+/** Review round 2 (Minor 5): the session's cleaner wraps only what 1.0's `$` hands out (src/style/session.ts guarded()).
+ *  A lifted cover-maker function (client/index.html "Cover maker" to "EPUB 3.2 packaging", and renderCoverSettings)
+ *  may write HTML (innerHTML, outerHTML, insertAdjacentHTML) only into a `$()` result — directly, through a local set
+ *  from one, or a conditional of two — except at these known-safe sites:
+ *  - sbRenderGrid: the icon grid, from Lucide's own icon nodes (sbIconSvg, every attribute esc()'d) and esc()'d names;
+ *  - sbSync: the spine icon's preview, sbIconSvg of a name lucideKey has held to a Lucide key, or a fixed <i>. */
+export const COVER_HTML_SAFE = ['sbRenderGrid', 'sbSync'];
+const COVER_FROM = '/* ================= Cover maker', COVER_TO = '/* ================= EPUB 3.2 packaging';
+/** The top-level names 1.0 declares in its cover-maker section (and renderCoverSettings). */
+export function coverSectionNames(html) {
+  const a = html.indexOf(COVER_FROM), b = html.indexOf(COVER_TO, a);
+  if (a < 0 || b < 0) fail("client/index.html no longer has its cover maker section's markers");
+  const sf = ts.createSourceFile('cover.js', html.slice(a, b), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const out = [];
+  for (const st of sf.statements) {
+    if (ts.isFunctionDeclaration(st) && st.name) out.push(st.name.text);
+    else if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name)) out.push(d.name.text);
+  }
+  return [...out, 'renderCoverSettings'];
+}
+/** Every HTML write in the named declarations of `code` (a module or createClosure's body), sorted by its receiver. */
+export function coverHtmlSinks(code, fns = coverSectionNames(readFileSync(path.join(REPO, 'client', 'index.html'), 'utf8'))) {
+  const sf = ts.createSourceFile('closure.js', code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const want = new Set(fns);
+  const tops = [];
+  const collect = (list) => {
+    for (const st of list) {
+      if (ts.isFunctionDeclaration(st) && st.name && want.has(st.name.text)) tops.push(st);
+      else if (ts.isFunctionDeclaration(st) && st.name && st.name.text === 'createClosure' && st.body) collect(st.body.statements);
+    }
+  };
+  collect(sf.statements);
+  const out = { guarded: 0, allowed: [], unguarded: [] };
+  for (const fn of tops) {
+    const name = fn.name.text;
+    const locals = new Map();
+    const scan = (n) => {
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer) (locals.get(n.name.text) || locals.set(n.name.text, []).get(n.name.text)).push(n.initializer);
+      ts.forEachChild(n, scan);
+    };
+    scan(fn);
+    const isDollar = (e, seen = new Set()) => {
+      while (ts.isParenthesizedExpression(e)) e = e.expression;
+      if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === '$') return true;
+      if (ts.isConditionalExpression(e)) return isDollar(e.whenTrue, seen) && isDollar(e.whenFalse, seen);
+      if (ts.isIdentifier(e) && locals.has(e.text) && !seen.has(e.text)) {
+        seen.add(e.text);
+        return locals.get(e.text).every((i) => isDollar(i, seen));
+      }
+      return false;
+    };
+    const walk = (n) => {
+      let recv = null, sink = '';
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isPropertyAccessExpression(n.left) && /^(innerHTML|outerHTML)$/.test(n.left.name.text)) {
+        recv = n.left.expression;
+        sink = n.left.name.text;
+      } else if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === 'insertAdjacentHTML') {
+        recv = n.expression.expression;
+        sink = 'insertAdjacentHTML';
+      }
+      if (recv) {
+        if (isDollar(recv)) out.guarded++;
+        else (COVER_HTML_SAFE.includes(name) ? out.allowed : out.unguarded).push({ fn: name, sink, at: recv.getText(sf).slice(0, 80) });
+      }
+      ts.forEachChild(n, walk);
+    };
+    walk(fn);
+  }
+  return out;
+}
 /** Lifted declarations that may read UI_STRINGS: each reads only every pack's "misc.untitledBook". */
 export const UI_STRINGS_READERS = ['imIsPlaceholderTitle'];
 /** Top-level names of 1.0 that the lifted code uses only as LOCAL names (the reachability walk is by name, not by
@@ -389,6 +459,9 @@ export async function buildClosureModule(html, epubSource) {
   }
   const strayFile = fileReaders.filter((n) => !FILEREADER_READERS.includes(n));
   if (strayFile.length) fail(`FileReader is read by ${strayFile.join(', ')}: only ${FILEREADER_READERS.join(', ')} may (its callbacks run in the Style tab's session)`);
+  // review round 2 (Minor 5): the cover maker writes HTML only into what the session's cleaner wraps
+  const sinks = coverHtmlSinks(src.code, coverSectionNames(html));
+  if (sinks.unguarded.length) fail(`the cover maker writes HTML into elements the session's cleaner does not wrap (not a $() result): ${sinks.unguarded.map((x) => x.fn + ' ' + x.sink + ' on ' + x.at).join('; ')}`);
   // each ATTACH statement where 1.0 has it, among the lifted declarations (extractStudioSource keeps them in 1.0's order)
   const code = attach.place(src.code, src.names);
   const api = [...new Set(roots)].filter((n) => src.names.includes(n));
