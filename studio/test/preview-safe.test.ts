@@ -103,3 +103,18 @@ describe('both sinks leave an honest book exactly as 1.0 made it', () => {
     expect(sheets).toBeGreaterThan(40);
   });
 });
+
+describe('at the source (the Style session’s sourceSafe): the theme values 1.0 writes unescaped', () => {
+  it('a headerStyle or indentDepth that is not a plain value becomes 1.0’s default; a plain one is kept', async () => {
+    const c = await loadClosure();
+    const { sourceSafe } = await import('../src/style/session');
+    const theme = (hs: string, ind: string) => ({ ...structuredClone(c.api.PRESETS[0]!.theme), headerStyle: hs, indentDepth: ind });
+    const st = { theme: theme('x" onmouseover="window.__pw=1', '1em;} body{display:none} .fc-page{'), customThemes: [{ id: 'a', name: 'A', theme: theme('y"><b', '2em)') }], fonts: [], images: [] };
+    sourceSafe(c, st as never, { fonts: [] });
+    expect([st.theme.headerStyle, st.theme.indentDepth]).toEqual(['classic_centered', '1.5em']);
+    expect([st.customThemes[0]!.theme.headerStyle, st.customThemes[0]!.theme.indentDepth]).toEqual(['classic_centered', '1.5em']);
+    const ok = { theme: theme('weird_style', '1.25em'), customThemes: [], fonts: [], images: [] };
+    sourceSafe(c, ok as never, { fonts: [] });
+    expect([ok.theme.headerStyle, ok.theme.indentDepth]).toEqual(['weird_style', '1.25em']);
+  });
+});

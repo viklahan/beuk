@@ -418,6 +418,9 @@ export const B64 = /^[A-Za-z0-9+/=\s]*$/;
 /** A family name safe in a quoted CSS string, a style attribute and a FontFace: letters (any script), digits, spaces
  *  and . , & ( ) + _ - only. */
 export const SAFE_FAMILY = /^[\p{L}\p{M}\p{N} _.,&()+-]+$/u;
+/** Wave 4b: a header style as a class name, and an indent as a plain CSS length. */
+const PLAIN_ID = /^[\w-]*$/;
+const PLAIN_LEN = /^\d*\.?\d+(em|rem|px|pt|%)?$/;
 function fontValid(f: unknown): f is Rec {
   return isRec(f) && (f.ext === 'ttf' || f.ext === 'otf') && typeof f.data === 'string' && !!f.data && typeof f.family === 'string' && !!f.family.trim();
 }
@@ -463,6 +466,10 @@ export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
     if (!ok(th.bodyFont)) th.bodyFont = 'EB Garamond';
     if (!ok(th.headFont)) th.headFont = 'Libre Baskerville';
     if (isRec(th.header)) for (const k of a.HD_KEYS) { const e = th.header[k]; if (isRec(e) && !ok(e.font)) e.font = th.headFont; }
+    // wave 4b: 1.0 writes these two into the preview's markup and CSS as they are (chapterOpeningHtml's class
+    // attribute, buildBookCss's text-indent): a value that is not a plain one becomes 1.0's default
+    if (typeof th.headerStyle === 'string' && !PLAIN_ID.test(th.headerStyle)) th.headerStyle = 'classic_centered';
+    if (typeof th.indentDepth === 'string' && !PLAIN_LEN.test(th.indentDepth)) th.indentDepth = '1.5em';
   };
   fix(st.theme);
   if (Array.isArray(st.customThemes)) for (const ct of st.customThemes) if (isRec(ct)) fix(ct.theme);
