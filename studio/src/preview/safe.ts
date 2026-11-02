@@ -161,7 +161,25 @@ function splitTop(sel: string, sep: string): string[] {
   return out;
 }
 
-type RuleLike = { type: number; cssText: string; selectorText?: string; cssRules?: ArrayLike<RuleLike>; conditionText?: string; media?: { mediaText: string }; style?: { cssText: string } };
+/* Review round 2: what 1.0's honest stylesheets never write (checked on every fixture's preview and hardcover sheets
+   and every preset: test/preview-safe.test.ts) and a book value could use to leave the page box or hide a load —
+   position fixed or sticky (over the app), any z-index, a custom property (--x: a value read elsewhere with var(),
+   where an escape could spell url), and a backslash outside a string (an escaped property or function name). */
+const STR = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g;
+function leavesPage(rule: RuleLike): boolean {
+  const st = rule.style as (CSSStyleDeclaration & { cssText: string }) | undefined;
+  const text = st?.cssText ?? rule.cssText;
+  if (/\\/.test(text.replace(STR, '""'))) return true;
+  if (/(^|[;{\s])--[\w-]*\s*:/.test(text)) return true;
+  if (st && typeof st.getPropertyValue === 'function') {
+    if (/^(fixed|sticky)$/i.test(st.getPropertyValue('position').trim())) return true;
+    if (st.getPropertyValue('z-index').trim()) return true;
+    for (let i = 0; i < (st.length ?? 0); i++) if (String(st[i]).startsWith('--')) return true;
+  }
+  return /position\s*:\s*(fixed|sticky)|z-index\s*:/i.test(text);
+}
+
+type RuleLike ={ type: number; cssText: string; selectorText?: string; cssRules?: ArrayLike<RuleLike>; conditionText?: string; media?: { mediaText: string }; style?: { cssText: string } };
 /** Keep `rule` when it is safe; returns its kept text (null: dropped) and counts drops into `n`. */
 function keep(rule: RuleLike, scope: string, n: { dropped: number; why: string[] }): string | null {
   const name = (rule as { constructor?: { name?: string } }).constructor?.name ?? '';
@@ -169,7 +187,7 @@ function keep(rule: RuleLike, scope: string, n: { dropped: number; why: string[]
   if (t === 1 || name === 'CSSStyleRule') {
     // a nested rule (1.0 writes none) could reach out of the scope (& ~ *) or load (& { background: url() }): dropped
     const nested = !!rule.cssRules && rule.cssRules.length > 0;
-    if (nested || !rule.selectorText || !selectorOk(rule.selectorText, scope) || !cssLoadsOnlySafe(rule.style?.cssText ?? rule.cssText)) {
+    if (nested || leavesPage(rule) || !rule.selectorText || !selectorOk(rule.selectorText, scope) || !cssLoadsOnlySafe(rule.style?.cssText ?? rule.cssText)) {
       n.dropped++;
       n.why.push(rule.cssText.slice(0, 160));
       return null;
@@ -209,6 +227,12 @@ function keep(rule: RuleLike, scope: string, n: { dropped: number; why: string[]
 export function cleanBookCss(css: string, scope: string): { css: string; dropped: number; why: string[] } {
   const text = String(css);
   const n = { dropped: /@import/i.test(text) ? 1 : 0, why: /@import/i.test(text) ? ['@import'] : [] };
+  // a backslash outside a string (1.0 writes none): the text is not handed over as it is, only the parsed rules,
+  // whose escapes the parser has resolved and whose resolved text is checked below
+  if (/\\/.test(text.replace(STR, '""'))) {
+    n.dropped++;
+    n.why.push('a backslash outside a string');
+  }
   let kept: string[];
   try {
     const sheet = new CSSStyleSheet();

@@ -161,4 +161,16 @@ describe('review round 2', () => {
     sourceSafe(c, ok as never, { fonts: [] });
     expect([ok.theme.fontSize, ok.theme.lineHeight, ok.theme.dropDepth]).toEqual([18.5, 1.7, 4]);
   });
+
+  it('Important 1b: a book rule that can leave the page box (position fixed or sticky, any z-index) is dropped', () => {
+    for (const css of ['.fc-page p { font-size: 1px; position: fixed; inset: 0; background: #fff; }', '.fc-page { position: sticky; top: 0; }', '.fc-page h1 { z-index: 99999; }'])
+      expect(cleanBookCss(css, '.fc-page').dropped, css).toBe(1);
+    expect(cleanBookCss('.fc-page .bd-layer { position: absolute; top: 0; }', '.fc-page').dropped).toBe(0);
+  });
+  it('Minor 3 (CSS): a custom property, and a backslash outside a string, are dropped (1.0 writes neither)', () => {
+    expect(cleanBookCss(String.raw`.fc-page p { --x: \75rl(//evil.example/x); background: var(--x); }`, '.fc-page').dropped).toBeGreaterThan(0);
+    expect(cleanBookCss('.fc-page p { --y: red; }', '.fc-page').dropped).toBe(1);
+    expect(cleanBookCss(String.raw`.fc-page p { b\61 ckground: red; }`, '.fc-page').dropped).toBeGreaterThan(0);
+    expect(cleanBookCss(String.raw`.fc-page p::before { content: "\201C"; }`, '.fc-page').dropped).toBe(0);
+  });
 });

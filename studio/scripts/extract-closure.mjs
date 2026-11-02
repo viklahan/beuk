@@ -236,7 +236,7 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
 export const PREVIEW_ROOTS = ['renderPreview', 'queuePreview', 'initPreview', 'setDevice', 'measurePages', 'goToPage', 'fitDeviceFrame', 'renderDeviceDisplayNote',
   'deviceReadingArea', 'scheduleDeskUpdate', 'updateDesk', 'renderDesk', 'renderDeskFacts', 'computeDeskCountsSync', 'deskState', 'deskSignature', 'deskGoToSection',
   'pvLeaving', 'pvResume', 'pvShowTitle', 'pvFlush', 'pvPageOfAnchor', 'pvCaretAnchor', 'pvPageAnchor', 'previewPageAtX', 'keepOrnamentsWithText', 'undoOrnamentRepairs',
-  'insGlancePages', 'statsPages', 'statsDeskReady', 'pageCountCache', 'sectionHtml', 'buildBookCss',
+  'insGlancePages', 'statsPages', 'statsDeskReady', 'pageCountCache', 'sectionHtml', 'buildBookCss', 'pivEnsureStyle',
   'COL_GAP', 'DEVICE_FOOTERS', 'DEVICE_FACTS', 'DEVICE_NAMES', 'PAGE_GEOMETRY', 'DEVICE_DISPLAY', 'DISPLAY_RENDER',
   // E2: the hardcover and full screen
   'hc', 'hcInit', 'hcRender', 'hcOnDevice', 'hcOnPreview', 'hcSetOpen', 'hcTurn', 'hcKey', 'hcEnsureModel', 'hcSignature', 'hcLook',
