@@ -1,0 +1,13 @@
+/* Wave 3a: 1.0's Zen layout rules (generated/environment.css, BEUK:zencalm) name 1.0's centre column, whose page is a
+   textarea that is a direct child of #panelContent:
+     body.zen #panelContent { display: flex; flex-direction: column; height: calc(100vh - 128px); }
+     body.zen #panelContent > * { flex: 0 0 auto; }
+     body.zen #panelContent > #editorArea { flex: 1 1 auto; min-height: 260px; height: auto; }
+     body.zen #panelContent.zen-led #editorArea { display: none !important; }
+   2.0's column is one level down (#panelContent > .desk) and its page is the editor's #manuscript: the same rules,
+   said of that column. The page scrolls inside itself, as 1.0's textarea does, so its last line is never under
+   Zen's bottom controls (zen.calm.manuscript-only). */
+body.zen #panelContent > .desk { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+body.zen #panelContent > .desk > * { flex: 0 0 auto; }
+body.zen #panelContent > .desk > #manuscript { flex: 1 1 auto; min-height: 260px; height: auto; overflow-y: auto; }
+body.zen #panelContent.zen-led #manuscript { display: none !important; }

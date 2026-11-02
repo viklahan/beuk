@@ -88,7 +88,9 @@ function precacheList(): Plugin {
         for (const f of e.css ?? []) files.add(f);
         for (const f of e.assets ?? []) files.add(f);
       }
-      const assets = [...files].sort().map((f) => BASE + f);
+      // wave 3a: 1.0's Zen paintings too (1.0's sw.js precaches them "so Zen is whole offline"); the sounds, as in 1.0,
+      // are not precached
+      const assets = [...[...files].sort(), ...ZEN_MEDIA.filter((f) => f.endsWith('.webp')).map((f) => 'assets/' + f)].map((f) => BASE + f);
       if (!assets.some((a) => a.endsWith('.js'))) throw new Error('beuk-precache: the manifest lists no script');
       const html = readFileSync(path.join(outDir, 'index.html'), 'utf8');
       const sw = readFileSync(path.join(outDir, 'sw.js'), 'utf8');

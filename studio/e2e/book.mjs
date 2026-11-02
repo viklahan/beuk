@@ -278,6 +278,36 @@ async function readOnlyRooms(page) {
   }
   await page.click('#tabBtnContent');
   done.push('the outline board (Cards, List, Grid, filters)');
+  // wave 3a (review focus #5): the Goals room opened and closed
+  await page.click('#btnGoals');
+  await page.waitForSelector('#modalGoals #goalsProgress', { timeout: 60_000 });
+  await page.click('#btnCloseGoals');
+  await page.waitForSelector('#modalGoals', { state: 'detached', timeout: 10_000 });
+  done.push('Goals');
+  // …and, on an open chapter, Zen entered and left by Escape, the Read Aloud popover and the dictation language picker
+  // opened and closed (nothing played, nothing dictated); the language bar is drawn on every chapter mounted above
+  if (await page.$('#btnZen')) {
+    await page.click('#btnZen');
+    await page.waitForFunction(() => document.body.classList.contains('zen'), null, { timeout: 10_000 });
+    await page.evaluate(() => window.beukZen.settle());
+    // Escape until it is gone (a tooltip shown on hover or focus takes the first Escape: 1.0, WCAG 1.4.13)
+    const escUntil = async (gone) => {
+      for (let i = 0; i < 3 && !(await page.evaluate(gone)); i++) {
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(150);
+      }
+      await page.waitForFunction(gone, null, { timeout: 10_000 });
+    };
+    await escUntil(() => !document.body.classList.contains('zen'));
+    await page.evaluate(() => window.beukZen.settle());
+    await page.click('#btnReadAloud');
+    await page.waitForSelector('#raPop:not([hidden])', { timeout: 10_000 });
+    await escUntil(() => document.getElementById('raPop').hidden);
+    await page.click('#btnDictate', { button: 'right' });
+    await page.waitForSelector('#dictPop.open', { timeout: 10_000 });
+    await escUntil(() => !document.querySelector('#dictPop.open'));
+    done.push('Zen, Read Aloud, the dictation picker');
+  }
   return done.join(' + ');
 }
 
@@ -1841,6 +1871,577 @@ async function notebookChecks(origin) {
   }
 }
 
+/* ---- wave 3a: goals, Zen, Read Aloud, dictation and the language bar, in Chromium ----
+   The speech APIs are stubbed in both apps the same way (W3A_SPEECH, before any page script): a fixed list of voices
+   that records what is spoken, and a SpeechRecognition that records each recogniser and lets the check speak into it.
+   Zen's checks are 1.0's own self-checks (zen.*), re-run against 2.0's page through 1.0's own seams
+   (window.beukZen / beukZenSound, which 2.0 publishes over the same lifted code); the page surface is 2.0's
+   #manuscript where 1.0 names its #editorArea textarea. */
+const W3A_SPEECH = () => {
+  const voices = [
+    { name: 'Samantha', lang: 'en-US', voiceURI: 'sam', default: true, localService: true },
+    { name: 'Daniel', lang: 'en-GB', voiceURI: 'dan', default: false, localService: true },
+    { name: 'Anna', lang: 'de-DE', voiceURI: 'anna', default: false, localService: true },
+    { name: 'Monica', lang: 'es-ES', voiceURI: 'mon', default: false, localService: true },
+  ];
+  window.__spoken = [];
+  class Utterance {
+    constructor(text) {
+      this.text = text;
+      this.lang = '';
+      this.voice = null;
+      this.onend = null;
+      this.onerror = null;
+    }
+  }
+  const synth = {
+    getVoices: () => voices,
+    speak: (u) => window.__spoken.push({ text: u.text, lang: u.lang, voice: u.voice ? u.voice.name : null }),
+    cancel() {}, pause() {}, resume() {}, addEventListener() {}, removeEventListener() {},
+    speaking: false, paused: false, pending: false,
+  };
+  Object.defineProperty(window, 'speechSynthesis', { configurable: true, get: () => synth });
+  window.SpeechSynthesisUtterance = Utterance;
+  window.__recs = [];
+  class Recognition {
+    constructor() {
+      window.__recs.push(this);
+      this.lang = '';
+      this.continuous = false;
+      this.interimResults = false;
+      this.aborted = false;
+    }
+    start() {}
+    stop() { if (this.onend) this.onend(); }
+    abort() { this.aborted = true; if (this.onend) this.onend(); }
+    emit(list) {
+      if (!this.onresult) return;
+      this.onresult({ resultIndex: 0, results: list.map(([s, fin]) => Object.assign([{ transcript: s }], { isFinal: !!fin })) });
+    }
+  }
+  window.SpeechRecognition = Recognition;
+  window.webkitSpeechRecognition = Recognition;
+};
+const W3A_ES = 'El viejo farero subía cada mañana las escaleras de piedra y miraba el mar que brillaba bajo el sol. No hablaba con nadie en el pueblo, pero todos lo conocían y los niños le llevaban pan y cartas. Cuando llegaba el invierno, la niebla cubría el puerto y él encendía la lámpara para los barcos.';
+const W3A_EN = 'The lighthouse keeper climbed the stone stairs every morning and looked out over the sea that shone under the sun. He spoke to no one in the village, but everyone knew him, and the children brought him bread and letters.';
+
+/** 1.0's zen self-checks, in the page (2.0 or 1.0): `ed` is the writing surface. Each returns [ok, detail]. */
+const ZEN_CHECKS = (edSel) => {
+  const $ = (id) => document.getElementById(id);
+  const Z = window.beukZen, snd = window.beukZenSound;
+  const ed = () => document.querySelector(edSel);
+  const vis = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden'; };
+  const out = {};
+  const run = (id, fn) => { try { out[id] = fn(); } catch (e) { out[id] = [false, 'threw ' + (e && e.stack ? e.stack : e)]; } finally { try { Z.overrideReducedMotion(null); Z.set(false); Z.settle(); Z.dayClock(null); Z.dayHidden(null); } catch { /* */ } } };
+  run('zen.transition.presence', () => {
+    Z.set(true);
+    const engaged = document.body.classList.contains('zen') && (!!$('zenTitle') || document.body.classList.contains('zen-fading') || document.body.classList.contains('zen-art-in') || Z.transitioning());
+    const flash = $('zenFlash');
+    const washCrossed = !!flash && (flash.classList.contains('go') || flash.classList.contains('go-out'));
+    Z.settle();
+    const mark = $('zenMark'), cluster = $('zenCluster');
+    let clusterOp = -1;
+    if (cluster) { cluster.style.transition = 'none'; clusterOp = parseFloat(getComputedStyle(cluster).opacity); cluster.style.transition = ''; }
+    const markVisible = !!mark && getComputedStyle(mark).display !== 'none' && clusterOp > 0;
+    const art = $('zenArt');
+    const wash = art ? art.querySelector('.zen-wash') : null, vig = art ? art.querySelector('.zen-vig') : null;
+    let washOp = -1, vigOp = -1;
+    if (wash) { wash.style.transition = 'none'; washOp = parseFloat(getComputedStyle(wash).opacity); wash.style.transition = ''; }
+    if (vig) { vig.style.transition = 'none'; vigOp = parseFloat(getComputedStyle(vig).opacity); vig.style.transition = ''; }
+    const settled = document.body.classList.contains('zen') && document.body.classList.contains('zen-art-in') && !!$('zenArt');
+    Z.set(false); Z.settle();
+    const gone = !document.body.classList.contains('zen') && !$('zenMark') && !$('zenCluster') && !$('zenArt') && !$('zenTitle') && !$('zenFlash');
+    return [engaged && washCrossed && markVisible && washOp > 0 && vigOp > 0 && settled && gone, `engaged ${engaged}, wash ${washCrossed}, mark ${markVisible} (cluster opacity ${clusterOp}), wash ${washOp} / vignette ${vigOp}, settled ${settled}, gone after exit ${gone}`];
+  });
+  run('zen.transition.reduced-motion', () => {
+    Z.overrideReducedMotion(true);
+    Z.set(true);
+    const title = $('zenTitle');
+    let titleOp = -1;
+    if (title) { title.style.transition = 'none'; titleOp = parseFloat(getComputedStyle(title).opacity); title.style.transition = ''; }
+    const presented = !!title && title.classList.contains('show') && titleOp > 0.9;
+    const opacityOnly = !document.body.classList.contains('zen-fading') && !document.body.classList.contains('zen-breath');
+    const art = $('zenArt');
+    const stillZen = document.body.classList.contains('zen-art-in') && !!art && !!art.querySelector('.zen-vig') && !!$('zenFlash');
+    Z.overrideReducedMotion(null); Z.set(false); Z.settle();
+    const gone = !$('zenTitle') && !$('zenArt') && !$('zenFlash');
+    return [presented && opacityOnly && stillZen && gone, `title shown at opacity ${titleOp} (${presented}), no settle/breath classes ${opacityOnly}, art and vignette ${stillZen}, gone ${gone}`];
+  });
+  run('zen.background.art', () => {
+    Z.set(true); Z.settle();
+    const art = $('zenArt'), paint = $('zenPaint');
+    const bg = paint ? getComputedStyle(paint).backgroundImage : '';
+    const present = !!art && !!paint && /assets\/zen\/(bliss|calm|mind|sakura)\.webp/.test(bg) && !$('zenArtSvg');
+    const noEvents = !!art && getComputedStyle(art).pointerEvents === 'none';
+    const behind = !!art && parseInt(getComputedStyle(art).zIndex, 10) < 0;
+    const edBg = ed() ? getComputedStyle(ed()).backgroundColor : '';
+    const m = edBg.match(/rgba?\(([^)]+)\)/);
+    const parts = m ? m[1].split(',').map((x) => parseFloat(x)) : [];
+    const opaque = parts.length === 3 || (parts.length === 4 && parts[3] >= 0.99);
+    Z.set(false); Z.settle();
+    const absent = !$('zenArt') && !$('zenArtSvg');
+    return [present && noEvents && behind && opaque && absent, `painting ${present} (${bg.slice(0, 70)}), pointer-events none ${noEvents}, behind ${behind}, the page surface ${edBg} (opaque ${opaque}), absent after exit ${absent}`];
+  });
+  run('zen.calm.manuscript-only', () => {
+    Z.set(true); Z.settle();
+    const tabsGone = !vis($('tabBtnContent')) && !vis($('tabBtnOutline')) && !vis($('tabBtnType'));
+    const det = $('zenDetailsToggle');
+    const foldedDetails = !!det && vis(det) && !vis($('secSettings')) && !vis($('editorMeta')) && det.getAttribute('aria-expanded') === 'false';
+    if (det) det.click();
+    const openDetails = vis($('secSettings')) && det.getAttribute('aria-expanded') === 'true';
+    if (det) det.click();
+    const noCount = !vis($('editorWordBar')) && getComputedStyle($('zenCount')).opacity === '0';
+    const er = ed().getBoundingClientRect(), pill = $('zenPill').getBoundingClientRect(), nav = $('zenNav') ? $('zenNav').getBoundingClientRect() : pill;
+    const tall = er.height >= window.innerHeight * 0.55 && er.bottom <= Math.min(pill.top, nav.top) + 1;
+    const snug = pill.width < 260;
+    const bg1 = $('zenPaint') ? getComputedStyle($('zenPaint')).backgroundImage : '';
+    const painted = /assets\/zen\/(bliss|calm|mind|sakura)\.webp/.test(bg1) && !$('zenArtSvg');
+    const listed = ['bliss', 'calm', 'mind', 'sakura'].every((k) => !!document.querySelector('#zenScenePop .zs-opt[data-paint="' + k + '"]'));
+    const sak = document.querySelector('#zenScenePop .zs-opt[data-paint="sakura"]');
+    if (sak) sak.click();
+    const chosen = !!sak && /sakura\.webp/.test(getComputedStyle($('zenPaint')).backgroundImage) && sak.getAttribute('aria-checked') === 'true';
+    Z.set(false); Z.settle(); Z.set(true); Z.settle();
+    const rotates = listed && chosen && /sakura\.webp/.test(getComputedStyle($('zenPaint')).backgroundImage);
+    return [tabsGone && foldedDetails && openDetails && noCount && tall && snug && painted && rotates,
+      `tabs gone ${tabsGone}, details folded ${foldedDetails} and open on a click ${openDetails}, no count ${noCount}, the page ${Math.round(er.top)}–${Math.round(er.bottom)} vs the bottom controls ${Math.round(Math.min(pill.top, nav.top))} (tall ${tall}), bar ${Math.round(pill.width)} px (snug ${snug}), painted ${painted}, four listed / sakura chosen and remembered ${rotates}`];
+  });
+  run('zen.day.reduced-motion', () => {
+    let t = 9000;
+    Z.overrideReducedMotion(true); Z.dayClock(() => t); Z.dayHidden(false);
+    Z.set(true); Z.settle();
+    Z.setDayPhase(0.1);
+    const art = $('zenArt');
+    const still = !!art && art.classList.contains('zen-still');
+    const POS = ['--zd-gx', '--zd-gy', '--zd-gx2', '--zd-gy2'];
+    let posAnimated = 'none';
+    if (art) {
+      const cs = getComputedStyle(art);
+      const props = cs.transitionProperty.split(',').map((x) => x.trim());
+      const durs = cs.transitionDuration.split(',').map((x) => parseFloat(x) || 0);
+      const hit = props.find((pr, i) => (POS.includes(pr) || pr === 'all') && (durs[i % durs.length] || 0) > 0);
+      if (hit) posAnimated = hit;
+    }
+    const glow = () => { const onB = !!art && art.classList.contains('zd-glow-b'); const g = (k) => (art ? art.style.getPropertyValue(k).trim() : ''); return { onB, vis: onB ? g('--zd-gx2') + ' ' + g('--zd-gy2') : g('--zd-gx') + ' ' + g('--zd-gy') }; };
+    const visLayer = () => { const g = (k) => getComputedStyle(art).getPropertyValue(k).trim(); return glow().onB ? g('--zd-gx2') + ' ' + g('--zd-gy2') : g('--zd-gx') + ' ' + g('--zd-gy'); };
+    const g0 = glow();
+    t += 60; Z.dayTick();
+    const smallWaits = glow().onB === g0.onB;
+    const visBefore = visLayer();
+    const g1 = glow();
+    t += 600; Z.dayTick();
+    const g2 = glow();
+    const g = (k) => (art ? art.style.getPropertyValue(k).trim() : '');
+    const oldLayerKept = (g1.onB ? g('--zd-gx2') + ' ' + g('--zd-gy2') : g('--zd-gx') + ' ' + g('--zd-gy')) === g1.vis;
+    const crossfaded = g2.onB !== g1.onB && g2.vis !== g1.vis && oldLayerKept && visBefore === g1.vis;
+    Z.set(false); Z.settle(); Z.dayClock(null); Z.dayHidden(null);
+    return [still && posAnimated === 'none' && smallWaits && crossfaded, `still ${still}, light-position transition ${posAnimated}, a 1-minute step waited ${smallWaits}, crossfade ${g1.vis} → ${g2.vis} (${crossfaded})`];
+  });
+  run('zen.controls.no-overlap', () => {
+    Z.overrideReducedMotion(true);
+    Z.set(true); Z.settle();
+    const vw = document.documentElement.clientWidth;
+    const bad = [];
+    if (!/16px/.test(getComputedStyle($('zenCluster')).insetInlineEnd || '')) bad.push('the cluster is not placed by inset-inline-end');
+    const v = (el) => el && el.getClientRects().length && getComputedStyle(el).display !== 'none';
+    const ctrls = ['zenMark', 'btnZenSound', 'btnZenScenes', 'btnZenDictate'].map((id) => $(id)).filter(v);
+    const tabs = [$('zenDetailsToggle')].filter(v);
+    if (!ctrls.length || !tabs.length) bad.push("controls or the page's first line not shown");
+    for (const c of ctrls) {
+      const a = c.getBoundingClientRect();
+      if (a.left < -0.5 || a.right > vw + 0.5) bad.push(c.id + ' outside the window');
+      for (const tb of tabs) { const b = tb.getBoundingClientRect(); if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) bad.push(c.id + ' covers ' + tb.id); }
+    }
+    const e = ed().getBoundingClientRect();
+    if (e.left < -0.5 || e.right > vw + 0.5) bad.push(`the page runs past the window (${Math.round(e.left)}–${Math.round(e.right)})`);
+    const cl = $('zenCluster').getBoundingClientRect();
+    return [bad.length === 0, `${document.documentElement.lang} at ${window.innerWidth}×${window.innerHeight}: cluster ${Math.round(cl.left)}–${Math.round(cl.right)}${bad.length ? ' — ' + bad.join('; ') : ', no overlap'}`];
+  });
+  return out;
+};
+
+/** 1.0's zen sound checks (zen.sound.*), in the page. Async: the files are fetched and decoded. */
+const ZEN_SOUND_CHECKS = async () => {
+  const $ = (id) => document.getElementById(id);
+  const Z = window.beukZen, snd = window.beukZenSound;
+  const out = {};
+  // zen.sound.files-decode: every scene's file, same origin, audio/mpeg, sizes, decoded length, seamless loop
+  try {
+    const files = snd.files();
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const rows = []; let total = 0; let ok = !!OAC;
+    for (const s of OAC ? snd.scenes() : []) {
+      const f = files[s];
+      const res = await fetch(snd.url(s), { credentials: 'same-origin' });
+      const type = (res.headers.get('content-type') || '').split(';')[0].trim();
+      const bytes = await res.arrayBuffer();
+      const size = bytes.byteLength; total += size;
+      const ctx = new OAC(2, 1, 44100);
+      const buf = await new Promise((resolve, reject) => { try { const p = ctx.decodeAudioData(bytes, resolve, reject); if (p && p.then) p.then(resolve, reject); } catch (e) { reject(e); } });
+      const sr = buf.sampleRate, d = buf.getChannelData(0);
+      const want = f.pad * 2 + f.loop;
+      const durOk = Math.abs(buf.duration - want) < 0.15;
+      const a = Math.round(f.pad * sr), b = Math.round((f.pad + f.loop) * sr), n = Math.round(0.05 * sr);
+      const rms = (i0, i1) => { let q = 0; for (let i = i0; i < i1; i++) q += d[i] * d[i]; return Math.sqrt(q / Math.max(1, i1 - i0)); };
+      const step = 20 * Math.log10((rms(b - n, b) + 1e-9) / (rms(a, a + n) + 1e-9));
+      let best = -1;
+      for (let lag = -64; lag <= 64; lag++) { let xy = 0, xx = 0, yy = 0; for (let i = 0; i < 8192; i++) { const x = d[a + i], y = d[b + i + lag]; xy += x * y; xx += x * x; yy += y * y; } const c = xy / Math.sqrt(xx * yy + 1e-12); if (c > best) best = c; }
+      const jump = Math.abs(d[b] - d[b - 1]);
+      let q = 0; for (let i = a + 1; i < a + 4097; i++) q += Math.abs(d[i] - d[i - 1]);
+      const seamOk = Math.abs(step) < 3 && best > 0.9 && jump < (q / 4096) * 8 + 1e-4;
+      const rowOk = res.ok && type === 'audio/mpeg' && size > 100 * 1024 && size <= 1.5 * 1024 * 1024 && durOk && seamOk;
+      ok = ok && rowOk;
+      rows.push(`${s}: ${new URL(res.url).pathname} ${res.status} ${type} ${(size / 1024).toFixed(0)} KB, ${buf.duration.toFixed(3)} s (want ${want.toFixed(3)}), seam ${step.toFixed(2)} dB r=${best.toFixed(3)}`);
+    }
+    ok = ok && total <= 4.5 * 1024 * 1024;
+    out['zen.sound.files-decode'] = [ok, (OAC ? '' : 'no OfflineAudioContext; ') + rows.join('; ') + `; total ${(total / 1024).toFixed(0)} KB`];
+  } catch (e) {
+    out['zen.sound.files-decode'] = [false, 'threw ' + e];
+  }
+  // zen.sound.opt-in
+  try {
+    Z.set(true); Z.settle();
+    const quietOnEntry = !snd.playing() && !snd.hasContext() && snd.status().status === 'off';
+    const btn = $('btnZenSound');
+    const offOnEntry = !!btn && btn.getAttribute('aria-pressed') === 'false';
+    btn.click();
+    const st1 = snd.status().status;
+    const honest = (st1 === 'loading' && !snd.playing() && btn.getAttribute('aria-pressed') === 'false' && btn.getAttribute('aria-busy') === 'true') ||
+      (st1 === 'on' && snd.playing() && btn.getAttribute('aria-pressed') === 'true') ||
+      ((st1 === 'error' || st1 === 'blocked') && !snd.playing() && btn.getAttribute('aria-pressed') === 'false');
+    const started = snd.hasContext() || st1 === 'error';
+    btn.click();
+    const stopped = !snd.playing() && !snd.hasContext() && snd.status().status === 'off' && btn.getAttribute('aria-pressed') === 'false' && !btn.hasAttribute('aria-busy');
+    const forgot = snd.pref() === false;
+    btn.click();
+    const restarted = snd.hasContext() || snd.status().status === 'error';
+    Z.set(false); Z.settle();
+    const stoppedOnExit = !snd.playing() && !snd.hasContext() && snd.status().status === 'off';
+    Z.set(true); Z.settle();
+    const noAutoResume = !snd.playing() && !snd.hasContext();
+    Z.set(false); Z.settle();
+    out['zen.sound.opt-in'] = [quietOnEntry && offOnEntry && started && honest && stopped && forgot && restarted && stoppedOnExit && noAutoResume,
+      `entry quiet ${quietOnEntry}/${offOnEntry}; click → ${st1} (honest ${honest}, started ${started}); again → stopped ${stopped}, preference forgotten ${forgot}; again → ${restarted}; exit → ${stoppedOnExit}; re-entry silent ${noAutoResume}`];
+  } catch (e) {
+    out['zen.sound.opt-in'] = [false, 'threw ' + e];
+  }
+  // zen.sound.scenes (the in-page half: files, migration, the popover rows, start / switch, no synthesis)
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const proto = AC ? AC.prototype : null;
+  const spied = ['createOscillator', 'createBiquadFilter', 'createBuffer', 'createScriptProcessor', 'createConstantSource', 'createIIRFilter'];
+  const calls = {}, orig = {};
+  try {
+    if (proto) spied.forEach((k) => { if (typeof proto[k] === 'function') { orig[k] = proto[k]; calls[k] = 0; proto[k] = function (...a) { calls[k]++; return orig[k].apply(this, a); }; } });
+    const scenes = snd.scenes(), files = snd.files();
+    const filesOk = scenes.join(',') === 'rain,waves,wind' && scenes.every((s) => { const f = files[s]; const u = new URL(snd.url(s)); return !!f && f.file === 'assets/sound/' + s + '.mp3' && u.origin === location.origin && /\/assets\/sound\/(rain|waves|wind)\.mp3$/.test(u.pathname) && f.pad > 0 && f.pad < 2 && f.loop >= 45 && f.loop <= 90; });
+    const mig = [snd.migrate('rain-drum'), snd.migrate('nonsense'), snd.migrate(null), snd.migrate('waves'), snd.migrate('wind'), snd.migrate('rain')].join(',');
+    localStorage.setItem('beuk.zenScene.v1', 'rain-drum');
+    const migStored = snd.scene() === 'rain' && localStorage.getItem('beuk.zenScene.v1') === 'rain';
+    Z.set(true); Z.settle();
+    const silentBefore = !snd.hasContext() && !snd.playing();
+    const caret = $('btnZenScenes');
+    caret.click();
+    const pop = $('zenScenePop');
+    const rows = pop ? [...pop.querySelectorAll('.zs-opt[data-scene]')] : [];
+    const popOk = !!pop && pop.classList.contains('open') && rows.map((r) => r.getAttribute('data-scene')).join(',') === 'rain,waves,wind';
+    rows.find((r) => r.getAttribute('data-scene') === 'waves')?.click();
+    const pickedWaves = snd.scene() === 'waves' && !snd.hasContext();
+    $('btnZenSound').click();
+    const g1 = snd.graph(), st1 = snd.status();
+    const targetOk = !!g1 && ((st1.status === 'loading' && st1.pending === 'waves') || (st1.status === 'on' && g1.scene === 'waves') || st1.status === 'error') && !('masterFilterType' in g1);
+    caret.click();
+    $('zenScenePop').querySelector('[data-scene="wind"]')?.click();
+    const st2 = snd.status();
+    const switchOk = snd.scene() === 'wind' && (st2.pending === 'wind' || (snd.graph() && snd.graph().scene === 'wind') || st2.status === 'error');
+    await snd.settled();
+    Z.set(false); Z.settle();
+    const stoppedOnExit = !snd.playing() && !snd.hasContext();
+    const noSynth = Object.values(calls).every((n) => n === 0);
+    out['zen.sound.scenes'] = [filesOk && mig === 'rain,rain,rain,waves,wind,rain' && migStored && silentBefore && popOk && pickedWaves && targetOk && switchOk && stoppedOnExit && noSynth,
+      `files ${filesOk} (${scenes.map((s) => new URL(snd.url(s)).pathname).join(', ')}); migration ${mig}, stored ${migStored}; silent before ${silentBefore}; popover ${popOk}; waves ${pickedWaves}, start ${st1.status}/${st1.pending || (g1 && g1.scene)} (${targetOk}); switch to wind ${switchOk}; stopped on exit ${stoppedOnExit}; synthesis calls ${JSON.stringify(calls)}`];
+  } catch (e) {
+    out['zen.sound.scenes'] = [false, 'threw ' + e];
+  } finally {
+    if (proto) Object.keys(orig).forEach((k) => { proto[k] = orig[k]; });
+    try { Z.set(false); Z.settle(); } catch { /* */ }
+  }
+  return out;
+};
+
+async function wave3aChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  // ---- a small book made by 1.0: an English chapter, one with a Spanish tail, and one all Spanish ----
+  let small = null;
+  {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const one = await watch(await ctx.newPage());
+      await one.goto(origin + '/studio');
+      await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+      small = await one.evaluate(([en, es]) => {
+        const b = buildEmptyBook();
+        b.meta.title = 'Wave Three';
+        b.meta.language = 'en';
+        b.meta.langSource = 'manual';
+        const front = b.sections.filter((s) => s.kind === 'front');
+        b.sections = front.concat([
+          mkSection('body', 'chapter', 'Harbour', { number: '1', content: [en, en, en, en].join('\n\n') }),
+          mkSection('body', 'chapter', 'Puerto', { number: '2', content: [en, es, es, es].join('\n\n') }),
+        ]);
+        return b;
+      }, [W3A_EN, W3A_ES]);
+    } finally {
+      await ctx.close();
+    }
+  }
+  const smallFile = path.join(OUT, 'wave3a-small.beuk-backup.json');
+  writeFileSync(smallFile, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book: small }));
+  const bodyIds = small.sections.filter((s) => s.kind === 'body').map((s) => s.id);
+
+  for (const ui of ['en', 'ar']) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    await ctx.addInitScript(W3A_SPEECH);
+    if (ui === 'ar') await ctx.addInitScript(() => localStorage.setItem('beuk.uiLang.v1', 'ar'));
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      const start = (await exportBackup(page)).json.book;
+      const firstCh = start.sections.find((x) => x.kind === 'body' && x.type === 'chapter');
+      await page.click(`#structureList .sec-item[data-sec="${firstCh.id}"]`);
+      await page.waitForSelector('#manuscript .ms-editor', { timeout: 30_000 });
+      await page.waitForFunction(() => !!window.beukZen && !!window.beukZenSound, null, { timeout: 30_000 });
+
+      // ---- Zen: 1.0's self-checks on 2.0's page; 1.0's own run of the same checks, same window, beside them ----
+      const zen = await page.evaluate(ZEN_CHECKS, '#manuscript');
+      const oneRef = await watch(await ctx.newPage());
+      await oneRef.goto(origin + '/studio');
+      await oneRef.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+      await oneRef.evaluate(([b, id]) => { applyBookDoc(JSON.parse(JSON.stringify(b))); selectSection(id); }, [start, firstCh.id]);
+      const oneZen = await oneRef.evaluate((ids) => Object.fromEntries(ids.map((id) => {
+        const sc = SELF_CHECKS.find((x) => x.id === id);
+        if (!sc) return [id, null];
+        try { const v = sc.run(); return [id, [v.pass, v.detail]]; } catch (e) { return [id, [false, 'threw ' + e]]; }
+      })), Object.keys(zen));
+      await oneRef.close();
+      await page.bringToFront();
+      for (const [id, [ok, detail]] of Object.entries(zen)) {
+        const ref = oneZen[id];
+        // gated: 2.0 passes, or 1.0's own check fails as well in this window (then both are printed, and the report says so)
+        check(ok || (ref && !ref[0]), `wave3a (${ui}) ${id}: ${ok ? 'passes' : 'FAILS'} in 2.0 — ${detail}` + (ok ? '' : ` || 1.0's own self-check in the same window: ${ref ? (ref[0] ? 'PASSES' : 'fails too') + ' — ' + String(ref[1]).slice(0, 400) : 'not found'}`));
+      }
+      if (ui === 'en') {
+        const sound = await page.evaluate(ZEN_SOUND_CHECKS);
+        for (const [id, [ok, detail]] of Object.entries(sound)) check(ok, `wave3a (${ui}) ${id}: ${detail}`);
+      }
+      // Escape leaves Zen; Alt+Right moves to the next section without leaving
+      await page.click('#btnZen');
+      await page.waitForFunction(() => document.body.classList.contains('zen'), null, { timeout: 10_000 });
+      await page.evaluate(() => window.beukZen.settle());
+      const secBefore = await page.$eval('#manuscript', (e) => e.getAttribute('data-section'));
+      await page.keyboard.press('Alt+ArrowRight');
+      await page.waitForFunction((s) => document.getElementById('manuscript')?.getAttribute('data-section') !== s, secBefore, { timeout: 10_000 }).catch(() => undefined);
+      const secAfter = await page.$eval('#manuscript', (e) => e.getAttribute('data-section'));
+      check(secAfter !== secBefore && (await page.evaluate(() => document.body.classList.contains('zen'))), `wave3a (${ui}) zen.nav.switch: Alt + Right opened section ${secAfter} after ${secBefore}, still in Zen`);
+      await page.keyboard.press('Escape');
+      await page.evaluate(() => window.beukZen.settle());
+      check(!(await page.evaluate(() => document.body.classList.contains('zen'))), `wave3a (${ui}) Escape leaves Zen`);
+      check(JSON.stringify((await exportBackup(page)).json.book) === JSON.stringify(start), `wave3a (${ui}) Zen entered, browsed and left: the export is unchanged`);
+
+      if (ui === 'en') {
+        // ---- per-device keys, both ways, with 1.0 on the same device ----
+        await page.evaluate(() => {
+          window.beukZen.set(true);
+          window.beukZen.settle();
+          document.getElementById('btnZenScenes').click();
+          document.querySelector('#zenScenePop [data-scene="waves"]').click();
+          document.querySelector('#zenScenePop [data-paint="mind"]').click();
+          window.beukZen.set(false);
+          window.beukZen.settle();
+        });
+        const one = await watch(await ctx.newPage());
+        await one.goto(origin + '/studio');
+        await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+        const oneSees = await one.evaluate(() => [zenScenePref(), zenPaintPref()]);
+        check(oneSees.join() === 'waves,mind', `wave3a: 1.0 on the same device reads 2.0's beuk.zenScene.v1 / beuk.zen.painting.v1 as ${oneSees.join(' / ')}`);
+        await one.evaluate(() => { zenSceneSetPref('wind'); localStorage.setItem(ZEN_PAINT_KEY, 'calm'); });
+        const twoSees = await page.evaluate(() => [window.beukZenSound.scene(), localStorage.getItem('beuk.zen.painting.v1')]);
+        check(twoSees.join() === 'wind,calm', `wave3a: 2.0 reads 1.0's choices back: ${twoSees.join(' / ')}`);
+
+        // ---- the look in Zen next to 1.0 (reduced motion, settled, the same painting and light): reported ----
+        await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+        await one.evaluate((id) => selectSection(id), firstCh.id);
+        await page.click(`#structureList .sec-item[data-sec="${firstCh.id}"]`);
+        await page.waitForSelector(`#manuscript .ms-editor`, { timeout: 30_000 });
+        const zenOn = () => {
+          window.beukZen.overrideReducedMotion(true);
+          window.beukZen.dayClock(() => 1000);
+          window.beukZen.set(true);
+          window.beukZen.settle();
+          window.beukZen.setDayPhase(0.3);
+        };
+        await one.evaluate(zenOn);
+        await page.evaluate(zenOn);
+        for (const p of [one, page]) await p.waitForTimeout(1200);
+        const a = await one.screenshot(), b = await page.screenshot();
+        writeFileSync(path.join(OUT, 'wave3a-zen-one.png'), a);
+        writeFileSync(path.join(OUT, 'wave3a-zen-two.png'), b);
+        const dctx = await browser.newContext();
+        try {
+          const d = await pixelDiff(await dctx.newPage(), a, b);
+          note(`wave3a: Zen, the whole window, 1.0 vs 2.0: ${(d.ratio * 100).toFixed(2)}% of pixels differ [${d.size}] (reported, not gated: 1.0's page is a textarea, 2.0's the editor)`);
+        } finally {
+          await dctx.close();
+        }
+        const offZen = () => { window.beukZen.set(false); window.beukZen.settle(); window.beukZen.dayClock(null); window.beukZen.overrideReducedMotion(null); };
+        await one.evaluate(offZen);
+        await page.evaluate(offZen);
+
+        // ---- Read Aloud (stubbed speech): the same first words, language and voice as 1.0 ----
+        const readIn = async (p, app) => {
+          await p.evaluate(() => { window.__spoken = []; });
+          await p.click('#btnReadAloud');
+          await p.waitForSelector('#raPop:not([hidden])', { timeout: 10_000 });
+          const options = await p.$$eval('#raVoice option', (os) => os.map((o) => o.value));
+          await p.click('#raPlay');
+          await p.waitForFunction(() => window.__spoken.length > 0, null, { timeout: 10_000 });
+          const s = await p.evaluate(() => window.__spoken[0]);
+          await p.click('#raStop');
+          await p.keyboard.press('Escape');
+          return { app, options, ...s };
+        };
+        const r2 = await readIn(page, '2.0'), r1 = await readIn(one, '1.0');
+        check(r2.lang === r1.lang && r2.voice === r1.voice && r2.text === r1.text && r2.options.join() === r1.options.join(),
+          `wave3a readaloud.voices / controls: 2.0 spoke "${String(r2.text).slice(0, 40)}…" in ${r2.lang} with ${r2.voice} (options ${r2.options.join(', ')}); 1.0: "${String(r1.text).slice(0, 40)}…" in ${r1.lang} with ${r1.voice}`);
+        check(JSON.stringify((await exportBackup(page)).json.book) === JSON.stringify(start), 'wave3a: Read Aloud opened, played and stopped: the export is unchanged');
+        await one.close();
+      }
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+
+  // ---- dictation and the language bar, on the small book, 2.0 next to 1.0 ----
+  {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    await ctx.addInitScript(W3A_SPEECH);
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, smallFile);
+      const start = (await exportBackup(page)).json.book;
+      const one = await watch(await ctx.newPage());
+      await one.goto(origin + '/studio');
+      await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+      await page.bringToFront();
+      await page.click(`#structureList .sec-item[data-sec="${bodyIds[0]}"]`);
+      await page.waitForSelector('#manuscript .ms-editor', { timeout: 30_000 });
+      await page.evaluate(() => document.getElementById('manuscript').beukEditor.commands.focus('end'));
+      await focused(page);
+      // first use: 1.0's intro popover (the privacy line), then Begin; the recogniser hears the book's language
+      await page.click('#btnDictate');
+      await page.waitForSelector('#dictPop.open #dictPopBegin', { timeout: 10_000 });
+      await page.click('#dictPopBegin');
+      const recLang = await page.evaluate(() => window.__recs.length && window.__recs[window.__recs.length - 1].lang);
+      check(recLang === 'en-US' && (await page.evaluate(() => localStorage.getItem('beuk.dictSeen.v1'))) === '1', `wave3a dictation.controls: Begin starts a recogniser in ${recLang}; beuk.dictSeen.v1 is "1"`);
+      await page.evaluate(() => window.__recs[window.__recs.length - 1].emit([['the lamps', false]]));
+      await page.evaluate(() => window.__recs[window.__recs.length - 1].emit([['the lamps were lit', true]]));
+      await page.click('#btnDictate'); // stop
+      const after = (await exportBackup(page)).json.book.sections.find((s) => s.id === bodyIds[0]).content;
+      const want = start.sections.find((s) => s.id === bodyIds[0]).content + ' the lamps were lit';
+      // 1.0 hears the same phrase into its own textarea
+      await one.bringToFront();
+      const oneAfter = await one.evaluate((id) => {
+        selectSection(id);
+        const area = document.getElementById('editorArea');
+        area.focus();
+        area.setSelectionRange(area.value.length, area.value.length);
+        dict.seen = true;
+        window.beukDictation.start();
+        const r = window.__recs[window.__recs.length - 1];
+        r.emit([['the lamps', false]]);
+        r.emit([['the lamps were lit', true]]);
+        window.beukDictation.stop();
+        return serializeBook().sections.find((s) => s.id === id).content;
+      }, bodyIds[0]);
+      check(after === want && after === oneAfter, `wave3a dictation.insert: the phrase lands at the caret, interim words never doubled — 2.0 equals 1.0 (${after === oneAfter}), "…${after.slice(-40)}"`);
+      // one Undo takes the phrase back
+      await page.bringToFront();
+      await page.evaluate(() => document.getElementById('manuscript').beukEditor.commands.focus());
+      await focused(page);
+      await page.keyboard.press('Control+z');
+      const undone = (await exportBackup(page)).json.book;
+      check(JSON.stringify(undone) === JSON.stringify(start), 'wave3a dictation.insert: one Undo takes the whole phrase back (the export equals the book as opened)');
+
+      // the language bar: the Spanish tail of an English book offers dictation in Spanish; the tap writes what 1.0 writes
+      await page.click(`#structureList .sec-item[data-sec="${bodyIds[1]}"]`);
+      await page.waitForSelector('#langBar.open[data-kind="section"]', { timeout: 15_000 });
+      const code = await page.$eval('#langBar', (e) => e.dataset.code);
+      await page.click('#langBar [data-lb="dict"]');
+      const tapped = (await exportBackup(page)).json.book;
+      const oneTapped = await one.evaluate(([b, id]) => {
+        applyBookDoc(JSON.parse(JSON.stringify(b)));
+        selectSection(id);
+        dictSetLang('es');
+        return serializeBook();
+      }, [undone, bodyIds[1]]);
+      check(code === 'es' && JSON.stringify(tapped.dictation) === JSON.stringify(oneTapped.dictation) && tapped.meta.language === 'en',
+        `wave3a dictation.language-suggest: the bar offered ${code}; the tap wrote dictation ${JSON.stringify(tapped.dictation)} (1.0: ${JSON.stringify(oneTapped.dictation)}), the book stays ${tapped.meta.language}`);
+      // the picker (right-click): a pick from 1.0's own popover reaches the book, as 1.0's dictSetLang saves it
+      await page.click('#btnDictate', { button: 'right' });
+      await page.waitForSelector('#dictPop.open #dictLangSel', { timeout: 10_000 });
+      await page.selectOption('#dictLangSel', 'fr');
+      const picked = (await exportBackup(page)).json.book;
+      const onePicked = await one.evaluate(() => { dictSetLang('fr'); return serializeBook().dictation; });
+      check(JSON.stringify(picked.dictation) === JSON.stringify(onePicked), `wave3a dictation.language-picker: the pick wrote ${JSON.stringify(picked.dictation)} (1.0: ${JSON.stringify(onePicked)})`);
+      await page.keyboard.press('Escape');
+      // 1.0 opens 2.0's book with the same dictation choice
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), picked);
+      const oneInfo = await one.evaluate(() => dictLangInfo().lang);
+      check(oneInfo === 'fr-FR', `wave3a: 1.0 opens 2.0's book and dictates in ${oneInfo}`);
+      await harvestCsp(page);
+      await harvestCsp(one);
+    } finally {
+      await ctx.close();
+    }
+  }
+
+  // ---- goals: the same book and writing log on the same device, 2.0's Goals room next to 1.0's ----
+  {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      const start = (await exportBackup(page)).json.book;
+      await page.click('#btnGoals');
+      await page.waitForSelector('#modalGoals #goalsProgress', { timeout: 30_000 });
+      await page.waitForTimeout(500);
+      const two = await page.evaluate(() => ({ progress: document.getElementById('goalsProgress')?.innerText ?? '', kept: document.getElementById('goalKept')?.innerText ?? '', lines: document.getElementById('goalLines')?.innerText ?? '' }));
+      await page.click('#btnCloseGoals');
+      await page.waitForSelector('#modalGoals', { state: 'detached', timeout: 10_000 });
+      const one = await watch(await ctx.newPage());
+      await one.goto(origin + '/studio');
+      await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+      await one.click('#btnGoals');
+      await one.waitForTimeout(500);
+      const oneSaw = await one.evaluate(() => ({ progress: document.getElementById('goalsProgress')?.innerText ?? '', kept: document.getElementById('goalKept')?.innerText ?? '', lines: document.getElementById('goalLines')?.innerText ?? '' }));
+      for (const k of ['progress', 'kept', 'lines']) check(two[k] === oneSaw[k], `wave3a goals: #${k === 'progress' ? 'goalsProgress' : k === 'kept' ? 'goalKept' : 'goalLines'} reads the same in 2.0 and 1.0 ("${two[k].replace(/\s+/g, ' ').slice(0, 80)}")${two[k] === oneSaw[k] ? '' : ` — 1.0: "${oneSaw[k].replace(/\s+/g, ' ').slice(0, 80)}"`}`);
+      check(JSON.stringify((await exportBackup(page)).json.book) === JSON.stringify(start), 'wave3a goals: the Goals room opened and closed: the export is unchanged');
+      // the no-edit gate's rooms (readOnlyRooms, with wave 3a's surfaces), once here on this book, on its first chapter
+      await page.bringToFront();
+      const ch = start.sections.find((x) => x.kind === 'body' && x.type === 'chapter');
+      await page.click(`#structureList .sec-item[data-sec="${ch.id}"]`);
+      await page.waitForSelector('#manuscript .ms-editor', { timeout: 30_000 });
+      const rooms = await readOnlyRooms(page);
+      check(/Goals/.test(rooms) && /Zen, Read Aloud, the dictation picker/.test(rooms) && JSON.stringify((await exportBackup(page)).json.book) === JSON.stringify(start), `wave3a: the no-edit gate's rooms on this book (${rooms}): the export is unchanged`);
+      await harvestCsp(page);
+      await harvestCsp(one);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
 /* ---- the bundle: one yjs ---- */
 function bundle() {
   const dir = path.join(REPO, 'client', 'next', 'assets');
@@ -1870,6 +2471,7 @@ try {
   if (run('wave2a')) await wave2aChecks(srv.origin);
   if (run('wave2b')) await wave2bChecks(srv.origin);
   if (run('wave2c')) await wave2cChecks(srv.origin);
+  if (run('wave3a')) await wave3aChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
