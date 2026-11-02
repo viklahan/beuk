@@ -7,6 +7,9 @@ import { Icon, type IconName } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import icons from '../generated/icons.json';
 import { STYLE_KEYS, styleBegin, styleRelease, styleRoot, styleRun, styleSettle, styleUi, styleWriting } from './session';
+import { probeCloud } from '../pictures/stock';
+import { installMineRetry, mineLoad } from './mine';
+import { keepFromCreator, MyThemes } from './MyThemes';
 
 /* Step 5 wave 4a (inventory D1, D2): 1.0's Typography Studio — the centre pane's "Typography Studio" tab (#panelType,
    the mobile Style tab): its markup, ids, classes and keys (client/index.html "Tab: typography"), drawn by 1.0's own
@@ -117,8 +120,15 @@ export function StyleTab({ shown }: Props) {
           });
       })
       .catch(() => undefined);
+    // per-user themes: the writer's list (signed in: the account's, with this device's copy; else this device's),
+    // read once the studio knows who is signed in, and what waits sent again on online, page hide and every 30 s
+    void probeCloud()
+      .then(() => (alive ? mineLoad() : undefined))
+      .catch(() => undefined);
+    const offRetry = installMineRetry();
     return () => {
       alive = false;
+      offRetry();
       // the book goes: its held edit written, its faces out of the page, the session let go
       styleRelease();
     };
@@ -213,11 +223,18 @@ export function StyleFrame({ t }: { t: ReturnType<typeof useLocale>['t'] }) {
             <Icon name="Check" />
             <span>{t('creator.save')}</span>
           </button>
+          <button className="tb-btn" id="btnTcKeep" type="button" onClick={() => keepFromCreator(t)}>
+            <Icon name="BookmarkPlus" />
+            <span>{t('next.themes.keep')}</span>
+          </button>
           <button className="tb-btn" id="btnTcClose" type="button">
             {t('creator.close')}
           </button>
         </div>
       </div>
+
+      {/* per-user themes (2.0 only): the writer's own list, beside the book's */}
+      <MyThemes t={t} />
 
       <H icon="Type">{t('type.fontPairingH')}</H>
       <div className="ctl-grid">

@@ -133,7 +133,15 @@ function openDb(): Promise<IDBDatabase | null> {
         if (!db.objectStoreNames.contains('themes')) db.createObjectStore('themes', { keyPath: ['owner', 'key'] }).createIndex('owner', 'owner');
         if (!db.objectStoreNames.contains('assets')) db.createObjectStore('assets', { keyPath: ['owner', 'sha'] });
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        // another tab's upgrade or a delete of the database: let go of it (opened again on the next use)
+        db.onversionchange = () => {
+          db.close();
+          dbp = null;
+        };
+        resolve(db);
+      };
       req.onerror = () => resolve(null);
       req.onblocked = () => resolve(null);
     });

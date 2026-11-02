@@ -15,6 +15,25 @@ const EN = {
   'next.markRefused': 'That can’t be italic or bold here — its asterisks would read back as something else.',
   'next.snapshotGone': 'That snapshot is no longer here — the book was replaced or the snapshot removed. Nothing was changed.',
   'next.bookReplaced': 'The book was replaced in another tab while this one was asking. Nothing was changed.',
+  // per-user themes ("My themes", plan 2026-11-02): 1.0 already calls the book's own list "My Themes" (themes.mineH),
+  // so the writer's per-account list is "Themes for every book"
+  'next.themes.everyH': 'Themes for every book',
+  'next.themes.everySub': 'Themes you keep for yourself, apart from any one book. One click copies a theme — with its fonts and flourishes — into this book and applies it. Removing one here never changes a book.',
+  'next.themes.account': 'Kept with your account: they follow you to every device you sign in on.',
+  'next.themes.deviceOnly': 'Kept on this device only. Sign in and they follow you to every device.',
+  'next.themes.empty': 'Nothing kept for every book yet. Use “Keep for every book” on one of this book’s themes, or in the Theme Creator.',
+  'next.themes.keep': 'Keep for every book',
+  'next.themes.kept': '“{name}” is kept for every book',
+  'next.themes.removed': '“{name}” is no longer kept for every book — no book was changed',
+  'next.themes.offer': 'This book has themes of its own. Keep them for every book too?',
+  'next.themes.offerYes': 'Keep them',
+  'next.themes.offerNo': 'No, thanks',
+  'next.themes.moveOffer': 'Some themes are kept on this device only. Move them to your account, so they follow you to every device?',
+  'next.themes.moveYes': 'Move them',
+  'next.themes.deviceSuffix': ' (this device)',
+  'next.themes.conflict': '“{name}” was changed on another device too. Both are kept: this device’s version is named “(this device)”.',
+  'next.themes.full': 'Themes for every book holds at most 200 themes. Remove one, then keep “{name}” again.',
+  'next.themes.refused': '“{name}” could not be kept with your account, so it stays on this device.',
 } as const;
 
 export type NextKey = keyof typeof EN;
