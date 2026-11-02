@@ -118,3 +118,15 @@ describe('at the source (the Style session’s sourceSafe): the theme values 1.0
     expect([ok.theme.headerStyle, ok.theme.indentDepth]).toEqual(['weird_style', '1.25em']);
   });
 });
+
+describe('typing stays cheap (constraint 37)', () => {
+  it('only 1.0’s page keys pressed outside a field read the book again; a key typed in the editor never does', async () => {
+    const { pageKeyReadsBook } = await import('../src/preview/preview');
+    const ed = { isContentEditable: true, tagName: 'DIV' } as unknown as EventTarget;
+    const body = { isContentEditable: false, tagName: 'BODY' } as unknown as EventTarget;
+    for (const key of [' ', 'Enter', 'a', 'f', 'ArrowLeft', 'ArrowRight', 'Escape']) expect(pageKeyReadsBook({ key, target: ed }), key).toBe(false);
+    expect(pageKeyReadsBook({ key: 'ArrowRight', target: body })).toBe(true);
+    expect(pageKeyReadsBook({ key: 'F', target: body })).toBe(true);
+    for (const key of [' ', 'Enter', 'Escape', 'a']) expect(pageKeyReadsBook({ key, target: body }), key).toBe(false);
+  });
+});

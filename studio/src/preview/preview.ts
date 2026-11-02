@@ -291,14 +291,23 @@ function ensureSheets(): void {
     document.body.appendChild(m);
   }
 }
+/** A key 1.0's preview acts on from anywhere in the page (← →, F), pressed outside a field: the preview's state is
+ *  read again first. A key typed in the editor or a field never is (typing stays cheap: constraint 37). */
+export function pageKeyReadsBook(e: { key: string; target: EventTarget | null }): boolean {
+  if (!/^(ArrowLeft|ArrowRight|f|F)$/.test(e.key)) return false;
+  const tg = e.target as HTMLElement | null;
+  return !(tg && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName || '')));
+}
 /** Before 1.0's own listeners in the pane (and its page keys) run, its state is the book as it stands. */
 function installRefresh(): void {
   const pane = document.getElementById('pane-preview');
   for (const type of ['click', 'pointerdown', 'pointerup', 'keydown']) pane?.addEventListener(type, () => void pvRefresh(), true);
+  // 1.0's page keys (← →, F) act only outside a field; a key typed in the editor or a field reads nothing (typing
+  // stays cheap: constraint 37)
   window.addEventListener(
     'keydown',
     (e) => {
-      if (/^(ArrowLeft|ArrowRight|f|F|Escape|Enter| )$/.test(e.key)) pvRefresh();
+      if (pageKeyReadsBook(e)) pvRefresh();
     },
     true,
   );
@@ -319,6 +328,8 @@ export function startPreview(): void {
   (window as unknown as { beukPreview?: unknown }).beukPreview = {
     call: (name: string, ...args: unknown[]) => pvRun((p) => p.api[name]!(...args)),
     get: (name: string) => (loaded?.api as Rec | undefined)?.[name],
+    // on the preview's state as it stands, not read again (the e2e puts values past the safe path to test the sinks)
+    raw: (name: string, ...args: unknown[]) => loaded?.api[name]!(...args),
     state: () => loaded?.getState() ?? null,
     safety: previewSafety,
   };

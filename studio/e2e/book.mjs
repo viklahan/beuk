@@ -743,7 +743,10 @@ async function latency(origin) {
     const lat = (await page.evaluate(() => window.__lat)).slice().sort((x, y) => x - y);
     const q = (p) => lat[Math.min(lat.length - 1, Math.ceil(p * lat.length) - 1)];
     const p50 = q(0.5), p95 = q(0.95), max = lat[lat.length - 1];
-    note(`latency: section ${big} ("${secs[big].title}"), ${size.blocks} blocks, ${size.chars} characters; ${lat.length} keystrokes: p50 ${p50.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, max ${max.toFixed(1)} ms`);
+    // wave 4b (constraint 37): the preview pane is open beside the editor, following the chapter being typed in
+    const pane = await page.evaluate(() => ({ open: !!document.getElementById('pageFlow')?.getClientRects().length && document.getElementById('flowWrap').clientWidth > 0, chars: document.getElementById('pageFlow')?.innerHTML.length ?? 0, counter: document.getElementById('pageCounter')?.textContent ?? '' }));
+    check(pane.open && pane.chars > 1000, `#5 the preview pane is open while typing (constraint 37): the chapter typeset in it (${pane.chars} characters of HTML, "${pane.counter}")`);
+    note(`latency (preview pane open): section ${big} ("${secs[big].title}"), ${size.blocks} blocks, ${size.chars} characters; ${lat.length} keystrokes: p50 ${p50.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, max ${max.toFixed(1)} ms`);
     check(lat.length >= 290, `#5 ${lat.length} keystrokes measured`);
     console.log(`${p95 <= LATENCY_P95_TARGET_MS ? 'ok  ' : 'OVER'} #5 p95 keystroke-to-paint ${p95.toFixed(1)} ms (target ${LATENCY_P95_TARGET_MS} ms; reported, not gated)`);
     // a profile of 100 more keystrokes: the hottest functions by self time
@@ -3132,13 +3135,40 @@ async function wave4bIsolation(origin) {
         const roots = [document.getElementById('pane-preview'), document.getElementById('pivMeasure'), ...['bookStyle', 'pivBookStyle'].map((id) => document.getElementById(id))].filter(Boolean);
         const bad = [];
         for (const r of roots) for (const el of [r, ...r.querySelectorAll('*')]) {
-          for (const a of el.attributes) if (/^on/i.test(a.name) || /javascript:/i.test(a.value) || /evil\.example/.test(a.value)) bad.push(el.tagName + '[' + a.name + ']');
+          // (a book's own https link stays a link, as in 1.0: it goes nowhere unless the writer follows it)
+          for (const a of el.attributes) if (/^on/i.test(a.name) || /javascript:/i.test(a.value) || (/evil\.example/.test(a.value) && !(el.tagName === 'A' && a.name === 'href' && /^https:/.test(a.value)))) bad.push(el.tagName + '[' + a.name + ']');
           if (/^(SCRIPT|IFRAME|LINK|OBJECT|EMBED)$/.test(el.tagName)) bad.push(el.tagName);
         }
         const css = ['bookStyle', 'pivBookStyle'].map((id) => document.getElementById(id)?.textContent || '').join('\n');
-        return { bad, pw: window.__pw ?? null, cssEvil: /evil\.example|#topbar|body\s*\{/.test(css), title: document.getElementById('rhBook')?.textContent ?? '', dropped: window.beukPreview.safety.droppedRules, flows: document.getElementById('pageFlow').innerHTML.length };
+        const EVIL = /evil\.example|#topbar|(^|[\s,}])body\s*\{/;
+        const cssHit = (css.split('\n').find((l) => EVIL.test(l)) || '').slice(0, 300);
+        return { bad, cssHit, pw: window.__pw ?? null, cssEvil: EVIL.test(css), title: document.getElementById('rhBook')?.textContent ?? '', dropped: window.beukPreview.safety.droppedRules, flows: document.getElementById('pageFlow').innerHTML.length };
       });
-      check(dom.bad.length === 0 && dom.pw === null && !dom.cssEvil, `wave4b isolation: no handler, script URL, remote source or script element in the preview, the print measurer or the book stylesheets (${dom.bad.slice(0, 6).join(', ') || 'none'}); window.__pw ${dom.pw}; the stylesheets name nothing outside the preview (${!dom.cssEvil}); ${dom.dropped} CSS rule(s) dropped at the sink`);
+      check(dom.bad.length === 0 && dom.pw === null && !dom.cssEvil, `wave4b isolation: no handler, script URL, remote source or script element in the preview, the print measurer or the book stylesheets (${dom.bad.slice(0, 6).join(', ') || 'none'}); window.__pw ${dom.pw}; the stylesheets name nothing outside the preview (${!dom.cssEvil}${dom.cssEvil ? ': ' + dom.cssHit : ''}); ${dom.dropped} CSS rule(s) dropped at the sink`);
+      // the second wall, by itself: hostile theme values put straight into the preview's state (past the safe path) reach
+      // only the sinks — the stylesheet's rules outside the preview are dropped, the class attribute's handler removed
+      const sink = await p2.evaluate(async () => {
+        const P = window.beukPreview;
+        const st = P.state();
+        const keep = { indent: st.theme.indentDepth, header: st.theme.headerStyle };
+        const before = P.safety.droppedRules;
+        st.theme.indentDepth = '1em; } #topbar { display: none } body { background: url(https://evil.example/s.png) } .fc-page p { x: y';
+        st.theme.headerStyle = 'classic_centered" onmouseover="window.__pw=99';
+        P.raw('renderPreview');
+        await new Promise((r) => setTimeout(r, 300));
+        const hd = document.querySelector('#pageFlow header.chapter-opening');
+        window.__w4bKeep = keep;
+        return { dropped: P.safety.droppedRules - before, topbar: getComputedStyle(document.getElementById('topbar')).display, handler: !!document.querySelector('#pageFlow [onmouseover]'), cls: hd ? hd.className : null };
+      });
+      sink.look = JSON.stringify(await p2.evaluate(W4B_LOOK));
+      await p2.evaluate(() => {
+        const st = window.beukPreview.state();
+        st.theme.indentDepth = window.__w4bKeep.indent;
+        st.theme.headerStyle = window.__w4bKeep.header;
+        window.beukPreview.raw('renderPreview');
+      });
+      check(sink.dropped > 0 && sink.topbar !== 'none' && !sink.handler && sink.look === JSON.stringify(after),
+        `wave4b isolation, the sinks by themselves: hostile theme values put past the safe path — ${sink.dropped} stylesheet rule(s) dropped at the sink, the top bar still shown (${sink.topbar}), no handler in the flow (header class "${String(sink.cls).slice(0, 60)}"), the app's computed styles unchanged (${sink.look === JSON.stringify(after)})`);
       check(/Hostile <img/.test(dom.title), `wave4b isolation: the hostile title is shown as text in the running head ("${dom.title.slice(0, 40)}…")`);
       const out = (await exportBackup(p2)).json.book;
       check(JSON.stringify(out) === JSON.stringify(expected(book, out)), 'wave4b isolation: the hostile book, previewed, exports exactly as readBook reads it (the values are hidden from 1.0\'s code, never rewritten)');
@@ -3472,7 +3502,7 @@ async function wave4bRtl(origin) {
   }
 }
 
-/** The preview region next to 1.0's (Paper, Candlelight, Arabic): the device frame gated, the whole pane reported. */
+/** The preview region next to 1.0's (Paper, Candlelight, Arabic): the device frame and the whole pane, gated. */
 async function wave4bScreens(origin) {
   const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
   const diffCtx = await browser.newContext();
@@ -3496,7 +3526,7 @@ async function wave4bScreens(origin) {
           await p.evaluate(() => document.fonts.ready);
           await p.waitForTimeout(3800);
         }
-        for (const [sel, gated] of [['#deviceFrame', true], ['#pane-preview', false]]) {
+        for (const [sel, gated] of [['#deviceFrame', true], ['#pane-preview', true]]) {
           await one.bringToFront();
           const a = await one.locator(sel).screenshot();
           await page.bringToFront();
@@ -3519,7 +3549,7 @@ async function wave4bScreens(origin) {
 }
 
 async function wave4bChecks(origin) {
-  const only = (process.env.W4B_PARTS || 'parity,chrome,reader,rtl,isolation,gate,screens').split(',');
+  const only = (process.env.W4B_PARTS || 'parity,chrome,reader,rtl,isolation,gate,screens,latency').split(',');
   if (only.includes('parity')) await wave4bParity(origin);
   if (only.includes('chrome')) await wave4bChrome(origin);
   if (only.includes('reader')) await wave4bReader(origin);
@@ -3527,9 +3557,9 @@ async function wave4bChecks(origin) {
   if (only.includes('isolation')) await wave4bIsolation(origin);
   if (only.includes('gate')) {
     // constraint 38: the preview browsed (every device, the hardcover, full screen, a desk row) writes nothing
-    const ctx = await newContext({ serviceWorkers: 'block' });
-    try {
-      for (const name of ['real/lantern-coast-print', 'real/dartagnan-01-three-musketeers']) {
+    for (const name of ['real/lantern-coast-print', 'real/dartagnan-01-three-musketeers']) {
+      const ctx = await newContext({ serviceWorkers: 'block' });
+      try {
         const f = fixtures.find((x) => x.name === name);
         const page = await openNext(ctx, origin);
         await openBackup(page, f.file);
@@ -3540,13 +3570,17 @@ async function wave4bChecks(origin) {
         const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /device|preview|hc|fs/i.test(k)));
         check(keys.length === 0, `wave4b constraint 38: the preview keeps no per-device key, as 1.0 keeps none (state.device is session-only; ${keys.join(', ') || 'none'})`);
         await harvestCsp(page);
-        await page.close();
+      } finally {
+        await ctx.close();
       }
-    } finally {
-      await ctx.close();
     }
   }
   if (only.includes('screens')) await wave4bScreens(origin);
+  // constraint 37: the typing latency on Dumas with the preview pane open (#5's measure, run here too)
+  if (only.includes('latency') && !(process.env.E2E_ONLY || '').split(',').includes('latency')) {
+    const r = await latency(origin);
+    note(`wave4b latency with the preview pane open: p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+  }
 }
 
 const srv = await startServer({ repo: REPO });
