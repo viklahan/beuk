@@ -50,12 +50,14 @@ export function probeCloud(fetcher: typeof fetch = globalThis.fetch?.bind(global
   if (!probed) {
     probed = (async () => {
       let available = false;
+      let unreachable = false;
       try {
         const r = await fetcher('/api/health', { credentials: 'same-origin' });
         const j = r.ok ? ((await r.json().catch(() => null)) as { ok?: unknown } | null) : null;
         available = !!(j && j.ok);
       } catch {
         available = false;
+        unreachable = true;
       }
       let user: unknown = null;
       if (available) {
@@ -69,6 +71,9 @@ export function probeCloud(fetcher: typeof fetch = globalThis.fetch?.bind(global
       }
       cloudFacts.available = available;
       cloudFacts.user = user;
+      // wave 3a: the studio now probes at start (the streak, 1.0's cloudAfterSignIn); a probe that could not reach the
+      // page's origin at all (thrown: offline) is asked again by the next caller rather than kept for the page's life
+      if (unreachable) probed = null;
     })();
   }
   return probed;

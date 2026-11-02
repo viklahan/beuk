@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useBook } from '../book/BookProvider';
 import { Desk } from '../book/Desk';
 import { Outline } from '../book/Outline';
@@ -11,6 +11,9 @@ import { SampleBar } from '../sample/SampleBar';
 import { HistoryDialog } from '../history/HistoryDialog';
 import { InsightsDialog } from '../insights/InsightsDialog';
 import { NotebookDialog } from '../notebook/NotebookDialog';
+import { GoalsDialog } from '../goals/GoalsDialog';
+import { cloudLoadStreak } from '../goals/goals';
+import { probeCloud } from '../pictures/stock';
 import { SettingsDialog } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { syncClosureLocale } from '../closure/index';
@@ -45,7 +48,13 @@ export function Shell() {
   const bk = useBook();
   const canExport = bk.phase === 'open';
   const [mobile, setMobile] = useState<MobilePane>('structure');
-  const [dialog, setDialog] = useState<'history' | 'settings' | 'insights' | 'notebook' | null>(null);
+  // wave 3a: 1.0's cloudAfterSignIn → cloudLoadStreak — with a shelf and a writer signed in, the server's streak
+  useEffect(() => {
+    void probeCloud()
+      .then(() => cloudLoadStreak())
+      .catch(() => undefined);
+  }, []);
+  const [dialog, setDialog] = useState<'history' | 'settings' | 'insights' | 'notebook' | 'goals' | null>(null);
   const bookOpen = bk.phase === 'open';
   const ops = useChapterOps({ openHistory: () => setDialog('history') });
   const structure = useStructure();
@@ -166,7 +175,7 @@ export function Shell() {
           <div id="structureScroll">
             <Outline tools={ops.tools} structure={structure} />
           </div>
-          {/* BEUK:sidebar — 1.0's book tools row: History (wave 1a), Insights and Notes (wave 1c); Goals and the Covenant keep their place until wave 3 */}
+          {/* BEUK:sidebar — 1.0's book tools row: History (wave 1a), Insights and Notes (wave 1c); Goals (wave 3a); the Covenant keeps its place until wave 3b */}
           <div className="side-dock">
             <div className="side-tools" id="sideTools" role="group" aria-label={t('side.toolsAria')}>
               <button
@@ -181,7 +190,15 @@ export function Shell() {
                 <Icon name="Activity" />
                 <span className="side-tool-lab">{t('side.toolInsights')}</span>
               </button>
-              <button className="side-tool" id="btnGoals" data-tip="tips.goals" type="button" aria-label={t('goals.open')} aria-disabled="true">
+              <button
+                className="side-tool"
+                id="btnGoals"
+                data-tip="tips.goals"
+                type="button"
+                aria-label={t('goals.open')}
+                aria-disabled={bookOpen ? undefined : 'true'}
+                onClick={bookOpen ? () => setDialog('goals') : undefined}
+              >
                 <Icon name="Target" />
                 <span className="side-tool-lab">{t('side.toolGoals')}</span>
               </button>
@@ -267,6 +284,7 @@ export function Shell() {
       <SettingsDialog open={dialog === 'settings' && bookOpen} onClose={() => setDialog(null)} />
       <InsightsDialog open={dialog === 'insights' && bookOpen} onClose={() => setDialog(null)} />
       <NotebookDialog open={dialog === 'notebook' && bookOpen} onClose={() => setDialog(null)} />
+      <GoalsDialog open={dialog === 'goals' && bookOpen} onClose={() => setDialog(null)} />
     </div>
   );
 }

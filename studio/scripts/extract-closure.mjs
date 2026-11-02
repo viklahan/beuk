@@ -102,6 +102,15 @@ export const EXTRA_ROOTS = [
   'olAddField', 'olRenameField', 'olSetFieldOptions', 'olSetCustom', 'olDeleteField', 'olApplySaved',
   // the Grid's Covenant columns: 1.0's uncached count (bibleMentions itself reads uiLangState for its cache key)
   'bibleMentionsCompute', 'bibleTypeLabel', 'castSecLabel', 'CAST_STEPS',
+  // wave 3a (C2): goals, the streak, the writing log, the Road so far and just-write — 1.0's whole subsystem, its own
+  // per-device state (wlog, streakState) included; its renderers write into the Goals room's and the sidebar's ids
+  'normalizeGoals', 'parseDayStr', 'dayStr', 'goalMath', 'goalPlan', 'goalOnPace', 'goalKept', 'goalKeptRange', 'goalStreakBridges',
+  'goalWritingDaysBetween', 'goalDays', 'goalIsWritingDay', 'goalPlanLine', 'goalPaceLine', 'goalDailyLine', 'goalProjectLine', 'goalDeadlineLine',
+  'roadPoints', 'roadSegments', 'roadModel', 'roadGeom', 'roadSvg', 'roadKeyHtml', 'roadPointLabel', 'roadLongDate',
+  'wlogObserve', 'wlogTick', 'wlogFlush', 'wlogLoad', 'wlogSave', 'wlogTodayWords', 'wlogTodayMinutes', 'wlogBookKey', 'bookTotalWords',
+  'markWritingActivity', 'renderStreak', 'saveStreak', 'loadStreak', 'streakState', 'STREAK_KEY', 'WLOG_KEY', 'goalStreakNow', 'goalJustWrite', 'goalSetJustWrite',
+  'goalClearTracking', 'goalAskClearTracking', 'goalEnsureStart', 'goalsApply', 'commitGoals', 'renderGoalLines', 'renderGoalsProgress',
+  'renderGoalKept', 'renderGoalCalendar', 'renderGoalRoad', 'roadShow', 'roadHide', 'roadNearest', 'syncGoalInputs', 'goalsRenderRoom',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -134,7 +143,9 @@ export const ORACLE_OWN = ['imgSelId', 'scenePending'];
  *  closure reaches; everything else it uses is the main closure's own (handed over as `share`: one copy, no drift). */
 export const SAMPLE_ROOTS = ['buildSampleBook', 'sampleCoverDoc'];
 /** 1.0's top-level `let`s a caller reads or sets (emitted as accessors on the closure's `vars`). */
-export const VARS = ['insVarPick', 'insCache', 'insFacts'];
+export const VARS = ['insVarPick', 'insCache', 'insFacts',
+  // wave 3a: the writing log, its clock and the Goals room's view state
+  'wlog', 'wlogRebase', 'wlogLastTick', 'wlogFgOverride', 'goalJustWriteCache', 'goalKeptPeriod', 'goalCalCursor', 'roadState'];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
   // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads
@@ -144,7 +155,10 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   'autoSnapshot', 'local', 'noteBookEdited', 'imglibRefresh', 'bibleSeriesTouched', 'cloud',
   // wave 2c: 1.0's redraws after a structural edit (React re-renders from the Y.Doc), and selectSection (2.0 selects the
   // section 1.0 chose once the change is written: src/structure/structure.ts structEnv)
-  'renderSidebar', 'syncEditor', 'renderPreview', 'updateStats', 'refreshExportTree', 'selectSection', 'olRender'];
+  'renderSidebar', 'syncEditor', 'renderPreview', 'updateStats', 'refreshExportTree', 'selectSection', 'olRender',
+  // wave 3a (C2): the shelf's heartbeat (1.0's cloudHeartbeat, src/goals/streak.ts), the calm confirm (2.0's useConfirm),
+  // 1.0's icons() (drawIcons) and fmtDateIntl (it reads uiLangState, which the browser studio never lifts)
+  'cloudHeartbeat', 'cloudConfirm', 'icons', 'fmtDateIntl'];
 /** Lifted declarations that may read UI_STRINGS: each reads only every pack's "misc.untitledBook". */
 export const UI_STRINGS_READERS = ['imIsPlaceholderTitle'];
 /** Top-level names of 1.0 that the lifted code uses only as LOCAL names (the reachability walk is by name, not by
@@ -370,7 +384,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; bibleSeriesTouched: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; bibleSeriesTouched: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 

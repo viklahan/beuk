@@ -16,6 +16,8 @@ import { ArtRows } from '../pictures/ArtRows';
 import { SceneBar } from '../pictures/SceneBar';
 import { SectionImages } from '../pictures/SectionImages';
 import { StarterBar } from './StarterBar';
+import { ySyncPluginKey } from '@tiptap/y-tiptap';
+import { noteWriting } from '../goals/goals';
 
 /* The open chapter: 1.0's insert toolbar (#insertToolbar, EditorToolbar:
    Bold and Italic as the editor's marks, every other button 1.0's own text
@@ -61,6 +63,9 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
     ed.on('selectionUpdate', sync);
     ed.on('transaction', ({ transaction }) => {
       if (transaction.storedMarksSet) sync();
+      // wave 3a: 1.0's editor input handler — a local edit of the page is writing activity (the streak, the shelf's
+      // heartbeat); a change arriving from Yjs (another tab, an undo of a remote change) is not
+      if (transaction.docChanged && transaction.getMeta(ySyncPluginKey) === undefined) noteWriting();
     });
     setEditor(ed);
     setActiveEditor(ed, section);

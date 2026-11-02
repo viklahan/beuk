@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import type * as Y from 'yjs';
 import { bookState, loadClosure, type Closure, type State } from '../closure/index';
 import { useBook } from './BookProvider';
+import { startDeskClock } from '../goals/goals';
 
 /* The book's counts (inventory C1: 1.0's statsCells, renderSideStatusSummary,
    renderProgress and the outline's per-row count, client/index.html
@@ -89,7 +90,10 @@ export function StatsProvider({ children }: { children: ReactNode }) {
       timer.current = null;
       if (!alive || !c) return;
       try {
-        setStats(statsOf(c, ydoc));
+        const st = statsOf(c, ydoc);
+        setStats(st);
+        // wave 3a: 1.0's updateStats funnel — the habit log observes every settled count (its state is this book's now)
+        c.api.wlogObserve(st.words);
       } catch {
         /* a book the closure cannot read yet: keep the last counts */
       }
@@ -100,6 +104,10 @@ export function StatsProvider({ children }: { children: ReactNode }) {
     };
     void loadClosure().then((cl) => {
       c = cl;
+      // a whole book arrived (open, replace, restore, the sample): 1.0's applyBookDoc rebases the habit log, so its
+      // words are never credited to today; and 1.0's desk clock runs from the first book on
+      cl.vars.wlogRebase = true;
+      startDeskClock(cl);
       run(); // at once on open
     }).catch(() => undefined);
     ydoc.on('update', soon);

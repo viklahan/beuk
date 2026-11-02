@@ -3,6 +3,7 @@ import { exportBook } from '@book/editor/index.js';
 import { epubState } from '@book/epub/state.js';
 import type { BookV1 } from '@book/schema.js';
 import meta from '../generated/strings-meta.json';
+import { drawIcons } from '../insights/insights';
 
 /* 1.0's own render/word-count/History code in the browser (step 5 design,
    decision 3): the generated module src/generated/closure.js
@@ -283,7 +284,73 @@ export type ClosureApi = {
   bibleTypeLabel: (type: string, plural?: boolean) => string;
   castSecLabel: (s: unknown) => string;
   CAST_STEPS: number[];
+  // wave 3a (C2): goals, the streak, the writing log, the Road so far, just-write — 1.0's own, its renderers writing into
+  // the room's and the sidebar's ids (src/goals)
+  normalizeGoals: (g: unknown) => Goals;
+  parseDayStr: (ds: unknown) => Date | null;
+  dayStr: (d: Date) => string;
+  goalMath: (goals: unknown, total: number, todayWords: number, now: Date) => GoalMathOut;
+  goalPlan: (goals: unknown, total: number, todayDone: number, now: Date) => Record<string, unknown> & { state: string };
+  goalOnPace: (goals: unknown, total: number, now: Date) => (Record<string, unknown> & { state: string; n: number }) | null;
+  goalKept: (book: unknown, fromDs: string, toDs: string) => { a: number; r: number; net: number; from: string | null; partial: boolean; none: boolean; notYet?: boolean };
+  goalKeptRange: (period: string, now: Date) => { from: string; to: string };
+  goalStreakBridges: (lastDay: string, today: Date, goals: unknown) => boolean;
+  goalWritingDaysBetween: (g: unknown, from: Date, to: Date, incl: boolean) => number;
+  goalDays: (g: unknown) => number[];
+  goalIsWritingDay: (g: unknown, d: Date) => boolean;
+  goalPlanLine: (plan: unknown) => string;
+  goalPaceLine: (p: unknown) => string;
+  goalDailyLine: (d: unknown) => string;
+  goalProjectLine: (p: unknown) => string;
+  goalDeadlineLine: (dl: unknown, total: number) => string;
+  roadPoints: (lenMap: unknown) => { ds: string; day: number; w: number }[];
+  roadSegments: (points: unknown[]) => unknown[][];
+  roadModel: (points: unknown[], goals: unknown, total: number, now?: Date) => Record<string, unknown> & { points: { ds: string; day: number; w: number }[]; segments: unknown[][]; target: number | null; pace: Record<string, number> | null; ticks: number[] };
+  roadGeom: (model: unknown, width: number) => Record<string, unknown>;
+  roadSvg: (model: unknown, geom: unknown) => string;
+  roadKeyHtml: (model: unknown, m: unknown) => string;
+  roadPointLabel: (p: unknown) => string;
+  roadLongDate: (day: number) => string;
+  wlogObserve: (total: number) => void;
+  wlogTick: (now?: number) => void;
+  wlogFlush: () => void;
+  wlogLoad: () => WriteLog;
+  wlogSave: () => void;
+  wlogTodayWords: () => number;
+  wlogTodayMinutes: () => number;
+  wlogBookKey: () => string;
+  bookTotalWords: () => number;
+  markWritingActivity: () => void;
+  renderStreak: () => void;
+  saveStreak: () => void;
+  loadStreak: () => { streak: number; lastDay: string };
+  streakState: { streak: number; lastDay: string };
+  STREAK_KEY: string;
+  WLOG_KEY: string;
+  goalStreakNow: () => number;
+  goalJustWrite: () => boolean;
+  goalSetJustWrite: (on: boolean) => void;
+  goalClearTracking: () => void;
+  goalAskClearTracking: () => Promise<boolean>;
+  goalEnsureStart: () => void;
+  goalsApply: (next: Record<string, unknown>) => void;
+  commitGoals: () => void;
+  renderGoalLines: () => void;
+  renderGoalsProgress: () => void;
+  renderGoalKept: () => void;
+  renderGoalCalendar: () => void;
+  renderGoalRoad: () => void;
+  roadShow: (idx: number, announce: boolean) => void;
+  roadHide: () => void;
+  roadNearest: (clientX: number) => number;
+  syncGoalInputs: () => void;
+  goalsRenderRoom: () => void;
 };
+/** 1.0's state.goals, normalised (normalizeGoals). */
+export type Goals = { daily: number; project: number; deadline: string; days?: number[]; dlDay?: boolean; auto?: boolean; start?: { day: string; w: number } };
+export type GoalMathOut = { has: boolean; daily: Record<string, unknown> | null; project: Record<string, unknown> | null; deadline: (Record<string, unknown> & { pace: number | null }) | null; plan: Record<string, unknown> | null; pace: Record<string, unknown> | null };
+/** 1.0's writing log (beuk.writelog.v1). */
+export type WriteLog = { days: Record<string, { w: number | null; s: number; seed?: number }>; base: number | null; baseDay: string; len: Record<string, Record<string, number>>; ar: Record<string, { from: string; days: Record<string, { a: number; r: number }> }> };
 /** 1.0's state.outline, normalised (olNormalize). */
 export type OlTag = { name: string; colour: number };
 export type OlFilter = { id: string; name: string; status: string[]; tags: string[] };
@@ -339,7 +406,20 @@ export type HistoryEntry = {
 export type State = Record<string, unknown> & { meta: Record<string, unknown>; sections: Record<string, unknown>[]; history?: HistoryEntry[] };
 
 /** 1.0's top-level lets the studio reads or sets (scripts/extract-closure.mjs VARS). */
-export type ClosureVars = { insVarPick: string; insCache: { key: string; d: InsightsData | null; ms: number; hit: boolean }; insFacts: Record<string, InsightsFact> };
+export type ClosureVars = {
+  insVarPick: string;
+  insCache: { key: string; d: InsightsData | null; ms: number; hit: boolean };
+  insFacts: Record<string, InsightsFact>;
+  // wave 3a: the writing log, its clock and the Goals room's view state
+  wlog: WriteLog;
+  wlogRebase: boolean;
+  wlogLastTick: number | null;
+  wlogFgOverride: boolean | null;
+  goalJustWriteCache: boolean | undefined;
+  goalKeptPeriod: string;
+  goalCalCursor: Date | null;
+  roadState: { model: unknown; geom: unknown; px: number[]; idx: number; width: number };
+};
 
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
 export type SampleApi = {
@@ -389,7 +469,25 @@ export const structEnv: { select: (id: string) => void; toast: (msg: string, ico
   select: () => undefined,
   toast: () => undefined,
 };
-export const cloudFacts: { available: boolean; user: unknown } = { available: false, user: null };
+/** Wave 3a adds what 1.0's streak reads of `cloud`: the server's streak (signed in) and when the last heartbeat went. */
+export const cloudFacts: { available: boolean; user: unknown; serverStreak: unknown; lastHeartbeatAt: number } = { available: false, user: null, serverStreak: null, lastHeartbeatAt: 0 };
+/** Wave 3a: what 1.0's goals and streak code call around their own code (BROWSER_SUPPLIED), set by src/goals/goals.ts:
+ *  noteBookEdited (1.0 saves the book: 2.0 writes 1.0's state.goals to the Y meta map, goals.ts goalsRun), the shelf's
+ *  heartbeat (streak.ts) and the calm confirm (2.0's useConfirm, for Clear tracking data). */
+export const writeEnv: { noteBookEdited: () => void; heartbeat: () => void; confirm: (o: Record<string, unknown>) => Promise<unknown> } = {
+  noteBookEdited: () => undefined,
+  heartbeat: () => undefined,
+  confirm: async () => false,
+};
+/** 1.0's fmtDateIntl (it reads uiLangState, which the browser studio never lifts): the same call, with the studio's
+ *  interface language. */
+export function fmtDateIntl(d: Date): string {
+  try {
+    return new Intl.DateTimeFormat(currentLang, { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
+  } catch {
+    return d.toLocaleDateString();
+  }
+}
 
 const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitledBook ?? [];
 
@@ -424,7 +522,7 @@ export function loadClosure(): Promise<Closure> {
             return pictureEnv.editSeq();
           },
         },
-        noteBookEdited: () => undefined,
+        noteBookEdited: () => writeEnv.noteBookEdited(),
         imglibRefresh: () => undefined,
         bibleSeriesTouched: () => undefined,
         cloud: cloudFacts,
@@ -436,6 +534,11 @@ export function loadClosure(): Promise<Closure> {
         refreshExportTree: () => undefined,
         selectSection: (id: string) => structEnv.select(id),
         olRender: () => undefined,
+        // wave 3a: the streak's heartbeat, the calm confirm, 1.0's icons() and fmtDateIntl
+        cloudHeartbeat: () => writeEnv.heartbeat(),
+        cloudConfirm: (o: Record<string, unknown>) => writeEnv.confirm(o),
+        icons: () => drawIcons(document),
+        fmtDateIntl,
       });
       share = c.share;
       loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, sample: null, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };

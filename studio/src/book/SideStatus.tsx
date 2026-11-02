@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { closureIfLoaded } from '../closure/index';
 import { fmtNum } from '../history/HistoryDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
@@ -10,8 +11,9 @@ import { PAGE_WORDS, useStats } from './stats';
    summary, #sideStatusBody with the four cells, the note and the progress
    bars; renderSideStatusSummary, statsCells, renderProgress). Open or
    closed is the device's own (beuk.sidebar.v1 statusOpen, closed by
-   default). Left out, each with its wave: the streak row and the goal lines
-   (wave 3, goals and streak); the shelf line (#syncRow, wave 7). */
+   default). Wave 3a adds the streak row and the goal lines (1.0's
+   renderStreak / renderGoalLines draw them). Left out: the shelf line
+   (#syncRow, wave 7). */
 
 export function SideStatus() {
   const { t, lang } = useLocale();
@@ -27,6 +29,15 @@ export function SideStatus() {
     pages: t('side.statsPages', { n: n(pages), count: pages }),
     time,
   });
+  const streakEl = useRef<HTMLSpanElement>(null);
+  const linesEl = useRef<HTMLDivElement>(null);
+  // 1.0's updateStats: renderStreak and renderGoalLines after every settled count (and on a language change)
+  useLayoutEffect(() => {
+    const c = closureIfLoaded();
+    if (!c || !stats) return;
+    c.api.renderStreak();
+    c.api.renderGoalLines();
+  }, [stats, lang]);
   const toggle = () => {
     setStatusOpen(!open);
     setOpen(!open);
@@ -77,7 +88,12 @@ export function SideStatus() {
         <p id="statsNote" className="stats-note">
           {stats ? t('stats.pagesNote', { a: n(PAGE_WORDS), b: n(stats.readWpm) }) : ''}
         </p>
-        {/* the streak row and the goal lines: wave 3 (goals and streak) */}
+        {/* wave 3a: 1.0's streak row and goal lines; 1.0's renderStreak / renderGoalLines fill them (React leaves their insides alone) */}
+        <div className="streak-row">
+          <Icon name="Flame" />
+          <span id="streakText" ref={streakEl} />
+        </div>
+        <div className="goal-lines" id="goalLines" style={{ display: 'none' }} ref={linesEl} />
         <div className="prog-block" id="progressBlock">
           {bar('front', 'side.groupFront', 'Front')}
           {bar('body', 'side.groupBody', 'Body')}
