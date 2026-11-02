@@ -387,6 +387,10 @@ export function mineSync(): Promise<void> {
 
 const body = (r: Record<string, unknown> | null) => (r && isRec(r.__body) ? r.__body : null);
 const status = (r: Record<string, unknown> | null) => (r && typeof r.__status === 'number' ? r.__status : r ? 200 : 0);
+/** Answers that say "not now", never "not this" (review round 2, Important 2): an expired session (401), a refusal
+ *  that a sign-in can change (403), a timeout (408), too many requests (429) and the server's own trouble (5xx). The
+ *  write waits and is sent again (the retries, the next load after a sign-in); only 400, 413 and 422 refuse it. */
+const retryable = (st: number) => st === 401 || st === 403 || st === 408 || st === 429 || st >= 500;
 
 async function syncOnce(): Promise<void> {
   const o = owner;
@@ -413,14 +417,14 @@ async function uploadAssets(r: MineRec): Promise<'ok' | 'offline' | 'refused'> {
   if (!hashes.length) return 'ok';
   const ask = await apiFetch('/api/pictures/missing', { method: 'POST', body: JSON.stringify({ hashes }) });
   if (!ask) return 'offline';
-  if (ask.__error) return status(ask) >= 500 ? 'offline' : 'refused';
+  if (ask.__error) return retryable(status(ask)) ? 'offline' : 'refused';
   const missing = Array.isArray(ask.missing) ? (ask.missing as unknown[]).filter((h): h is string => typeof h === 'string' && hashes.includes(h)) : [];
   for (const h of missing) {
     const b = await mineBytes(h);
     if (!b) return 'refused';
     const up = await apiFetch('/api/pictures/' + h, { method: 'PUT', body: JSON.stringify(b) });
     if (!up) return 'offline';
-    if (up.__error) return status(up) >= 500 ? 'offline' : 'refused';
+    if (up.__error) return retryable(status(up)) ? 'offline' : 'refused';
   }
   return 'ok';
 }
@@ -472,7 +476,7 @@ async function sendPut(r: MineRec): Promise<void> {
     return;
   }
   if (st === 413) return refuse(r, body(res)?.limitThemes ? 'full' : 'large');
-  if (st >= 500) return; // the server's trouble: tried again later
+  if (retryable(st)) return; // not now (a session, a limit, the server's trouble): tried again later
   return refuse(r, 'other');
 }
 

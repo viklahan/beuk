@@ -352,6 +352,57 @@ describe('review round 2 (Important 1): jsonb does not keep key order', () => {
   });
 });
 
+describe('review round 2 (Important 2): an expired session is not a refusal', () => {
+  it('a 401 on /api/pictures/missing, then on the theme PUT: still waiting (also after a reload); signed in again, it is sent', async () => {
+    signIn('ua');
+    await mineLoad();
+    const orig = acct.fetch;
+    let expired = true;
+    let missing401 = 0, put401 = 0;
+    acct.fetch = async (p, init) => {
+      if (expired && p === '/api/pictures/missing') {
+        missing401++;
+        if (missing401 === 1) return new Response(JSON.stringify({ error: 'sign in' }), { status: 401 });
+      }
+      if (expired && p === '/api/themes/t11' && init?.method === 'PUT') {
+        put401++;
+        return new Response(JSON.stringify({ error: 'sign in' }), { status: 401 });
+      }
+      return orig(p, init);
+    };
+    setCovenantFetch(acct.fetch as typeof fetch);
+    await mineSave(doc('t11', 'Expired'), bytes());
+    await mineSync(); // 401 on the pictures question
+    expect(mineList().map((r) => [r.key, r.dirty, r.refused])).toEqual([['t11', true, undefined]]);
+    await mineSync(); // the pictures go; 401 on the theme
+    // (mineSave's own sync joins these calls, so a round may run twice: at least once each)
+    expect(missing401).toBeGreaterThanOrEqual(2);
+    expect(put401).toBeGreaterThanOrEqual(1);
+    expect(mineList().map((r) => [r.key, r.dirty, r.refused])).toEqual([['t11', true, undefined]]);
+    mineReset(); // a reload, the session still expired
+    await mineLoad();
+    expect(mineList().map((r) => [r.key, r.dirty, r.refused])).toEqual([['t11', true, undefined]]);
+    expect(refusals).toEqual([]);
+    // signed in again: the next load sends it
+    expired = false;
+    mineReset();
+    await mineLoad();
+    expect(acct.of(acct.themes).get('t11')?.name).toBe('Expired');
+    expect(mineList().map((r) => [r.key, r.dirty, r.revision])).toEqual([['t11', false, 1]]);
+  });
+
+  it('a 400 or 422 is still a refusal (kept on the device, marked, said)', async () => {
+    signIn('ua');
+    await mineLoad();
+    const orig = acct.fetch;
+    acct.fetch = async (p, init) => (p === '/api/themes/t12' && init?.method === 'PUT' ? new Response(JSON.stringify({ error: 'bad' }), { status: 400 }) : orig(p, init));
+    setCovenantFetch(acct.fetch as typeof fetch);
+    await mineSave(doc('t12', 'Bad'), bytes());
+    await mineSync();
+    expect(mineList().map((r) => [r.key, r.refused])).toEqual([['t12', 'other']]);
+  });
+});
+
 describe('review (Minor): a stale delete whose answer carries no theme does not retry forever', () => {
   it('the tombstone goes and the list is read again', async () => {
     signIn('ua');
