@@ -111,8 +111,8 @@ const undoManager = (editor: Editor) => yUndoPluginKey.getState(editor.state)?.u
 
 /** Write `next` (a whole new text and its selection) into the editor: one transaction, one undo step. Returns false when
  *  the editor is gone. */
-/** `merge` (wave 3a, dictation): this edit joins the undo step of the edit before it — one recogniser session's
- *  rewrites of its span are ONE undo step, as 1.0's textarea gives one per phrase. */
+/** `merge` (wave 3a, dictation): this edit joins the undo step of the edit before it — a phrase's interim rewrites
+ *  and its final are ONE undo step; environment/page.ts decides where a phrase ends. */
 export function applyTextEdit(editor: Editor, next: TextEdit, opts: { merge?: boolean } = {}): boolean {
   if (editor.isDestroyed) return false;
   const { state } = editor;

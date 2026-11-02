@@ -104,7 +104,7 @@ function writeLangBack(c: Closure, y: Y.Doc): void {
 
 /* ---- 1.0's textarea, over the open editor ---- */
 
-let lastSpan: { editor: Editor; start: number; gen: number } | null = null;
+let lastSpan: { editor: Editor; start: number; gen: number; finals: string; closed: boolean } | null = null;
 function areaStandIn(): Record<string, unknown> | null {
   const a = activeEditor();
   if (!a || a.editor.isDestroyed) return null;
@@ -149,13 +149,17 @@ function areaStandIn(): Record<string, unknown> | null {
       if (ev.type !== 'input' || !pending) return true;
       const next = pending;
       pending = null;
-      // dictation: one session span's rewrites are one undo step (dict.applying is set by 1.0 around them)
+      /* dictation: one undo step per committed phrase (plan constraint 23; dict.applying is set by 1.0 around its
+         rewrites). A phrase's interim rewrites and its final merge; the write that grows the session's finals closes
+         the phrase, so the next write (the next phrase's first interim) starts a new step. */
       const c = closureIfLoaded();
-      const d = c?.api.dict as { applying: boolean; spanStart: number; gen: number } | undefined;
+      const d = c?.api.dict as { applying: boolean; spanStart: number; gen: number; sessFinals: string } | undefined;
       let merge = false;
       if (d && d.applying && d.spanStart >= 0) {
-        merge = !!lastSpan && lastSpan.editor === ed && lastSpan.start === d.spanStart && lastSpan.gen === d.gen;
-        lastSpan = { editor: ed, start: d.spanStart, gen: d.gen };
+        const same = !!lastSpan && lastSpan.editor === ed && lastSpan.start === d.spanStart && lastSpan.gen === d.gen;
+        merge = same && !lastSpan!.closed;
+        const closed = same ? d.sessFinals !== lastSpan!.finals : !!d.sessFinals;
+        lastSpan = { editor: ed, start: d.spanStart, gen: d.gen, finals: d.sessFinals, closed };
       } else lastSpan = null;
       applyTextEdit(ed, next, { merge });
       return true;

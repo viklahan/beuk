@@ -372,6 +372,37 @@ describe('Dictation (A9)', () => {
     expect(editorText(ed).text).toBe(text0);
   }, 60_000);
 
+  it('dictation.insert: two phrases in ONE recogniser session are two Undo steps (one per committed phrase, plan constraint 23)', async () => {
+    const recs = stubRecognition();
+    c.api.dict.seen = true;
+    localStorage.setItem('beuk.dictSeen.v1', '1');
+    await studioWith(bookOf(['Hello there.']));
+    const ed = activeEditor()!.editor;
+    const text0 = editorText(ed).text;
+    act(() => {
+      ed.commands.focus('end');
+    });
+    act(() => $('btnDictate').click());
+    expect(recs).toHaveLength(1);
+    // phrase 1: interim, then final
+    act(() => recs[0]!.onresult!(results([['first', false]])));
+    act(() => recs[0]!.onresult!(results([['first words', true]])));
+    // phrase 2 in the same session: interim churn, then final
+    act(() => recs[0]!.onresult!(results([['first words', true], ['and', false]])));
+    act(() => recs[0]!.onresult!(results([['first words', true], ['and more', false]])));
+    act(() => recs[0]!.onresult!(results([['first words', true], ['and more', true]])));
+    expect(editorText(ed).text).toBe(text0 + ' first words and more');
+    act(() => $('btnDictate').click()); // stop
+    act(() => {
+      ed.commands.undo();
+    });
+    expect(editorText(ed).text).toBe(text0 + ' first words');
+    act(() => {
+      ed.commands.undo();
+    });
+    expect(editorText(ed).text).toBe(text0);
+  }, 60_000);
+
   it('dictation.language-suggest / lang: Spanish at the end of an English book offers "dictate in Spanish"; accepting writes 1.0\'s dictation key', async () => {
     stubRecognition();
     c.api.dict.seen = true;

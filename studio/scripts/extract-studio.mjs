@@ -219,9 +219,9 @@ export function extractTokens(html) {
    1.0's own rules for Zen (BEUK:zencalm, the day cycle, the sound popover, the dock, the stage), Read Aloud and
    dictation (the popover, the language picker, the language bar), lifted verbatim from the <head> stylesheet into
    src/generated/environment.css: one source, nothing retyped. A rule is taken when one of its selectors names a part
-   of these features (ENV_SELECTOR, case-insensitive: 1.0 names #btnZenSound, #btnZenExit…); inside @media / @supports the same test runs rule by rule; an @keyframes or
+   of these features (ENV_SELECTOR: zen/dict at a word start or camel-cased, so 1.0's #btnZenSound, #btnZenExit… match and "frozen"/"verdict" don't); inside @media / @supports the same test runs rule by rule; an @keyframes or
    @property is taken when the taken rules use it. Fails loudly when 1.0 no longer has the anchor rules. */
-export const ENV_SELECTOR = /zen|#zd|\.zd-|\bzs-|\.zi-|#zenIndex|\.zn-|\.zp-|\.zt-|\.zf-|\.zd-label|#raPop|\.ra-|#btnReadAloud|#raLangSug|dict|#dictPop|\.dp-|#langBar|\.lb-|focus-cluster|#editorWordBar/i;
+export const ENV_SELECTOR = /(?<![a-zA-Z])zen|Zen|#zd|\.zd-|\bzs-|\.zi-|#zenIndex|\.zn-|\.zp-|\.zt-|\.zf-|\.zd-label|#raPop|\.ra-|#btnReadAloud|#raLangSug|(?<![a-zA-Z])dict|Dict|\.dp-|#langBar|\.lb-|focus-cluster|#editorWordBar/;
 const BACKSLASH = String.fromCharCode(92);
 const ENV_ANCHORS =['#zenPill', 'body.zen #topbar', '#raPop', '#dictPop', '#langBar'];
 
