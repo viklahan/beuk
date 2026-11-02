@@ -89,8 +89,14 @@ async function cspAndOffline() {
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
+  /* serve.mjs answers every /api/* with 404 (no shelf in these runs) and, since wave 3a, the studio probes /api/health
+     at boot as 1.0 does (the streak). Chrome logs each as a console 404 without its URL, so the console line is dropped
+     and the responses are checked instead: a 4xx on /api/ is the expected no-shelf answer; anything else is an error. */
   page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(m.text());
+    if (m.type() === 'error' && !/^Failed to load resource: the server responded with a status of 404/.test(m.text())) errors.push(m.text());
+  });
+  page.on('response', (r) => {
+    if (r.status() >= 400 && !new URL(r.url()).pathname.startsWith('/api/')) errors.push(`${r.status()} ${r.url()}`);
   });
   try {
     const res = await page.goto(srv.origin + '/next/');
