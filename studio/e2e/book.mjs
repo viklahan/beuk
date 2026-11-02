@@ -356,6 +356,10 @@ async function readOnlyRooms(page) {
   await page.click('#tabBtnContent');
   done.push('the Style tab (15 presets hovered, the creator opened and closed)');
   done.push(await previewBrowse(page));
+  // wave 4c (constraint 45): the cover maker opened from Project Settings, browsed (layouts, backgrounds, an element,
+  // bindings, the spine and back, the 3D book turned) and cancelled; no stock search here (wave4cGate searches)
+  await page.waitForFunction(() => !!window.beukCover && document.getElementById('cmSpineBody')?.getAttribute('data-built') === '1', null, { timeout: 60_000 });
+  done.push('the cover maker (' + (await w4cBrowse(page, { search: false })) + ')');
   return done.join(' + ');
 }
 /** Wave 4b (constraint 38): the preview browsed — every device, pages turned both ways, a desk rail row, full screen on
@@ -3633,6 +3637,578 @@ async function wave4bChecks(origin) {
   }
 }
 
+/* ---- wave 4c: the cover maker, spine, back, hardcover flaps and guides, the wrap and its 3D stand (D3, D4) ----
+   Beside 1.0 with the same book, in the same browser:
+   - pixel parity (constraint 41): for the fixtures with a recipe, every captured wrap-parity patch
+     (tests/fixtures/wrap-parity) and a recipe set covering every layout × background type, every texture, every
+     binding, the spine's and back's backgrounds, patterns, text, direction and icons: 1.0's drawCoverTo (the front),
+     drawWrapTo at the maker's preview size, renderWrapCanvas at 300 DPI (the full wrap) and its spine and back panels
+     equal 1.0's pixel for pixel (a hash of every pixel), after a warm-up pass in both; wrapDims for every trim, page
+     count, paper and binding equals 1.0's;
+   - the no-edit gate (constraint 45): opening the maker, switching its backgrounds and layouts, hovering, searching
+     stock photos without choosing one (Openverse answered by the test), turning the 3D book and closing without
+     saving leave the export exactly equal;
+   - round trip (constraint 42): a recipe edited in 2.0 ("Use as My Cover") reads back in 1.0 exactly;
+   - the preview's hardcover follows the new cover (4b reads it);
+   - the wrap PDF (constraint 44): POST /api/wrap with the same book and recipe as 1.0's request; signed out and
+     offline, 1.0's own messages;
+   - the hostile cover (constraint 43): hostile font names, colours, text with markup and picture data in the recipe;
+     the app outside the maker is unaffected, no request leaves the page, no handler runs;
+   - the maker's dialog screenshotted beside 1.0's (Paper, Candlelight, Arabic: reported). */
+/** In a page: each recipe (null: the book's own) painted the four ways, after a warm-up; and the wrap's dims. */
+const W4C_PAINT = async ([recipes, two]) => {
+  const one = two ? null : { drawCoverTo, drawWrapTo, renderWrapCanvas, wrapDims, normalizeCoverRecipe, defaultCoverRecipe, ensureCoverBgImage, ensureWrapIcons, hcEnsureFlapPhoto };
+  const R = (fn) => (two ? window.beukCover.run((a, c) => fn(a, c.getState())) : fn(one, state));
+  const hashOf = (cv, x, y, w, h) => {
+    x = Math.round(x || 0); y = Math.round(y || 0); w = Math.max(1, Math.round(w || cv.width)); h = Math.max(1, Math.round(h || cv.height));
+    const d = cv.getContext('2d').getImageData(x, y, w, h).data;
+    const u = new Uint32Array(d.buffer);
+    let a = 0x811c9dc5;
+    const tiles = new Array(16).fill(0x811c9dc5);
+    for (let i = 0; i < u.length; i++) {
+      a = Math.imul(a ^ u[i], 16777619);
+      const k = Math.min(3, Math.floor((Math.floor(i / w) * 4) / h)) * 4 + Math.min(3, Math.floor(((i % w) * 4) / w));
+      tiles[k] = Math.imul(tiles[k] ^ u[i], 16777619);
+    }
+    return { size: w + 'x' + h, hash: (a >>> 0).toString(16), tiles: tiles.map((t) => (t >>> 0).toString(16)) };
+  };
+  const paint = (a, r) => {
+    const front = document.createElement('canvas');
+    front.width = 800; front.height = 1280;
+    const items = a.drawCoverTo(front, r);
+    const d = a.wrapDims(r);
+    const prev = document.createElement('canvas');
+    prev.width = 1240; prev.height = Math.round(1240 * d.totalH / d.totalW);
+    const pitems = a.drawWrapTo(prev, r, { guides: true, preview: true });
+    const full = a.renderWrapCanvas(r, {});
+    const L = d.layout, px = 300;
+    return {
+      dims: JSON.stringify(d), items: JSON.stringify(items), pitems: JSON.stringify(pitems),
+      front: hashOf(front), preview: hashOf(prev), wrap: hashOf(full),
+      spine: hashOf(full, L.spineX * px, L.topY * px, Math.max(1, d.spine * px), L.panelH * px),
+      back: hashOf(full, L.backX * px, L.topY * px, L.panelW * px, L.panelH * px),
+      frontPanel: hashOf(full, L.frontX * px, L.topY * px, L.panelW * px, L.panelH * px),
+      // the 300 DPI wrap box-averaged to 600 px wide (as tests/book-wrap-parity.test.ts compares the server's): where
+      // Chrome itself does not paint the same 300 DPI canvas twice alike, the closeness is measured on this
+      down: (() => {
+        const W = full.width, H = full.height, tw = 600, th = Math.round(tw * H / W);
+        const d = full.getContext('2d').getImageData(0, 0, W, H).data;
+        const sum = new Float64Array(tw * th * 3), cnt = new Uint32Array(tw * th);
+        for (let y = 0; y < H; y++) {
+          const row = Math.min(th - 1, Math.floor(y * th / H)) * tw;
+          for (let x = 0, i = y * W * 4; x < W; x++, i += 4) { const t = row + Math.min(tw - 1, Math.floor(x * tw / W)); sum[t * 3] += d[i]; sum[t * 3 + 1] += d[i + 1]; sum[t * 3 + 2] += d[i + 2]; cnt[t]++; }
+        }
+        let s = '';
+        for (let t = 0; t < tw * th; t++) for (let k = 0; k < 3; k++) s += String.fromCharCode(Math.round(sum[t * 3 + k] / cnt[t]));
+        return btoa(s);
+      })(),
+    };
+  };
+  const out = [];
+  for (const r0 of recipes) {
+    const r = R((a, st) => a.normalizeCoverRecipe(JSON.parse(JSON.stringify(r0 || st.coverRecipe || a.defaultCoverRecipe()))));
+    await R((a) => Promise.all([a.ensureCoverBgImage(r), a.ensureWrapIcons(r), a.hcEnsureFlapPhoto(r)]));
+    R((a) => paint(a, r)); // warm-up: the faces it sets type in start loading
+    await document.fonts.ready;
+    await new Promise((res) => setTimeout(res, 30));
+    R((a) => paint(a, r));
+    await document.fonts.ready;
+    out.push(R((a) => paint(a, r)));
+  }
+  return out;
+};
+const W4C_DIMS = ([two]) => {
+  const one = two ? null : { wrapDims, normalizeCoverRecipe, defaultCoverRecipe, TRIM_SIZES, HC_BINDINGS };
+  const R = (fn) => (two ? window.beukCover.run((a, c) => fn(a, c.getState())) : fn(one, state));
+  return R((a, st) => {
+    const base = a.normalizeCoverRecipe(JSON.parse(JSON.stringify(st.coverRecipe || a.defaultCoverRecipe())));
+    const rows = [];
+    for (const trim of ['', ...a.TRIM_SIZES.map((x) => x.id)])
+      for (const pages of [0, 24, 151, 600, 828])
+        for (const paper of ['white', 'cream', 'custom'])
+          for (const binding of a.HC_BINDINGS)
+            for (const hcSpine of [0, 1.25]) {
+              const r = JSON.parse(JSON.stringify(base));
+              Object.assign(r.wrap, { trim, pages, paper, customFactor: 0.0031, binding, hcSpine });
+              rows.push(trim + '|' + pages + '|' + paper + '|' + binding + '|' + hcSpine + '=' + JSON.stringify(a.wrapDims(r)));
+            }
+    return rows;
+  });
+};
+/** The recipe set: every layout × background type (on the book's own recipe and its pictures), every texture, every
+ *  binding, the spine's and back's backgrounds, every pattern, custom spine text both ways, a Lucide and an uploaded
+ *  icon, the jacket's flaps with an author photo, other trims and papers, free positions. */
+function w4cRecipes(book) {
+  const base = JSON.parse(JSON.stringify(book.coverRecipe));
+  const pics = (book.images || []).filter((im) => im && !im.flourish && /^image\/(jpeg|png)$/.test(im.mediaType)).map((im) => im.id);
+  const pic = pics[0], pic2 = pics[1] || pics[0];
+  const out = [];
+  const L = ['classic', 'modern', 'editorial', 'banded', 'framed', 'minimal', 'free'];
+  const B = ['solid', 'gradient', 'texture', 'image', 'duotone', 'photo'];
+  for (const layout of L) for (const bgType of B) out.push({ name: `${layout}/${bgType}`, r: { ...base, layout, bgType, bgImageId: pic, bgColor: '#3b2f63', bgColor2: '#dcb96f' } });
+  for (const texture of ['linen', 'speckle', 'vignette']) out.push({ name: `texture ${texture}`, r: { ...base, bgType: 'texture', texture } });
+  out.push({ name: 'duotone without art (the harbour scene)', r: { ...base, bgType: 'duotone', bgImageId: null } });
+  const free = JSON.parse(JSON.stringify(base));
+  free.layout = 'free';
+  free.elements.title.pos = { x: 0.3, y: 0.1 };
+  free.elements.author.pos = { x: 0.8, y: 0.9 };
+  free.tagline = 'A tagline that wraps onto more than one line of the cover, here';
+  free.series = 'The Gullwick Books';
+  out.push({ name: 'free positions, tagline, series', r: free });
+  const w = (patch, name) => out.push({ name, r: { ...base, wrap: { ...base.wrap, ...patch } } });
+  w({ binding: 'case', trim: '6x9', pages: 320 }, 'case laminate 6x9 320 pp');
+  w({ binding: 'jacket', trim: '6x9', pages: 320, flapFront: 'The front flap tells what the book is about, at some length, so that it wraps.', flapBack: 'About the author: a writer of coasts.', flapPhotoId: pic2 }, 'dust jacket with flaps and photo');
+  w({ binding: 'case', hcSpine: 1.1, hcSpineAllow: 0.06, pages: 500 }, 'case from the printer template');
+  w({ trim: '5x8', pages: 150, paper: 'cream', blurb: 'A back-cover blurb\n\nwith two paragraphs.', quote: '“A quote.” — Someone', imprint: 'Quiet Shelf Studio' }, '5x8 cream, blurb, quote, imprint');
+  w({ trim: '8.5x11', pages: 40, paper: 'custom', customFactor: 0.0042 }, 'narrow spine, custom paper');
+  w({ spine: { bg: { mode: 'gradient', color: '#112233', color2: '#ddcc88', dir: 'across' }, show: 'custom', text: 'CUSTOM SPINE', caps: false, dir: 'btt', iconTop: { kind: 'lucide', name: 'Feather' }, iconBottom: { kind: 'upload', picId: pic }, font: 'Lora', color: '#f0e0c0' }, pages: 400 }, 'spine: gradient, custom text, btt, icons');
+  w({ spine: { bg: { mode: 'solid', color: '#7a1f1f' }, show: 'title', iconTop: { kind: 'lucide', name: 'Anchor' } }, back: { bg: { mode: 'gradient', color: '#0f4c5c', color2: '#232a33', dir: 'diag-up' }, font: 'Lora', color: '#eeeeee' }, pages: 300 }, 'spine solid title only, back gradient');
+  for (const pattern of ['linen', 'speckle', 'vignette', 'dots', 'stripes', 'grid', 'diamonds'])
+    w({ spine: { bg: { mode: 'pattern', pattern, color: '#3d2c1e', color2: '#c9a959' }, show: 'author' }, back: { bg: { mode: 'pattern', pattern, color: '#14532d', color2: '#e9e2d0' } }, pages: 360 }, `pattern ${pattern}`);
+  return out;
+}
+/** The captured wrap-parity patches (tests/fixtures/wrap-parity), applied as tests/book-wrap-parity.test.ts does. */
+function w4cMerge(a, b) {
+  const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+  if (!isObj(a) || !isObj(b)) return structuredClone(b);
+  const o = { ...a };
+  for (const k of Object.keys(b)) o[k] = isObj(a[k]) && isObj(b[k]) ? w4cMerge(a[k], b[k]) : structuredClone(b[k]);
+  return o;
+}
+function w4cCaptureBooks() {
+  const dir = path.join(REPO, 'tests', 'fixtures', 'wrap-parity');
+  const load = (rel) => JSON.parse(readFileSync(path.join(REPO, 'tests', 'fixtures', rel), 'utf8')).book;
+  return readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((f) => {
+    const cap = JSON.parse(readFileSync(path.join(dir, f), 'utf8'));
+    const b = structuredClone(load(cap.book));
+    const p = cap.patch || {};
+    if (p.meta) b.meta = { ...b.meta, ...p.meta };
+    if (p.theme) b.theme = structuredClone(p.theme);
+    if (p.recipe) b.coverRecipe = w4cMerge(b.coverRecipe, p.recipe);
+    if (p.fonts) b.fonts = p.fonts.map((x) => ({ ...load(x.from).fonts[x.index || 0], ...(x.family ? { family: x.family } : {}) }));
+    return { name: 'capture ' + cap.name, book: b, lang: cap.lang };
+  });
+}
+function w4cBackup(name, book) {
+  return w4File(name.replace(/[^\w.-]+/g, '-') + '.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book }));
+}
+const w4cParity = { rows: [], dims: [] };
+/** Two 600 px box-averaged renders (RGB bytes, base64): mean and max absolute channel difference. */
+function w4cNear(a, b) {
+  const x = Buffer.from(a, 'base64'), y = Buffer.from(b, 'base64');
+  if (x.length !== y.length) return { mean: Infinity, max: 255 };
+  let sum = 0, max = 0;
+  for (let i = 0; i < x.length; i++) { const d = Math.abs(x[i] - y[i]); sum += d; if (d > max) max = d; }
+  return { mean: sum / x.length, max };
+}
+/** 2.0 with a book open and its cover maker wired (the closure loaded, 1.0's initCoverMaker run, Lucide in). */
+async function w4cOpen(ctx, origin, file) {
+  const page = await openNext(ctx, origin);
+  await openBackup(page, file);
+  await page.waitForFunction(() => !!window.beukCover && !!window.lucide && document.querySelectorAll('#cmElFont option').length > 10 && document.getElementById('cmSpineBody')?.getAttribute('data-built') === '1', null, { timeout: 60_000 });
+  return page;
+}
+async function wave4cParity(origin) {
+  const narrow = (process.env.W4C_BOOKS || '').split(',').filter(Boolean);
+  const books = [
+    ...fixtures.filter((f) => f.book.coverRecipe).map((f) => ({ name: f.name, book: f.book, file: f.file, set: f.name === 'real/lantern-coast-book-one' })),
+    ...w4cCaptureBooks().map((b) => ({ ...b, file: w4cBackup(b.name, b.book), set: false })),
+  ].filter((b) => !narrow.length || narrow.some((n) => b.name.includes(n)));
+  for (const b of books) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const page = await w4cOpen(ctx, origin, b.file);
+      const start = (await exportBackup(page)).json.book;
+      const one = await openOne(ctx, origin);
+      await one.evaluate((bk) => applyBookDoc(JSON.parse(JSON.stringify(bk))), start);
+      await one.waitForFunction(() => !!window.lucide);
+      const set = [{ name: "the book's own recipe", r: null }, ...(b.set ? w4cRecipes(start) : [])];
+      const recipes = set.map((x) => x.r);
+      await one.bringToFront();
+      const A = await one.evaluate(W4C_PAINT, [recipes, false]);
+      await page.bringToFront();
+      const B = await page.evaluate(W4C_PAINT, [recipes, true]);
+      // Chrome's own noise at 300 DPI: 1.0 painting the same recipes again, in its own page
+      await one.bringToFront();
+      const A2 = await one.evaluate(W4C_PAINT, [recipes, false]);
+      let bad = 0;
+      set.forEach((x, i) => {
+        const near = w4cNear(A[i].down, B[i].down), noise = w4cNear(A[i].down, A2[i].down);
+        for (const part of ['front', 'preview', 'wrap', 'spine', 'back', 'frontPanel']) {
+          const a = A[i][part], c = B[i][part];
+          const same = a.size === c.size && a.hash === c.hash;
+          const tiles = a.tiles.filter((t, k) => t !== c.tiles[k]).length;
+          const selfSame = A2[i][part].hash === a.hash;
+          // exact where 1.0 paints the part alike twice; where it does not (Chrome's 300 DPI canvas), 2.0's distance
+          // from 1.0 is held to 1.0's distance from itself
+          // (measured: 1.0 against itself differs at 300 DPI in 130 of 141 front-panel renders, by at most 1 in 255 at
+          // 600 px, mean 0.000; never at the maker's sizes, nor in the spine or back panels)
+          const ok = same || (a.size === c.size && (part === 'wrap' || part === 'frontPanel') && near.max <= 1 && near.mean <= 0.01);
+          w4cParity.rows.push({ book: b.name, recipe: x.name, part, size: c.size, same, ok, selfSame, tiles, near, noise });
+          if (!ok) { bad++; check(false, `wave4c pixel parity ${b.name} · ${x.name} · ${part}: 1.0 ${a.size} ${a.hash} / 2.0 ${c.size} ${c.hash} (${tiles} of 16 tiles differ; 600 px: mean ${near.mean.toFixed(3)} max ${near.max}; 1.0 against itself: ${selfSame ? 'equal' : `mean ${noise.mean.toFixed(3)} max ${noise.max}`})`); }
+        }
+        for (const k of ['dims', 'items', 'pitems']) if (A[i][k] !== B[i][k]) { bad++; check(false, `wave4c ${b.name} · ${x.name}: ${k} differ (1.0 ${A[i][k].slice(0, 160)} / 2.0 ${B[i][k].slice(0, 160)})`); }
+      });
+      check(bad === 0, `wave4c review focus #1 (constraint 41): ${b.name}: ${set.length} recipe(s) × front, maker preview, 300 DPI wrap, spine, back, front panel — every pixel, wrapDims and the drawn items equal 1.0's`);
+      if (b.set || b.name === 'real/lantern-coast-print') {
+        await one.bringToFront();
+        const da = await one.evaluate(W4C_DIMS, [false]);
+        await page.bringToFront();
+        const db = await page.evaluate(W4C_DIMS, [true]);
+        const diff = da.filter((r, i) => r !== db[i]);
+        w4cParity.dims.push({ book: b.name, n: da.length, same: diff.length === 0 && da.length === db.length });
+        check(diff.length === 0 && da.length === db.length, `wave4c constraint 41: ${b.name}: wrapDims for every trim (${da.length} trim × page count × paper × binding × template spine combinations) equals 1.0's${diff.length ? ' — first: ' + diff[0].slice(0, 200) : ''}`);
+      }
+      for (const p of [page, one]) await harvestCsp(p);
+    } finally {
+      await ctx.close();
+    }
+  }
+  const byBook = {};
+  for (const r of w4cParity.rows) (byBook[r.book] ||= { n: 0, bad: 0, parts: {} }), byBook[r.book].n++, (r.same ? 0 : byBook[r.book].bad++), ((byBook[r.book].parts[r.part] ||= [0, 0])[r.same ? 0 : 1]++);
+  note('wave4c pixel parity: "equal" counts parts equal to the last bit');
+  note('wave4c pixel parity (book: equal/total per part):');
+  for (const [k, v] of Object.entries(byBook)) note(`  ${k}: ` + Object.entries(v.parts).map(([p, [s, d]]) => `${p} ${s}/${s + d}`).join(', '));
+  const near = w4cParity.rows.filter((r) => !r.same && r.ok);
+  const selfNoisy = w4cParity.rows.filter((r) => !r.selfSame);
+  note(`  1.0 against itself (the same recipes painted again in its page): ${selfNoisy.length} of ${w4cParity.rows.length} parts differ — ` + ([...new Set(selfNoisy.map((r) => r.part))].join(', ') || 'none') + (selfNoisy.length ? `; worst 600 px distance mean ${Math.max(...selfNoisy.map((r) => r.noise.mean)).toFixed(3)} max ${Math.max(...selfNoisy.map((r) => r.noise.max))}` : ''));
+  if (near.length) note(`  2.0 not equal to the last bit but within Chrome's 300 DPI noise: ${near.length} — ` + [...new Set(near.map((r) => r.part))].join(', ') + `; worst 600 px distance mean ${Math.max(...near.map((r) => r.near.mean)).toFixed(3)} max ${Math.max(...near.map((r) => r.near.max))}`);
+  for (const d of w4cParity.dims) note(`  wrapDims ${d.book}: ${d.n} combinations ${d.same ? 'equal' : 'DIFFER'}`);
+}
+
+/** Openverse, answered by the test: a result whose thumbnail the policy allows and one whose does not. */
+async function w4cStockRoutes(ctx) {
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  const asked = [];
+  await ctx.route('https://api.openverse.org/**', (route) => {
+    const u = route.request().url();
+    asked.push(u);
+    if (/\/v1\/images\/\?/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ results: [
+      { title: 'Harbour', creator: 'A Photographer', url: 'https://images.pexels.com/photos/1/harbour.png', thumbnail: 'https://api.openverse.org/v1/images/1/thumb/', foreign_landing_url: 'https://example.org/1' },
+      { title: 'Elsewhere', creator: 'B', url: 'https://elsewhere.example/2.png', thumbnail: 'https://elsewhere.example/2-thumb.png' },
+    ] }) });
+    return route.fulfill({ status: 200, contentType: 'image/png', headers: { 'access-control-allow-origin': '*' }, body: png });
+  });
+  await ctx.route('https://images.pexels.com/**', (route) => { asked.push(route.request().url()); return route.fulfill({ status: 200, contentType: 'image/png', headers: { 'access-control-allow-origin': '*' }, body: png }); });
+  return asked;
+}
+/** The maker browsed: opened from Project Settings, every layout and background, an element, the wrap's binding, a
+ *  stock search without a choice, the 3D book turned, Cancel. Returns what was done. */
+async function w4cBrowse(page, { search = true } = {}) {
+  await page.click('#btnSettings2');
+  await page.waitForSelector('#btnCoverMake');
+  await page.click('#btnCoverMake');
+  await page.waitForFunction(() => document.getElementById('modalCoverMaker').classList.contains('open'));
+  for (const l of ['modern', 'banded', 'free']) await page.click(`[data-cmlayout="${l}"]`);
+  for (const bg of ['gradient', 'texture', 'image', 'duotone', 'solid', 'photo']) await page.click(`[data-cmbg="${bg}"]`);
+  const art = page.locator('#cmArtGrid [data-cmart]');
+  if (await art.count()) await art.first().hover();
+  await page.selectOption('#cmElement', 'author');
+  await page.selectOption('#cmHcBinding', 'jacket');
+  await page.selectOption('#cmHcBinding', 'case');
+  await page.locator('#cmSpineSec summary').click();
+  await page.locator('#cmBackSec summary').click();
+  let searched = 0;
+  if (search) {
+    await page.click('[data-cmbg="photo"]');
+    await page.fill('#cmPhotoQuery', 'harbour');
+    await page.click('#btnCmPhotoFind');
+    await page.waitForFunction(() => document.querySelectorAll('#cmPhotoGrid .cm-photo-cell').length > 0, null, { timeout: 15_000 });
+    searched = await page.evaluate(() => document.querySelectorAll('#cmPhotoGrid .cm-photo-cell').length);
+    await page.locator('#cmPhotoGrid .cm-photo-cell').first().hover();
+  }
+  const stage = page.locator('#cmWrap3dStage');
+  await stage.scrollIntoViewIfNeeded();
+  const box = await stage.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2 + 10, { steps: 5 });
+  await page.mouse.up();
+  await page.keyboard.press('ArrowRight');
+  await page.click('#btnCmCancel');
+  await page.waitForFunction(() => !document.getElementById('modalCoverMaker').classList.contains('open'));
+  await page.keyboard.press('Escape'); // Project Settings, without saving
+  return `layouts, backgrounds, an element, two bindings, the spine and back opened, ${search ? `a stock search (${searched} shown, none chosen), ` : ''}the 3D book turned, Cancel`;
+}
+async function wave4cGate(origin) {
+  for (const name of ['real/lantern-coast-print', 'real/salt-road-book-one', 'legacy/theme-missing']) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const asked = await w4cStockRoutes(ctx);
+      const f = fixtures.find((x) => x.name === name);
+      const page = await w4cOpen(ctx, origin, f.file);
+      const start = (await exportBackup(page)).json.book;
+      const did = await w4cBrowse(page);
+      const out = (await exportBackup(page)).json.book;
+      check(JSON.stringify(out) === JSON.stringify(start) && JSON.stringify(out) === JSON.stringify(expected(f.book, out)), `wave4c no-edit gate (constraint 45) ${name}: ${did} — the export is unchanged`);
+      check(!asked.some((u) => /elsewhere\.example/.test(u)), `wave4c constraint 44: ${name}: the stock search asked Openverse (${asked.filter((u) => /\?q=|q=/.test(u)).length} search) and never an address the policy refuses`);
+      check(asked.some((u) => /api\.openverse\.org\/v1\/images\/\?q=harbour&page_size=12&license_type=all&filter_dead=false/.test(u)), `wave4c constraint 44: the search is 1.0's (stockDirectUrl: q, page_size=12) — ${asked[0] || 'none'}`);
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+/** "Use as My Cover" in 2.0: the export reads back in 1.0 exactly; the preview's hardcover wears the new cover. */
+async function wave4cRoundTrip(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-print');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w4cOpen(ctx, origin, f.file);
+    await page.click('#btnSettings2');
+    await page.click('#btnCoverMake');
+    await page.waitForFunction(() => document.getElementById('modalCoverMaker').classList.contains('open'));
+    await page.fill('#cmTitle', 'The Lantern Coast, Again');
+    await page.click('[data-cmlayout="banded"]');
+    await page.click('[data-cmbg="gradient"]');
+    await page.selectOption('#cmHcBinding', 'jacket');
+    await page.fill('#cmHcFlapFront', 'A flap of the jacket.');
+    await page.click('#btnCmUse');
+    await page.waitForFunction(() => !document.getElementById('modalCoverMaker').classList.contains('open'), null, { timeout: 30_000 });
+    const thumb = await page.evaluate(() => document.querySelector('#coverThumb img')?.getAttribute('src') || '');
+    await page.keyboard.press('Escape');
+    const out = (await exportBackup(page)).json.book;
+    check(out.coverRecipe.title === 'The Lantern Coast, Again' && out.coverRecipe.layout === 'banded' && out.coverRecipe.bgType === 'gradient' && out.coverRecipe.wrap.binding === 'jacket' && out.cover.mediaType === 'image/jpeg', 'wave4c round trip: "Use as My Cover" in 2.0 wrote the recipe (title, layout, background, binding, flap) and the cover JPEG');
+    check(thumb.startsWith('data:image/jpeg') && thumb.length > 1000, `wave4c: Project Settings' cover row shows the new cover (${thumb.length} characters)`);
+    const one = await openOne(ctx, origin);
+    const back = await one.evaluate((b) => { applyBookDoc(JSON.parse(JSON.stringify(b))); return JSON.parse(JSON.stringify(serializeBook())); }, out);
+    const diffKeys = (x, y) => [...new Set([...Object.keys(x || {}), ...Object.keys(y || {})])].filter((k) => JSON.stringify(x?.[k]) !== JSON.stringify(y?.[k]));
+    for (const k of ['cover', 'coverRecipe', 'images']) check(JSON.stringify(back[k]) === JSON.stringify(out[k]), `wave4c review focus #2: 1.0 reads 2.0's ${k} back exactly (applyBookDoc + serializeBook)`);
+    // the rest of the book: 1.0 reads it as it reads the book 2.0 opened (1.0's serializeBook orders meta its own way)
+    const backStart = await one.evaluate((b) => { applyBookDoc(JSON.parse(JSON.stringify(b))); return JSON.parse(JSON.stringify(serializeBook())); }, expected(f.book));
+    const rest = diffKeys(back, backStart).filter((k) => !['cover', 'coverRecipe', 'history', 'historyPool'].includes(k));
+    check(rest.length === 0, `wave4c review focus #2: everything else 1.0 reads from 2.0's export equals what it reads from the book before the edit (${rest.join(', ') || 'no other key differs'})`);
+    // 1.0's own adopt on the same recipe: the recipe it writes equals 2.0's (the JPEG bytes are the encoder's)
+    const oneRecipe = await one.evaluate((r) => { adoptCoverRecipe(r, renderCoverCanvas(r, COVER_EBOOK_W, COVER_EBOOK_H)); return JSON.parse(JSON.stringify(serializeBook().coverRecipe)); }, out.coverRecipe);
+    check(JSON.stringify(oneRecipe) === JSON.stringify(out.coverRecipe), "wave4c: 1.0's adoptCoverRecipe on the same recipe writes the recipe 2.0 wrote");
+    // the preview's hardcover (4b) wears the new cover, as a jacket
+    await page.bringToFront();
+    await page.click('#deviceBar [data-device="hardcover"]');
+    await page.waitForFunction((d) => [...document.querySelectorAll('#pane-preview img')].some((i) => i.getAttribute('src') === d), 'data:image/jpeg;base64,' + out.cover.data, { timeout: 20_000 });
+    check(true, "wave4c review focus #4: the preview's hardcover wears the cover made in the maker");
+    await one.evaluate(() => { const b = document.querySelector('#deviceBar [data-device="hardcover"]'); b.click(); });
+    const oneText = await one.evaluate(() => document.getElementById('hcBar')?.innerText || '');
+    const twoText = await page.evaluate(() => document.getElementById('hcBar')?.innerText || '');
+    check(oneText === twoText && oneText.length > 0, `wave4c: the hardcover's bar names the binding as 1.0's does (${JSON.stringify(twoText.slice(0, 80))})`);
+    for (const p of [page, one]) await harvestCsp(p);
+  } finally {
+    await ctx.close();
+  }
+}
+/** The wrap download: POST /api/wrap as 1.0 sends it; signed out and offline, 1.0's messages. */
+async function wave4cWrapPdf(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const routes = async (ctx, signedIn, bodies) => {
+    await ctx.route('**/api/**', (route) => {
+      const u = new URL(route.request().url());
+      if (u.pathname === '/api/health') return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+      if (u.pathname === '/api/auth/me') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ user: signedIn ? { id: 'u1', email: 'w@example.org' } : null }) });
+      if (u.pathname === '/api/wrap') {
+        bodies.push(route.request().postData());
+        return route.fulfill({ status: 200, contentType: 'application/pdf', headers: { 'Content-Disposition': "attachment; filename=\"x.pdf\"; filename*=UTF-8''the-lantern-coast-cover-wrap.pdf" }, body: Buffer.from('%PDF-1.4\n%test\n') });
+      }
+      return route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"not here"}' });
+    });
+  };
+  const bodies2 = [], bodies1 = [];
+  let ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    await routes(ctx, true, bodies2);
+    const page = await w4cOpen(ctx, origin, f.file);
+    await page.click('#btnSettings2');
+    await page.click('#btnCoverMake');
+    await page.waitForFunction(() => document.getElementById('modalCoverMaker').classList.contains('open'));
+    await page.fill('#cmWrapBlurb', 'The blurb for the wrap.');
+    const dl = page.waitForEvent('download', { timeout: 30_000 });
+    await page.click('#btnCmWrapPdf');
+    const d = await dl;
+    check(d.suggestedFilename() === 'the-lantern-coast-cover-wrap.pdf', `wave4c constraint 44: the wrap PDF downloads under the server's name (${d.suggestedFilename()})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+  // 1.0's request, in its own context with the same routes
+  ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    await routes(ctx, true, bodies1);
+    const one = await openOne(ctx, origin);
+    await one.waitForFunction(() => typeof cloud !== 'undefined' && cloud.available && !!cloud.user, null, { timeout: 20_000 });
+    const dl = one.waitForEvent('download', { timeout: 30_000 });
+    await one.evaluate((b) => {
+      applyBookDoc(JSON.parse(JSON.stringify(b)));
+      openCoverMaker();
+      const el = document.getElementById('cmWrapBlurb');
+      el.value = 'The blurb for the wrap.';
+      el.dispatchEvent(new Event('input'));
+      document.getElementById('btnCmWrapPdf').click();
+    }, expected(f.book));
+    await dl;
+    const a = JSON.parse(bodies1[0]), b = JSON.parse(bodies2[0]);
+    const sorted = (o) => JSON.stringify(Object.keys(o).sort().map((k) => [k, o[k]]));
+    const others = [...new Set([...Object.keys(a.book), ...Object.keys(b.book)])].filter((k) => k !== 'meta' && JSON.stringify(a.book[k]) !== JSON.stringify(b.book[k]));
+    check(others.length === 0 && sorted(a.book.meta) === sorted(b.book.meta), `wave4c constraint 44: every value of the wrap request's book equals 1.0's (the meta's keys in the book's order: ${JSON.stringify(a.book.meta) === JSON.stringify(b.book.meta) ? 'the same order' : 'another order'}; ${others.join(', ') || 'no other key differs'})`);
+    check(a.kind === b.kind && a.lang === b.lang && JSON.stringify(a.book.coverRecipe) === JSON.stringify(b.book.coverRecipe) && JSON.stringify(a.book.images) === JSON.stringify(b.book.images),
+      `wave4c constraint 44: POST /api/wrap carries what 1.0's does (kind ${b.kind}, lang ${b.lang}, the maker's recipe, only the pictures the wrap paints: ${b.book.images.length})`);
+    const keysA = Object.keys(a.book).sort().join(','), keysB = Object.keys(b.book).sort().join(',');
+    check(keysA === keysB, `wave4c: the wrap request's book has 1.0's keys (History, notes, research and audio left home)${keysA === keysB ? '' : ` — 1.0 ${keysA} / 2.0 ${keysB}`}`);
+    await harvestCsp(one);
+  } finally {
+    await ctx.close();
+  }
+  // signed out: 1.0's message, nothing sent; no shelf: 1.0's offline message
+  for (const [label, signed, health] of [['signed out', false, true], ['no shelf', false, false]]) {
+    ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const sent = [];
+      if (health) await routes(ctx, signed, sent);
+      const page = await w4cOpen(ctx, origin, f.file);
+      await page.click('#btnSettings2');
+      await page.click('#btnCoverMake');
+      await page.waitForFunction(() => document.getElementById('modalCoverMaker').classList.contains('open'));
+      await page.click('#btnCmWrapPdf');
+      await page.waitForFunction(() => document.querySelectorAll('#toasts .toast').length > 0, null, { timeout: 10_000 });
+      const msg = await page.evaluate(() => [...document.querySelectorAll('#toasts .toast')].map((x) => x.textContent).join(' | '));
+      const one = await openOne(ctx, origin);
+      const want = await one.evaluate((s) => (s ? t('wrap.signin', { use: t('covermk.use'), signIn: t('top.signIn') }) : t('wrap.offline')), health);
+      check(msg.includes(want) && sent.length === 0, `wave4c constraint 44: ${label}: the wrap download says 1.0's words and sends nothing (${JSON.stringify(msg.slice(0, 120))})`);
+      check(await page.evaluate(() => document.getElementById('modalCoverMaker').classList.contains('open')), `wave4c: ${label}: the maker stays open (1.0 keeps the unapplied recipe)`);
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+/** A cover recipe made to attack the maker: hostile font names, colours, text with markup, picture data. */
+function w4cHostileBook(base) {
+  const b = JSON.parse(JSON.stringify(base));
+  const tag = (n) => `<img src="https://evil.example/${n}.png" onerror="window.__pw=${n}">"'</style><script>window.__pw=${n}</script>`;
+  const evil = "EB Garamond'; } body { display: none } #topbar { background: url(https://evil.example/t.png) } .x { font-family: '";
+  const r = b.coverRecipe;
+  r.title = 'Hostile ' + tag(1);
+  r.subtitle = tag(2);
+  r.author = 'Writer ' + tag(3);
+  r.tagline = tag(4);
+  r.series = tag(5);
+  r.bgColor = 'red; background: url(https://evil.example/c.png)';
+  r.bgColor2 = '"><script>window.__pw=6</script>';
+  for (const k of Object.keys(r.elements)) Object.assign(r.elements[k], { font: evil, color: 'url(https://evil.example/e.png)', size: '1e9; x', pos: { x: 'NaN', y: { toString: 1 } } });
+  r.wrap = { ...r.wrap, blurb: tag(7), quote: tag(8), imprint: tag(9), flapFront: tag(10), flapBack: tag(11), binding: 'jacket" onclick="window.__pw=12', trim: '<b>', spine: { font: evil, color: 'red', text: tag(13), iconTop: { kind: 'lucide', name: '__proto__' }, iconBottom: { kind: 'upload', picId: 'constructor' } }, back: { font: evil, color: 'url(x)' } };
+  r.bgImageId = 'hostile-pic';
+  b.images = [...(b.images || []), { id: 'hostile-pic', name: 'x' + tag(14), mediaType: 'image/png" onerror="window.__pw=15', ext: 'png', data: 'iVBORw0KGgo=" onerror="window.__pw=16' },
+    { id: 'x" onclick="window.__pw=17', name: 'n', mediaType: 'image/png', ext: 'png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' }];
+  b.cover = { data: '/9j/" onerror="window.__pw=18', mediaType: 'image/jpeg"><script>window.__pw=19</script>', ext: 'jpg', name: tag(20) };
+  b.fonts = [{ id: 'fbad', name: 'b.ttf', family: evil, ext: 'ttf', mediaType: 'font/ttf', data: 'AAAA' }];
+  return b;
+}
+async function wave4cHostile(origin) {
+  const base = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const hctx = await newContext({ serviceWorkers: 'block' });
+    const honest = await w4cOpen(hctx, origin, base.file);
+    const lookHonest = await honest.evaluate(W4B_LOOK);
+    await hctx.close();
+    const hostile = w4cHostileBook(base.book);
+    const file = w4File('w4c-hostile.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: hostile }));
+    const page = await w4cOpen(ctx, origin, file);
+    const foreign = [];
+    page.on('request', (r) => { const u = r.url(); if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) foreign.push(u); });
+    const start = (await exportBackup(page)).json.book;
+    await page.click('#btnSettings2');
+    await page.click('#btnCoverMake');
+    await page.waitForFunction(() => document.getElementById('modalCoverMaker').classList.contains('open'));
+    for (const bg of ['image', 'duotone', 'gradient', 'texture', 'photo', 'solid']) await page.click(`[data-cmbg="${bg}"]`);
+    for (const l of ['modern', 'free', 'classic']) await page.click(`[data-cmlayout="${l}"]`);
+    await page.locator('#cmSpineSec summary').click();
+    await page.locator('#cmBackSec summary').click();
+    await page.selectOption('#cmElement', 'author');
+    await page.waitForTimeout(600);
+    const scan = await page.evaluate(() => {
+      const root = document.getElementById('modalCoverMaker');
+      const row = document.getElementById('coverThumb')?.closest('.full');
+      const els = [...root.querySelectorAll('*'), ...(row ? row.querySelectorAll('*') : [])];
+      const on = els.flatMap((el) => [...el.attributes].filter((a) => /^on/i.test(a.name)).map((a) => el.tagName + ' ' + a.name));
+      const src = els.flatMap((el) => [...el.attributes].filter((a) => /^(src|href|srcset|xlink:href)$/i.test(a.name) && !/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]*$/.test(a.value) && !/^blob:/.test(a.value)).map((a) => el.tagName + ' ' + a.name + '=' + a.value.slice(0, 60)));
+      const scripts = root.querySelectorAll('script, iframe, object, embed, link, style').length;
+      const css = [...document.styleSheets].flatMap((s) => { try { return [...s.cssRules].map((r) => r.cssText); } catch { return []; } }).filter((x) => /evil\.example/.test(x)).length;
+      return { on, src, scripts, css, pw: window.__pw ?? null, fonts: [...document.fonts].filter((f) => /evil|display: none/.test(f.family)).length };
+    });
+    const look = await page.evaluate(W4B_LOOK);
+    check(scan.on.length === 0 && scan.src.length === 0 && scan.scripts === 0 && scan.pw === null, `wave4c constraint 43: the hostile cover (fonts, colours, markup in every text, picture data, the cover itself) gives no handler, no foreign source, no script in the maker or the cover row; nothing ran (${JSON.stringify(scan).slice(0, 300)})`);
+    check(scan.css === 0 && scan.fonts === 0, `wave4c constraint 43: no stylesheet and no face names anything of the hostile book (${scan.css} rules, ${scan.fonts} faces)`);
+    check(JSON.stringify(look) === JSON.stringify(lookHonest), 'wave4c constraint 43: the app outside the maker looks exactly as with the honest book (8 elements × 11 computed properties)');
+    await page.click('#btnCmCancel');
+    await page.keyboard.press('Escape');
+    const out = (await exportBackup(page)).json.book;
+    check(JSON.stringify(out) === JSON.stringify(start) && JSON.stringify(out) === JSON.stringify(expected(hostile, out)), 'wave4c constraint 43: the hostile book exports exactly as readBook reads it (the maker browsed, nothing kept)');
+    check(foreign.length === 0, `wave4c constraint 43: no request left the page (${foreign.slice(0, 3).join(', ') || 'none'})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+async function wave4cScreens(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  try {
+    for (const run of [{ theme: 'paper' }, { theme: 'candlelight' }, { theme: 'paper', lang: 'ar' }]) {
+      const tag = run.theme + (run.lang ? '-' + run.lang : '');
+      const ctx = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      await ctx.addInitScript(([t, l]) => { localStorage.setItem('beuk.theme.v1', t); if (l) localStorage.setItem('beuk.uiLang.v1', l); }, [run.theme, run.lang]);
+      try {
+        const page = await w4cOpen(ctx, origin, f.file);
+        const start = (await exportBackup(page)).json.book;
+        await page.click('#btnSettings2');
+        await page.click('#btnCoverMake');
+        await page.waitForFunction(() => document.getElementById('modalCoverMaker').classList.contains('open'));
+        const one = await openOne(ctx, origin);
+        await one.evaluate((b) => { applyBookDoc(JSON.parse(JSON.stringify(b))); openSettings(); openCoverMaker(); }, start);
+        await one.addStyleTag({ content: ONE_HIDE });
+        for (const p of [one, page]) {
+          await p.bringToFront();
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(1500);
+          await p.evaluate(() => { const m = document.querySelector('#modalCoverMaker'); m.scrollTop = 0; });
+        }
+        for (const [sel, gated] of [['#cmCanvas', true], ['#cmWrapCanvas', true], ['#modalCoverMaker .modal', false]]) {
+          await one.bringToFront();
+          const a = await one.locator(sel).screenshot();
+          await page.bringToFront();
+          const b = await page.locator(sel).screenshot();
+          const nm = sel.replace(/[^\w]+/g, '-');
+          writeFileSync(path.join(OUT, `cover-one-${tag}${nm}.png`), a);
+          writeFileSync(path.join(OUT, `cover-two-${tag}${nm}.png`), b);
+          const d = await pixelDiff(diffPage, a, b);
+          const msg = `wave4c screenshots ${tag}: ${sel} differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}]`;
+          if (gated) check(d.ratio <= PIXEL_TOLERANCE, msg + ` (max ${PIXEL_TOLERANCE * 100}%)`);
+          else note(msg + ' (reported, not gated)');
+        }
+        for (const p of [page, one]) await harvestCsp(p);
+      } finally {
+        await ctx.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+}
+async function wave4cChecks(origin) {
+  const only = (process.env.W4C_PARTS || 'parity,gate,roundtrip,pdf,hostile,screens,latency').split(',');
+  if (only.includes('parity')) await wave4cParity(origin);
+  if (only.includes('gate')) await wave4cGate(origin);
+  if (only.includes('roundtrip')) await wave4cRoundTrip(origin);
+  if (only.includes('pdf')) await wave4cWrapPdf(origin);
+  if (only.includes('hostile')) await wave4cHostile(origin);
+  if (only.includes('screens')) await wave4cScreens(origin);
+  // constraint 45: canvas work stays off the typing path — the editor's p95 on Dumas with the maker closed
+  if (only.includes('latency') && !(process.env.E2E_ONLY || '').split(',').includes('latency')) {
+    const r = await latency(origin);
+    note(`wave4c latency (the cover maker mounted, closed): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+    check(r.p95 < LATENCY_P95_TARGET_MS, `wave4c constraint 45: p95 under ${LATENCY_P95_TARGET_MS} ms on Dumas with the cover maker closed (${r.p95.toFixed(1)} ms)`);
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -3657,6 +4233,7 @@ try {
   if (run('wave3b')) await wave3bChecks(srv.origin);
   if (run('wave4a')) await wave4aChecks(srv.origin);
   if (run('wave4b')) await wave4bChecks(srv.origin);
+  if (run('wave4c')) await wave4cChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);

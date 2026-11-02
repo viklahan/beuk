@@ -167,7 +167,8 @@ export function coverReady(c: Closure | null = closureIfLoaded()): Closure | nul
     coverEnv.fetch = coverFetch as typeof fetch;
     coverEnv.downloadBlob = downloadBlob;
     // 1.0's serializeBook: the open book as book format (exportBook writes what readBook reads: what 1.0 writes)
-    coverEnv.serializeBook = () => (desk.ydoc ? (exportBook(desk.ydoc) as Record<string, unknown>) : {});
+    // (1.0's serializeBook writes formatVersion: 1 first, BEUK:bookformat; the meta's keys stand in the book's own order)
+    coverEnv.serializeBook = () => (desk.ydoc ? { formatVersion: 1, ...(exportBook(desk.ydoc) as Record<string, unknown>) } : {});
     // a toast raised outside any session (1.0's downloadWrap after its request) reaches the page
     const base = structEnv.toast;
     if (base === defaultToast.fn) structEnv.toast = (msg, icon) => coverUi.toast(msg, icon);
