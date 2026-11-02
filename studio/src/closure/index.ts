@@ -710,9 +710,35 @@ export const closureT = (): T => currentT;
 export function setClosureLang(lang: string): void {
   currentLang = lang;
 }
-/* 1.0's reading desk (deskState / deskSignature) is wave 4 (E1): until then it has measured nothing, so 1.0's
-   insGlancePages shows no page number, its own "still measuring" state (see the wave 1c report). */
-const NO_DESK = Object.freeze({ counts: Object.freeze({}), total: 0, sig: '', words: 0, run: null });
+/** The interface language 1.0's code reads now (the preview module's getUiLang and uiLangState, wave 4b). */
+export const closureLang = (): string => currentLang;
+/* Wave 4b (E1): 1.0's reading desk lives in the preview's own module (src/preview/preview.ts). The main closure's
+   deskState / deskSignature are that desk's (read live: before the preview has measured anything, an empty desk, 1.0's
+   "still measuring" state), and its renderPreview asks the preview to draw (1.0's Style handlers call it). */
+export type DeskState = { counts: Record<string, number>; total: number; sig: string; words: number; run: unknown };
+const NO_DESK: DeskState = Object.freeze({ counts: Object.freeze({}), total: 0, sig: '', words: 0, run: null }) as DeskState;
+export const previewEnv: { render: () => void; deskSignature: () => string; desk: () => DeskState } = {
+  render: () => undefined,
+  deskSignature: () => '',
+  desk: () => NO_DESK,
+};
+const liveDesk = {
+  get counts() {
+    return previewEnv.desk().counts;
+  },
+  get total() {
+    return previewEnv.desk().total;
+  },
+  get sig() {
+    return previewEnv.desk().sig;
+  },
+  get words() {
+    return previewEnv.desk().words;
+  },
+  get run() {
+    return previewEnv.desk().run;
+  },
+};
 
 /** Wave 2b: what 1.0's image library calls around its own code (BROWSER_SUPPLIED), set by pictures/imagelib.ts for the
  *  call it makes: History's "Before removing a picture" snapshot (2.0's history.ts), and 1.0's local.editSeq (the
@@ -816,6 +842,8 @@ function sessionFileReader(): unknown {
 }
 
 const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitledBook ?? [];
+/** The UI_STRINGS 1.0's code is given: every pack's "misc.untitledBook" alone (imIsPlaceholderTitle reads it). */
+export const untitledStrings = (): Record<string, Record<string, string>> => Object.fromEntries(UNTITLED.map((s, i) => [String(i), { 'misc.untitledBook': s }]));
 
 let loading: Promise<Closure> | null = null;
 let loaded: Closure | null = null;
@@ -837,10 +865,10 @@ export function loadClosure(): Promise<Closure> {
         samplePicsRequire: async () => undefined,
         JSZip: undefined,
         t: (k, p) => currentT(k, p),
-        UI_STRINGS: Object.fromEntries(UNTITLED.map((s, i) => [String(i), { 'misc.untitledBook': s }])),
+        UI_STRINGS: untitledStrings(),
         getUiLang: () => currentLang,
-        deskState: NO_DESK,
-        deskSignature: () => '',
+        deskState: liveDesk,
+        deskSignature: () => previewEnv.deskSignature(),
         // wave 2b: the image library's surroundings (see pictureEnv); 1.0's redraws after an edit are React's re-render here
         autoSnapshot: (kind: string) => pictureEnv.autoSnapshot(kind),
         local: {
@@ -854,7 +882,7 @@ export function loadClosure(): Promise<Closure> {
         // wave 2c: 1.0's redraws after a structural edit are React's re-render from the Y.Doc; selectSection see structEnv
         renderSidebar: () => undefined,
         syncEditor: () => undefined,
-        renderPreview: () => undefined,
+        renderPreview: () => previewEnv.render(),
         updateStats: () => undefined,
         refreshExportTree: () => undefined,
         selectSection: (id: string) => structEnv.select(id),

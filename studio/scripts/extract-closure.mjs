@@ -236,7 +236,7 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
 export const PREVIEW_ROOTS = ['renderPreview', 'queuePreview', 'initPreview', 'setDevice', 'measurePages', 'goToPage', 'fitDeviceFrame', 'renderDeviceDisplayNote',
   'deviceReadingArea', 'scheduleDeskUpdate', 'updateDesk', 'renderDesk', 'renderDeskFacts', 'computeDeskCountsSync', 'deskState', 'deskSignature', 'deskGoToSection',
   'pvLeaving', 'pvResume', 'pvShowTitle', 'pvFlush', 'pvPageOfAnchor', 'pvCaretAnchor', 'pvPageAnchor', 'previewPageAtX', 'keepOrnamentsWithText', 'undoOrnamentRepairs',
-  'insGlancePages', 'statsPages', 'statsDeskReady', 'pageCountCache',
+  'insGlancePages', 'statsPages', 'statsDeskReady', 'pageCountCache', 'sectionHtml', 'buildBookCss',
   'COL_GAP', 'DEVICE_FOOTERS', 'DEVICE_FACTS', 'DEVICE_NAMES', 'PAGE_GEOMETRY', 'DEVICE_DISPLAY', 'DISPLAY_RENDER',
   // E2: the hardcover and full screen
   'hc', 'hcInit', 'hcRender', 'hcOnDevice', 'hcOnPreview', 'hcSetOpen', 'hcTurn', 'hcKey', 'hcEnsureModel', 'hcSignature', 'hcLook',
@@ -251,7 +251,7 @@ export const PREVIEW_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'uiLangState', 
   'renderSidebar', 'syncEditor', 'raStop', 'dictDiscard', 'renderPrintView', 'statsPagesRefresh', 'insGlancePagesRefresh',
   'noteBookEdited', 'autoSnapshot', 'local', 'cloud', 'refreshImagePickers', 'FileReader'];
 /** 1.0's top-level lets of the preview module the studio reads or sets. */
-export const PREVIEW_VARS = ['editorSyncedSectionId', 'editorTypedAt', 'pvFollow', 'pcFontGen'];
+export const PREVIEW_VARS = ['editorSyncedSectionId', 'editorTypedAt', 'pvFollow', 'pcFontGen', 'pvShownId', 'pvShownSec'];
 
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile'];

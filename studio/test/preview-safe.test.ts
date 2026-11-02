@@ -1,0 +1,105 @@
+import { beforeAll, describe, expect, it } from 'vitest';
+import * as Y from 'yjs';
+import { importBook } from '../../src/book/editor/index';
+import { loadClosure, stateFromBook, type Closure } from '../src/closure/index';
+import { exportBook } from '@book/editor/index.js';
+import { cleanBookCss, cleanFlowHtml } from '../src/preview/safe';
+import { loadPreview, type PreviewClosure } from '../src/preview/preview';
+import { fixtures } from './fixtures';
+
+/* Wave 4b, constraint 36: the preview carries book-controlled HTML (the section's typeset text) and CSS (the theme's
+   fonts, sizes, colours, header design). 1.0 puts both into its page unscoped by anything but `.fc-page`; a crafted
+   book could close the scope (a theme value ending a rule) or carry markup (an attribute 1.0 leaves unescaped). Two
+   sinks guard the preview: cleanFlowHtml (every innerHTML 1.0 writes into a page flow) and cleanBookCss (every book
+   stylesheet 1.0 writes). Both leave an honest book's output exactly as 1.0 made it (the pagination's parity rests
+   on it): proven on every fixture's every section and every preset theme. */
+
+const inert = (html: string) => {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  return tpl.innerHTML;
+};
+
+describe('cleanFlowHtml', () => {
+  it('drops script-bearing elements, handlers, remote sources and script URLs', () => {
+    const out = cleanFlowHtml(
+      '<p onclick="x()">a<script>window.__pw=1</script><img src="https://evil.example/a.png" onerror="x()"><iframe src="/x"></iframe></p>' +
+        '<a href="javascript:alert(1)">l</a><a href="#fn1">n</a><a href="https://example.com/">w</a>' +
+        '<div style="background-image:url(https://evil.example/b.png);color:red">d</div>' +
+        '<div style="background-image:url(data:image/png;base64,iVBORw0KGgo=)">ok</div>' +
+        '<img srcset="https://evil.example/c.png 2x" src="data:image/png;base64,iVBORw0KGgo="><svg><use href="https://evil.example/s.svg#a"></use><animate attributeName="href" to="javascript:x()"></animate></svg>' +
+        '<form action="https://evil.example/"><input name="q"></form><link rel="stylesheet" href="https://evil.example/c.css"><style>body{display:none}</style><meta http-equiv="refresh" content="0;url=https://evil.example/">',
+    );
+    expect(out).not.toMatch(/script|onclick|onerror|iframe|evil|javascript|<form|<link|<style|<meta|<use|<animate|srcset/i);
+    expect(out).toContain('href="#fn1"');
+    expect(out).toContain('href="https://example.com/"');
+    expect(out).toContain('url(data:image/png;base64,iVBORw0KGgo=)');
+    expect(out).toContain('src="data:image/png;base64,iVBORw0KGgo="');
+    expect(out).toContain('color:red');
+  });
+  it('an attribute broken out of by a quote (class="ch-x" onmouseover=…) loses the handler', () => {
+    expect(cleanFlowHtml('<header class="chapter-opening ch-x" onmouseover="window.__pw=1">t</header>')).toBe('<header class="chapter-opening ch-x">t</header>');
+  });
+});
+
+describe('cleanBookCss', () => {
+  it('drops a rule outside the scope, an @import, a remote url() and a :has() reaching out', () => {
+    const css = [
+      '.fc-page { font-family: "EB Garamond", serif; }',
+      '.fc-page p { text-indent: 1em; } body { display: none; } .fc-page x { color: red; }',
+      '@import url(https://evil.example/x.css);',
+      '.fc-page .a { background: url(https://evil.example/t.png); }',
+      'body:has(.fc-page) { opacity: 0; }',
+      '#topbar, .fc-page h1 { color: red; }',
+      '@font-face { font-family: X; src: url(https://evil.example/f.woff2); }',
+    ].join('\n');
+    const r = cleanBookCss(css, '.fc-page');
+    expect(r.dropped).toBeGreaterThanOrEqual(6);
+    const sib = cleanBookCss('.fc-page ~ .pane, .fc-page+#mobileTabs { display: none; }\n.fc-page blockquote + p { text-indent: 0; }', '.fc-page');
+    expect(sib.dropped).toBe(1);
+    expect(sib.css).toContain('blockquote + p');
+    expect(r.css).not.toMatch(/body|@import|evil|#topbar|:has|\.pane|#mobileTabs/);
+    expect(r.css).toContain('text-indent');
+  });
+});
+
+describe('both sinks leave an honest book exactly as 1.0 made it', () => {
+  let c: Closure;
+  let pv: PreviewClosure;
+  beforeAll(async () => {
+    c = await loadClosure();
+    pv = await loadPreview();
+  });
+  const books = fixtures('all');
+  it(`every section of every fixture (${books.length}), every preset theme`, () => {
+    let sections = 0, sheets = 0;
+    for (const f of books) {
+      const ydoc = new Y.Doc();
+      importBook(f.book, ydoc);
+      const st = stateFromBook(c, exportBook(ydoc));
+      pv.setState(st);
+      for (const s of st.sections) {
+        const html = pv.api.sectionHtml(s) as string;
+        expect(cleanFlowHtml(html), `${f.name} ${String(s.id)}`).toBe(inert(html));
+        sections++;
+      }
+      for (const scope of ['.fc-page', '.piv-book']) {
+        const css = pv.api.buildBookCss(scope) as string;
+        const r = cleanBookCss(css, scope);
+        expect(r.why, `${f.name} ${scope}`).toEqual([]);
+        expect(r.css).toBe(css);
+        sheets++;
+      }
+    }
+    const theme = (pv.getState() as unknown as { theme: unknown }).theme;
+    for (const p of c.api.PRESETS) {
+      (pv.getState() as unknown as { theme: unknown }).theme = structuredClone(p.theme);
+      const css = pv.api.buildBookCss('.fc-page') as string;
+      expect(cleanBookCss(css, '.fc-page').dropped, p.id).toBe(0);
+      sheets++;
+    }
+    (pv.getState() as unknown as { theme: unknown }).theme = theme;
+    expect(sections).toBeGreaterThan(100);
+    expect(sheets).toBeGreaterThan(40);
+  });
+});
