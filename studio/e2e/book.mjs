@@ -3084,7 +3084,9 @@ function w4bHostileBook(base) {
   b.images = [...(b.images || []), { id: 'hostile-pic', name: 'x', mediaType: 'image/png" onerror="window.__pw=10', ext: 'png', data: 'iVBORw0KGgo=" onerror="window.__pw=11' }];
   s.plateId = 'hostile-pic';
   const evil = "EB Garamond'; } body { display: none } #topbar { background: url(https://evil.example/t.png) } .x { font-family: '";
-  b.theme = { ...b.theme, bodyFont: evil, headFont: 'x"); background: url(https://evil.example/h.png); x: ("', indentDepth: '1em; } #topbar { background: red } .fc-page p {', headerStyle: 'classic_centered" onmouseover="window.__pw=12' };
+  b.theme = { ...b.theme, bodyFont: evil, headFont: 'x"); background: url(https://evil.example/h.png); x: ("', indentDepth: '1em; } #topbar { background: red } .fc-page p {', headerStyle: 'classic_centered" onmouseover="window.__pw=12',
+    // review round 2: the numbers 1.0 interpolates into the CSS as they are
+    fontSize: '1px; position: fixed; inset: 0; z-index: 99999; background: #fff', lineHeight: '1.5; position: fixed; inset: 0', dropDepth: '3; } #topbar { display: none } .x { x: 1' };
   if (b.theme.header) for (const k of ['number', 'title', 'subtitle']) if (b.theme.header[k]) b.theme.header[k].font = evil;
   b.colour = { accent: 'red; } #topbar { background: red } x {', tint: 'url(https://evil.example/c.png)' };
   return b;
@@ -3159,6 +3161,8 @@ async function wave4bIsolation(origin) {
         const before = P.safety.droppedRules;
         st.theme.indentDepth = '1em; } #topbar { display: none } body { background: url(https://evil.example/s.png) } .fc-page p { x: y';
         st.theme.headerStyle = 'classic_centered" onmouseover="window.__pw=99';
+        keep.size = st.theme.fontSize;
+        st.theme.fontSize = '1px; position: fixed; inset: 0; z-index: 99999; background: #fff';
         P.raw('renderPreview');
         await new Promise((r) => setTimeout(r, 300));
         const hd = document.querySelector('#pageFlow header.chapter-opening');
@@ -3179,6 +3183,7 @@ async function wave4bIsolation(origin) {
         const st = window.beukPreview.state();
         st.theme.indentDepth = window.__w4bKeep.indent;
         st.theme.headerStyle = window.__w4bKeep.header;
+        st.theme.fontSize = window.__w4bKeep.size;
         window.beukPreview.raw('renderPreview');
       });
       check(sink.dropped > 0 && sink.topbar !== 'none' && !sink.handler && sink.pw === null && sink.hcPages > 0 && sink.look === JSON.stringify(after),
@@ -3300,7 +3305,10 @@ async function wave4bChrome(origin) {
       }
       // E2: the hardcover, closed and open, beside 1.0's
       await page.bringToFront();
+      const sheets0 = await page.evaluate(() => ({ d: window.beukPreview.safety.droppedRules, n: window.beukPreview.safety.sheets }));
       const h2 = await page.evaluate(W4B_HC, true);
+      const sheets1 = await page.evaluate(() => ({ d: window.beukPreview.safety.droppedRules, n: window.beukPreview.safety.sheets }));
+      check(sheets1.n > sheets0.n && sheets1.d === 0, `wave4b (${ui}) review round 2, Minor 4: the honest book's every stylesheet, the open hardcover's included (${sheets1.n} written through the sink, ${sheets1.n - sheets0.n} while it was open), lost ${sheets1.d} rules at the sink`);
       await one.bringToFront();
       const h1 = await one.evaluate(W4B_HC, false);
       const hbad = ['closed', 'spreads', 'back', 'after'].filter((k) => JSON.stringify(h1[k]) !== JSON.stringify(h2[k]));
