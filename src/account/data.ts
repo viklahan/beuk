@@ -314,8 +314,8 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
     `series-covenants.json  The shared Covenant (story bible) of each of your series (${c.series_covenants}),`,
     `                        whole, with its revision and dates.`,
     `themes.json             Your own themes (My themes) (${c.user_themes}), each whole, with its`,
-    `                        revision and dates, and the fonts and flourishes it carries`,
-    `                        (their bytes as base64, in each asset's "data").`,
+    `                        revision and dates; the fonts and flourishes they carry are in`,
+    `                        themes/assets/, one file each, named by its SHA-256.`,
     `exports/                Every file in your export archive (${c.exports}), byte for byte,`,
     `                        and exports/index.json with each one's format, preset,`,
     `                        size, SHA-256 and date.`,
@@ -424,24 +424,43 @@ export async function writeAccountExport(
   );
   counts.series_covenants = series.rows.length;
 
-  // My themes (migration 022), whole: each asset with its bytes filled in from the account's own pictures, so the
-  // file carries the fonts and flourishes and not only their names.
+  // My themes (migration 022), whole, as stored. The fonts and flourishes they carry are written ONCE each, as files of
+  // their own (themes/assets/<sha256>.<ext>, read one at a time), however many themes name them; themes.json lists
+  // them by hash (review, Important 3: never the bytes copied into every theme naming them).
   const themes = await db.query<{ theme_key: string; name: string; doc: unknown; revision: number; created_at: string; updated_at: string }>(
     'select theme_key, name, doc, revision, created_at, updated_at from user_themes where user_id = $1 order by created_at, theme_key',
     [userId],
   );
-  const themeOut = [];
-  for (const r of themes.rows) {
-    themeOut.push({
-      key: r.theme_key,
-      name: r.name,
-      revision: r.revision,
-      createdAt: iso(r.created_at),
-      updatedAt: iso(r.updated_at),
-      doc: await themeWithAssetBytes(db, userId, r.doc),
-    });
+  const named = new Set<string>();
+  for (const r of themes.rows) for (const h of themeAssetHashes(r.doc)) named.add(h);
+  const assetFiles: { sha256: string; mediaType: string; file: string }[] = [];
+  for (const h of named) {
+    const pic = await db.query<{ media_type: string; data: string }>('select media_type, data from pictures where user_id = $1 and sha256 = $2', [userId, h]);
+    const row = pic.rows[0];
+    if (!row) continue; // gone: the doc still names it, the file is simply absent
+    const ext = ASSET_EXT[row.media_type] ?? 'bin';
+    const file = await zip.add(`themes/assets/${h}.${ext}`, Buffer.from(row.data, 'base64'), { compress: true });
+    assetFiles.push({ sha256: h, mediaType: row.media_type, file });
   }
-  await zip.add('themes.json', JSON.stringify({ themes: themeOut }, null, 2), { compress: true });
+  await zip.add(
+    'themes.json',
+    JSON.stringify(
+      {
+        themes: themes.rows.map((r) => ({
+          key: r.theme_key,
+          name: r.name,
+          revision: r.revision,
+          createdAt: iso(r.created_at),
+          updatedAt: iso(r.updated_at),
+          doc: r.doc,
+        })),
+        assets: assetFiles,
+      },
+      null,
+      2,
+    ),
+    { compress: true },
+  );
   counts.user_themes = themes.rows.length;
 
   // Exports: the bytes, then an index with each file's metadata.
@@ -594,24 +613,15 @@ export async function writeAccountExport(
   return { counts, missingFiles };
 }
 
-/** A theme's doc with each asset's bytes (`data`, canonical base64) filled in from the account's own pictures; an asset
- *  whose bytes are gone stays without. Owner-scoped. */
-async function themeWithAssetBytes(db: Db, userId: string, doc: unknown): Promise<unknown> {
-  if (!doc || typeof doc !== 'object' || !Array.isArray((doc as { assets?: unknown }).assets)) return doc;
-  const assets = (doc as { assets: unknown[] }).assets;
-  const hashes = assets.map((a) => (a && typeof a === 'object' ? (a as { sha256?: unknown }).sha256 : null)).filter((h): h is string => typeof h === 'string');
-  if (!hashes.length) return doc;
-  const r = await db.query<{ sha256: string; data: string }>('select sha256, data from pictures where user_id = $1 and sha256 = any($2::text[])', [userId, hashes]);
-  const byHash = new Map(r.rows.map((row) => [row.sha256, row.data]));
-  return {
-    ...(doc as Record<string, unknown>),
-    assets: assets.map((a) => {
-      const h = a && typeof a === 'object' ? (a as { sha256?: unknown }).sha256 : null;
-      const data = typeof h === 'string' ? byHash.get(h) : undefined;
-      return data === undefined ? a : { ...(a as Record<string, unknown>), data };
-    }),
-  };
+/** The picture hashes a theme's doc names (its assets'). */
+function themeAssetHashes(doc: unknown): string[] {
+  const assets = doc && typeof doc === 'object' ? (doc as { assets?: unknown }).assets : null;
+  if (!Array.isArray(assets)) return [];
+  return assets
+    .map((a) => (a && typeof a === 'object' ? (a as { sha256?: unknown }).sha256 : null))
+    .filter((h): h is string => typeof h === 'string' && /^[0-9a-f]{64}$/.test(h));
 }
+const ASSET_EXT: Record<string, string> = { 'font/ttf': 'ttf', 'font/otf': 'otf', 'image/svg+xml': 'svg', 'image/png': 'png' };
 
 export { ZIP_LIMIT_BYTES };
 

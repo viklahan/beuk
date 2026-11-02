@@ -217,24 +217,32 @@ test('signed out gets 401', async () => {
   assert.equal((await anon.delete('/api/themes/x')).status, 401);
 });
 
-test("Download all my data carries themes.json (the assets' bytes filled in) and the README's line; another account's themes never", async () => {
+test("Download all my data carries themes.json and each asset's bytes once as a file of its own, and the README's line; another account's themes never", async () => {
   const c = new Client(server.base);
   await registerUser(c, 'themes-zip@example.com');
   assert.equal(await upload(c, FONT, 'font/ttf'), 201);
   assert.equal((await c.put('/api/themes/z1', { name: 'Zip Theme', doc: theme('z1', 'Zip Theme', [fontAsset]) })).status, 201);
+  assert.equal((await c.put('/api/themes/z2', { name: 'Zip Two', doc: theme('z2', 'Zip Two', [fontAsset]) })).status, 201);
   assert.equal((await alice.put('/api/themes/not-yours', { name: 'Not Yours Theme', doc: theme('not-yours', 'Not Yours Theme') })).status, 201);
   const res = await c.download('/api/account/export');
   assert.equal(res.status, 200);
   const entries = readZip(res.bytes);
   const get = (n: string) => entries.find((e) => e.name === n)?.data.toString('utf8');
-  const file = JSON.parse(get('themes.json') ?? 'null') as { themes: { key: string; name: string; revision: number; createdAt: string; updatedAt: string; doc: { assets: { data?: string }[] } }[] };
-  assert.equal(file.themes.length, 1);
-  assert.equal(file.themes[0]!.key, 'z1');
+  const file = JSON.parse(get('themes.json') ?? 'null') as {
+    themes: { key: string; name: string; revision: number; createdAt: string; updatedAt: string; doc: { assets: { data?: string }[] } }[];
+    assets: { sha256: string; mediaType: string; file: string }[];
+  };
+  assert.deepEqual(file.themes.map((x) => x.key), ['z1', 'z2']);
   assert.equal(file.themes[0]!.name, 'Zip Theme');
   assert.ok(file.themes[0]!.createdAt && file.themes[0]!.updatedAt);
-  assert.equal(file.themes[0]!.doc.assets[0]!.data, FONT, 'the font itself, not only its hash');
-  assert.match(get('README.txt') ?? '', /themes\.json\s+Your own themes \(My themes\) \(1\)/);
-  assert.equal(JSON.parse(get('account.json') ?? '{}').counts.user_themes, 1);
+  assert.equal(file.themes[0]!.doc.assets[0]!.data, undefined, 'the doc as stored: the bytes are not copied into each theme');
+  // review (Important 3): each asset once, as a file of its own, however many themes name it
+  assert.deepEqual(file.assets, [{ sha256: sha(FONT), mediaType: 'font/ttf', file: `themes/assets/${sha(FONT)}.ttf` }]);
+  const bytesEntry = entries.find((e) => e.name === `themes/assets/${sha(FONT)}.ttf`);
+  assert.ok(bytesEntry && bytesEntry.data.equals(Buffer.from(FONT, 'base64')), 'the font itself, byte for byte');
+  assert.equal(entries.filter((e) => e.name.startsWith('themes/assets/')).length, 1);
+  assert.match(get('README.txt') ?? '', /themes\.json\s+Your own themes \(My themes\) \(2\)/);
+  assert.equal(JSON.parse(get('account.json') ?? '{}').counts.user_themes, 2);
   assert.ok(!entries.some((e) => e.data.toString('utf8').includes('Not Yours Theme')));
   await alice.delete('/api/themes/not-yours');
 });
