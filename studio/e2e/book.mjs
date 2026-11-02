@@ -367,10 +367,14 @@ async function previewBrowse(page) {
     await page.click(`#deviceBar [data-device="${d}"]`);
     if (d === 'hardcover') {
       await page.waitForSelector('#hcStage:not([hidden])', { timeout: 10_000 });
+      // an empty book has nothing to open (1.0: hcToggle off when empty and closed)
+      if (await page.$eval('#hcToggle', (b) => b.disabled)) continue;
       await page.click('#hcToggle');
       await page.waitForTimeout(700);
-      await page.click('#hcNext');
-      await page.click('#hcPrev');
+      // 1.0's hcSyncChrome: Next is off on the last spread (a one-spread book such as the Bookbinder's letter), Prev
+      // on the first — turn only where 1.0 lets the reader (the spreads themselves are the page parity sweep's)
+      if (!(await page.$eval('#hcNext', (b) => b.disabled))) await page.click('#hcNext');
+      if (!(await page.$eval('#hcPrev', (b) => b.disabled))) await page.click('#hcPrev');
       await page.click('#hcToggle');
       await page.waitForTimeout(500);
       continue;
