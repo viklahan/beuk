@@ -14,7 +14,7 @@ import { StyleFrame } from '../src/style/StyleTab';
 import { applyMine, mineDocFromBook, saveToMine, bookThemesNotInMine } from '../src/style/themeActions';
 import { mineDelete, mineGet, mineList, mineLoad, mineReset, mineSave, type Bytes, type MineDoc } from '../src/style/mine';
 import { fixtures } from './fixtures';
-import { styledBook, ttfData } from './style-fixture';
+import { PNG_1PX, styledBook, ttfData } from './style-fixture';
 
 /* Per-user themes, task 2 (the book side, constraints 46 and 48): a book theme saved to My themes carries the fonts and
    flourishes it wears, resolved as 1.0 resolves them; applying a My theme to another book copies it in exactly as 1.0
@@ -274,6 +274,58 @@ describe('constraint 48: a hostile My theme passes the same safe path', () => {
     expect(attrs.filter((a) => /^on|evil\.example|javascript:/i.test(a))).toEqual([]);
     expect(root.textContent).toContain('<img src=x onerror=alert(1)>');
     expect(readBook(out).status).toBe('ok');
+    y.destroy();
+  });
+});
+
+describe('review (Important 4): applying never overwrites the book\'s own different copy', () => {
+  it('a book theme of the same id edited since: kept as it is; the kept theme joins under a new id and is worn', async () => {
+    const a = onDesk(styledBook());
+    tab();
+    expect(await saveToMine('ctHarbour')).toBe(true);
+    // the book's own copy edited afterwards (a plain Save in the creator), not kept again
+    styleRun((cc) => {
+      const st = cc.getState() as unknown as { customThemes: { id: string; name: string; theme: Rec }[] };
+      st.customThemes[0]!.theme = { ...st.customThemes[0]!.theme, fontSize: 24 };
+      st.customThemes[0]!.name = 'Harbour Lights, edited';
+    });
+    const edited = JSON.parse(JSON.stringify((exact(a).customThemes as Rec[])[0]));
+    expect(await applyMine('ctHarbour')).toBe(true);
+    const out = exact(a);
+    const list = out.customThemes as Rec[];
+    expect(list.find((x) => x.id === 'ctHarbour')).toEqual(edited);
+    const added = list.find((x) => x.id !== 'ctHarbour' && x.name === 'Harbour Lights')!;
+    expect(added).toBeTruthy();
+    expect((added.theme as Rec).fontSize).toBe(17.5);
+    expect(out.activePreset).toBe('custom:' + added.id);
+    // the same again: the copy the book now holds is that theme, so nothing more is added
+    const n = list.length;
+    expect(await applyMine('ctHarbour')).toBe(true);
+    expect((exact(a).customThemes as Rec[]).length).toBe(n);
+    a.destroy();
+  });
+});
+
+describe('review (Minor): a flourish the theme names but could not bring never points at another picture', () => {
+  it('its id is cleared from the theme when its bytes are refused (1.0 falls back as when a flourish leaves)', async () => {
+    const evilSvg = btoa('<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>');
+    await mineSave(
+      {
+        id: 'flMiss',
+        name: 'Missing Flourish',
+        theme: { bodyFont: 'EB Garamond', ornament: 'fl:pic1', headingFlourish: 'pic1' },
+        assets: [{ kind: 'flourish', sha256: shaOfData(evilSvg), mediaType: 'image/svg+xml', id: 'pic1', name: 'x.svg', ext: 'svg', flourish: true }],
+      },
+      new Map<string, Bytes>([[shaOfData(evilSvg), { mediaType: 'image/svg+xml', data: evilSvg }]]),
+    );
+    const b = LANTERN();
+    b.images = [...((b.images as Rec[]) ?? []), { id: 'pic1', name: 'unrelated.png', mediaType: 'image/png', ext: 'png', data: PNG_1PX }];
+    const y = onDesk(b);
+    tab();
+    expect(await applyMine('flMiss')).toBe(true);
+    const th = exact(y).theme as Rec;
+    expect(th.headingFlourish).toBe('');
+    expect(th.ornament).toBe('fleuron');
     y.destroy();
   });
 });

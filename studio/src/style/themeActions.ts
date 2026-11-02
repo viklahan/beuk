@@ -222,14 +222,33 @@ export async function applyMine(key: string): Promise<boolean> {
           if (isRec(e) && typeof e.font === 'string' && fam.has(e.font)) e.font = fam.get(e.font);
         }
       const P = c.api.FLOURISH_PREFIX;
-      if (typeof th.ornament === 'string' && th.ornament.indexOf(P) === 0 && ids.has(th.ornament.slice(P.length))) th.ornament = P + ids.get(th.ornament.slice(P.length));
-      if (typeof th.headingFlourish === 'string' && ids.has(th.headingFlourish)) th.headingFlourish = ids.get(th.headingFlourish);
+      // a flourish the theme names but did not bring (refused or missing bytes) never points at another picture of the
+      // book's that happens to share its id: 1.0's fallbacks when a flourish leaves (the fleuron, no heading flourish)
+      if (typeof th.ornament === 'string' && th.ornament.indexOf(P) === 0) {
+        const to = ids.get(th.ornament.slice(P.length));
+        th.ornament = to ? P + to : 'fleuron';
+      }
+      if (typeof th.headingFlourish === 'string' && th.headingFlourish) th.headingFlourish = ids.get(th.headingFlourish) ?? '';
       const ct = c.api.normalizeCustomTheme({ id: r.doc.id, name: r.doc.name, theme: th });
       if (!ct) return false;
       const shown = new Set(st.fonts.filter((f) => isRec(f) && typeof f.family === 'string' && f.family).map((f) => String(f.family).trim()));
       themeSafe(c, ct.theme, shown);
+      // review (Important 4): the book's own copy of that theme, edited since, is never overwritten — the kept theme
+      // joins under a new id (or the book's identical copy is the one worn)
+      const same = (x: CustomTheme) => x.name === ct.name && JSON.stringify(x.theme) === JSON.stringify(ct.theme);
       const at = st.customThemes.findIndex((x) => x && x.id === ct.id);
-      if (at >= 0) st.customThemes[at] = ct;
+      if (at >= 0 && !same(st.customThemes[at]!)) {
+        const twin = st.customThemes.find((x) => x && same(x));
+        if (twin) ct.id = twin.id;
+        else {
+          const taken = new Set(st.customThemes.map((x) => x && x.id));
+          let id = c.api.uid();
+          while (taken.has(id)) id = c.api.uid();
+          ct.id = id;
+        }
+      }
+      const at2 = st.customThemes.findIndex((x) => x && x.id === ct.id);
+      if (at2 >= 0) st.customThemes[at2] = ct;
       else st.customThemes.push(ct);
       c.vars.fontPickerSig = null;
       c.api.registerAllFonts();
