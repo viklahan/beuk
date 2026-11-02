@@ -167,7 +167,9 @@ function keep(rule: RuleLike, scope: string, n: { dropped: number; why: string[]
   const name = (rule as { constructor?: { name?: string } }).constructor?.name ?? '';
   const t = rule.type;
   if (t === 1 || name === 'CSSStyleRule') {
-    if (!rule.selectorText || !selectorOk(rule.selectorText, scope) || !cssLoadsOnlySafe(rule.style?.cssText ?? rule.cssText)) {
+    // a nested rule (1.0 writes none) could reach out of the scope (& ~ *) or load (& { background: url() }): dropped
+    const nested = !!rule.cssRules && rule.cssRules.length > 0;
+    if (nested || !rule.selectorText || !selectorOk(rule.selectorText, scope) || !cssLoadsOnlySafe(rule.style?.cssText ?? rule.cssText)) {
       n.dropped++;
       n.why.push(rule.cssText.slice(0, 160));
       return null;

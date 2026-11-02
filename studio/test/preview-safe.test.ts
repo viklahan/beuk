@@ -130,3 +130,18 @@ describe('typing stays cheap (constraint 37)', () => {
     for (const key of [' ', 'Enter', 'Escape', 'a']) expect(pageKeyReadsBook({ key, target: body }), key).toBe(false);
   });
 });
+
+describe('review round (final review, Important 1 and 2)', () => {
+  it('nested CSS inside an in-scope rule is checked too: a nested rule that loads or reaches out is dropped', () => {
+    const r = cleanBookCss('.fc-page p { text-indent: 1em; & { background: url(https://evil.example/x) } }', '.fc-page');
+    expect(r.dropped).toBeGreaterThan(0);
+    expect(r.css).not.toMatch(/evil/);
+    expect(cleanBookCss('.fc-page p { & ~ * { display: none } }', '.fc-page').dropped).toBeGreaterThan(0);
+  });
+  it('the hardcover’s open pages take their HTML through the flow sink (1.0’s printUnlink, wrapped)', async () => {
+    const pv = await loadPreview();
+    const out = String((pv.vars.printUnlink as (h: string) => string)('<p class="x" onmouseover="window.__pw=1">a<img src="https://evil.example/i.png"><a class="ext-link" href="https://e.example/">l</a></p>'));
+    expect(out).not.toMatch(/onmouseover|evil/);
+    expect(out).toContain('<span class="ext-link">l</span>');
+  });
+});

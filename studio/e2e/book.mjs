@@ -703,7 +703,8 @@ async function onePackedPics(origin) {
 }
 
 /* ---- #5 latency ---- */
-async function latency(origin) {
+async function latency(origin, opts = {}) {
+  const delay = opts.delay ?? 30, count = opts.count ?? 300;
   const ctx = await newContext({ serviceWorkers: 'block' });
   try {
     const page = await openNext(ctx, origin);
@@ -738,7 +739,7 @@ async function latency(origin) {
     await page.evaluate(() => { window.__lat = []; });
     let text = '';
     while (text.length < 300) text += words;
-    await page.keyboard.type(text.slice(0, 300), { delay: 30 });
+    await page.keyboard.type(text.slice(0, count), { delay });
     await page.waitForTimeout(300);
     const lat = (await page.evaluate(() => window.__lat)).slice().sort((x, y) => x - y);
     const q = (p) => lat[Math.min(lat.length - 1, Math.ceil(p * lat.length) - 1)];
@@ -747,7 +748,11 @@ async function latency(origin) {
     const pane = await page.evaluate(() => ({ open: !!document.getElementById('pageFlow')?.getClientRects().length && document.getElementById('flowWrap').clientWidth > 0, chars: document.getElementById('pageFlow')?.innerHTML.length ?? 0, counter: document.getElementById('pageCounter')?.textContent ?? '' }));
     check(pane.open && pane.chars > 1000, `#5 the preview pane is open while typing (constraint 37): the chapter typeset in it (${pane.chars} characters of HTML, "${pane.counter}")`);
     note(`latency (preview pane open): section ${big} ("${secs[big].title}"), ${size.blocks} blocks, ${size.chars} characters; ${lat.length} keystrokes: p50 ${p50.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, max ${max.toFixed(1)} ms`);
-    check(lat.length >= 290, `#5 ${lat.length} keystrokes measured`);
+    check(lat.length >= count - 10, `#5 ${lat.length} keystrokes measured (${delay} ms between keys)`);
+    if (opts.quick) {
+      await harvestCsp(page);
+      return { p50, p95, max, n: lat.length, section: big, ...size, top: [] };
+    }
     console.log(`${p95 <= LATENCY_P95_TARGET_MS ? 'ok  ' : 'OVER'} #5 p95 keystroke-to-paint ${p95.toFixed(1)} ms (target ${LATENCY_P95_TARGET_MS} ms; reported, not gated)`);
     // a profile of 100 more keystrokes: the hottest functions by self time
     const cdp = await ctx.newCDPSession(page);
@@ -2757,7 +2762,7 @@ async function wave3bChecks(origin) {
     await page.evaluate(() => { window.__lat = []; });
     let text = '';
     while (text.length < 300) text += words;
-    await page.keyboard.type(text.slice(0, 300), { delay: 30 });
+    await page.keyboard.type(text.slice(0, count), { delay });
     await page.waitForTimeout(400);
     const lat = (await page.evaluate(() => window.__lat)).slice().sort((x, y) => x - y);
     const q = (p) => lat[Math.min(lat.length - 1, Math.ceil(p * lat.length) - 1)];
@@ -3158,7 +3163,16 @@ async function wave4bIsolation(origin) {
         await new Promise((r) => setTimeout(r, 300));
         const hd = document.querySelector('#pageFlow header.chapter-opening');
         window.__w4bKeep = keep;
-        return { dropped: P.safety.droppedRules - before, topbar: getComputedStyle(document.getElementById('topbar')).display, handler: !!document.querySelector('#pageFlow [onmouseover]'), cls: hd ? hd.className : null };
+        // the open hardcover's pages (1.0 builds them into elements of its own, through printUnlink)
+        P.raw('setDevice', 'hardcover');
+        P.raw('hcSetOpen', true, true);
+        await new Promise((r) => setTimeout(r, 900));
+        const hcPages = document.querySelectorAll('#hcStage .piv-page').length;
+        const hcHandler = !!document.querySelector('#hcStage [onmouseover], #pivMeasure [onmouseover], body > [onmouseover]');
+        P.raw('hcSetOpen', false, true);
+        P.raw('setDevice', 'kindle');
+        await new Promise((r) => setTimeout(r, 400));
+        return { pw: window.__pw ?? null, dropped: P.safety.droppedRules - before, topbar: getComputedStyle(document.getElementById('topbar')).display, handler: !!document.querySelector('#pageFlow [onmouseover]') || hcHandler, hcPages, cls: hd ? hd.className : null };
       });
       sink.look = JSON.stringify(await p2.evaluate(W4B_LOOK));
       await p2.evaluate(() => {
@@ -3167,8 +3181,8 @@ async function wave4bIsolation(origin) {
         st.theme.headerStyle = window.__w4bKeep.header;
         window.beukPreview.raw('renderPreview');
       });
-      check(sink.dropped > 0 && sink.topbar !== 'none' && !sink.handler && sink.look === JSON.stringify(after),
-        `wave4b isolation, the sinks by themselves: hostile theme values put past the safe path — ${sink.dropped} stylesheet rule(s) dropped at the sink, the top bar still shown (${sink.topbar}), no handler in the flow (header class "${String(sink.cls).slice(0, 60)}"), the app's computed styles unchanged (${sink.look === JSON.stringify(after)})`);
+      check(sink.dropped > 0 && sink.topbar !== 'none' && !sink.handler && sink.pw === null && sink.hcPages > 0 && sink.look === JSON.stringify(after),
+        `wave4b isolation, the sinks by themselves: hostile theme values put past the safe path — ${sink.dropped} stylesheet rule(s) dropped at the sink, the top bar still shown (${sink.topbar}), no handler in the flow (header class "${String(sink.cls).slice(0, 60)}") nor on the open hardcover's ${sink.hcPages} pages, the app's computed styles unchanged (${sink.look === JSON.stringify(after)})`);
       check(/Hostile <img/.test(dom.title), `wave4b isolation: the hostile title is shown as text in the running head ("${dom.title.slice(0, 40)}…")`);
       const out = (await exportBackup(p2)).json.book;
       check(JSON.stringify(out) === JSON.stringify(expected(book, out)), 'wave4b isolation: the hostile book, previewed, exports exactly as readBook reads it (the values are hidden from 1.0\'s code, never rewritten)');
@@ -3600,6 +3614,10 @@ async function wave4bChecks(origin) {
   if (only.includes('latency') && !(process.env.E2E_ONLY || '').split(',').includes('latency')) {
     const r = await latency(origin);
     note(`wave4b latency with the preview pane open: p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+    // typing with pauses past 1.0's 120 ms preview timer: the preview draws between keys (final review, Important 3)
+    const r2 = await latency(origin, { delay: 200, count: 60, quick: true });
+    note(`wave4b latency with the pane open, 200 ms between keys (the preview redraws between them): p50 ${r2.p50.toFixed(1)} ms, p95 ${r2.p95.toFixed(1)} ms, max ${r2.max.toFixed(1)} ms over ${r2.n} keystrokes`);
+    check(r2.p95 < LATENCY_P95_TARGET_MS, `wave4b constraint 37: p95 under ${LATENCY_P95_TARGET_MS} ms on Dumas with the pane open while the preview redraws between keys (${r2.p95.toFixed(1)} ms)`);
   }
 }
 

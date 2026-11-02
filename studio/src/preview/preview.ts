@@ -6,7 +6,7 @@ import { activeEditor, activeEditorSectionId } from '../editor/active';
 import { editorText } from '../editor/insert';
 import { desk, envRun } from '../environment/page';
 import { styleEnter, styleState } from '../style/session';
-import { cleanBookCss, cleanFlowFragment } from './safe';
+import { cleanBookCss, cleanFlowFragment, cleanFlowHtml } from './safe';
 
 /* Step 5 wave 4b (inventory E1, E2): the preview — 1.0's own code, lifted whole into its own module
    (src/generated/closure-preview.js, scripts/extract-closure.mjs PREVIEW_ROOTS): the pane's device profiles and
@@ -194,6 +194,13 @@ export function loadPreview(): Promise<PreviewClosure> {
         refreshImagePickers: () => undefined,
         FileReader: undefined,
       }) as unknown as PreviewClosure;
+      // the open hardcover's pages: 1.0's pivSectionFlow writes printUnlink(sectionHtml(…)) into elements it creates
+      // (no `$` there): its HTML goes through the same flow sink (every page, note and sideways copy derives from it)
+      const unlink = pc.vars.printUnlink as (html: string) => string;
+      pc.vars.printUnlink = (html: string) => {
+        previewSafety.cleanedFlows++;
+        return cleanFlowHtml(unlink(html));
+      };
       loaded = pc;
       return pc;
     });
