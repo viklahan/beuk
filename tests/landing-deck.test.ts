@@ -50,6 +50,18 @@ test('the tour never moves by itself, and its controls wait for script', () => {
   assert.match(html, /\.deck-nav\[hidden\]\{display:none\}/);
 });
 
+test('a click on a scene moves on, but never through a control, a drag or a selection', () => {
+  const skip = html.match(/var CLICK_SKIP = "([^"]+)";/);
+  assert.ok(skip, 'the skip list exists');
+  for (const sel of ['a', 'button', 'input', 'label', '[tabindex]', '[data-book3d]', '.deck-nav']) {
+    assert.ok(skip[1].split(', ').includes(sel), `clicks on ${sel} are left alone`);
+  }
+  assert.match(html, /Math\.abs\(e\.clientX - px\) > 6/, 'a drag is not a click');
+  assert.match(html, /sel\.isCollapsed/, 'selecting text is not a click');
+  assert.match(html, /if\(e\.detail > 1\) return;/, 'a double-click picks a word, not a scene');
+  assert.match(html, /!selecting\(\) && cur < N - 1\) goTo\(cur \+ 1\);/, 'a click stops at the last scene');
+});
+
 test('a scene that is too tall shrinks to no less than 80%, then scrolls inside itself', () => {
   assert.match(html, /var ZOOM_FLOOR = 0\.8;/);
   assert.match(html, /\.deck \.scene\{position:absolute;inset:0;[^}]*overflow-y:auto/);
