@@ -114,10 +114,11 @@ export function isMissingPictureError(err: unknown): boolean {
   return !!err && typeof err === 'object' && (err as { code?: string }).code === '23503';
 }
 
-/** Collect this account's pictures no shelf book names any more and
- *  nobody has touched for `graceSeconds` (a save in progress uploads
- *  its pictures before its doc, so a fresh one is never taken). The
- *  NOT EXISTS and the foreign key both protect a picture still named. */
+/** Collect this account's pictures no shelf book and no theme of its
+ *  own (My themes, migration 022) names any more and nobody has touched
+ *  for `graceSeconds` (a save in progress uploads its pictures before
+ *  its doc, so a fresh one is never taken). The NOT EXISTS and the
+ *  foreign keys both protect a picture still named. */
 export async function collectUnusedPictures(db: Db, userId: string, graceSeconds: number): Promise<number> {
   const r = await db.query<{ sha256: string }>(
     `delete from pictures p
@@ -125,6 +126,9 @@ export async function collectUnusedPictures(db: Db, userId: string, graceSeconds
        and p.touched_at < now() - make_interval(secs => $2::double precision)
        and not exists (
          select 1 from manuscript_pictures r where r.user_id = p.user_id and r.sha256 = p.sha256
+       )
+       and not exists (
+         select 1 from user_theme_pictures t where t.user_id = p.user_id and t.sha256 = p.sha256
        )
      returning p.sha256`,
     [userId, Math.max(0, graceSeconds)],

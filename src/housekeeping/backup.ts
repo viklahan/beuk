@@ -24,7 +24,8 @@ import { scrubText } from './scrub.js';
 
 /** Data tables, in FK-safe restore order (parents before children):
  *  jobs after exports (source/artifact export ids), shares after
- *  manuscripts, share_comments / share_readers after shares.
+ *  manuscripts, share_comments / share_readers after shares;
+ *  user_theme_pictures after user_themes and pictures.
  *  billing_subscriptions / billing_events (migration 012) only reference
  *  users. They are backed up, not excluded: billing_subscriptions holds
  *  the grace clock (status_since) and the user attribution that access
@@ -38,8 +39,10 @@ export const BACKUP_TABLES = [
   'users',
   'manuscripts',
   'series_covenants',
+  'user_themes',
   'pictures',
   'manuscript_pictures',
+  'user_theme_pictures',
   'streak_state',
   'streak_days',
   'streak_freezes',

@@ -438,6 +438,23 @@
       "sources": ["src/routes/series-covenants.ts PUT 409"]
     },
     {
+      "code": "BEUK-C803",
+      "category": "saving",
+      "title": "One of My themes changed in two places",
+      "severity": "warning",
+      "says": [
+        { "from": "server", "code": "HTTP 409", "text": "revision conflict: the account copy has changed" }
+      ],
+      "cause": "You changed or removed one of your own themes (My themes) on two devices. Beuk never overwrites silently, so the second change was refused and your account's copy came back with the answer.",
+      "steps": [
+        "Nothing is lost: the account's copy keeps the theme's name, and the change made on this device is kept beside it as its own theme, named with \"(this device)\".",
+        "Keep the one you want and delete the other from My themes."
+      ],
+      "guide": "saving",
+      "maps": { "epubcheck": [], "validator": [], "http": [{ "status": 409, "route": "PUT /api/themes/:key" }, { "status": 409, "route": "DELETE /api/themes/:key" }], "store": [] },
+      "sources": ["src/routes/user-themes.ts PUT 409, DELETE 409"]
+    },
+    {
       "code": "BEUK-L901",
       "category": "saving",
       "title": "This browser is blocking storage",

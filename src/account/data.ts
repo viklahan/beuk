@@ -14,7 +14,7 @@ import { ZIP_LIMIT_BYTES, ZipWriter } from './zip.js';
  *
  * Owned by an account (every table with a user_id/owner_id foreign key
  * to users): sessions, password_resets, email_confirmations,
- * manuscripts, series_covenants, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
+ * manuscripts, series_covenants, user_themes, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
  * streak_days, streak_freezes, streak_state, shares (+ share_comments,
  * share_readers), school_progress, billing_subscriptions. billing_events keep their
  * Stripe event id (the webhook dedupe ledger) with user_id set null.
@@ -34,6 +34,7 @@ export const ACCOUNT_DELETED_TABLES = [
   'email_confirmations',
   'manuscripts',
   'series_covenants',
+  'user_themes',
   'pictures',
   'exports',
   'jobs',
@@ -312,6 +313,9 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
       : []),
     `series-covenants.json  The shared Covenant (story bible) of each of your series (${c.series_covenants}),`,
     `                        whole, with its revision and dates.`,
+    `themes.json             Your own themes (My themes) (${c.user_themes}), each whole, with its`,
+    `                        revision and dates, and the fonts and flourishes it carries`,
+    `                        (their bytes as base64, in each asset's "data").`,
     `exports/                Every file in your export archive (${c.exports}), byte for byte,`,
     `                        and exports/index.json with each one's format, preset,`,
     `                        size, SHA-256 and date.`,
@@ -357,7 +361,7 @@ export async function writeAccountExport(
   zip: ZipWriter,
   account: Record<string, unknown>,
 ): Promise<{ counts: Record<string, number>; missingFiles: number }> {
-  const counts: Record<string, number> = { manuscripts: 0, unopenable: 0, series_covenants: 0, exports: 0, shares: 0, comments: 0 };
+  const counts: Record<string, number> = { manuscripts: 0, unopenable: 0, series_covenants: 0, user_themes: 0, exports: 0, shares: 0, comments: 0 };
 
   // Manuscripts, one at a time (a book can be large).
   const ids = await db.query<{ id: string }>('select id from manuscripts where user_id = $1 order by created_at', [userId]);
@@ -419,6 +423,26 @@ export async function writeAccountExport(
     { compress: true },
   );
   counts.series_covenants = series.rows.length;
+
+  // My themes (migration 022), whole: each asset with its bytes filled in from the account's own pictures, so the
+  // file carries the fonts and flourishes and not only their names.
+  const themes = await db.query<{ theme_key: string; name: string; doc: unknown; revision: number; created_at: string; updated_at: string }>(
+    'select theme_key, name, doc, revision, created_at, updated_at from user_themes where user_id = $1 order by created_at, theme_key',
+    [userId],
+  );
+  const themeOut = [];
+  for (const r of themes.rows) {
+    themeOut.push({
+      key: r.theme_key,
+      name: r.name,
+      revision: r.revision,
+      createdAt: iso(r.created_at),
+      updatedAt: iso(r.updated_at),
+      doc: await themeWithAssetBytes(db, userId, r.doc),
+    });
+  }
+  await zip.add('themes.json', JSON.stringify({ themes: themeOut }, null, 2), { compress: true });
+  counts.user_themes = themes.rows.length;
 
   // Exports: the bytes, then an index with each file's metadata.
   const archive = await listArchive(db, userId);
@@ -570,6 +594,25 @@ export async function writeAccountExport(
   return { counts, missingFiles };
 }
 
+/** A theme's doc with each asset's bytes (`data`, canonical base64) filled in from the account's own pictures; an asset
+ *  whose bytes are gone stays without. Owner-scoped. */
+async function themeWithAssetBytes(db: Db, userId: string, doc: unknown): Promise<unknown> {
+  if (!doc || typeof doc !== 'object' || !Array.isArray((doc as { assets?: unknown }).assets)) return doc;
+  const assets = (doc as { assets: unknown[] }).assets;
+  const hashes = assets.map((a) => (a && typeof a === 'object' ? (a as { sha256?: unknown }).sha256 : null)).filter((h): h is string => typeof h === 'string');
+  if (!hashes.length) return doc;
+  const r = await db.query<{ sha256: string; data: string }>('select sha256, data from pictures where user_id = $1 and sha256 = any($2::text[])', [userId, hashes]);
+  const byHash = new Map(r.rows.map((row) => [row.sha256, row.data]));
+  return {
+    ...(doc as Record<string, unknown>),
+    assets: assets.map((a) => {
+      const h = a && typeof a === 'object' ? (a as { sha256?: unknown }).sha256 : null;
+      const data = typeof h === 'string' ? byHash.get(h) : undefined;
+      return data === undefined ? a : { ...(a as Record<string, unknown>), data };
+    }),
+  };
+}
+
 export { ZIP_LIMIT_BYTES };
 
 /* ------------------------------------------------------------------ */
@@ -608,6 +651,8 @@ export async function deleteAccount(
     await del('exports', 'delete from exports where user_id = $1', [userId]);
     await del('manuscripts', 'delete from manuscripts where user_id = $1', [userId]);
     await del('series_covenants', 'delete from series_covenants where user_id = $1', [userId]);
+    // before pictures: a theme's user_theme_pictures rows (on delete cascade) name pictures
+    await del('user_themes', 'delete from user_themes where user_id = $1', [userId]);
     await del('pictures', 'delete from pictures where user_id = $1', [userId]);
     await del('streak_days', 'delete from streak_days where user_id = $1', [userId]);
     await del('streak_freezes', 'delete from streak_freezes where user_id = $1', [userId]);

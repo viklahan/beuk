@@ -29,6 +29,7 @@ export function beukCodeForValidator(checkId: string, content: HelpContent = get
 export const HTTP_CODES = {
   manuscriptConflict: 'BEUK-C801',
   seriesConflict: 'BEUK-C802',
+  themeConflict: 'BEUK-C803',
   readingCopyClosed: 'BEUK-H410',
   jobsBusy: 'BEUK-J702',
 } as const;
