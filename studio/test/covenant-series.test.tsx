@@ -10,7 +10,7 @@ import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { covReset, covRun } from '../src/covenant/covenant';
-import { installSeriesNet, setCovenantFetch } from '../src/covenant/net';
+import { installSeriesNet, installSeriesRetry, seriesRetryTick, setCovenantFetch } from '../src/covenant/net';
 import { SeriesConflict } from '../src/covenant/CovenantDialog';
 
 /* Wave 3b, task 3 (inventory C6, review focus #4): the series Covenant — one Covenant shared by every book of a
@@ -300,4 +300,64 @@ describe('Project Settings and the series Covenant', () => {
     const y = desk.ydoc!;
     expect((exportBook(y).meta as Rec).series).toBe('Salt Road');
   }, 60_000);
+});
+
+describe('a series save that failed (review of wave 3b, should-fix 1)', () => {
+  it('a PUT lost to the network waits counted, goes again when the browser is back online (and on the 30 s retry), and an edit in its pause goes when the page hides', async () => {
+    deskTwo({ entries: [{ id: 'own-gull', type: 'place', name: 'Gullwick' }] });
+    const puts: string[] = [];
+    let fail = true;
+    let rev = 3;
+    setCovenantFetch((async (_url: string, init?: RequestInit) => {
+      if ((init?.method || 'GET') === 'GET') return new Response(JSON.stringify({ series: { key: 'salt road', name: 'Salt Road', revision: rev, doc: { entries: [{ id: 'sx-mara', type: 'character', name: 'Mara' }] } } }), { status: 200 });
+      const d = ((JSON.parse(String(init!.body)) as Rec).doc as { entries: Rec[] }).entries[0]!.description as string;
+      puts.push(d + (fail ? ' (lost)' : ''));
+      if (fail) throw new TypeError('Failed to fetch');
+      rev++;
+      return new Response(JSON.stringify({ series: { key: 'salt road', name: 'Salt Road', revision: rev, doc: (JSON.parse(String(init!.body)) as Rec).doc } }), { status: 200 });
+    }) as typeof fetch);
+    Object.assign(c.api.bibleSeriesNet, keepNet, { store: () => null, load: () => null });
+    (c.api.bibleSeriesNet as unknown as { __beuk?: boolean }).__beuk = false;
+    installSeriesNet(c);
+    const un = installSeriesRetry();
+    try {
+      covRun((cc) => cc.api.bibleSeriesRefresh(true));
+      await new Promise((r) => setTimeout(r, 30));
+      covRun((cc) => {
+        cc.api.bibleById('sx-mara')!.description = 'one';
+        cc.api.bibleTouched(false);
+      });
+      await new Promise((r) => setTimeout(r, 3100));
+      expect(puts).toEqual(['one (lost)']);
+      expect(c.api.bibleSeriesSync.pending).toBeGreaterThan(0);
+      // still out of reach: the 30 s retry sends it, and it is lost again (still counted)
+      seriesRetryTick();
+      await new Promise((r) => setTimeout(r, 30));
+      expect(puts).toEqual(['one (lost)', 'one (lost)']);
+      expect(c.api.bibleSeriesSync.pending).toBeGreaterThan(0);
+      // back online: it goes, and nothing waits
+      fail = false;
+      window.dispatchEvent(new Event('online'));
+      await new Promise((r) => setTimeout(r, 30));
+      expect(puts).toEqual(['one (lost)', 'one (lost)', 'one']);
+      expect(c.api.bibleSeriesSync.pending).toBe(0);
+      expect(c.vars.bibleSeries?.revision).toBe(4);
+      // an edit in its 300 ms pause, then the page hides: it goes at once
+      covRun((cc) => {
+        cc.api.bibleById('sx-mara')!.description = 'two';
+        cc.api.bibleTouched(false);
+      });
+      window.dispatchEvent(new Event('pagehide'));
+      await new Promise((r) => setTimeout(r, 30));
+      expect(puts.at(-1)).toBe('two');
+      // nothing waiting: a retry sends nothing
+      const n = puts.length;
+      seriesRetryTick();
+      window.dispatchEvent(new Event('online'));
+      await new Promise((r) => setTimeout(r, 30));
+      expect(puts.length).toBe(n);
+    } finally {
+      un();
+    }
+  }, 15_000);
 });

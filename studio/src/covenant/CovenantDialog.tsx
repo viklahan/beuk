@@ -13,7 +13,7 @@ import { activeEditor } from '../editor/active';
 import { toBook } from '../editor/bridge';
 import { desk } from '../environment/page';
 import { covEnv, covRun, covUi } from './covenant';
-import { installSeriesNet } from './net';
+import { installSeriesNet, installSeriesRetry } from './net';
 import { probeCloud } from '../pictures/stock';
 import { covenantDesk, setMarksClosure } from './marks';
 import { drawIcons } from '../insights/insights';
@@ -79,8 +79,11 @@ export function CovenantHost() {
       if (e.keysChanged.has('bible') || e.keysChanged.has('meta')) covenantDesk.schedule();
     };
     m.observe(onMeta);
+    // a series save that failed goes again (online, every 30 s), and an edit waiting goes when the page hides
+    const unRetry = installSeriesRetry();
     return () => {
       alive = false;
+      unRetry();
       m.unobserve(onMeta);
       setOpen(null);
     };
