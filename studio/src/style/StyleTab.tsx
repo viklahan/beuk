@@ -6,7 +6,7 @@ import { useLocale } from '../i18n/LocaleProvider';
 import { Icon, type IconName } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import icons from '../generated/icons.json';
-import { STYLE_KEYS, styleBegin, styleRoot, styleRun, styleSettle, styleUi, styleWriting } from './session';
+import { STYLE_KEYS, styleBegin, styleRelease, styleRoot, styleRun, styleSettle, styleUi, styleWriting } from './session';
 
 /* Step 5 wave 4a (inventory D1, D2): 1.0's Typography Studio — the centre pane's "Typography Studio" tab (#panelType,
    the mobile Style tab): its markup, ids, classes and keys (client/index.html "Tab: typography"), drawn by 1.0's own
@@ -119,6 +119,8 @@ export function StyleTab({ shown }: Props) {
       .catch(() => undefined);
     return () => {
       alive = false;
+      // the book goes: its held edit written, its faces out of the page, the session let go
+      styleRelease();
     };
   }, [ydoc]);
 
