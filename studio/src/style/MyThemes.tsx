@@ -210,7 +210,8 @@ export function MyThemes({ t }: { t: T }) {
           </button>
         </div>
       )}
-      <div className="preset-grid" id="mineThemeGrid">
+      {/* data-ready: the store has read this owner's list (the e2e waits for it, not only for the element) */}
+      <div className="preset-grid" id="mineThemeGrid" data-ready={mineLoaded() ? '1' : '0'} data-owner={signedIn ? 'account' : 'device'}>
         {list.length === 0 ? (
           <p className="flourish-empty" style={{ gridColumn: '1 / -1' }}>
             {t('next.themes.empty')}

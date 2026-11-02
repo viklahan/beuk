@@ -33,6 +33,7 @@
    Screenshots: an open book in Paper, Candlelight and Arabic chrome next
    to 1.0 with the same book; the shell regions are diffed as part A does
    (gated), the editor surface is reported only. */
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { register } from 'node:module';
 import os from 'node:os';
@@ -4201,6 +4202,377 @@ async function wave4cChecks(origin) {
   }
 }
 
+/* ---- per-user themes ("My themes", plan 2026-11-02, constraints 46-50) ----
+   Signed out (this device only): a theme designed with an uploaded font in book A is kept for every book, applied in
+   book B; B exports as a 1.0 book (readBook reads it exactly) and 1.0's own page opens it with the theme worn and the
+   face a loaded FontFace; applying again adds nothing (dedupe). The one-time offer: declined once, the export is
+   unchanged, and it is never shown again for that book (after a reload). Another device lists nothing.
+   Signed in (a mocked account, src/routes/user-themes.ts's answers): the bytes go first, then the theme; a second
+   device lists it and applies it with the face fetched from the account's picture store; a 409 from that second
+   device keeps both on the first; an offline write survives a reload and is sent when the account answers again.
+   A hostile My theme from the account: drawn as text, applied through the safe path — no handler, no script, no
+   request leaves the page, the book exports as readBook reads it. */
+function themeAccount() {
+  const acct = { users: new Map(), log: [], fail: false };
+  const of = (uid) => {
+    let u = acct.users.get(uid);
+    if (!u) acct.users.set(uid, (u = { themes: new Map(), pictures: new Map() }));
+    return u;
+  };
+  acct.of = of;
+  acct.sha = (b64) => createHash('sha256').update(Buffer.from(b64, 'base64')).digest('hex');
+  acct.install = (ctx, uid) =>
+    ctx.route('**/api/**', (route) => {
+      const req = route.request();
+      const p = new URL(req.url()).pathname;
+      const m = req.method();
+      const json = (status, body) => route.fulfill({ status, contentType: 'application/json', body: status === 204 ? '' : JSON.stringify(body) });
+      if (p === '/api/health') return json(200, { ok: true });
+      if (p === '/api/auth/me') return json(200, { user: uid ? { id: uid, email: uid + '@example.org' } : null });
+      if (!uid || !(p.startsWith('/api/themes') || p.startsWith('/api/pictures'))) return json(404, { error: 'not here' });
+      acct.log.push(`${uid} ${m} ${p}`);
+      if (acct.fail) return route.abort('internetdisconnected');
+      const me = of(uid);
+      const body = req.postData() ? JSON.parse(req.postData()) : {};
+      const ifm = req.headers()['if-match'];
+      const base = ifm ? Number(/\d+/.exec(ifm)[0]) : null;
+      if (p === '/api/pictures/missing') return json(200, { missing: body.hashes.filter((h) => !me.pictures.has(h)) });
+      let mm = /^\/api\/pictures\/([0-9a-f]{64})$/.exec(p);
+      if (mm) {
+        if (m === 'PUT') {
+          if (acct.sha(body.data) !== mm[1]) return json(400, { error: 'sha256 does not match the data' });
+          me.pictures.set(mm[1], { mediaType: body.mediaType, data: body.data });
+          return json(201, { picture: { sha256: mm[1], stored: true } });
+        }
+        const pic = me.pictures.get(mm[1]);
+        return pic ? json(200, { picture: { sha256: mm[1], ...pic } }) : json(404, { error: 'picture not found' });
+      }
+      if (p === '/api/themes') return json(200, { themes: [...me.themes].map(([key, t]) => ({ key, name: t.name, revision: t.revision, updated_at: 'x' })) });
+      mm = /^\/api\/themes\/([\w-]+)$/.exec(p);
+      if (!mm) return json(404, { error: 'not here' });
+      const key = mm[1];
+      const row = me.themes.get(key);
+      const full = (r) => ({ key, name: r.name, revision: r.revision, updated_at: 'x', doc: r.doc });
+      if (m === 'GET') return row ? json(200, { theme: full(row) }) : json(404, { error: 'theme not found' });
+      if (m === 'DELETE') {
+        if (!row) return json(404, { error: 'theme not found' });
+        if (base !== null && base !== row.revision) return json(409, { error: 'revision conflict', code: 'BEUK-C803', theme: full(row) });
+        me.themes.delete(key);
+        return json(204);
+      }
+      const missing = (body.doc.assets || []).map((a) => a.sha256).filter((h) => !me.pictures.has(h));
+      if (missing.length) return json(422, { error: 'assets not held', missingPictures: missing });
+      if (base === null) {
+        if (row) return json(428, { error: 'revision required', theme: full(row) });
+        const r = { name: body.name, doc: body.doc, revision: 1 };
+        me.themes.set(key, r);
+        return json(201, { theme: full(r) });
+      }
+      if (!row) return json(404, { error: 'theme not found' });
+      if (row.revision !== base) return json(409, { error: 'revision conflict', code: 'BEUK-C803', theme: full(row) });
+      const r = { name: body.name, doc: body.doc, revision: row.revision + 1 };
+      me.themes.set(key, r);
+      return json(200, { theme: full(r) });
+    });
+  return acct;
+}
+const utReady = (p) => p.waitForFunction(() => document.getElementById('mineThemeGrid')?.getAttribute('data-ready') === '1', null, { timeout: 30_000 });
+const utCards = (p) => p.$$eval('#mineThemeGrid [data-mine-key]', (els) => els.map((e) => ({ key: e.getAttribute('data-mine-key'), name: e.querySelector('.p-name')?.textContent ?? '' })));
+const utCardsAre = (p, n) => p.waitForFunction((k) => document.querySelectorAll('#mineThemeGrid [data-mine-key]').length === k, n, { timeout: 30_000 });
+async function utUploadFont(p) {
+  await p.setInputFiles('#fontFileInput', w4File('Writer-Hand.ttf', readFileSync(W4_TTF)));
+  await p.waitForFunction(() => /Writer Hand/.test(document.getElementById('fontList')?.innerText || ''), null, { timeout: 15_000 });
+}
+/** The creator, opened on the book's current styling (or on `edit`), its title set in the uploaded face, then 1.0's Save
+ *  and "Keep for every book" (btnTcKeep) — or only Save. */
+async function utDesign(p, name, { edit = null, keep = true } = {}) {
+  await p.click(edit ? `#myThemeGrid [data-mine-edit="${edit}"]` : '#btnNewTheme');
+  await p.waitForSelector('#tcElements [data-tc-font="title"]', { timeout: 10_000 });
+  await p.fill('#tcName', name);
+  await p.selectOption('#tcFont-title', 'Writer Hand');
+  await p.click(keep ? '#btnTcKeep' : '#btnTcSave');
+  await p.click('#btnTcClose');
+}
+/** Poll a condition in Node (the mocked account's state) while the page works. */
+async function utUntil(p, fn, ms = 20_000) {
+  for (let i = 0; i < ms / 100; i++) {
+    if (fn()) return true;
+    await p.waitForTimeout(100);
+  }
+  return fn();
+}
+
+async function userThemesSignedOut(origin) {
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const salt = fixtures.find((x) => x.name === 'real/salt-road-standalone');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx, origin);
+    await openBackup(page, lan.file);
+    await w4OpenTab(page);
+    await utReady(page);
+    const where = await page.evaluate(() => [document.getElementById('mineThemeGrid').getAttribute('data-owner'), document.getElementById('mineThemesWhere').textContent]);
+    check(where[0] === 'device', `userThemes signed out: My themes are this device's ("${where[1]}")`);
+    await utUploadFont(page);
+    await utDesign(page, 'Harbour Mine');
+    await utCardsAre(page, 1);
+    const bookA = (await exportBackup(page)).json.book;
+    const ct = bookA.customThemes.find((x) => x.name === 'Harbour Mine');
+    const key = ct && ct.id;
+    const cards = await utCards(page);
+    check(!!key && cards.length === 1 && cards[0].key === key && cards[0].name === 'Harbour Mine', `userThemes the creator's Keep for every book: saved into book A (1.0's Save) and kept (${JSON.stringify(cards)})`);
+    check(!(await page.$('#mineThemesOffer')), "userThemes no offer while every theme of the book's is kept");
+
+    // book B: My themes listed, browsing writes nothing; the theme applied with its face
+    await openInNext(page, salt.file); // over A: 1.0's History snapshot of A is taken (wave 1a), so B is compared with itself
+    const openedB = (await exportBackup(page)).json.book;
+    await w4OpenTab(page);
+    await utReady(page);
+    await utCardsAre(page, 1);
+    const startB = (await exportBackup(page)).json.book;
+    check(JSON.stringify(startB) === JSON.stringify(openedB), "userThemes review focus #4: book B's Style tab opened with My themes listed: the export is unchanged");
+    await page.click(`#mineThemeGrid [data-mine-key="${key}"]`);
+    await page.waitForSelector(`#mineThemeGrid .preset-card.active[data-mine-key="${key}"]`, { timeout: 30_000 });
+    const B = (await exportBackup(page)).json.book;
+    const bCt = (B.customThemes || []).find((x) => x.id === key);
+    check(B.activePreset === 'custom:' + key && !!bCt && JSON.stringify(B.theme) === JSON.stringify(bCt.theme) && JSON.stringify(bCt.theme) === JSON.stringify(ct.theme),
+      `userThemes applied in book B: the theme copied in and worn (activePreset ${B.activePreset})`);
+    check((B.fonts || []).length === 1 && B.fonts[0].family === 'Writer Hand' && B.fonts[0].data === bookA.fonts[0].data, "userThemes the theme's uploaded face is copied into B's fonts (1.0's shape, the same bytes)");
+    check(JSON.stringify(B) === JSON.stringify(expected(B, B)), 'userThemes constraint 46: B after the apply is a 1.0 book (readBook reads it exactly, key order included)');
+    const otherKeys = Object.keys(startB).filter((k) => !['theme', 'activePreset', 'customThemes', 'fonts', 'history', 'historyPool'].includes(k));
+    check(otherKeys.every((k) => JSON.stringify(B[k]) === JSON.stringify(startB[k])), `userThemes the apply changed only the style keys (${otherKeys.length} others equal)`);
+    // applying again: the face B holds is reused, nothing added
+    await page.click(`#mineThemeGrid [data-mine-key="${key}"]`);
+    await page.waitForTimeout(500);
+    const B2 = (await exportBackup(page)).json.book;
+    check((B2.fonts || []).length === 1 && JSON.stringify(B2) === JSON.stringify(B), 'userThemes dedupe: applying the same theme again adds nothing (the export is unchanged)');
+
+    // 1.0 opens B: the theme worn, its face a loaded FontFace, its CSS in the book's stylesheet
+    const one = await openOne(ctx, origin);
+    const r1 = await one.evaluate(async (b) => {
+      applyBookDoc(JSON.parse(JSON.stringify(b)));
+      for (let i = 0; i < 50; i++) {
+        if ([...document.fonts].some((x) => x.family.replace(/"/g, '') === 'Writer Hand')) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      const faces = [...document.fonts].filter((x) => x.family.replace(/"/g, '') === 'Writer Hand');
+      await Promise.all(faces.map((x) => x.loaded.catch(() => undefined)));
+      const s = serializeBook();
+      return { theme: s.theme, activePreset: s.activePreset, customThemes: s.customThemes, fonts: s.fonts, faces: faces.map((x) => x.status).join(','), css: buildBookCss('.fc-page').includes("'Writer Hand'") };
+    }, B);
+    for (const k of ['theme', 'activePreset', 'customThemes', 'fonts']) check(JSON.stringify(r1[k]) === JSON.stringify(B[k]), `userThemes constraint 46: 1.0 reads B's ${k} back exactly`);
+    check(/loaded/.test(r1.faces) && r1.css, `userThemes 1.0 wears the copied theme: its face is a loaded FontFace (${r1.faces}) and in the book's CSS (${r1.css})`);
+    await harvestCsp(one);
+    await one.close();
+
+    // the one-time offer, on a book with a theme of its own
+    const offerBook = structuredClone(lan.book);
+    offerBook.meta = { ...offerBook.meta, bookId: '7c1d6a52-2b8f-4e57-9d3a-5f0e1c2b9a71', title: 'The Offer Book' };
+    offerBook.customThemes = [{ id: 'ctOffer', name: 'Offer Theme', theme: { ...(offerBook.theme || {}), fontSize: 18 } }];
+    const offerFile = w4File('offer.beuk-backup.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book: offerBook }));
+    await openInNext(page, offerFile);
+    await w4OpenTab(page);
+    await utReady(page);
+    await page.waitForSelector('#mineThemesOffer', { timeout: 15_000 });
+    const before = (await exportBackup(page)).json.book;
+    await page.click('#btnMineOfferNo');
+    await page.waitForSelector('#mineThemesOffer', { state: 'detached', timeout: 10_000 });
+    const after = (await exportBackup(page)).json.book;
+    check(JSON.stringify(after) === JSON.stringify(before), 'userThemes review focus #4: the offer declined: the export is unchanged');
+    const ls = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('beuk.themes.')));
+    check(ls.length === 1 && ls[0] === 'beuk.themes.offer.' + after.meta.bookId && !JSON.stringify(after).includes('beuk.themes'), `userThemes the answer is one beuk.* device key, never in the book (${ls.join(', ')})`);
+    check((await utCards(page)).length === 1, 'userThemes declining keeps nothing');
+    await page.reload();
+    await page.waitForSelector('#topbar');
+    await titleIs(page, 'The Offer Book');
+    await w4OpenTab(page);
+    await utReady(page);
+    await page.waitForFunction(() => /Offer Theme/.test(document.getElementById('myThemeGrid')?.innerText || ''), null, { timeout: 15_000 });
+    check(!(await page.$('#mineThemesOffer')), 'userThemes the offer is never shown twice for a book (after a reload)');
+    await harvestCsp(page);
+
+    // another device: nothing (signed out = this device only)
+    const ctx2 = await newContext({ serviceWorkers: 'block' });
+    try {
+      const p2 = await openNext(ctx2, origin);
+      await openBackup(p2, lan.file);
+      await w4OpenTab(p2);
+      await utReady(p2);
+      check((await utCards(p2)).length === 0, 'userThemes signed out: another device lists none of them');
+      await harvestCsp(p2);
+    } finally {
+      await ctx2.close();
+    }
+  } finally {
+    await ctx.close();
+  }
+}
+
+async function userThemesSignedIn(origin) {
+  const errorsBefore = csp.errors.length;
+  try {
+    await userThemesSignedInRun(origin);
+  } finally {
+    // the deliberate 409 (the conflict below) is logged by Chromium as a failed resource: expected here, not a page error
+    const mine = csp.errors.splice(errorsBefore);
+    const expected409 = mine.filter((e) => /Failed to load resource: the server responded with a status of 409 \(Conflict\)$/.test(e));
+    csp.errors.push(...mine.filter((e) => !expected409.includes(e)));
+    note(`userThemes: ${expected409.length} expected 409 resource line(s) from the conflict check set aside`);
+  }
+}
+async function userThemesSignedInRun(origin) {
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const salt = fixtures.find((x) => x.name === 'real/salt-road-standalone');
+  const acct = themeAccount();
+  const s1 = await newContext({ serviceWorkers: 'block' });
+  const s2 = await newContext({ serviceWorkers: 'block' });
+  try {
+    await acct.install(s1, 'u1');
+    await acct.install(s2, 'u1');
+    const p1 = await openNext(s1, origin);
+    await openBackup(p1, lan.file);
+    await w4OpenTab(p1);
+    await utReady(p1);
+    check((await p1.getAttribute('#mineThemeGrid', 'data-owner')) === 'account', 'userThemes signed in: My themes are the account\'s');
+    await utUploadFont(p1);
+    await utDesign(p1, 'Account Theme');
+    await utCardsAre(p1, 1);
+    const key = (await utCards(p1))[0].key;
+    const sent = await utUntil(p1, () => acct.of('u1').themes.get(key)?.revision === 1);
+    const order = acct.log.filter((l) => / PUT /.test(l));
+    const fontSha = [...acct.of('u1').pictures.keys()][0];
+    check(sent && order.indexOf(`u1 PUT /api/pictures/${fontSha}`) >= 0 && order.indexOf(`u1 PUT /api/pictures/${fontSha}`) < order.indexOf(`u1 PUT /api/themes/${key}`),
+      `userThemes signed in: the face's bytes are sent first, then the theme (${order.join(' → ')})`);
+
+    // a second device of the same account: listed, applied with the face from the account's picture store
+    const p2 = await openNext(s2, origin);
+    await openBackup(p2, salt.file);
+    await w4OpenTab(p2);
+    await utReady(p2);
+    await utCardsAre(p2, 1);
+    await p2.click(`#mineThemeGrid [data-mine-key="${key}"]`);
+    await p2.waitForSelector(`#mineThemeGrid .preset-card.active[data-mine-key="${key}"]`, { timeout: 30_000 });
+    const B = (await exportBackup(p2)).json.book;
+    check(acct.log.includes(`u1 GET /api/pictures/${fontSha}`) && (B.fonts || []).length === 1 && acct.sha(B.fonts[0].data) === fontSha && JSON.stringify(B) === JSON.stringify(expected(B, B)),
+      'userThemes a second device applies it: the face fetched from the account\'s picture store, checked, copied in; the book a 1.0 book');
+
+    // a 409 from the second context: device 2 changes the theme and keeps it (revision 2); device 1, still at 1, keeps its
+    // own change — both are kept on device 1
+    await utDesign(p2, 'Account Theme, second device', { edit: key, keep: false });
+    await p2.click(`#myThemeGrid [data-mine-keep="${key}"]`);
+    check(await utUntil(p2, () => acct.of('u1').themes.get(key)?.revision === 2), 'userThemes device 2 keeps its change (revision 2 on the account)');
+    await utDesign(p1, 'Account Theme, first device', { edit: key, keep: false });
+    await p1.click(`#myThemeGrid [data-mine-keep="${key}"]`);
+    await utCardsAre(p1, 2);
+    const both = (await utCards(p1)).map((x) => x.name).sort();
+    const server = [...acct.of('u1').themes.values()].map((x) => x.name).sort();
+    check(JSON.stringify(both) === JSON.stringify(['Account Theme, first device (this device)', 'Account Theme, second device']), `userThemes constraint 49: a 409 keeps both on device 1 (${both.join(' | ')})`);
+    check(await utUntil(p1, () => acct.of('u1').themes.size === 2), `userThemes the kept edit is sent as a theme of its own (${server.join(' | ')} → ${[...acct.of('u1').themes.values()].map((x) => x.name).join(' | ')})`);
+
+    // offline: a kept theme survives a reload and is sent when the account answers again
+    acct.fail = true;
+    await utDesign(p1, 'Offline Theme');
+    await utCardsAre(p1, 3);
+    await p1.reload();
+    await p1.waitForSelector('#topbar');
+    await w4OpenTab(p1);
+    await utReady(p1);
+    await utCardsAre(p1, 3);
+    const listed = (await utCards(p1)).some((x) => x.name === 'Offline Theme');
+    check(listed && ![...acct.of('u1').themes.values()].some((x) => x.name === 'Offline Theme'), 'userThemes constraint 49: an offline write survives a reload (listed from the device, not on the account yet)');
+    acct.fail = false;
+    await p1.evaluate(() => window.dispatchEvent(new Event('online')));
+    check(await utUntil(p1, () => [...acct.of('u1').themes.values()].some((x) => x.name === 'Offline Theme')), 'userThemes …and is sent when the browser is back online');
+    for (const p of [p1, p2]) await harvestCsp(p);
+  } finally {
+    await s1.close();
+    await s2.close();
+  }
+}
+
+async function userThemesHostile(origin) {
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const acct = themeAccount();
+  const evilSvg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" onload="window.__pw=1"><script>window.__pw=1</script><path d="M0 0h9"/></svg>').toString('base64');
+  const notAFont = Buffer.from('<html><body onload="window.__pw=1"></body></html>' + 'x'.repeat(1500)).toString('base64');
+  const name = '<img src=x onerror="window.__pw=1">';
+  acct.of('u3').pictures.set(acct.sha(evilSvg), { mediaType: 'image/svg+xml', data: evilSvg });
+  acct.of('u3').pictures.set(acct.sha(notAFont), { mediaType: 'font/ttf', data: notAFont });
+  acct.of('u3').themes.set('hostile1', {
+    name,
+    revision: 1,
+    doc: {
+      id: 'hostile1',
+      name,
+      theme: {
+        bodyFont: "x'}body *{visibility:hidden}.q{font-family:'",
+        headFont: 'Bad Face',
+        headerStyle: 'classic_centered" onmouseover="window.__pw=1',
+        indentDepth: '1em;background:url(https://evil.example/i)',
+        fontSize: '18px;background:url(https://evil.example/s)',
+        lineHeight: 1.6,
+        ornament: 'fl:flH',
+        headingFlourish: 'flH',
+        header: { title: { font: "a'),url(https://evil.example/f", size: 2, align: 'center', casing: 'asis', above: 0, below: 0 } },
+      },
+      assets: [
+        { kind: 'flourish', sha256: acct.sha(evilSvg), mediaType: 'image/svg+xml', id: 'flH', name: 'h.svg', ext: 'svg' },
+        { kind: 'font', sha256: acct.sha(notAFont), mediaType: 'font/ttf', id: 'fB', name: 'bad.ttf', family: 'Bad Face', ext: 'ttf' },
+      ],
+    },
+  });
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const outside = [];
+  try {
+    await acct.install(ctx, 'u3');
+    const page = await openNext(ctx, origin);
+    page.on('request', (r) => {
+      const u = r.url();
+      if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) outside.push(u);
+    });
+    await openBackup(page, lan.file);
+    await w4OpenTab(page);
+    await utReady(page);
+    await utCardsAre(page, 1);
+    const card = (await utCards(page))[0];
+    check(card.key === 'hostile1' && card.name === name, 'userThemes constraint 48: a hostile My theme is listed, its name as text');
+    await page.click('#mineThemeGrid [data-mine-key="hostile1"]');
+    await page.waitForSelector('#mineThemeGrid .preset-card.active[data-mine-key="hostile1"]', { timeout: 30_000 });
+    await page.waitForTimeout(600); // the preview's redraw (120 ms) and the desk's
+    const seen = await page.evaluate(() => {
+      const roots = ['panelType', 'pane-preview'].map((id) => document.getElementById(id)).filter(Boolean);
+      const attrs = roots.flatMap((r) => [...r.querySelectorAll('*')].flatMap((el) => [...el.attributes].map((a) => a.name + '=' + a.value)));
+      const sheets = [...document.querySelectorAll('style')].map((s) => s.textContent || '').join('\n');
+      return {
+        pw: window.__pw ?? null,
+        handlers: attrs.filter((a) => /^on/i.test(a)).length,
+        remote: attrs.filter((a) => /evil\.example|javascript:/i.test(a)).length,
+        scripts: roots.reduce((n, r) => n + r.querySelectorAll('script, iframe, object').length, 0),
+        sheetEvil: /evil\.example|visibility:\s*hidden/.test(sheets),
+      };
+    });
+    check(seen.pw === null && seen.handlers === 0 && seen.remote === 0 && seen.scripts === 0 && !seen.sheetEvil,
+      `userThemes constraint 48: the hostile My theme applied — no handler, script or remote address in the tab or the preview, none in the stylesheets (${JSON.stringify(seen)})`);
+    const out = (await exportBackup(page)).json.book;
+    const th = out.theme;
+    check(th.bodyFont === 'EB Garamond' && th.headerStyle === 'classic_centered' && th.indentDepth === '1.5em' && typeof th.fontSize === 'number' && th.header.title.font === th.headFont,
+      `userThemes the hostile values corrected by the safe path before 1.0's code saw them (${JSON.stringify({ body: th.bodyFont, head: th.headFont, hs: th.headerStyle, indent: th.indentDepth, size: th.fontSize })})`);
+    check(!(out.images || []).some((im) => im.flourish) && !(out.fonts || []).length, 'userThemes the bytes 1.0\'s uploads would refuse (an SVG with a script, a "font" that is HTML) are never added');
+    check(JSON.stringify(out) === JSON.stringify(expected(out, out)), 'userThemes the book after the hostile apply is a 1.0 book (readBook reads it exactly)');
+    check(outside.length === 0, `userThemes no request leaves the page (${outside.length}${outside.length ? ': ' + outside.slice(0, 3).join(', ') : ''})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+async function userThemesChecks(origin) {
+  const parts = (process.env.UT_PARTS || 'out,in,hostile').split(',');
+  if (parts.includes('out')) await userThemesSignedOut(origin);
+  if (parts.includes('in')) await userThemesSignedIn(origin);
+  if (parts.includes('hostile')) await userThemesHostile(origin);
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -4226,6 +4598,7 @@ try {
   if (run('wave4a')) await wave4aChecks(srv.origin);
   if (run('wave4b')) await wave4bChecks(srv.origin);
   if (run('wave4c')) await wave4cChecks(srv.origin);
+  if (run('userThemes')) await userThemesChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
