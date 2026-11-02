@@ -20,6 +20,7 @@ import { SettingsDialog } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { syncClosureLocale } from '../closure/index';
 import { TourHost } from '../tour/TourHost';
+import { StyleTab } from '../style/StyleTab';
 import { Icon } from './Icon';
 import { LangMenu } from './LangMenu';
 import { ThemeButton } from './ThemeButton';
@@ -60,9 +61,11 @@ export function Shell() {
   const bookOpen = bk.phase === 'open';
   const ops = useChapterOps({ openHistory: () => setDialog('history') });
   const structure = useStructure();
-  // 1.0's centre tabs: the chapter content and the outline board (the Typography Studio is wave 4)
-  const [center, setCenter] = useState<'content' | 'outline'>('content');
+  // 1.0's centre tabs: the chapter content, the Typography Studio (wave 4a) and the outline board
+  const [center, setCenter] = useState<'content' | 'outline' | 'type'>('content');
   const showOutline = center === 'outline' && bookOpen;
+  const showType = center === 'type' && bookOpen;
+  const showContent = !showOutline && !showType;
   /** 1.0's olOpen: the desk, that section, the caret in its page. */
   const openOnDesk = (id: string) => {
     const y = bk.book?.ydoc;
@@ -78,6 +81,8 @@ export function Shell() {
   };
   const [mstyle, setMstyle] = useState(false);
   const tab = (pane: MobilePane, style: boolean) => () => {
+    // 1.0: a centre tab on a phone is the Write or the Style tab (currentCenterTab "content" / "type")
+    if (pane === 'center') setCenter(style ? 'type' : 'content');
     setMobile(pane);
     setMstyle(style);
   };
@@ -248,9 +253,21 @@ export function Shell() {
 
         <section id="pane-center" className="pane">
           <div className="center-tabs" role="tablist">
-            <button type="button" className={'ctab' + (showOutline ? '' : ' active')} id="tabBtnContent" role="tab" aria-selected={showOutline ? 'false' : 'true'} onClick={() => setCenter('content')}>
+            <button type="button" className={'ctab' + (showContent ? ' active' : '')} id="tabBtnContent" role="tab" aria-selected={showContent ? 'true' : 'false'} onClick={() => setCenter('content')}>
               <Icon name="PenLine" />
               {t('tab.content')}
+            </button>
+            <button
+              type="button"
+              className={'ctab' + (showType ? ' active' : '')}
+              id="tabBtnType"
+              role="tab"
+              aria-selected={showType ? 'true' : 'false'}
+              aria-disabled={bookOpen ? undefined : 'true'}
+              onClick={bookOpen ? () => setCenter('type') : undefined}
+            >
+              <Icon name="Type" />
+              {t('tab.type')}
             </button>
             <button
               type="button"
@@ -266,9 +283,10 @@ export function Shell() {
             </button>
           </div>
           <div className="center-body" role="tabpanel">
-            <div id="panelContent" className="center-inner" style={showOutline ? { display: 'none' } : undefined}>
+            <div id="panelContent" className="center-inner" style={showContent ? undefined : { display: 'none' }}>
               <Desk />
             </div>
+            {bookOpen ? <StyleTab key={bk.book!.id + ':' + bk.book!.epoch} shown={showType} /> : <div id="panelType" className="center-inner" style={{ display: 'none' }} />}
             <div id="panelOutline" className="center-inner ol-inner" style={showOutline ? undefined : { display: 'none' }}>
               <OutlineBoard shown={showOutline} onOpen={openOnDesk} />
             </div>

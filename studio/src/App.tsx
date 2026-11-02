@@ -15,6 +15,7 @@ import './generated/environment.css';
 import './styles/environment.css';
 import './generated/covenant.css';
 import './styles/covenant.css';
+import './generated/style.css';
 import { BookProvider } from './book/BookProvider';
 import { StatsProvider } from './book/stats';
 import { DialogStackProvider } from './shell/Dialog';
