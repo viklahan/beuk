@@ -421,6 +421,9 @@ export const SAFE_FAMILY = /^[\p{L}\p{M}\p{N} _.,&()+-]+$/u;
 /** Wave 4b: a header style as a class name, and an indent as a plain CSS length. */
 const PLAIN_ID = /^[\w-]*$/;
 const PLAIN_LEN = /^\d*\.?\d+(em|rem|px|pt|%)?$/;
+/** Review round 2: the theme's numeric fields, and a number written as a plain decimal string. */
+const NUMERIC_THEME = ['fontSize', 'lineHeight', 'dropDepth', 'smallCapsWords'] as const;
+const PLAIN_NUM = /^\s*-?\d*\.?\d+\s*$/;
 function fontValid(f: unknown): f is Rec {
   return isRec(f) && (f.ext === 'ttf' || f.ext === 'otf') && typeof f.data === 'string' && !!f.data && typeof f.family === 'string' && !!f.family.trim();
 }
@@ -470,6 +473,15 @@ export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
     // attribute, buildBookCss's text-indent): a value that is not a plain one becomes 1.0's default
     if (typeof th.headerStyle === 'string' && !PLAIN_ID.test(th.headerStyle)) th.headerStyle = 'classic_centered';
     if (typeof th.indentDepth === 'string' && !PLAIN_LEN.test(th.indentDepth)) th.indentDepth = '1.5em';
+    // review round 2: the numbers 1.0's CSS and markup builders interpolate as they are (buildBookCss's font-size,
+    // line-height, the drop cap's size and initial-letter; sectionHtml's small-caps count): a finite number, else the
+    // default theme's (PRESETS[0], 1.0's starting theme)
+    const def = a.PRESETS[0]!.theme as Rec;
+    for (const k of NUMERIC_THEME) {
+      if (!(k in th)) continue;
+      const n = typeof th[k] === 'number' ? (th[k] as number) : typeof th[k] === 'string' && PLAIN_NUM.test(th[k] as string) ? Number(th[k]) : NaN;
+      th[k] = Number.isFinite(n) ? n : def[k];
+    }
   };
   fix(st.theme);
   if (Array.isArray(st.customThemes)) for (const ct of st.customThemes) if (isRec(ct)) fix(ct.theme);

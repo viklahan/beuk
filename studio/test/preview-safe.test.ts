@@ -145,3 +145,20 @@ describe('review round (final review, Important 1 and 2)', () => {
     expect(out).toContain('<span class="ext-link">l</span>');
   });
 });
+
+describe('review round 2', () => {
+  it('Important 1a: fontSize, lineHeight, dropDepth and smallCapsWords become finite numbers (the preset default otherwise), in the theme and every custom theme', async () => {
+    const c = await loadClosure();
+    const { sourceSafe } = await import('../src/style/session');
+    const def = c.api.PRESETS[0]!.theme as Record<string, unknown>;
+    const evil = '1px; position:fixed; inset:0; z-index:99999; background:#fff';
+    const bad = () => ({ ...structuredClone(def), fontSize: evil, lineHeight: '1.5; position:fixed', dropDepth: 'x', smallCapsWords: {} as unknown });
+    const st = { theme: bad(), customThemes: [{ id: 'a', name: 'A', theme: bad() }], fonts: [], images: [] };
+    sourceSafe(c, st as never, { fonts: [] });
+    for (const th of [st.theme, st.customThemes[0]!.theme] as Record<string, unknown>[])
+      expect([th.fontSize, th.lineHeight, th.dropDepth, th.smallCapsWords]).toEqual([def.fontSize, def.lineHeight, def.dropDepth, def.smallCapsWords]);
+    const ok = { theme: { ...structuredClone(def), fontSize: 18.5, lineHeight: '1.7', dropDepth: 4 }, customThemes: [], fonts: [], images: [] };
+    sourceSafe(c, ok as never, { fonts: [] });
+    expect([ok.theme.fontSize, ok.theme.lineHeight, ok.theme.dropDepth]).toEqual([18.5, 1.7, 4]);
+  });
+});
