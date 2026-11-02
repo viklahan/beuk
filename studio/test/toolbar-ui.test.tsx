@@ -66,6 +66,12 @@ async function openStudio(book: Rec) {
     fireEvent.change(document.querySelector('#btnOpenBackup + input')!, { target: { files: [backupFile(book)] } });
   });
   await waitFor(() => expect(document.querySelector('#manuscript .ms-editor')).not.toBeNull(), { timeout: 20_000 });
+  // the editor's DOM lands inside ChapterEditor's effect; the toolbar gets the editor on the render its setEditor
+  // schedules. A click before that render finds no editor and does nothing (seen in the container once 4b's preview
+  // mounted beside it): let React commit first.
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+  });
 }
 const editor = () => (document.getElementById('manuscript') as HTMLElement & { beukEditor?: Editor }).beukEditor!;
 const text = () => editorText(editor()).text;
