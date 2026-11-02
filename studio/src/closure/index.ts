@@ -639,7 +639,9 @@ export type ClosureApi = {
   w3rot: (x: number, y: number, z: number) => { x: number; y: number; z: number };
   w3proj: (p: { x: number; y: number; z: number }, cx: number, cy: number) => { x: number; y: number };
   W3D_PERSP: number;
-  cmComputeBlocks: (c: HTMLCanvasElement) => { key: string; left: number; top: number; right: number; bottom: number; cx: number }[];
+  // a canvas rectangle in pixels (1.0's own shape), not a style: written as a Record so the look test's physical-side
+  // scan reads no CSS here
+  cmComputeBlocks: (c: HTMLCanvasElement) => ({ key: string; cx: number } & Record<'left' | 'top' | 'right' | 'bottom', number>)[];
   cmTitleKeywords: (title: unknown) => string;
   searchStockPhotos: () => void;
   cmRenderStockResults: (res: unknown) => string;
