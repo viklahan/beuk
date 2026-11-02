@@ -1,7 +1,7 @@
 import type * as Y from 'yjs';
 import { setMetaValue } from '@book/editor/index.js';
 import { bookState, closureIfLoaded, covEnv, pageEnv, structEnv, writeEnv, type BibleEntry, type Closure, type State } from '../closure/index';
-import { setMeta } from '../book/hooks';
+import { getMeta, setMeta } from '../book/hooks';
 import { placeKey } from '../notebook/notebook';
 import { repackHistory } from '../history/history';
 import { desk } from '../environment/page';
@@ -29,7 +29,7 @@ import { activeEditor } from '../editor/active';
    fetches) and a toast's Undo. */
 
 type Rec = Record<string, unknown>;
-type Session = { ydoc: Y.Doc; state: State; ver: number; base: string; images: string; wrote: string | null; bible: unknown };
+type Session = { ydoc: Y.Doc; state: State; ver: number; base: string; images: string; series: string; wrote: string | null; bible: unknown };
 
 let session: Session | null = null;
 /** Bumped by every transaction of the open book (one listener per Y.Doc). */
@@ -92,6 +92,18 @@ function serialized(c: Closure): unknown {
   const fields = isRec(b) && isRec(b.fields) && Object.keys(b.fields).length > 0;
   return a.bibleHas() || fields || a.bibleCountsHeld() ? a.bibleNormalize(b) : undefined;
 }
+/** The book settings 1.0's series code changes (bibleSeriesLeave, bibleSeriesRename: state.meta.series). */
+const seriesSig = (st: Rec): string => JSON.stringify([(st.meta as Rec | undefined)?.series ?? null]);
+/** What an edit changes: the Covenant as serializeBook writes it, less a series book's mention counts (bibleCountsNow
+ *  refreshes them on every save, so a series arriving or the text changing moves them without any Covenant edit; 1.0
+ *  writes them only with its next save, and so does 2.0: they ride the next real edit). */
+const editSig = (out: unknown): string => {
+  if (!isRec(out)) return 'null';
+  const entries = Array.isArray(out.entries) ? out.entries : [];
+  // a Covenant held only for its counts (no entry, no field) is no edit either
+  if (!entries.length && !(isRec(out.fields) && Object.keys(out.fields).length)) return 'null';
+  return JSON.stringify({ ...out, counts: undefined });
+};
 const imagesSig = (st: Rec): string => JSON.stringify(((st.images as Rec[] | undefined) ?? []).map((im) => (isRec(im) ? [im.id, typeof im.data === 'string' ? im.data.length : 0] : null)));
 
 /** 1.0's state of the open book for the Covenant: the whole book (mentions read every section), its Covenant as
@@ -108,8 +120,8 @@ function build(c: Closure, ydoc: Y.Doc): Session {
   st.activeId = sec ? sec.id : null;
   c.vars.editorSyncedSectionId = sec && activeEditor() ? (sec.id as string) : null;
   c.setState(st);
-  const s: Session = { ydoc, state: st, ver: verOf(ydoc).n, base: '', images: imagesSig(st), wrote: session && session.ydoc === ydoc ? session.wrote : null, bible: st.bible };
-  s.base = JSON.stringify(serialized(c) ?? null);
+  const s: Session = { ydoc, state: st, ver: verOf(ydoc).n, base: '', images: imagesSig(st), series: seriesSig(st), wrote: session && session.ydoc === ydoc ? session.wrote : null, bible: st.bible };
+  s.base = editSig(serialized(c));
   return s;
 }
 
@@ -144,11 +156,20 @@ export function covFlush(): void {
      the language bar, the word counts) has since set a state of its own into the shared closure */
   if (c.getState() !== s.state) c.setState(s.state);
   const out = serialized(c);
-  const json = JSON.stringify(out ?? null);
+  const json = editSig(out);
   const img = imagesSig(s.state as Rec);
-  if (json === s.base && img === s.images) return;
+  const ser = seriesSig(s.state as Rec);
+  if (json === s.base && img === s.images && ser === s.series) return;
   const y = s.ydoc;
   const write = () => {
+    if (ser !== s.series) {
+      // the series name, as 1.0's leave / rename set it (blank: the key goes); every other book setting as stored
+      const stored = { ...((getMeta(y, 'meta') ?? {}) as Rec) };
+      const v = ((s.state as Rec).meta as Rec).series;
+      if (typeof v === 'string' && v) stored.series = v;
+      else delete stored.series;
+      setMeta(y, 'meta', stored as never);
+    }
     if (json !== s.base) {
       if (out === undefined) {
         if (y.getMap('meta').has('bible')) setMeta(y, 'bible', undefined);
@@ -170,6 +191,7 @@ export function covFlush(): void {
   } else y.transact(() => write());
   s.base = json;
   s.images = img;
+  s.series = ser;
   s.wrote = JSON.stringify(out ?? null);
   s.bible = (s.state as Rec).bible;
   s.ver = verOf(y).n;

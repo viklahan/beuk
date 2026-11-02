@@ -57,7 +57,7 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // step 5 wave 3a: Dictate, Read Aloud and Zen
   'Mic', 'Volume2', 'Play', 'Pause', 'Square', 'Leaf',
   // step 5 wave 3b: the Covenant (its room, list, card and fields; BIBLE_ICONS' five kinds)
-  'ArrowLeft', 'ListPlus', 'UserRound', 'MapPin', 'Gem', 'Users', 'ScrollText'];
+  'ArrowLeft', 'ListPlus', 'UserRound', 'MapPin', 'Gem', 'Users', 'ScrollText', 'Cloud'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);

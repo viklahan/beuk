@@ -37,7 +37,7 @@ type MarkState = { set: DecorationSet; dots: DecorationSet; ver: number };
 export const covKey = new PluginKey<MarkState>('beukCovenant');
 
 /* ---- the matcher the page draws with (1.0: bibleDeskLive / bibleMatcherNow) ---- */
-const cur: { m: BibleMatcher | null; any: BibleMatcher | null; on: boolean; ver: number } = { m: null, any: null, on: true, ver: 0 };
+const cur: { m: BibleMatcher | null; any: BibleMatcher | null; on: boolean; ver: number; changes: boolean } = { m: null, any: null, on: true, ver: 0, changes: false };
 const views = new Set<EditorView>();
 let scheduled = 0;
 
@@ -52,6 +52,7 @@ function readMatcher(): boolean {
   const entries = a.bibleAllEntries();
   const any = entries.length ? (a.bibleMatcherNow() as BibleMatcher | null) : null;
   const on = a.bibleMarksOn();
+  cur.changes = entries.some((e) => !!(e.changes && e.changes.length));
   const m = on ? any : null;
   const changed = m !== cur.m || any !== cur.any || on !== cur.on;
   cur.m = m;
@@ -271,6 +272,8 @@ function computeDots(view: EditorView): DecorationSet {
   const doc = view.state.doc;
   const a = activeEditor();
   if (!a || a.editor.view !== view) return DecorationSet.empty;
+  // no entry holds a change: nothing to place, and the book's state is not built (a typing pause on Dumas costs nothing)
+  if (!cur.changes || !cur.on) return DecorationSet.empty;
   const c = covEnter();
   if (!c) return DecorationSet.empty;
   if (!c.api.bibleAllEntries().some((e) => e.changes && e.changes.length)) return DecorationSet.empty;

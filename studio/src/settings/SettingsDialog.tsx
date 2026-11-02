@@ -7,6 +7,7 @@ import { useLocale } from '../i18n/LocaleProvider';
 import { Dialog } from '../shell/Dialog';
 import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
+import { covRun } from '../covenant/covenant';
 import { bookLanguages, formFromMeta, langHint, rightsPreviewLine, settingsChange, supportEmailFrom, type SettingsForm } from './settings';
 
 /* Project Settings (1.0 #modalSettings), with 1.0's markup, ids and keys:
@@ -89,9 +90,18 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   };
   const save = () => {
     if (!c || !ydoc || !form) return;
-    const next = settingsChange(c, bookMeta(ydoc), form);
+    /* wave 3b (BEUK:bible): a book reading a series Covenant is asked first whether it leaves or renames the series
+       (1.0's bibleSeriesChangeAsk, run on the book's state): while it asks, or when the series cannot be read, the
+       series name stays as it was and the note beside the field (#setSeriesNote, 1.0's own text) says why */
+    const stored = bookMeta(ydoc);
+    const asked = !!covRun((cc) => cc.api.bibleSeriesChangeAsk(form.series.trim().slice(0, 120)));
+    const f = asked ? { ...form, series: typeof stored.series === 'string' ? stored.series : '' } : form;
+    const next = settingsChange(c, bookMeta(ydoc), f);
     if (next) setMeta(ydoc, 'meta', next as never);
-    onClose();
+    covRun((cc) => cc.api.bibleSeriesRefresh(false)); // another series (or none) is read; the same one refreshes its places
+    const note = document.getElementById('setSeriesNote');
+    // 1.0 closes Project Settings and opens it again on the note (bibleSeriesSettingsNote): here it stays open
+    if (!(asked && note && !note.hidden)) onClose();
     toast(t('toast.settingsSaved'), 'Check');
   };
 
@@ -155,6 +165,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 {t('set.series')}
               </label>
               <input className="txt-input" id="setSeries" type="text" maxLength={120} placeholder={t('set.seriesPh')} value={form.series} onChange={set('series')} />
+              {/* 1.0's note beside the field: written by 1.0's bibleSeriesSettingsNote (the Covenant, wave 3b) */}
+              <p className="bib-hint" id="setSeriesNote" role="status" hidden />
             </div>
             <div style={{ flex: '0 0 10em' }}>
               <label className="field-lab" htmlFor="setSeriesNumber">

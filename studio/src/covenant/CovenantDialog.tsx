@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type * as Y from 'yjs';
 import { TextSelection } from '@tiptap/pm/state';
 import { textOffsetToPos } from '@book/editor/index.js';
@@ -13,6 +14,7 @@ import { toBook } from '../editor/bridge';
 import { desk } from '../environment/page';
 import { covEnv, covRun, covUi } from './covenant';
 import { installSeriesNet } from './net';
+import { probeCloud } from '../pictures/stock';
 import { covenantDesk, setMarksClosure } from './marks';
 import { drawIcons } from '../insights/insights';
 
@@ -64,6 +66,11 @@ export function CovenantHost() {
         setMarksClosure(c);
         covRun((cc) => cc.api.bibleBookArrived());
         covenantDesk.refresh(true);
+        // 1.0's cloudAfterSignIn: once the shelf and the writer are known, a waiting series save goes, an unread series
+        // is read (bibleSeriesFlush: nothing at all signed out)
+        return probeCloud().then(() => {
+          if (alive) covRun((cc) => cc.api.bibleSeriesFlush());
+        });
       })
       .catch(() => undefined);
     // the Covenant or the book's language changed in the book (another tab, an undo, History): the marks follow
@@ -78,7 +85,50 @@ export function CovenantHost() {
       setOpen(null);
     };
   }, [ydoc]);
-  return <CovenantDialog open={!!open && bookOpen} openId={open?.id} openN={open?.n ?? 0} onClose={() => setOpen(null)} />;
+  return (
+    <>
+      <CovenantDialog open={!!open && bookOpen} openId={open?.id} openN={open?.n ?? 0} onClose={() => setOpen(null)} />
+      <SeriesConflict />
+    </>
+  );
+}
+
+/** 1.0's conflict notice (#modalConflict, its markup and keys), as far as the series Covenant uses it: 1.0's
+ *  bibleSeriesRaise words it for the series and opens it (classList "open", 1.0's own way), and its two answers go
+ *  to 1.0's bibleSeriesResolve. The book's own shelf conflict (Keep both) is the shelf's, wave 7. */
+export function SeriesConflict() {
+  const { t } = useLocale();
+  const answer = (choice: 'shelf' | 'mine') => () => {
+    const done = covRun((c) => c.api.bibleSeriesResolve(choice));
+    if (!done) document.getElementById('modalConflict')?.classList.remove('open');
+  };
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <div className="modal-back" id="modalConflict" style={{ zIndex: 80 }}>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="conflictTitle" style={{ maxWidth: 480 }}>
+        <h2>
+          <Icon name="Cloud" />
+          <span id="conflictTitle">{t('offline.conflictTitle')}</span>
+        </h2>
+        <p className="m-sub" id="conflictBody" />
+        <p className="m-sub" data-i18n="offline.conflictBothNote">
+          {t('offline.conflictBothNote')}
+        </p>
+        <div className="modal-actions" style={{ flexWrap: 'wrap' }}>
+          <button className="tb-btn" id="btnConflictShelf" type="button" onClick={answer('shelf')}>
+            {t('offline.useShelf')}
+          </button>
+          <button className="tb-btn" id="btnConflictBoth" type="button">
+            {t('offline.keepBoth')}
+          </button>
+          <button className="tb-btn primary" id="btnConflictMine" type="button" onClick={answer('mine')}>
+            {t('offline.keepMine')}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
 }
 
 const pascal = (name: string) => name.replace(/(^|-)([a-z0-9])/g, (_m, _a, ch: string) => ch.toUpperCase());

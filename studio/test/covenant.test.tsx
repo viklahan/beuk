@@ -437,7 +437,7 @@ describe('the Covenant room in the studio', { timeout: 60_000 }, () => {
     expect(taken).toEqual(['Mara']);
   });
 
-  it('bible.links.facts (room half) and bible.card.folded: a plain entry has no card; a fact field, a fact and a link bring it in on both entries; clearing them takes it away; a template adds only missing fields', async () => {
+  it('bible.links.facts (room half) and bible.card.folded: a plain entry has no card; a fact field, a fact and a link bring it in on both entries; clearing them takes it away', async () => {
     await studioWith(book('Facts', { bible: { entries: [{ id: 'cf-mara', type: 'character', name: 'Mara' }, { id: 'cf-tomas', type: 'character', name: 'Tomas' }] } }));
     await openRoom();
     act(() => (document.querySelector('.bib-item[data-bib-id="cf-mara"]') as HTMLElement).click());
