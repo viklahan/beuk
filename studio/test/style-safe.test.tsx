@@ -116,7 +116,7 @@ describe('the allowlist cleaner', () => {
 });
 
 describe('at the source: book values that would break 1.0\'s markup', { timeout: 60_000 }, () => {
-  it('a font named "<img src=x onerror=…>" and a flourish with a hostile mediaType render inert; the font is refused, the flourish kept', async () => {
+  it('a font named "<img src=x onerror=…>" and a flourish with a hostile mediaType render inert; the font is refused, the flourish hidden from the tab (both kept in the book)', async () => {
     const doc = structuredClone(fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!.book) as Rec;
     doc.fonts = [
       { id: 'bad1', name: 'x.ttf', family: '<img src=x onerror=window.__pwned=1>', ext: 'ttf', mediaType: 'font/ttf', data: ttfData() },
@@ -149,9 +149,9 @@ describe('at the source: book values that would break 1.0\'s markup', { timeout:
     // the hostile families are refused (not listed, not offered); the plain one stays
     expect(Array.from(document.querySelectorAll('#fontList .fl-name')).map((x) => x.textContent)).toEqual(['Garamond 3']);
     expect(Array.from(document.querySelectorAll('#selBodyFont option')).map((o) => (o as HTMLOptionElement).value)).not.toContain('<img src=x onerror=window.__pwned=1>');
-    // the flourish is kept, its thumbnail from 2.0's checked URL
-    const thumb = document.querySelector('#ornamentGrid img.orn-thumb');
-    expect(thumb?.getAttribute('src')).toMatch(/^data:image\/png;base64,iVBOR/);
-    expect(styleRun((cc) => (cc.getState() as unknown as { fonts: Rec[] }).fonts.map((f) => f.id))).toEqual(['ok1']);
+    // review round: the flourish with a hostile mediaType is hidden from the tab (not offered), the book keeps it as stored;
+    // the hostile fonts are hidden the same way (the session shows only the plain one)
+    expect(document.querySelector('#ornamentGrid img.orn-thumb')).toBeNull();
+    expect(styleRun((cc) => cc.api.uploadedFonts().map((f) => f.id))).toEqual(['ok1']);
   });
 });

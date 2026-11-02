@@ -6,6 +6,7 @@ import { repackHistory } from '../history/history';
 import { desk } from '../environment/page';
 import { onSettleWrites } from '../book/store';
 import { pictureSrc } from '../pictures/pictures';
+import { readThemes, serializeThemes, writeThemes } from './themes';
 
 /* Step 5 wave 4a (inventory D1, D2): the Style tab — the data side.
 
@@ -37,7 +38,10 @@ export const STYLE_KEYS = ['theme', 'activePreset', 'colour', 'fonts', 'customTh
 type Key = (typeof STYLE_KEYS)[number];
 type Out = Partial<Record<Key, unknown>>;
 
-type Session = { ydoc: Y.Doc; state: State; ver: number; base: Sig };
+type Session = { ydoc: Y.Doc; state: State; ver: number; base: Sig; hidden: Hidden };
+/** The book values the session hides from 1.0's code (sourceSafe), each with what the book stores, put back whenever
+ *  the session writes that list: the book keeps them exactly. */
+type Hidden = { images: Map<unknown, Rec>; fonts: Map<unknown, Rec> };
 /** Each key's serialized form: JSON for the small ones; for `images` and `fonts`, their fields with the bytes held
  *  by reference (compared with ===: no copy, no hash of megabytes per event). */
 type Sig = { json: Partial<Record<Key, string>>; images: unknown[][]; fonts: unknown[][] };
@@ -61,6 +65,8 @@ function verOf(ydoc: Y.Doc): { n: number } {
 export function serializedStyle(c: Closure): Out {
   const a = c.api;
   const st = c.getState() as unknown as Rec & { theme: Rec };
+  const h = session && session.state === (st as unknown) ? session.hidden : null;
+  const back = (list: unknown, m: Map<unknown, Rec> | undefined) => (Array.isArray(list) ? list.map((x) => (m && m.get(x)) ?? x) : []);
   const themeCopy: Rec = Object.assign({}, st.theme);
   if (st.theme.header) themeCopy.header = JSON.parse(JSON.stringify(st.theme.header));
   else delete themeCopy.header;
@@ -68,9 +74,9 @@ export function serializedStyle(c: Closure): Out {
     theme: themeCopy,
     activePreset: st.activePreset,
     colour: a.bookColourSet() ? a.bookColour() : undefined,
-    fonts: (Array.isArray(st.fonts) ? st.fonts : []).map((f) => a.normalizeCustomFont(f)).filter(Boolean),
-    customThemes: JSON.parse(JSON.stringify((Array.isArray(st.customThemes) ? st.customThemes : []).map((ct) => a.normalizeCustomTheme(ct)).filter(Boolean))),
-    images: st.images,
+    fonts: back(st.fonts, h?.fonts).map((f) => a.normalizeCustomFont(f)).filter(Boolean),
+    customThemes: serializeThemes(c, st.customThemes),
+    images: h && h.images.size ? back(st.images, h.images) : st.images,
     coverRecipe: st.coverRecipe ? a.normalizeCoverRecipe(st.coverRecipe) : null,
   };
 }
@@ -98,10 +104,13 @@ function build(c: Closure, ydoc: Y.Doc): Session {
   const a = c.api;
   // applyBookDoc's lines ARRIVE (the EPUB build's arrival) leaves out
   st.activePreset = book.activePreset || (book.theme ? null : a.PRESETS[0]!.id);
-  st.customThemes = Array.isArray(book.customThemes) ? book.customThemes.map((ct) => a.normalizeCustomTheme(ct)).filter(Boolean) : [];
-  sourceSafe(st); // book values 1.0's markup takes unescaped (below)
+  st.customThemes = readThemes(c, book.customThemes);
+  const hidden = sourceSafe(c, st, book); // book values 1.0's code takes unescaped (below)
   c.setState(st);
-  return { ydoc, state: st, ver: verOf(ydoc).n, base: sigOf(serializedStyle(c)) };
+  const s: Session = { ydoc, state: st, ver: verOf(ydoc).n, base: { json: {}, images: [], fonts: [] }, hidden };
+  session = s;
+  s.base = sigOf(serializedStyle(c));
+  return s;
 }
 
 /** 1.0's state of the open book, current. Null without a book or a closure. */
@@ -140,6 +149,10 @@ export function styleFlush(): void {
     for (const k of keys) {
       if (k === 'images' || k === 'fonts') continue;
       const v = out[k];
+      if (k === 'customThemes') {
+        writeThemes(y, v);
+        continue;
+      }
       if (v === undefined) {
         if (y.getMap('meta').has(k)) setMeta(y, k as never, undefined);
       } else {
@@ -174,6 +187,23 @@ type ToastAction = { label: string; ms?: number; onClick: () => void };
 export const styleUi: { toast: (msg: string, icon?: string, action?: ToastAction) => void } = { toast: () => undefined };
 
 let depth = 0;
+/* ---- the FontFaces the book's own faces became (1.0's registerUploadedFont adds them to document.fonts) ----
+   Every face the page gains during a session is the open book's: they are taken out again when the book goes
+   (styleRelease), and 1.0's registeredFontIds is cleared, so another book's face of the same family name is its own. */
+const owned = new Set<FontFace>();
+let facesBefore: Set<FontFace> | null = null;
+function pageFaces(): Set<FontFace> | null {
+  const set = typeof document !== 'undefined' ? (document as Document & { fonts?: Iterable<FontFace> }).fonts : undefined;
+  if (!set || typeof (set as { [Symbol.iterator]?: unknown })[Symbol.iterator] !== 'function') return null;
+  return new Set(set as Iterable<FontFace>);
+}
+function noteFaces(): void {
+  const before = facesBefore;
+  facesBefore = null;
+  const now = before && pageFaces();
+  if (!before || !now) return;
+  for (const f of now) if (!before.has(f)) owned.add(f);
+}
 let kept: { toast: typeof structEnv.toast; edited: typeof writeEnv.noteBookEdited } | null = null;
 let pauseWrite = false;
 const PAUSE_MS = 300;
@@ -186,9 +216,10 @@ function hold(): void {
     styleFlush();
   }, PAUSE_MS);
 }
-/** Write a held edit now (nothing when none is held). */
+/** Write a held edit now (nothing when none is held) — also from inside a running call: the write is diff-based, so
+ *  the call's own end writes again only what it changes after this. */
 export function styleSettle(): void {
-  if (held && depth === 0) styleFlush();
+  if (held) styleFlush();
 }
 onSettleWrites(styleSettle);
 
@@ -199,6 +230,7 @@ export function styleBegin(paused = false): (() => void) | null {
   if (!c) return null;
   depth++;
   if (depth === 1) {
+    facesBefore = pageFaces();
     kept = { toast: structEnv.toast, edited: writeEnv.noteBookEdited };
     structEnv.toast = (msg, icon, action) => styleUi.toast(msg, icon, action);
     writeEnv.noteBookEdited = () => undefined; // 1.0's save: styleFlush writes when the call returns
@@ -220,6 +252,7 @@ export function styleBegin(paused = false): (() => void) | null {
       } finally {
         pauseWrite = false;
         depth--;
+        noteFaces();
       }
       return;
     }
@@ -267,7 +300,7 @@ const ATTRS = new Set(['class', 'id', 'title', 'alt', 'role', 'tabindex', 'type'
 const STYLE_PROPS = new Set(['font-family', 'font-size', 'font-weight', 'font-style', 'font-variant', 'text-align', 'text-transform', 'letter-spacing',
   'line-height', 'opacity', 'margin', 'margin-top', 'margin-bottom', 'display', '--sw']);
 /** A plain CSS value: words, numbers, units, quotes, commas, hashes — nothing that loads or escapes. */
-const PLAIN_CSS = /^[\w\s#.,%'"+-]*$/;
+const PLAIN_CSS = /^[\p{L}\p{M}\p{N}\s#.,%'"+_-]*$/u;
 const SVG_PAINT = /^(none|currentColor|#[0-9a-f]{3,8}|var\(--[\w-]+(,\s*#[0-9a-f]{3,8})?\))$/i;
 const SVG_NUM = /^[-\d.\s,]*$/;
 const SVG_PATH = /^[\d\s.,MLHVCSQTAZmlhvcsqtaz+-]*$/;
@@ -368,20 +401,88 @@ pageEnv.$ = (id: string) => {
   return el instanceof Element && styleRoot.el && styleRoot.el.contains(el) ? guarded(el) : el;
 };
 
-/* ---- at the source: book values 1.0's markup takes unescaped ----
-   1.0 puts an uploaded face's family into style attributes and @font-face rules unescaped (renderFonts,
-   renderMyThemes, fontStack) and a flourish's mediaType into an <img src> (renderStudio, renderFlourishes): a book
-   could carry markup there (1.0 has the same gap: reported to V). In the session's state, a font whose family is not
-   a plain name is refused (left out: never registered, never offered, gone from the book at its next fonts write),
-   and a picture's mediaType that is not a plain media type is replaced by what its bytes are (the picture stays;
-   written only at the library's next write). Names 1.0 does escape (esc) are left as they are. */
-export const PLAIN_FAMILY = /^[\w .-]+$/;
-export function sourceSafe(st: Rec): void {
-  if (Array.isArray(st.fonts)) st.fonts = st.fonts.filter((f) => isRec(f) && typeof f.family === 'string' && PLAIN_FAMILY.test(f.family.trim()));
+/* ---- at the source: book values 1.0's code takes unescaped ----
+   1.0 puts book values into its markup and its CSS unescaped: a picture's data and mediaType into an <img src>
+   (renderStudio, renderFlourishes), a font's data into a FontFace src (registerUploadedFont: url(data:…) — a `)` there
+   adds another source), an uploaded face's family into style attributes and @font-face rules, and every theme font name
+   into fontStack's quoted string, which becomes the book's stylesheet (buildBookCss). A crafted book could carry
+   markup, CSS or a remote request there; 1.0 has the same gap (reported to V). So, in the session's state only:
+   - a picture whose data is not base64, or whose mediaType is not a plain media type, and a font whose data is not
+     base64 or whose family is not a plain name, are HIDDEN from 1.0's code (not shown, not offered, never a FontFace);
+     the book keeps them exactly as stored (the session puts them back whenever it writes that list);
+   - a theme font name (body, heading, the header design's three; the book's theme and every custom theme) that is
+     neither a library face nor one of the book's shown uploaded families becomes 1.0's own default (removeUploadedFont's
+     fallbacks: EB Garamond, Libre Baskerville, the heading face), written only with the next theme write;
+   - a font stored without an id gets a stable one (its place: "fx<n>"), not 1.0's random uid on every read. */
+export const B64 = /^[A-Za-z0-9+/=\s]*$/;
+/** A family name safe in a quoted CSS string, a style attribute and a FontFace: letters (any script), digits, spaces
+ *  and . , & ( ) + _ - only. */
+export const SAFE_FAMILY = /^[\p{L}\p{M}\p{N} _.,&()+-]+$/u;
+function fontValid(f: unknown): f is Rec {
+  return isRec(f) && (f.ext === 'ttf' || f.ext === 'otf') && typeof f.data === 'string' && !!f.data && typeof f.family === 'string' && !!f.family.trim();
+}
+export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
+  const hidden: Hidden = { images: new Map(), fonts: new Map() };
+  // stable ids: ARRIVE's normalizeCustomFont kept the valid fonts in order and minted a random id where none was stored
+  if (Array.isArray(st.fonts) && Array.isArray(book.fonts)) {
+    const raw = book.fonts.filter(fontValid);
+    const taken = new Set(raw.map((f) => (typeof f.id === 'string' ? f.id : '')));
+    (st.fonts as Rec[]).forEach((f, k) => {
+      const r = raw[k];
+      if (!r || (typeof r.id === 'string' && r.id)) return;
+      let id = 'fx' + (k + 1), n = 1;
+      while (taken.has(id)) id = 'fx' + (k + 1) + '-' + ++n;
+      taken.add(id);
+      f.id = id;
+    });
+  }
+  if (Array.isArray(st.fonts))
+    for (const f of st.fonts) {
+      if (!isRec(f)) continue;
+      if (typeof f.data === 'string' && B64.test(f.data) && typeof f.family === 'string' && SAFE_FAMILY.test(f.family.trim())) continue;
+      hidden.fonts.set(f, { ...f });
+      f.family = '';
+      f.data = '';
+    }
   if (Array.isArray(st.images))
     for (const im of st.images) {
-      if (!isRec(im) || typeof im.mediaType !== 'string' || MEDIA.test(im.mediaType)) continue;
-      const url = pictureSrc(im);
-      im.mediaType = url ? url.slice(5, url.indexOf(';')) : 'application/octet-stream';
+      if (!isRec(im)) continue;
+      if ((typeof im.data !== 'string' || B64.test(im.data)) && (typeof im.mediaType !== 'string' || MEDIA.test(im.mediaType))) continue;
+      hidden.images.set(im, { ...im });
+      im.data = '';
+      im.mediaType = 'application/octet-stream';
+      im.ext = '';
+      im.flourish = false;
     }
+  // theme font names: a library face or a shown uploaded family, else 1.0's default
+  const a = c.api;
+  const shown = new Set((Array.isArray(st.fonts) ? st.fonts : []).filter((f) => isRec(f) && f.family).map((f) => String((f as Rec).family).trim()));
+  const ok = (v: unknown) => typeof v === 'string' && (a.ALL_LIBRARY_FONTS.includes(v) || shown.has(v));
+  const fix = (th: unknown) => {
+    if (!isRec(th)) return;
+    if (!ok(th.bodyFont)) th.bodyFont = 'EB Garamond';
+    if (!ok(th.headFont)) th.headFont = 'Libre Baskerville';
+    if (isRec(th.header)) for (const k of a.HD_KEYS) { const e = th.header[k]; if (isRec(e) && !ok(e.font)) e.font = th.headFont; }
+  };
+  fix(st.theme);
+  if (Array.isArray(st.customThemes)) for (const ct of st.customThemes) if (isRec(ct)) fix(ct.theme);
+  return hidden;
+}
+
+/** The book went (or another arrives): a held edit is written, the faces it added leave the page, 1.0's record of
+ *  registered faces is cleared, and the session is let go. */
+export function styleRelease(): void {
+  styleSettle();
+  if (typeof document !== 'undefined') {
+    const set = (document as Document & { fonts?: { delete?: (f: FontFace) => unknown } }).fonts;
+    for (const f of owned) set?.delete?.(f);
+  }
+  owned.clear();
+  const c = closureIfLoaded();
+  if (c) {
+    const reg = c.api.registeredFontIds as Record<string, unknown> | undefined;
+    if (reg) for (const k of Object.keys(reg)) delete reg[k];
+    c.vars.fontPickerSig = null;
+  }
+  styleReset();
 }

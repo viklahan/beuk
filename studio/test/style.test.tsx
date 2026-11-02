@@ -10,7 +10,7 @@ import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { cleanFragment, serializedStyle, styleFlush, styleReset, styleRoot, styleRun, styleState } from '../src/style/session';
 import { StyleFrame } from '../src/style/StyleTab';
-import { applyTheme, deleteTheme, duplicateTheme, listThemes, openCreator, saveTheme } from '../src/style/themes';
+import { applyTheme, deleteTheme, duplicateTheme, listThemes, openCreator, saveTheme } from '../src/style/themeActions';
 import { fixtures } from './fixtures';
 import { styledBook } from './style-fixture';
 

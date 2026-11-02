@@ -151,7 +151,7 @@ export const EXTRA_ROOTS = [
   'saveThemeCreator', 'renderFonts', 'fontFamilyFromFile', 'handleFontFile', 'removeUploadedFont', 'fillFontSelects', 'refreshFontPickers',
   'registerUploadedFont', 'registerAllFonts', 'fontOptionsHtml', 'uploadedFonts', 'normalizeCustomTheme', 'normalizeHeaderDesign', 'defaultHeaderDesign',
   'COLOUR_ACCENTS', 'COLOUR_TINTS', 'bookColour', 'bookColourSet', 'bookColourNormalize', 'bookColourCheck', 'setBookColour', 'setBookPrintBlack',
-  'renderBookColour', 'initBookColour', 'BODY_FONTS', 'HEAD_FONTS', 'ALL_LIBRARY_FONTS', 'TEXT_HEAD_FONTS', 'DISPLAY_FONTS', 'HD_KEYS', 'FLOURISH_PREFIX',
+  'renderBookColour', 'initBookColour', 'registeredFontIds', 'BODY_FONTS', 'HEAD_FONTS', 'ALL_LIBRARY_FONTS', 'TEXT_HEAD_FONTS', 'DISPLAY_FONTS', 'HD_KEYS', 'FLOURISH_PREFIX',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is

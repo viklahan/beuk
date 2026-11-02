@@ -553,6 +553,7 @@ export type ClosureApi = {
   refreshFontPickers: () => void;
   registerUploadedFont: (f: unknown) => Promise<boolean>;
   registerAllFonts: () => void;
+  registeredFontIds: Record<string, boolean>;
   fontOptionsHtml: (list: string[]) => string;
   uploadedFonts: () => BookFont[];
   normalizeCustomTheme: (ct: unknown) => CustomTheme | null;
