@@ -242,7 +242,7 @@ export const PREVIEW_ROOTS = ['renderPreview', 'queuePreview', 'initPreview', 's
   'hc', 'hcInit', 'hcRender', 'hcOnDevice', 'hcOnPreview', 'hcSetOpen', 'hcTurn', 'hcKey', 'hcEnsureModel', 'hcSignature', 'hcLook',
   'fsInit', 'fsToggle', 'fsExit', 'fsIsOn', 'fsActive', 'fsState', 'fsLabelFor', 'fsScaleFrame', 'FS_TARGETS', 'syncFsButtons'];
 /** What the preview module takes from its page and from the main studio (src/preview/preview.ts). */
-export const PREVIEW_SUPPLIED = ['t', 'document', 'UI_STRINGS', 'getUiLang', 'uiLangState', 'fmtDateIntl', 'icons',
+export const PREVIEW_SUPPLIED = ['t', 'document', 'window', 'setTimeout', 'requestAnimationFrame', 'UI_STRINGS', 'getUiLang', 'uiLangState', 'fmtDateIntl', 'icons',
   // the page: `$` (the preview's ids, 1.0's #editorArea as a read-only view of the open editor), the open section
   '$', 'activeSection',
   // the main studio after a desk jump (deskGoToSection: 2.0 selects the section), Read Aloud and dictation (the main

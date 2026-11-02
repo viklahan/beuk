@@ -3,7 +3,7 @@ import { useBook } from '../book/BookProvider';
 import { loadClosure } from '../closure/index';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon, type IconName } from '../shell/Icon';
-import { loadPreview, previewIfLoaded, setPreviewMounted, previewStarted, startPreview, renderNow, queueTyped, pvMobile } from './preview';
+import { loadPreview, previewIfLoaded, setPreviewMounted, previewStarted, startPreview, stopPreview, renderNow, queueTyped, pvMobile } from './preview';
 
 /* Step 5 wave 4b (inventory E1, E2): 1.0's preview pane — its markup, ids, classes and keys (client/index.html
    "PANE 3 : PREVIEW"): the device bar, the device frame and its screen (the running head, the page flow, the
@@ -134,6 +134,7 @@ export function PreviewPane({ mobile }: { mobile: string }) {
     return () => {
       gone = true;
       setPreviewMounted(false);
+      stopPreview();
     };
   }, []);
   // the book, its open section, the language: drawn again (1.0's renderPreview on selectSection / applyBookDoc / a

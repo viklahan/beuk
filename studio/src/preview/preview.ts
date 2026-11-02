@@ -45,7 +45,29 @@ const INERT = new Set(['modalPrintView', 'modalPrint', 'pivModalBox', 'printModa
 const inert = new Map<string, HTMLElement>();
 const proxies = new WeakMap<Element, Element>();
 /** The CSS rules cleanBookCss dropped (0 for an honest book: the e2e reads it). */
-export const previewSafety = { droppedRules: 0, cleanedFlows: 0, sheets: 0, reads: 0 };
+export const previewSafety = {
+  droppedRules: 0,
+  cleanedFlows: 0,
+  sheets: 0,
+  reads: 0,
+  /** 1.0's page-wide listeners the preview holds now (review round 2: taken away when the pane goes). */
+  get listeners(): number {
+    return tracked.length;
+  },
+};
+/* ---- 1.0's page-wide listeners (document, window, document.fonts), recorded so the pane's end takes them away ---- */
+type Tracked = { target: EventTarget; type: string; fn: EventListenerOrEventListenerObject; opts?: boolean | AddEventListenerOptions };
+const tracked: Tracked[] = [];
+function trackOn(target: EventTarget): EventTarget['addEventListener'] {
+  return (type: string, fn: EventListenerOrEventListenerObject | null, opts?: boolean | AddEventListenerOptions) => {
+    if (!fn) return;
+    target.addEventListener(type, fn, opts);
+    tracked.push({ target, type, fn, opts });
+  };
+}
+function untrackAll(): void {
+  for (const x of tracked.splice(0)) x.target.removeEventListener(x.type, x.fn, x.opts);
+}
 
 function guardFlow(el: Element): Element {
   let p = proxies.get(el);
@@ -111,7 +133,7 @@ const editorArea = {
     return a ? editorText(a.editor).end : 0;
   },
   addEventListener(type: string, fn: (e: Event) => void): void {
-    document.addEventListener(type, (e) => {
+    trackOn(document)(type, (e: Event) => {
       const tg = e.target as Element | null;
       if (tg && typeof tg.closest === 'function' && tg.closest('#manuscript')) fn(e);
     });
@@ -130,10 +152,28 @@ export const previewDocument: Document = new Proxy(document, {
       const a = t.activeElement;
       return a && typeof a.closest === 'function' && a.closest('#manuscript') ? editorFocus : a;
     }
+    if (k === 'addEventListener') return trackOn(t);
+    if (k === 'fonts') return t.fonts ? tracking(t.fonts) : t.fonts;
     const v = Reflect.get(t, k, t);
     return typeof v === 'function' ? v.bind(t) : v;
   },
 });
+/** An event target (window, document.fonts) as the preview's code reaches it: its listeners recorded. */
+const trackers = new WeakMap<object, unknown>();
+function tracking<T extends object>(target: T): T {
+  let p = trackers.get(target) as T | undefined;
+  if (!p) {
+    p = new Proxy(target, {
+      get(t, k) {
+        if (k === 'addEventListener') return trackOn(t as unknown as EventTarget);
+        const v = Reflect.get(t, k, t);
+        return typeof v === 'function' ? v.bind(t) : v;
+      },
+    });
+    trackers.set(target, p);
+  }
+  return p;
+}
 export function preview$(id: string): unknown {
   if (id === 'editorArea') return editorArea;
   const el = document.getElementById(id);
@@ -175,6 +215,21 @@ export function loadPreview(): Promise<PreviewClosure> {
         icons: () => drawIcons(document),
         $: preview$,
         document: previewDocument,
+        window: tracking(window),
+        // 1.0's timers in the preview's code: a callback due after the pane went (a device switch's 330 ms re-measure,
+        // a frame) does nothing — its elements are gone
+        setTimeout: (fn: (...a: unknown[]) => void, ms?: number, ...args: unknown[]) => {
+          const at = epoch;
+          return setTimeout(() => {
+            if (at === epoch) fn(...args);
+          }, ms);
+        },
+        requestAnimationFrame: (fn: FrameRequestCallback) => {
+          const at = epoch;
+          return requestAnimationFrame((t) => {
+            if (at === epoch) fn(t);
+          });
+        },
         activeSection,
         // 1.0's deskGoToSection set state.activeId: the studio opens that section (its editor follows)
         renderSidebar: () => undefined,
@@ -288,6 +343,8 @@ previewEnv.desk = () => ((loaded?.api.deskState as unknown as DeskState) ?? { co
 
 /* ---- the pane's life ---- */
 let started = false;
+/** Bumped when the pane goes: 1.0's timers set before it do nothing after. */
+let epoch = 0;
 let uninstall: (() => void) | null = null;
 export const previewStarted = (): boolean => started;
 /** The two book stylesheets 1.0 creates in the head on first use, made here first (so 1.0's code reaches them only
@@ -356,6 +413,18 @@ export function startPreview(): void {
     safety: previewSafety,
   };
   renderNow();
+}
+/** The pane goes (the Shell or the pane drawn anew, the app torn down): 1.0's page-wide listeners and the
+ *  refreshes are taken away, the last book is let go, and the next pane starts the preview again on its markup. */
+export function stopPreview(): void {
+  epoch++;
+  clearTimeout(typedTimer);
+  untrackAll();
+  uninstall?.();
+  uninstall = null;
+  started = false;
+  shownDoc = null;
+  shownOnPhone = false;
 }
 /** 1.0's renderPreview now, on the book as it stands. With no book open, the page is empty (1.0's empty desk). */
 export function renderNow(): void {
