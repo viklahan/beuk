@@ -10,6 +10,7 @@ import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { styleRelease, styleReset, styleRun, styleState } from '../src/style/session';
 import { coverClear, coverReady, coverUi, coverUpload, lucideArrived } from '../src/cover/cover';
+import { saveNamed } from '../src/history/history';
 import { fixtures } from './fixtures';
 import { PNG_1PX } from './style-fixture';
 
@@ -214,4 +215,29 @@ describe('wave 4c review (Minors 1, 2)', () => {
     structEnv.toast('after the request');
     expect(seen).toEqual(['after the request']);
   });
+});
+
+describe('review round 2, Minor 4: History keeps the cover it saw', () => {
+  for (const how of ['Use as My Cover', 'Remove'] as const)
+    it(`a snapshot taken before ${how} still reads the old cover's bytes after it`, async () => {
+      const doc = book('real/lantern-coast-book-one');
+      const old = doc.cover as Rec;
+      const y = onDesk(doc);
+      saveNamed(c, y, 'before the cover changed');
+      const snapBefore = c.api.normalizeHistory(exportBook(y).history, exportBook(y).historyPool);
+      expect((snapBefore[0]!.doc.cover as Rec).data).toBe(old.data);
+      if (how === 'Use as My Cover')
+        styleRun((cc) => {
+          const r = cc.api.normalizeCoverRecipe(JSON.parse(JSON.stringify((cc.getState() as Rec).coverRecipe)));
+          cc.api.adoptCoverRecipe(r, fakeCanvas());
+        });
+      else coverClear(() => undefined);
+      const out = exportBook(y);
+      expect(out.cover === null || (out.cover as Rec).data !== old.data).toBe(true);
+      const hist = c.api.normalizeHistory(out.history, out.historyPool);
+      expect(hist.length).toBe(1);
+      expect(hist[0]!.doc.cover).toEqual(old);
+      expect(readBook(out).status).toBe('ok');
+      y.destroy();
+    });
 });
