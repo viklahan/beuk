@@ -25,13 +25,14 @@ import { stockUrls } from './scene';
 /** The origins the served policy allows for img-src and connect-src beyond 'self' (Caddyfile). */
 export const STOCK_ORIGINS = ['https://images.pexels.com', 'https://api.openverse.org'];
 
-/** An address the policy lets this page load. */
+/** A stock address this page may load: https on one of STOCK_ORIGINS. Review round 2 (Minor 3): never this page's own
+ *  origin nor a relative address — those come from a third party's answer (Openverse's JSON) and would be credentialed
+ *  same-origin requests; the shelf's /api/stock/search hands back Pexels' own https addresses (src/routes/stock.ts). */
 export function allowedStockUrl(u: unknown): u is string {
-  if (typeof u !== 'string' || !u) return false;
+  if (typeof u !== 'string' || !/^https:\/\//i.test(u)) return false;
   try {
-    const url = new URL(u, globalThis.location?.href ?? 'https://beuk.invalid/');
-    if (url.protocol !== 'https:' && url.origin !== globalThis.location?.origin) return false;
-    return url.origin === globalThis.location?.origin || STOCK_ORIGINS.includes(url.origin);
+    const url = new URL(u);
+    return url.protocol === 'https:' && STOCK_ORIGINS.includes(url.origin);
   } catch {
     return false;
   }

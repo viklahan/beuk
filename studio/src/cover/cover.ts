@@ -124,15 +124,15 @@ export function coverFetch(input: RequestInfo | URL, init?: RequestInit): Promis
   } catch {
     return Promise.reject(new TypeError('refused'));
   }
-  if (url.origin === globalThis.location?.origin) return globalThis.fetch(input, init);
-  if (!allowedStockUrl(url.href)) return Promise.reject(new TypeError('refused: the served policy does not allow ' + url.origin));
-  return globalThis.fetch(url.href, { ...init, credentials: 'omit' }).then((r) => {
-    const out = Object.create(r) as Response;
-    Object.defineProperty(out, 'blob', { value: () => r.blob().then(pictureBlob) });
-    Object.defineProperty(out, 'json', { value: () => r.json() });
-    Object.defineProperty(out, 'ok', { value: r.ok });
-    Object.defineProperty(out, 'status', { value: r.status });
-    return out;
+  const same = url.origin === globalThis.location?.origin;
+  if (!same && !allowedStockUrl(url.href)) return Promise.reject(new TypeError('refused: the served policy does not allow ' + url.origin));
+  // review round 2 (Minor 3): a body 1.0 reads as a picture (blob(): the chosen photo) is sniffed on every path
+  return (same ? globalThis.fetch(input, init) : globalThis.fetch(url.href, { ...init, credentials: 'omit' })).then((r) => {
+    // the Response itself, its blob() shadowed (its other methods and getters stay the platform's: the font loads read
+    // arrayBuffer() and text())
+    const blob = r.blob.bind(r);
+    Object.defineProperty(r, 'blob', { value: () => blob().then(pictureBlob), configurable: true });
+    return r;
   });
 }
 
