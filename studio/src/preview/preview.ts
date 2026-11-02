@@ -202,6 +202,13 @@ export function loadPreview(): Promise<PreviewClosure> {
         previewSafety.cleanedFlows++;
         return cleanFlowHtml(unlink(html));
       };
+      // a sideways block in print layout (the hardcover): 1.0 lays its HTML out in a host of its own on <body> first
+      // (sidewaysPrintPages: host.innerHTML) — its input is cleaned before it gets there
+      const sideways = pc.vars.sidewaysPrintPages as (inner: string) => string;
+      pc.vars.sidewaysPrintPages = (inner: string) => {
+        previewSafety.cleanedFlows++;
+        return sideways(cleanFlowHtml(inner));
+      };
       loaded = pc;
       return pc;
     });

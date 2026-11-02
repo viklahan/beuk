@@ -198,4 +198,20 @@ describe('review round 2', () => {
     expect(cleanBookCss(String.raw`.fc-page p { b\61 ckground: red; }`, '.fc-page').dropped).toBeGreaterThan(0);
     expect(cleanBookCss(String.raw`.fc-page p::before { content: "\201C"; }`, '.fc-page').dropped).toBe(0);
   });
+
+  it('Important 2: the hardcover’s sideways pages (1.0’s sidewaysPrintPages) take their HTML through the flow sink', async () => {
+    const c = await loadClosure();
+    const pv = await loadPreview();
+    const ydoc = new Y.Doc();
+    importBook(fixtures('real').find((f) => f.name === 'real/lantern-coast-print')!.book, ydoc);
+    pv.setState(stateFromBook(c, exportBook(ydoc)));
+    const seen: string[] = [];
+    const obs = new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((x) => { if (x instanceof Element) seen.push(x.outerHTML); })));
+    obs.observe(document.body, { childList: true, subtree: true });
+    (window as unknown as { __pw?: unknown }).__pw = undefined;
+    const out = String((pv.vars.sidewaysPrintPages as (h: string) => string)('<p>ok</p><img src="x" onerror="window.__pw=1"><p onclick="window.__pw=2">t</p>'));
+    obs.disconnect();
+    expect(out + seen.join('')).not.toMatch(/onerror|onclick/);
+    expect(out).toContain('ok');
+  });
 });

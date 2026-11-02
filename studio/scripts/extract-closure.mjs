@@ -254,8 +254,9 @@ export const PREVIEW_SUPPLIED = ['t', 'document', 'UI_STRINGS', 'getUiLang', 'ui
 /** 1.0's top-level lets of the preview module the studio reads or sets. */
 export const PREVIEW_VARS = ['editorSyncedSectionId', 'editorTypedAt', 'pvFollow', 'pcFontGen', 'pvShownId', 'pvShownSec',
   // 1.0's printUnlink, through which every page of the open hardcover gets its HTML (pivSectionFlow): wrapped by the
-  // flow sink (src/preview/preview.ts)
-  'printUnlink'];
+  // flow sink (src/preview/preview.ts); and sidewaysPrintPages, which lays a sideways block's raw HTML out in a host
+  // of its own on <body> before that (review round 2)
+  'printUnlink', 'sidewaysPrintPages'];
 
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile'];
