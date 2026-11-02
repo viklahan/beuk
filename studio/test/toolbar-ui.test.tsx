@@ -214,7 +214,8 @@ describe("1.0's insert toolbar in the studio (A1–A4, A13)", () => {
   it("Auto-Format: 1.0's text and toasts; one Undo", async () => {
     await openStudio(BOOK({ content: 'He said "hi" -- then...' }));
     await click(document.getElementById('btnBeautify')!);
-    expect(text()).toBe('He said “hi” — then…');
+    // (the toolbar runs on the closure, loaded on first use: under load it lands after the click's act)
+    await waitFor(() => expect(text()).toBe('He said “hi” — then…'));
     await waitFor(() => expect(document.body.textContent).toContain(AUTO_FORMAT_DONE));
     await click(document.getElementById('btnBeautify')!);
     await waitFor(() => expect(document.body.textContent).toContain(AUTO_FORMAT_CLEAN));

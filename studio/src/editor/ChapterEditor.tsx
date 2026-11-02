@@ -72,7 +72,7 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
       }
     });
     setEditor(ed);
-    setActiveEditor(ed, section);
+    setActiveEditor(ed, section, sectionMap);
     (host.current as HTMLDivElement & { beukEditor?: Editor }).beukEditor = ed; // e2e and latency probes reach it here
     // and the section's text with the selection as text offsets (wave 2a e2e: the toolbar against 1.0's own page)
     (host.current as HTMLDivElement & { beukText?: unknown }).beukText = {

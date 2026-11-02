@@ -2,7 +2,9 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import * as Y from 'yjs';
-import { exportBook, importBook } from '../../src/book/editor/index';
+import { exportBook, importBook, sectionList } from '../../src/book/editor/index';
+import type { Editor } from '@tiptap/core';
+import { clearActiveEditor, setActiveEditor } from '../src/editor/active';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import { App } from '../src/App';
@@ -503,5 +505,27 @@ describe('the toast the Covenant raises outside a call', () => {
     const keep = structEnv.toast;
     covRun(() => undefined);
     expect(structEnv.toast).toBe(keep);
+  });
+});
+
+describe("1.0's editorSyncedSectionId: the section the editor holds, by the section itself (review of wave 3b, should-fix 3)", () => {
+  it('an editor still on chapter 1 while the desk points at chapter 2 (a move before the Desk remounts) is not the active section: Alt+M and the card refuse', () => {
+    const y = onDesk(book('Guard', { bible: { entries: [{ id: 'g1', type: 'character', name: 'Mara' }] } }));
+    const maps = sectionList(y);
+    const fake = { isDestroyed: false } as unknown as Editor;
+    setActiveEditor(fake, 1, maps[0]!); // mounted at index 1, but it holds the first section
+    desk.active = 1;
+    try {
+      const c = covRun((cc) => cc)!;
+      expect((c.getState() as Rec).activeId).toBe('bibc2');
+      expect(c.vars.editorSyncedSectionId).toBe('bibc1');
+      // and once the editor holds the desk's section, they agree
+      setActiveEditor(fake, 1, maps[1]!);
+      covReset();
+      const c2 = covRun((cc) => cc)!;
+      expect(c2.vars.editorSyncedSectionId).toBe((c2.getState() as Rec).activeId);
+    } finally {
+      clearActiveEditor(fake);
+    }
   });
 });

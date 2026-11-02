@@ -5,7 +5,7 @@ import { getMeta, setMeta } from '../book/hooks';
 import { placeKey } from '../notebook/notebook';
 import { repackHistory } from '../history/history';
 import { desk } from '../environment/page';
-import { activeEditor } from '../editor/active';
+import { activeEditorSectionId } from '../editor/active';
 
 /* Step 5 wave 3b (inventory C6): the Covenant — the data side.
 
@@ -118,7 +118,10 @@ function build(c: Closure, ydoc: Y.Doc): Session {
   else st.bible = c.api.bibleNormalize(stableIds(structuredClone(raw)));
   const sec = desk.active === null ? undefined : st.sections[desk.active];
   st.activeId = sec ? sec.id : null;
-  c.vars.editorSyncedSectionId = sec && activeEditor() ? (sec.id as string) : null;
+  /* 1.0's editorSyncedSectionId: the section the editor holds, read from the editor's own section (not the desk's
+     index), so markNames' check against activeId catches an editor still on another section (a move, this tab's or a
+     synced one, before the Desk remounts it) */
+  c.vars.editorSyncedSectionId = activeEditorSectionId();
   c.setState(st);
   const s: Session = { ydoc, state: st, ver: verOf(ydoc).n, base: '', images: imagesSig(st), series: seriesSig(st), wrote: session && session.ydoc === ydoc ? session.wrote : null, bible: st.bible };
   s.base = editSig(serialized(c));
@@ -142,7 +145,7 @@ export function covEnter(): Closure | null {
     // the desk may have moved to another section without a book change
     const sec = desk.active === null ? undefined : s.state.sections[desk.active];
     (s.state as Rec).activeId = sec ? sec.id : null;
-    c.vars.editorSyncedSectionId = sec && activeEditor() ? (sec.id as string) : null;
+    c.vars.editorSyncedSectionId = activeEditorSectionId();
   }
   return c;
 }
