@@ -195,6 +195,16 @@ export const EXTRA_ROOTS = [
   'msPlan', 'msRoundWords', 'msDocumentXml', 'msHeaderXml', 'msStylesXml', 'msFiles', 'msBlob', 'msFilename', 'msDownload', 'msSummaryHtml', 'msRender', 'msOpen', 'msInit',
   'acxBuildPlan', 'acxDetectCandidates', 'acxGuideRows', 'acxSetPron', 'acxZipEntries', 'acxBuildZipBlob', 'acxDownload', 'acxSummaryTxt', 'acxFileTxt', 'acxDocxFiles',
   'acxRender', 'acxOpen', 'acxInit', 'acxListen',
+  // wave 5d (F10): the store-ready check, 1.0's own — the per-store rules (STORE_RULES, cited data), the audit (storeAudit:
+  // its facts, rows, verdict and actions, storeServerReason / storeServerFix, storeFootnoteFallbacks), the report surface
+  // (storeRowsHtml, renderStoreReport, buildStoreReportHtml, downloadStoreReport) and the modal's wiring (openStoreReady,
+  // initStoreReady, storeAct, storeRunServer, storeRecheck). What it reads of print that the main closure did not hold
+  // (printPlacements, imagePixelSize, printEdgeSections, printNotesAtFoot, preflightJumpTo) comes as their own copies of
+  // 1.0's text. The shelf half is supplied (BROWSER_SUPPLIED: storeMakePrintJob and its three neighbours, wave 7)
+  'STORE_TRIM_TOL', 'STORE_SPINE_TOL', 'STORE_RULES', 'STORE_IDS', 'storeUi', 'storeDefaults', 'storeInkId', 'storeIsTrim', 'storeTrimOnPaper', 'storeMatchTrim',
+  'storeIn', 'storeTrimLabel', 'storeSpineClearance', 'storeFacts', 'storeBookSig', 'storeServerFresh', 'storeServerReason', 'STORE_CAUSE_FIX', 'storeServerFix',
+  'storeFootnoteFallbacks', 'storeFontNames', 'storeAudit', 'STORE_ICON', 'storeVerdictText', 'storeFactsLine', 'storeRowsHtml', 'renderStoreReport', 'storeAct',
+  'openStoreReady', 'storeRunServer', 'storeRecheck', 'buildStoreReportHtml', 'downloadStoreReport', 'initStoreReady',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -294,7 +304,12 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   'runPrintPreflight', 'renderPrintControls', 'boxSetExpandPick', 'manuscriptFileToVolume',
   'renderArchiveList', 'cloudLoadArchive',
   // review of 5c (Minor 2): the page's crypto, its digest resuming in the export session (src/closure/index.ts)
-  'crypto'];
+  'crypto',
+  // wave 5d (F10): the store check's server half needs the book on the shelf (1.0's storeMakePrintJob → cloudEnsureLinked);
+  // no shelf copy before wave 7, so the seam is 2.0's storeMakePrintJob, answering { needShelf: true } without a request
+  // (src/print/print.ts shelfPrintJob, the same one 5b's print-ready panel uses); the three that would talk to the
+  // server after a job exists are refusing stand-ins (no request: src/store/store.ts)
+  'storeMakePrintJob', 'storeUpload', 'storeCreateJob', 'storeRefreshJobs'];
 /** Wave 5a: 1.0's serializeBook, emitted as its own sub-module (closure-serialize.js, createSerialize(share)): the main
  *  closure keeps `serializeBook` SUPPLIED (the wrap download's book stays wave 4c's), and the export's request body is
  *  1.0's own serializeBook run on 1.0's state of the open book as applyBookDoc holds it (src/export/state.ts). */
@@ -806,7 +821,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; boxSetExpandPick: (files: unknown[]) => Promise<{ files: unknown[]; skipped: unknown[] }>; manuscriptFileToVolume: (f: unknown) => Promise<unknown>; renderArchiveList: () => void; cloudLoadArchive: () => void; crypto: unknown };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; boxSetExpandPick: (files: unknown[]) => Promise<{ files: unknown[]; skipped: unknown[] }>; manuscriptFileToVolume: (f: unknown) => Promise<unknown>; renderArchiveList: () => void; cloudLoadArchive: () => void; crypto: unknown; storeMakePrintJob: (o?: unknown) => Promise<unknown>; storeUpload: (...a: unknown[]) => Promise<unknown>; storeCreateJob: (...a: unknown[]) => Promise<unknown>; storeRefreshJobs: (out: unknown) => Promise<boolean> };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 

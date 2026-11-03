@@ -156,7 +156,7 @@ export function arrivePrint(c: Closure, doc: Rec, s: Rec): Rec {
 
 /* ---- the session ---- */
 
-type Session = { ydoc: Y.Doc; state: State; ver: number; platform: unknown; print: Rec; plans: Rec };
+type Session = { ydoc: Y.Doc; state: State; ver: number; platform: unknown; print: Rec; plans: Rec; store: Rec };
 
 /* ---- wave 5c (constraints 65, 66) ----
    The submission manuscript's block (state.manuscript: msInit's fields) and the ACX audio plan (state.audio: acxInit's
@@ -216,7 +216,8 @@ export function exportEnter(): Closure | null {
   let vols = volumes.get(ydoc);
   if (!vols) volumes.set(ydoc, (vols = []));
   (st as Rec).boxSetVolumes = vols;
-  session = { ydoc, state: st, ver: verOf(ydoc).n, platform: (st as Rec).exportPlatform, print: printSerialized(st as Rec), plans: planSerialized(c, st as Rec) };
+  session = { ydoc, state: st, ver: verOf(ydoc).n, platform: (st as Rec).exportPlatform, print: printSerialized(st as Rec), plans: planSerialized(c, st as Rec),
+    store: storeSerialized(c, st as Rec) };
   for (const f of exportStateListeners) f(st);
   return c;
 }
@@ -240,6 +241,7 @@ export function exportFlush(): void {
   }
   if (flushPrint(c, s)) wrote = true;
   if (flushPlans(c, s)) wrote = true;
+  if (flushStore(c, s)) wrote = true;
   // wave 5c: 1.0's Remove makes a new list (state.boxSetVolumes = …filter…): the open book keeps the one it made
   const vols = (s.state as Rec).boxSetVolumes;
   if (Array.isArray(vols)) volumes.set(y, vols);
@@ -276,6 +278,79 @@ function flushPlans(c: Closure, s: Session): boolean {
   });
   base.written = JSON.stringify(storedPlans(y));
   s.plans = now;
+  return true;
+}
+
+/* ---- wave 5d (constraint 72): what the store check's actions and selects change, written back ----
+   1.0's storeAct and initStoreReady's listeners change state.storeCheck (the store, binding and paper chosen, the
+   attested spine), state.coverRecipe.wrap (Follow the book's trim, Follow the interior's page count, Use <factor> in per
+   page) and state.bookColour.printBlack (Print the accent in black ink); state.printTrim (a trim fix) is a print key
+   (flushPrint). Each is written as serializeBook writes it — storeCheck: normalizeStoreCheck(state.storeCheck); coverRecipe:
+   normalizeCoverRecipe(state.coverRecipe), or null; colour: bookColour() when bookColourSet(), else no key — in its
+   place, only when a call changed it, with flushPrint's rule for a value put back (the stored value again, absent if the
+   book had none). */
+export const STORE_KEYS = ['storeCheck', 'coverRecipe', 'colour'] as const;
+/** serializeBook's lines for the three keys, on `st` (1.0's bookColour helpers read the closure's state: set to `st` for
+ *  the call). */
+export function storeSerialized(c: Closure, st: Rec): Rec {
+  const a = c.api;
+  const was = c.getState();
+  if (was !== (st as unknown)) c.setState(st as never);
+  try {
+    return {
+      storeCheck: a.normalizeStoreCheck(st.storeCheck),
+      coverRecipe: st.coverRecipe ? a.normalizeCoverRecipe(st.coverRecipe) : null,
+      colour: a.bookColourSet() ? a.bookColour() : undefined,
+    };
+  } finally {
+    if (was !== (st as unknown)) c.setState(was as never);
+  }
+}
+/** What 1.0's applyBookDoc makes of the stored values (its lines for the three, on the session's state otherwise: 1.0's
+ *  normalizeCoverRecipe reads the theme), as serializeBook would write them again. */
+function storeArrived(c: Closure, raw: Stored, st: Rec): Rec {
+  const v = (k: string) => (raw[k]!.has ? raw[k]!.v : undefined);
+  const tmp: Rec = Object.assign({}, st);
+  const was = c.getState();
+  c.setState(tmp as never);
+  try {
+    const colour = c.api.bookColourNormalize(v('colour'));
+    tmp.storeCheck = c.api.normalizeStoreCheck(v('storeCheck'));
+    tmp.bookColour = colour.accent || colour.tint ? colour : undefined;
+    tmp.coverRecipe = v('coverRecipe') ? c.api.normalizeCoverRecipe(structuredClone(v('coverRecipe'))) : null;
+    return storeSerialized(c, tmp);
+  } finally {
+    c.setState(was as never);
+  }
+}
+const storeBases = new WeakMap<Y.Doc, { raw: Stored; written: string }>();
+function storedStore(y: Y.Doc): Stored {
+  const m = y.getMap<unknown>(META);
+  const out: Stored = {};
+  for (const k of STORE_KEYS) out[k] = m.has(k) ? { has: true, v: getMetaValue(y, k) } : { has: false, v: undefined };
+  return out;
+}
+function flushStore(c: Closure, s: Session): boolean {
+  const now = storeSerialized(c, s.state as Rec);
+  const changed = STORE_KEYS.filter((k) => !same(now[k], s.store[k]));
+  if (!changed.length) return false;
+  const y = s.ydoc;
+  const cur = storedStore(y);
+  let base = storeBases.get(y);
+  if (!base || base.written !== JSON.stringify(cur)) storeBases.set(y, (base = { raw: cur, written: '' }));
+  const was = storeArrived(c, base.raw, s.state as Rec);
+  const m = y.getMap<unknown>(META);
+  y.transact(() => {
+    for (const k of changed) {
+      const want = same(now[k], was[k]) ? base.raw[k]! : now[k] === undefined ? { has: false, v: undefined } : { has: true, v: now[k] };
+      if (want.has) {
+        placeKey(y, k);
+        setMeta(y, k as never, structuredClone(want.v) as never);
+      } else if (m.has(k)) m.delete(k);
+    }
+  });
+  base.written = JSON.stringify(storedStore(y));
+  s.store = now;
   return true;
 }
 

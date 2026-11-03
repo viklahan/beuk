@@ -738,7 +738,34 @@ export type ClosureApi = {
   acxRender: () => void;
   acxOpen: () => void;
   acxInit: () => void;
+  // wave 5d (F10): the store-ready check (1.0's own)
+  STORE_RULES: Record<string, StoreRules>;
+  STORE_IDS: string[];
+  storeUi: { store: string; binding: string; ink: string; attestSpine: boolean; server: unknown; running: boolean; last: StoreAudit | null } & Record<string, unknown>;
+  storeAudit: (sc?: unknown) => StoreAudit;
+  storeAct: (act: unknown) => void;
+  storeBookSig: () => string;
+  storeMatchTrim: (list: unknown[], tr: { w: number; h: number }) => (Record<string, unknown> & { w: number; h: number }) | null;
+  storeSpineClearance: (boxes: unknown[], spineX: number, spineW: number) => { clear: number; kind: string } | null;
+  storeRowsHtml: (rows: StoreRow[], withActions: boolean, seen?: Set<string>) => string;
+  storeVerdictText: (a: StoreAudit) => string;
+  storeFactsLine: (a: StoreAudit) => string;
+  renderStoreReport: () => void;
+  openStoreReady: () => void;
+  initStoreReady: () => void;
+  storeRunServer: () => Promise<void>;
+  storeRecheck: () => Promise<void>;
+  buildStoreReportHtml: (a?: StoreAudit) => string;
+  downloadStoreReport: () => void;
+  printPlacements: () => (Record<string, unknown> & { dpi: number })[];
 };
+/** Wave 5d: one of 1.0's per-store rule tables (STORE_RULES). */
+export type StoreRules = Record<string, unknown> & { id: string; name: string; sources: string[]; inks: (Record<string, unknown> & { id: string })[]; bindings: Record<string, Record<string, unknown> & { trims: unknown[] }> };
+/** Wave 5d: one line of 1.0's store-ready report (storeAudit's row). */
+export type StoreRow = { id: string; required: boolean; status: 'pass' | 'fail' | 'warn' | 'nc'; name: string; evidence: string; fix: string; action: (Record<string, unknown> & { kind: string; label?: string }) | null };
+/** Wave 5d: 1.0's storeAudit result. */
+export type StoreAudit = { sc: { store: string; binding: string; ink: string; attestSpine: boolean }; rules: StoreRules; ink: string; facts: { trim: string; pages: number; measured: boolean; est: number };
+  groups: { interior: StoreRow[]; cover: StoreRow[]; ebook: StoreRow[] }; verdict: 'ready' | 'notReady' | 'cantConfirm'; blocking: number; unrun: number; at: Date };
 /** One of 1.0's eleven EPUB platform presets (PLATFORM_PRESETS). */
 export type PlatformPreset = { id: string; name: string; sub: string; desc: string; idNote: string; check: string; suffix: string; guide?: boolean; appleOptions?: boolean };
 /** One file of the package 1.0's EPUB builder writes (epubFiles). */
@@ -1068,6 +1095,35 @@ const closureCrypto = {
   },
 };
 
+/** Wave 5d (F10): the shelf half of the store check and of 5b's print-ready PDF. 1.0 makes their job from the book's
+ *  shelf copy (storeMakePrintJob → cloudEnsureLinked → /api/exports + /api/jobs/pdfx); 2.0 has no shelf copy before wave
+ *  7, so THE SEAM is shelfPrintJob: the shelf-link answer, { needShelf: true }, without a request (1.0's own callers then
+ *  say store.serverNeedShelf). The three names the store check would reach only once a job exists are refusing
+ *  stand-ins: no request, their call recorded (shelf.refused; the tests hold it empty). Wave 7 lifts 1.0's four. */
+export const shelf: { asked: number; refused: string[] } = { asked: 0, refused: [] };
+export async function shelfPrintJob(): Promise<{ needShelf: true }> {
+  shelf.asked++;
+  return { needShelf: true };
+}
+const shelfStandIns = {
+  // 1.0's storeUpload hands back the archived export's id, or null when there is none
+  storeUpload: async () => {
+    shelf.refused.push('storeUpload');
+    return null;
+  },
+  // 1.0's storeCreateJob without an export: its own failed job (store.serverUnreachable, cause "client")
+  storeCreateJob: async () => {
+    shelf.refused.push('storeCreateJob');
+    return { status: 'failed', result: { error: currentT('store.serverUnreachable'), cause: 'client' } };
+  },
+  // 1.0's storeRefreshJobs re-reads a job that has an id; none exists before wave 7: everything is settled
+  storeRefreshJobs: async (out: unknown) => {
+    const o = (out ?? {}) as Record<string, { id?: unknown } | null>;
+    if (['pdfx', 'epubcheck'].some((k) => o[k] && o[k]!.id)) shelf.refused.push('storeRefreshJobs');
+    return true;
+  },
+};
+
 export const exportEnv: {
   openAuth: () => void;
   openSettings: () => void;
@@ -1203,6 +1259,12 @@ export function loadClosure(): Promise<Closure> {
         manuscriptFileToVolume: (f: unknown) => exportEnv.volumeFromFile(f),
         renderArchiveList: () => undefined,
         cloudLoadArchive: () => undefined,
+        // wave 5d (F10): the store check's shelf half (see shelf above); its continuation (storeRunServer's next step)
+        // resumes in the export session
+        storeMakePrintJob: () => exportEnv.resume(shelfPrintJob()),
+        storeUpload: () => exportEnv.resume(shelfStandIns.storeUpload()),
+        storeCreateJob: () => exportEnv.resume(shelfStandIns.storeCreateJob()),
+        storeRefreshJobs: (out: unknown) => exportEnv.resume(shelfStandIns.storeRefreshJobs(out)),
       });
       share = c.share;
       // wave 4c: a picture id is a key of 1.0's coverImgCache: never Object.prototype's (as the server's WRAP_API)

@@ -1,4 +1,4 @@
-import { closureLang, closureT, cloudFacts, coverEnv, exportEnv, fmtDateIntl, pageEnv, printEnv, untitledStrings, type State } from '../closure/index';
+import { closureLang, closureT, cloudFacts, coverEnv, exportEnv, fmtDateIntl, pageEnv, printEnv, shelf, shelfPrintJob, untitledStrings, type State } from '../closure/index';
 import { exportBegin, exportRun, exportStateListeners, exportUi } from '../export/state';
 import { drawIcons } from '../insights/insights';
 import { guardSheet } from '../preview/preview';
@@ -86,8 +86,13 @@ export const printIfLoaded = (): PrintClosure | null => loaded;
 const uiLangLive = { toString: () => closureLang(), valueOf: () => closureLang() };
 /** The sinks (see loadPrint); a test turns them off to see 1.0's own output. */
 export const printSinks = { on: true };
-/** The print-ready PDF's job: 1.0 makes it from the book's shelf copy; 2.0 has none before wave 7 (see above). */
-export const printJobs = { made: 0 };
+/** The print-ready PDF's job: 1.0 makes it from the book's shelf copy; 2.0 has none before wave 7 (see above). Wave 5d:
+ *  the one seam the store check shares (src/closure/index.ts shelfPrintJob); `made` counts its answers. */
+export const printJobs = {
+  get made(): number {
+    return shelf.asked;
+  },
+};
 
 export function loadPrint(): Promise<PrintClosure> {
   if (!loading) {
@@ -118,10 +123,7 @@ export function loadPrint(): Promise<PrintClosure> {
         a11yJumpTo: (jump: unknown) => exportRun((c) => c.api.a11yJumpTo(jump)),
         openAuth: () => exportEnv.openAuth(),
         cloud: cloudFacts,
-        storeMakePrintJob: async () => {
-          printJobs.made++;
-          return { needShelf: true };
-        },
+        storeMakePrintJob: () => shelfPrintJob(),
         storeRefreshJobs: async () => true,
         cloudLoadArchive: () => undefined,
         noteBookEdited: () => undefined,
