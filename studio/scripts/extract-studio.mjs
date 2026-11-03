@@ -69,7 +69,9 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // step 5 wave 5b: print, the Print Interior View and the preflight (1.0's data-lucide names)
   'Printer', 'FileDown', 'ClipboardCheck', 'RotateCcw',
   // step 5 wave 5c: Word, the box set, the submission manuscript and the ACX script (1.0's data-lucide names)
-  'FileType2', 'BookPlus', 'FilePenLine', 'Headphones'];
+  'FileType2', 'BookPlus', 'FilePenLine', 'Headphones',
+  // step 5 wave 5d: the store-ready check — its entry, the modal's buttons, the verdict and the rows (1.0's data-lucide names)
+  'Store', 'BadgeCheck', 'Server', 'RefreshCw', 'HelpCircle', 'OctagonX', 'Wand2', 'CheckSquare'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);

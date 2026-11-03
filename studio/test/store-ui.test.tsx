@@ -144,6 +144,8 @@ describe('the store-ready check in the studio', { timeout: 120_000 }, () => {
     expect($('storeVerdict').getAttribute('data-verdict')).toBe(a.verdict);
     expect($('storeVerdict').textContent).toContain(c.api.storeVerdictText(a));
     expect(rowsOf()).toEqual(a.groups.interior.concat(a.groups.cover, a.groups.ebook).map((r) => r.id + ':' + r.status));
+    // every icon 1.0 names in the entry, the modal and its rows is drawn (none left as an empty <i data-lucide>)
+    expect(Array.from(document.querySelectorAll('#modalStore i[data-lucide], #modalExport .st-entry i[data-lucide]')).map((i) => i.getAttribute('data-lucide'))).toEqual([]);
     // the store modal is the top of the dialog stack: Escape closes it and leaves the export modal open
     await act(async () => void fireEvent.keyDown(document, { key: 'Escape' }));
     expect(isOpen('modalStore')).toBe(false);
