@@ -19,6 +19,10 @@ RUN cd studio && npm ci
 COPY studio ./studio
 COPY client/index.html ./client/index.html
 COPY client/assets/vendor/lucide.min.js ./client/assets/vendor/lucide.min.js
+# Zen's scenes and sounds: studio/vite.config.ts (beuk-zen-media) copies
+# them into client/next/assets at build time.
+COPY client/assets/zen ./client/assets/zen
+COPY client/assets/sound ./client/assets/sound
 COPY src/book ./src/book
 RUN cd studio && npm run build
 
