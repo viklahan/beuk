@@ -11,7 +11,7 @@ import { StackEntry } from '../shell/Dialog';
 import { useToast } from '../shell/Toasts';
 import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
-import { exportBegin, exportReset, exportRun, exportUi, loadSerialize } from './state';
+import { exportBegin, exportBody, exportReset, exportRun, exportUi, loadSerialize } from './state';
 
 /* Step 5 wave 5a (inventory F1, F7, F8): 1.0's export modal and package inspector — their markup, verbatim
    (client/index.html #modalExport and #modalInspector, extracted at build time into src/generated/export-markup.json):
@@ -212,5 +212,7 @@ export const exportSeam = {
   run<T>(fn: (api: Closure['api'], c: Closure) => T): T | undefined {
     return exportRun((c) => fn(c.api, c));
   },
+  /** The body 1.0's buildEpub posts for the open book (1.0's serializeBook on the export's state). */
+  body: (lang: string) => exportBody(lang),
   ready: true,
 };

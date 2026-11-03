@@ -33,6 +33,7 @@
    Screenshots: an open book in Paper, Candlelight and Arabic chrome next
    to 1.0 with the same book; the shell regions are diffed as part A does
    (gated), the editor surface is reported only. */
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { register } from 'node:module';
@@ -363,6 +364,9 @@ async function readOnlyRooms(page) {
   // bindings, the spine and back, the 3D book turned) and cancelled; no stock search here (wave4cGate searches)
   await page.waitForFunction(() => !!window.beukCover && document.getElementById('cmSpineBody')?.getAttribute('data-built') === '1', null, { timeout: 60_000 });
   done.push('the cover maker (' + (await w4cBrowse(page, { search: false })) + ')');
+  // wave 5a (constraint 54): the export modal browsed — every preset and the book's own again, the validator, the
+  // audit, the inspector — and closed; nothing exported
+  done.push(await exportBrowse(page));
   return done.join(' + ');
 }
 /** Wave 4b (constraint 38): the preview browsed — every device, pages turned both ways, a desk rail row, full screen on
@@ -841,6 +845,7 @@ async function screenshots(origin) {
         const two = await openNext(c2, origin);
         await openBackup(two, f.file);
         await two.waitForSelector('#manuscript .ms-editor');
+        await two.addStyleTag({ content: W5A_TWO_HIDE }); // wave 5a: 2.0's own "Export book" (1.0's #btnExport opens the modal)
         for (const p of [one, two]) {
           await p.evaluate(() => document.fonts.ready);
           await p.waitForTimeout(3800); // toasts gone
@@ -4202,6 +4207,499 @@ async function wave4cChecks(origin) {
   }
 }
 
+/* ---- wave 5a: the export modal, EPUB, Markdown/HTML, the validator and inspector, the a11y audit (F1, F7, F8) ----
+   Constraint 51 (review focus #1), one builder: for every fixture, the body 2.0 sends to POST /api/epub (1.0's own
+   serializeBook on the export's state: window.beukExport.body) equals, byte for byte, the body 1.0 sends (1.0's page:
+   applyBookDoc of the same book, then buildEpub's own lines); for one fixture the bodies the two apps really POST are
+   captured and are those. 1.0's Markdown and standalone HTML equal 2.0's for every fixture and every preset (hashes
+   taken in each page). Constraint 56: Lantern Coast's .epub, .md and .html downloaded in both apps — the EPUB is the
+   server's own build (src/book/epub, e2e/server-epub.mjs) of each app's body, served as /api/epub would serve it — are
+   the same files (the package's entries and bytes; the one field 1.0 makes differ per build, package.opf's
+   dcterms:modified, masked, and the zip's entry dates not compared). Constraint 53: a hostile book through the modal,
+   the inspector, the validator, the audit, the .md and .html downloads and the server's build of its body — no
+   handler, script or remote request; 1.0's own body of the same book, built by the server, is the reproducing fixture
+   of the 1.0 findings. Constraint 54: the modal browsed (presets switched and back, the validator, the inspector, the
+   audit) and closed — the export is unchanged (here on two books; readOnlyRooms takes it into the 23-fixture gate).
+   Constraint 55: the trial's 402, signed out and no shelf say 1.0's words and nothing is downloaded. The modal's
+   regions beside 1.0's in Paper, Candlelight and Arabic (gated). */
+const W5A_TWO_HIDE = '#btnExportBook { display: none !important; }';
+/** 2.0 with a book open and its export modal wired (1.0's initExport run). */
+async function w5aOpen(ctx, origin, file) {
+  const page = await openNext(ctx, origin);
+  await openBackup(page, file);
+  await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExportBook')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+  return page;
+}
+async function w5aOpenModal(page, opener = '#btnExportBook') {
+  await page.click(opener);
+  await page.waitForFunction(() => document.getElementById('modalExport')?.classList.contains('open') && document.querySelectorAll('#platformGrid [data-platform]').length === 11, null, { timeout: 30_000 });
+}
+/** The modal browsed without exporting: every preset chosen, then the book's own again; the validator, the audit and
+ *  the inspector (its first files opened) run; closed. Shared with readOnlyRooms (the 23-fixture gate). */
+async function exportBrowse(page) {
+  await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExportBook')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+  await w5aOpenModal(page);
+  const own = await page.$eval('#platformGrid .active', (b) => b.getAttribute('data-platform'));
+  const ids = await page.$$eval('#platformGrid [data-platform]', (bs) => bs.map((b) => b.getAttribute('data-platform')));
+  for (const id of ids) await page.click(`#platformGrid [data-platform="${id}"]`);
+  await page.click(`#platformGrid [data-platform="${own}"]`);
+  await page.click('#btnValidate');
+  await page.waitForSelector('#validateResults .val-summary', { timeout: 60_000 });
+  await page.click('#btnA11y');
+  await page.waitForFunction(() => document.getElementById('a11yResults')?.style.display === '' && document.getElementById('a11yResults').children.length > 0, null, { timeout: 60_000 });
+  await page.click('#btnInspect');
+  await page.waitForFunction(() => document.getElementById('modalInspector')?.classList.contains('open') && document.querySelectorAll('#inspFiles [data-insp]').length > 4, null, { timeout: 60_000 });
+  const files = await page.$$('#inspFiles [data-insp]');
+  for (const b of files.slice(0, 6)) await b.click();
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.getElementById('modalInspector').classList.contains('open'), null, { timeout: 10_000 });
+  await page.click('#btnCloseExport');
+  await page.waitForFunction(() => !document.getElementById('modalExport').classList.contains('open'), null, { timeout: 10_000 });
+  return `the export modal (${ids.length} presets chosen and ${own} again, the validator, the audit, the inspector: ${Math.min(6, files.length)} of ${files.length} files)`;
+}
+/** 1.0's body for a book (its page): applyBookDoc, then buildEpub's own lines (serializeBook less what it leaves home). */
+const W5A_ONE_BODY = (b) => {
+  applyBookDoc(JSON.parse(JSON.stringify(b)));
+  const book = serializeBook();
+  ['history', 'historyPool', 'notebook', 'research', 'audio', 'importReport'].forEach((k) => { delete book[k]; });
+  return JSON.stringify({ book: book, platform: state.exportPlatform, lang: getUiLang() });
+};
+/** Each preset's Markdown and standalone HTML, hashed in the page (two 32-bit FNV-style hashes and the length:
+ *  synchronous, so 1.0's code runs on one state throughout), in either app (`two`: 2.0's export seam). */
+const W5A_FORMATS = (two) => {
+  const hash = (s) => {
+    let a = 0x811c9dc5, b = 0x01000193 ^ 0x5bd1e995;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      a = Math.imul(a ^ c, 0x01000193) >>> 0;
+      b = Math.imul(b ^ c ^ (i & 255), 0x5bd1e995) >>> 0;
+    }
+    return a.toString(16) + '.' + b.toString(16) + '.' + s.length;
+  };
+  const go = (api, st) => {
+    const keep = st.exportPlatform, out = {};
+    for (const p of api.PLATFORM_PRESETS) {
+      st.exportPlatform = p.id;
+      out[p.id] = hash(api.buildMarkdown()) + ' ' + hash(api.buildStandaloneHtml());
+    }
+    st.exportPlatform = keep;
+    return out;
+  };
+  return two ? window.beukExport.run((api, c) => go(api, c.getState())) : go({ PLATFORM_PRESETS, buildMarkdown, buildStandaloneHtml }, state);
+};
+function w5aServerBuild(bodies, withText = false) {
+  const inF = path.join(OUT, 'w5a-bodies.json'), outF = path.join(OUT, 'w5a-server.json');
+  writeFileSync(inF, JSON.stringify(bodies));
+  const r = spawnSync(process.execPath, ['--import', 'tsx', path.join(STUDIO, 'e2e', 'server-epub.mjs'), inF, outF, withText ? '1' : ''], { cwd: REPO, encoding: 'utf8', timeout: 300_000 });
+  if (r.status !== 0) return { error: (r.stderr || r.stdout || String(r.error || '')).trim().split('\n').slice(-3).join(' | ') };
+  return { results: JSON.parse(readFileSync(outF, 'utf8')) };
+}
+const w5aSame = (a, b) => JSON.stringify(a.files) === JSON.stringify(b.files) && a.filename === b.filename && a.first === b.first;
+/** The routes an app with a shelf answers: health, the session, and /api/epub (its bodies recorded; `epub` answers). */
+async function w5aRoutes(ctx, { signedIn = true, health = true, epub = null, bodies = [] } = {}) {
+  await ctx.route('**/api/**', (route) => {
+    const u = new URL(route.request().url());
+    if (u.pathname === '/api/health' && health) return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+    if (u.pathname === '/api/auth/me' && health) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ user: signedIn ? { id: 'u1', email: 'w@example.org' } : null }) });
+    if (u.pathname === '/api/epub' && route.request().method() === 'POST') {
+      bodies.push(route.request().postData());
+      if (epub) return route.fulfill(epub(bodies.length - 1));
+    }
+    return route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"not here"}' });
+  });
+}
+async function w5aDownload(page, sel) {
+  const dl = page.waitForEvent('download', { timeout: 60_000 });
+  await page.click(sel);
+  const d = await dl;
+  return { name: d.suggestedFilename(), bytes: readFileSync(await d.path()) };
+}
+
+async function wave5aBodies(origin) {
+  const c1 = await newContext({ serviceWorkers: 'block' });
+  let equal = 0, fmtEqual = 0, n = 0;
+  const unequal = [];
+  try {
+    for (const f of fixtures) {
+      if (!Array.isArray(f.book.sections)) continue;
+      n++;
+      const c2 = await newContext({ serviceWorkers: 'block' });
+      let b2, fm2;
+      try {
+        const two = await w5aOpen(c2, origin, f.file);
+        b2 = await two.evaluate(() => window.beukExport.body(document.documentElement.lang === 'ar' ? 'ar' : 'en'));
+        fm2 = await two.evaluate(W5A_FORMATS, true);
+        await harvestCsp(two);
+      } finally {
+        await c2.close();
+      }
+      const one = await openOne(c1, origin);
+      const id = JSON.parse(b2).book.meta.bookId;
+      const b1 = await one.evaluate(W5A_ONE_BODY, expected(f.book, { meta: { bookId: id } }));
+      const fm1 = await one.evaluate(W5A_FORMATS, false);
+      await harvestCsp(one);
+      await one.close();
+      if (b1 === b2) equal++;
+      else {
+        const A = JSON.parse(b1), B = JSON.parse(b2);
+        const k = [...new Set([...Object.keys(A.book), ...Object.keys(B.book)])].find((x) => JSON.stringify(A.book[x]) !== JSON.stringify(B.book[x])) || (Object.keys(A.book).join() !== Object.keys(B.book).join() ? '(key order)' : '(platform/lang)');
+        unequal.push(`${f.name}: ${k} (${b1.length} / ${b2.length} bytes)`);
+      }
+      const fe = JSON.stringify(fm1) === JSON.stringify(fm2) && Object.keys(fm1).length === 11;
+      if (fe) fmtEqual++;
+      else unequal.push(`${f.name}: Markdown/HTML ${JSON.stringify(fm1).slice(0, 120)} / ${JSON.stringify(fm2).slice(0, 120)}`);
+    }
+  } finally {
+    await c1.close();
+  }
+  check(equal === n, `wave5a constraint 51: the /api/epub body 2.0 sends equals 1.0's byte for byte for ${equal} of ${n} fixtures${unequal.length ? ' — ' + unequal.slice(0, 4).join('; ') : ''}`);
+  check(fmtEqual === n, `wave5a constraint 51: 1.0's Markdown and standalone HTML equal 2.0's for ${fmtEqual} of ${n} fixtures × 11 presets (hashes in each page)`);
+}
+
+async function wave5aDownloads(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  // the bodies first (2.0's seam; 1.0's page), then the server's build of each, served as /api/epub would serve it
+  let b2, b1;
+  {
+    const c = await newContext({ serviceWorkers: 'block' });
+    try {
+      b2 = await (await w5aOpen(c, origin, f.file)).evaluate(() => window.beukExport.body('en'));
+      const one = await openOne(c, origin);
+      b1 = await one.evaluate(W5A_ONE_BODY, expected(f.book));
+    } finally {
+      await c.close();
+    }
+  }
+  const built = w5aServerBuild([b1, b2]);
+  if (built.error) {
+    note(`wave5a: the server's EPUB build could not run here (${built.error}): the EPUB download comparison is NOT RUN — install the server's dependencies (tsx, @xmldom/xmldom) and run again`);
+    check(false, 'wave5a constraint 56: the server\'s build of both bodies ran');
+    return;
+  }
+  const [s1, s2] = built.results;
+  check(!s1.error && !s2.error && w5aSame(s1, s2) && s1.first === 'mimetype' && s1.files[0].stored === true,
+    `wave5a constraint 56: the server builds the same package from 1.0's and 2.0's bodies (${s2.files?.length} entries, ${s2.filename}; mimetype first, stored; dcterms:modified masked)`);
+  const serve = (s) => () => ({ status: 200, contentType: 'application/epub+zip', headers: { 'X-Beuk-Notes': encodeURIComponent(JSON.stringify(s.notes || [])) }, body: Buffer.from(s.zip, 'base64') });
+  const got = {};
+  for (const [app, s] of [['two', s2], ['one', s1]]) {
+    const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+    const bodies = [];
+    try {
+      await w5aRoutes(ctx, { epub: serve(s), bodies });
+      let page;
+      if (app === 'two') {
+        page = await w5aOpen(ctx, origin, f.file);
+        await w5aOpenModal(page);
+      } else {
+        page = await openOne(ctx, origin);
+        await page.waitForFunction(() => typeof cloud !== 'undefined' && cloud.available && !!cloud.user, null, { timeout: 20_000 });
+        await page.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(f.book));
+        await page.click('#btnExport');
+        await page.waitForFunction(() => document.getElementById('modalExport').classList.contains('open'));
+      }
+      const md = await w5aDownload(page, '#btnDownloadMd');
+      const html = await w5aDownload(page, '#btnDownloadHtml');
+      const epub = await w5aDownload(page, '#btnBuildEpub');
+      got[app] = { md, html, epub, body: bodies[0] };
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+  check(got.one.body === b1 && got.two.body === b2, `wave5a constraint 51: the bodies the two apps POST are the ones compared above (1.0 ${got.one.body?.length} bytes, 2.0 ${got.two.body?.length} bytes)`);
+  for (const k of ['md', 'html']) {
+    check(got.one[k].name === got.two[k].name && got.one[k].bytes.equals(got.two[k].bytes), `wave5a constraint 56: the .${k} download is 1.0's (${got.two[k].name}, ${got.two[k].bytes.length} bytes, byte for byte)`);
+  }
+  check(got.one.epub.name === got.two.epub.name && got.two.epub.name === s2.filename.replace(/\.epub$/, '') + '.epub' && got.one.epub.bytes.equals(Buffer.from(s1.zip, 'base64')) && got.two.epub.bytes.equals(Buffer.from(s2.zip, 'base64')),
+    `wave5a constraint 56: the .epub download is the server's file under 1.0's name (${got.two.epub.name}), in both apps`);
+}
+
+/** A book made to attack the export (studio/test/export-fixture.ts, the same values). */
+function w5aHostileBook(base) {
+  const b = JSON.parse(JSON.stringify(base));
+  const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  let ttf = '\u0000\u0001\u0000\u0000';
+  for (let i = 4; i < 1600; i++) ttf += String.fromCharCode((i * 3 + 13) % 256);
+  const TTF = Buffer.from(ttf, 'latin1').toString('base64');
+  const tag = (n) => `<img src="https://evil.example/${n}.png" onerror="window.__pw=${n}">"'</style><script>window.__pw=${n}</script>`;
+  const evil = "EB Garamond'; } body { display: none } #topbar { background: url(https://evil.example/t.png) } .x { font-family: '";
+  Object.assign(b.meta, { title: 'Hostile ' + tag(1), author: 'Writer ' + tag(2), description: 'About ' + tag(13), a11ySummary: 'Summary ' + tag(14), isbn: '978' + tag(15), publisher: 'Pub ' + tag(16) });
+  const s = b.sections.find((x) => x.kind === 'body' && x.type === 'chapter');
+  s.title = 'Chapter ' + tag(3);
+  s.subtitle = 'Sub ' + tag(4);
+  s.number = '1' + tag(5);
+  s.content = ['A paragraph <script>window.__pw=6</script> and <iframe src="https://evil.example/f"></iframe> and <img src=https://evil.example/i.png onerror=window.__pw=7>.',
+    '[click](javascript:window.__pw=8) and [away](https://evil.example/a) and <a href="javascript:window.__pw=9">raw</a>.',
+    '<style>#topbar{display:none}</style><link rel="stylesheet" href="https://evil.example/s.css">', '![a picture](img:hostext)', '![another](img:hostmedia)', String(s.content || '')].join('\n\n');
+  s.plateId = 'hostdata';
+  b.sections.push({ ...JSON.parse(JSON.stringify(s)), id: 'hostsec', type: 'chapter" onclick="window.__pw=17', kind: 'body"><script>window.__pw=18</script>', content: 'A hostile type.', plateId: null, title: 'Typed' });
+  b.images = [...(b.images || []),
+    { id: 'hostext', name: 'ext', mediaType: 'image/png', ext: 'png" onerror="window.__pw=19', data: PNG },
+    { id: 'hostmedia', name: 'media', mediaType: 'image/png" onerror="window.__pw=10', ext: 'png', data: PNG },
+    { id: 'hostdata', name: 'data', mediaType: 'image/png', ext: 'png', data: 'iVBORw0KGgo=" onerror="window.__pw=11' },
+    { id: 'host" onload="window.__pw=20', name: 'id', mediaType: 'image/png', ext: 'png', data: PNG }];
+  b.cover = { data: PNG, mediaType: 'image/png', ext: 'png"/><item id="x" href="https://evil.example/c.xhtml" media-type="application/xhtml+xml', name: 'cover.png' };
+  b.fonts = [{ id: 'f1" onload="window.__pw=21', name: 'Hand.ttf', family: 'Hand', ext: 'ttf', mediaType: 'font/ttf', data: TTF },
+    { id: 'f2', name: 'Bad.ttf', family: 'Bad"); src: url(https://evil.example/f.ttf', ext: 'ttf', mediaType: 'font/ttf', data: TTF },
+    { id: 'f3', name: 'Data.ttf', family: 'DataFace', ext: 'ttf', mediaType: 'font/ttf', data: 'AAEAAA") format("truetype"); } @import url(https://evil.example/i.css); x {' }];
+  b.theme = { ...b.theme, bodyFont: 'Hand', headFont: evil, indentDepth: '1em; } #topbar { background: red } .fc-page p {', headerStyle: 'classic_centered" onmouseover="window.__pw=12',
+    fontSize: '1px; position: fixed; inset: 0; z-index: 99999; background: url(https://evil.example/z.png)', lineHeight: '1.5; position: fixed; inset: 0', dropDepth: '3; } #topbar { display: none } .x { x: 1' };
+  b.colour = { accent: 'red; } #topbar { background: url(https://evil.example/a.png) } x {', tint: 'url(https://evil.example/c.png)' };
+  b.customThemes = [{ id: 'ctx', name: 'Mine ' + tag(22), theme: { ...b.theme, bodyFont: evil } }];
+  return b;
+}
+/** studio/test/hazards.ts, in a page (run through playwright's evaluation, not the page's): what a document could make a
+ *  reader run, embed or fetch — parsed the lenient way (text/html), then walked. */
+const W5A_HAZARDS = ([docs]) => {
+  const RUNS = new Set(['script', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'base', 'form', 'portal', 'foreignobject', 'set', 'animate', 'animatemotion', 'animatetransform']);
+  const LOADS = { img: ['src', 'srcset'], audio: ['src'], video: ['src', 'poster'], source: ['src', 'srcset'], track: ['src'], input: ['src'], image: ['href', 'xlink:href'], use: ['href', 'xlink:href'], feimage: ['href', 'xlink:href'], body: ['background'], item: ['href'], content: ['src'] };
+  const remote = (v) => !!v && /^\s*(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(v);
+  const cssRemote = (css) => { const c = String(css || '').replace(/\/\*[\s\S]*?\*\//g, ''); const re = /url\(\s*(['"]?)([^'")]*)\1\s*\)|@import\s+(?:url\()?\s*(['"]?)([^'")\s;]+)/gi; let m; while ((m = re.exec(c))) { const u = m[2] || m[4] || ''; if (remote(u) || /^\s*(?:javascript|https?):/i.test(u)) return u; } return ''; };
+  const out = [];
+  for (const [where, text] of Object.entries(docs)) {
+    if (where.endsWith('.css')) { if (cssRemote(text)) out.push(where + ': url(' + cssRemote(text) + ')'); continue; }
+    const doc = new DOMParser().parseFromString(String(text), 'text/html');
+    for (const el of doc.getElementsByTagName('*')) {
+      const name = el.localName.toLowerCase();
+      if (RUNS.has(name)) out.push(where + ': <' + name + '>');
+      if (name === 'link' && /stylesheet|import|preload/i.test(el.getAttribute('rel') || '') && remote(el.getAttribute('href'))) out.push(where + ': remote <link>');
+      for (const at of el.attributes) {
+        const n = at.name.toLowerCase();
+        if (n.startsWith('on') || n === 'srcdoc' || /^\s*(?:javascript|vbscript)\s*:/i.test(at.value)) out.push(where + ': <' + name + ' ' + n + '>');
+        if (n === 'style' && cssRemote(at.value)) out.push(where + ': style url(' + cssRemote(at.value) + ')');
+      }
+      for (const a of LOADS[name] || []) if (remote(el.getAttribute(a))) out.push(where + ': remote <' + name + ' ' + a + '>');
+      if (name === 'style' && cssRemote(el.textContent)) out.push(where + ': <style> url(' + cssRemote(el.textContent) + ')');
+    }
+  }
+  return out;
+};
+async function wave5aHostile(origin) {
+  const base = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  // the honest twin: the same book with the hostile one's extra chapter in plain words (the outline is as long)
+  const twin = JSON.parse(JSON.stringify(base.book));
+  const tch = twin.sections.find((x) => x.kind === 'body' && x.type === 'chapter');
+  twin.sections.push({ ...JSON.parse(JSON.stringify(tch)), id: 'hostsec', content: 'A plain type.', plateId: null, title: 'Typed' });
+  const hctx = await newContext({ serviceWorkers: 'block' });
+  const honest = await w5aOpen(hctx, origin, w4File('w5a-twin.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: twin })));
+  const lookHonest = await honest.evaluate(W4B_LOOK);
+  await hctx.close();
+  const hostile = w5aHostileBook(base.book);
+  const file = w4File('w5a-hostile.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: hostile }));
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  const bodies = [];
+  try {
+    await w5aRoutes(ctx, { epub: () => ({ status: 200, contentType: 'application/epub+zip', body: Buffer.from('PK') }), bodies });
+    const page = await w5aOpen(ctx, origin, file);
+    const foreign = [];
+    page.on('request', (r) => { const u = r.url(); if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) foreign.push(u); });
+    const start = (await exportBackup(page)).json.book;
+    const browsed = await exportBrowse(page);
+    await w5aOpenModal(page);
+    await page.click('#btnValidate');
+    await page.click('#btnA11y');
+    await page.click('#btnInspect');
+    for (const b of await page.$$('#inspFiles [data-insp]')) await b.click();
+    const scan = await page.evaluate(() => {
+      const els = ['modalExport', 'modalInspector'].flatMap((id) => [...document.getElementById(id).querySelectorAll('*')]);
+      const on = els.flatMap((el) => [...el.attributes].filter((a) => /^on/i.test(a.name)).map((a) => el.tagName + ' ' + a.name));
+      const src = els.flatMap((el) => [...el.attributes].filter((a) => /^(src|srcset|xlink:href)$/i.test(a.name) || (/^href$/i.test(a.name) && !/^\/help\/errors\/BEUK-[A-Z]\d{3}$/.test(a.value))).map((a) => el.tagName + ' ' + a.name + '=' + a.value.slice(0, 60)));
+      const scripts = els.filter((el) => /^(SCRIPT|IFRAME|OBJECT|EMBED|LINK|STYLE)$/.test(el.tagName)).length;
+      return { on, src, scripts, pw: window.__pw ?? null };
+    });
+    await page.keyboard.press('Escape');
+    const md = await w5aDownload(page, '#btnDownloadMd');
+    const html = await w5aDownload(page, '#btnDownloadHtml');
+    await page.click('#btnBuildEpub');
+    await page.waitForFunction(() => !document.getElementById('btnBuildEpub').disabled && !document.getElementById('modalExport').classList.contains('open'), null, { timeout: 30_000 }).catch(() => undefined);
+    await page.evaluate(() => document.getElementById('modalExport').classList.remove('open')); // (1.0 closes it after a download)
+    await page.waitForTimeout(500);
+    const look = await page.evaluate(W4B_LOOK);
+    const htmlHaz = await page.evaluate(W5A_HAZARDS, [{ [html.name]: html.bytes.toString('utf8') }]);
+    check(scan.on.length === 0 && scan.src.length === 0 && scan.scripts === 0 && scan.pw === null, `wave5a constraint 53: the hostile book in the modal, the validator's and the audit's results and every file of the inspector: no handler, source, script or style element; nothing ran (${JSON.stringify(scan).slice(0, 240)})`);
+    check(htmlHaz.length === 0, `wave5a constraint 53: the hostile book's standalone HTML (${html.bytes.length} bytes, parsed and walked): no script, handler or remote request (${htmlHaz.slice(0, 4).join('; ') || 'none'})`);
+    const mdHaz = await page.evaluate(W5A_HAZARDS, [{ [md.name]: md.bytes.toString('utf8') }]);
+    note(`wave5a: the hostile book's Markdown carries the writer's text as 1.0 writes it (raw markup in the text stays text in a .md; rendered as HTML it reads as: ${mdHaz.length} hazard(s)${mdHaz.length ? ', e.g. ' + mdHaz.slice(0, 3).join('; ') : ''}) — reported, not gated: 1.0's buildMarkdown writes the words verbatim`);
+    const lookDiff = Object.keys(lookHonest).filter((k) => look[k] !== lookHonest[k]).map((k) => `${k}: ${lookHonest[k]} → ${look[k]}`);
+    check(lookDiff.length === 0, `wave5a constraint 53: the app outside the modal looks exactly as with the honest book (8 elements × 11 computed properties)${lookDiff.length ? ' — ' + lookDiff.join('; ') : ''}`);
+    check(bodies.length === 1, `wave5a: the hostile book's store-ready EPUB was asked for once (${bodies.length})`);
+    const out = (await exportBackup(page)).json.book;
+    check(JSON.stringify(out) === JSON.stringify(start) && JSON.stringify(out) === JSON.stringify(expected(hostile, out)), `wave5a constraint 54: the hostile book exports exactly as readBook reads it (${browsed}, the .md, .html and .epub downloads)`);
+    check(foreign.length === 0, `wave5a constraint 53: no request left the page (${foreign.slice(0, 3).join(', ') || 'none'})`);
+    await harvestCsp(page);
+    // the body 2.0 sent, built by the server; and the same book as 1.0 sends it — its values uncorrected (1.0's
+    // serializeBook escapes none of them) — built by the server: the reproducing fixture. (Not 1.0's page: 1.0 renders
+    // the hostile book unescaped and runs it.) The pictures and the font whose data is not base64 are left out of
+    // that one: with them the server's build fails outright ("Invalid base64 input"), itself a finding.
+    const raw = JSON.parse(JSON.stringify(out));
+    raw.images = raw.images.filter((im) => im.id !== 'hostdata');
+    raw.fonts = raw.fonts.filter((f) => f.id !== 'f3');
+    const b1 = JSON.stringify({ book: raw, platform: 'generic', lang: 'en' });
+    const built = w5aServerBuild([bodies[0], b1, JSON.stringify({ book: out, platform: 'generic', lang: 'en' })], true);
+    if (built.error) {
+      note(`wave5a: the server's EPUB build could not run here (${built.error}): the hostile body's server package is NOT RUN`);
+      check(false, "wave5a constraint 53: the server's build of the hostile bodies ran");
+    } else {
+      const [two, oneB, asStored] = built.results;
+      note(`wave5a 1.0 finding: the hostile book as stored (a picture and a font whose data is not base64) — the server's build: ${asStored.error || 'built'}`);
+      const h2 = await page.evaluate(W5A_HAZARDS, [two.texts || {}]);
+      const h1 = await page.evaluate(W5A_HAZARDS, [oneB.texts || {}]);
+      check(!two.error && Object.keys(two.texts || {}).length > 10 && h2.length === 0, `wave5a constraint 53: the server's build of the body 2.0 sends for the hostile book (${two.files?.length} entries): no script, handler or remote request (${h2.slice(0, 4).join('; ') || 'none'})`);
+      note(`wave5a 1.0 finding (reproducing fixture: this hostile book, uncorrected, the server's own build): ${h1.length} hazard(s) — ${[...new Set(h1.map((x) => x.replace(/window\.__pw=\d+/g, 'N')))].slice(0, 12).join('; ')}`);
+      check(!oneB.error && h1.length > 0, "wave5a: the uncorrected book does carry them through the server's build (the 1.0 finding stands; 1.0 and the server are not changed)");
+    }
+  } finally {
+    await ctx.close();
+  }
+}
+
+async function wave5aNetwork(origin) {
+  const errorsBefore = csp.errors.length;
+  try {
+    await wave5aNetworkRun(origin);
+  } finally {
+    // the deliberate 402 (the trial ended) is logged by Chromium as a failed resource: expected here, not a page error
+    const mine = csp.errors.splice(errorsBefore);
+    const expected402 = mine.filter((e) => /Failed to load resource: the server responded with a status of 402 \(Payment Required\)$/.test(e));
+    csp.errors.push(...mine.filter((e) => !expected402.includes(e)));
+    note(`wave5a: ${expected402.length} expected 402 resource line(s) from the trial check set aside`);
+  }
+}
+async function wave5aNetworkRun(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const PAUSED = 'Your free trial has ended, so store-ready EPUB files is paused until you choose a plan.';
+  for (const [label, opts, key] of [
+    ['the trial ended (402)', { epub: () => ({ status: 402, contentType: 'application/json', body: JSON.stringify({ error: PAUSED, paused: true, feature: 'export.epub' }) }) }, 'plan.pausedToast'],
+    ['signed out', { signedIn: false }, 'epub.signin'],
+    ['no shelf', null, 'epub.offline'],
+  ]) {
+    const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+    try {
+      const bodies = [];
+      if (opts) await w5aRoutes(ctx, { ...opts, bodies });
+      const page = await w5aOpen(ctx, origin, f.file);
+      if (opts) await page.waitForTimeout(800); // the studio's probe of the shelf (pictures/stock.ts) has answered
+      await w5aOpenModal(page);
+      let downloads = 0;
+      page.on('download', () => downloads++);
+      await page.click('#btnBuildEpub');
+      await page.waitForFunction(() => document.querySelectorAll('#toasts .toast').length > 0, null, { timeout: 30_000 });
+      await page.waitForFunction(() => !document.getElementById('btnBuildEpub').disabled, null, { timeout: 30_000 });
+      const msg = await page.evaluate(() => [...document.querySelectorAll('#toasts .toast')].map((x) => x.textContent).join(' | '));
+      const one = await openOne(ctx, origin);
+      const want = await one.evaluate((k) => t(k), key);
+      check(msg.includes(want) && downloads === 0 && bodies.length === (key === 'plan.pausedToast' ? 1 : 0), `wave5a constraint 55: ${label}: 1.0's words ("${want.slice(0, 60)}…"), ${bodies.length} request(s), no file (${JSON.stringify(msg.slice(0, 100))})`);
+      check(await page.evaluate(() => document.getElementById('modalExport').classList.contains('open')), `wave5a: ${label}: the modal stays open (1.0's buildEpub.noOpen: 2.0 has no sign-in dialog yet)`);
+      await harvestCsp(page);
+      await harvestCsp(one);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
+async function wave5aGate(origin) {
+  for (const name of ['real/lantern-coast-print', 'real/dartagnan-01-three-musketeers']) {
+    const f = fixtures.find((x) => x.name === name);
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const page = await w5aOpen(ctx, origin, f.file);
+      const before = (await exportBackup(page)).json.book;
+      const done = await exportBrowse(page);
+      const after = (await exportBackup(page)).json.book;
+      check(JSON.stringify(after) === JSON.stringify(before) && JSON.stringify(after) === JSON.stringify(expected(f.book, after)), `wave5a constraint 54: ${name}: ${done} — the export is unchanged`);
+      const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /export|platform|insp|a11y|valid/i.test(k)));
+      check(keys.length === 0, `wave5a constraint 54: no per-device key is written by the modal (1.0 keeps none: ${keys.join(', ') || 'none'})`);
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+  // the top bar keeps its look at a phone's width with the new opener (nothing spills)
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w5aOpen(ctx, origin, fixtures.find((x) => x.name === 'real/lantern-coast-book-one').file);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(300);
+    const fit = await page.evaluate(() => { const t = document.getElementById('topbar'); return [t.scrollWidth, t.clientWidth]; });
+    check(fit[0] <= fit[1], `wave5a: at 390 px the top bar holds "Export book" without spilling (${fit[0]} / ${fit[1]} px)`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+async function wave5aScreens(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  try {
+    for (const run of [{ theme: 'paper' }, { theme: 'candlelight' }, { theme: 'paper', lang: 'ar' }]) {
+      const tag = run.theme + (run.lang ? '-' + run.lang : '');
+      const prep = (ctx) => ctx.addInitScript(([th, l]) => {
+        try {
+          localStorage.setItem('beuk.theme.v1', th);
+          if (l) localStorage.setItem('beuk.uiLang.v1', l);
+        } catch {
+          /* no storage */
+        }
+      }, [run.theme, run.lang]);
+      const c1 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      const c2 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      await prep(c1);
+      await prep(c2);
+      try {
+        const one = await watch(await c1.newPage());
+        await one.goto(origin + '/studio');
+        await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+        await one.setInputFiles('#localBackupInput', f.file);
+        await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
+        await one.addStyleTag({ content: ONE_HIDE });
+        const two = await w5aOpen(c2, origin, f.file);
+        await w5aOpenModal(one, '#btnExport');
+        await w5aOpenModal(two);
+        for (const p of [one, two]) {
+          await p.click('#btnValidate');
+          await p.waitForSelector('#validateResults .val-summary');
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(3800); // toasts gone
+        }
+        for (const sel of ['#platformGrid', '#platformDetail', '#exportTree', '#validateResults']) {
+          const la = one.locator(sel).first(), lb = two.locator(sel).first();
+          const d = await pixelDiff(diffPage, await la.screenshot(), await lb.screenshot());
+          check(d.ratio <= PIXEL_TOLERANCE, `wave5a screenshots ${tag}: ${sel} differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        }
+        for (const p of [one, two]) {
+          await p.click('#btnInspect');
+          await p.waitForFunction(() => document.getElementById('modalInspector').classList.contains('open'));
+          await p.waitForTimeout(300);
+        }
+        const d = await pixelDiff(diffPage, await one.locator('#inspFiles').screenshot(), await two.locator('#inspFiles').screenshot());
+        check(d.ratio <= PIXEL_TOLERANCE, `wave5a screenshots ${tag}: the inspector's #inspFiles differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        writeFileSync(path.join(OUT, `w5a-one-${tag}.png`), await one.screenshot());
+        writeFileSync(path.join(OUT, `w5a-two-${tag}.png`), await two.screenshot());
+        await harvestCsp(one);
+        await harvestCsp(two);
+      } finally {
+        await c1.close();
+        await c2.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+}
+
+async function wave5aChecks(origin) {
+  const only = (process.env.W5A_PARTS || 'bodies,downloads,hostile,network,gate,screens').split(',');
+  if (only.includes('bodies')) await wave5aBodies(origin);
+  if (only.includes('downloads')) await wave5aDownloads(origin);
+  if (only.includes('hostile')) await wave5aHostile(origin);
+  if (only.includes('network')) await wave5aNetwork(origin);
+  if (only.includes('gate')) await wave5aGate(origin);
+  if (only.includes('screens')) await wave5aScreens(origin);
+}
+
 /* ---- per-user themes ("My themes", plan 2026-11-02, constraints 46-50) ----
    Signed out (this device only): a theme designed with an uploaded font in book A is kept for every book, applied in
    book B; B exports as a 1.0 book (readBook reads it exactly) and 1.0's own page opens it with the theme worn and the
@@ -4599,6 +5097,7 @@ try {
   if (run('wave4b')) await wave4bChecks(srv.origin);
   if (run('wave4c')) await wave4cChecks(srv.origin);
   if (run('userThemes')) await userThemesChecks(srv.origin);
+  if (run('wave5a')) await wave5aChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
