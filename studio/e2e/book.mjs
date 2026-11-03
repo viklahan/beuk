@@ -369,6 +369,10 @@ async function readOnlyRooms(page) {
   // wave 5a (constraint 54): the export modal browsed — every preset and the book's own again, the validator, the
   // audit, the inspector — and closed; nothing exported
   done.push(await exportBrowse(page));
+  // wave 5b (constraint 60): print browsed — trims, toggles and selects and back, the preflight and a jump, the print
+  // view, the interior view paged — every setting where it was
+  await page.waitForFunction(() => !!window.beukPrint, null, { timeout: 60_000 });
+  done.push(await printBrowse(page));
   // wave 5a, round 2: the local pill's popover opened, then closed by a click outside and by Escape; nothing backed up
   done.push(await localPillBrowse(page));
   return done.join(' + ');
@@ -4737,6 +4741,481 @@ async function wave5aChecks(origin) {
   if (only.includes('screens')) await wave5aScreens(origin);
 }
 
+/* ---- wave 5b: print (plan 2026-11-02 wave5b, constraints 57-63) ----
+   Constraint 57: Download Print HTML is 1.0's file, byte for byte — 1.0's buildPrintHtml (after its press bake) in
+   1.0's page and in 2.0's, hashed in each page, for every fixture × every trim × the settings that change it; the
+   downloaded files and the print frames compared whole on one book. The Print Interior View's model (every page: its
+   number, blank, section, column; the spread count) equals 1.0's in the same browser at the same viewport. 59: a
+   hostile book through the print view's frame (its own document walked), the downloaded file, the interior view and
+   the preflight: no script, handler or remote request. 60: the print section, the print view, the interior view and
+   the preflight browsed — the export unchanged (and readOnlyRooms takes it into the 23-fixture gate). 61: the latency
+   line with the interior view closed. Screenshots beside 1.0's in Paper, Candlelight and Arabic. */
+/** The print settings each fixture's document is built at (`big`: the three long books, fewer). */
+function w5bSets(book, trims, big) {
+  const notes = book.printNotes === 'end' ? 'page' : 'end';
+  const toggles = [
+    { printRecto: !(book.printRecto ?? true) },
+    { printLargePrint: true, printPictureBook: false },
+    { printPictureBook: true, printLargePrint: false },
+    { printBleed: true },
+    { printMarginMode: 'custom', printCustomMargins: { inside: 0.9, outside: 0.4, top: 0.5, bottom: 0.8 } },
+    { printHeadContent: 'chapter' },
+    { printHeadContent: 'none' },
+    { printHeadPlace: 'bottom' },
+    { printOmitChapterHead: true },
+    { printOmitBlankHead: false },
+    { printFolio: 'outer' },
+    { printFolio: 'none' },
+    { printNotes: notes },
+  ];
+  if (big) return [{}, { printTrim: '5x8' }, toggles[1], toggles[12]];
+  return [{}, ...trims.map((id) => ({ printTrim: id })), ...toggles];
+}
+/** In 1.0's page: the book arrives (applyBookDoc), then each setting's document after the press bake, hashed. */
+const W5B_ONE_HTML = async ([b, sets]) => {
+  const hash = (s) => {
+    let a = 0x811c9dc5, b = 0x01000193 ^ 0x5bd1e995;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      a = Math.imul(a ^ c, 0x01000193) >>> 0;
+      b = Math.imul(b ^ c ^ (i & 255), 0x5bd1e995) >>> 0;
+    }
+    return a.toString(16) + '.' + b.toString(16) + '.' + s.length;
+  };
+  applyBookDoc(JSON.parse(JSON.stringify(b)));
+  // the running head's face loaded first (1.0's printFitHead measures on a canvas, with the face once the page has it;
+  // a book open in 1.0's studio has it from the preview), and 1.0's measure cache empty
+  await document.fonts.load('10pt ' + fontStack(labelFaceOf(state.theme))).catch(() => undefined);
+  printHeadFitMemo.clear();
+  const out = [];
+  for (const set of sets) {
+    const keep = {};
+    for (const k of Object.keys(set)) keep[k] = JSON.parse(JSON.stringify(state[k] ?? null));
+    Object.assign(state, JSON.parse(JSON.stringify(set)));
+    try {
+      await preparePrintPress();
+      out.push(hash(buildPrintHtml()));
+    } finally {
+      Object.assign(state, keep);
+    }
+  }
+  return out;
+};
+const W5B_TWO_HTML = async ([sets]) => {
+  const hash = (s) => {
+    let a = 0x811c9dc5, b = 0x01000193 ^ 0x5bd1e995;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      a = Math.imul(a ^ c, 0x01000193) >>> 0;
+      b = Math.imul(b ^ c ^ (i & 255), 0x5bd1e995) >>> 0;
+    }
+    return a.toString(16) + '.' + b.toString(16) + '.' + s.length;
+  };
+  const out = [];
+  for (const set of sets) out.push(hash(await window.beukPrint.html(set)));
+  return out;
+};
+/** The interior view's model in 1.0's page (after a first pass: faces and pictures in). */
+const W5B_ONE_MODEL = async ([b, sets]) => {
+  applyBookDoc(JSON.parse(JSON.stringify(b)));
+  const one = () => { const m = buildPrintViewModel(); return { spreads: m.spreads, pages: m.pages.map((p) => [p.n, p.blank ? 1 : 0, p.section ? p.section.id : '', p.col]) }; };
+  one();
+  await document.fonts.ready;
+  const out = [];
+  for (const set of sets) {
+    const keep = {};
+    for (const k of Object.keys(set)) keep[k] = JSON.parse(JSON.stringify(state[k] ?? null));
+    Object.assign(state, JSON.parse(JSON.stringify(set)));
+    try {
+      out.push(one());
+    } finally {
+      Object.assign(state, keep);
+    }
+  }
+  return out;
+};
+const W5B_TWO_MODEL = async ([sets]) => {
+  window.beukPrint.model({});
+  await document.fonts.ready;
+  return sets.map((s) => window.beukPrint.model(s));
+};
+async function w5bOpen(ctx, origin, file) {
+  const page = await w5aOpen(ctx, origin, file);
+  await page.waitForFunction(() => !!window.beukPrint, null, { timeout: 60_000 });
+  return page;
+}
+
+async function wave5bParity(origin) {
+  const c1 = await newContext({ serviceWorkers: 'block' });
+  let docs = 0, docsEqual = 0, models = 0, modelsEqual = 0, n = 0;
+  const unequal = [];
+  const table = [];
+  try {
+    const probe = await openOne(c1, origin);
+    const trims = await probe.evaluate(() => TRIM_SIZES.map((x) => x.id));
+    await probe.close();
+    for (const f of fixtures) {
+      if (!Array.isArray(f.book.sections)) continue;
+      if (process.env.W5B_FIXTURES && !new RegExp(process.env.W5B_FIXTURES).test(f.name)) continue; // a quick re-run while working
+      n++;
+      const big = /dartagnan|valois|oz-14/.test(f.name);
+      const sets = w5bSets(f.book, trims, big);
+      const msets = big ? [{}] : [{}, { printTrim: '5x8' }, { printNotes: f.book.printNotes === 'end' ? 'page' : 'end' }];
+      const c2 = await newContext({ serviceWorkers: 'block' });
+      let h2, m2, bookId;
+      try {
+        const two = await w5bOpen(c2, origin, f.file);
+        h2 = await two.evaluate(W5B_TWO_HTML, [sets]);
+
+        m2 = await two.evaluate(W5B_TWO_MODEL, [msets]);
+        const body = await two.evaluate(() => window.beukExport.body('en'));
+        bookId = JSON.parse(body).book.meta.bookId;
+        await harvestCsp(two);
+      } finally {
+        await c2.close();
+      }
+      const one = await openOne(c1, origin);
+      const b = expected(f.book, { meta: { bookId } });
+      const h1 = await one.evaluate(W5B_ONE_HTML, [b, sets]);
+      const firstBad = sets.findIndex((_, i) => h1[i] !== h2[i]);
+      if (firstBad >= 0) {
+        // where the two documents part: 1.0's (its page) and 2.0's (a fresh 2.0 page, the same book)
+        const doc1 = await one.evaluate(async ([bb, set]) => { applyBookDoc(JSON.parse(JSON.stringify(bb))); await document.fonts.load('10pt ' + fontStack(labelFaceOf(state.theme))).catch(() => undefined); printHeadFitMemo.clear(); Object.assign(state, JSON.parse(JSON.stringify(set))); await preparePrintPress(); return buildPrintHtml(); }, [b, sets[firstBad]]);
+        const c3 = await newContext({ serviceWorkers: 'block' });
+        try {
+          const t3 = await w5bOpen(c3, origin, f.file);
+          const doc2 = await t3.evaluate((set) => window.beukPrint.html(set), sets[firstBad]);
+          let k = 0;
+          while (k < doc1.length && doc1[k] === doc2[k]) k++;
+          note(`wave5b: ${f.name} ${JSON.stringify(sets[firstBad])}: the documents part at character ${k}: 1.0 ${JSON.stringify(doc1.slice(Math.max(0, k - 160), k + 140))} | 2.0 ${JSON.stringify(doc2.slice(Math.max(0, k - 160), k + 140))}`);
+          await harvestCsp(t3);
+        } finally {
+          await c3.close();
+        }
+      }
+      const m1 = await one.evaluate(W5B_ONE_MODEL, [b, msets]);
+      await harvestCsp(one);
+      await one.close();
+      sets.forEach((s, i) => {
+        docs++;
+        if (h1[i] === h2[i]) docsEqual++;
+        else unequal.push(`${f.name} ${JSON.stringify(s)}: ${h1[i]} / ${h2[i]}`);
+      });
+      const cells = [];
+      msets.forEach((s, i) => {
+        models++;
+        const same = JSON.stringify(m1[i]) === JSON.stringify(m2[i]);
+        if (same) modelsEqual++;
+        else unequal.push(`${f.name} model ${JSON.stringify(s)}: ${m1[i].pages.length}/${m2[i].pages.length} pages, ${m1[i].spreads}/${m2[i].spreads} spreads`);
+        cells.push(`${m1[i].pages.length}/${m2[i].pages.length} p, ${m1[i].spreads}/${m2[i].spreads} sp`);
+      });
+      table.push(`${f.name}: ${cells.join(' | ')}`);
+    }
+  } finally {
+    await c1.close();
+  }
+  note('wave5b interior view (1.0 / 2.0), [book\'s own trim | 5x8 | notes flipped]:');
+  for (const row of table) note('  ' + row);
+  check(docsEqual === docs, `wave5b constraint 57: Download Print HTML (1.0's buildPrintHtml after its press bake) equals 1.0's for ${docsEqual} of ${docs} documents (${n} fixtures × every trim × 13 settings; the three long books × 4)${unequal.length ? ' — ' + unequal.slice(0, 4).join('; ') : ''}`);
+  check(modelsEqual === models, `wave5b constraint 57: the Print Interior View's pages and spread breaks equal 1.0's for ${modelsEqual} of ${models} models (${n} fixtures)`);
+}
+
+async function wave5bDownloads(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  try {
+    const two = await w5bOpen(ctx, origin, f.file);
+    await w5aOpenModal(two);
+    const d2 = await w5aDownload(two, '#btnDownloadPrintHtml');
+    await two.click('#btnOpenPrintView');
+    await two.waitForFunction(() => document.getElementById('modalPrint').classList.contains('open') && document.getElementById('printFrame').srcdoc.length > 1000, null, { timeout: 60_000 });
+    await two.waitForTimeout(1500); // the press bake's second frame
+    const fr2 = await two.$eval('#printFrame', (x) => x.srcdoc);
+    const one = await openOne(ctx, origin);
+    await one.setInputFiles('#localBackupInput', f.file);
+    await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
+    await one.click('#btnExport');
+    await one.waitForFunction(() => document.getElementById('modalExport').classList.contains('open'));
+    const d1 = await w5aDownload(one, '#btnDownloadPrintHtml');
+    await one.click('#btnOpenPrintView');
+    await one.waitForFunction(() => document.getElementById('modalPrint').classList.contains('open') && document.getElementById('printFrame').srcdoc.length > 1000, null, { timeout: 60_000 });
+    await one.waitForTimeout(1500);
+    const fr1 = await one.$eval('#printFrame', (x) => x.srcdoc);
+    check(d1.name === d2.name && d1.bytes.equals(d2.bytes), `wave5b constraint 57: Download Print HTML in both apps: ${d2.name} ${d2.bytes.length} bytes, byte for byte (1.0: ${d1.name} ${d1.bytes.length})`);
+    check(fr1 === fr2 && fr2 === d2.bytes.toString('utf8'), `wave5b constraint 57: the print view's frame shows 1.0's document (${fr2.length} characters), and the downloaded file is that document`);
+    const sb = await two.$eval('#printFrame', (x) => x.getAttribute('sandbox'));
+    const sb1 = await one.$eval('#printFrame', (x) => x.getAttribute('sandbox'));
+    check(sb === sb1, `wave5b constraint 59: the print frame is sandboxed exactly as 1.0's is (1.0: ${sb1 === null ? 'no sandbox' : sb1}; 2.0: ${sb === null ? 'no sandbox' : sb})`);
+    // the frame's own document (same origin): what it holds and runs
+    const inFrame = await two.evaluate(() => {
+      const d = document.getElementById('printFrame').contentDocument;
+      return { sections: d.querySelectorAll('section.print-sec').length, scripts: d.querySelectorAll('script').length, on: [...d.querySelectorAll('*')].filter((el) => [...el.attributes].some((a) => /^on/i.test(a.name))).length };
+    });
+    check(inFrame.sections > 5 && inFrame.scripts === 0 && inFrame.on === 0, `wave5b: the frame's own document: ${inFrame.sections} print sections, ${inFrame.scripts} scripts, ${inFrame.on} handlers`);
+    await harvestCsp(two);
+    await harvestCsp(one);
+  } finally {
+    await ctx.close();
+  }
+}
+
+async function wave5bHostile(origin) {
+  const base = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const hostile = w5aHostileBook(base.book);
+  const file = w4File('w5b-hostile.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: hostile }));
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  try {
+    const page = await w5bOpen(ctx, origin, file);
+    const foreign = [];
+    page.on('request', (r) => { const u = r.url(); if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:') && !u.startsWith('about:')) foreign.push(u); });
+    const start = (await exportBackup(page)).json.book;
+    await w5aOpenModal(page);
+    const file1 = await w5aDownload(page, '#btnDownloadPrintHtml');
+    await page.click('#btnOpenPrintView');
+    await page.waitForFunction(() => document.getElementById('modalPrint').classList.contains('open') && document.getElementById('printFrame').srcdoc.length > 1000, null, { timeout: 60_000 });
+    await page.waitForTimeout(1500);
+    const frame = await page.evaluate(() => {
+      const d = document.getElementById('printFrame').contentDocument;
+      const els = [...d.querySelectorAll('*')];
+      return {
+        on: els.flatMap((el) => [...el.attributes].filter((a) => /^on/i.test(a.name)).map((a) => el.tagName + ' ' + a.name)),
+        runs: els.filter((el) => /^(SCRIPT|IFRAME|OBJECT|EMBED|BASE|FORM)$/.test(el.tagName)).length,
+        remote: els.flatMap((el) => [...el.attributes].filter((a) => /^(src|srcset|href|xlink:href)$/i.test(a.name) && /^\s*(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(a.value)).map((a) => el.tagName + ' ' + a.value.slice(0, 50))),
+        pw: document.getElementById('printFrame').contentWindow.__pw ?? null,
+        srcdoc: document.getElementById('printFrame').srcdoc,
+      };
+    });
+    await page.click('#btnClosePrint');
+    await w5aOpenModal(page);
+    await page.click('#btnOpenSpreads');
+    await page.waitForFunction(() => document.getElementById('modalPrintView').classList.contains('open') && document.querySelectorAll('#pivSpread .piv-page').length > 0, null, { timeout: 60_000 });
+    const spreads = await page.evaluate(() => Number((/of (\d+)/.exec(document.getElementById('pivCounter').textContent) || [0, 0])[1]));
+    let pivOn = 0;
+    for (let i = 0; i < Math.min(spreads, 40); i++) {
+      pivOn += await page.evaluate(() => [...document.querySelectorAll('#pivSpread *, #pivMeasure *')].filter((el) => [...el.attributes].some((a) => /^on/i.test(a.name)) || /^(SCRIPT|IFRAME|OBJECT|EMBED)$/.test(el.tagName)).length);
+      if (i < Math.min(spreads, 40) - 1) await page.click('#btnPivNext');
+    }
+    await page.click('#btnClosePrintView');
+    await w5aOpenModal(page);
+    await page.click('#btnPreflight');
+    await page.waitForFunction(() => document.getElementById('preflightResults').style.display === '', null, { timeout: 30_000 });
+    const pf = await page.evaluate(() => [...document.querySelectorAll('#preflightResults *')].filter((el) => [...el.attributes].some((a) => /^on/i.test(a.name)) || el.tagName === 'SCRIPT').length);
+    await page.click('#btnCloseExport');
+    const fileHaz = await page.evaluate(W5A_HAZARDS, [{ [file1.name]: file1.bytes.toString('utf8') }]);
+    const docHaz = await page.evaluate(W5A_HAZARDS, [{ frame: frame.srcdoc }]);
+    check(frame.on.length === 0 && frame.runs === 0 && frame.remote.length === 0 && frame.pw === null && docHaz.length === 0, `wave5b constraint 59: the hostile book in the print view's frame: no handler, script or remote source in its own document; nothing ran (${JSON.stringify({ on: frame.on.slice(0, 3), runs: frame.runs, remote: frame.remote.slice(0, 3), pw: frame.pw, docHaz: docHaz.slice(0, 3) })})`);
+    check(fileHaz.length === 0, `wave5b constraint 59: the hostile book's Download Print HTML (${file1.bytes.length} bytes, parsed and walked): no script, handler or remote request (${fileHaz.slice(0, 4).join('; ') || 'none'})`);
+    check(pivOn === 0 && pf === 0 && (await page.evaluate(() => window.__pw ?? null)) === null, `wave5b constraint 59: the hostile book's interior view (${Math.min(spreads, 40)} of ${spreads} spreads) and preflight: no handler or script; nothing ran`);
+    const out = (await exportBackup(page)).json.book;
+    check(JSON.stringify(out) === JSON.stringify(start) && JSON.stringify(out) === JSON.stringify(expected(hostile, out)), 'wave5b constraint 60: the hostile book exports exactly as readBook reads it (after the print view, the file, the interior view and the preflight)');
+    check(foreign.length === 0, `wave5b constraint 59: no request left the page (${foreign.slice(0, 3).join(', ') || 'none'})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** Wave 5b (constraint 60): the print section, the print view, the interior view and the preflight browsed, every
+ *  setting put back where it was. Shared with readOnlyRooms (the 23-fixture gate). */
+async function printBrowse(page) {
+  await w5aOpenModal(page);
+  await page.waitForFunction(() => document.querySelectorAll('#trimGrid [data-trim]').length === 24, null, { timeout: 30_000 });
+  const own = await page.$eval('#trimGrid .active', (b) => b.getAttribute('data-trim'));
+  for (const id of ['5x8', '8.5x11', own]) await page.click(`#trimGrid [data-trim="${id}"]`);
+  for (const id of ['#tglRecto', '#tglLargePrint', '#tglBleed', '#tglOmitChapter', '#tglOmitBlank']) {
+    await page.click(id);
+    await page.click(id);
+  }
+  // picture book on (large print off), then each back: 1.0's exclusion
+  const lp = await page.$eval('#tglLargePrint', (b) => b.getAttribute('aria-pressed'));
+  const pb = await page.$eval('#tglPictureBook', (b) => b.getAttribute('aria-pressed'));
+  await page.click('#tglPictureBook');
+  await page.click('#tglPictureBook');
+  if ((await page.$eval('#tglLargePrint', (b) => b.getAttribute('aria-pressed'))) !== lp) await page.click('#tglLargePrint');
+  if ((await page.$eval('#tglPictureBook', (b) => b.getAttribute('aria-pressed'))) !== pb) await page.click('#tglPictureBook');
+  for (const [sel, vals] of [['#selHeadContent', ['none', 'chapter']], ['#selHeadPlace', ['bottom']], ['#selFolio', ['none']], ['#selPrintNotes', ['page', 'end']], ['#selMarginMode', ['custom']]]) {
+    const was = await page.$eval(sel, (x) => x.value);
+    for (const v of vals) await page.selectOption(sel, v);
+    await page.selectOption(sel, was);
+  }
+  await page.click('#btnPreflight');
+  await page.waitForFunction(() => document.getElementById('preflightResults').style.display === '', null, { timeout: 60_000 });
+  const jump = await page.$('#preflightResults [data-pfjump]');
+  if (jump) await jump.click();
+  // a section jump is 1.0's audit's "Take me there": the modal closes, the section opens
+  if (!(await page.evaluate(() => document.getElementById('modalExport').classList.contains('open')))) await w5aOpenModal(page);
+  await page.click('#btnOpenPrintView');
+  await page.waitForFunction(() => document.getElementById('modalPrint').classList.contains('open') && document.getElementById('printFrame').srcdoc.length > 500, null, { timeout: 60_000 });
+  await page.click('#btnClosePrint');
+  await w5aOpenModal(page);
+  await page.click('#btnOpenSpreads');
+  await page.waitForFunction(() => document.getElementById('modalPrintView').classList.contains('open') && /\d/.test(document.getElementById('pivCounter').textContent), null, { timeout: 120_000 });
+  await page.click('#btnPivNext');
+  await page.click('#btnPivNext');
+  await page.click('#btnPivPrev');
+  await page.click('#tglPivGuides');
+  await page.click('#tglPivGuides');
+  await page.click('#pivZoomActual');
+  await page.click('#pivZoomFit');
+  const jumpTo = await page.$$eval('#pivJump option', (o) => (o[1] || o[0]).value);
+  await page.selectOption('#pivJump', jumpTo);
+  const pt = await page.$eval('#pivTrim', (x) => x.value);
+  await page.selectOption('#pivTrim', '5x8');
+  await page.selectOption('#pivTrim', pt);
+  await page.click('#tglPivRecto');
+  await page.click('#tglPivRecto');
+  await page.click('#btnClosePrintView');
+  await page.waitForFunction(() => !document.getElementById('modalPrintView').classList.contains('open'), null, { timeout: 10_000 });
+  return `print (3 trims and the book's own again, 6 toggles twice, 5 selects and back, the preflight${jump ? ' and a jump' : ''}, the print view, the interior view paged, guides, zoom, a jump, its trim and recto and back)`;
+}
+
+async function wave5bGate(origin) {
+  for (const name of ['real/lantern-coast-print', 'real/dartagnan-01-three-musketeers']) {
+    const f = fixtures.find((x) => x.name === name);
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const page = await w5bOpen(ctx, origin, f.file);
+      const before = (await exportBackup(page)).json.book;
+      const done = await printBrowse(page);
+      const after = (await exportBackup(page)).json.book;
+      check(JSON.stringify(after) === JSON.stringify(before) && JSON.stringify(after) === JSON.stringify(expected(f.book, after)), `wave5b constraint 60: ${name}: ${done} — the export is unchanged`);
+      const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /print|piv|trim|preflight/i.test(k)));
+      check(keys.length === 0, `wave5b constraint 60: no per-device key is written by print (1.0 keeps none: ${keys.join(', ') || 'none'})`);
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+  // a setting left changed is an edit, in 1.0's shape, and 1.0 reads it back
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  try {
+    const page = await w5bOpen(ctx, origin, f.file);
+    await w5aOpenModal(page);
+    await page.click('#trimGrid [data-trim="5.5x8.5"]');
+    await page.click('#tglLargePrint');
+    await page.click('#btnCloseExport');
+    const out = (await exportBackup(page)).json.book;
+    const want = { ...expected(f.book, out), printTrim: '5.5x8.5', printLargePrint: true, printPictureBook: false };
+    check(JSON.stringify(out) === JSON.stringify(want), `wave5b constraint 58: a trim and Large Print left changed are 1.0's printTrim / printLargePrint in their places (${out.printTrim}, ${out.printLargePrint})`);
+    const file = w4File('w5b-changed.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: out }));
+    const one = await openOne(ctx, origin);
+    await one.setInputFiles('#localBackupInput', file);
+    await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
+    const back = await one.evaluate(() => [state.printTrim, state.printLargePrint, state.printPictureBook]);
+    check(JSON.stringify(back) === JSON.stringify(['5.5x8.5', true, false]), `wave5b constraint 58: 1.0 reads the setting 2.0 wrote back (${JSON.stringify(back)})`);
+    await harvestCsp(page);
+    await harvestCsp(one);
+  } finally {
+    await ctx.close();
+  }
+}
+
+async function wave5bScreens(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  try {
+    for (const run of [{ theme: 'paper' }, { theme: 'candlelight' }, { theme: 'paper', lang: 'ar' }]) {
+      const tag = run.theme + (run.lang ? '-' + run.lang : '');
+      const prep = (ctx) => ctx.addInitScript(([th, l]) => {
+        try {
+          localStorage.setItem('beuk.theme.v1', th);
+          if (l) localStorage.setItem('beuk.uiLang.v1', l);
+        } catch {
+          /* no storage */
+        }
+      }, [run.theme, run.lang]);
+      const c1 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      const c2 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      await prep(c1);
+      await prep(c2);
+      try {
+        const one = await watch(await c1.newPage());
+        await one.goto(origin + '/studio');
+        await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+        await one.setInputFiles('#localBackupInput', f.file);
+        await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
+        await one.addStyleTag({ content: ONE_HIDE });
+        const two = await w5bOpen(c2, origin, f.file);
+        await w5aOpenModal(one, '#btnExport');
+        await w5aOpenModal(two);
+        for (const p of [one, two]) {
+          await p.click('#btnPreflight');
+          await p.waitForFunction(() => document.getElementById('preflightResults').style.display === '');
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(3800); // toasts gone
+        }
+        // the export modal's other sections hidden in both (1.0 shows the later waves' sections 2.0 hides: what stands
+        // above the print section differs, and with it the subpixel position the region is cut at)
+        for (const p of [one, two]) {
+          await p.evaluate(() => {
+            const keep = document.getElementById('trimGrid').closest('.fmt-sec');
+            const pf = document.getElementById('preflightResults').closest('.fmt-sec');
+            document.querySelectorAll('#modalExport .fmt-sec').forEach((x) => { if (x !== keep && x !== pf) x.style.display = 'none'; });
+            const st = document.querySelector('#modalExport .st-entry');
+            if (st) st.style.display = 'none';
+          });
+          await p.waitForTimeout(300);
+        }
+        const sec = (p) => p.locator('#trimGrid').locator('xpath=ancestor::div[contains(@class,"fmt-sec")]');
+        for (const [label, la, lb] of [['#trimGrid', one.locator('#trimGrid'), two.locator('#trimGrid')], ['the print section', sec(one), sec(two)], ['#preflightResults', one.locator('#preflightResults'), two.locator('#preflightResults')]]) {
+          await la.scrollIntoViewIfNeeded();
+          await lb.scrollIntoViewIfNeeded();
+          const d = await pixelDiff(diffPage, await la.screenshot(), await lb.screenshot());
+          check(d.ratio <= PIXEL_TOLERANCE, `wave5b screenshots ${tag}: ${label} differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        }
+        for (const p of [one, two]) {
+          await p.click('#btnOpenPrintView');
+          await p.waitForFunction(() => document.getElementById('modalPrint').classList.contains('open') && document.getElementById('printFrame').srcdoc.length > 1000);
+          await p.waitForTimeout(2500);
+        }
+        const d1 = await pixelDiff(diffPage, await one.locator('#printModalBox').screenshot(), await two.locator('#printModalBox').screenshot());
+        check(d1.ratio <= PIXEL_TOLERANCE, `wave5b screenshots ${tag}: the print view (#printModalBox, its frame included) differs in ${(d1.ratio * 100).toFixed(2)}% of pixels [${d1.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        for (const p of [one, two]) {
+          await p.click('#btnClosePrint');
+          await w5aOpenModal(p, '#btnExport');
+          await p.click('#btnOpenSpreads');
+          await p.waitForFunction(() => document.getElementById('modalPrintView').classList.contains('open') && /\d/.test(document.getElementById('pivCounter').textContent));
+          await p.click('#btnPivNext');
+          await p.click('#btnPivNext');
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(800);
+        }
+        const d2 = await pixelDiff(diffPage, await one.locator('#pivModalBox').screenshot(), await two.locator('#pivModalBox').screenshot());
+        check(d2.ratio <= PIXEL_TOLERANCE, `wave5b screenshots ${tag}: the Print Interior View (#pivModalBox, spread 3) differs in ${(d2.ratio * 100).toFixed(2)}% of pixels [${d2.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        writeFileSync(path.join(OUT, `w5b-one-${tag}.png`), await one.screenshot());
+        writeFileSync(path.join(OUT, `w5b-two-${tag}.png`), await two.screenshot());
+        await harvestCsp(one);
+        await harvestCsp(two);
+      } finally {
+        await c1.close();
+        await c2.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+}
+
+async function wave5bChecks(origin) {
+  const only = (process.env.W5B_PARTS || 'parity,downloads,hostile,gate,screens,latency').split(',');
+  if (only.includes('parity')) await wave5bParity(origin);
+  if (only.includes('downloads')) await wave5bDownloads(origin);
+  if (only.includes('hostile')) await wave5bHostile(origin);
+  if (only.includes('gate')) await wave5bGate(origin);
+  if (only.includes('screens')) await wave5bScreens(origin);
+  // constraint 61: the editor's typing with the interior view closed (#5's measure, and the redraws between keys)
+  if (only.includes('latency') && !(process.env.E2E_ONLY || '').split(',').includes('latency')) {
+    const r = await latency(origin);
+    note(`wave5b latency (the print dialogs mounted, closed): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+    check(r.p95 < LATENCY_P95_TARGET_MS, `wave5b constraint 61: p95 under ${LATENCY_P95_TARGET_MS} ms on Dumas with the interior view closed (${r.p95.toFixed(1)} ms)`);
+    const r2 = await latency(origin, { delay: 200, count: 60, quick: true });
+    note(`wave5b latency with the preview redrawing between keys (200 ms): p50 ${r2.p50.toFixed(1)} ms, p95 ${r2.p95.toFixed(1)} ms, max ${r2.max.toFixed(1)} ms over ${r2.n} keystrokes`);
+    check(r2.p95 < LATENCY_P95_TARGET_MS, `wave5b constraint 61: p95 under ${LATENCY_P95_TARGET_MS} ms while the preview redraws between keys (${r2.p95.toFixed(1)} ms)`);
+  }
+}
+
 /* ---- per-user themes ("My themes", plan 2026-11-02, constraints 46-50) ----
    Signed out (this device only): a theme designed with an uploaded font in book A is kept for every book, applied in
    book B; B exports as a 1.0 book (readBook reads it exactly) and 1.0's own page opens it with the theme worn and the
@@ -5135,6 +5614,7 @@ try {
   if (run('wave4c')) await wave4cChecks(srv.origin);
   if (run('userThemes')) await userThemesChecks(srv.origin);
   if (run('wave5a')) await wave5aChecks(srv.origin);
+  if (run('wave5b')) await wave5bChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);

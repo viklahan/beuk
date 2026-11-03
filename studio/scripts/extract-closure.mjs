@@ -334,7 +334,7 @@ export const PRINT_ROOTS = ['initPrint', 'initPrintView', 'renderPrintControls',
   // so the module hands them out
   'buildPrintCss', 'printTypeCss', 'pivGeometry', 'PIV_PX', 'inCss', 'cssStr', 'printHeadText', 'printFolioPos', 'trimOptionsHtml', 'pivEnsureStyle',
   'printSolidTintCss', 'printBlendHex', 'printSolidSvgHtml', 'printPressCss', 'PRINT_PAGE', 'PRINT_INK', 'printEdgeSections', 'printBleedConfig', 'kdpEdgeMin',
-  'buildBookCss', 'printHeadsConfig', 'printBaseFontPt', 'printNotesAtFoot', 'isPairedSpread', 'printMarginsAuto', 'inBook'];
+  'buildBookCss', 'printHeadsConfig', 'printBaseFontPt', 'printNotesAtFoot', 'isPairedSpread', 'printMarginsAuto', 'inBook', 'fontStack', 'labelFaceOf'];
 /** What the print module takes from its page and from the main studio (src/print/print.ts). */
 export const PRINT_SUPPLIED = ['t', 'document', 'window', 'setTimeout', 'requestAnimationFrame', 'ResizeObserver', 'UI_STRINGS', 'getUiLang', 'uiLangState',
   'fmtDateIntl', 'icons', '$', 'downloadBlob', 'samplePicsHold', 'samplePicsReady', 'Image',

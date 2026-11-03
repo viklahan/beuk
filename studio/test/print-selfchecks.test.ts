@@ -390,6 +390,39 @@ describe("1.0's print self-checks, on print's module", () => {
     expect(a.printFilename()).toMatch(/-picture-book\.html$/);
   });
 
+  it("starters.blanks-flagged (5a left its print half): a [[blank]] is a preflight finding that jumps to its page; one on a page switched off is not; filled, gone", () => {
+    const st = empty();
+    const secs = st.sections as Rec[];
+    const ch = secs.find((s) => s.type === 'chapter')!;
+    ch.content = "The ledger lay open on the captain's table, and every name in it was a debt. ".repeat(20);
+    const about = secs.find((s) => s.type === 'aboutauthor')!, ack = secs.find((s) => s.type === 'acknowledgments')!;
+    about.content = 'Zoey Suzuki lives in [[your town]] and writes at [[your website]].';
+    ack.content = 'Thanks to [[your editor]].';
+    ack.included = false;
+    const hits = () => (a.auditPrintInterior() as { findings: { id: string; name: string; detail: string; jump: { sectionId?: string } | null }[] }).findings.filter((f) => f.id === 'template.blanks');
+    const p1 = hits();
+    expect(p1.length).toBe(1);
+    expect(p1[0]!.jump?.sectionId).toBe(about.id);
+    expect(p1[0]!.name).toBe(t('check.blanks.name'));
+    expect(p1[0]!.detail).not.toContain('[[your editor]]');
+    about.content = String(about.content).replace('[[your town]]', 'Bristol').replace('[[your website]]', 'zoeysuzuki.com');
+    expect(hits()).toEqual([]);
+  });
+
+  it('starters.empty-left-out (5a left its print half): a page with no words of its own is not in the print document; a written one and the generated pages are', () => {
+    const st = empty();
+    const secs = st.sections as Rec[];
+    secs.find((s) => s.type === 'chapter')!.content = 'Words of the chapter.';
+    secs.find((s) => s.type === 'dedication')!.content = 'For you.';
+    const html = String(pc.vars.buildPrintHtml());
+    const ids = [...html.matchAll(/<section class="print-sec[^"]*" id="ps-(\d+)"/g)].length;
+    const want = secs.filter((s) => a.inBook(s) && s.type !== 'cover');
+    expect(ids).toBe(want.length);
+    for (const ty of ['epigraph', 'aboutauthor', 'alsoby']) expect(want.some((s) => s.type === ty), ty).toBe(false);
+    for (const ty of ['dedication', 'titlepage', 'copyright', 'chapter']) expect(want.some((s) => s.type === ty), ty).toBe(true);
+    expect(html).toContain('For you.');
+  });
+
   it('print.press.solid-tints, print.press.blend-math', async () => {
     const sample = await loadSample();
     on(sample.buildSampleBook());

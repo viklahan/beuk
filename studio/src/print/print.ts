@@ -175,7 +175,55 @@ export async function printWire(): Promise<void> {
     rewiring = false;
   }
   wiredHost = printHost.el;
+  (window as unknown as { beukPrint?: unknown }).beukPrint = printSeam;
 }
+
+/** The test seam (e2e): 1.0's print code on the open book's print state, with `set` print settings in place for the
+ *  call only (put back after: nothing is written — no export call ends while they stand). */
+type PrintSet = Record<string, unknown>;
+function withSettings<T>(set: PrintSet, fn: (pc: PrintClosure) => T): T | undefined {
+  const pc = loaded;
+  if (!pc) return undefined;
+  exportRun(() => undefined); // the state is the open book's, now
+  const st = pc.getState() as Rec;
+  const keep = structuredClone(Object.fromEntries(Object.keys(set).map((k) => [k, st[k]])));
+  Object.assign(st, structuredClone(set));
+  const back = () => Object.assign(st, keep);
+  try {
+    const out = fn(pc);
+    if (out && typeof (out as { then?: unknown }).then === 'function') return (out as unknown as Promise<unknown>).finally(back) as unknown as T;
+    back();
+    return out;
+  } catch (e) {
+    back();
+    throw e;
+  }
+}
+export const printSeam = {
+  /** The print document (after 1.0's press bake), as Download Print HTML writes it. The running head's face is loaded
+   *  first: 1.0 cuts a long head to its box by measuring it on a canvas (printFitHead), which measures with the face
+   *  only once the page has loaded it (in the studio the preview has, by the time a writer prints). */
+  html: (set: PrintSet = {}) =>
+    withSettings(set, async (pc) => {
+      const st = pc.getState() as Rec;
+      await document.fonts.load('10pt ' + String(pc.api.fontStack(pc.api.labelFaceOf(st.theme)))).catch(() => undefined);
+      await pc.api.preparePrintPress();
+      return pc.vars.buildPrintHtml();
+    }),
+  /** The Print Interior View's model: every page (its number, blank, section, column) and the spread count. */
+  model: (set: PrintSet = {}) =>
+    withSettings(set, (pc) => {
+      const m = pc.api.buildPrintViewModel() as { pages: { n: number; blank: boolean; section: { id: string } | null; col: number }[]; spreads: number };
+      return { spreads: m.spreads, pages: m.pages.map((p) => [p.n, p.blank ? 1 : 0, p.section ? p.section.id : '', p.col]) };
+    }),
+  /** The preflight's findings and facts. */
+  preflight: (set: PrintSet = {}) =>
+    withSettings(set, (pc) => {
+      const a = pc.api.auditPrintInterior() as { findings: { id: string; detail: string }[]; facts: { pages: number; trim: { id: string } } };
+      return { findings: a.findings.map((f) => f.id + ': ' + f.detail), pages: a.facts.pages, trim: a.facts.trim.id };
+    }),
+  ready: true,
+};
 
 /** Print's code on the open book's export state (the tests and the e2e). */
 export function printRun<T>(fn: (pc: PrintClosure) => T): T | undefined {
