@@ -442,7 +442,9 @@ export function exportResume<T>(v: T): T {
         );
       },
     };
-    return wrapped as unknown as T;
+    // review of 5c (Minor 3): a real Promise (catch, finally), adopting the wrapped thenable — its resolution still runs
+    // in the session, and the caller's continuation in the same microtask run, before the session's deferred end
+    return Promise.resolve(wrapped) as unknown as T;
   }
   return v;
 }

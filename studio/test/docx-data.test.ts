@@ -8,7 +8,7 @@ import meta from '../src/generated/strings-meta.json';
 import { loadClosure, setClosureLang, setClosureT, type Closure } from '../src/closure/index';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
-import { arriveForExport, exportReset, exportRun, exportState, loadSerialize, volumeFromFile } from '../src/export/state';
+import { arriveForExport, exportReset, exportResume, exportRun, exportState, loadSerialize, volumeFromFile } from '../src/export/state';
 import { styleRelease } from '../src/style/session';
 import { fixtures } from './fixtures';
 
@@ -173,5 +173,23 @@ describe("wave 5c: the manuscript, the audio plan and the box set are 1.0's data
     await expect(volumeFromFile(new File(['{"x":1}'], 'notes.json'))).rejects.toThrow('this is not a Beuk backup file');
     y.destroy();
     y2.destroy();
+  });
+});
+
+describe('review of 5c (Minor 3): what exportResume hands back is a real Promise', () => {
+  it('it has catch and finally, a rejection reaches catch, and the continuation runs on the export state though another was set meanwhile', async () => {
+    const f = fixtures('real').find((x) => x.name === 'real/lantern-coast-book-one')!;
+    const y = onDesk(structuredClone(f.book));
+    const mine = exportRun((cc) => cc.getState())!;
+    const p = exportRun(() => exportResume(Promise.reject(new Error('refused'))))!;
+    expect(p).toBeInstanceOf(Promise);
+    let caught = '', finished = false;
+    await p.catch((e: Error) => (caught = e.message)).finally(() => (finished = true));
+    expect([caught, finished]).toEqual(['refused', true]);
+    const q = exportRun(() => exportResume(new Promise((r) => setTimeout(() => r(1), 5))))!;
+    c.setState(arriveForExport(c, { meta: { title: 'Another state' } }) as never);
+    const seen = await q.then(() => c.getState());
+    expect(seen).toBe(mine);
+    y.destroy();
   });
 });
