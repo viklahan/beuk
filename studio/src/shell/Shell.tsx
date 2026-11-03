@@ -23,6 +23,8 @@ import { TourHost } from '../tour/TourHost';
 import { StyleTab } from '../style/StyleTab';
 import { PreviewPane } from '../preview/PreviewPane';
 import { CoverMaker } from '../cover/CoverMaker';
+import { EXPORT_BUILT_EVENT, ExportModal, exportBuilt, exportOpen } from '../export/ExportModal';
+import { exportEnv } from '../closure/index';
 import { Icon } from './Icon';
 import { LangMenu } from './LangMenu';
 import { ThemeButton } from './ThemeButton';
@@ -89,6 +91,23 @@ export function Shell() {
     setMstyle(style);
   };
   const active = (pane: MobilePane, style: boolean) => (mobile === pane && mstyle === style ? 'active' : undefined);
+  // wave 5a: 1.0's export modal opens once its markup is wired (src/export/ExportModal.tsx); 1.0's export code reaches
+  // Project Settings (the audit's "Open Project Settings") and the phone's pane switch ("Take me there")
+  const [exportReady, setExportReady] = useState(exportBuilt());
+  useEffect(() => {
+    const on = () => setExportReady(exportBuilt());
+    window.addEventListener(EXPORT_BUILT_EVENT, on);
+    on();
+    return () => window.removeEventListener(EXPORT_BUILT_EVENT, on);
+  }, []);
+  exportEnv.openSettings = () => setDialog('settings');
+  exportEnv.setMobilePane = (pane) => {
+    if (pane === 'structure' || pane === 'center' || pane === 'preview') {
+      setMobile(pane);
+      setMstyle(false);
+    }
+  };
+  const canExportBook = bookOpen && exportReady;
 
   return (
     <div id="app" dir={dir}>
@@ -127,6 +146,18 @@ export function Shell() {
         <button type="button" className="tb-btn" id="btnHelp" data-tip="tips.help" aria-label={t('top.helpAria')} onClick={() => openTab('/help/')}>
           <Icon name="LifeBuoy" />
           <span className="tb-label lbl-collapse">{t('top.help')}</span>
+        </button>
+        <button
+          type="button"
+          className="tb-btn"
+          id="btnExportBook"
+          data-tip="tips.export"
+          aria-label={t('next.exportBook')}
+          aria-disabled={canExportBook ? undefined : 'true'}
+          onClick={canExportBook ? () => exportOpen() : undefined}
+        >
+          <Icon name="PackageCheck" />
+          <span className="tb-label lbl-collapse">{t('next.exportBook')}</span>
         </button>
         <button
           type="button"
@@ -318,6 +349,7 @@ export function Shell() {
       <EnvironmentHost setCenter={setCenter} />
       <CovenantHost />
       {bookOpen ? <CoverMaker key={bk.book!.id + ':' + bk.book!.epoch} /> : null}
+      {bookOpen ? <ExportModal key={'export:' + bk.book!.id + ':' + bk.book!.epoch} /> : null}
     </div>
   );
 }

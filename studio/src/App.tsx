@@ -18,6 +18,7 @@ import './styles/covenant.css';
 import './generated/style.css';
 import './generated/preview.css';
 import './generated/cover.css';
+import './generated/export.css';
 import { BookProvider } from './book/BookProvider';
 import { StatsProvider } from './book/stats';
 import { DialogStackProvider } from './shell/Dialog';

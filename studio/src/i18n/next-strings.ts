@@ -34,6 +34,9 @@ const EN = {
   'next.themes.conflict': '“{name}” was changed on another device too. Both are kept: this device’s version is named “(this device)”.',
   'next.themes.full': 'Themes for every book holds at most 200 themes. Remove one, then keep “{name}” again.',
   'next.themes.refused': '“{name}” could not be kept with your account, so it stays on this device.',
+  // wave 5a: the top bar's opener of 1.0's export modal (1.0's own #btnExport opens it; 2.0's #btnExport stays the backup
+  // download, Part C ruling 2) — 1.0's words: its #btnExport's aria-label, which has no key
+  'next.exportBook': 'Export book',
 } as const;
 
 export type NextKey = keyof typeof EN;

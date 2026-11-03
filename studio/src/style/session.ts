@@ -310,7 +310,9 @@ export const styleState = (): State | null => session?.state ?? null;
    expression, no escape. SVG presentation values are checked by shape. An <img src> stands only as 2.0's own checked
    data: URL for the picture its bytes are (pictureSrc). */
 const TAGS = new Set(['div', 'span', 'p', 'b', 'i', 'em', 'strong', 'small', 'br', 'h4', 'button', 'img', 'label', 'select', 'option', 'optgroup', 'input',
-  'svg', 'g', 'path', 'rect', 'circle']);
+  'svg', 'g', 'path', 'rect', 'circle',
+  // wave 5a: the export modal's results (the validator's and the audit's lists, a failed line's error-dictionary link)
+  'ul', 'li', 'a']);
 const ATTRS = new Set(['class', 'id', 'title', 'alt', 'role', 'tabindex', 'type', 'value', 'label', 'for', 'min', 'max', 'step', 'checked', 'disabled', 'selected',
   'placeholder', 'xmlns', 'viewbox', 'focusable', 'width', 'height', 'x', 'y', 'cx', 'cy', 'r', 'rx', 'ry', 'd', 'fill', 'stroke', 'stroke-width',
   'stroke-linecap', 'stroke-linejoin', 'opacity', 'src', 'style',
@@ -319,7 +321,9 @@ const ATTRS = new Set(['class', 'id', 'title', 'alt', 'role', 'tabindex', 'type'
 const STYLE_PROPS = new Set(['font-family', 'font-size', 'font-weight', 'font-style', 'font-variant', 'text-align', 'text-transform', 'letter-spacing',
   'line-height', 'opacity', 'margin', 'margin-top', 'margin-bottom', 'display', '--sw',
   // wave 4c: the cover maker's swatches (background) and the hardcover legend (color, background), paint values only
-  'color', 'background', 'background-color']);
+  'color', 'background', 'background-color',
+  // wave 5a: the package inspector's file list (1.0 indents each file by its depth)
+  'padding-left']);
 /** Wave 4c: a paint value — a hex colour, rgb()/rgba() of plain numbers, a custom property of the app, or a keyword. */
 const PAINT_CSS = /^(#[0-9a-f]{3,8}|rgba?\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?\s*(,\s*[\d.]+%?\s*)?\)|var\(--[\w-]+\)|[a-z]+)$/i;
 const PAINT_PROPS = new Set(['color', 'background', 'background-color']);
@@ -329,6 +333,8 @@ const SVG_PAINT = /^(none|currentColor|#[0-9a-f]{3,8}|var\(--[\w-]+(,\s*#[0-9a-f
 const SVG_NUM = /^[-\d.\s,]*$/;
 const SVG_PATH = /^[\d\s.,MLHVCSQTAZmlhvcsqtaz+-]*$/;
 const MEDIA = /^[\w.+-]+\/[\w.+-]+$/;
+/** Wave 5a: 1.0's error-dictionary link (beukCodeLinkHtml: /help/errors/BEUK-<letter><3 digits>). */
+const HELP_LINK = /^\/help\/errors\/BEUK-[A-Z]\d{3}$/;
 
 function cleanStyle(v: string): string {
   const out: string[] = [];
@@ -345,6 +351,10 @@ function cleanStyle(v: string): string {
 function cleanAttr(el: Element, name: string, value: string): string | null {
   const n = name.toLowerCase();
   if (n.startsWith('data-') || n.startsWith('aria-')) return /^[\w-]+$/.test(n.slice(5)) ? value : null;
+  // wave 5a: a link only as 1.0's validator writes one (beukCodeLinkHtml): to this site's error dictionary, a new tab
+  if (n === 'href') return el.tagName.toLowerCase() === 'a' && HELP_LINK.test(value) ? value : null;
+  if (n === 'target') return el.tagName.toLowerCase() === 'a' && value === '_blank' ? value : null;
+  if (n === 'rel') return el.tagName.toLowerCase() === 'a' && /^noopener( noreferrer)?$/.test(value) ? value : null;
   if (!ATTRS.has(n)) return null;
   if (n === 'style') return cleanStyle(value) || null;
   if (n === 'src') {
