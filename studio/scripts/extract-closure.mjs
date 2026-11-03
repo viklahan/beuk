@@ -183,6 +183,18 @@ export const EXTRA_ROOTS = [
   // (src/export/state.ts), so 1.0's serializeBook (closure-serialize.js) writes the body 1.0 sends
   'bookMetaDefaults', 'bookPrintDefaults', 'bookSeriesNumberInto', 'bookIdNormalizeLegacyList', 'imSetSource', 'castSetHidden', 'bodyFaceOf', 'bookColourNormalize',
   'olNormalize', 'rsNormalize', 'normalizeStoreCheck', 'normalizeGoals', 'normalizeImportReport', 'acxNormalize', 'msNormalize', 'dictNormalize', 'bibleNormalize', 'nbNormalize',
+  // wave 5c (F3-F6): the rest of the export family, 1.0's own builders and dialogs — the Word document (buildDocxFiles,
+  // downloadDocx), the box set (its plan, package and download, the list and its Remove, a backup made a volume:
+  // localParseBackup + bookDocToVolume), the submission manuscript (its plan, package, download and dialog, wired by
+  // msInit) and the ACX audio script (its plan and readiness checks, the zip, the pronunciation guide, the dialog, wired
+  // by acxInit). Add a Book's import half stays supplied (BROWSER_SUPPLIED: boxSetExpandPick, manuscriptFileToVolume)
+  'buildDocxFiles', 'buildDocxBlob', 'downloadDocx', 'docxRun', 'docxInlineRuns', 'docxPara', 'docxContentParas', 'buildDocxDocumentXml', 'buildDocxStylesXml',
+  'buildDocxNumberingXml', 'docxDocumentRelsXml',
+  'bookWord', 'boxSetVolumesAll', 'boxSetPlan', 'renderBoxSetEntry', 'boxSetTitle', 'boxSetFilename', 'boxSetFiles', 'buildBoxSetEpub', 'renderBoxSetList',
+  'bookDocToVolume', 'boxSetVolumeMeta', 'boxSetNameTitle', 'localParseBackup',
+  'msPlan', 'msRoundWords', 'msDocumentXml', 'msHeaderXml', 'msStylesXml', 'msFiles', 'msBlob', 'msFilename', 'msDownload', 'msSummaryHtml', 'msRender', 'msOpen', 'msInit',
+  'acxBuildPlan', 'acxDetectCandidates', 'acxGuideRows', 'acxSetPron', 'acxZipEntries', 'acxBuildZipBlob', 'acxDownload', 'acxSummaryTxt', 'acxFileTxt', 'acxDocxFiles',
+  'acxRender', 'acxOpen', 'acxInit', 'acxListen',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -276,7 +288,10 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // stand-ins here (their sections of the modal are hidden): the print preflight and controls (5b), Word and the box set
   // (5c), the archive (wave 7)
   'openAuth', 'openSettings', 'setMobilePane',
-  'runPrintPreflight', 'renderPrintControls', 'downloadDocx', 'buildBoxSetEpub', 'renderBoxSetList', 'boxSetExpandPick', 'manuscriptFileToVolume', 'bookWord',
+  // (wave 5c lifts downloadDocx, buildBoxSetEpub, renderBoxSetList and bookWord: 1.0's own now.) Add a Book's import half
+  // stays supplied: a zip of books and a manuscript volume are 1.0's import (wave 6); 2.0's stand-ins read a Beuk backup
+  // with 1.0's own localParseBackup and bookDocToVolume (src/export/state.ts volumeFromFile)
+  'runPrintPreflight', 'renderPrintControls', 'boxSetExpandPick', 'manuscriptFileToVolume',
   'renderArchiveList', 'cloudLoadArchive'];
 /** Wave 5a: 1.0's serializeBook, emitted as its own sub-module (closure-serialize.js, createSerialize(share)): the main
  *  closure keeps `serializeBook` SUPPLIED (the wrap download's book stays wave 4c's), and the export's request body is
@@ -789,7 +804,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; downloadDocx: () => void; buildBoxSetEpub: () => void; renderBoxSetList: () => void; boxSetExpandPick: (files: unknown[]) => Promise<{ files: unknown[]; skipped: unknown[] }>; manuscriptFileToVolume: (f: unknown) => Promise<unknown>; bookWord: (n: number) => string; renderArchiveList: () => void; cloudLoadArchive: () => void };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; boxSetExpandPick: (files: unknown[]) => Promise<{ files: unknown[]; skipped: unknown[] }>; manuscriptFileToVolume: (f: unknown) => Promise<unknown>; renderArchiveList: () => void; cloudLoadArchive: () => void };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 

@@ -712,6 +712,32 @@ export type ClosureApi = {
   msNormalize: (m: unknown) => unknown;
   rightsNormalizeInto: (target: Record<string, unknown>, src: Record<string, unknown>) => void;
   LANG_PACKS: Record<string, unknown>;
+  // wave 5c (F3-F6): the Word document, the box set, the submission manuscript, the ACX script (1.0's own)
+  buildDocxFiles: () => EpubFile[];
+  buildDocxBlob: () => Promise<Blob>;
+  downloadDocx: () => Promise<void>;
+  boxSetPlan: () => Record<string, unknown>[];
+  boxSetFiles: (presetId?: string) => EpubFile[];
+  boxSetFilename: (presetId?: string) => string;
+  buildBoxSetEpub: () => Promise<void>;
+  renderBoxSetList: () => void;
+  bookDocToVolume: (book: unknown, fileName: string) => Record<string, unknown> & { id: string; meta: Record<string, unknown> };
+  localParseBackup: (text: string) => Record<string, unknown> | null;
+  msPlan: () => Record<string, unknown> & { body: unknown[]; rounded: number; words: number; warnings: string[] };
+  msRoundWords: (n: number) => number;
+  msFiles: (plan?: unknown) => EpubFile[];
+  msBlob: (plan?: unknown) => Promise<Blob>;
+  msFilename: () => string;
+  msRender: () => void;
+  msOpen: () => void;
+  msInit: () => void;
+  acxBuildPlan: () => Record<string, unknown> & { files: Record<string, unknown>[]; warnings: Record<string, unknown>[]; narrated: number };
+  acxDetectCandidates: (limit?: number) => { list: Record<string, unknown>[]; skipped: boolean };
+  acxZipEntries: (plan: unknown) => ({ path: string; text: string } | { path: string; docx: EpubFile[] })[];
+  acxBuildZipBlob: (plan?: unknown) => Promise<Blob>;
+  acxRender: () => void;
+  acxOpen: () => void;
+  acxInit: () => void;
 };
 /** One of 1.0's eleven EPUB platform presets (PLATFORM_PRESETS). */
 export type PlatformPreset = { id: string; name: string; sub: string; desc: string; idNote: string; check: string; suffix: string; guide?: boolean; appleOptions?: boolean };
@@ -1021,12 +1047,24 @@ export const printEnv: { controls: () => void; preflight: () => void; renderView
   renderView: () => undefined,
 };
 
-export const exportEnv: { openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; serialize: (() => Record<string, unknown>) | null } = {
+export const exportEnv: {
+  openAuth: () => void;
+  openSettings: () => void;
+  setMobilePane: (pane: string) => void;
+  serialize: (() => Record<string, unknown>) | null;
+  expandPick: (files: unknown[]) => Promise<{ files: unknown[]; skipped: unknown[] }>;
+  volumeFromFile: (file: unknown) => Promise<unknown>;
+} = {
   /** During an export call: 1.0's own serializeBook on the export's state (src/export/state.ts); else the wrap's (4c). */
   serialize: null,
   openAuth: () => undefined,
   openSettings: () => undefined,
   setMobilePane: () => undefined,
+  /** Wave 5c: Add a Book's pick and its volume (src/export/state.ts sets them). */
+  expandPick: async (files) => ({ files, skipped: [] }),
+  volumeFromFile: async () => {
+    throw new Error('not ready');
+  },
 };
 
 const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitledBook ?? [];
@@ -1118,14 +1156,10 @@ export function loadClosure(): Promise<Closure> {
         // wave 5b: print's own module (src/print/print.ts)
         runPrintPreflight: () => printEnv.preflight(),
         renderPrintControls: () => printEnv.controls(),
-        downloadDocx: () => undefined,
-        buildBoxSetEpub: () => undefined,
-        renderBoxSetList: () => undefined,
-        boxSetExpandPick: async () => ({ files: [], skipped: [] }),
-        manuscriptFileToVolume: async () => {
-          throw new Error('not in this wave');
-        },
-        bookWord: (n: number) => String(n),
+        // wave 5c: Add a Book's import half (src/export/state.ts: a Beuk backup through 1.0's own localParseBackup and
+        // bookDocToVolume; a zip or a manuscript is 1.0's import, wave 6)
+        boxSetExpandPick: (files: unknown[]) => exportEnv.expandPick(files),
+        manuscriptFileToVolume: (f: unknown) => exportEnv.volumeFromFile(f),
         renderArchiveList: () => undefined,
         cloudLoadArchive: () => undefined,
       });

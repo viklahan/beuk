@@ -156,7 +156,20 @@ export function arrivePrint(c: Closure, doc: Rec, s: Rec): Rec {
 
 /* ---- the session ---- */
 
-type Session = { ydoc: Y.Doc; state: State; ver: number; platform: unknown; print: Rec };
+type Session = { ydoc: Y.Doc; state: State; ver: number; platform: unknown; print: Rec; plans: Rec };
+
+/* ---- wave 5c (constraints 65, 66) ----
+   The submission manuscript's block (state.manuscript: msInit's fields) and the ACX audio plan (state.audio: acxInit's
+   narrator, format, rights line, sections switched on or off, pronunciation guide) are written back where serializeBook
+   writes them, as it writes them (msNormalize, acxNormalize), only when a call changed them; put back where they were,
+   the book is as it was (the print keys' rule, flushPrint). The box set's volumes (state.boxSetVolumes) are 1.0's
+   session-only list: never written into the book, kept for the open book (its Y.Doc) across the session's rebuilds, and
+   gone with another book (1.0's applyBookDoc: BEUK:metaleak). */
+export const PLAN_KEYS = ['audio', 'manuscript'] as const;
+export function planSerialized(c: Closure, st: Rec): Rec {
+  return { audio: c.api.acxNormalize(st.audio), manuscript: c.api.msNormalize(st.manuscript) };
+}
+const volumes = new WeakMap<Y.Doc, unknown[]>();
 let session: Session | null = null;
 /** Wave 5b: told of the export's state each time a call enters the session (print's own module runs on that state). */
 export const exportStateListeners = new Set<(st: State) => void>();
@@ -199,7 +212,11 @@ export function exportEnter(): Closure | null {
   if (s && depth > 0) exportFlush(); // an open call's preset is written before the state is built again
   styleSettle(); // a held Style edit is in the book before the export reads it
   const st = exportStateOf(c, ydoc);
-  session = { ydoc, state: st, ver: verOf(ydoc).n, platform: (st as Rec).exportPlatform, print: printSerialized(st as Rec) };
+  // wave 5c: the open book's box-set volumes, as this session left them (1.0 keeps them while the book stands)
+  let vols = volumes.get(ydoc);
+  if (!vols) volumes.set(ydoc, (vols = []));
+  (st as Rec).boxSetVolumes = vols;
+  session = { ydoc, state: st, ver: verOf(ydoc).n, platform: (st as Rec).exportPlatform, print: printSerialized(st as Rec), plans: planSerialized(c, st as Rec) };
   for (const f of exportStateListeners) f(st);
   return c;
 }
@@ -222,8 +239,76 @@ export function exportFlush(): void {
     wrote = true;
   }
   if (flushPrint(c, s)) wrote = true;
+  if (flushPlans(c, s)) wrote = true;
+  // wave 5c: 1.0's Remove makes a new list (state.boxSetVolumes = …filter…): the open book keeps the one it made
+  const vols = (s.state as Rec).boxSetVolumes;
+  if (Array.isArray(vols)) volumes.set(y, vols);
   if (wrote) s.ver = verOf(y).n;
 }
+
+/** Wave 5c: the manuscript block and the audio plan, written back (flushPrint's rule: a key put back to what 1.0 makes of
+ *  the value the book stored is that stored value again, absent if it had none). */
+const planBases = new WeakMap<Y.Doc, { raw: Stored; written: string }>();
+function storedPlans(y: Y.Doc): Stored {
+  const m = y.getMap<unknown>(META);
+  const out: Stored = {};
+  for (const k of PLAN_KEYS) out[k] = m.has(k) ? { has: true, v: getMetaValue(y, k) } : { has: false, v: undefined };
+  return out;
+}
+function flushPlans(c: Closure, s: Session): boolean {
+  const now = planSerialized(c, s.state as Rec);
+  const changed = PLAN_KEYS.filter((k) => !same(now[k], s.plans[k]));
+  if (!changed.length) return false;
+  const y = s.ydoc;
+  const cur = storedPlans(y);
+  let base = planBases.get(y);
+  if (!base || base.written !== JSON.stringify(cur)) planBases.set(y, (base = { raw: cur, written: '' }));
+  const was = planSerialized(c, { audio: base.raw.audio!.v, manuscript: base.raw.manuscript!.v });
+  const m = y.getMap<unknown>(META);
+  y.transact(() => {
+    for (const k of changed) {
+      const want = same(now[k], was[k]) ? base.raw[k]! : { has: true, v: now[k] };
+      if (want.has) {
+        placeKey(y, k);
+        setMeta(y, k as never, structuredClone(want.v) as never);
+      } else if (m.has(k)) m.delete(k);
+    }
+  });
+  base.written = JSON.stringify(storedPlans(y));
+  s.plans = now;
+  return true;
+}
+
+/** Wave 5c: Add a Book's volume from a file (1.0's manuscriptFileToVolume, its Beuk-backup half): 1.0's own
+ *  localParseBackup and bookDocToVolume, on the open book's state (the volume's defaults are the open book's), the
+ *  volume's values then corrected as the open book's are (exportSafe: a hostile volume is a hostile book). A
+ *  manuscript or a zip of books is 1.0's import (wave 6). The continuation 1.0's listener runs after it is in the
+ *  export session (exportResume). */
+export function volumeFromFile(file: unknown): Promise<unknown> {
+  const f = file as File;
+  const read = (async () => {
+    const name = String(f && f.name);
+    if (!/\.json$/i.test(name)) throw new Error('Beuk 2.0 adds Beuk backups (.json) here for now; manuscripts and zips of books come with the import');
+    const text = await f.text();
+    const vol = exportRun((cc) => {
+      const book = cc.api.localParseBackup(text);
+      if (!book) throw new Error('this is not a Beuk backup file');
+      const v = cc.api.bookDocToVolume(book, name);
+      exportSafe(cc, v as unknown as State & Rec, v);
+      return v;
+    });
+    if (!vol) throw new Error('unknown error');
+    return vol;
+  })();
+  return exportResume(read);
+}
+/** Wave 5c: Add a Book's pick (1.0's boxSetExpandPick): the files as picked; a zip is not opened here (1.0's import,
+ *  wave 6) — volumeFromFile names it. */
+export function expandPick(files: unknown[]): Promise<{ files: unknown[]; skipped: unknown[] }> {
+  return exportResume(Promise.resolve({ files: Array.isArray(files) ? files.slice() : [], skipped: [] }));
+}
+exportEnv.volumeFromFile = volumeFromFile;
+exportEnv.expandPick = expandPick;
 
 /* ---- wave 5b (constraint 58): the print settings, written back ----
    A print control changes 1.0's state.print* (initPrint's and initPrintView's listeners); the key it changed is
