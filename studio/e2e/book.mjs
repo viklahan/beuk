@@ -373,6 +373,8 @@ async function readOnlyRooms(page) {
   // view, the interior view paged — every setting where it was
   await page.waitForFunction(() => !!window.beukPrint, null, { timeout: 60_000 });
   done.push(await printBrowse(page));
+  // wave 5c (constraint 68): Word, the box set, the manuscript and the ACX script browsed, every setting where it was
+  done.push(await msAcxBoxBrowse(page));
   // wave 5a, round 2: the local pill's popover opened, then closed by a click outside and by Escape; nothing backed up
   done.push(await localPillBrowse(page));
   return done.join(' + ');
@@ -5156,8 +5158,9 @@ async function wave5bScreens(origin) {
           await p.evaluate(() => document.fonts.ready);
           await p.waitForTimeout(3800); // toasts gone
         }
-        // the export modal's other sections hidden in both (1.0 shows the later waves' sections 2.0 hides: what stands
-        // above the print section differs, and with it the subpixel position the region is cut at)
+        // the export modal's other sections hidden in both (wave 5c: 2.0 shows every section 1.0 shows but store-ready's
+        // entry, 5d; what stands above the print section must be alike, and with it the subpixel position the region is
+        // cut at)
         for (const p of [one, two]) {
           await p.evaluate(() => {
             const keep = document.getElementById('trimGrid').closest('.fmt-sec');
@@ -5223,6 +5226,448 @@ async function wave5bChecks(origin) {
     const r2 = await latency(origin, { delay: 200, count: 60, quick: true });
     note(`wave5b latency with the preview redrawing between keys (200 ms): p50 ${r2.p50.toFixed(1)} ms, p95 ${r2.p95.toFixed(1)} ms, max ${r2.max.toFixed(1)} ms over ${r2.n} keystrokes`);
     check(r2.p95 < LATENCY_P95_TARGET_MS, `wave5b constraint 61: p95 under ${LATENCY_P95_TARGET_MS} ms while the preview redraws between keys (${r2.p95.toFixed(1)} ms)`);
+  }
+}
+
+/* ---- wave 5c: Word, box sets, the submission manuscript, the ACX script (plan 2026-11-03, constraints 64-70) ----
+   Constraint 64: every package is 1.0's — 1.0's builders in 1.0's page (applyBookDoc of the same book) and in 2.0's
+   (the seam), every part hashed in each page: for every fixture, the Word document; the manuscript at every paper ×
+   font × italics with a contact block; the ACX zip at every format × rights line; the box set (two volumes made by
+   1.0's own bookDocToVolume, their generated ids named alike) at three presets. Masked, and shown to vary in 1.0 too:
+   the box set's dcterms:modified (the build's time) and a volume's id (uid() at each Add a Book). The real buttons on
+   one book in both apps: the same file names and every entry equal. 67: a hostile book and a hostile volume through
+   every format, each package walked in the page; the dialogs' DOM. 68: the dialogs in the no-edit gate (and in
+   readOnlyRooms, the 23-fixture gate); a box set of three fixtures built. 70: the latency line. Screenshots beside 1.0. */
+/** Every package of 1.0's four builders for the book on the page, each part hashed (see above). `two`: 2.0's seam. */
+const W5C_PACKAGES = ([two, vols]) => {
+  const hash = (s) => {
+    let a = 0x811c9dc5, b = 0x01000193 ^ 0x5bd1e995;
+    s = String(s);
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      a = Math.imul(a ^ c, 0x01000193) >>> 0;
+      b = Math.imul(b ^ c ^ (i & 255), 0x5bd1e995) >>> 0;
+    }
+    return a.toString(16) + '.' + b.toString(16) + '.' + s.length;
+  };
+  const go = (api, st) => {
+    const out = {};
+    const put = (k, files) => {
+      out[k] = files.map((f) => f.path + '=' + hash(k.startsWith('boxset') && f.path === 'OEBPS/package.opf' ? String(f.content).replace(/<meta property="dcterms:modified">[^<]*<\/meta>/, '') : f.content)).join(' ');
+    };
+    put('docx', api.buildDocxFiles());
+    const ms0 = st.manuscript, au0 = st.audio, bv0 = st.boxSetVolumes;
+    try {
+      for (const paper of ['letter', 'a4']) for (const font of ['times', 'courier']) for (const italics of ['italic', 'underline']) {
+        st.manuscript = api.msNormalize(Object.assign({}, ms0, { legalName: 'Ada Quill', address: '1 Harbour Row\nPortsalt', email: 'ada@example.org', paper, font, italics }));
+        put('ms ' + paper + ' ' + font + ' ' + italics, api.msFiles(api.msPlan()));
+      }
+      for (const format of ['both', 'docx', 'txt']) for (const rightsInClosing of [false, true]) {
+        st.audio = api.acxNormalize(Object.assign({}, au0, { format, rightsInClosing, narrator: 'Rae North' }));
+        out['acx ' + format + ' ' + rightsInClosing] = api.acxZipEntries(api.acxBuildPlan()).map((e) => e.path + '=' + ('text' in e ? hash(e.text) : e.docx.map((f) => f.path + ':' + hash(f.content)).join(','))).join(' ');
+      }
+      st.boxSetVolumes = vols.map((b, i) => {
+        const v = api.bookDocToVolume(JSON.parse(JSON.stringify(b)), 'vol' + i + '.json');
+        return JSON.parse(JSON.stringify(v).split(v.id).join('VOL' + i));
+      });
+      for (const p of ['generic', 'kdp', 'apple']) put('boxset ' + p, api.boxSetFiles(p));
+    } finally {
+      st.manuscript = ms0;
+      st.audio = au0;
+      st.boxSetVolumes = bv0;
+    }
+    return out;
+  };
+  /* global buildDocxFiles, msNormalize, msFiles, msPlan, acxNormalize, acxZipEntries, acxBuildPlan, bookDocToVolume, boxSetFiles, state */
+  return two ? window.beukExport.run((api, c) => go(api, c.getState())) : go({ buildDocxFiles, msNormalize, msFiles, msPlan, acxNormalize, acxZipEntries, acxBuildPlan, bookDocToVolume, boxSetFiles }, state);
+};
+const W5C_VOLS = () => ['real/reads-you', 'real/four-kitchens-book-one'].map((n) => fixtures.find((x) => x.name === n).book);
+async function wave5cParity(origin) {
+  const c1 = await newContext({ serviceWorkers: 'block' });
+  let n = 0, pk = 0, eq = 0;
+  const unequal = [];
+  try {
+    for (const f of fixtures) {
+      if (!Array.isArray(f.book.sections)) continue;
+      n++;
+      const c2 = await newContext({ serviceWorkers: 'block' });
+      let p2, id;
+      try {
+        const two = await w5aOpen(c2, origin, f.file);
+        p2 = await two.evaluate(W5C_PACKAGES, [true, W5C_VOLS()]);
+        id = (await exportBackup(two)).json.book.meta.bookId;
+        await harvestCsp(two);
+      } finally {
+        await c2.close();
+      }
+      const one = await openOne(c1, origin);
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(f.book, { meta: { bookId: id } }));
+      const p1 = await one.evaluate(W5C_PACKAGES, [false, W5C_VOLS()]);
+      await harvestCsp(one);
+      await one.close();
+      for (const k of Object.keys(p1)) {
+        pk++;
+        if (p1[k] === p2[k]) eq++;
+        else {
+          const a = p1[k].split(' '), b = String(p2[k] || '').split(' ');
+          unequal.push(`${f.name} ${k}: ${a.find((x, i) => x !== b[i]) || '(entry count)'}`);
+        }
+      }
+      if (Object.keys(p2).length !== Object.keys(p1).length) unequal.push(`${f.name}: ${Object.keys(p2).length} / ${Object.keys(p1).length} packages`);
+    }
+  } finally {
+    await c1.close();
+  }
+  check(eq === pk && pk === n * 18 && !unequal.length, `wave5c constraint 64: 1.0's Word, manuscript (8 settings), ACX (6) and box-set (3 presets) packages equal 2.0's part by part: ${eq} of ${pk} packages, ${n} fixtures${unequal.length ? ' — ' + unequal.slice(0, 4).join('; ') : ''}`);
+}
+
+/** Unzip in the page (1.0's JSZip there): every entry's text (a picture's base64; a .docx inside, its own entries). */
+const W5C_UNZIP = async ([b64]) => {
+  const read = async (data, opt) => {
+    const z = await window.JSZip.loadAsync(data, opt);
+    const out = {};
+    for (const [p, f] of Object.entries(z.files)) {
+      if (f.dir) continue;
+      if (/\.docx$/.test(p)) out[p] = await read(await f.async('uint8array'));
+      else out[p] = /\.(png|jpe?g|gif|webp|ttf|otf|woff2?)$/i.test(p) ? 'b64:' + (await f.async('base64')) : await f.async('string');
+    }
+    return out;
+  };
+  return read(b64, { base64: true });
+};
+/** A Word package's parts walked (studio/test/docx-safe.test.ts's rules, in the page's DOMParser). */
+const W5C_DOCX_HAZARDS = ([parts, where]) => {
+  const EMBEDS = new Set(['object', 'pict', 'imagedata', 'altchunk', 'attachedtemplate', 'frame', 'subdoc', 'control', 'oleobject', 'embed', 'fldsimple', 'shape', 'binarydata']);
+  const out = [];
+  for (const [p, text] of Object.entries(parts)) {
+    if (typeof text !== 'string') continue;
+    const doc = new DOMParser().parseFromString(text, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) {
+      out.push(where + ' ' + p + ': not well-formed');
+      continue;
+    }
+    for (const el of doc.getElementsByTagName('*')) {
+      const name = el.localName.toLowerCase();
+      if (EMBEDS.has(name)) out.push(where + ' ' + p + ': <' + el.tagName + '>');
+      if (name === 'instrtext' && (el.textContent || '').trim() !== 'PAGE') out.push(where + ' ' + p + ': field ' + (el.textContent || '').trim().slice(0, 30));
+      if (name === 'relationship') {
+        const ext = el.getAttribute('TargetMode') === 'External', tg = el.getAttribute('Target') || '';
+        if (ext && !(/\/hyperlink$/.test(el.getAttribute('Type') || '') && /^(https?:\/\/|mailto:)/i.test(tg))) out.push(where + ' ' + p + ': external ' + tg.slice(0, 40));
+        if (!ext && /^\s*(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(tg)) out.push(where + ' ' + p + ': unmarked ' + tg.slice(0, 40));
+      }
+      for (const a of el.attributes) if (/^\s*(?:javascript|vbscript)\s*:/i.test(a.value)) out.push(where + ' ' + p + ': ' + a.name + ' javascript:');
+    }
+  }
+  return out;
+};
+async function w5cDownloadAll(page, app, vols) {
+  const got = {};
+  await w5aOpenModal(page, '#btnExport');
+  got.docx = await w5aDownload(page, '#btnDownloadDocx');
+  await page.setInputFiles('#boxSetFileInput', vols);
+  await page.waitForFunction((n) => document.querySelectorAll('#boxSetList .bs-row').length === n, vols.length + 1, { timeout: 30_000 });
+  got.volIds = await page.evaluate((two) => (two ? window.beukExport.run((a, c) => c.getState().boxSetVolumes.map((v) => v.id)) : state.boxSetVolumes.map((v) => v.id)), app === 'two'); // eslint-disable-line no-undef
+  got.boxset = await w5aDownload(page, '#btnBuildBoxSet');
+  await page.click('#btnMsOpen');
+  await page.waitForFunction(() => document.getElementById('modalManuscript').classList.contains('open'));
+  got.ms = await w5aDownload(page, '#btnMsDownload');
+  await page.click('#btnMsClose');
+  await w5aOpenModal(page, '#btnExport');
+  await page.click('#btnAcxOpen');
+  await page.waitForFunction(() => document.getElementById('modalAcx').classList.contains('open'));
+  got.acx = await w5aDownload(page, '#btnAcxDownload');
+  await page.click('#btnAcxClose');
+  return got;
+}
+async function wave5cDownloads(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const vols = ['real/reads-you', 'real/four-kitchens-book-one'].map((n) => fixtures.find((x) => x.name === n).file);
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  try {
+    const two = await w5aOpen(ctx, origin, f.file);
+    const start = (await exportBackup(two)).json.book;
+    const g2 = await w5cDownloadAll(two, 'two', vols);
+    const one = await openOne(ctx, origin);
+    await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(f.book, start)); // eslint-disable-line no-undef
+    await one.waitForFunction(() => !!window.JSZip);
+    const g1 = await w5cDownloadAll(one, 'one', vols);
+    // the fields 1.0 itself makes vary per build, shown varying in 1.0: dcterms:modified (a second apart) and a
+    // volume's id (two Add a Book of the same file)
+    const vary = await one.evaluate(async (b) => {
+      /* global boxSetFiles, bookDocToVolume */
+      const opf = () => boxSetFiles().find((x) => x.path === 'OEBPS/package.opf').content.match(/<meta property="dcterms:modified">([^<]*)</)[1];
+      const m1 = opf();
+      await new Promise((r) => setTimeout(r, 1100));
+      return { modified: [m1, opf()], ids: [bookDocToVolume(b, 'a.json').id, bookDocToVolume(b, 'a.json').id] };
+    }, fixtures.find((x) => x.name === 'real/reads-you').book);
+    check(vary.modified[0] !== vary.modified[1] && vary.ids[0] !== vary.ids[1], `wave5c constraint 64: the two masked fields vary in 1.0 itself: dcterms:modified ${vary.modified.join(' → ')}; a volume's id ${vary.ids.join(' / ')}`);
+    const norm = async (g, d, key) => {
+      const m = await two.evaluate(W5C_UNZIP, [d.bytes.toString('base64')]);
+      if (key !== 'boxset') return m;
+      const out = {};
+      for (let [k, v] of Object.entries(m)) {
+        g.volIds.forEach((id, i) => {
+          k = k.split(id).join('VOL' + i);
+          v = String(v).split(id).join('VOL' + i);
+        });
+        if (k === 'OEBPS/package.opf') v = v.replace(/<meta property="dcterms:modified">[^<]*<\/meta>/, '');
+        out[k] = v;
+      }
+      return out;
+    };
+    for (const key of ['docx', 'boxset', 'ms', 'acx']) {
+      const a = await norm(g1, g1[key], key), b = await norm(g2, g2[key], key);
+      const ka = Object.keys(a), kb = Object.keys(b);
+      const diff = ka.filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]));
+      check(g1[key].name === g2[key].name && ka.join() === kb.join() && !diff.length, `wave5c constraint 64/69: the ${key} download is 1.0's — ${g2[key].name} (1.0: ${g1[key].name}), ${kb.length} entries in 1.0's order, every entry equal${key === 'boxset' ? ' (volume ids and dcterms:modified masked)' : ''}${diff.length ? ' — differs: ' + diff.slice(0, 3).join(', ') : ''}`);
+    }
+    const out = (await exportBackup(two)).json.book;
+    check(JSON.stringify(out) === JSON.stringify(start), 'wave5c constraint 68: after the four downloads (and two volumes added), the book exports exactly as before');
+    await harvestCsp(two);
+    await harvestCsp(one);
+  } finally {
+    await ctx.close();
+  }
+}
+
+async function wave5cHostile(origin) {
+  const base = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const hostile = w5aHostileBook(base.book);
+  const file = w4File('w5c-hostile.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: hostile }));
+  const volFile = w4File('w5c-hostile-volume.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: w5aHostileBook(fixtures.find((x) => x.name === 'real/reads-you').book) }));
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  try {
+    const page = await w5aOpen(ctx, origin, file);
+    const foreign = [];
+    page.on('request', (r) => {
+      const u = r.url();
+      if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:') && !u.startsWith('about:')) foreign.push(u);
+    });
+    const start = (await exportBackup(page)).json.book;
+    await w5aOpenModal(page);
+    await page.click('#btnMsOpen');
+    await page.waitForFunction(() => document.getElementById('modalManuscript').classList.contains('open'));
+    await page.fill('#msLegal', '<img src=x onerror="window.__pw=51">');
+    const domHaz = (sel) => page.evaluate((s) => [...document.querySelectorAll(s + ' *')].flatMap((el) => [
+      ...(/^(SCRIPT|IFRAME|OBJECT|EMBED|STYLE|LINK|BASE|FORM)$/.test(el.tagName) ? [el.tagName] : []),
+      ...[...el.attributes].filter((a) => /^on/i.test(a.name) || /javascript:/i.test(a.value) || (/^(src|href|srcset)$/i.test(a.name) && /^\s*(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(a.value))).map((a) => el.tagName + ' ' + a.name)]), sel);
+    const msDom = await domHaz('#modalManuscript');
+    await page.fill('#msLegal', '');
+    await page.click('#btnMsClose');
+    await w5aOpenModal(page);
+    await page.click('#btnAcxOpen');
+    await page.waitForFunction(() => document.getElementById('modalAcx').classList.contains('open'));
+    const acxDom = await domHaz('#modalAcx');
+    await page.click('#btnAcxClose');
+    const g = await w5cDownloadAll(page, 'two', [volFile, fixtures.find((x) => x.name === 'real/reads-you').file]);
+    const haz = [];
+    for (const key of ['docx', 'ms']) haz.push(...(await page.evaluate(W5C_DOCX_HAZARDS, [await page.evaluate(W5C_UNZIP, [g[key].bytes.toString('base64')]), key])));
+    const acx = await page.evaluate(W5C_UNZIP, [g.acx.bytes.toString('base64')]);
+    for (const [k, v] of Object.entries(acx)) {
+      if (typeof v === 'object') haz.push(...(await page.evaluate(W5C_DOCX_HAZARDS, [v, 'acx ' + k])));
+      else if (!/\.txt$/.test(k)) haz.push('acx: ' + k + ' is not a text file');
+    }
+    const box = await page.evaluate(W5C_UNZIP, [g.boxset.bytes.toString('base64')]);
+    const docs = Object.fromEntries(Object.entries(box).filter(([k, v]) => !String(v).startsWith('b64:') && k !== 'mimetype'));
+    haz.push(...(await page.evaluate(W5A_HAZARDS, [docs])));
+    check(!msDom.length && !acxDom.length, `wave5c constraint 67: the hostile book's manuscript and ACX dialogs (a hostile contact field typed): no script, handler, remote source or javascript: address (${[...msDom, ...acxDom].slice(0, 3).join('; ') || 'none'})`);
+    check(!haz.length, `wave5c constraint 67: the hostile book's Word document, manuscript, ACX zip (${Object.keys(acx).length} entries) and the box set with a hostile volume (${Object.keys(box).length} entries), every part parsed and walked: nothing that fetches, runs or leaves the package (${haz.slice(0, 4).join('; ') || 'none'})`);
+    check((await page.evaluate(() => window.__pw ?? null)) === null && foreign.length === 0, `wave5c constraint 67: nothing ran, and no request left the page (${foreign.slice(0, 3).join(', ') || 'none'})`);
+    const out = (await exportBackup(page)).json.book;
+    check(JSON.stringify(out) === JSON.stringify(start) && JSON.stringify(out) === JSON.stringify(expected(hostile, out)), 'wave5c constraint 68: the hostile book exports exactly as readBook reads it (after the dialogs, the four downloads and the volumes)');
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** Wave 5c (constraint 68): Word, the box set, the manuscript and the ACX script browsed without exporting — a volume
+ *  added and removed, the manuscript's paper and a contact field changed and put back, the ACX readiness checks drawn,
+ *  its format changed and put back, Listen pressed when the browser can speak — every dialog closed. Shared with
+ *  readOnlyRooms (the 23-fixture gate). */
+async function msAcxBoxBrowse(page) {
+  await w5aOpenModal(page);
+  await page.setInputFiles('#boxSetFileInput', fixtures.find((x) => x.name === 'real/reads-you').file);
+  await page.waitForFunction(() => document.querySelectorAll('#boxSetList [data-bsremove]').length === 1, null, { timeout: 30_000 });
+  await page.click('#boxSetList [data-bsremove]');
+  await page.waitForFunction(() => document.querySelectorAll('#boxSetList [data-bsremove]').length === 0);
+  await page.click('#btnMsOpen');
+  await page.waitForFunction(() => document.getElementById('modalManuscript').classList.contains('open'));
+  const paper = await page.$eval('#msPaper', (x) => x.value);
+  await page.selectOption('#msPaper', paper === 'a4' ? 'letter' : 'a4');
+  await page.selectOption('#msPaper', paper);
+  const legal = await page.$eval('#msLegal', (x) => x.value);
+  await page.fill('#msLegal', legal + ' Zq');
+  await page.$eval('#msLegal', (x) => x.dispatchEvent(new Event('change', { bubbles: true })));
+  await page.fill('#msLegal', legal);
+  await page.$eval('#msLegal', (x) => x.dispatchEvent(new Event('change', { bubbles: true })));
+  await page.click('#btnMsClose');
+  await w5aOpenModal(page);
+  await page.click('#btnAcxOpen');
+  await page.waitForFunction(() => document.getElementById('modalAcx').classList.contains('open') && !!document.getElementById('acxWarnings'));
+  const fmt = await page.$eval('#acxFormat', (x) => x.value);
+  await page.selectOption('#acxFormat', fmt === 'txt' ? 'docx' : 'txt');
+  await page.selectOption('#acxFormat', fmt);
+  const listen = await page.$('[data-acxlisten]:not([disabled])');
+  if (listen) await listen.click();
+  const nrows = await page.$$eval('#acxFiles tbody tr', (r) => r.length);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.getElementById('modalAcx').classList.contains('open'), null, { timeout: 10_000 });
+  return `Word / box set / manuscript / ACX (a volume added and removed; paper and a contact field changed and put back; the ACX checks drawn: ${nrows} files${listen ? ', Listen pressed' : ''}; its format changed and put back)`;
+}
+async function wave5cGate(origin) {
+  for (const name of ['real/lantern-coast-print', 'real/dartagnan-01-three-musketeers']) {
+    const f = fixtures.find((x) => x.name === name);
+    const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+    try {
+      const page = await w5aOpen(ctx, origin, f.file);
+      const before = (await exportBackup(page)).json.book;
+      const done = await msAcxBoxBrowse(page);
+      // a box set of three fixtures, built (and downloaded): never an edit
+      await w5aOpenModal(page);
+      const three = ['real/reads-you', 'real/four-kitchens-book-one', 'real/salt-road-book-one'].map((n) => fixtures.find((x) => x.name === n).file);
+      await page.setInputFiles('#boxSetFileInput', three);
+      await page.waitForFunction(() => document.querySelectorAll('#boxSetList .bs-row').length === 4, null, { timeout: 30_000 });
+      const d = await w5aDownload(page, '#btnBuildBoxSet');
+      await page.click('#btnCloseExport');
+      const after = (await exportBackup(page)).json.book;
+      check(JSON.stringify(after) === JSON.stringify(before) && JSON.stringify(after) === JSON.stringify(expected(f.book, after)), `wave5c constraint 68: ${name}: ${done}; a box set of three fixtures built (${d.name}, ${d.bytes.length} bytes) — the export is unchanged`);
+      const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /acx|manuscript|boxset|docx/i.test(k)));
+      check(keys.length === 0, `wave5c constraint 68: no per-device key is written (1.0 keeps none: ${keys.join(', ') || 'none'})`);
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+  // a setting left changed is an edit, in 1.0's shape, and 1.0 reads it back
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  try {
+    const page = await w5aOpen(ctx, origin, f.file);
+    await w5aOpenModal(page);
+    await page.click('#btnMsOpen');
+    await page.waitForFunction(() => document.getElementById('modalManuscript').classList.contains('open'));
+    await page.selectOption('#msPaper', 'a4');
+    await page.fill('#msByline', 'R. North');
+    await page.$eval('#msByline', (x) => x.dispatchEvent(new Event('change', { bubbles: true })));
+    await page.click('#btnMsClose');
+    await w5aOpenModal(page);
+    await page.click('#btnAcxOpen');
+    await page.waitForFunction(() => document.getElementById('modalAcx').classList.contains('open'));
+    await page.fill('#acxNarrator', 'Rae North');
+    await page.$eval('#acxNarrator', (x) => x.dispatchEvent(new Event('change', { bubbles: true })));
+    await page.click('#btnAcxClose');
+    const out = (await exportBackup(page)).json.book;
+    const w = expected(f.book, out);
+    check(out.manuscript.paper === 'a4' && out.manuscript.byline === 'R. North' && out.audio.narrator === 'Rae North' && Object.keys(out).join() === Object.keys(w).join(), `wave5c constraint 65: the paper, a pen name and the narrator left changed are 1.0's manuscript / audio in their places (${out.manuscript.paper}, ${out.manuscript.byline}, ${out.audio.narrator})`);
+    const file = w4File('w5c-changed.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: out }));
+    const one = await openOne(ctx, origin);
+    await one.setInputFiles('#localBackupInput', file);
+    await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
+    const back = await one.evaluate(() => [state.manuscript.paper, state.manuscript.byline, state.audio.narrator]); // eslint-disable-line no-undef
+    check(JSON.stringify(back) === JSON.stringify(['a4', 'R. North', 'Rae North']), `wave5c constraint 65: 1.0 reads back what 2.0 wrote (${JSON.stringify(back)})`);
+    await harvestCsp(page);
+    await harvestCsp(one);
+  } finally {
+    await ctx.close();
+  }
+}
+
+async function wave5cScreens(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const vols = ['real/reads-you', 'real/four-kitchens-book-one'].map((n) => fixtures.find((x) => x.name === n).file);
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  try {
+    for (const run of [{ theme: 'paper' }, { theme: 'candlelight' }, { theme: 'paper', lang: 'ar' }]) {
+      const tag = run.theme + (run.lang ? '-' + run.lang : '');
+      const prep = (ctx) => ctx.addInitScript(([th, l]) => {
+        try {
+          localStorage.setItem('beuk.theme.v1', th);
+          if (l) localStorage.setItem('beuk.uiLang.v1', l);
+        } catch {
+          /* no storage */
+        }
+      }, [run.theme, run.lang]);
+      const c1 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      const c2 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      await prep(c1);
+      await prep(c2);
+      try {
+        const one = await watch(await c1.newPage());
+        await one.goto(origin + '/studio');
+        await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+        await one.setInputFiles('#localBackupInput', f.file);
+        await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
+        await one.addStyleTag({ content: ONE_HIDE });
+        const two = await w5aOpen(c2, origin, f.file);
+        for (const p of [one, two]) {
+          await w5aOpenModal(p, '#btnExport');
+          await p.setInputFiles('#boxSetFileInput', vols);
+          await p.waitForFunction(() => document.querySelectorAll('#boxSetList .bs-row').length === 3, null, { timeout: 30_000 });
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(3800); // toasts gone
+          // the store-ready entry is the one part of the modal 2.0 still hides (5d): hidden in both
+          await p.evaluate(() => {
+            const st = document.querySelector('#modalExport .st-entry');
+            if (st) st.style.display = 'none';
+          });
+        }
+        const secOf = (p, id) => p.locator('#' + id).locator('xpath=ancestor::div[contains(@class,"fmt-sec")]');
+        for (const id of ['btnDownloadDocx', 'btnMsOpen', 'btnAcxOpen', 'boxSetList']) {
+          const la = secOf(one, id), lb = secOf(two, id);
+          await la.scrollIntoViewIfNeeded();
+          await lb.scrollIntoViewIfNeeded();
+          const [sa, sb] = [await la.screenshot(), await lb.screenshot()];
+          writeFileSync(path.join(OUT, `w5c-sec-${id}-${tag}-one.png`), sa);
+          writeFileSync(path.join(OUT, `w5c-sec-${id}-${tag}-two.png`), sb);
+          const d = await pixelDiff(diffPage, sa, sb);
+          check(d.ratio <= PIXEL_TOLERANCE, `wave5c screenshots ${tag}: the section of #${id} differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        }
+        for (const [opener, modal] of [['#btnMsOpen', 'modalManuscript'], ['#btnAcxOpen', 'modalAcx']]) {
+          for (const p of [one, two]) {
+            if (!(await p.evaluate(() => document.getElementById('modalExport').classList.contains('open')))) await w5aOpenModal(p, '#btnExport');
+            await p.click(opener);
+            await p.waitForFunction((m) => document.getElementById(m).classList.contains('open'), modal);
+            await p.evaluate(() => document.fonts.ready);
+            await p.waitForTimeout(500);
+          }
+          const [ma, mb] = [await one.locator('#' + modal + ' .modal').screenshot(), await two.locator('#' + modal + ' .modal').screenshot()];
+          writeFileSync(path.join(OUT, `w5c-dlg-${modal}-${tag}-one.png`), ma);
+          writeFileSync(path.join(OUT, `w5c-dlg-${modal}-${tag}-two.png`), mb);
+          const d = await pixelDiff(diffPage, ma, mb);
+          check(d.ratio <= PIXEL_TOLERANCE, `wave5c screenshots ${tag}: #${modal} differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+          writeFileSync(path.join(OUT, `w5c-two-${modal}-${tag}.png`), await two.screenshot());
+          writeFileSync(path.join(OUT, `w5c-one-${modal}-${tag}.png`), await one.screenshot());
+          for (const p of [one, two]) await p.click(modal === 'modalAcx' ? '#btnAcxClose' : '#btnMsClose');
+        }
+        await harvestCsp(one);
+        await harvestCsp(two);
+      } finally {
+        await c1.close();
+        await c2.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+}
+
+async function wave5cChecks(origin) {
+  const only = (process.env.W5C_PARTS || 'parity,downloads,hostile,gate,screens,latency').split(',');
+  if (only.includes('parity')) await wave5cParity(origin);
+  if (only.includes('downloads')) await wave5cDownloads(origin);
+  if (only.includes('hostile')) await wave5cHostile(origin);
+  if (only.includes('gate')) await wave5cGate(origin);
+  if (only.includes('screens')) await wave5cScreens(origin);
+  // constraint 70: the editor's typing with these dialogs mounted and closed (#5's measure, and the redraws between keys)
+  if (only.includes('latency') && !(process.env.E2E_ONLY || '').split(',').includes('latency')) {
+    const r = await latency(origin);
+    note(`wave5c latency (the Word, box-set, manuscript and ACX dialogs mounted, closed): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+    check(r.p95 < LATENCY_P95_TARGET_MS, `wave5c constraint 70: p95 under ${LATENCY_P95_TARGET_MS} ms on Dumas with these dialogs closed (${r.p95.toFixed(1)} ms)`);
+    const r2 = await latency(origin, { delay: 200, count: 60, quick: true });
+    note(`wave5c latency with the preview redrawing between keys (200 ms): p50 ${r2.p50.toFixed(1)} ms, p95 ${r2.p95.toFixed(1)} ms, max ${r2.max.toFixed(1)} ms over ${r2.n} keystrokes`);
+    check(r2.p95 < LATENCY_P95_TARGET_MS, `wave5c constraint 70: p95 under ${LATENCY_P95_TARGET_MS} ms while the preview redraws between keys (${r2.p95.toFixed(1)} ms)`);
   }
 }
 
@@ -5625,6 +6070,7 @@ try {
   if (run('userThemes')) await userThemesChecks(srv.origin);
   if (run('wave5a')) await wave5aChecks(srv.origin);
   if (run('wave5b')) await wave5bChecks(srv.origin);
+  if (run('wave5c')) await wave5cChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
