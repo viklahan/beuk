@@ -329,7 +329,12 @@ export const PRINT_ROOTS = ['initPrint', 'initPrintView', 'renderPrintControls',
   'printPressReport', 'trimSize', 'TRIM_SIZES', 'TRIM_GROUPS', 'printMargins', 'printPageEstimate', 'kdpGutterMin', 'printPictureBookOn', 'printBleedOn',
   'openPrintInteriorView', 'renderPrintView', 'pivRebuild', 'pivSyncChrome', 'buildPrintViewModel', 'piv', 'pivSpreadPages',
   'auditPrintInterior', 'runPrintPreflight', 'preflightJumpTo', 'printPlacements', 'imagePixelSize',
-  'printReadyPdf', 'printReadyUi', 'printReadyRender'];
+  'printReadyPdf', 'printReadyUi', 'printReadyRender',
+  // what 1.0's print self-checks call (re-expressed in studio/test/print-selfchecks.test.ts): already lifted, named here
+  // so the module hands them out
+  'buildPrintCss', 'printTypeCss', 'pivGeometry', 'PIV_PX', 'inCss', 'cssStr', 'printHeadText', 'printFolioPos', 'trimOptionsHtml', 'pivEnsureStyle',
+  'printSolidTintCss', 'printBlendHex', 'printSolidSvgHtml', 'printPressCss', 'PRINT_PAGE', 'PRINT_INK', 'printEdgeSections', 'printBleedConfig', 'kdpEdgeMin',
+  'buildBookCss', 'printHeadsConfig', 'printBaseFontPt', 'printNotesAtFoot', 'isPairedSpread', 'printMarginsAuto', 'inBook'];
 /** What the print module takes from its page and from the main studio (src/print/print.ts). */
 export const PRINT_SUPPLIED = ['t', 'document', 'window', 'setTimeout', 'requestAnimationFrame', 'ResizeObserver', 'UI_STRINGS', 'getUiLang', 'uiLangState',
   'fmtDateIntl', 'icons', '$', 'downloadBlob', 'samplePicsHold', 'samplePicsReady', 'Image',
