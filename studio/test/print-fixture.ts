@@ -26,3 +26,15 @@ export function installCanvas(): void {
     }
   };
 }
+
+/** Review (Important 1): a title and an author shaped to break out of the print CSS's running-head string. 1.0's cssStr
+ *  escapes \ and " only, so a raw newline ends the CSS string in a browser; the quoted url() carries a ')' that a
+ *  plain url() pattern stops at. */
+export const CSS_TITLE = "x\n}\n}\nbody{background:url('https://evil.example/t)')}";
+export const CSS_AUTHOR = "y\r}\f@media all{p{background-image:url('https://evil.example/a)')}}";
+/** The CSS the print document carries (every <style>), from its text. */
+export const styleText = (html: string): string => [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
+/** That CSS as a browser reads it as CSS: every string (one a raw newline does not break) masked, but a url()'s own
+ *  quoted address kept (it is loaded, not shown). */
+export const cssOutsideStrings = (css: string): string =>
+  css.replace(/"(?:[^"\\\n\r\f]|\\[\s\S])*"|'(?:[^'\\\n\r\f]|\\[\s\S])*'/g, (m: string, at: number, all: string) => (/url\(\s*$/i.test(all.slice(Math.max(0, at - 12), at)) ? m : '""'));

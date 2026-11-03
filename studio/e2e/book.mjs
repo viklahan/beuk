@@ -4962,6 +4962,10 @@ async function wave5bDownloads(origin) {
 async function wave5bHostile(origin) {
   const base = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
   const hostile = w5aHostileBook(base.book);
+  // second review (Important 1): a title and an author that leave the print CSS's running-head string by a raw newline
+  // (1.0's cssStr escapes \ and " only) with a quoted url() carrying ')'
+  hostile.meta.title = "x\n}\n}\nbody{background:url('https://evil.example/t)')}" + hostile.meta.title;
+  hostile.meta.author = "y\r}\f@media all{p{background-image:url('https://evil.example/a)')}}" + hostile.meta.author;
   const file = w4File('w5b-hostile.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: hostile }));
   const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
   try {
@@ -5005,6 +5009,11 @@ async function wave5bHostile(origin) {
     const docHaz = await page.evaluate(W5A_HAZARDS, [{ frame: frame.srcdoc }]);
     check(frame.on.length === 0 && frame.runs === 0 && frame.remote.length === 0 && frame.pw === null && docHaz.length === 0, `wave5b constraint 59: the hostile book in the print view's frame: no handler, script or remote source in its own document; nothing ran (${JSON.stringify({ on: frame.on.slice(0, 3), runs: frame.runs, remote: frame.remote.slice(0, 3), pw: frame.pw, docHaz: docHaz.slice(0, 3) })})`);
     check(fileHaz.length === 0, `wave5b constraint 59: the hostile book's Download Print HTML (${file1.bytes.length} bytes, parsed and walked): no script, handler or remote request (${fileHaz.slice(0, 4).join('; ') || 'none'})`);
+    // its stylesheets as a browser reads them as CSS (strings a raw newline does not break masked; a url()'s own quoted
+    // address kept): no address of another origin
+    const asCss = (html) => [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n')
+      .replace(/"(?:[^"\\\n\r\f]|\\[\s\S])*"|'(?:[^'\\\n\r\f]|\\[\s\S])*'/g, (m, at, all) => (/url\(\s*$/i.test(all.slice(Math.max(0, at - 12), at)) ? m : '""'));
+    check(!/evil\.example/.test(asCss(file1.bytes.toString('utf8'))) && !/evil\.example/.test(asCss(frame.srcdoc)), 'wave5b constraint 59: the hostile title and author (a raw newline out of the running head\'s CSS string, a quoted url() with a ")") load nothing from another origin in the file\'s or the frame\'s stylesheets');
     check(pivOn === 0 && pf === 0 && (await page.evaluate(() => window.__pw ?? null)) === null, `wave5b constraint 59: the hostile book's interior view (${Math.min(spreads, 40)} of ${spreads} spreads) and preflight: no handler or script; nothing ran`);
     const out = (await exportBackup(page)).json.book;
     check(JSON.stringify(out) === JSON.stringify(start) && JSON.stringify(out) === JSON.stringify(expected(hostile, out)), 'wave5b constraint 60: the hostile book exports exactly as readBook reads it (after the print view, the file, the interior view and the preflight)');

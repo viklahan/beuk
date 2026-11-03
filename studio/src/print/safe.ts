@@ -33,26 +33,62 @@ const foreign = (v: string | null | undefined): boolean => {
  *  vbscript: scheme is looked for in every other attribute (the coordinator's note: not only the address ones). */
 const isTextAttr = (n: string): boolean => n === 'alt' || n === 'title' || n === 'placeholder' || n === 'content' || n.startsWith('aria-');
 const scheme = (v: string): boolean => /^\s*(?:javascript|vbscript)\s*:/i.test(v.replace(/[\u0000- ]/g, ''));
-/** A CSS string literal. */
-const CSS_STR = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g;
+/** A CSS string literal as a browser reads it: a raw newline (\n, \r, \f) ends it (a "bad string"). 1.0's cssStr
+ *  escapes \ and " only, so a newline in the title or author ends the running head's string there (second review,
+ *  Important 1): what follows is CSS, and is read here as CSS. */
+const CSS_STR = /"(?:[^"\\\n\r\f]|\\[\s\S])*"|'(?:[^'\\\n\r\f]|\\[\s\S])*'/g;
+/** The quoted runs a raw newline breaks, read left to right as a browser does (a bad string): each span from its
+ *  quote to the next same quote (as a looser reading would take it for one string). */
+function brokenRuns(c: string): [number, number][] {
+  const broken: [number, number][] = [];
+  for (let i = 0; i < c.length; i++) {
+    const q = c[i];
+    if (q !== '"' && q !== "'") continue;
+    let j = i + 1, bad = false;
+    for (; j < c.length && c[j] !== q; j++) {
+      if (c[j] === '\\') j++;
+      else if (c[j] === '\n' || c[j] === '\r' || c[j] === '\f') bad = true;
+    }
+    if (bad) broken.push([i, Math.min(j + 1, c.length)]);
+    i = j;
+  }
+  return broken;
+}
+/** Each quoted run a raw newline breaks, its newlines made spaces (one string again: the book's words). */
+const mendRuns = (css: string): string => {
+  let out = css;
+  for (const [a, b] of brokenRuns(css).reverse()) out = out.slice(0, a) + out.slice(a, b).replace(/[\n\r\f]/g, ' ') + out.slice(b);
+  return out;
+};
 const unquote = (s: string): string => s.slice(1, -1);
 /** image-set() / -webkit-image-set(): their strings are addresses the browser loads (no url() needed). */
-const IMAGE_SET = /(?:-webkit-)?image-set\s*\(((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\([^()]*\)|[^'"()])*)\)/gi;
-const URL_FN = /url\(\s*(['"]?)([^'")]*)\1\s*\)/gi;
+const IMAGE_SET = /(?:-webkit-)?image-set\s*\(((?:"(?:[^"\\\n\r\f]|\\[\s\S])*"|'(?:[^'\\\n\r\f]|\\[\s\S])*'|\([^()]*\)|[^'"()])*)\)/gi;
+/** url(): its argument quoted (a ')' inside the quotes included) or bare. */
+const URL_FN = /url\(\s*(?:"((?:[^"\\\n\r\f]|\\[\s\S])*)"|'((?:[^'\\\n\r\f]|\\[\s\S])*)'|([^'"()\s]*))\s*\)/gi;
 const imageSetForeign = (args: string): boolean => (args.match(CSS_STR) || []).some((s) => foreign(unquote(s)));
+/** The spans of the CSS's strings. */
+const stringSpans = (c: string): [number, number][] => [...c.matchAll(CSS_STR)].map((m) => [m.index!, m.index! + m[0].length]);
+const inSpans = (i: number, spans: [number, number][]): boolean => spans.some(([a, b]) => i > a && i < b);
 /** CSS that names another origin (url(), image-set(), @import) or runs script (expression(), -moz-binding, behavior,
  *  javascript:) — the keywords looked for outside the stylesheet's strings: the running head is the book's title and
- *  author as a CSS string, and "Behavior: …" there is the book's words (review, Critical 1). */
+ *  author as a CSS string, and "Behavior: …" there is the book's words (review, Critical 1). Fail closed (second
+ *  review, Important 1): a quoted run a raw newline breaks, or a url( that no url() reading accounts for, is foreign. */
 function cssForeign(css: string): boolean {
   const c = String(css || '').replace(/\/\*[\s\S]*?\*\//g, '');
+  if (brokenRuns(c).length) return true;
   const outside = c.replace(CSS_STR, '""');
   if (/@import|expression\s*\(|-moz-binding|behavior\s*:|javascript:/i.test(outside)) return true;
   if (/\\/.test(outside)) return true; // an escape outside a string can hide a url( or a scheme
-  let m: RegExpExecArray | null;
-  URL_FN.lastIndex = 0;
-  while ((m = URL_FN.exec(c))) if (foreign(m[2])) return true;
-  IMAGE_SET.lastIndex = 0;
-  while ((m = IMAGE_SET.exec(c))) if (imageSetForeign(m[1] || '')) return true;
+  const spans = stringSpans(c);
+  let parsed = 0;
+  for (const m of c.matchAll(URL_FN)) {
+    if (inSpans(m.index!, spans)) continue;
+    parsed++;
+    if (foreign(m[1] ?? m[2] ?? m[3] ?? '')) return true;
+  }
+  // every url( read as CSS (outside the strings) is one of the url() read above, or the CSS is not trusted
+  if ((outside.match(/url\(/gi) || []).length !== parsed) return true;
+  for (const m of c.matchAll(IMAGE_SET)) if (imageSetForeign(m[1] || '')) return true;
   return false;
 }
 /** `fn` on the CSS outside its strings (the strings kept as they are). */
@@ -68,9 +104,9 @@ const outsideStrings = (css: string, fn: (part: string) => string): string => {
 /** A url() or image-set() that names another origin made none; @import, script in CSS and escapes outside a string
  *  taken out (the strings — the book's words — kept). */
 const cssDefang = (css: string): string =>
-  outsideStrings(String(css), (p) => p.replace(/\\/g, '').replace(/@import[^;]*;?/gi, '').replace(/expression\s*\(|-moz-binding|behavior\s*:|javascript:/gi, 'x-'))
+  outsideStrings(mendRuns(String(css)), (p) => p.replace(/\\/g, '').replace(/@import[^;]*;?/gi, '').replace(/expression\s*\(|-moz-binding|behavior\s*:|javascript:/gi, 'x-'))
     .replace(IMAGE_SET, (all, args: string) => (imageSetForeign(args || '') ? 'none' : all))
-    .replace(URL_FN, (all, _q, u) => (foreign(u) ? 'none' : all));
+    .replace(URL_FN, (all: string, a?: string, b?: string, d?: string) => (foreign(a ?? b ?? d ?? '') ? 'none' : all));
 
 /** What the walk took out (0 for an honest book), for the tests and the e2e. */
 export const printSafety = { docs: 0, cleaned: 0, removed: 0, flowsCleaned: 0 };
@@ -106,7 +142,9 @@ export function cleanPrintDoc(html: string): string {
       }
     }
     if (name === 'style' && cssForeign(el.textContent || '')) {
-      el.textContent = cssDefang(el.textContent || '');
+      const css = cssDefang(el.textContent || '');
+      // fail closed: what the defanging could not make safe is not kept at all
+      el.textContent = cssForeign(css) ? '' : css;
       removed++;
     }
   }

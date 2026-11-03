@@ -14,7 +14,7 @@ import { styleRelease } from '../src/style/session';
 import { fixtures } from './fixtures';
 import { hostileExportBook, hostileNonStringBook } from './export-fixture';
 import { hazards } from './hazards';
-import { installCanvas } from './print-fixture';
+import { CSS_AUTHOR, CSS_TITLE, cssOutsideStrings, installCanvas, styleText } from './print-fixture';
 
 /* Wave 5b, task 1 — constraint 59 (review focus #3): safety, print's turn. The print document (1.0's buildPrintHtml)
    is a file the writer opens and the print frame's srcdoc. A hostile book (test/export-fixture.ts: 5a's) through it:
@@ -148,6 +148,24 @@ describe("wave 5b: the print document is safe (constraint 59)", () => {
     expect(noScheme(html)).toEqual([]);
     expect(hazards(html, 'print')).toEqual([]);
     y.destroy();
+  });
+
+  /* Second review (Important 1): a raw newline in the title or author ends 1.0's CSS string (cssStr escapes \ and "
+     only); with a quoted url() carrying ')' the stylesheet loaded from another origin and the walk saw nothing. */
+  it('a title and an author with a raw newline and a quoted url() carrying ")" cannot load from another origin', () => {
+    for (const [title, author] of [[CSS_TITLE, 'A. Writer'], ['A Title', CSS_AUTHOR], [CSS_TITLE, CSS_AUTHOR]]) {
+      const b = structuredClone(fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!.book) as Rec & { meta: Rec };
+      b.meta.title = title;
+      b.meta.author = author;
+      const y = onDesk(b);
+      printSinks.on = false;
+      const raw = build(() => undefined);
+      printSinks.on = true;
+      expect(cssOutsideStrings(styleText(raw)), '1.0 builds it into its stylesheet, as CSS').toMatch(/evil.example/);
+      for (const [name, html] of [['the document', build(() => undefined)], ['the walk alone', cleanPrintDoc(raw)]] as const) expect(cssOutsideStrings(styleText(html)), name).not.toMatch(/evil.example/);
+      for (const [name, fn] of TOGGLES.entries()) expect(cssOutsideStrings(styleText(build(fn))), 'toggle ' + name).not.toMatch(/evil.example/);
+      y.destroy();
+    }
   });
 
   /* Review (Important 2): CSS that loads from elsewhere without url() — image-set() with a bare string. */
