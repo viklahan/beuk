@@ -1047,12 +1047,34 @@ export const printEnv: { controls: () => void; preflight: () => void; renderView
   renderView: () => undefined,
 };
 
+/** Review of 5c (Minor 2): a fetched Response whose body readers hand back values that resume in the export session. */
+function resumeBody(r: Response): Response {
+  for (const k of ['text', 'arrayBuffer', 'json', 'blob'] as const) {
+    const f = (r as unknown as Record<string, unknown>)[k];
+    if (typeof f !== 'function') continue;
+    const bound = (f as (...a: unknown[]) => Promise<unknown>).bind(r);
+    Object.defineProperty(r, k, { value: () => exportEnv.resume(bound()), configurable: true });
+  }
+  return r;
+}
+/** Review of 5c (Minor 2): the crypto 1.0's lifted code reads — the page's, with subtle.digest resuming in the session. */
+const closureCrypto = {
+  getRandomValues: <T extends ArrayBufferView | null>(a: T): T => globalThis.crypto.getRandomValues(a as never) as T,
+  randomUUID: () => globalThis.crypto.randomUUID(),
+  get subtle() {
+    const sub = globalThis.crypto?.subtle;
+    if (!sub) return undefined;
+    return { digest: (alg: AlgorithmIdentifier, data: BufferSource) => exportEnv.resume(sub.digest(alg, data)) };
+  },
+};
+
 export const exportEnv: {
   openAuth: () => void;
   openSettings: () => void;
   setMobilePane: (pane: string) => void;
   serialize: (() => Record<string, unknown>) | null;
   resume: <T>(v: T) => T;
+  resuming: () => boolean;
   expandPick: (files: unknown[]) => Promise<{ files: unknown[]; skipped: unknown[] }>;
   volumeFromFile: (file: unknown) => Promise<unknown>;
 } = {
@@ -1064,6 +1086,7 @@ export const exportEnv: {
   /** Wave 5c: a value 1.0's export code waits on, held to the export session while an export call is running
    *  (src/export/state.ts: exportResume); as it is otherwise. */
   resume: (v) => v,
+  resuming: () => false,
   /** Wave 5c: Add a Book's pick and its volume (src/export/state.ts sets them). */
   expandPick: async (files) => ({ files, skipped: [] }),
   volumeFromFile: async () => {
@@ -1157,7 +1180,15 @@ export function loadClosure(): Promise<Closure> {
         samplePicsHold: () => false,
         serializeBook: () => (exportEnv.serialize ? exportEnv.serialize() : coverEnv.serializeBook()),
         downloadBlob: (blob: Blob, name: string) => coverEnv.downloadBlob(blob, name),
-        fetch: ((input: RequestInfo | URL, init?: RequestInit) => exportEnv.resume(coverEnv.fetch(input, init))) as typeof fetch,
+        fetch: ((input: RequestInfo | URL, init?: RequestInit) => {
+          const p = coverEnv.fetch(input, init);
+          // review of 5c (Minor 2): inside an export call, the body read after it (text, arrayBuffer: 1.0's script and
+          // display faces) resumes in the session too, so the next step of 1.0's code still reads the open book's state
+          return exportEnv.resuming() ? exportEnv.resume(p.then(resumeBody)) : p;
+        }) as typeof fetch,
+        // review of 5c (Minor 2): the page's crypto, its digest resuming in the export session (1.0 checks each script
+        // face's sha256 between its fetches); everything else is the page's own
+        crypto: closureCrypto,
         // wave 5a (F1, F7, F8): the export's surroundings (exportEnv, src/export), and the later waves' parts of 1.0's
         // initExport, inert (their sections are hidden)
         openAuth: () => exportEnv.openAuth(),

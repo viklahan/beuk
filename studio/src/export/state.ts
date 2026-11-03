@@ -311,6 +311,7 @@ exportEnv.volumeFromFile = volumeFromFile;
 exportEnv.expandPick = expandPick;
 /** Wave 5c: inside an export call, what 1.0's code waits on resumes in the session (exportResume); else as it is. */
 exportEnv.resume = <T,>(v: T): T => (depth > 0 || lingering > 0 ? exportResume(v) : v);
+exportEnv.resuming = (): boolean => depth > 0 || lingering > 0;
 
 /* ---- wave 5b (constraint 58): the print settings, written back ----
    A print control changes 1.0's state.print* (initPrint's and initPrintView's listeners); the key it changed is

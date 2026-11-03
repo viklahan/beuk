@@ -1,5 +1,7 @@
 import 'fake-indexeddb/auto';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import en from '../src/generated/packs/en.json';
@@ -180,5 +182,43 @@ describe('Word and the box set in the studio (F3, F4)', { timeout: 120_000 }, ()
     await openExport();
     expect($('boxSetList').querySelectorAll('.bs-row').length).toBe(2);
     expect(await backup()).toEqual(want(doc));
+  });
+});
+
+describe('review of 5c (Minor 2): the box set waits on its script faces', { timeout: 120_000 }, () => {
+  it("another state set while 1.0's ensureScriptFonts reads a face's bytes (a native wait after a fetch): the box set is still the open book's, with its volumes", async () => {
+    const doc = book('real/salt-road-book-one');
+    const ch = (doc.sections as Rec[]).find((x) => x.kind === 'body' && x.type === 'chapter')!;
+    ch.content = 'नमस्ते दुनिया, यह एक पंक्ति है।\n\n' + String(ch.content || '');
+    await studioWith(doc);
+    await openExport();
+    await addBooks([backupFile(book('real/reads-you'), 'reads-you.json')]);
+    await waitFor(() => expect($('boxSetList').querySelectorAll('.bs-row').length).toBe(2));
+    const other = exportRun((cc) => ({ ...(cc.getState() as Rec), boxSetVolumes: [] }))!;
+    const FONTS = path.join(import.meta.dirname, '..', '..', 'client', 'assets', 'fonts');
+    let displaced = 0;
+    const real = globalThis.fetch;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
+      const u = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
+      if (!u.pathname.startsWith('/assets/fonts/')) return real(input);
+      const bytes = readFileSync(path.join(FONTS, decodeURIComponent(u.pathname.slice('/assets/fonts/'.length))));
+      const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+      return {
+        ok: true,
+        status: 200,
+        text: async () => bytes.toString('utf8'),
+        blob: async () => new Blob([buf]),
+        // the face's bytes arrive later, and another part of the studio sets its state meanwhile
+        arrayBuffer: () => new Promise<ArrayBuffer>((r) => setTimeout(() => {
+          displaced++;
+          c.setState(other as never);
+          r(buf);
+        }, 5)),
+      } as unknown as Response;
+    });
+    await downloads(() => click($('btnBuildBoxSet')));
+    expect(displaced).toBeGreaterThan(0);
+    await waitFor(() => expect(toasts().some((x) => x.startsWith('Box set exported — ')), toasts().join(' | ')).toBe(true));
+    expect(toasts().filter((x) => x.startsWith('Box set exported — ')).every((x) => x.startsWith('Box set exported — 2 books, '))).toBe(true);
   });
 });
