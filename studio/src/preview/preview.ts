@@ -67,6 +67,43 @@ function trackOn(target: EventTarget): EventTarget['addEventListener'] {
 }
 function untrackAll(): void {
   for (const x of tracked.splice(0)) x.target.removeEventListener(x.type, x.fn, x.opts);
+  for (const o of observers.splice(0)) o.disconnect();
+}
+/* ---- wave 5b, constraint 63: 1.0's re-measures that outlive the pane ----
+   1.0's preview code re-measures (measurePages, fitDeviceFrame) from continuations: its timers, its frames, a
+   ResizeObserver on #frameZone (initPreview, hcInit) and document.fonts.ready. Each runs only while the pane that set it
+   stands (`live`): set before the pane went, or by a continuation after it went, it does nothing. The observers are
+   disconnected when the pane goes. */
+const observers: ResizeObserver[] = [];
+/** The epoch `at` is the pane's, and the pane stands. */
+const live = (at: number): boolean => at === epoch && started;
+/** 1.0's ResizeObserver for the preview's code: recorded, so the pane's end disconnects it. */
+const previewResizeObserver = (): typeof ResizeObserver | undefined =>
+  typeof ResizeObserver === 'undefined'
+    ? undefined
+    : (function PreviewResizeObserver(cb: ResizeObserverCallback) {
+        const at = epoch;
+        const ro = new ResizeObserver((entries, o) => {
+          if (live(at)) cb(entries, o);
+        });
+        observers.push(ro);
+        return ro;
+      } as unknown as typeof ResizeObserver);
+/** A promise whose continuations run only while the pane that asked for them stands. */
+function liveThen<T>(p: Promise<T>): Promise<T> {
+  const at = epoch;
+  return {
+    then(ok?: ((v: T) => unknown) | null, bad?: ((e: unknown) => unknown) | null) {
+      return p.then(ok ? (v: T) => (live(at) ? ok(v) : undefined) : undefined, bad ? (e: unknown) => (live(at) ? bad(e) : undefined) : undefined);
+    },
+    catch(bad: (e: unknown) => unknown) {
+      return p.catch((e) => (live(at) ? bad(e) : undefined));
+    },
+    finally(f: () => void) {
+      return p.finally(f);
+    },
+    [Symbol.toStringTag]: 'Promise',
+  } as Promise<T>;
 }
 
 function guardFlow(el: Element): Element {
@@ -166,6 +203,9 @@ function tracking<T extends object>(target: T): T {
     p = new Proxy(target, {
       get(t, k) {
         if (k === 'addEventListener') return trackOn(t as unknown as EventTarget);
+        // wave 5b (constraint 63): document.fonts.ready's continuation (1.0's initPreview / hcInit re-measure) runs only
+        // while the pane that asked stands
+        if (k === 'ready') return liveThen(Reflect.get(t, k, t) as Promise<unknown>);
         const v = Reflect.get(t, k, t);
         return typeof v === 'function' ? v.bind(t) : v;
       },
@@ -218,18 +258,20 @@ export function loadPreview(): Promise<PreviewClosure> {
         window: tracking(window),
         // 1.0's timers in the preview's code: a callback due after the pane went (a device switch's 330 ms re-measure,
         // a frame) does nothing — its elements are gone
+        // (wave 5b, constraint 63: nor one set after the pane went, by a continuation that outlived it)
         setTimeout: (fn: (...a: unknown[]) => void, ms?: number, ...args: unknown[]) => {
           const at = epoch;
           return setTimeout(() => {
-            if (at === epoch) fn(...args);
+            if (live(at)) fn(...args);
           }, ms);
         },
         requestAnimationFrame: (fn: FrameRequestCallback) => {
           const at = epoch;
           return requestAnimationFrame((t) => {
-            if (at === epoch) fn(t);
+            if (live(at)) fn(t);
           });
         },
+        ResizeObserver: previewResizeObserver(),
         activeSection,
         // 1.0's deskGoToSection set state.activeId: the studio opens that section (its editor follows)
         renderSidebar: () => undefined,
@@ -397,6 +439,7 @@ export function startPreview(): void {
   if (!pc || started || !document.getElementById('pageFlow')) return;
   ensureSheets();
   if (!pvRefresh()) return;
+  epoch++; // a continuation set while no pane stood never runs on this one
   uninstall = installRefresh(document.getElementById('pane-preview'));
   pc.api.initPreview();
   pc.api.hcInit();
@@ -476,7 +519,9 @@ export function pvMobile(on: boolean): void {
     pvRun((pc) => pc.api.pvLeaving());
     return;
   }
+  const at = epoch;
   requestAnimationFrame(() =>
+    live(at) &&
     pvRun((pc) => {
       pc.api.fitDeviceFrame();
       pc.api.pvResume();

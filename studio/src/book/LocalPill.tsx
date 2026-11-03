@@ -47,21 +47,37 @@ export function localDetailText(s: LocalStatus, t: T, savedAt = 0, lang = 'en'):
   return d;
 }
 
+/** 1.0's LOCAL_DEBOUNCE_MS (BEUK:local): the pause after an edit before 1.0 saves and its pill says the time. */
+export const LOCAL_QUIET_MS = 800;
+
 export function LocalPill() {
   const { t, lang } = useLocale();
   const bk = useBook();
   const s = bk.local;
   const [open, setOpen] = useState(false);
-  // the store's last completed write, followed as 1.0's pill follows its saves (only this small part re-renders)
+  // the store's last completed write, followed as 1.0's pill follows its saves (only this small part re-renders).
+  // Wave 5b (constraint 63): y-indexeddb writes on every keystroke; with the popover closed the pill is drawn again
+  // once a run of writes has gone quiet (1.0's LOCAL_DEBOUNCE_MS: 1.0 saves, and says its time, after that pause), so
+  // typing does not re-render it per key; with the popover open, at each write. Every render reads the store's time.
   const ob = bk.book;
-  const [savedAt, setSavedAt] = useState(() => ob?.savedAt ?? 0);
+  const [, setTick] = useState(0);
+  const openRef = useRef(open);
+  openRef.current = open;
   useEffect(() => {
-    setSavedAt(ob?.savedAt ?? 0);
     if (!ob) return;
-    return ob.onWrite((err) => {
-      if (err === null) setSavedAt(ob.savedAt);
+    let quiet: ReturnType<typeof setTimeout> | undefined;
+    const off = ob.onWrite((err) => {
+      if (err !== null) return;
+      clearTimeout(quiet);
+      if (openRef.current) setTick((n) => n + 1);
+      else quiet = setTimeout(() => setTick((n) => n + 1), LOCAL_QUIET_MS);
     });
+    return () => {
+      clearTimeout(quiet);
+      off();
+    };
   }, [ob]);
+  const savedAt = ob?.savedAt ?? 0;
   const input = useRef<HTMLInputElement>(null);
   const txt = localStatusText(s, t as T);
   const detail = localDetailText(s, t as T, savedAt, lang);

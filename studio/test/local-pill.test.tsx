@@ -6,6 +6,7 @@ import meta from '../src/generated/strings-meta.json';
 import { App } from '../src/App';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { bookOf, importToDevice } from '../src/book/store';
+import { fmtLocalTime } from '../src/book/LocalPill';
 
 /* The store's import, passed through — except when a test makes the device refuse it (as IndexedDB answers a full
    device: a QuotaExceededError). (Failing indexedDB.open itself also leaves y-indexeddb's own promise chains rejected
@@ -214,5 +215,40 @@ describe("the backup, in 1.0's local pill", { timeout: 60_000 }, () => {
     act(() => ydoc.getMap('meta').set('zzProbe', 1));
     await waitFor(() => expect($('localPill').getAttribute('data-state')).toBe('saved'), { timeout: 10_000 });
     act(() => ydoc.getMap('meta').delete('zzProbe'));
+  });
+  /* Wave 5b, constraint 63 (carried from 5a): y-indexeddb writes each keystroke, and the pill re-rendered on every
+     write's end (its "Last saved" time) — work on every key that 88ec8f7 did not do. With the popover closed, the
+     pill's words follow a run of writes once it has gone quiet (1.0's LOCAL_DEBOUNCE_MS, 800 ms: 1.0's own pill says
+     its time after that pause); with it open, at each write, as before. */
+  it('with the popover closed, a run of writes redraws the pill once, after 800 ms of quiet', async () => {
+    persisted(true);
+    await studioWith(book('real/lantern-coast-book-one'));
+    const ydoc = desk.ydoc!;
+    await new Promise((res) => setTimeout(res, 1500)); // the writes that follow an opening have ended
+    const ob = bookOf(ydoc)!;
+    let clock = Date.parse('2026-11-02T10:00:00Z');
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => clock);
+    const titles: string[] = [];
+    const mo = new MutationObserver(() => titles.push($('localPill').getAttribute('title') || ''));
+    mo.observe($('localPill'), { attributes: true, attributeFilter: ['title'] });
+    try {
+      for (let i = 0; i < 5; i++) {
+        clock += 2000; // each write a different second: its own "Last saved" time
+        act(() => ob.writeDone(null));
+        await act(() => new Promise((res) => setTimeout(res, 60)));
+      }
+      expect(titles.length).toBe(0); // none yet: the run has not gone quiet
+      await act(() => new Promise((res) => setTimeout(res, 900)));
+      expect(titles.length).toBe(1);
+      expect(titles[0]).toContain(fmtLocalTime(clock, 'en'));
+      // open, it follows each write at once
+      await click($('localPillBtn'));
+      clock += 2000;
+      act(() => ob.writeDone(null));
+      expect($('localPopDetail').textContent).toContain(fmtLocalTime(clock, 'en'));
+    } finally {
+      mo.disconnect();
+      now.mockRestore();
+    }
   });
 });
