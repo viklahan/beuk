@@ -661,7 +661,62 @@ export type ClosureApi = {
   updateWrapDims: () => void;
   drawWrapPreview: () => void;
   paintCoverScene: (...args: unknown[]) => unknown;
+  // wave 5a (F1, F7, F8): the export modal (src/export) — 1.0's own wiring, presets, package, downloads, inspector,
+  // validator and accessibility audit
+  initExport: () => void;
+  renderPlatformPresets: () => void;
+  refreshExportTree: () => void;
+  PLATFORM_PRESETS: PlatformPreset[];
+  platformPreset: (id?: string) => PlatformPreset;
+  platformFilename: (id?: string) => string;
+  epubPlan: () => { section: Record<string, unknown>; plate?: boolean; id: string; file: string }[];
+  epubFiles: (presetId?: string) => EpubFile[];
+  buildEpubBlob: () => Promise<Blob>;
+  buildEpub: (() => Promise<void>) & { noOpen?: boolean };
+  buildMarkdown: () => string;
+  buildStandaloneHtml: () => string;
+  copyText: (text: string, doneMsg: string) => void;
+  openInspector: () => void;
+  selectInspFile: (path: string) => void;
+  highlightCode: (src: string, isCss: boolean) => string;
+  fileSize: (f: EpubFile) => number;
+  runValidation: () => void;
+  validateEpubPackage: (files: EpubFile[]) => { results: { id: string; level: 'pass' | 'warning' | 'error'; name: string; detail: string }[]; errors: number; warnings: number; passes: number };
+  validationListHtml: (sorted: unknown[], iconFor: (lvl: string) => string) => string;
+  BEUK_VALIDATOR_CODES: Record<string, string>;
+  epubManifestPropertyReport: (files: EpubFile[]) => { opfPath: string; items: { id: string; href: string; mediaType: string; declared: string[]; needed: string[]; missing: string[]; extra: string[] }[] };
+  epubDetectProps: (content: string, mediaType: string) => string[];
+  epubApplyManifestProperties: (files: EpubFile[]) => EpubFile[];
+  epubLinksOutsideSpine: (files: EpubFile[]) => { from: string; href: string; target: string }[];
+  epubTocTarget: (tocFile?: string) => { href: string; navInSpine: boolean };
+  EPUB_DETECTED_PROPS: string[];
+  runA11yCheck: () => void;
+  auditAccessibility: (files: EpubFile[]) => { findings: { id: string; name: string; detail: string; jump: { kind: string; sectionId?: string } | null }[] };
+  a11yFacts: (files: EpubFile[]) => { contentImages: boolean; hasImages: boolean };
+  a11yMetaBlock: (files: EpubFile[]) => string;
+  a11yStampConformance: (files: EpubFile[]) => boolean;
+  a11ySummaryText: () => string;
+  A11Y_CONFORMS_VALUE: string;
+  a11yJumpTo: (jump: unknown) => void;
+  // wave 5a: applyBookDoc's normalizers (src/export/state.ts runs them in applyBookDoc's order)
+  bookMetaDefaults: () => Record<string, unknown>;
+  bookPrintDefaults: () => Record<string, unknown>;
+  bookSeriesNumberInto: (meta: Record<string, unknown>, n: unknown) => void;
+  bookIdNormalizeLegacyList: (list: unknown) => string[];
+  imSetSource: (field: string, v: unknown) => void;
+  castSetHidden: (list: unknown) => void;
+  bodyFaceOf: (font: unknown) => string;
+  normalizeStoreCheck: (sc: unknown) => unknown;
+  normalizeImportReport: (r: unknown) => unknown;
+  acxNormalize: (a: unknown) => unknown;
+  msNormalize: (m: unknown) => unknown;
+  rightsNormalizeInto: (target: Record<string, unknown>, src: Record<string, unknown>) => void;
+  LANG_PACKS: Record<string, unknown>;
 };
+/** One of 1.0's eleven EPUB platform presets (PLATFORM_PRESETS). */
+export type PlatformPreset = { id: string; name: string; sub: string; desc: string; idNote: string; check: string; suffix: string; guide?: boolean; appleOptions?: boolean };
+/** One file of the package 1.0's EPUB builder writes (epubFiles). */
+export type EpubFile = { path: string; content: string; binary?: boolean };
 /** One text line drawCoverTo painted (1.0's cmItems). */
 export type CoverItem = { key: string; text: string; x: number; y: number };
 /** 1.0's wrapDims: the wrap's sizes in inches. */
@@ -775,6 +830,9 @@ export type ClosureVars = {
   hcEnsureFlapPhoto: (recipe: unknown) => Promise<unknown>;
   ensureWrapIcons: (recipe: unknown) => Promise<unknown>;
   cmRenderStockResults: (res: unknown) => string;
+  // wave 5a: the package inspector's file set and the file it shows
+  inspFilesCache: EpubFile[];
+  inspCurrent: string;
 };
 
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
@@ -952,6 +1010,16 @@ export const coverEnv: { serializeBook: () => Record<string, unknown>; downloadB
   fetch: (input, init) => globalThis.fetch(input, init),
 };
 
+/** Wave 5a (F1, F7, F8): what 1.0's export code reaches around its own, set by src/export: the sign-in dialog (2.0 has
+ *  none before wave 7), Project Settings (2.0's dialog) and the phone's pane switch (the audit's "Take me there"). */
+export const exportEnv: { openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; serialize: (() => Record<string, unknown>) | null } = {
+  /** During an export call: 1.0's own serializeBook on the export's state (src/export/state.ts); else the wrap's (4c). */
+  serialize: null,
+  openAuth: () => undefined,
+  openSettings: () => undefined,
+  setMobilePane: () => undefined,
+};
+
 const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitledBook ?? [];
 /** The UI_STRINGS 1.0's code is given: every pack's "misc.untitledBook" alone (imIsPlaceholderTitle reads it). */
 export const untitledStrings = (): Record<string, Record<string, string>> => Object.fromEntries(UNTITLED.map((s, i) => [String(i), { 'misc.untitledBook': s }]));
@@ -974,7 +1042,13 @@ export function loadClosure(): Promise<Closure> {
         state: null,
         toast: (msg: string, icon?: string, action?: { label: string; ms?: number; onClick: () => void }) => structEnv.toast(msg, icon, action),
         samplePicsRequire: async () => undefined,
-        JSZip: undefined,
+        // wave 5a: 1.0's vendored JSZip, loaded with its integrity when a book opens (src/export/export.ts loadJszip); the
+        // closure's `new JSZip()` makes the page's own (1.0's code reads window.JSZip where it checks for it)
+        JSZip: function JSZipOfPage(this: unknown, ...args: unknown[]) {
+          const Z = (globalThis as { JSZip?: new (...a: unknown[]) => unknown }).JSZip;
+          if (!Z) throw new Error('JSZip is not loaded');
+          return new Z(...args);
+        },
         t: (k, p) => currentT(k, p),
         UI_STRINGS: untitledStrings(),
         getUiLang: () => currentLang,
@@ -995,7 +1069,6 @@ export function loadClosure(): Promise<Closure> {
         syncEditor: () => undefined,
         renderPreview: () => previewEnv.render(),
         updateStats: () => undefined,
-        refreshExportTree: () => undefined,
         selectSection: (id: string) => structEnv.select(id),
         olRender: () => undefined,
         // wave 3a: the streak's heartbeat, the calm confirm, 1.0's icons() and fmtDateIntl
@@ -1025,9 +1098,26 @@ export function loadClosure(): Promise<Closure> {
         FileReader: sessionFileReader(),
         // wave 4c (D3, D4): the cover maker's surroundings (coverEnv, src/cover/cover.ts)
         samplePicsHold: () => false,
-        serializeBook: () => coverEnv.serializeBook(),
+        serializeBook: () => (exportEnv.serialize ? exportEnv.serialize() : coverEnv.serializeBook()),
         downloadBlob: (blob: Blob, name: string) => coverEnv.downloadBlob(blob, name),
         fetch: ((input: RequestInfo | URL, init?: RequestInit) => coverEnv.fetch(input, init)) as typeof fetch,
+        // wave 5a (F1, F7, F8): the export's surroundings (exportEnv, src/export), and the later waves' parts of 1.0's
+        // initExport, inert (their sections are hidden)
+        openAuth: () => exportEnv.openAuth(),
+        openSettings: () => exportEnv.openSettings(),
+        setMobilePane: (pane: string) => exportEnv.setMobilePane(pane),
+        runPrintPreflight: () => undefined,
+        renderPrintControls: () => undefined,
+        downloadDocx: () => undefined,
+        buildBoxSetEpub: () => undefined,
+        renderBoxSetList: () => undefined,
+        boxSetExpandPick: async () => ({ files: [], skipped: [] }),
+        manuscriptFileToVolume: async () => {
+          throw new Error('not in this wave');
+        },
+        bookWord: (n: number) => String(n),
+        renderArchiveList: () => undefined,
+        cloudLoadArchive: () => undefined,
       });
       share = c.share;
       // wave 4c: a picture id is a key of 1.0's coverImgCache: never Object.prototype's (as the server's WRAP_API)

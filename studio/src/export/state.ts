@@ -1,0 +1,307 @@
+import { exportBook } from '@book/editor/index.js';
+import type * as Y from 'yjs';
+import { closureIfLoaded, closureShare, covEnv, exportEnv, loadClosure, structEnv, type Closure, type State } from '../closure/index';
+import { setMeta } from '../book/hooks';
+import { desk } from '../environment/page';
+import { placeKey } from '../notebook/notebook';
+import { styleSettle } from '../style/session';
+import { exportSafe } from './safe';
+
+/* Step 5 wave 5a (inventory F1, F7, F8): the export's data side — 1.0's state of the open book, as the export reads it.
+
+   Everything the export modal runs is 1.0's own code, lifted into the browser closure (scripts/extract-closure.mjs):
+   the presets and the package tree, epubFiles (the package the inspector shows, the validator checks and the audit
+   reads), buildEpub (the store-ready download: POST /api/epub with 1.0's own serializeBook of the book), Markdown and
+   standalone HTML. It runs on 1.0's state of the open book, built here from exportBook (book format v1, what readBook
+   reads) by the lines of 1.0's applyBookDoc that fill the keys serializeBook writes — in applyBookDoc's order, with
+   1.0's own normalizers — so 1.0's serializeBook (closure-serialize.js) writes, for the same book, the body 1.0 sends
+   (constraint 51: the e2e compares the two bodies byte for byte for every fixture). The server's EPUB arrival
+   (src/book/epub/closure.ts ARRIVE) is the same kind of re-typed applyBookDoc subset, held to 1.0 by its parity test.
+
+   Then the corrections (constraint 53, src/export/safe.ts): the book values 1.0's export code writes unescaped are
+   corrected or hidden in this state only — the preview's corrections (the Style session's sourceSafe) and the ones the
+   export alone needs — so the package the modal builds, the files it downloads and the book it sends carry no script,
+   handler or remote request. The book itself is never changed by them.
+
+   One state per session (as the Style session's): while the book does not change and nothing else set a state into the
+   shared closure, the next call runs on the very same state. A call writes back one key only — exportPlatform, the
+   preset chosen (1.0's renderPlatformPresets sets state.exportPlatform; serializeBook writes it) — and only when its
+   value changed in the call (constraint 54). */
+
+type Rec = Record<string, unknown>;
+const isRec = (x: unknown): x is Rec => typeof x === 'object' && x !== null && !Array.isArray(x);
+
+/** 1.0's applyBookDoc, the lines that fill what serializeBook and the export read, on a fresh state (a book arriving on
+ *  an empty desk: no History, box set or import of the desk's carries over). `book` is book format v1 and is not
+ *  touched. The state is the closure's global while the lines run (1.0's imSetSource, castSetHidden and
+ *  normalizeCoverRecipe read it). */
+export function arriveForExport(c: Closure, book: Rec): State {
+  const a = c.api;
+  const doc = structuredClone(book) as Rec;
+  const s = {} as State & Rec;
+  c.setState(s);
+  const arrMeta: Rec = isRec(doc.meta) ? (doc.meta as Rec) : {};
+  const baseMeta = a.bookMetaDefaults();
+  delete baseMeta.langSource;
+  delete baseMeta.langGuess;
+  s.meta = Object.assign(baseMeta, arrMeta);
+  if (!s.meta.bookId) s.meta.bookId = a.newBookId();
+  a.bookSeriesNumberInto(s.meta, arrMeta.seriesNumber);
+  {
+    const lg = a.bookIdNormalizeLegacyList(arrMeta.legacyBookIds);
+    if (lg.length) s.meta.legacyBookIds = lg;
+    else delete s.meta.legacyBookIds;
+  }
+  for (const f of ['title', 'subtitle', 'author']) a.imSetSource(f, arrMeta[f + 'Source']);
+  a.castSetHidden(arrMeta.castHidden);
+  a.rightsNormalizeInto(s.meta, arrMeta);
+  if (!a.LANG_PACKS[s.meta.language as string]) s.meta.language = 'en';
+  if (s.meta.langSource !== 'manual' && s.meta.langSource !== 'auto') s.meta.langSource = s.meta.language !== 'en' ? 'manual' : 'auto';
+  if (typeof s.meta.langGuess !== 'string') s.meta.langGuess = '';
+  const preset0 = a.PRESETS[0]!;
+  if (!doc.theme) s.theme = Object.assign({}, preset0.theme);
+  else {
+    const th = doc.theme as Rec;
+    const theme = Object.assign({}, preset0.theme, th) as Rec;
+    theme.header = th.header ? a.normalizeHeaderDesign(th.header, theme) : null;
+    if (!theme.header) delete theme.header;
+    theme.bodyFont = a.bodyFaceOf(theme.bodyFont);
+    s.theme = theme;
+  }
+  s.activePreset = doc.activePreset || (doc.theme ? null : preset0.id);
+  s.bookColour = a.bookColourNormalize(doc.colour);
+  const bc = s.bookColour as Rec;
+  if (!bc.accent && !bc.tint) s.bookColour = undefined;
+  if (Array.isArray(doc.sections) && doc.sections.length) {
+    s.sections = doc.sections.map((x) => a.normalizeSection(x));
+    s.activeId = s.sections.some((x) => x.id === doc.activeId) ? doc.activeId : (s.sections.find((x) => x.type === 'chapter') || s.sections[0])!.id;
+  } else {
+    const e = a.buildEmptyBook();
+    s.sections = e.sections;
+    s.activeId = e.activeId;
+  }
+  s.cover = doc.cover || null;
+  s.fonts = Array.isArray(doc.fonts) ? doc.fonts.map((f) => a.normalizeCustomFont(f)).filter(Boolean) : [];
+  s.coverRecipe = doc.coverRecipe ? a.normalizeCoverRecipe(doc.coverRecipe) : null;
+  s.outline = a.olNormalize(doc.outline, s.sections);
+  s.images = Array.isArray(doc.images) ? doc.images : [];
+  s.research = a.rsNormalize(doc.research);
+  s.customThemes = Array.isArray(doc.customThemes) ? doc.customThemes.map((x) => a.normalizeCustomTheme(x)).filter(Boolean) : [];
+  const pd = a.bookPrintDefaults();
+  for (const k of Object.keys(pd)) s[k] = pd[k];
+  if (doc.exportPlatform) s.exportPlatform = doc.exportPlatform;
+  if (doc.printTrim) s.printTrim = doc.printTrim;
+  if (typeof doc.printRecto === 'boolean') s.printRecto = doc.printRecto;
+  if (typeof doc.printLargePrint === 'boolean') s.printLargePrint = doc.printLargePrint;
+  s.printPictureBook = doc.printPictureBook === true && !s.printLargePrint;
+  s.printBleed = doc.printBleed === true;
+  s.storeCheck = a.normalizeStoreCheck(doc.storeCheck);
+  if (doc.printMarginMode === 'custom' || doc.printMarginMode === 'auto') s.printMarginMode = doc.printMarginMode;
+  if (isRec(doc.printCustomMargins)) {
+    const m = doc.printCustomMargins, cur = Object.assign({}, s.printCustomMargins) as Rec;
+    for (const k of ['inside', 'outside', 'top', 'bottom']) if (typeof m[k] === 'number' && isFinite(m[k] as number) && (m[k] as number) >= 0 && (m[k] as number) <= 3) cur[k] = m[k];
+    s.printCustomMargins = cur;
+  }
+  if (['titleauthor', 'title', 'author', 'chapter', 'none'].includes(doc.printHeadContent as string)) s.printHeadContent = doc.printHeadContent;
+  if (doc.printHeadPlace === 'top' || doc.printHeadPlace === 'bottom') s.printHeadPlace = doc.printHeadPlace;
+  if (typeof doc.printOmitChapterHead === 'boolean') s.printOmitChapterHead = doc.printOmitChapterHead;
+  if (typeof doc.printOmitBlankHead === 'boolean') s.printOmitBlankHead = doc.printOmitBlankHead;
+  if (['centre', 'outer', 'none'].includes(doc.printFolio as string)) s.printFolio = doc.printFolio;
+  s.printNotes = doc.printNotes === 'page' || doc.printNotes === 'end' ? doc.printNotes : 'end';
+  s.goals = a.normalizeGoals(doc.goals);
+  // History: 1.0's buildEpub deletes history and historyPool from the body it sends (and the package never reads it),
+  // so the export's state holds none — no unpacking of a large History per session
+  s.history = [];
+  s.importReport = a.normalizeImportReport(doc.importReport);
+  s.audio = a.acxNormalize(doc.audio);
+  s.manuscript = a.msNormalize(doc.manuscript);
+  s.dictation = a.dictNormalize(doc.dictation);
+  s.bible = a.bibleNormalize(doc.bible);
+  s.notebook = a.nbNormalize(doc.notebook, s.sections, new Set(((s.research as Rec).files as { id: string }[]).map((f) => f.id)));
+  // 1.0's session-only fields the export code reads
+  s.boxSetVolumes = [];
+  s.page = 1;
+  return s;
+}
+
+/* ---- the session ---- */
+
+type Session = { ydoc: Y.Doc; state: State; ver: number; platform: unknown };
+let session: Session | null = null;
+const versions = new WeakMap<Y.Doc, { n: number }>();
+function verOf(ydoc: Y.Doc): { n: number } {
+  let v = versions.get(ydoc);
+  if (!v) {
+    v = { n: 0 };
+    const box = v;
+    ydoc.on('afterTransaction', () => {
+      box.n++;
+    });
+    versions.set(ydoc, v);
+  }
+  return v;
+}
+
+/** 1.0's state of the open book for the export, corrected (safe.ts): built, set into the closure. */
+export function exportStateOf(c: Closure, ydoc: Y.Doc): State {
+  const book = exportBook(ydoc) as Rec;
+  const st = arriveForExport(c, book);
+  exportSafe(c, st as State & Rec, book);
+  c.setState(st);
+  return st;
+}
+
+/** 1.0's state of the open book, current, for the export. Null without a book or a closure. */
+export function exportEnter(): Closure | null {
+  const c = closureIfLoaded();
+  const ydoc = desk.ydoc;
+  if (!c || !ydoc) return null;
+  const s = session;
+  if (!(s && s.ydoc === ydoc && s.ver === verOf(ydoc).n && c.getState() === s.state)) {
+    styleSettle(); // a held Style edit is in the book before the export reads it
+    const st = exportStateOf(c, ydoc);
+    session = { ydoc, state: st, ver: verOf(ydoc).n, platform: (st as Rec).exportPlatform };
+  } else if (c.getState() !== session!.state) c.setState(session!.state);
+  return c;
+}
+
+/** Write what the export changed: exportPlatform, as serializeBook writes it, only when the call changed it. */
+export function exportFlush(): void {
+  const c = closureIfLoaded();
+  const s = session;
+  if (!c || !s) return;
+  const now = (s.state as Rec).exportPlatform;
+  if (now === s.platform) return;
+  const y = s.ydoc;
+  y.transact(() => {
+    placeKey(y, 'exportPlatform');
+    setMeta(y, 'exportPlatform', now as never);
+  });
+  s.platform = now;
+  s.ver = verOf(y).n;
+}
+
+/** Where the export's toasts go (ExportModal sets the page's toaster). */
+export const exportUi: { toast: (msg: string, icon?: string) => void } = { toast: (msg, icon) => structEnv.toast(msg, icon) };
+
+let depth = 0;
+let kept: { toast: typeof structEnv.toast; apiFetch: typeof covEnv.apiFetch } | null = null;
+/** The first half of exportRun, for 1.0's own listeners: the book's state stands; 1.0's toast goes to the export's
+ *  toaster, its serializeBook is 1.0's own (on this state), and an answer it waits on from the server resumes this
+ *  state (exportResume). The returned function (once) writes what changed. Null without a book or a closure. */
+export function exportBegin(): (() => void) | null {
+  const c = exportEnter();
+  if (!c) return null;
+  depth++;
+  if (depth === 1) {
+    kept = { toast: structEnv.toast, apiFetch: covEnv.apiFetch };
+    structEnv.toast = (msg, icon) => exportUi.toast(msg, icon);
+    const fetch0 = covEnv.apiFetch;
+    covEnv.apiFetch = (path, opts) => exportResume(fetch0(path, opts));
+    const ser = serializeLoaded;
+    exportEnv.serialize = ser ? () => ser(c) : null;
+  }
+  let done = false;
+  return () => {
+    if (done) return;
+    done = true;
+    depth--;
+    if (depth === 0) {
+      if (kept) {
+        structEnv.toast = kept.toast;
+        covEnv.apiFetch = kept.apiFetch;
+        kept = null;
+      }
+      exportEnv.serialize = null;
+      exportFlush();
+    }
+  };
+}
+
+/** 1.0's export code on the open book: `fn` runs on 1.0's (corrected) state of it; a preset changed is written when it
+ *  returns. Undefined without a book or a closure. */
+export function exportRun<T>(fn: (c: Closure) => T): T | undefined {
+  const end = exportBegin();
+  if (!end) return undefined;
+  try {
+    return fn(closureIfLoaded()!);
+  } finally {
+    end();
+  }
+}
+
+/** A value 1.0's export code waits on (the server's answer): its continuation runs on the export's state again (another
+ *  part of the studio may have set its own into the closure meanwhile). */
+export function exportResume<T>(v: T): T {
+  if (v && typeof (v as { then?: unknown }).then === 'function') {
+    const p = v as unknown as Promise<unknown>;
+    const wrapped = {
+      then(ok?: ((x: unknown) => unknown) | null, bad?: ((e: unknown) => unknown) | null) {
+        return p.then(
+          ok ? (x: unknown) => {
+            const end = exportBegin();
+            try {
+              return ok(x);
+            } finally {
+              setTimeout(() => end?.(), 0);
+            }
+          } : undefined,
+          bad ? (e: unknown) => {
+            const end = exportBegin();
+            try {
+              return bad(e);
+            } finally {
+              setTimeout(() => end?.(), 0);
+            }
+          } : undefined,
+        );
+      },
+    };
+    return wrapped as unknown as T;
+  }
+  return v;
+}
+
+/** Forget the session (a test, or the book went). */
+export function exportReset(): void {
+  session = null;
+}
+/** The session's state, for the tests. */
+export const exportState = (): State | null => session?.state ?? null;
+
+/** The body 1.0's buildEpub posts, for this state: 1.0's own serializeBook (closure-serialize.js) less what buildEpub
+ *  leaves home, as 1.0 writes it ({ book, platform, lang }). For the tests and the e2e; the app sends it through 1.0's
+ *  buildEpub itself. */
+export async function exportBody(lang: string): Promise<string | null> {
+  await loadClosure();
+  const ser = await loadSerialize();
+  return (
+    exportRun((cc) => {
+      const book = ser(cc);
+      for (const k of ['history', 'historyPool', 'notebook', 'research', 'audio', 'importReport']) delete book[k];
+      return JSON.stringify({ book, platform: (cc.getState() as Rec).exportPlatform, lang });
+    }) ?? null
+  );
+}
+
+/* ---- 1.0's serializeBook, its own chunk ---- */
+type Serialize = (c: Closure) => Rec;
+let serializeLoading: Promise<Serialize> | null = null;
+let serializeLoaded: Serialize | null = null;
+/** 1.0's serializeBook on the closure's current state (null until loadSerialize has loaded its chunk). */
+export const serializeIfLoaded = (): Serialize | null => serializeLoaded;
+export function loadSerialize(): Promise<Serialize> {
+  if (!serializeLoading) {
+    serializeLoading = Promise.all([loadClosure(), import('../generated/closure-serialize.js')]).then(([, m]) => {
+      serializeLoaded = () => m.createSerialize(closureShare()!).serializeBook();
+      return serializeLoaded;
+    });
+    serializeLoading.catch(() => {
+      serializeLoading = null;
+    });
+  }
+  return serializeLoading;
+}
+
+/** Where 1.0's export code raises a toast (structEnv.toast stands at the page's toaster between calls). */
+export const exportToast = (msg: string, icon?: string): void => structEnv.toast(msg, icon);

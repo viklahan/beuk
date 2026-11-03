@@ -167,6 +167,20 @@ export const EXTRA_ROOTS = [
   'cmComputeBlocks', 'cmTitleKeywords', 'searchStockPhotos', 'cmRenderStockResults', 'choosePexelsPhoto', 'imCoverFollowBook', 'imBookCoverText',
   'hcTrimOffered', 'HC_SPEC', 'spineDirection', 'normalizeWrapSpine', 'normalizeWrapBack', 'wrapDefaults', 'stableJson',
   'setElText', 'sbBuildControls', 'sbSync', 'sbIconSvg', 'SB_CURATED_ICONS', 'hcSyncPanel', 'hcLegendHtml', 'updateWrapDims', 'drawWrapPreview', 'paintCoverScene',
+  // wave 5a (F1, F7, F8): the export modal — 1.0's own initExport wires it (the later waves' parts reach supplied, inert
+  // stand-ins: BROWSER_SUPPLIED), the platform presets and the package tree, the package itself (epubFiles; the browser's
+  // buildEpubBlob, the same text as the server's EPUB_ROOTS: test/export-closure.test.ts), the store-ready download
+  // (buildEpub: POST /api/epub), Markdown and standalone HTML, the package inspector, the structural validator, and the
+  // accessibility audit with its conformance stamp
+  'initExport', 'renderPlatformPresets', 'refreshExportTree', 'PLATFORM_PRESETS', 'platformPreset', 'platformFilename', 'epubPlan', 'epubFiles', 'buildEpubBlob',
+  'buildEpub', 'buildMarkdown', 'buildStandaloneHtml', 'copyText', 'openInspector', 'selectInspFile', 'highlightCode', 'fileSize',
+  'runValidation', 'validateEpubPackage', 'validationListHtml', 'BEUK_VALIDATOR_CODES', 'epubManifestPropertyReport', 'epubDetectProps', 'epubApplyManifestProperties',
+  'epubLinksOutsideSpine', 'epubTocTarget', 'EPUB_DETECTED_PROPS', 'runA11yCheck', 'auditAccessibility', 'a11yFacts', 'a11yMetaBlock', 'a11yStampConformance',
+  'a11ySummaryText', 'a11ySummaryDefault', 'A11Y_CONFORMS_VALUE', 'a11yJumpTo',
+  // wave 5a: applyBookDoc's own normalizers, which 2.0's arrival for the export runs in applyBookDoc's order
+  // (src/export/state.ts), so 1.0's serializeBook (closure-serialize.js) writes the body 1.0 sends
+  'bookMetaDefaults', 'bookPrintDefaults', 'bookSeriesNumberInto', 'bookIdNormalizeLegacyList', 'imSetSource', 'castSetHidden', 'bodyFaceOf', 'bookColourNormalize',
+  'olNormalize', 'rsNormalize', 'normalizeStoreCheck', 'normalizeGoals', 'normalizeImportReport', 'acxNormalize', 'msNormalize', 'dictNormalize', 'bibleNormalize', 'nbNormalize',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -217,7 +231,9 @@ export const VARS = ['insVarPick', 'insCache', 'insFacts',
   // wave 4c: the cover maker's working recipe, its element and guides; and 1.0's functions whose promises resolve
   // later (a decoded picture), wrapped so their continuations run in the Style session (src/cover/cover.ts), and the
   // stock results' renderer, wrapped so a thumbnail the policy refuses is never asked for
-  'cmRecipe', 'cmElement', 'cmWrapGuides', 'cmItems', 'cmBlocks', 'ensureCoverBgImage', 'hcEnsureFlapPhoto', 'ensureWrapIcons', 'cmRenderStockResults'];
+  'cmRecipe', 'cmElement', 'cmWrapGuides', 'cmItems', 'cmBlocks', 'ensureCoverBgImage', 'hcEnsureFlapPhoto', 'ensureWrapIcons', 'cmRenderStockResults',
+  // wave 5a: the package inspector's file set and the file it shows (1.0's #btnCopyFile reads them)
+  'inspFilesCache', 'inspCurrent'];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
   // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads
@@ -226,8 +242,9 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // wave 2b supplied as a no-op: the series Covenant is 1.0's own code now.)
   'autoSnapshot', 'local', 'noteBookEdited', 'imglibRefresh', 'cloud',
   // wave 2c: 1.0's redraws after a structural edit (React re-renders from the Y.Doc), and selectSection (2.0 selects the
-  // section 1.0 chose once the change is written: src/structure/structure.ts structEnv)
-  'renderSidebar', 'syncEditor', 'renderPreview', 'updateStats', 'refreshExportTree', 'selectSection', 'olRender',
+  // section 1.0 chose once the change is written: src/structure/structure.ts structEnv). (Wave 5a lifts
+  // refreshExportTree, which wave 2c supplied as a no-op: the export modal's tree is 1.0's own code now.)
+  'renderSidebar', 'syncEditor', 'renderPreview', 'updateStats', 'selectSection', 'olRender',
   // wave 3a (C2): the shelf's heartbeat (1.0's cloudHeartbeat, src/goals/streak.ts), the calm confirm (2.0's useConfirm),
   // 1.0's icons() (drawIcons) and fmtDateIntl (it reads uiLangState, which the browser studio never lifts)
   'cloudHeartbeat', 'cloudConfirm', 'icons', 'fmtDateIntl',
@@ -250,7 +267,19 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // downloadBlob (the cover and wrap files), and the page's fetch — the stock search and the chosen photo's download,
   // held to the addresses the served policy allows, a picture's bytes checked as 2.0's scene picker checks them
   // (src/cover/cover.ts coverFetch); same-origin requests pass through unchanged
-  'samplePicsHold', 'serializeBook', 'downloadBlob', 'fetch'];
+  'samplePicsHold', 'serializeBook', 'downloadBlob', 'fetch',
+  // wave 5a (F1, F7, F8): what 1.0's export code reaches outside the export — the sign-in dialog (wave 7: 2.0 has none;
+  // buildEpub's own noOpen keeps the modal open), Project Settings (2.0's dialog) and the phone's pane switch (the
+  // accessibility audit's "Take me there") — and the parts of 1.0's initExport that belong to later waves, inert
+  // stand-ins here (their sections of the modal are hidden): the print preflight and controls (5b), Word and the box set
+  // (5c), the archive (wave 7)
+  'openAuth', 'openSettings', 'setMobilePane',
+  'runPrintPreflight', 'renderPrintControls', 'downloadDocx', 'buildBoxSetEpub', 'renderBoxSetList', 'boxSetExpandPick', 'manuscriptFileToVolume', 'bookWord',
+  'renderArchiveList', 'cloudLoadArchive'];
+/** Wave 5a: 1.0's serializeBook, emitted as its own sub-module (closure-serialize.js, createSerialize(share)): the main
+ *  closure keeps `serializeBook` SUPPLIED (the wrap download's book stays wave 4c's), and the export's request body is
+ *  1.0's own serializeBook run on 1.0's state of the open book as applyBookDoc holds it (src/export/state.ts). */
+export const SERIALIZE_ROOTS = ['serializeBook'];
 /** Wave 4b (E1, E2): the preview's OWN module, src/generated/closure-preview.js (createPreviewClosure). 1.0's preview
  *  pane, its pagination and reading desk, the device frames and truth notes, the hardcover and full screen — lifted
  *  whole, beside their own copy of what they reach (sectionHtml, buildBookCss, the print view's model), with their own
@@ -420,7 +449,9 @@ export async function buildClosureModule(html, epubSource) {
   const names = reachableFrom(html, [...roots, ...attach.refs], [...supplied, ...LOCAL_ONLY]);
   const sampleNames = reachableFrom(html, SAMPLE_ROOTS, [...supplied, ...LOCAL_ONLY, ...names]);
   const oracleNames = [...new Set([...reachableFrom(html, ORACLE_ROOTS, [...supplied, ...ORACLE_SUPPLIED, ...LOCAL_ONLY, ...names]), ...ORACLE_OWN])];
-  const forbidden = [...names, ...sampleNames, ...oracleNames].filter((n) => FORBIDDEN.test(n));
+  // wave 5a: serializeBook is a supplied name of the main closure, its own declaration here
+  const serializeNames = reachableFrom(html, SERIALIZE_ROOTS, [...supplied.filter((n) => !SERIALIZE_ROOTS.includes(n)), ...LOCAL_ONLY, ...names]);
+  const forbidden = [...names, ...sampleNames, ...oracleNames, ...serializeNames].filter((n) => FORBIDDEN.test(n));
   if (forbidden.length) fail(`the lifted code reaches ${forbidden.join(', ')}, which the browser studio does not lift (supply it, or change the roots)`);
   let src;
   try {
@@ -472,6 +503,12 @@ export async function buildClosureModule(html, epubSource) {
     label: 'ORACLE_ROOTS', roots: ORACLE_ROOTS, env: ORACLE_SUPPLIED, fn: 'createOracle', namesConst: 'ORACLE_NAMES',
     about: "1.0's dialog handlers (ORACLE_ROOTS), for the tests only: the app never imports this module",
   });
+  const serialize = subModule(extractStudioSource, html, serializeNames, src.names, supplied, {
+    label: 'SERIALIZE_ROOTS', roots: SERIALIZE_ROOTS, env: [], fn: 'createSerialize', namesConst: 'SERIALIZE_NAMES',
+    about: "1.0's serializeBook (SERIALIZE_ROOTS), the export's request body (wave 5a)",
+  });
+  const serializeOwn = serialize.names.filter((n) => !SERIALIZE_ROOTS.includes(n));
+  if (serializeOwn.length) fail(`serializeBook reaches ${serializeOwn.join(', ')}, which the main closure does not lift (add them to EXTRA_ROOTS: one copy of each)`);
   const vars = VARS.filter((n) => src.names.includes(n));
   const unlifted = VARS.filter((n) => !src.names.includes(n));
   if (unlifted.length) fail(`VARS names no lifted declaration: ${unlifted.join(', ')}`);
@@ -491,14 +528,14 @@ export async function buildClosureModule(html, epubSource) {
   const tail = [
     '',
     `  const vars = { ${vars.map((v) => `get ${v}() { return ${v}; }, set ${v}(v) { ${v} = v; }`).join(', ')} };`,
-    `  const share = { get state() { return state; }, ${[...new Set([...sample.uses, ...oracle.uses])].map((n) => `get ${n}() { return ${n}; }`).join(', ')} };`,
+    `  const share = { get state() { return state; }, ${[...new Set([...sample.uses, ...oracle.uses, ...serialize.uses])].map((n) => `get ${n}() { return ${n}; }`).join(', ')} };`,
     `  return { api: { ${api.join(', ')} }, vars, share, setState: (s) => { state = s; }, getState: () => state, arrive: ${spec.ARRIVE} };`,
     '}',
     '',
   ].join('\n');
   const missingAttach = ATTACH.filter((n) => !src.names.includes(n) || !attach.byName[n]);
   if (missingAttach.length) fail(`ATTACH names no lifted declaration filled by a top-level statement: ${missingAttach.join(', ')}`);
-  return { code: head + '\n' + code + tail, names: src.names, roots: api, supplied, sample, oracle };
+  return { code: head + '\n' + code + tail, names: src.names, roots: api, supplied, sample, oracle, serialize };
 }
 
 /** Wave 4b: the preview's own module (PREVIEW_ROOTS): createPreviewClosure(env) → { api, vars, setState, getState }. */
@@ -699,7 +736,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; downloadDocx: () => void; buildBoxSetEpub: () => void; renderBoxSetList: () => void; boxSetExpandPick: (files: unknown[]) => Promise<{ files: unknown[]; skipped: unknown[] }>; manuscriptFileToVolume: (f: unknown) => Promise<unknown>; bookWord: (n: number) => string; renderArchiveList: () => void; cloudLoadArchive: () => void };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 
@@ -713,6 +750,11 @@ export declare const PREVIEW_NAMES: string[];
 export declare const PREVIEW_API: string[];
 export declare const PREVIEW_SUPPLIED_NAMES: string[];
 export declare function createPreviewClosure(env: Record<string, unknown>): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; setState(s: unknown): void; getState(): any };
+`;
+
+const SERIALIZE_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. Wave 5a: 1.0's serializeBook. */
+export declare const SERIALIZE_NAMES: string[];
+export declare function createSerialize(share: Record<string, unknown>): { serializeBook: () => Record<string, unknown> };
 `;
 
 const ORACLE_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. Test oracle only. */
@@ -732,6 +774,8 @@ export async function writeClosure() {
   writeFileSync(path.join(dir, 'closure-sample.d.ts'), SAMPLE_DTS);
   writeFileSync(path.join(dir, 'closure-oracle.js'), out.oracle.code);
   writeFileSync(path.join(dir, 'closure-oracle.d.ts'), ORACLE_DTS);
+  writeFileSync(path.join(dir, 'closure-serialize.js'), out.serialize.code);
+  writeFileSync(path.join(dir, 'closure-serialize.d.ts'), SERIALIZE_DTS);
   const pv = await buildPreviewModule(html, epub);
   writeFileSync(path.join(dir, 'closure-preview.js'), pv.code);
   writeFileSync(path.join(dir, 'closure-preview.d.ts'), PREVIEW_DTS);
