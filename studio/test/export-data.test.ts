@@ -98,6 +98,19 @@ describe('wave 5a: the export reads the book and writes nothing but the preset (
     y.destroy();
   });
 
+  it('another session displacing the closure\'s state inside an open call keeps the preset it chose (no rebuild)', () => {
+    const f = fixtures('real').find((x) => x.name === 'real/lantern-coast-book-one')!;
+    const y = onDesk(structuredClone(f.book));
+    exportRun((cc) => {
+      const mine = cc.getState() as Rec;
+      mine.exportPlatform = 'kdp';
+      cc.setState(structuredClone(mine) as never); // the preview / the Style session sets its own state
+      expect(exportRun((c2) => (c2.getState() as Rec).exportPlatform)).toBe('kdp'); // a nested call reads ours
+    });
+    expect((exportBook(y) as Rec).exportPlatform).toBe('kdp');
+    y.destroy();
+  });
+
   it("the request body is 1.0's buildEpub's: { book, platform, lang }, the book 1.0's serializeBook less what it leaves home", async () => {
     const f = fixtures('real').find((x) => x.name === 'real/lantern-coast-book-one')!;
     const y = onDesk(structuredClone(f.book));

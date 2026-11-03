@@ -130,10 +130,15 @@ export function styleEnter(): Closure | null {
   const ydoc = desk.ydoc;
   if (!c || !ydoc) return null;
   const s = session;
-  if (!(s && s.ydoc === ydoc && s.ver === verOf(ydoc).n && c.getState() === s.state)) {
-    if (s && held) styleFlush(); // a held edit is written before the state is built again
-    session = build(c, ydoc);
+  if (s && s.ydoc === ydoc && s.ver === verOf(ydoc).n) {
+    // the book is unchanged: another session (the preview, the export, My themes) only set its own state into the
+    // closure. Ours stands again. Rebuilding here would drop an edit a call still open has made (it has no held flag
+    // until its call ends): seen as a header style lost when the preview redrew inside the select's change.
+    if (c.getState() !== s.state) c.setState(s.state);
+    return c;
   }
+  if (s && (held || depth > 0)) styleFlush(); // a held edit, or an open call's edit, is written before the state is built again
+  session = build(c, ydoc);
   return c;
 }
 

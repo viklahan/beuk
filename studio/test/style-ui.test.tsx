@@ -198,9 +198,13 @@ describe('the Style tab in the studio', { timeout: 60_000 }, () => {
     await click($('tglJustify'));
     await click($('tglHyph'));
     await click(document.querySelector('#ornamentGrid [data-orn="stars"]'));
-    await new Promise((r) => setTimeout(r, 400));
-    const th = (await exported()).theme as Rec;
-    expect(th).toMatchObject({ fontSize: 19.5, lineHeight: 1.8, headerStyle: 'editorial_left', paraMode: 'block', dropDepth: 4, smallCapsWords: 5, justify: false, hyphens: false, ornament: 'stars' });
+    // wait for the writes themselves, not a fixed sleep (the header style was once lost here: another session
+    // displacing the closure's state inside the select's open call rebuilt the Style session; session.ts now keeps it)
+    await waitFor(
+      async () =>
+        expect((await exported()).theme as Rec).toMatchObject({ fontSize: 19.5, lineHeight: 1.8, headerStyle: 'editorial_left', paraMode: 'block', dropDepth: 4, smallCapsWords: 5, justify: false, hyphens: false, ornament: 'stars' }),
+      { timeout: 3000 },
+    );
     expect($('tglJustify').getAttribute('aria-pressed')).toBe('false');
     expect(document.querySelector('#ornamentGrid .orn-btn.active')!.getAttribute('data-orn')).toBe('stars');
   });

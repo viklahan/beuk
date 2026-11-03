@@ -11,7 +11,7 @@ import meta from '../src/generated/strings-meta.json';
 import { loadClosure, setClosureLang, setClosureT, type Closure } from '../src/closure/index';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
-import { styleRelease, styleReset, styleRoot, styleRun, styleSettle } from '../src/style/session';
+import { styleBegin, styleEnter, styleRelease, styleReset, styleRoot, styleRun, styleSettle } from '../src/style/session';
 import { StyleFrame } from '../src/style/StyleTab';
 import { removePictures } from '../src/pictures/imagelib';
 import { fixtures } from './fixtures';
@@ -195,6 +195,18 @@ describe('the pause, and other writers', () => {
       styleSettle();
       expect((exportBook(y).theme as Rec).fontSize).toBe(21);
     });
+    y.destroy();
+  });
+
+  it('another session displacing the closure\'s state inside an open call loses none of the call\'s edit (the preview and My themes do: seen as a lost header style)', () => {
+    const y = onDesk(LANTERN());
+    const end = styleBegin()!;
+    const mine = c.getState() as unknown as { theme: Rec };
+    mine.theme.headerStyle = 'editorial_left';
+    c.setState(structuredClone(mine) as never); // the preview's pvRefresh / another session sets its own state
+    expect(styleEnter()).not.toBeNull(); // My themes' render reads the book through the session meanwhile
+    end();
+    expect((exportBook(y).theme as Rec).headerStyle).toBe('editorial_left');
     y.destroy();
   });
 

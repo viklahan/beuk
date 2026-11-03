@@ -157,11 +157,16 @@ export function exportEnter(): Closure | null {
   const ydoc = desk.ydoc;
   if (!c || !ydoc) return null;
   const s = session;
-  if (!(s && s.ydoc === ydoc && s.ver === verOf(ydoc).n && c.getState() === s.state)) {
-    styleSettle(); // a held Style edit is in the book before the export reads it
-    const st = exportStateOf(c, ydoc);
-    session = { ydoc, state: st, ver: verOf(ydoc).n, platform: (st as Rec).exportPlatform };
-  } else if (c.getState() !== session!.state) c.setState(session!.state);
+  if (s && s.ydoc === ydoc && s.ver === verOf(ydoc).n) {
+    // the book is unchanged: another session only set its own state into the closure; ours stands again (a rebuild
+    // would drop a preset an open call chose, and costs a whole exportBook)
+    if (c.getState() !== s.state) c.setState(s.state);
+    return c;
+  }
+  if (s && depth > 0) exportFlush(); // an open call's preset is written before the state is built again
+  styleSettle(); // a held Style edit is in the book before the export reads it
+  const st = exportStateOf(c, ydoc);
+  session = { ydoc, state: st, ver: verOf(ydoc).n, platform: (st as Rec).exportPlatform };
   return c;
 }
 
