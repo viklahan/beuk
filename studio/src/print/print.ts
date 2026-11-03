@@ -158,6 +158,12 @@ exportStateListeners.add((st) => loaded?.setState(st));
 
 /** The print dialogs' host the wiring last ran on (PrintModals makes a new one only when it mounts again). */
 let wiredHost: HTMLElement | null = null;
+/** The print dialogs go (PrintModals unmounts): the window listeners 1.0's wiring added for them (the interior view's
+ *  resize, which reads #modalPrintView) go with them, and the next host is wired afresh (second review, Minor 2). */
+export function printUnwire(host: HTMLElement): void {
+  for (const x of tracked.splice(0)) window.removeEventListener(x.type, x.fn, x.opts);
+  if (wiredHost === host) wiredHost = null;
+}
 /** 1.0's initPrint and initPrintView, on a newly built export modal (ExportModal, once per book), inside the export
  *  session: the export modal's print section is wired every time (its markup is new), the print dialogs the first
  *  time only (see print$). 1.0's own switch keeps the modal open when the print-ready PDF asks for a sign-in (2.0 has

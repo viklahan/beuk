@@ -220,6 +220,28 @@ describe("1.0's print section, print view and print-ready panel in the studio", 
     expect(($('btnPrintReadyPdf') as HTMLButtonElement).disabled).toBe(false);
   });
 
+  /* Second review (Minor 2): 1.0's interior-view resize listener (initPrintView, on the window) outlived the print
+     dialogs: after they went, every resize read $("modalPrintView") as null and threw. */
+  it('the print dialogs gone, their window listeners go with them: a resize afterwards throws nothing', async () => {
+    await studioWith(LANTERN());
+    expect(printListeners()).toBeGreaterThan(0);
+    const errors: unknown[] = [];
+    const onErr = (e: unknown) => errors.push(e);
+    const onWinErr = (e: ErrorEvent) => errors.push(e.error ?? e.message);
+    process.on('uncaughtException', onErr);
+    window.addEventListener('error', onWinErr);
+    try {
+      cleanup();
+      expect(printListeners()).toBe(0);
+      window.dispatchEvent(new Event('resize'));
+      await new Promise((r) => setTimeout(r, 300));
+      expect(errors.map(String)).toEqual([]);
+    } finally {
+      process.off('uncaughtException', onErr);
+      window.removeEventListener('error', onWinErr);
+    }
+  });
+
   it('a second book: the print dialogs keep one set of listeners (one print per click), the new export modal is wired', async () => {
     await studioWith(LANTERN());
     const n = printListeners();

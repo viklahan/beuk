@@ -8,7 +8,7 @@ import { useLocale } from '../i18n/LocaleProvider';
 import { drawIcons } from '../insights/insights';
 import { StackEntry } from '../shell/Dialog';
 import { guardRoots } from '../style/session';
-import { loadPrint, printHost } from './print';
+import { loadPrint, printHost, printUnwire } from './print';
 
 /* Step 5 wave 5b (inventory F2): 1.0's print view (#modalPrint: the paginated interior in a frame, the browser's own
    print) and Print Interior View (#modalPrintView: the facing-page spreads), with the view's measurer (#pivMeasure) —
@@ -66,6 +66,7 @@ export function PrintModals() {
       off.forEach((f) => f());
       backs.current = { print: null, view: null };
       if (printHost.el === el) printHost.el = null;
+      printUnwire(el);
       el.innerHTML = '';
       el.remove();
     };
