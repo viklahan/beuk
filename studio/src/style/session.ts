@@ -375,6 +375,12 @@ export function cleanFragment(root: DocumentFragment | Element): void {
         el.remove(); // with everything inside it
         continue;
       }
+      // wave 5a: a link stands only as 1.0's validator writes it — an HTML <a> to the error dictionary; any other <a>
+      // (an SVG one, one to anywhere else) goes, with its content
+      if (el.tagName.toLowerCase() === 'a' && !(el.namespaceURI === 'http://www.w3.org/1999/xhtml' && HELP_LINK.test(el.getAttribute('href') || ''))) {
+        el.remove();
+        continue;
+      }
       for (const at of Array.from(el.attributes)) {
         const v = cleanAttr(el, at.name, at.value);
         if (v === null) el.removeAttribute(at.name);
@@ -470,6 +476,9 @@ const PLAIN_LEN = /^\d*\.?\d+(em|rem|px|pt|%)?$/;
 /** Review round 2: the theme's numeric fields, and a number written as a plain decimal string. */
 const NUMERIC_THEME = ['fontSize', 'lineHeight', 'dropDepth', 'smallCapsWords'] as const;
 const PLAIN_NUM = /^\s*-?\d*\.?\d+\s*$/;
+/** Wave 5a review (Important 1): absent, or a string matching `re` — never another type (1.0 writes values into its
+ *  markup and CSS by concatenation, where an array or an object becomes its text). */
+const plainOr = (v: unknown, re: RegExp): boolean => v === undefined || (typeof v === 'string' && re.test(v));
 function fontValid(f: unknown): f is Rec {
   return isRec(f) && (f.ext === 'ttf' || f.ext === 'otf') && typeof f.data === 'string' && !!f.data && typeof f.family === 'string' && !!f.family.trim();
 }
@@ -502,7 +511,9 @@ export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
       // wave 4c review (Important 2): an id 1.0 writes unescaped into an attribute (the maker's art grid) must be a
       // plain one (1.0's uid: "s" and base-36), else the picture is hidden and its id replaced in the session's state
       const plainId = typeof im.id !== 'string' || PICTURE_ID.test(im.id);
-      if (plainId && (typeof im.data !== 'string' || B64.test(im.data)) && (typeof im.mediaType !== 'string' || MEDIA.test(im.mediaType))) continue;
+      // wave 5a review (Important 1): a value is plain only as a string that matches (1.0 concatenates an array as its
+      // joined text); an absent one stays absent
+      if (plainId && plainOr(im.data, B64) && plainOr(im.mediaType, MEDIA)) continue;
       hidden.images.set(im, { ...im });
       if (!plainId) im.id = 'hidden-picture-' + k;
       im.data = '';
@@ -513,7 +524,7 @@ export function sourceSafe(c: Closure, st: Rec, book: Rec): Hidden {
   // review round 2: the cover (1.0's sectionHtml writes its mediaType unescaped into an <img src>; the hardcover's
   // board wears it) — hidden from 1.0's code when its data is not base64 or its media type not plain. The Style
   // session never writes `cover` (STYLE_KEYS), so the book keeps it exactly.
-  if (isRec(st.cover) && !((typeof st.cover.data !== 'string' || B64.test(st.cover.data)) && (typeof st.cover.mediaType !== 'string' || MEDIA.test(st.cover.mediaType)))) {
+  if (isRec(st.cover) && !(plainOr(st.cover.data, B64) && plainOr(st.cover.mediaType, MEDIA))) {
     // wave 4c: the session writes `cover` now: the stored cover is put back whenever 1.0 has not replaced it
     hidden.cover = isRec(book.cover) ? book.cover : { ...st.cover };
     st.cover = null;
@@ -540,8 +551,9 @@ export function themeSafe(c: Closure, th: unknown, shown: Set<string>): void {
   if (isRec(th.header)) for (const k of a.HD_KEYS) { const e = th.header[k]; if (isRec(e) && !ok(e.font)) e.font = th.headFont; }
   // wave 4b: 1.0 writes these two into the preview's markup and CSS as they are (chapterOpeningHtml's class
   // attribute, buildBookCss's text-indent): a value that is not a plain one becomes 1.0's default
-  if (typeof th.headerStyle === 'string' && !PLAIN_ID.test(th.headerStyle)) th.headerStyle = 'classic_centered';
-  if (typeof th.indentDepth === 'string' && !PLAIN_LEN.test(th.indentDepth)) th.indentDepth = '1.5em';
+  // (wave 5a review, Important 1: a non-string value is not plain either; an absent one stays absent)
+  if (!plainOr(th.headerStyle, PLAIN_ID)) th.headerStyle = 'classic_centered';
+  if (!plainOr(th.indentDepth, PLAIN_LEN)) th.indentDepth = '1.5em';
   // review round 2: the numbers 1.0's CSS and markup builders interpolate as they are (buildBookCss's font-size,
   // line-height, the drop cap's size and initial-letter; sectionHtml's small-caps count): a finite number, else the
   // default theme's (PRESETS[0], 1.0's starting theme)

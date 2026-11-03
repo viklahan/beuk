@@ -53,3 +53,20 @@ export function hostileExportBook(): Rec {
   b.customThemes = [{ id: 'ctx', name: 'Mine ' + tag(22), theme: { ...b.theme, bodyFont: evil } }];
   return b;
 }
+
+/** Review (Important 1): the same attacks as non-string values — 1.0 concatenates them into markup and CSS as their
+ *  joined text (an array), so a type check that lets a non-string pass is no check. */
+export function hostileNonStringBook(): Rec {
+  const b = structuredClone(fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!.book) as Rec & { sections: Rec[]; theme: Rec };
+  const s = b.sections.find((x) => x.kind === 'body' && x.type === 'chapter')!;
+  s.content = ['![arr](img:arrmedia)', '![arr2](img:arrdata)', ''].join('\n\n') +String(s.content || '');
+  b.images = [
+    ...((b.images as Rec[]) || []),
+    { id: 'arrmedia', name: 'm', mediaType: ['image/png" onerror="window.__pw=31'], ext: 'png', data: PNG_1PX },
+    { id: 'arrdata', name: 'd', mediaType: 'image/png', ext: 'png', data: [PNG_1PX + '" onerror="window.__pw=32'] },
+  ];
+  b.cover = { data: PNG_1PX, mediaType: ['image/png"/><item id="y" href="https://evil.example/d.xhtml" media-type="application/xhtml+xml'], ext: 'png', name: 'c.png' };
+  b.theme = { ...b.theme, headerStyle: ['x" onmouseover="window.__pw=33'], indentDepth: ['1em; background: url(https://evil.example/n.png)'] };
+  return b;
+}
+

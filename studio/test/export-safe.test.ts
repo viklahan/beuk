@@ -12,7 +12,7 @@ import { arriveForExport, exportBody, exportReset, exportRun, loadSerialize } fr
 import { exportSafe } from '../src/export/safe';
 import { styleRelease } from '../src/style/session';
 import { fixtures } from './fixtures';
-import { hostileExportBook } from './export-fixture';
+import { hostileExportBook, hostileNonStringBook } from './export-fixture';
 import { cssHazards, hazards } from './hazards';
 
 /* Wave 5a, task 1 — constraint 53 (review focus #2): safety, the export's turn. A hostile book (test/export-fixture.ts)
@@ -91,6 +91,19 @@ describe('wave 5a: a hostile book through the export (constraint 53)', () => {
     const found: string[] = [];
     for (const id of PRESETS()) found.push(...packageHazards(c.api.epubFiles(id), 'server ' + id));
     expect(found).toEqual([]);
+    y.destroy();
+  });
+
+  it('review (Important 1): non-string values (arrays) in a picture, the cover and the theme: no hazard in the package, the HTML or the server build', async () => {
+    const y = onDesk(hostileNonStringBook());
+    const found = exportRun((cc) => [...packageHazards(cc.api.epubFiles('generic'), 'pkg'), ...hazards(cc.api.buildStandaloneHtml(), 'html')])!;
+    expect(found).toEqual([]);
+    const body = JSON.parse((await exportBody('en'))!) as { book: Rec };
+    const r = readBook(body.book);
+    if (r.status === 'ok') {
+      c.setState(stateFromBook(c, JSON.parse(JSON.stringify(r.book)) as Rec));
+      expect(packageHazards(c.api.epubFiles('generic'), 'server')).toEqual([]);
+    }
     y.destroy();
   });
 
