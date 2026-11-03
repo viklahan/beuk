@@ -288,7 +288,13 @@ function flushPlans(c: Closure, s: Session): boolean {
    (flushPrint). Each is written as serializeBook writes it — storeCheck: normalizeStoreCheck(state.storeCheck); coverRecipe:
    normalizeCoverRecipe(state.coverRecipe), or null; colour: bookColour() when bookColourSet(), else no key — in its
    place, only when a call changed it, with flushPrint's rule for a value put back (the stored value again, absent if the
-   book had none). */
+   book had none).
+   Second review of 5d (Important): the write is minimal. The session's state is corrected (exportSafe: stripXmlIllegal,
+   coverSafe, the hidden fonts), so its whole value is never written: only the fields the call changed (the session's
+   value before against after) are applied to 1.0's state of the book AS STORED (applyBookDoc's lines, no correction),
+   which is then serialized as serializeBook does. A wrap fix changes the stored recipe in its wrap alone; a tagline's
+   control character, a face named "Author's Hand", a hostile recipe's values stay as the book holds them (the safe path
+   corrects them again on every read). */
 export const STORE_KEYS = ['storeCheck', 'coverRecipe', 'colour'] as const;
 /** serializeBook's lines for the three keys, on `st` (1.0's bookColour helpers read the closure's state: set to `st` for
  *  the call). */
@@ -323,6 +329,23 @@ function storeArrived(c: Closure, raw: Stored, st: Rec): Rec {
     c.setState(was as never);
   }
 }
+/** `base` with only what changed from `before` to `after` applied, field by field (objects walked; anything else
+ *  replaced; undefined: no key). */
+function patchInto(base: unknown, before: unknown, after: unknown): unknown {
+  if (same(before, after)) return base;
+  if (isRec(before) && isRec(after) && isRec(base)) {
+    const out = structuredClone(base);
+    for (const k of new Set([...Object.keys(before), ...Object.keys(after)])) {
+      const v = patchInto(out[k], before[k], after[k]);
+      if (v === undefined) delete out[k];
+      else out[k] = v;
+    }
+    return out;
+  }
+  return after === undefined ? undefined : structuredClone(after);
+}
+/** The state key each written key is held in (serializeBook's colour is state.bookColour). */
+const STORE_STATE: Record<(typeof STORE_KEYS)[number], string> = { storeCheck: 'storeCheck', coverRecipe: 'coverRecipe', colour: 'bookColour' };
 const storeBases = new WeakMap<Y.Doc, { raw: Stored; written: string }>();
 function storedStore(y: Y.Doc): Stored {
   const m = y.getMap<unknown>(META);
@@ -338,11 +361,17 @@ function flushStore(c: Closure, s: Session): boolean {
   const cur = storedStore(y);
   let base = storeBases.get(y);
   if (!base || base.written !== JSON.stringify(cur)) storeBases.set(y, (base = { raw: cur, written: '' }));
-  const was = storeArrived(c, base.raw, s.state as Rec);
+  // 1.0's state of the book as it stands, uncorrected; the call's own changes applied to it, field by field
+  const prev = c.getState();
+  const stored = arriveForExport(c, exportBook(y) as Rec) as unknown as Rec;
+  c.setState(prev as never);
+  for (const k of changed) stored[STORE_STATE[k]] = patchInto(stored[STORE_STATE[k]], s.store[k], now[k]);
+  const out = storeSerialized(c, stored);
+  const was = storeArrived(c, base.raw, stored);
   const m = y.getMap<unknown>(META);
   y.transact(() => {
     for (const k of changed) {
-      const want = same(now[k], was[k]) ? base.raw[k]! : now[k] === undefined ? { has: false, v: undefined } : { has: true, v: now[k] };
+      const want = same(out[k], was[k]) ? base.raw[k]! : out[k] === undefined ? { has: false, v: undefined } : { has: true, v: out[k] };
       if (want.has) {
         placeKey(y, k);
         setMeta(y, k as never, structuredClone(want.v) as never);

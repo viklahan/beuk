@@ -11,6 +11,8 @@ import { desk } from '../src/environment/page';
 import { arriveForExport, exportReset, exportRun, exportState, loadSerialize } from '../src/export/state';
 import { styleRelease } from '../src/style/session';
 import { fixtures } from './fixtures';
+import { hostileExportBook } from './export-fixture';
+import { ttfData } from './style-fixture';
 
 /* Wave 5d, task 1 — constraints 71, 72, 73 (review focus #1, #2): THE AUDIT IS 1.0's AND ITS ACTIONS ARE 1.0's EDITS.
    - On every fixture, every store, binding and paper, with the print settings that change the verdict, 1.0's storeAudit
@@ -265,6 +267,80 @@ describe("wave 5d: the store check's actions are 1.0's edits (constraint 72)", (
     exportRun((cc) => ((cc.getState() as Rec).bookColour = cc.api.bookColourNormalize(structuredClone(expected.colour))));
     expect(exportBook(y)).toEqual(expected);
     exportRun((cc) => ((cc.api.storeUi as Rec).server = null));
+    y.destroy();
+  });
+
+  /* Second review of 5d (Important): a fix writes only what 1.0's action changed — never the session's corrections
+     (stripXmlIllegal, coverSafe, the hidden fonts). */
+  const withoutWrap = (r: Rec) => {
+    const x = structuredClone(r);
+    delete x.wrap;
+    return x;
+  };
+  const changedWrapKeys = (a: Rec, b: Rec) => [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k])).sort();
+
+  it("an honest but unusual book (an uploaded face named \"Author's Hand\" on a cover element, a tagline with U+000B): a wrap fix changes the stored recipe only in its wrap, and 1.0 reads it back", () => {
+    const book = structuredClone(LC().book) as Rec & { coverRecipe: Rec & { elements: Record<string, Rec> } };
+    book.fonts = [{ id: 'fah', name: 'AuthorsHand.ttf', family: "Author's Hand", ext: 'ttf', mediaType: 'font/ttf', data: ttfData(1600, 3) }];
+    book.coverRecipe.elements.tagline!.font = "Author's Hand";
+    book.coverRecipe.tagline = 'Tide\u000Bline';
+    book.coverRecipe.title = 'Lantern \ud800Coast';
+    const y = onDesk(book);
+    const r0 = (exportBook(y) as Rec).coverRecipe as Rec;
+    expect((r0.elements as Record<string, Rec>).tagline!.font).toBe("Author's Hand");
+    expect(r0.tagline).toBe('Tide\u000Bline');
+    // what 1.0's own save writes of the stored recipe (serializeBook: normalizeCoverRecipe — it adds the wrap's spine and
+    // back a legacy recipe lacks), on 1.0's uncorrected state of the book
+    const n0 = (arriveForExport(c, exportBook(y) as Rec) as unknown as Rec).coverRecipe as Rec;
+    expect(withoutWrap(n0)).toEqual(withoutWrap(r0));
+    exportRun((cc) => cc.api.storeAct({ kind: 'wrapFactor', factor: 0.0025 }));
+    const r1 = (exportBook(y) as Rec).coverRecipe as Rec;
+    expect(withoutWrap(r1)).toEqual(withoutWrap(r0));
+    expect(changedWrapKeys(n0.wrap as Rec, r1.wrap as Rec).every((k) => k === 'customFactor' || k === 'paper')).toBe(true);
+    expect([(r1.wrap as Rec).paper, (r1.wrap as Rec).customFactor]).toEqual(['custom', 0.0025]);
+    // 1.0 reads it back: its arrival keeps the face and the tagline as stored
+    const back = arriveForExport(c, exportBook(y) as Rec) as unknown as Rec & { coverRecipe: Rec & { elements: Record<string, Rec> } };
+    expect([back.coverRecipe.elements.tagline!.font, back.coverRecipe.tagline, (back.coverRecipe.wrap as Rec).customFactor]).toEqual(["Author's Hand", 'Tide\u000Bline', 0.0025]);
+    y.destroy();
+  });
+
+  it("the hostile book: browsing writes none of the session's corrections, and a wrap fix writes only the wrap (the recipe otherwise as stored; the safe path corrects it again on every read)", () => {
+    const hostile = hostileExportBook() as Rec & { coverRecipe: Rec & { elements: Record<string, Rec> } };
+    hostile.coverRecipe.elements.title!.font = 'Bad"); src: url(https://evil.example/f.ttf';
+    hostile.coverRecipe.bgColor = 'red; background: url(https://evil.example/b.png)';
+    const y = onDesk(hostile);
+    const expected = want(hostile, exportBook(y) as Rec);
+    exportRun((cc) => {
+      for (const sc of [{ store: 'kdp', binding: 'paperback', ink: 'bw_white' }, { store: 'ingramspark', binding: 'hardcover', ink: 'bw_cream' }]) cc.api.storeAudit(sc);
+      cc.api.buildStoreReportHtml(cc.api.storeAudit());
+    });
+    expect(exportBook(y)).toEqual(expected);
+    const r0 = (exportBook(y) as Rec).coverRecipe as Rec;
+    const n0 = (arriveForExport(c, exportBook(y) as Rec) as unknown as Rec).coverRecipe as Rec;
+    exportRun((cc) => cc.api.storeAct({ kind: 'wrapPages', pages: 212 }));
+    const out = exportBook(y) as Rec;
+    const r1 = out.coverRecipe as Rec;
+    expect(withoutWrap(r1)).toEqual(withoutWrap(r0));
+    expect(changedWrapKeys(n0.wrap as Rec, r1.wrap as Rec)).toEqual(['pages']);
+    // every other key is the book's own
+    const { coverRecipe: _a, ...restOut } = out;
+    const { coverRecipe: _b, ...restWant } = expected as Rec;
+    expect(restOut).toEqual(restWant);
+    y.destroy();
+  });
+
+  it('storeCheck and colour: the action\'s fields only (an ink chosen, printBlack), the rest of the stored value as it was', () => {
+    const book = structuredClone(fixtures('real').find((x) => x.name === 'real/reads-you')!.book) as Rec;
+    // a stored colour 1.0 keeps as written, with a control character the export session strips
+    book.colour = { accent: '#a3241c', tint: '' };
+    const y = onDesk(book);
+    const c0 = (exportBook(y) as Rec).colour as Rec;
+    exportRun((cc) => cc.api.storeAct({ kind: 'ink', ink: 'bw_cream' }));
+    expect((exportBook(y) as Rec).storeCheck).toEqual({ store: 'kdp', binding: 'paperback', ink: 'bw_cream', attestSpine: false });
+    exportRun((cc) => {
+      (cc.getState() as Rec).bookColour = cc.api.bookColourNormalize({ ...((cc.getState() as Rec).bookColour as Rec), printBlack: true });
+    });
+    expect((exportBook(y) as Rec).colour).toEqual({ ...c0, printBlack: true });
     y.destroy();
   });
 
