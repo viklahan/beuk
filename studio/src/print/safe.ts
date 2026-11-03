@@ -29,25 +29,47 @@ const foreign = (v: string | null | undefined): boolean => {
   if (/^data:/i.test(s)) return false;
   return /^[a-z][a-z0-9+.-]*:/i.test(s) || s.startsWith('//') || /[\\\u0000-\u001f]/.test(s);
 };
+/** The attributes that hold an address (a scheme anywhere else is the book's words: an alt "JavaScript: …"). */
+const URL_ATTRS = new Set(['href', 'src', 'srcset', 'xlink:href', 'action', 'formaction', 'poster', 'background', 'data', 'cite', 'longdesc', 'manifest', 'ping']);
 const scheme = (v: string): boolean => /^\s*(?:javascript|vbscript)\s*:/i.test(v.replace(/[\u0000- ]/g, ''));
-/** CSS that names another origin (url(), @import) or runs script (expression(), -moz-binding, behavior). */
+/** A CSS string literal. */
+const CSS_STR = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g;
+const unquote = (s: string): string => s.slice(1, -1);
+/** image-set() / -webkit-image-set(): their strings are addresses the browser loads (no url() needed). */
+const IMAGE_SET = /(?:-webkit-)?image-set\s*\(((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\([^()]*\)|[^'"()])*)\)/gi;
+const URL_FN = /url\(\s*(['"]?)([^'")]*)\1\s*\)/gi;
+const imageSetForeign = (args: string): boolean => (args.match(CSS_STR) || []).some((s) => foreign(unquote(s)));
+/** CSS that names another origin (url(), image-set(), @import) or runs script (expression(), -moz-binding, behavior,
+ *  javascript:) — the keywords looked for outside the stylesheet's strings: the running head is the book's title and
+ *  author as a CSS string, and "Behavior: …" there is the book's words (review, Critical 1). */
 function cssForeign(css: string): boolean {
   const c = String(css || '').replace(/\/\*[\s\S]*?\*\//g, '');
-  if (/@import|expression\s*\(|-moz-binding|behavior\s*:|javascript:/i.test(c)) return true;
-  if (/\\/.test(c.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""'))) return true; // an escape outside a string can hide a url( or a scheme
-  const re = /url\(\s*(['"]?)([^'")]*)\1\s*\)/gi;
+  const outside = c.replace(CSS_STR, '""');
+  if (/@import|expression\s*\(|-moz-binding|behavior\s*:|javascript:/i.test(outside)) return true;
+  if (/\\/.test(outside)) return true; // an escape outside a string can hide a url( or a scheme
   let m: RegExpExecArray | null;
-  while ((m = re.exec(c))) if (foreign(m[2])) return true;
+  URL_FN.lastIndex = 0;
+  while ((m = URL_FN.exec(c))) if (foreign(m[2])) return true;
+  IMAGE_SET.lastIndex = 0;
+  while ((m = IMAGE_SET.exec(c))) if (imageSetForeign(m[1] || '')) return true;
   return false;
 }
-/** The CSS with every backslash outside a string taken out (strings kept as they are). */
-const unescapedOutside = (css: string): string => String(css).replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|\\/g, (all, str) => (str ? str : ''));
-/** Every url() in the CSS that names another origin made none, @import and script in CSS taken out. */
+/** `fn` on the CSS outside its strings (the strings kept as they are). */
+const outsideStrings = (css: string, fn: (part: string) => string): string => {
+  let out = '', at = 0, m: RegExpExecArray | null;
+  const re = new RegExp(CSS_STR.source, 'g');
+  while ((m = re.exec(css))) {
+    out += fn(css.slice(at, m.index)) + m[0];
+    at = m.index + m[0].length;
+  }
+  return out + fn(css.slice(at));
+};
+/** A url() or image-set() that names another origin made none; @import, script in CSS and escapes outside a string
+ *  taken out (the strings — the book's words — kept). */
 const cssDefang = (css: string): string =>
-  unescapedOutside(css)
-    .replace(/@import[^;]*;?/gi, '')
-    .replace(/expression\s*\(|-moz-binding|behavior\s*:|javascript:/gi, 'x-')
-    .replace(/url\(\s*(['"]?)([^'")]*)\1\s*\)/gi, (all, _q, u) => (foreign(u) ? 'none' : all));
+  outsideStrings(String(css), (p) => p.replace(/\\/g, '').replace(/@import[^;]*;?/gi, '').replace(/expression\s*\(|-moz-binding|behavior\s*:|javascript:/gi, 'x-'))
+    .replace(IMAGE_SET, (all, args: string) => (imageSetForeign(args || '') ? 'none' : all))
+    .replace(URL_FN, (all, _q, u) => (foreign(u) ? 'none' : all));
 
 /** What the walk took out (0 for an honest book), for the tests and the e2e. */
 export const printSafety = { docs: 0, cleaned: 0, removed: 0, flowsCleaned: 0 };
@@ -73,7 +95,7 @@ export function cleanPrintDoc(html: string): string {
     for (const at of Array.from(el.attributes)) {
       const n = at.name.toLowerCase();
       const bad =
-        n.startsWith('on') || n === 'srcdoc' || n === 'formaction' || n === 'action' || scheme(at.value) ||
+        n.startsWith('on') || n === 'srcdoc' || n === 'formaction' || n === 'action' || (URL_ATTRS.has(n) && scheme(at.value)) ||
         (n === 'style' && cssForeign(at.value)) ||
         ((LOADS[name] || []).includes(n) && (n === 'srcset' ? at.value.split(',').some((p) => foreign(p.trim().split(/\s+/)[0])) : foreign(at.value))) ||
         (n === 'href' && name === 'a' && foreign(at.value) && !/^https?:\/\//i.test(at.value.trim()));

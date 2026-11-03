@@ -95,6 +95,34 @@ describe("wave 5b: the print document is safe (constraint 59)", () => {
     y.destroy();
   });
 
+  /* Review (Critical 1): words in the book that read like CSS or script names, inside the stylesheet's strings (the
+     running head is the title and author as a CSS string) or in an attribute that is not an address, are the book's
+     words: the document is handed on as 1.0 built it. */
+  it('an honest title and author that read like CSS ("Behavior:", "JavaScript:", "@import") and a picture described "JavaScript: …" pass unchanged', () => {
+    const b = structuredClone(fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!.book) as Rec & { meta: Rec };
+    b.meta.title = 'Animal Behavior: JavaScript @import expression(s) -moz-binding';
+    b.meta.author = 'VBScript: A. Writer';
+    const y = onDesk(b);
+    printSinks.on = false;
+    const raw = build(() => undefined);
+    printSinks.on = true;
+    expect(raw).toContain('Animal Behavior: JavaScript @import');
+    expect(cleanPrintDoc(raw) === raw).toBe(true);
+    const alt = '<!DOCTYPE html>\n<html><head><style>p { color: #000; }</style></head><body><p><img src="data:image/png;base64,AAAA" alt="JavaScript: The Good Parts" title="vbscript: notes"></p></body></html>';
+    expect(cleanPrintDoc(alt)).toBe(alt);
+    y.destroy();
+  });
+
+  /* Review (Important 2): CSS that loads from elsewhere without url() — image-set() with a bare string. */
+  it('image-set() and -webkit-image-set() of another origin are taken out of the stylesheet and of a style attribute', () => {
+    const doc = '<!DOCTYPE html>\n<html><head><style>body { background-image: image-set("https://evil.example/a.png" 1x); } p { background: -webkit-image-set(\'//evil.example/b.png\' 1x); }</style></head><body><p style="background-image: image-set(&quot;https://evil.example/c.png&quot; 1x)">x</p></body></html>';
+    const out = cleanPrintDoc(doc);
+    expect(out).not.toMatch(/evil\.example/);
+    // a picture's own bytes stay
+    const own = '<!DOCTYPE html>\n<html><head><style>body { background-image: image-set("data:image/png;base64,AAAA" 1x); }</style></head><body></body></html>';
+    expect(cleanPrintDoc(own)).toBe(own);
+  });
+
   it("an honest book's print document passes the sinks unchanged, byte for byte (every fixture, every trim, every toggle)", () => {
     const before = printSafety.cleaned;
     for (const f of fixtures('all')) {

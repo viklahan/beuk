@@ -1,5 +1,5 @@
 import { closureLang, closureT, cloudFacts, coverEnv, exportEnv, fmtDateIntl, pageEnv, printEnv, untitledStrings, type State } from '../closure/index';
-import { exportRun, exportStateListeners, exportUi } from '../export/state';
+import { exportBegin, exportRun, exportStateListeners, exportUi } from '../export/state';
 import { drawIcons } from '../insights/insights';
 import { guardSheet } from '../preview/preview';
 import { cleanPrintDoc, printFlowSink } from './safe';
@@ -138,6 +138,8 @@ export function loadPrint(): Promise<PrintClosure> {
       pc.vars.sidewaysPrintPages = (inner: string) => sideways(printSinks.on ? printFlowSink(inner) : inner);
       const build = pc.vars.buildPrintHtml as () => string;
       pc.vars.buildPrintHtml = () => (printSinks.on ? cleanPrintDoc(build()) : build());
+      // (review, Minor: the api object holds the function it was created with; a caller of it gets the checked one too)
+      pc.api.buildPrintHtml = pc.vars.buildPrintHtml as Fn;
       loaded = pc;
       // the main closure's initExport calls these two; the preview's full screen the third
       printEnv.controls = () => void pc.api.renderPrintControls();
@@ -184,11 +186,17 @@ type PrintSet = Record<string, unknown>;
 function withSettings<T>(set: PrintSet, fn: (pc: PrintClosure) => T): T | undefined {
   const pc = loaded;
   if (!pc) return undefined;
-  exportRun(() => undefined); // the state is the open book's, now
+  // the export session is held open for the whole call (review, Minor: a session ending meanwhile would have written
+  // the settings in place): the settings are put back before it ends, so its flush sees nothing changed
+  const end = exportBegin();
+  if (!end) return undefined;
   const st = pc.getState() as Rec;
   const keep = structuredClone(Object.fromEntries(Object.keys(set).map((k) => [k, st[k]])));
   Object.assign(st, structuredClone(set));
-  const back = () => Object.assign(st, keep);
+  const back = () => {
+    Object.assign(st, keep);
+    end();
+  };
   try {
     const out = fn(pc);
     if (out && typeof (out as { then?: unknown }).then === 'function') return (out as unknown as Promise<unknown>).finally(back) as unknown as T;

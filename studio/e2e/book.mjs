@@ -5022,13 +5022,14 @@ async function printBrowse(page) {
   await page.waitForFunction(() => document.querySelectorAll('#trimGrid [data-trim]').length === 24, null, { timeout: 30_000 });
   const own = await page.$eval('#trimGrid .active', (b) => b.getAttribute('data-trim'));
   for (const id of ['5x8', '8.5x11', own]) await page.click(`#trimGrid [data-trim="${id}"]`);
+  // large print and picture book as the book has them (1.0's exclusion: large print on turns picture book off, so a
+  // toggle twice is not always the book as it was — they are put back at the end)
+  const lp = await page.$eval('#tglLargePrint', (b) => b.getAttribute('aria-pressed'));
+  const pb = await page.$eval('#tglPictureBook', (b) => b.getAttribute('aria-pressed'));
   for (const id of ['#tglRecto', '#tglLargePrint', '#tglBleed', '#tglOmitChapter', '#tglOmitBlank']) {
     await page.click(id);
     await page.click(id);
   }
-  // picture book on (large print off), then each back: 1.0's exclusion
-  const lp = await page.$eval('#tglLargePrint', (b) => b.getAttribute('aria-pressed'));
-  const pb = await page.$eval('#tglPictureBook', (b) => b.getAttribute('aria-pressed'));
   await page.click('#tglPictureBook');
   await page.click('#tglPictureBook');
   if ((await page.$eval('#tglLargePrint', (b) => b.getAttribute('aria-pressed'))) !== lp) await page.click('#tglLargePrint');
