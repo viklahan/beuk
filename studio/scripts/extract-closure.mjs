@@ -177,6 +177,8 @@ export const EXTRA_ROOTS = [
   'runValidation', 'validateEpubPackage', 'validationListHtml', 'BEUK_VALIDATOR_CODES', 'epubManifestPropertyReport', 'epubDetectProps', 'epubApplyManifestProperties',
   'epubLinksOutsideSpine', 'epubTocTarget', 'EPUB_DETECTED_PROPS', 'runA11yCheck', 'auditAccessibility', 'a11yFacts', 'a11yMetaBlock', 'a11yStampConformance',
   'a11ySummaryText', 'a11ySummaryDefault', 'A11Y_CONFORMS_VALUE', 'a11yJumpTo',
+  // (already lifted for the package: named so the tests run 1.0's own script-face self-check, epub.fonts.script-embedded)
+  'ensureScriptFonts', 'SCRIPT_FONTS', 'scriptFontData', 'bookScripts',
   // wave 5a: applyBookDoc's own normalizers, which 2.0's arrival for the export runs in applyBookDoc's order
   // (src/export/state.ts), so 1.0's serializeBook (closure-serialize.js) writes the body 1.0 sends
   'bookMetaDefaults', 'bookPrintDefaults', 'bookSeriesNumberInto', 'bookIdNormalizeLegacyList', 'imSetSource', 'castSetHidden', 'bodyFaceOf', 'bookColourNormalize',

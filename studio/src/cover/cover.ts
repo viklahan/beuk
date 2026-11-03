@@ -113,6 +113,9 @@ async function pictureBlob(b: Blob): Promise<Blob> {
   return new Blob([b], { type: jpeg ? 'image/jpeg' : 'image/png' });
 }
 
+/** Where 1.0's page-relative font addresses land on 2.0's page (wave 5a: coverFetch sends them to 1.0's /assets/fonts/). */
+const NEXT_FONTS = '/next/assets/fonts/';
+
 /** The page's fetch as 1.0's cover code reaches it: a same-origin request unchanged; any other only when the served
  *  policy allows its address (else refused, as a network failure: 1.0's own catch says photoRetry / photoFail or tries
  *  the next size), its body's bytes checked to be a JPEG or a PNG when 1.0 reads it as a picture (blob()). */
@@ -126,6 +129,12 @@ export function coverFetch(input: RequestInfo | URL, init?: RequestInit): Promis
   }
   const same = url.origin === globalThis.location?.origin;
   if (!same && !allowedStockUrl(url.href)) return Promise.reject(new TypeError('refused: the served policy does not allow ' + url.origin));
+  // wave 5a: 1.0 asks for its script and display faces page-relative ("assets/fonts/…" against document.baseURI), and
+  // its page is /studio, so they are 1.0's /assets/fonts/…; 2.0's page is /next/, where no such files are
+  if (same && url.pathname.startsWith(NEXT_FONTS)) {
+    url.pathname = url.pathname.slice('/next'.length);
+    input = url.href;
+  }
   // review round 2 (Minor 3): a body 1.0 reads as a picture (blob(): the chosen photo) is sniffed on every path
   return (same ? globalThis.fetch(input, init) : globalThis.fetch(url.href, { ...init, credentials: 'omit' })).then((r) => {
     // the Response itself, its blob() shadowed (its other methods and getters stay the platform's: the font loads read
