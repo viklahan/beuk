@@ -14,7 +14,7 @@ import { styleRelease } from '../src/style/session';
 import { fixtures } from './fixtures';
 import { hostileExportBook, hostileNonStringBook } from './export-fixture';
 import { hazards } from './hazards';
-import { CSS_AUTHOR, CSS_TITLE, cssOutsideStrings, installCanvas, styleText } from './print-fixture';
+import { CSS_AUTHOR, CSS_COMMENT_TITLE, CSS_COMMENT_TITLE_SQ, CSS_TITLE, cssAsBrowser, cssOutsideStrings, installCanvas, styleText } from './print-fixture';
 
 /* Wave 5b, task 1 — constraint 59 (review focus #3): safety, print's turn. The print document (1.0's buildPrintHtml)
    is a file the writer opens and the print frame's srcdoc. A hostile book (test/export-fixture.ts: 5a's) through it:
@@ -164,6 +164,27 @@ describe("wave 5b: the print document is safe (constraint 59)", () => {
       expect(cssOutsideStrings(styleText(raw)), '1.0 builds it into its stylesheet, as CSS').toMatch(/evil.example/);
       for (const [name, html] of [['the document', build(() => undefined)], ['the walk alone', cleanPrintDoc(raw)]] as const) expect(cssOutsideStrings(styleText(html)), name).not.toMatch(/evil.example/);
       for (const [name, fn] of TOGGLES.entries()) expect(cssOutsideStrings(styleText(build(fn))), 'toggle ' + name).not.toMatch(/evil.example/);
+      y.destroy();
+    }
+  });
+
+  /* Third review: a comment opener inside the running-head string. Stripping comments before reading strings took the
+     newline away with the "comment"; a browser ends the string at the newline, and the rule after it is live. */
+  it('a /* inside the title or author does not hide a newline that carries CSS out of the running-head string', () => {
+    for (const [title, author] of [[CSS_COMMENT_TITLE, 'A. Writer'], ['A Title', CSS_COMMENT_TITLE], [CSS_COMMENT_TITLE_SQ, CSS_COMMENT_TITLE_SQ]]) {
+      const b = structuredClone(fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!.book) as Rec & { meta: Rec };
+      b.meta.title = title;
+      b.meta.author = author;
+      const y = onDesk(b);
+      printSinks.on = false;
+      const raw = build(() => undefined);
+      printSinks.on = true;
+      expect(cssAsBrowser(styleText(raw)).bad, '1.0 builds a broken string into its stylesheet').toBeGreaterThan(0);
+      for (const [name, html] of [['the document', build(() => undefined)], ['the walk alone', cleanPrintDoc(raw)]] as const) {
+        const r = cssAsBrowser(styleText(html));
+        expect(r.bad, name + ': broken strings').toBe(0);
+        expect(r.live, name).not.toMatch(/evil.example/);
+      }
       y.destroy();
     }
   });

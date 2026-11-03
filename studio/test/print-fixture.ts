@@ -38,3 +38,39 @@ export const styleText = (html: string): string => [...html.matchAll(/<style>([\
  *  quoted address kept (it is loaded, not shown). */
 export const cssOutsideStrings = (css: string): string =>
   css.replace(/"(?:[^"\\\n\r\f]|\\[\s\S])*"|'(?:[^'\\\n\r\f]|\\[\s\S])*'/g, (m: string, at: number, all: string) => (/url\(\s*$/i.test(all.slice(Math.max(0, at - 12), at)) ? m : '""'));
+
+/** Third review: a comment opener inside the running-head string; a regex that strips comments first takes the
+ *  newline out with it, but a browser ends the string at the newline and the rule after it is live. */
+export const CSS_COMMENT_TITLE = 'a/*\n}body{background:url("https://evil.example/t)")}\n*/';
+export const CSS_COMMENT_TITLE_SQ = "a/*\n}body{background:url('https://evil.example/c)')}\n*/";
+/** CSS read left to right as a browser reads it: strings end at their quote or at a raw newline (a bad string),
+ *  comments only outside strings. What is live CSS (comments and strings masked, a url()'s own quoted address kept),
+ *  and how many bad strings there are. */
+export function cssAsBrowser(css: string): { live: string; bad: number } {
+  let live = '', bad = 0, i = 0;
+  while (i < css.length) {
+    const ch = css[i]!;
+    if (ch === '/' && css[i + 1] === '*') {
+      const j = css.indexOf('*/', i + 2);
+      i = j < 0 ? css.length : j + 2;
+      live += ' ';
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      let j = i + 1, isBad = false;
+      for (; j < css.length; j++) {
+        const c = css[j]!;
+        if (c === ch) { j++; break; }
+        if (c === '\\') { j++; continue; }
+        if (c === '\n' || c === '\r' || c === '\f') { isBad = true; break; }
+      }
+      if (isBad) bad++;
+      live += /url\(\s*$/i.test(live.slice(-12)) ? css.slice(i, j) : '""';
+      i = j;
+      continue;
+    }
+    live += ch;
+    i++;
+  }
+  return { live, bad };
+}

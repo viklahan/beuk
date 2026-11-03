@@ -37,49 +37,86 @@ const scheme = (v: string): boolean => /^\s*(?:javascript|vbscript)\s*:/i.test(v
  *  escapes \ and " only, so a newline in the title or author ends the running head's string there (second review,
  *  Important 1): what follows is CSS, and is read here as CSS. */
 const CSS_STR = /"(?:[^"\\\n\r\f]|\\[\s\S])*"|'(?:[^'\\\n\r\f]|\\[\s\S])*'/g;
-/** The quoted runs a raw newline breaks, read left to right as a browser does (a bad string): each span from its
- *  quote to the next same quote (as a looser reading would take it for one string). */
-function brokenRuns(c: string): [number, number][] {
-  const broken: [number, number][] = [];
-  for (let i = 0; i < c.length; i++) {
-    const q = c[i];
-    if (q !== '"' && q !== "'") continue;
-    let j = i + 1, bad = false;
-    for (; j < c.length && c[j] !== q; j++) {
-      if (c[j] === '\\') j++;
-      else if (c[j] === '\n' || c[j] === '\r' || c[j] === '\f') bad = true;
+/** The CSS read once, left to right, as a browser reads it (third review): a string ends at its quote or at a raw
+ *  newline (\n, \r, \f: a "bad string"); a comment is one only outside a string (a "/*" inside the running-head
+ *  string is the book's words); a backslash outside a string escapes the next character. Every check below runs on
+ *  this one reading. */
+type Tok = { t: 'css' | 'str' | 'bad' | 'com'; s: string };
+function cssTokens(css: string): Tok[] {
+  const out: Tok[] = [];
+  let buf = '', i = 0;
+  const flush = () => {
+    if (buf) out.push({ t: 'css', s: buf });
+    buf = '';
+  };
+  while (i < css.length) {
+    const ch = css[i]!;
+    if (ch === '/' && css[i + 1] === '*') {
+      flush();
+      const j = css.indexOf('*/', i + 2);
+      const end = j < 0 ? css.length : j + 2;
+      out.push({ t: 'com', s: css.slice(i, end) });
+      i = end;
+      continue;
     }
-    if (bad) broken.push([i, Math.min(j + 1, c.length)]);
-    i = j;
+    if (ch === '"' || ch === "'") {
+      flush();
+      let j = i + 1, bad = false;
+      for (; j < css.length; j++) {
+        const c = css[j]!;
+        if (c === ch) {
+          j++;
+          break;
+        }
+        if (c === '\\') {
+          j++; // an escaped character (an escaped newline continues the string)
+          continue;
+        }
+        if (c === '\n' || c === '\r' || c === '\f') {
+          bad = true;
+          break;
+        }
+      }
+      out.push({ t: bad ? 'bad' : 'str', s: css.slice(i, Math.min(j, css.length)) });
+      i = Math.min(j, css.length);
+      continue;
+    }
+    if (ch === '\\') {
+      buf += css.slice(i, i + 2);
+      i += 2;
+      continue;
+    }
+    buf += ch;
+    i++;
   }
-  return broken;
-}
-/** Each quoted run a raw newline breaks, its newlines made spaces (one string again: the book's words). */
-const mendRuns = (css: string): string => {
-  let out = css;
-  for (const [a, b] of brokenRuns(css).reverse()) out = out.slice(0, a) + out.slice(a, b).replace(/[\n\r\f]/g, ' ') + out.slice(b);
+  flush();
   return out;
-};
+}
 const unquote = (s: string): string => s.slice(1, -1);
 /** image-set() / -webkit-image-set(): their strings are addresses the browser loads (no url() needed). */
 const IMAGE_SET = /(?:-webkit-)?image-set\s*\(((?:"(?:[^"\\\n\r\f]|\\[\s\S])*"|'(?:[^'\\\n\r\f]|\\[\s\S])*'|\([^()]*\)|[^'"()])*)\)/gi;
 /** url(): its argument quoted (a ')' inside the quotes included) or bare. */
 const URL_FN = /url\(\s*(?:"((?:[^"\\\n\r\f]|\\[\s\S])*)"|'((?:[^'\\\n\r\f]|\\[\s\S])*)'|([^'"()\s]*))\s*\)/gi;
 const imageSetForeign = (args: string): boolean => (args.match(CSS_STR) || []).some((s) => foreign(unquote(s)));
-/** The spans of the CSS's strings. */
-const stringSpans = (c: string): [number, number][] => [...c.matchAll(CSS_STR)].map((m) => [m.index!, m.index! + m[0].length]);
 const inSpans = (i: number, spans: [number, number][]): boolean => spans.some(([a, b]) => i > a && i < b);
 /** CSS that names another origin (url(), image-set(), @import) or runs script (expression(), -moz-binding, behavior,
- *  javascript:) — the keywords looked for outside the stylesheet's strings: the running head is the book's title and
- *  author as a CSS string, and "Behavior: …" there is the book's words (review, Critical 1). Fail closed (second
- *  review, Important 1): a quoted run a raw newline breaks, or a url( that no url() reading accounts for, is foreign. */
+ *  javascript:) — the keywords looked for in what a browser reads as CSS, outside the strings and comments: the
+ *  running head is the book's title and author as a CSS string, and "Behavior: …" there is the book's words (review,
+ *  Critical 1). Fail closed (second and third reviews): a bad string (a raw newline ends it), or a url( that no url()
+ *  reading accounts for, is foreign. */
 function cssForeign(css: string): boolean {
-  const c = String(css || '').replace(/\/\*[\s\S]*?\*\//g, '');
-  if (brokenRuns(c).length) return true;
-  const outside = c.replace(CSS_STR, '""');
+  const toks = cssTokens(String(css || ''));
+  if (toks.some((k) => k.t === 'bad')) return true;
+  const outside = toks.map((k) => (k.t === 'css' ? k.s : k.t === 'com' ? ' ' : '""')).join('');
   if (/@import|expression\s*\(|-moz-binding|behavior\s*:|javascript:/i.test(outside)) return true;
   if (/\\/.test(outside)) return true; // an escape outside a string can hide a url( or a scheme
-  const spans = stringSpans(c);
+  // the CSS without its comments, its strings in place, and where each string stands
+  let c = '';
+  const spans: [number, number][] = [];
+  for (const k of toks) {
+    if (k.t === 'str') spans.push([c.length, c.length + k.s.length]);
+    c += k.t === 'com' ? ' ' : k.s;
+  }
   let parsed = 0;
   for (const m of c.matchAll(URL_FN)) {
     if (inSpans(m.index!, spans)) continue;
@@ -91,20 +128,21 @@ function cssForeign(css: string): boolean {
   for (const m of c.matchAll(IMAGE_SET)) if (imageSetForeign(m[1] || '')) return true;
   return false;
 }
-/** `fn` on the CSS outside its strings (the strings kept as they are). */
-const outsideStrings = (css: string, fn: (part: string) => string): string => {
-  let out = '', at = 0, m: RegExpExecArray | null;
-  const re = new RegExp(CSS_STR.source, 'g');
-  while ((m = re.exec(css))) {
-    out += fn(css.slice(at, m.index)) + m[0];
-    at = m.index + m[0].length;
-  }
-  return out + fn(css.slice(at));
-};
-/** A url() or image-set() that names another origin made none; @import, script in CSS and escapes outside a string
- *  taken out (the strings — the book's words — kept). */
+/** The same reading, made safe: a bad string is closed where the browser ends it (its quote added); outside the
+ *  strings, comments, escapes, @import and script in CSS are taken out; then a url() or image-set() naming another
+ *  origin is made none. (cleanPrintDoc empties a stylesheet this cannot make safe.) */
 const cssDefang = (css: string): string =>
-  outsideStrings(mendRuns(String(css)), (p) => p.replace(/\\/g, '').replace(/@import[^;]*;?/gi, '').replace(/expression\s*\(|-moz-binding|behavior\s*:|javascript:/gi, 'x-'))
+  cssTokens(String(css))
+    .map((k) =>
+      k.t === 'str'
+        ? k.s
+        : k.t === 'bad'
+          ? k.s + k.s[0]
+          : k.t === 'com'
+            ? ' '
+            : k.s.replace(/\\/g, '').replace(/@import[^;]*;?/gi, '').replace(/expression\s*\(|-moz-binding|behavior\s*:|javascript:/gi, 'x-'),
+    )
+    .join('')
     .replace(IMAGE_SET, (all, args: string) => (imageSetForeign(args || '') ? 'none' : all))
     .replace(URL_FN, (all: string, a?: string, b?: string, d?: string) => (foreign(a ?? b ?? d ?? '') ? 'none' : all));
 
