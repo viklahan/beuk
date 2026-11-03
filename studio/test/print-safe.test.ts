@@ -113,6 +113,43 @@ describe("wave 5b: the print document is safe (constraint 59)", () => {
     y.destroy();
   });
 
+  /* The coordinator's note (an automated review of the scheme check, which ran on address attributes only): each of
+     these in a print document, by itself and as a book's words through 1.0's build — no element, attribute or value
+     with a javascript: scheme survives. */
+  const JS_CASES: [string, string][] = [
+    ['svg animate values', '<svg><a><animate attributeName="href" values="javascript:alert(1)"/><text>x</text></a></svg>'],
+    ['svg set to', '<svg><a><set attributeName="href" to="javascript:alert(2)"/><text>x</text></a></svg>'],
+    ['xlink:href with a tab', '<svg><a xlink:href="java&#x09;script:alert(3)"><text>x</text></a></svg>'],
+    ['math href', '<math href="javascript:alert(4)"><mi>x</mi></math>'],
+    ['button formaction', '<button formaction="javascript:alert(5)">go</button>'],
+    ['a href, mixed case and a space', '<a href=" JaVaScRiPt:alert(6)">x</a>'],
+    ['an attribute outside the address list', '<span data-href="javascript:alert(7)" itemid="vbscript:alert(8)">x</span>'],
+  ];
+  const noScheme = (html: string): string[] => {
+    const d = new DOMParser().parseFromString(html, 'text/html');
+    const out: string[] = [];
+    for (const el of Array.from(d.getElementsByTagName('*'))) {
+      if (/^(animate|set|animatemotion|animatetransform|script)$/i.test(el.localName)) out.push('<' + el.localName + '>');
+      for (const at of Array.from(el.attributes)) if (/^(?:javascript|vbscript):/i.test(at.value.replace(/[\u0000- ]/g, ''))) out.push(el.localName + ' ' + at.name);
+    }
+    return out;
+  };
+  it('a javascript: scheme in any element, attribute or animation value does not survive the print document', () => {
+    for (const [name, frag] of JS_CASES) {
+      const doc = '<!DOCTYPE html>\n<html><head><style>p { color: #000; }</style></head><body><section class="print-sec">' + frag + '</section></body></html>';
+      expect(noScheme(cleanPrintDoc(doc)), name).toEqual([]);
+    }
+    // and as a book's words, through 1.0's own build and every wall
+    const b = structuredClone(fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!.book) as Rec & { sections: Rec[] };
+    const ch = b.sections.find((s) => s.kind === 'body' && s.type === 'chapter')!;
+    ch.content = JS_CASES.map((c) => c[1]).join('\n\n') + '\n\n' + String(ch.content);
+    const y = onDesk(b);
+    const html = build(() => undefined);
+    expect(noScheme(html)).toEqual([]);
+    expect(hazards(html, 'print')).toEqual([]);
+    y.destroy();
+  });
+
   /* Review (Important 2): CSS that loads from elsewhere without url() — image-set() with a bare string. */
   it('image-set() and -webkit-image-set() of another origin are taken out of the stylesheet and of a style attribute', () => {
     const doc = '<!DOCTYPE html>\n<html><head><style>body { background-image: image-set("https://evil.example/a.png" 1x); } p { background: -webkit-image-set(\'//evil.example/b.png\' 1x); }</style></head><body><p style="background-image: image-set(&quot;https://evil.example/c.png&quot; 1x)">x</p></body></html>';

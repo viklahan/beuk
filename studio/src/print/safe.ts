@@ -29,8 +29,9 @@ const foreign = (v: string | null | undefined): boolean => {
   if (/^data:/i.test(s)) return false;
   return /^[a-z][a-z0-9+.-]*:/i.test(s) || s.startsWith('//') || /[\\\u0000-\u001f]/.test(s);
 };
-/** The attributes that hold an address (a scheme anywhere else is the book's words: an alt "JavaScript: …"). */
-const URL_ATTRS = new Set(['href', 'src', 'srcset', 'xlink:href', 'action', 'formaction', 'poster', 'background', 'data', 'cite', 'longdesc', 'manifest', 'ping']);
+/** The attributes whose value is text, the book's words (an alt "JavaScript: The Good Parts"): a javascript: or
+ *  vbscript: scheme is looked for in every other attribute (the coordinator's note: not only the address ones). */
+const isTextAttr = (n: string): boolean => n === 'alt' || n === 'title' || n === 'placeholder' || n === 'content' || n.startsWith('aria-');
 const scheme = (v: string): boolean => /^\s*(?:javascript|vbscript)\s*:/i.test(v.replace(/[\u0000- ]/g, ''));
 /** A CSS string literal. */
 const CSS_STR = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g;
@@ -95,7 +96,7 @@ export function cleanPrintDoc(html: string): string {
     for (const at of Array.from(el.attributes)) {
       const n = at.name.toLowerCase();
       const bad =
-        n.startsWith('on') || n === 'srcdoc' || n === 'formaction' || n === 'action' || (URL_ATTRS.has(n) && scheme(at.value)) ||
+        n.startsWith('on') || n === 'srcdoc' || n === 'formaction' || n === 'action' || (!isTextAttr(n) && scheme(at.value)) ||
         (n === 'style' && cssForeign(at.value)) ||
         ((LOADS[name] || []).includes(n) && (n === 'srcset' ? at.value.split(',').some((p) => foreign(p.trim().split(/\s+/)[0])) : foreign(at.value))) ||
         (n === 'href' && name === 'a' && foreign(at.value) && !/^https?:\/\//i.test(at.value.trim()));
