@@ -294,6 +294,30 @@ describe("1.0's store-ready self-checks, on the main closure", () => {
     });
   });
 
+  it("cover.store.spine-icon-limit (partial: the store rows and the not-yet-decoded uploaded icon; the drawn icons' margins need a browser's canvas)", () => {
+    onSample((st) => {
+      (st.meta as Rec).language = 'fr';
+      (st.coverRecipe as Rec).wrap = a.normalizeWrap({ trim: '6x9', pages: 195, paper: 'cream', spine: { iconTop: { kind: 'lucide', name: 'Feather' }, iconBottom: { kind: 'lucide', name: 'Star' } } });
+      const d = a.wrapDims(a.normalizeCoverRecipe(st.coverRecipe)) as unknown as { spine: number };
+      const row = (store: string, ink: string) => audit({ store, binding: 'paperback', ink }).groups.cover.find((r) => r.id === 'spinetext');
+      // 1.0's check names the second store "ingram" (not a store id): normalizeStoreCheck makes it KDP, as in 1.0
+      const kdp = row('kdp', 'bw_cream')!, ing = row('ingram', 'bw_cream')!;
+      const keepSecs = st.sections as unknown[];
+      st.sections = keepSecs.slice(0, 2);
+      (st.images as Rec[]).push({ id: 'sc-icon-pending', name: 'i.png', mediaType: 'image/png', ext: 'png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' });
+      (st.coverRecipe as Rec).wrap = a.normalizeWrap({ trim: '6x9', pages: 195, paper: 'cream', spine: { iconTop: { kind: 'upload', picId: 'sc-icon-pending' } } });
+      delete (a.coverImgCache as Record<string, unknown>)['sc-icon-pending'];
+      const pend = row('kdp', 'bw_cream')!;
+      st.sections = keepSecs;
+      delete (a.coverImgCache as Record<string, unknown>)['sc-icon-pending'];
+      expect(d.spine).toBeGreaterThan(0.5);
+      expect(d.spine).toBeLessThan(0.575);
+      expect([kdp.status, ing.status]).toEqual(['pass', 'pass']);
+      expect(pend.status).toBe('fail');
+      expect(pend.evidence).toBe(t('store.c.spinetext.failPagesIcons', { store: 'Amazon KDP', min: 79, pages: '1' }));
+    });
+  });
+
   it('print.footnotes.report (the store half 5b left)', () => {
     onSample((st) => {
       st.printNotes = 'page';

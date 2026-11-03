@@ -375,6 +375,9 @@ async function readOnlyRooms(page) {
   done.push(await printBrowse(page));
   // wave 5c (constraint 68): Word, the box set, the manuscript and the ACX script browsed, every setting where it was
   done.push(await msAcxBoxBrowse(page));
+  // wave 5d (constraint 73): the store-ready check browsed — every store, binding and paper and the book's own again,
+  // Check again, the report downloaded — closed
+  done.push(await storeBrowse(page));
   // wave 5a, round 2: the local pill's popover opened, then closed by a click outside and by Escape; nothing backed up
   done.push(await localPillBrowse(page));
   return done.join(' + ');
@@ -5158,16 +5161,13 @@ async function wave5bScreens(origin) {
           await p.evaluate(() => document.fonts.ready);
           await p.waitForTimeout(3800); // toasts gone
         }
-        // the export modal's other sections hidden in both (wave 5c: 2.0 shows every section 1.0 shows but store-ready's
-        // entry, 5d; what stands above the print section must be alike, and with it the subpixel position the region is
-        // cut at)
+        // the export modal's other sections hidden in both (what stands above the print section must be alike, and with
+        // it the subpixel position the region is cut at; wave 5d: the store-ready entry is shown in both, as 1.0 has it)
         for (const p of [one, two]) {
           await p.evaluate(() => {
             const keep = document.getElementById('trimGrid').closest('.fmt-sec');
             const pf = document.getElementById('preflightResults').closest('.fmt-sec');
             document.querySelectorAll('#modalExport .fmt-sec').forEach((x) => { if (x !== keep && x !== pf) x.style.display = 'none'; });
-            const st = document.querySelector('#modalExport .st-entry');
-            if (st) st.style.display = 'none';
           });
           await p.waitForTimeout(300);
         }
@@ -5606,12 +5606,7 @@ async function wave5cScreens(origin) {
           await p.setInputFiles('#boxSetFileInput', vols);
           await p.waitForFunction(() => document.querySelectorAll('#boxSetList .bs-row').length === 3, null, { timeout: 30_000 });
           await p.evaluate(() => document.fonts.ready);
-          await p.waitForTimeout(3800); // toasts gone
-          // the store-ready entry is the one part of the modal 2.0 still hides (5d): hidden in both
-          await p.evaluate(() => {
-            const st = document.querySelector('#modalExport .st-entry');
-            if (st) st.style.display = 'none';
-          });
+          await p.waitForTimeout(3800); // toasts gone (wave 5d: the store-ready entry is shown in both, as 1.0 has it)
         }
         const secOf = (p, id) => p.locator('#' + id).locator('xpath=ancestor::div[contains(@class,"fmt-sec")]');
         for (const id of ['btnDownloadDocx', 'btnMsOpen', 'btnAcxOpen', 'boxSetList']) {
@@ -5668,6 +5663,420 @@ async function wave5cChecks(origin) {
     const r2 = await latency(origin, { delay: 200, count: 60, quick: true });
     note(`wave5c latency with the preview redrawing between keys (200 ms): p50 ${r2.p50.toFixed(1)} ms, p95 ${r2.p95.toFixed(1)} ms, max ${r2.max.toFixed(1)} ms over ${r2.n} keystrokes`);
     check(r2.p95 < LATENCY_P95_TARGET_MS, `wave5c constraint 70: p95 under ${LATENCY_P95_TARGET_MS} ms while the preview redraws between keys (${r2.p95.toFixed(1)} ms)`);
+  }
+}
+
+/* ---- wave 5d (inventory F10): the store-ready check ----
+   1.0's own audit (STORE_RULES, storeAudit) in 1.0's page (applyBookDoc of readBook's book) and in 2.0's (the export
+   session): every fixture × store × binding × paper × the print settings that change the verdict — each audit's rows,
+   verdict and facts line, and at the book's own settings the report's bytes (the audit's time fixed in both pages:
+   a.at, the one field 1.0 varies, shown varying in 1.0 itself). The real buttons beside 1.0's (Download report); a hostile
+   book's live modal and report; the modal browsed in the no-edit gate; the shelf-gated server panel — offline, signed
+   out, signed in — with 1.0's own words and no request to /api/exports or /api/jobs; the latency line; screenshots. */
+const W5D_EN = JSON.parse(readFileSync(path.join(STUDIO, 'src', 'generated', 'packs', 'en.json'), 'utf8'));
+const w5dT = (k, p = {}) => String(W5D_EN[k] ?? k).replace(/\{(\w+)\}/g, (m, n) => (n in p ? String(p[n]) : m));
+const W5D_SETTINGS = [{}, { printTrim: '8x8' }, { printTrim: '8.5x11' }, { printTrim: '5x8' }, { printLargePrint: true, printPictureBook: false }, { printBleed: true },
+  { printMarginMode: 'custom', printCustomMargins: { inside: 0.2, outside: 0.2, top: 0.2, bottom: 0.2 } }];
+const W5D_AT = Date.UTC(2026, 0, 1, 12, 0, 0);
+/** The faces the wrap's read-back measures with, loaded, and its pictures decoded (1.0 measures the spine's text on a
+ *  canvas, which uses a face only once the page has it: the same in both pages before they are compared). */
+const W5D_WARM = async ([two]) => {
+  /* global state, fontStack, ensureWrapIcons, ensureCoverBgImage */
+  const st = two ? window.beukExport.run((a, c) => c.getState()) : state;
+  const fs = (n) => (two ? window.beukExport.run((a) => a.fontStack(n)) : fontStack(n));
+  const r = st.coverRecipe;
+  const names = new Set([st.theme && st.theme.headFont, st.theme && st.theme.bodyFont, ...(r ? Object.values(r.elements || {}).map((e) => e && e.font) : []),
+    r && r.wrap && r.wrap.spine && r.wrap.spine.font, r && r.wrap && r.wrap.back && r.wrap.back.font].filter(Boolean));
+  const loads = [];
+  for (const n of names) for (const w of ['600', '700', 'italic 500', '400']) loads.push(document.fonts.load(w + ' 20px ' + fs(n)).catch(() => null));
+  await Promise.all(loads);
+  if (r) await (two ? window.beukExport.run((a) => Promise.all([a.ensureWrapIcons(r), a.ensureCoverBgImage(r)])) : Promise.all([ensureWrapIcons(r), ensureCoverBgImage(r)]));
+  await document.fonts.ready;
+  return names.size;
+};
+/** Every store × binding × paper × setting: the audit as data (its time fixed), its facts line and verdict text, and at
+ *  the book's own settings (the first) the report's bytes. In 1.0's page on its globals, in 2.0's in the export session
+ *  (the settings put back before the call ends, so nothing is written). */
+const W5D_AUDITS = ([two, SETTINGS, AT]) => {
+  /* global STORE_RULES, storeAudit, storeFactsLine, storeVerdictText, buildStoreReportHtml */
+  const go = (api, st) => {
+    const out = [];
+    const keep0 = JSON.stringify(st.storeCheck);
+    for (const [i, set] of SETTINGS.entries()) {
+      const keep = JSON.parse(JSON.stringify(Object.fromEntries(Object.keys(set).map((k) => [k, st[k]]))));
+      Object.assign(st, JSON.parse(JSON.stringify(set)));
+      try {
+        for (const store of ['kdp', 'ingramspark'])
+          for (const binding of ['paperback', 'hardcover'])
+            for (const ink of api.STORE_RULES[store].inks) {
+              const a = api.storeAudit({ store, binding, ink: ink.id });
+              a.at = new Date(AT);
+              const { rules, at, ...rest } = a; // eslint-disable-line no-unused-vars
+              out.push(JSON.stringify({ ...rest, rules: rules.id }) + '\n' + api.storeFactsLine(a) + '\n' + api.storeVerdictText(a) + (i === 0 ? '\n' + api.buildStoreReportHtml(a) : ''));
+            }
+      } finally {
+        Object.assign(st, keep);
+      }
+    }
+    st.storeCheck = JSON.parse(keep0);
+    return out;
+  };
+  if (two) return window.beukExport.run((api, c) => go(api, c.getState()));
+  return go({ STORE_RULES, storeAudit, storeFactsLine, storeVerdictText, buildStoreReportHtml }, state);
+};
+async function wave5dParity(origin) {
+  const c1 = await newContext({ serviceWorkers: 'block' });
+  let n = 0, total = 0, eq = 0, reports = 0;
+  const unequal = [];
+  const verdicts = {};
+  try {
+    for (const f of fixtures) {
+      if (!Array.isArray(f.book.sections)) continue;
+      n++;
+      const c2 = await newContext({ serviceWorkers: 'block' });
+      let a2, id, faces;
+      try {
+        const two = await w5aOpen(c2, origin, f.file);
+        const before = (await exportBackup(two)).json.book;
+        id = before.meta.bookId;
+        faces = await two.evaluate(W5D_WARM, [true]);
+        a2 = await two.evaluate(W5D_AUDITS, [true, W5D_SETTINGS, W5D_AT]);
+        const after = (await exportBackup(two)).json.book;
+        if (JSON.stringify(after) !== JSON.stringify(before)) unequal.push(`${f.name}: the audits wrote to the book`);
+        await harvestCsp(two);
+      } finally {
+        await c2.close();
+      }
+      const one = await openOne(c1, origin);
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(f.book, { meta: { bookId: id } })); // eslint-disable-line no-undef
+      await one.evaluate(W5D_WARM, [false]);
+      const a1 = await one.evaluate(W5D_AUDITS, [false, W5D_SETTINGS, W5D_AT]);
+      await harvestCsp(one);
+      await one.close();
+      if (a1.length !== a2.length) unequal.push(`${f.name}: ${a2.length} / ${a1.length} audits`);
+      for (let i = 0; i < a1.length; i++) {
+        total++;
+        if (i < 24) reports++;
+        if (a1[i] === a2[i]) eq++;
+        else {
+          const x = a1[i].split('\n'), y = String(a2[i] || '').split('\n');
+          const at = x.findIndex((l, k) => l !== y[k]);
+          const lx = x[at] || '', ly = y[at] || '';
+          const ch = [...lx].findIndex((c, k) => c !== ly[k]);
+          unequal.push(`${f.name} #${i} line ${at}: 1.0 …${lx.slice(Math.max(0, ch - 60), ch + 60)}… / 2.0 …${ly.slice(Math.max(0, ch - 60), ch + 60)}…`);
+        }
+      }
+      const own = JSON.parse(a1[0].split('\n')[0]);
+      verdicts[f.name] = own.verdict + ' (' + own.blocking + ' blocking, ' + own.unrun + ' unchecked; ' + faces + ' faces)';
+    }
+  } finally {
+    await c1.close();
+  }
+  note('wave5d: each fixture\'s own audit (KDP, paperback, white) in 1.0: ' + Object.entries(verdicts).map(([k, v]) => k + ' ' + v).join('; '));
+  check(eq === total && total === n * W5D_SETTINGS.length * 24 && !unequal.length, `wave5d constraint 71: 1.0's storeAudit equals 2.0's — rows, verdict, facts line and verdict text — for every fixture × store × binding × paper × ${W5D_SETTINGS.length} print settings: ${eq} of ${total} audits, ${n} fixtures; the report's bytes (the audit's time fixed) among them, ${reports} reports${unequal.length ? ' — ' + unequal.slice(0, 3).join('; ') : ''}`);
+}
+
+const W5D_ISO = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g;
+async function w5dOpenStore(page) {
+  if (!(await page.evaluate(() => document.getElementById('modalExport')?.classList.contains('open')))) await w5aOpenModal(page, '#btnExport');
+  await page.click('#btnStoreReady');
+  await page.waitForFunction(() => document.getElementById('modalStore')?.classList.contains('open') && !!document.getElementById('storeVerdict'), null, { timeout: 30_000 });
+}
+async function wave5dDownloads(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  try {
+    const two = await w5aOpen(ctx, origin, f.file);
+    const start = (await exportBackup(two)).json.book;
+    await w5dOpenStore(two);
+    const d2 = await w5aDownload(two, '#btnStoreDownload');
+    const one = await openOne(ctx, origin);
+    await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(f.book, start)); // eslint-disable-line no-undef
+    await w5dOpenStore(one);
+    const d1 = await w5aDownload(one, '#btnStoreDownload');
+    // the field 1.0 varies, shown varying in 1.0 itself: the audit's time (a.at — the report's stamp)
+    const vary = await one.evaluate(async () => {
+      /* global storeAudit, buildStoreReportHtml */
+      const x = storeAudit();
+      await new Promise((r) => setTimeout(r, 15));
+      const y = storeAudit();
+      const hx = buildStoreReportHtml(x), hy = buildStoreReportHtml(y);
+      const mask = (h) => h.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g, 'AT');
+      return { at: [x.at.toISOString(), y.at.toISOString()], differ: hx !== hy, maskedSame: mask(hx) === mask(hy) };
+    });
+    check(vary.at[0] !== vary.at[1] && vary.differ && vary.maskedSame, `wave5d constraint 71: the one field 1.0 varies, in 1.0 itself — the audit's time (report stamp ${vary.at.join(' → ')}): two reports of one book differ only there`);
+    const t1 = d1.bytes.toString('utf8'), t2 = d2.bytes.toString('utf8');
+    const m1 = t1.replace(W5D_ISO, 'AT'), m2 = t2.replace(W5D_ISO, 'AT');
+    await two.click('#btnCloseStore');
+    await two.click('#btnCloseExport');
+    check(d1.name === d2.name && m1 === m2 && t1.length === t2.length, `wave5d constraint 71: Download report is 1.0's file — ${d2.name} (1.0: ${d1.name}), ${d2.bytes.length} bytes (1.0: ${d1.bytes.length}), equal byte for byte but the audit's time${m1 === m2 ? '' : ' — differs at ' + [...m1].findIndex((c, i) => c !== m2[i])}`);
+    const out = (await exportBackup(two)).json.book;
+    check(JSON.stringify(out) === JSON.stringify(start), 'wave5d constraint 73: after the check opened and its report downloaded, the book exports exactly as before');
+    await harvestCsp(two);
+    await harvestCsp(one);
+  } finally {
+    await ctx.close();
+  }
+}
+
+const W5D_DOM_HAZ = (sel) => [...document.querySelectorAll(sel + ' *')].flatMap((el) => [
+  ...(/^(SCRIPT|IFRAME|OBJECT|EMBED|STYLE|LINK|BASE|FORM)$/.test(el.tagName) ? [el.tagName] : []),
+  ...[...el.attributes].filter((a) => /^on/i.test(a.name) || /javascript:/i.test(a.value) || (/^(src|href|srcset)$/i.test(a.name) && /^\s*(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(a.value))).map((a) => el.tagName + ' ' + a.name)]);
+async function wave5dHostile(origin) {
+  const base = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const hostile = w5aHostileBook(base.book);
+  const file = w4File('w5d-hostile.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: hostile }));
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  try {
+    const page = await w5aOpen(ctx, origin, file);
+    const foreign = [];
+    page.on('request', (r) => {
+      const u = r.url();
+      if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:') && !u.startsWith('about:')) foreign.push(u);
+    });
+    const start = (await exportBackup(page)).json.book;
+    await w5dOpenStore(page);
+    const dom = [];
+    for (const [s, b] of [['ingramspark', 'paperback'], ['ingramspark', 'hardcover'], ['kdp', 'hardcover'], ['kdp', 'paperback']]) {
+      await page.selectOption('#storeSel', s);
+      await page.selectOption('#storeBinding', b);
+      dom.push(...(await page.evaluate(W5D_DOM_HAZ, '#modalStore')));
+    }
+    const rows = await page.$$eval('#storeReport .st-row', (r) => r.length);
+    const d = await w5aDownload(page, '#btnStoreDownload');
+    const haz = await page.evaluate(W5A_HAZARDS, [{ [d.name]: d.bytes.toString('utf8') }]);
+    const shown = d.bytes.toString('utf8').includes('window.__pw=1');
+    check(!dom.length, `wave5d constraint 74: the hostile book's live store modal (both stores, both bindings, ${rows} rows): no script, handler, remote source or javascript: address (${dom.slice(0, 3).join('; ') || 'none'})`);
+    check(!haz.length && shown, `wave5d constraint 74: the hostile book's downloaded report (${d.bytes.length} bytes), parsed and walked: nothing that fetches or runs (${haz.slice(0, 3).join('; ') || 'none'}); its hostile title is there as text (${shown})`);
+    check((await page.evaluate(() => window.__pw ?? null)) === null && foreign.length === 0, `wave5d constraint 74: nothing ran, and no request left the page (${foreign.slice(0, 3).join(', ') || 'none'})`);
+    await page.click('#btnCloseStore');
+    await page.click('#btnCloseExport');
+    const out = (await exportBackup(page)).json.book;
+    check(JSON.stringify(out) === JSON.stringify(start) && JSON.stringify(out) === JSON.stringify(expected(hostile, out)), 'wave5d constraint 73: the hostile book exports exactly as readBook reads it (after the stores and bindings switched and back, and the report)');
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** Wave 5d (constraint 73): the store-ready check browsed without an edit — opened from the export modal, every store,
+ *  binding and paper chosen and the book's own put back, Check again, the report downloaded, closed by Escape and
+ *  reopened, closed by 1.0's Close. Shared with readOnlyRooms (the 23-fixture gate). */
+async function storeBrowse(page) {
+  await w5dOpenStore(page);
+  const own = await page.evaluate(() => window.beukExport.run((a, c) => JSON.parse(JSON.stringify(c.getState().storeCheck))));
+  const papers = {};
+  for (const s of ['ingramspark', 'kdp']) {
+    await page.selectOption('#storeSel', s);
+    for (const b of ['hardcover', 'paperback']) await page.selectOption('#storeBinding', b);
+    const inks = await page.$$eval('#storeInk option', (o) => o.map((x) => x.value));
+    for (const i of inks) await page.selectOption('#storeInk', i);
+    papers[s] = inks.length;
+  }
+  // the book's own choice again (choosing a store resets the paper and the attestation, as 1.0's listener does)
+  await page.selectOption('#storeSel', own.store);
+  await page.selectOption('#storeBinding', own.binding);
+  if (own.ink) await page.selectOption('#storeInk', own.ink);
+  await page.click('#btnStoreRecheck');
+  const dl = page.waitForEvent('download', { timeout: 30_000 }).then((d) => d.suggestedFilename(), () => '');
+  await page.click('#btnStoreDownload');
+  const name = await dl;
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.getElementById('modalStore').classList.contains('open') && document.getElementById('modalExport').classList.contains('open'), null, { timeout: 10_000 });
+  await page.click('#btnStoreReady');
+  await page.waitForFunction(() => document.getElementById('modalStore').classList.contains('open'), null, { timeout: 10_000 });
+  const verdict = await page.$eval('#storeVerdict', (v) => v.getAttribute('data-verdict'));
+  await page.click('#btnCloseStore');
+  await page.click('#btnCloseExport');
+  return `the store-ready check (KDP ${papers.kdp} and IngramSpark ${papers.ingramspark} papers, both bindings, the book's own again, Check again, the report${name ? ' ' + name : ''}; verdict ${verdict})`;
+}
+async function wave5dGate(origin) {
+  for (const name of ['real/lantern-coast-print', 'real/dartagnan-01-three-musketeers']) {
+    const f = fixtures.find((x) => x.name === name);
+    const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+    try {
+      const page = await w5aOpen(ctx, origin, f.file);
+      const before = (await exportBackup(page)).json.book;
+      const done = await storeBrowse(page);
+      const after = (await exportBackup(page)).json.book;
+      check(JSON.stringify(after) === JSON.stringify(before) && JSON.stringify(after) === JSON.stringify(expected(f.book, after)), `wave5d constraint 73: ${name}: ${done} — the export is unchanged`);
+      const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => /store/i.test(k)));
+      check(keys.length === 0, `wave5d constraint 73: no per-device key is written (1.0 keeps none: ${keys.join(', ') || 'none'})`);
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+  // the actions are edits, in 1.0's shape, and 1.0 reads them back: a trim fix (an 8 × 8 in book, KDP), the wrap's
+  // fixes and a paper chosen
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const book = JSON.parse(JSON.stringify(f.book));
+  book.printTrim = '8x8';
+  const file = w4File('w5d-8x8.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book }));
+  const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  try {
+    const page = await w5aOpen(ctx, origin, file);
+    await w5dOpenStore(page);
+    const trimLabel = await page.$eval('#storeReport [data-st-act="trim"]', (b) => b.textContent);
+    await page.click('#storeReport [data-st-act="trim"]');
+    await page.waitForFunction(() => document.querySelector('#storeReport [data-st-id="trim"]')?.getAttribute('data-st-status') === 'pass', null, { timeout: 10_000 });
+    const acts = [];
+    for (const id of ['spine', 'wpages', 'wtrim']) {
+      const b = await page.$(`#storeReport [data-st-act="${id}"]`);
+      if (b) {
+        acts.push(id + ': ' + (await b.textContent()));
+        await b.click();
+        await page.waitForTimeout(200);
+      }
+    }
+    await page.selectOption('#storeInk', 'bw_cream');
+    await page.click('#btnCloseStore');
+    await page.click('#btnCloseExport');
+    const out = (await exportBackup(page)).json.book;
+    const w = expected(book, out);
+    check(out.printTrim !== '8x8' && out.storeCheck.ink === 'bw_cream' && Object.keys(out).join() === Object.keys(w).join(), `wave5d constraint 72: the trim fix ("${trimLabel}" → ${out.printTrim}), ${acts.join('; ') || 'no wrap fix offered'} and a paper chosen are 1.0's printTrim / coverRecipe.wrap / storeCheck, in their places (wrap ${JSON.stringify({ trim: out.coverRecipe.wrap.trim, pages: out.coverRecipe.wrap.pages, paper: out.coverRecipe.wrap.paper, customFactor: out.coverRecipe.wrap.customFactor })})`);
+    const back = w4File('w5d-changed.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: out }));
+    const one = await openOne(ctx, origin);
+    await one.setInputFiles('#localBackupInput', back);
+    await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
+    const read = await one.evaluate(() => JSON.stringify([state.printTrim, state.storeCheck, normalizeWrap(state.coverRecipe.wrap)])); // eslint-disable-line no-undef
+    const norm = await one.evaluate((w) => JSON.stringify(normalizeWrap(w)), out.coverRecipe.wrap); // eslint-disable-line no-undef
+    check(read === JSON.stringify([out.printTrim, out.storeCheck, JSON.parse(norm)]), `wave5d constraint 72: 1.0 reads back what 2.0 wrote (${read.slice(0, 200)}…)`);
+    await harvestCsp(page);
+    await harvestCsp(one);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** The server panel in each shelf state, with 1.0's own words; no request to /api/exports or /api/jobs (constraint 75). */
+async function wave5dShelf(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  for (const st of ['offline', 'signedOut', 'signedIn']) {
+    const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+    const shelf = [];
+    try {
+      if (st !== 'offline') await w5aRoutes(ctx, { signedIn: st === 'signedIn' });
+      ctx.on('request', (r) => {
+        if (/\/api\/(exports|jobs)/.test(new URL(r.url()).pathname)) shelf.push(r.method() + ' ' + new URL(r.url()).pathname);
+      });
+      const page = await w5aOpen(ctx, origin, f.file);
+      const start = (await exportBackup(page)).json.book;
+      await w5dOpenStore(page);
+      const look = () => page.evaluate(() => {
+        const r = document.querySelector('#storeReport [data-st-id="fonts"]');
+        const b = document.getElementById('btnStoreServer');
+        return { ev: r?.querySelector('.st-ev')?.textContent || '', act: r?.querySelector('[data-st-act]')?.textContent || '', disabled: b.disabled, title: b.title, note: document.getElementById('storeServerNote').textContent };
+      });
+      let a = await look();
+      let ok, said;
+      if (st === 'offline') {
+        ok = a.disabled && a.title === w5dT('store.nc.local') && a.ev === w5dT('store.nc.local');
+        said = `"${a.ev}"; Run full server check off, its title the same`;
+      } else if (st === 'signedOut') {
+        ok = a.disabled && a.title === w5dT('store.nc.signin') && a.ev === w5dT('store.nc.signin') && a.act === w5dT('store.act.signin');
+        said = `"${a.ev}"; its button "${a.act}"; Run full server check off`;
+      } else {
+        const before = a;
+        await page.click('#btnStoreServer');
+        await page.waitForFunction((d) => document.getElementById('storeServerNote').textContent === d, w5dT('store.serverDone'), { timeout: 30_000 });
+        await page.click('#btnStoreRecheck');
+        await page.waitForTimeout(300);
+        a = await look();
+        ok = !before.disabled && before.ev === w5dT('store.nc.notRun') && a.ev === w5dT('store.nc.failed', { error: w5dT('store.serverNeedShelf') }) && a.note === w5dT('store.serverDone');
+        said = `before: "${before.ev}"; after Run full server check and Check again: "${a.ev}" (${a.note})`;
+      }
+      await page.click('#btnCloseStore');
+      await page.click('#btnCloseExport');
+      const out = (await exportBackup(page)).json.book;
+      check(ok && shelf.length === 0 && JSON.stringify(out) === JSON.stringify(start), `wave5d constraint 75: ${st}: 1.0's own words — ${said}; requests to /api/exports or /api/jobs: ${shelf.length}${shelf.length ? ' (' + shelf.join(', ') + ')' : ''}; the book unchanged`);
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
+async function wave5dScreens(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  try {
+    for (const run of [{ theme: 'paper' }, { theme: 'candlelight' }, { theme: 'paper', lang: 'ar' }]) {
+      const tag = run.theme + (run.lang ? '-' + run.lang : '');
+      const prep = (ctx) => ctx.addInitScript(([th, l]) => {
+        try {
+          localStorage.setItem('beuk.theme.v1', th);
+          if (l) localStorage.setItem('beuk.uiLang.v1', l);
+        } catch {
+          /* no storage */
+        }
+      }, [run.theme, run.lang]);
+      const c1 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      const c2 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      await prep(c1);
+      await prep(c2);
+      try {
+        const one = await watch(await c1.newPage());
+        await one.goto(origin + '/studio');
+        await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+        await one.setInputFiles('#localBackupInput', f.file);
+        await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
+        await one.addStyleTag({ content: ONE_HIDE });
+        const two = await w5aOpen(c2, origin, f.file);
+        for (const p of [one, two]) {
+          await w5aOpenModal(p, '#btnExport');
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(3800); // toasts gone
+        }
+        const [ea, eb] = [one.locator('#modalExport .st-entry'), two.locator('#modalExport .st-entry')];
+        await ea.scrollIntoViewIfNeeded();
+        await eb.scrollIntoViewIfNeeded();
+        const [sa, sb] = [await ea.screenshot(), await eb.screenshot()];
+        writeFileSync(path.join(OUT, `w5d-entry-${tag}-one.png`), sa);
+        writeFileSync(path.join(OUT, `w5d-entry-${tag}-two.png`), sb);
+        let d = await pixelDiff(diffPage, sa, sb);
+        check(d.ratio <= PIXEL_TOLERANCE, `wave5d screenshots ${tag}: the export modal's Store-ready? entry differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        for (const p of [one, two]) {
+          await w5dOpenStore(p);
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(500);
+        }
+        const [ma, mb] = [await one.locator('#modalStore .modal').screenshot(), await two.locator('#modalStore .modal').screenshot()];
+        writeFileSync(path.join(OUT, `w5d-modal-${tag}-one.png`), ma);
+        writeFileSync(path.join(OUT, `w5d-modal-${tag}-two.png`), mb);
+        d = await pixelDiff(diffPage, ma, mb);
+        check(d.ratio <= PIXEL_TOLERANCE, `wave5d screenshots ${tag}: #modalStore differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        writeFileSync(path.join(OUT, `w5d-two-modalStore-${tag}.png`), await two.screenshot());
+        writeFileSync(path.join(OUT, `w5d-one-modalStore-${tag}.png`), await one.screenshot());
+        await harvestCsp(one);
+        await harvestCsp(two);
+      } finally {
+        await c1.close();
+        await c2.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+}
+
+async function wave5dChecks(origin) {
+  const only = (process.env.W5D_PARTS || 'parity,downloads,hostile,gate,shelf,screens,latency').split(',');
+  if (only.includes('parity')) await wave5dParity(origin);
+  if (only.includes('downloads')) await wave5dDownloads(origin);
+  if (only.includes('hostile')) await wave5dHostile(origin);
+  if (only.includes('gate')) await wave5dGate(origin);
+  if (only.includes('shelf')) await wave5dShelf(origin);
+  if (only.includes('screens')) await wave5dScreens(origin);
+  // constraint 76: the editor's typing with the store modal mounted and closed (#5's measure, and the redraws between keys)
+  if (only.includes('latency') && !(process.env.E2E_ONLY || '').split(',').includes('latency')) {
+    const r = await latency(origin);
+    note(`wave5d latency (the store modal mounted, closed): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+    check(r.p95 < LATENCY_P95_TARGET_MS, `wave5d constraint 76: p95 under ${LATENCY_P95_TARGET_MS} ms on Dumas with the store modal closed (${r.p95.toFixed(1)} ms)`);
+    const r2 = await latency(origin, { delay: 200, count: 60, quick: true });
+    note(`wave5d latency with the preview redrawing between keys (200 ms): p50 ${r2.p50.toFixed(1)} ms, p95 ${r2.p95.toFixed(1)} ms, max ${r2.max.toFixed(1)} ms over ${r2.n} keystrokes`);
+    check(r2.p95 < LATENCY_P95_TARGET_MS, `wave5d constraint 76: p95 under ${LATENCY_P95_TARGET_MS} ms while the preview redraws between keys (${r2.p95.toFixed(1)} ms)`);
   }
 }
 
@@ -6071,6 +6480,7 @@ try {
   if (run('wave5a')) await wave5aChecks(srv.origin);
   if (run('wave5b')) await wave5bChecks(srv.origin);
   if (run('wave5c')) await wave5cChecks(srv.origin);
+  if (run('wave5d')) await wave5dChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
