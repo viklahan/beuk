@@ -38,9 +38,9 @@ export type PrintClosure = { api: Record<string, Fn> & Rec; vars: Rec & { buildP
 export const printHost: { el: HTMLElement | null } = { el: null };
 
 /* ---- 1.0's page, for print's code ---- */
-/** While 1.0's initPrint / initPrintView wire a NEW export modal (another book: its markup is new): the print dialogs
- *  were wired by the first pass and keep those listeners, so their elements are handed out as throwaways now (a
- *  second listener on #btnDoPrint would print twice). */
+/** While 1.0's initPrint / initPrintView wire a NEW export modal (another book: its markup is new) beside print dialogs
+ *  an earlier pass wired (the same host), those keep their listeners, so their elements are handed out as throwaways
+ *  now (a second listener on #btnDoPrint would print twice). */
 let rewiring = false;
 const throwaways = new Map<string, HTMLElement>();
 export function print$(id: string): unknown {
@@ -154,7 +154,8 @@ export function loadPrint(): Promise<PrintClosure> {
 // the export session's state is print's (each time a call enters it)
 exportStateListeners.add((st) => loaded?.setState(st));
 
-let wiredOnce = false;
+/** The print dialogs' host the wiring last ran on (PrintModals makes a new one only when it mounts again). */
+let wiredHost: HTMLElement | null = null;
 /** 1.0's initPrint and initPrintView, on a newly built export modal (ExportModal, once per book), inside the export
  *  session: the export modal's print section is wired every time (its markup is new), the print dialogs the first
  *  time only (see print$). 1.0's own switch keeps the modal open when the print-ready PDF asks for a sign-in (2.0 has
@@ -163,7 +164,7 @@ export async function printWire(): Promise<void> {
   const pc = await loadPrint();
   if (!printHost.el || !document.getElementById('btnOpenPrintView')) return;
   for (const x of tracked.splice(0)) window.removeEventListener(x.type, x.fn, x.opts);
-  rewiring = wiredOnce;
+  rewiring = wiredHost === printHost.el;
   try {
     exportRun(() => {
       pc.api.initPrint();
@@ -173,7 +174,7 @@ export async function printWire(): Promise<void> {
   } finally {
     rewiring = false;
   }
-  wiredOnce = true;
+  wiredHost = printHost.el;
 }
 
 /** Print's code on the open book's export state (the tests and the e2e). */

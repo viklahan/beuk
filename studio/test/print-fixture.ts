@@ -9,4 +9,20 @@ export function installCanvas(): void {
   HTMLCanvasElement.prototype.getContext = function () {
     return ctx as never;
   } as never;
+  HTMLCanvasElement.prototype.toDataURL = () => 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDA==';
+  // jsdom decodes no picture: an Image that loads as soon as it is given a source (1.0's press bake waits on it)
+  (globalThis as unknown as { Image: unknown }).Image = class {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    naturalWidth = 10;
+    naturalHeight = 10;
+    width = 10;
+    height = 10;
+    decode() {
+      return Promise.resolve();
+    }
+    set src(_v: string) {
+      setTimeout(() => this.onload?.(), 0);
+    }
+  };
 }
