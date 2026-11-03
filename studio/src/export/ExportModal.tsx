@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useBook } from '../book/BookProvider';
-import { loadClosure, pageEnv, type Closure } from '../closure/index';
+import { closureT, exportEnv, loadClosure, pageEnv, type Closure } from '../closure/index';
 import { coverReady } from '../cover/cover';
 import { coverOpen, translateCover } from '../cover/CoverMaker';
 import markup from '../generated/export-markup.json';
@@ -193,6 +193,18 @@ export function ExportModal() {
             // cover maker" is 2.0's opener (the maker on the Style session's state, as Project Settings opens it)
             cc.vars.openCoverMaker = () => coverOpen();
             cc.api.initStoreReady();
+            // review of 5d (Important 1): 2.0 has no sign-in dialog before wave 7. 1.0's storeAct ("Sign in", and "Run the
+            // server check" signed out) closes the store modal and the export modal, then opens the sign-in; it is the
+            // only caller of openAuth left in the export family (buildEpub and the print-ready panel keep their modal
+            // open by 1.0's own noOpen). So, as 5a's buildEpub.noOpen: both stay open, with 1.0's own words for the state
+            exportEnv.openAuth = () => {
+              modal.classList.add('open');
+              store.classList.add('open');
+              exportUi.toast(closureT()('store.nc.signin'), 'cloud');
+            };
+            off.push(() => {
+              exportEnv.openAuth = () => undefined;
+            });
             // 2.0 has no sign-in dialog yet (wave 7): 1.0's own switch keeps the modal open and opens nothing, after
             // its "Sign in to download the store-ready EPUB" (buildEpub, signed out)
             cc.api.buildEpub.noOpen = true;

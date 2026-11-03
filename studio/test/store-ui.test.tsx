@@ -238,6 +238,12 @@ describe('the store-ready check in the studio', { timeout: 120_000 }, () => {
     expect($('btnStoreServer').title).toBe(t('store.nc.signin'));
     expect(fonts().querySelector('.st-ev')!.textContent).toBe(t('store.nc.signin'));
     expect(fonts().querySelector('[data-st-act]')!.textContent).toBe(t('store.act.signin'));
+    // review (Important 1): 2.0 has no sign-in dialog before wave 7 — 1.0's Sign in keeps both modals open and says
+    // 1.0's own words for the state, as 5a's buildEpub.noOpen does; it never closes everything and opens nothing
+    await click(fonts().querySelector('[data-st-act]'));
+    expect(isOpen('modalStore')).toBe(true);
+    expect(isOpen('modalExport')).toBe(true);
+    await waitFor(() => expect(Array.from(document.querySelectorAll('#toasts .toast')).some((x) => (x.textContent || '').includes(t('store.nc.signin')))).toBe(true));
     await click($('btnCloseStore'));
     // signed in: the run asks the shelf seam once; 1.0's own answer for a book not on the shelf
     cloudFacts.user = { id: 'u', email: 'u@beuk.test' };
