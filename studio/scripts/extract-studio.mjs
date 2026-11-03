@@ -491,8 +491,11 @@ export function extractCoverMarkup(html) {
    the package inspector (#modalInspector), each cut by counting its <div>s, into src/generated/export-markup.json
    with the JSZip build 1.0 links (same file, same integrity). The studio puts it in place once per book
    (src/export/ExportModal.tsx) and 1.0's own initExport wires it. Fails loudly when 1.0 no longer has an anchor. */
-export const EXPORT_SELECTOR = /\.file-tree|\.check-list|\.fmt-sec|\.fmt-actions|\.platform-|\.val-|\.v-code|\.a11y-|\.insp-/;
-const EXPORT_ANCHORS = ['.file-tree', '.check-list', '.fmt-sec', '.platform-grid', '.platform-btn', '.platform-detail', '.val-summary', '.a11y-clean', '.insp-layout', '.insp-code'];
+/* Wave 5c: and the box set's list (.bs-*), the ACX script's and the submission manuscript's dialogs (BEUK:acx,
+   BEUK:manuscript: .acx-*, .ms-*, .modal.acx-modal, .modal.ms-modal). */
+export const EXPORT_SELECTOR = /\.file-tree|\.check-list|\.fmt-sec|\.fmt-actions|\.platform-|\.val-|\.v-code|\.a11y-|\.insp-|\.bs-|\.acx-|\.ms-/;
+const EXPORT_ANCHORS = ['.file-tree', '.check-list', '.fmt-sec', '.platform-grid', '.platform-btn', '.platform-detail', '.val-summary', '.a11y-clean', '.insp-layout', '.insp-code',
+  '.bs-list', '.bs-row', '.bs-empty', '.modal.acx-modal', '.acx-grid', '.acx-table', '.modal.ms-modal', '.ms-tp'];
 export function extractExportCss(html) {
   const tree = cssTree(headStyle(html));
   const taken = [];
@@ -521,11 +524,17 @@ export function extractExportMarkup(html) {
     'btnDownloadMd', 'btnCopyMd', 'btnDownloadHtml', 'btnCloseExport', 'btnStoreReady', 'btnPreflight', 'btnDownloadDocx', 'btnMsOpen', 'btnAcxOpen', 'btnOpenPrintView', 'btnBuildBoxSet', 'archiveSec'])
     if (!modal.includes('id="' + id + '"')) fail(`the export modal's markup no longer has #${id}`);
   for (const id of ['inspSub', 'inspFiles', 'inspPath', 'inspSize', 'btnCopyFile', 'inspCode', 'btnCloseInspector']) if (!inspector.includes('id="' + id + '"')) fail(`the package inspector's markup no longer has #${id}`);
-  if (/<script|\son[a-z]+=/i.test(modal + inspector)) fail("the export modal's markup carries a script or a handler attribute: the studio puts it in place as it is");
+  // wave 5c: the ACX script's dialog (#modalAcx) and the submission manuscript's (#modalManuscript), 1.0's own, verbatim
+  const acx = divBlock(html, html.indexOf('<div class="modal-back" id="modalAcx"'), "the ACX script's dialog (#modalAcx)");
+  const ms = divBlock(html, html.indexOf('<div class="modal-back" id="modalManuscript"'), "the submission manuscript's dialog (#modalManuscript)");
+  for (const id of ['acxH', 'acxBody', 'btnAcxClose', 'btnAcxDownload']) if (!acx.includes('id="' + id + '"')) fail(`the ACX script's dialog no longer has #${id}`);
+  for (const id of ['msH', 'msBody', 'btnMsClose', 'btnMsDownload']) if (!ms.includes('id="' + id + '"')) fail(`the submission manuscript's dialog no longer has #${id}`);
+  for (const id of ['boxSetList', 'btnBoxSetAdd', 'boxSetFileInput']) if (!modal.includes('id="' + id + '"')) fail(`the export modal's markup no longer has #${id}`);
+  if (/<script|\son[a-z]+=/i.test(modal + inspector + acx + ms)) fail("the export modal's markup carries a script or a handler attribute: the studio puts it in place as it is");
   // the JSZip build 1.0 links (its in-browser package: buildEpubBlob): the same file, the same integrity
   const jszip = /<script src="assets\/vendor\/jszip\.min\.js" integrity="([^"]+)"><\/script>/.exec(html);
   if (!jszip) fail('client/index.html no longer links assets/vendor/jszip.min.js with its integrity');
-  return { modal, inspector, jszipSri: jszip[1] };
+  return { modal, inspector, acx, ms, jszipSri: jszip[1] };
 }
 
 /* ---- print's stylesheet and markup (wave 5b) ----

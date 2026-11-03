@@ -317,12 +317,17 @@ export const styleState = (): State | null => session?.state ?? null;
 const TAGS = new Set(['div', 'span', 'p', 'b', 'i', 'em', 'strong', 'small', 'br', 'h4', 'button', 'img', 'label', 'select', 'option', 'optgroup', 'input',
   'svg', 'g', 'path', 'rect', 'circle',
   // wave 5a: the export modal's results (the validator's and the audit's lists, a failed line's error-dictionary link)
-  'ul', 'li', 'a']);
+  'ul', 'li', 'a',
+  // wave 5c: the ACX script's and the submission manuscript's dialogs (acxRender, msRender: headings, the file and
+  // pronunciation tables, the contact block's address field)
+  'h3', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'textarea']);
 const ATTRS = new Set(['class', 'id', 'title', 'alt', 'role', 'tabindex', 'type', 'value', 'label', 'for', 'min', 'max', 'step', 'checked', 'disabled', 'selected',
   'placeholder', 'xmlns', 'viewbox', 'focusable', 'width', 'height', 'x', 'y', 'cx', 'cy', 'r', 'rx', 'ry', 'd', 'fill', 'stroke', 'stroke-width',
   'stroke-linecap', 'stroke-linejoin', 'opacity', 'src', 'style',
   // wave 4c: the cover maker's spine and back controls (sbBuildControls: a text's maxlength, a file input's accept)
-  'maxlength', 'accept']);
+  'maxlength', 'accept',
+  // wave 5c: the manuscript's fields (a textarea's rows, the e-mail field's autocomplete) and its title page's dir
+  'rows', 'autocomplete', 'dir']);
 const STYLE_PROPS = new Set(['font-family', 'font-size', 'font-weight', 'font-style', 'font-variant', 'text-align', 'text-transform', 'letter-spacing',
   'line-height', 'opacity', 'margin', 'margin-top', 'margin-bottom', 'display', '--sw',
   // wave 4c: the cover maker's swatches (background) and the hardcover legend (color, background), paint values only

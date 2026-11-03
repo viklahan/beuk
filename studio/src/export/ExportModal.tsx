@@ -31,7 +31,7 @@ import { printWire } from '../print/print';
 /** The modal's sections that belong to later waves (their buttons reach inert stand-ins): hidden. Store-ready (5d); the
  *  archive (wave 7) is hidden by 1.0 itself until a shelf is linked. (Wave 5b: the print preflight and the print interior
  *  are 1.0's own now, src/print. Wave 5c: Word and the box set, the submission manuscript and the ACX script too.) */
-export const LATER_WAVES: string[] = ['btnMsOpen', 'btnAcxOpen'];
+export const LATER_WAVES: string[] = [];
 function hideLater(root: HTMLElement): void {
   const st = root.querySelector<HTMLElement>('.st-entry');
   if (st) st.style.display = 'none';
@@ -117,15 +117,22 @@ export function exportOpen(): void {
   exportRun(() => b.click());
 }
 
+/** The dialogs this component puts in place (wave 5c: and 1.0's ACX script and submission manuscript dialogs). */
+const DLGS = ['modal', 'insp', 'acx', 'ms'] as const;
+type Dlg = (typeof DLGS)[number];
+type Backs = Record<Dlg, HTMLElement | null>;
+const NO_BACKS: Backs = { modal: null, insp: null, acx: null, ms: null };
+const CLOSED: Record<Dlg, boolean> = { modal: false, insp: false, acx: false, ms: false };
+
 export function ExportModal() {
   const { lang } = useLocale();
   const toast = useToast();
   const bk = useBook();
   const ydoc = bk.book?.ydoc ?? null;
   const host = useRef<HTMLDivElement | null>(null);
-  const backs = useRef<{ modal: HTMLElement | null; insp: HTMLElement | null }>({ modal: null, insp: null });
+  const backs = useRef<Backs>(NO_BACKS);
   const closure = useRef<Closure | null>(null);
-  const [open, setOpen] = useState({ modal: false, insp: false });
+  const [open, setOpen] = useState<Record<Dlg, boolean>>(CLOSED);
   exportUi.toast = (msg, icon) => toast(msg, toastIcon(icon));
   if (!host.current && typeof document !== 'undefined') {
     host.current = document.createElement('div');
@@ -145,18 +152,23 @@ export function ExportModal() {
         // 1.0's downloadBlob and the page's fetch (held to the served policy), as the cover maker installs them
         coverReady(c);
         closure.current = c;
-        el.innerHTML = markup.modal + markup.inspector; // 1.0's own static markup (no script, no handler: the extractor checks)
+        // 1.0's own static markup (no script, no handler: the extractor checks), in 1.0's order: the ACX script's and the
+        // submission manuscript's dialogs (wave 5c), the export modal, the package inspector
+        el.innerHTML = markup.acx + markup.ms + markup.modal + markup.inspector;
         const modal = el.querySelector<HTMLElement>('#modalExport')!;
         const insp = el.querySelector<HTMLElement>('#modalInspector')!;
-        backs.current = { modal, insp };
+        const acx = el.querySelector<HTMLElement>('#modalAcx')!;
+        const ms = el.querySelector<HTMLElement>('#modalManuscript')!;
+        backs.current = { modal, insp, acx, ms };
         hideLater(modal);
         drawIcons(el);
         translateCover(c, el);
-        for (const r of [modal, insp]) {
+        const openNow = () => ({ modal: modal.classList.contains('open'), insp: insp.classList.contains('open'), acx: acx.classList.contains('open'), ms: ms.classList.contains('open') });
+        for (const r of [modal, insp, acx, ms]) {
           guardRoots.add(r);
           off.push(() => guardRoots.delete(r));
           off.push(exportGuard(r));
-          const mo = new MutationObserver(() => setOpen({ modal: modal.classList.contains('open'), insp: insp.classList.contains('open') }));
+          const mo = new MutationObserver(() => setOpen(openNow()));
           mo.observe(r, { attributes: true, attributeFilter: ['class'] });
           off.push(() => mo.disconnect());
         }
@@ -169,6 +181,10 @@ export function ExportModal() {
             cc.vars.inspFilesCache = [];
             cc.vars.inspCurrent = '';
             cc.api.initExport();
+            // wave 5c: 1.0's own msInit and acxInit (1.0 runs them at start-up, on the same page): the dialogs' buttons
+            // and their bodies' listeners; #btnMsOpen and #btnAcxOpen are in the export modal
+            cc.api.msInit();
+            cc.api.acxInit();
             // 2.0 has no sign-in dialog yet (wave 7): 1.0's own switch keeps the modal open and opens nothing, after
             // its "Sign in to download the store-ready EPUB" (buildEpub, signed out)
             cc.api.buildEpub.noOpen = true;
@@ -190,8 +206,8 @@ export function ExportModal() {
       if (built) setBuilt(false);
       opener = null;
       off.forEach((f) => f());
-      backs.current = { modal: null, insp: null };
-      setOpen({ modal: false, insp: false });
+      backs.current = NO_BACKS;
+      setOpen(CLOSED);
       el.innerHTML = '';
       el.remove();
       exportReset();
@@ -209,11 +225,13 @@ export function ExportModal() {
     if (backs.current.modal.classList.contains('open')) exportRun((cc) => cc.api.renderPlatformPresets());
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const box = (k: 'modal' | 'insp') => ({ get current() { return backs.current[k]?.querySelector<HTMLElement>('.modal') ?? null; } });
+  const box = (k: Dlg) => ({ get current() { return backs.current[k]?.querySelector<HTMLElement>('.modal') ?? null; } });
   return (
     <>
-      {open.modal && backs.current.modal ? createPortal(<StackEntry box={box('modal')} onClose={() => backs.current.modal?.classList.remove('open')} />, backs.current.modal) : null}
-      {open.insp && backs.current.insp ? createPortal(<StackEntry box={box('insp')} onClose={() => backs.current.insp?.classList.remove('open')} />, backs.current.insp) : null}
+      {DLGS.map((k) => {
+        const back = backs.current[k];
+        return open[k] && back ? createPortal(<StackEntry key={k} box={box(k)} onClose={() => backs.current[k]?.classList.remove('open')} />, back) : null;
+      })}
     </>
   );
 }
