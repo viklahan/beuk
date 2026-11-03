@@ -205,6 +205,8 @@ export const EXTRA_ROOTS = [
   'storeIn', 'storeTrimLabel', 'storeSpineClearance', 'storeFacts', 'storeBookSig', 'storeServerFresh', 'storeServerReason', 'STORE_CAUSE_FIX', 'storeServerFix',
   'storeFootnoteFallbacks', 'storeFontNames', 'storeAudit', 'STORE_ICON', 'storeVerdictText', 'storeFactsLine', 'storeRowsHtml', 'renderStoreReport', 'storeAct',
   'openStoreReady', 'storeRunServer', 'storeRecheck', 'buildStoreReportHtml', 'downloadStoreReport', 'initStoreReady',
+  // (already lifted for the audit: named so the tests run 1.0's own store self-checks, studio/test/store-selfchecks.test.ts)
+  'printPlacements', 'printEdgeSections', 'sectionLabel',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
