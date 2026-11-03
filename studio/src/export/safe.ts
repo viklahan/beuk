@@ -32,11 +32,40 @@ export const PLAIN_EXT = /^[A-Za-z0-9]{1,10}$/;
 /** A section type or kind as 1.0 names them (chapter, halftitle, aboutauthor, …): a lowercase word, digits and - allowed. */
 export const PLAIN_TYPE = /^[a-z][a-z0-9-]{0,40}$/;
 
+/** Review of 5c (Important 1): the code points XML 1.0 does not allow — C0 controls but tab, newline and carriage return,
+ *  U+FFFE and U+FFFF, and a surrogate without its pair. 1.0's esc() passes them through, so one in a title or a chapter
+ *  makes the EPUB's XHTML (the server's build of the body too), a Word part, the manuscript or an ACX script not
+ *  well-formed. 1.0 takes the same set out of a PDF's text on import (pdfCleanText), not out of a backup. U+007F is
+ *  legal XML and stays. */
+export const XML_ILLEGAL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f￾￿]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g;
+/** Take them out of every string in `x` (objects and arrays walked in place; a string changed only where it carries
+ *  one). Returns how many strings changed. */
+export function stripXmlIllegal(x: unknown, seen: WeakSet<object> = new WeakSet()): number {
+  if (!x || typeof x !== 'object' || seen.has(x)) return 0;
+  seen.add(x);
+  let n = 0;
+  const keys = Array.isArray(x) ? x.keys() : Object.keys(x);
+  for (const k of keys as Iterable<string | number>) {
+    const v = (x as Record<string | number, unknown>)[k];
+    if (typeof v === 'string') {
+      XML_ILLEGAL.lastIndex = 0;
+      if (XML_ILLEGAL.test(v)) {
+        (x as Record<string | number, unknown>)[k] = v.replace(XML_ILLEGAL, '');
+        n++;
+      }
+    } else if (v && typeof v === 'object') n += stripXmlIllegal(v, seen);
+  }
+  return n;
+}
+
 /** Correct the export's state in place (see above). Returns what was hidden or corrected, for the tests. */
-export function exportSafe(c: Closure, st: State & Rec, book: Rec): { images: number; cover: boolean; fonts: number; sections: number } {
+export function exportSafe(c: Closure, st: State & Rec, book: Rec): { images: number; cover: boolean; fonts: number; sections: number; chars: number } {
+  // review of 5c (Important 1): first, no XML-illegal code point in any value 1.0's builders write (the state, or a
+  // volume, is the export's own copy: the book is not touched)
+  const chars = stripXmlIllegal(st);
   // the preview's corrections first (they also give a font stored without an id its stable id)
   sourceSafe(c, st, book);
-  const out = { images: 0, cover: false, fonts: 0, sections: 0 };
+  const out = { images: 0, cover: false, fonts: 0, sections: 0, chars };
   if (Array.isArray(st.images))
     for (const [k, im] of st.images.entries()) {
       if (!isRec(im) || im.ext === undefined || im.ext === '' || (typeof im.ext === 'string' && PLAIN_EXT.test(im.ext))) continue;

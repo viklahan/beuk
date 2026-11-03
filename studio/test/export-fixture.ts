@@ -70,3 +70,20 @@ export function hostileNonStringBook(): Rec {
   return b;
 }
 
+
+/** Review of 5c (Important 1): code points XML 1.0 does not allow — C0 controls but tab, newline and carriage return,
+ *  U+FFFE / U+FFFF, and lone surrogates — in the meta, a section's title and words, a picture's alt, the manuscript block
+ *  and the audio plan. 1.0's esc() passes them through; a backup's JSON.parse keeps them. */
+export const XML_BAD = '\u0000\u0001\u0008\u000b\u000c\u000e\u001f\ufffe\uffffa\ud800b\udc00c';
+export function controlCharBook(): Rec {
+  const b = structuredClone(fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!.book) as Rec & { meta: Rec; sections: Rec[] };
+  b.meta.title = 'Ctl' + XML_BAD + ' Title';
+  b.meta.author = 'Au' + XML_BAD;
+  b.meta.subtitle = 'Sub' + XML_BAD;
+  const s = b.sections.find((x) => x.kind === 'body' && x.type === 'chapter')!;
+  s.title = 'Chapter' + XML_BAD;
+  s.content = 'A line' + XML_BAD + ' with *it' + XML_BAD + '*.[^1]\n\n[link' + XML_BAD + '](https://example.org/a)\n\n[^1]: A note' + XML_BAD + '\n\n' + String(s.content || '');
+  b.manuscript = { legalName: 'Ada' + XML_BAD, address: '1 Row' + XML_BAD, byline: 'By' + XML_BAD, surname: 'Sur' + XML_BAD };
+  b.audio = { narrator: 'Nar' + XML_BAD, pron: [{ word: 'Wo' + XML_BAD + 'rd', soundsLike: 'so' + XML_BAD }] };
+  return b;
+}

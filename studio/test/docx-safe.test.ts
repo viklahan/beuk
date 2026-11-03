@@ -11,7 +11,7 @@ import { arriveForExport, exportReset, exportRun, volumeFromFile } from '../src/
 import { exportSafe } from '../src/export/safe';
 import { styleRelease } from '../src/style/session';
 import { fixtures } from './fixtures';
-import { hostileExportBook, hostileNonStringBook } from './export-fixture';
+import { XML_BAD, controlCharBook, hostileExportBook, hostileNonStringBook } from './export-fixture';
 import { cssHazards, hazards } from './hazards';
 
 /* Wave 5c, task 1 — constraint 67 (review focus #3): safety, these formats' turn. A hostile book (5a's) through the
@@ -89,6 +89,42 @@ const acxDocx = (cc: Closure, fmt: string) => {
   return entries;
 };
 
+/** Every XML part of a package (an EPUB's XHTML, OPF, NCX and container; a Word package's parts) parsed as XML. */
+export function notWellFormed(files: { path: string; content: string; binary?: boolean }[], where = ''): string[] {
+  return files
+    .filter((f) => !f.binary && /\.(xhtml|opf|ncx|xml|rels)$/.test(f.path))
+    .filter((f) => new DOMParser().parseFromString(String(f.content), 'application/xml').getElementsByTagName('parsererror').length > 0)
+    .map((f) => `${where} ${f.path}`);
+}
+
+describe('review of 5c (Important 1): XML-illegal code points in the open book and in a volume', () => {
+  it('the parse itself catches them: a part carrying U+0001 is not well-formed', () => {
+    expect(notWellFormed([{ path: 'a.xhtml', content: '<?xml version="1.0"?><p>a\u0001b</p>' }])).toEqual([' a.xhtml']);
+  });
+  it("every XML part of the EPUB (every preset), Word, the manuscript, every ACX script and the box set (a volume with them too) is well-formed; the characters are gone", async () => {
+    const y = onDesk(controlCharBook());
+    const vol = await volumeFromFile(backupFile(controlCharBook(), 'ctl.json'));
+    const out = exportRun((cc) => {
+      const a = cc.api;
+      const found: string[] = [];
+      for (const p of a.PLATFORM_PRESETS) found.push(...notWellFormed(a.epubFiles(p.id), 'epub ' + p.id));
+      found.push(...notWellFormed(a.buildDocxFiles(), 'docx'));
+      found.push(...notWellFormed(a.msFiles(a.msPlan()), 'ms'));
+      for (const e of a.acxZipEntries(a.acxBuildPlan())) if ('docx' in e) found.push(...notWellFormed(e.docx, 'acx ' + e.path));
+      (cc.getState() as Rec).boxSetVolumes = [vol];
+      found.push(...notWellFormed(a.boxSetFiles(), 'boxset'));
+      const md = a.buildMarkdown() + a.buildStandaloneHtml();
+      if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/.test(md)) found.push('markdown / html carry them');
+      (cc.getState() as Rec).boxSetVolumes = [];
+      return found;
+    })!;
+    expect(out).toEqual([]);
+    // the book itself is never changed by the correction
+    expect(JSON.stringify(exportBook(y))).toContain(JSON.stringify(XML_BAD).slice(1, -1).slice(0, 12));
+    y.destroy();
+  });
+});
+
 describe('wave 5c: a hostile book and a hostile volume through Word, the manuscript, the ACX script and the box set (constraint 67)', () => {
   it("the hostile book's Word document, manuscript (every paper, font, italics) and ACX script (every format): no part that fetches, runs or leaves the package", () => {
     for (const book of [hostileExportBook(), hostileNonStringBook()]) {
@@ -162,7 +198,7 @@ describe('wave 5c: a hostile book and a hostile volume through Word, the manuscr
       if (!Array.isArray(f.book.sections)) continue;
       const v = c.api.bookDocToVolume(structuredClone(f.book), f.name + '.json');
       const before = JSON.stringify(v);
-      expect(exportSafe(c, v as never, v), f.name).toEqual({ images: 0, cover: false, fonts: 0, sections: 0 });
+      expect(exportSafe(c, v as never, v), f.name).toEqual({ images: 0, cover: false, fonts: 0, sections: 0, chars: 0 });
       expect(JSON.stringify(v), f.name).toBe(before);
     }
   });

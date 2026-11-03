@@ -119,7 +119,7 @@ describe('wave 5a: a hostile book through the export (constraint 53)', () => {
       const what = exportSafe(c, safe as Rec & typeof safe, book);
       c.setState(safe);
       const b = JSON.stringify(ser(c));
-      expect(what, f.name).toEqual({ images: 0, cover: false, fonts: 0, sections: 0 });
+      expect(what, f.name).toEqual({ images: 0, cover: false, fonts: 0, sections: 0, chars: 0 });
       expect(b === a, f.name).toBe(true);
       y.destroy();
     }
