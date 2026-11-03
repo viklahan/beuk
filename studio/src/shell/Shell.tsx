@@ -24,6 +24,7 @@ import { StyleTab } from '../style/StyleTab';
 import { PreviewPane } from '../preview/PreviewPane';
 import { CoverMaker } from '../cover/CoverMaker';
 import { EXPORT_BUILT_EVENT, ExportModal, exportBuilt, exportOpen } from '../export/ExportModal';
+import { PrintModals } from '../print/PrintModals';
 import { exportEnv } from '../closure/index';
 import { Icon } from './Icon';
 import { LocalPill } from '../book/LocalPill';
@@ -342,6 +343,8 @@ export function Shell() {
       <CovenantHost />
       {bookOpen ? <CoverMaker key={bk.book!.id + ':' + bk.book!.epoch} /> : null}
       {bookOpen ? <ExportModal key={'export:' + bk.book!.id + ':' + bk.book!.epoch} /> : null}
+      {/* wave 5b: 1.0's print view and Print Interior View, in place before the preview starts (its full screen wires them) */}
+      <PrintModals />
     </div>
   );
 }

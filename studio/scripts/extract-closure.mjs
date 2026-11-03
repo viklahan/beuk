@@ -316,6 +316,32 @@ export const PREVIEW_VARS = ['editorSyncedSectionId', 'editorTypedAt', 'pvFollow
   // of its own on <body> before that (review round 2)
   'printUnlink', 'sidewaysPrintPages'];
 
+/** Wave 5b (inventory F2, F9): print's OWN module, src/generated/closure-print.js (createPrintClosure). 1.0's print
+ *  family — the print controls in the export modal (trims, margins, heads and folios, notes, large print, picture book,
+ *  bleed, the omit toggles), the print frame and its browser print, Download Print HTML (buildPrintHtml, printFilename,
+ *  preparePrintPress), the print-ready PDF's button and panel, the Print Interior View (the facing-page spreads,
+ *  piv*) and the print preflight — lifted whole beside their own copy of what they reach, with their own `state`,
+ *  which only src/print/print.ts sets: the export session's state of the open book (src/export/state.ts: 1.0's
+ *  applyBookDoc state, corrected). 1.0's continuations in this code (the press bake's decodes, the interior view's
+ *  font reload and resize, the pictures it warms first) therefore always run on the print's state. The main
+ *  closure's renderPrintControls and runPrintPreflight (initExport calls them) are this module's. */
+export const PRINT_ROOTS = ['initPrint', 'initPrintView', 'renderPrintControls', 'openPrintView', 'buildPrintHtml', 'printFilename', 'preparePrintPress',
+  'printPressReport', 'trimSize', 'TRIM_SIZES', 'TRIM_GROUPS', 'printMargins', 'printPageEstimate', 'kdpGutterMin', 'printPictureBookOn', 'printBleedOn',
+  'openPrintInteriorView', 'renderPrintView', 'pivRebuild', 'pivSyncChrome', 'buildPrintViewModel', 'piv', 'pivSpreadPages',
+  'auditPrintInterior', 'runPrintPreflight', 'preflightJumpTo', 'printPlacements', 'imagePixelSize',
+  'printReadyPdf', 'printReadyUi', 'printReadyRender'];
+/** What the print module takes from its page and from the main studio (src/print/print.ts). */
+export const PRINT_SUPPLIED = ['t', 'document', 'window', 'setTimeout', 'requestAnimationFrame', 'ResizeObserver', 'UI_STRINGS', 'getUiLang', 'uiLangState',
+  'fmtDateIntl', 'icons', '$', 'downloadBlob', 'samplePicsHold', 'samplePicsReady', 'Image',
+  // the main closure's, in the export session: the audit's "Take me there" (preflight's section jumps), the sign-in
+  // dialog (none before wave 7) and the shelf (the print-ready PDF's job: shelf-gated, see src/print/print.ts)
+  'a11yJumpTo', 'openAuth', 'cloud', 'storeMakePrintJob', 'storeRefreshJobs', 'cloudLoadArchive',
+  // what 1.0 refreshes after a print setting (the main closure's own): the store-ready report (wave 5d)
+  'noteBookEdited', 'autoSnapshot', 'local', 'refreshImagePickers', 'FileReader'];
+/** 1.0's top-level lets of the print module the studio reads or sets: the sinks (printUnlink, sidewaysPrintPages, as
+ *  the preview's), and buildPrintHtml (the print document, checked as a whole before the frame or a file gets it). */
+export const PRINT_VARS = ['printUnlink', 'sidewaysPrintPages', 'buildPrintHtml', 'printPressCache'];
+
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile',
   // wave 4c: the cover maker's uploads (its art, the back flap's photo, an uploaded spine icon) and the chosen stock photo
@@ -543,27 +569,42 @@ export async function buildClosureModule(html, epubSource) {
 }
 
 /** Wave 4b: the preview's own module (PREVIEW_ROOTS): createPreviewClosure(env) → { api, vars, setState, getState }. */
-export async function buildPreviewModule(html, epubSource) {
+export function buildPreviewModule(html, epubSource) {
+  return buildOwnModule(html, epubSource, {
+    roots: PREVIEW_ROOTS, suppliedOwn: PREVIEW_SUPPLIED, varsOwn: PREVIEW_VARS, what: 'preview', file: 'closure-preview.js', prefix: 'PREVIEW',
+    fn: 'createPreviewClosure', title: 'The preview (wave 4b)',
+  });
+}
+/** Wave 5b: print's own module (PRINT_ROOTS): createPrintClosure(env) → { api, vars, setState, getState }. */
+export function buildPrintModule(html, epubSource) {
+  return buildOwnModule(html, epubSource, {
+    roots: PRINT_ROOTS, suppliedOwn: PRINT_SUPPLIED, varsOwn: PRINT_VARS, what: 'print', file: 'closure-print.js', prefix: 'PRINT',
+    fn: 'createPrintClosure', title: 'Print (wave 5b)',
+  });
+}
+/** A module of its own (the preview's, print's): its roots' declarations and everything they reach, with its own
+ *  `state` and its own supplied names. */
+async function buildOwnModule(html, epubSource, o) {
   const { extractStudioSource, reachableFrom } = await studioClosure();
   const spec = epubSpec(epubSource);
-  const supplied = [...spec.EPUB_SUPPLIED, ...PREVIEW_SUPPLIED];
+  const supplied = [...spec.EPUB_SUPPLIED, ...o.suppliedOwn];
   const attach = await attachStatements(html);
-  let names = reachableFrom(html, PREVIEW_ROOTS, [...supplied, ...LOCAL_ONLY]);
-  // an ATTACH declaration the preview reaches brings the statements that fill it, and what those read
+  let names = reachableFrom(html, o.roots, [...supplied, ...LOCAL_ONLY]);
+  // an ATTACH declaration the module reaches brings the statements that fill it, and what those read
   const reached = ATTACH.filter((n) => names.includes(n));
-  if (reached.length) names = reachableFrom(html, [...PREVIEW_ROOTS, ...reached.flatMap((n) => attach.refsOf[n] || [])], [...supplied, ...LOCAL_ONLY]);
+  if (reached.length) names = reachableFrom(html, [...o.roots, ...reached.flatMap((n) => attach.refsOf[n] || [])], [...supplied, ...LOCAL_ONLY]);
   const forbidden = names.filter((n) => FORBIDDEN.test(n));
-  if (forbidden.length) fail(`the preview module reaches ${forbidden.join(', ')}, which the browser studio does not lift (supply it in PREVIEW_SUPPLIED)`);
+  if (forbidden.length) fail(`the ${o.what} module reaches ${forbidden.join(', ')}, which the browser studio does not lift (supply it in ${o.prefix}_SUPPLIED)`);
   let src;
   try {
-    src = extractStudioSource(html, [...new Set([...PREVIEW_ROOTS, ...names])], { listRef: 'studio/scripts/extract-closure.mjs PREVIEW_ROOTS', api: '', stringTables: false });
+    src = extractStudioSource(html, [...new Set([...o.roots, ...names])], { listRef: `studio/scripts/extract-closure.mjs ${o.prefix}_ROOTS`, api: '', stringTables: false });
   } catch (e) {
     fail(e.message);
   }
   for (const n of LOCAL_ONLY) {
-    if (src.names.includes(n) || new RegExp('(^|[^\\w$.])' + n + '\\s*\\(').test(src.code)) fail(`${n} is in LOCAL_ONLY but the preview code declares or calls it`);
+    if (src.names.includes(n) || new RegExp('(^|[^\\w$.])' + n + '\\s*\\(').test(src.code)) fail(`${n} is in LOCAL_ONLY but the ${o.what} code declares or calls it`);
   }
-  const lifted = ts.createSourceFile('closure-preview.js', src.code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const lifted = ts.createSourceFile(o.file, src.code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   for (const [name, allowed] of [['UI_STRINGS', UI_STRINGS_READERS], ['FileReader', []]]) {
     const readers = [];
     for (const st of lifted.statements) {
@@ -577,24 +618,24 @@ export async function buildPreviewModule(html, epubSource) {
       if (hit) readers.push(declName(st.getText(lifted)) || '(unnamed)');
     }
     const stray = readers.filter((n) => !allowed.includes(n));
-    if (stray.length) fail(`the preview module reads ${name} in ${stray.join(', ')}`);
+    if (stray.length) fail(`the ${o.what} module reads ${name} in ${stray.join(', ')}`);
   }
   const code = attach.place(src.code, src.names);
-  const api = PREVIEW_ROOTS.filter((n) => src.names.includes(n));
-  const missingRoots = PREVIEW_ROOTS.filter((n) => !src.names.includes(n));
-  if (missingRoots.length) fail(`PREVIEW_ROOTS names no lifted declaration: ${missingRoots.join(', ')}`);
-  const vars = PREVIEW_VARS.filter((n) => src.names.includes(n));
-  const unlifted = PREVIEW_VARS.filter((n) => !src.names.includes(n));
-  if (unlifted.length) fail(`PREVIEW_VARS names no lifted declaration: ${unlifted.join(', ')}`);
+  const api = o.roots.filter((n) => src.names.includes(n));
+  const missingRoots = o.roots.filter((n) => !src.names.includes(n));
+  if (missingRoots.length) fail(`${o.prefix}_ROOTS names no lifted declaration: ${missingRoots.join(', ')}`);
+  const vars = o.varsOwn.filter((n) => src.names.includes(n));
+  const unlifted = o.varsOwn.filter((n) => !src.names.includes(n));
+  if (unlifted.length) fail(`${o.prefix}_VARS names no lifted declaration: ${unlifted.join(', ')}`);
   const head = [
     '/* GENERATED by studio/scripts/extract-closure.mjs from client/index.html — do not edit.',
-    `   The preview (wave 4b): ${src.names.length} top-level declarations (${src.lines} lines) of 1.0's own code, reached from PREVIEW_ROOTS;`,
+    `   ${o.title}: ${src.names.length} top-level declarations (${src.lines} lines) of 1.0's own code, reached from ${o.prefix}_ROOTS;`,
     `   studio sha256 ${src.studioSha}. */`,
     '/* eslint-disable */',
-    `export const PREVIEW_NAMES = ${JSON.stringify(src.names)};`,
-    `export const PREVIEW_API = ${JSON.stringify(api)};`,
-    `export const PREVIEW_SUPPLIED_NAMES = ${JSON.stringify(supplied)};`,
-    'export function createPreviewClosure(env) {',
+    `export const ${o.prefix}_NAMES = ${JSON.stringify(src.names)};`,
+    `export const ${o.prefix}_API = ${JSON.stringify(api)};`,
+    `export const ${o.prefix}_SUPPLIED_NAMES = ${JSON.stringify(supplied)};`,
+    `export function ${o.fn}(env) {`,
     '  let state = env.state;',
     ...supplied.filter((n) => n !== 'state').map((n) => `  const ${n} = env.${n};`),
   ].join('\n');
@@ -756,6 +797,13 @@ export declare const PREVIEW_SUPPLIED_NAMES: string[];
 export declare function createPreviewClosure(env: Record<string, unknown>): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; setState(s: unknown): void; getState(): any };
 `;
 
+const PRINT_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. Print (wave 5b). */
+export declare const PRINT_NAMES: string[];
+export declare const PRINT_API: string[];
+export declare const PRINT_SUPPLIED_NAMES: string[];
+export declare function createPrintClosure(env: Record<string, unknown>): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; setState(s: unknown): void; getState(): any };
+`;
+
 const SERIALIZE_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. Wave 5a: 1.0's serializeBook. */
 export declare const SERIALIZE_NAMES: string[];
 export declare function createSerialize(share: Record<string, unknown>): { serializeBook: () => Record<string, unknown> };
@@ -784,12 +832,16 @@ export async function writeClosure() {
   writeFileSync(path.join(dir, 'closure-preview.js'), pv.code);
   writeFileSync(path.join(dir, 'closure-preview.d.ts'), PREVIEW_DTS);
   out.preview = pv;
+  const pr = await buildPrintModule(html, epub);
+  writeFileSync(path.join(dir, 'closure-print.js'), pr.code);
+  writeFileSync(path.join(dir, 'closure-print.d.ts'), PRINT_DTS);
+  out.print = pr;
   return out;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   writeClosure()
-    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js; the sample: ${o.sample.names.length} → closure-sample.js; the test oracle: ${o.oracle.names.length} → closure-oracle.js; the preview: ${o.preview.names.length} → closure-preview.js`))
+    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js; the sample: ${o.sample.names.length} → closure-sample.js; the test oracle: ${o.oracle.names.length} → closure-oracle.js; the preview: ${o.preview.names.length} → closure-preview.js; print: ${o.print.names.length} → closure-print.js`))
     .catch((e) => {
       console.error(e.message);
       process.exit(1);

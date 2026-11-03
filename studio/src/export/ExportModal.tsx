@@ -12,6 +12,7 @@ import { useToast } from '../shell/Toasts';
 import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
 import { exportBegin, exportBody, exportReset, exportRun, exportUi, loadSerialize } from './state';
+import { printWire } from '../print/print';
 
 /* Step 5 wave 5a (inventory F1, F7, F8): 1.0's export modal and package inspector — their markup, verbatim
    (client/index.html #modalExport and #modalInspector, extracted at build time into src/generated/export-markup.json):
@@ -27,10 +28,10 @@ import { exportBegin, exportBody, exportReset, exportRun, exportUi, loadSerializ
    state of the open book and only a preset chosen is written. Every HTML string 1.0 writes into the dialogs goes
    through the Style session's cleaner (guardRoots). */
 
-/** The modal's sections that belong to later waves (their buttons reach inert stand-ins): hidden. Store-ready (5d), the
- *  print preflight and interior (5b), Word, the submission manuscript, the ACX script and the box set (5c); the archive
- *  (wave 7) is hidden by 1.0 itself until a shelf is linked. */
-export const LATER_WAVES = ['btnPreflight', 'btnDownloadDocx', 'btnMsOpen', 'btnAcxOpen', 'btnOpenPrintView', 'btnBuildBoxSet'];
+/** The modal's sections that belong to later waves (their buttons reach inert stand-ins): hidden. Store-ready (5d), Word,
+ *  the submission manuscript, the ACX script and the box set (5c); the archive (wave 7) is hidden by 1.0 itself until a
+ *  shelf is linked. (Wave 5b: the print preflight and the print interior are 1.0's own now, src/print.) */
+export const LATER_WAVES = ['btnDownloadDocx', 'btnMsOpen', 'btnAcxOpen', 'btnBuildBoxSet'];
 function hideLater(root: HTMLElement): void {
   const st = root.querySelector<HTMLElement>('.st-entry');
   if (st) st.style.display = 'none';
@@ -41,7 +42,9 @@ function hideLater(root: HTMLElement): void {
 }
 
 const EVENTS = ['click', 'change', 'input', 'keydown', 'pointerdown', 'pointerup'] as const;
-function guard(root: HTMLElement): () => void {
+/** Every event on `root` opens the export session before 1.0's listener runs; the event's arrival back at the window
+ *  (or the next task) closes it, writing what changed (wave 5b: the print dialogs too, src/print/PrintModals.tsx). */
+export function exportGuard(root: HTMLElement): () => void {
   const off: (() => void)[] = [];
   for (const type of EVENTS) {
     let end: (() => void) | null = null;
@@ -148,7 +151,7 @@ export function ExportModal() {
         for (const r of [modal, insp]) {
           guardRoots.add(r);
           off.push(() => guardRoots.delete(r));
-          off.push(guard(r));
+          off.push(exportGuard(r));
           const mo = new MutationObserver(() => setOpen({ modal: modal.classList.contains('open'), insp: insp.classList.contains('open') }));
           mo.observe(r, { attributes: true, attributeFilter: ['class'] });
           off.push(() => mo.disconnect());
@@ -171,7 +174,11 @@ export function ExportModal() {
         }
         opener = stub;
         (window as unknown as { beukExport?: unknown }).beukExport = exportSeam;
-        setBuilt(true);
+        // wave 5b: 1.0's initPrint and initPrintView on this markup (the print section) and the print dialogs
+        // (src/print/print.ts); the modal is usable once they are wired
+        return printWire().then(() => {
+          if (alive) setBuilt(true);
+        });
       })
       .catch(() => undefined);
     return () => {

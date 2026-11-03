@@ -1,4 +1,4 @@
-import { exportBook } from '@book/editor/index.js';
+import { META, exportBook, getMetaValue } from '@book/editor/index.js';
 import type * as Y from 'yjs';
 import { closureIfLoaded, closureShare, covEnv, exportEnv, loadClosure, structEnv, type Closure, type State } from '../closure/index';
 import { setMeta } from '../book/hooks';
@@ -87,27 +87,9 @@ export function arriveForExport(c: Closure, book: Rec): State {
   s.images = Array.isArray(doc.images) ? doc.images : [];
   s.research = a.rsNormalize(doc.research);
   s.customThemes = Array.isArray(doc.customThemes) ? doc.customThemes.map((x) => a.normalizeCustomTheme(x)).filter(Boolean) : [];
-  const pd = a.bookPrintDefaults();
-  for (const k of Object.keys(pd)) s[k] = pd[k];
+  arrivePrint(c, doc, s);
   if (doc.exportPlatform) s.exportPlatform = doc.exportPlatform;
-  if (doc.printTrim) s.printTrim = doc.printTrim;
-  if (typeof doc.printRecto === 'boolean') s.printRecto = doc.printRecto;
-  if (typeof doc.printLargePrint === 'boolean') s.printLargePrint = doc.printLargePrint;
-  s.printPictureBook = doc.printPictureBook === true && !s.printLargePrint;
-  s.printBleed = doc.printBleed === true;
   s.storeCheck = a.normalizeStoreCheck(doc.storeCheck);
-  if (doc.printMarginMode === 'custom' || doc.printMarginMode === 'auto') s.printMarginMode = doc.printMarginMode;
-  if (isRec(doc.printCustomMargins)) {
-    const m = doc.printCustomMargins, cur = Object.assign({}, s.printCustomMargins) as Rec;
-    for (const k of ['inside', 'outside', 'top', 'bottom']) if (typeof m[k] === 'number' && isFinite(m[k] as number) && (m[k] as number) >= 0 && (m[k] as number) <= 3) cur[k] = m[k];
-    s.printCustomMargins = cur;
-  }
-  if (['titleauthor', 'title', 'author', 'chapter', 'none'].includes(doc.printHeadContent as string)) s.printHeadContent = doc.printHeadContent;
-  if (doc.printHeadPlace === 'top' || doc.printHeadPlace === 'bottom') s.printHeadPlace = doc.printHeadPlace;
-  if (typeof doc.printOmitChapterHead === 'boolean') s.printOmitChapterHead = doc.printOmitChapterHead;
-  if (typeof doc.printOmitBlankHead === 'boolean') s.printOmitBlankHead = doc.printOmitBlankHead;
-  if (['centre', 'outer', 'none'].includes(doc.printFolio as string)) s.printFolio = doc.printFolio;
-  s.printNotes = doc.printNotes === 'page' || doc.printNotes === 'end' ? doc.printNotes : 'end';
   s.goals = a.normalizeGoals(doc.goals);
   // History: 1.0's buildEpub deletes history and historyPool from the body it sends (and the package never reads it),
   // so the export's state holds none — no unpacking of a large History per session
@@ -124,10 +106,60 @@ export function arriveForExport(c: Closure, book: Rec): State {
   return s;
 }
 
+/** Wave 5b (constraint 58): the print settings as 1.0's serializeBook writes them, in its order. */
+export const PRINT_KEYS = ['printTrim', 'printRecto', 'printLargePrint', 'printPictureBook', 'printBleed', 'printMarginMode', 'printCustomMargins', 'printHeadContent', 'printHeadPlace',
+  'printOmitChapterHead', 'printOmitBlankHead', 'printFolio', 'printNotes'] as const;
+/** serializeBook's own lines for the print keys (client/index.html serializeBook: printPictureBook and printBleed as
+ *  booleans, the custom margins copied). */
+export function printSerialized(st: Rec): Rec {
+  return {
+    printTrim: st.printTrim,
+    printRecto: st.printRecto,
+    printLargePrint: st.printLargePrint,
+    printPictureBook: !!st.printPictureBook,
+    printBleed: !!st.printBleed,
+    printMarginMode: st.printMarginMode,
+    printCustomMargins: Object.assign({}, st.printCustomMargins),
+    printHeadContent: st.printHeadContent,
+    printHeadPlace: st.printHeadPlace,
+    printOmitChapterHead: st.printOmitChapterHead,
+    printOmitBlankHead: st.printOmitBlankHead,
+    printFolio: st.printFolio,
+    printNotes: st.printNotes,
+  };
+}
+/** 1.0's applyBookDoc, its print lines (bookPrintDefaults, then each stored value it takes, with its clamps: a custom
+ *  margin 0–3 in, picture book never beside large print, notes "page" or "end"), into `s`. */
+export function arrivePrint(c: Closure, doc: Rec, s: Rec): Rec {
+  const a = c.api;
+  const pd = a.bookPrintDefaults();
+  for (const k of Object.keys(pd)) s[k] = pd[k];
+  if (doc.printTrim) s.printTrim = doc.printTrim;
+  if (typeof doc.printRecto === 'boolean') s.printRecto = doc.printRecto;
+  if (typeof doc.printLargePrint === 'boolean') s.printLargePrint = doc.printLargePrint;
+  s.printPictureBook = doc.printPictureBook === true && !s.printLargePrint;
+  s.printBleed = doc.printBleed === true;
+  if (doc.printMarginMode === 'custom' || doc.printMarginMode === 'auto') s.printMarginMode = doc.printMarginMode;
+  if (isRec(doc.printCustomMargins)) {
+    const m = doc.printCustomMargins, cur = Object.assign({}, s.printCustomMargins) as Rec;
+    for (const k of ['inside', 'outside', 'top', 'bottom']) if (typeof m[k] === 'number' && isFinite(m[k] as number) && (m[k] as number) >= 0 && (m[k] as number) <= 3) cur[k] = m[k];
+    s.printCustomMargins = cur;
+  }
+  if (['titleauthor', 'title', 'author', 'chapter', 'none'].includes(doc.printHeadContent as string)) s.printHeadContent = doc.printHeadContent;
+  if (doc.printHeadPlace === 'top' || doc.printHeadPlace === 'bottom') s.printHeadPlace = doc.printHeadPlace;
+  if (typeof doc.printOmitChapterHead === 'boolean') s.printOmitChapterHead = doc.printOmitChapterHead;
+  if (typeof doc.printOmitBlankHead === 'boolean') s.printOmitBlankHead = doc.printOmitBlankHead;
+  if (['centre', 'outer', 'none'].includes(doc.printFolio as string)) s.printFolio = doc.printFolio;
+  s.printNotes = doc.printNotes === 'page' || doc.printNotes === 'end' ? doc.printNotes : 'end';
+  return s;
+}
+
 /* ---- the session ---- */
 
-type Session = { ydoc: Y.Doc; state: State; ver: number; platform: unknown };
+type Session = { ydoc: Y.Doc; state: State; ver: number; platform: unknown; print: Rec };
 let session: Session | null = null;
+/** Wave 5b: told of the export's state each time a call enters the session (print's own module runs on that state). */
+export const exportStateListeners = new Set<(st: State) => void>();
 const versions = new WeakMap<Y.Doc, { n: number }>();
 function verOf(ydoc: Y.Doc): { n: number } {
   let v = versions.get(ydoc);
@@ -161,29 +193,79 @@ export function exportEnter(): Closure | null {
     // the book is unchanged: another session only set its own state into the closure; ours stands again (a rebuild
     // would drop a preset an open call chose, and costs a whole exportBook)
     if (c.getState() !== s.state) c.setState(s.state);
+    for (const f of exportStateListeners) f(s.state);
     return c;
   }
   if (s && depth > 0) exportFlush(); // an open call's preset is written before the state is built again
   styleSettle(); // a held Style edit is in the book before the export reads it
   const st = exportStateOf(c, ydoc);
-  session = { ydoc, state: st, ver: verOf(ydoc).n, platform: (st as Rec).exportPlatform };
+  session = { ydoc, state: st, ver: verOf(ydoc).n, platform: (st as Rec).exportPlatform, print: printSerialized(st as Rec) };
+  for (const f of exportStateListeners) f(st);
   return c;
 }
 
-/** Write what the export changed: exportPlatform, as serializeBook writes it, only when the call changed it. */
+/** Write what the export changed: exportPlatform, and (wave 5b) the print settings, each as serializeBook writes it,
+ *  only when the call changed it. */
 export function exportFlush(): void {
   const c = closureIfLoaded();
   const s = session;
   if (!c || !s) return;
   const now = (s.state as Rec).exportPlatform;
-  if (now === s.platform) return;
   const y = s.ydoc;
+  let wrote = false;
+  if (now !== s.platform) {
+    y.transact(() => {
+      placeKey(y, 'exportPlatform');
+      setMeta(y, 'exportPlatform', now as never);
+    });
+    s.platform = now;
+    wrote = true;
+  }
+  if (flushPrint(c, s)) wrote = true;
+  if (wrote) s.ver = verOf(y).n;
+}
+
+/* ---- wave 5b (constraint 58): the print settings, written back ----
+   A print control changes 1.0's state.print* (initPrint's and initPrintView's listeners); the key it changed is
+   written as serializeBook writes it, where serializeBook puts it (placeKey). A setting put back where it was is the
+   book as it was (constraint 60): when a key's new value is what 1.0 makes of the value the book stored before the
+   print controls first touched it (applyBookDoc's print lines: arrivePrint), the stored value comes back — absent if
+   the book had none (a legacy book without print keys stays without them). The stored values are remembered per book
+   from the first write; when the book's print keys are no longer what the last write left (another tab, History, an
+   import), they are taken afresh. */
+type Stored = Record<string, { has: boolean; v: unknown }>;
+const printBases = new WeakMap<Y.Doc, { raw: Stored; written: string }>();
+function storedPrint(y: Y.Doc): Stored {
+  const m = y.getMap<unknown>(META);
+  const out: Stored = {};
+  for (const k of PRINT_KEYS) out[k] = m.has(k) ? { has: true, v: getMetaValue(y, k) } : { has: false, v: undefined };
+  return out;
+}
+const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+function flushPrint(c: Closure, s: Session): boolean {
+  const now = printSerialized(s.state as Rec);
+  const changed = PRINT_KEYS.filter((k) => !same(now[k], s.print[k]));
+  if (!changed.length) return false;
+  const y = s.ydoc;
+  const cur = storedPrint(y);
+  let base = printBases.get(y);
+  if (!base || base.written !== JSON.stringify(cur)) printBases.set(y, (base = { raw: cur, written: '' }));
+  const doc: Rec = {};
+  for (const k of PRINT_KEYS) if (base.raw[k]!.has) doc[k] = base.raw[k]!.v;
+  const was = printSerialized(arrivePrint(c, doc, {}));
+  const m = y.getMap<unknown>(META);
   y.transact(() => {
-    placeKey(y, 'exportPlatform');
-    setMeta(y, 'exportPlatform', now as never);
+    for (const k of changed) {
+      const want = same(now[k], was[k]) ? base.raw[k]! : { has: true, v: now[k] };
+      if (want.has) {
+        placeKey(y, k);
+        setMeta(y, k as never, structuredClone(want.v) as never);
+      } else if (m.has(k)) m.delete(k);
+    }
   });
-  s.platform = now;
-  s.ver = verOf(y).n;
+  base.written = JSON.stringify(storedPrint(y));
+  s.print = now;
+  return true;
 }
 
 /** Where the export's toasts go (ExportModal sets the page's toaster). */

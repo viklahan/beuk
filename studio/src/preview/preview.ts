@@ -1,6 +1,6 @@
 import type * as Y from 'yjs';
 import { META, SECTIONS } from '@book/editor/index.js';
-import { closureIfLoaded, closureLang, closureT, cloudFacts, fmtDateIntl, previewEnv, stateFromBook, structEnv, untitledStrings, type DeskState, type State } from '../closure/index';
+import { closureIfLoaded, closureLang, closureT, cloudFacts, fmtDateIntl, previewEnv, printEnv, stateFromBook, structEnv, untitledStrings, type DeskState, type State } from '../closure/index';
 import { drawIcons } from '../insights/insights';
 import { activeEditor, activeEditorSectionId } from '../editor/active';
 import { editorText } from '../editor/insert';
@@ -132,7 +132,7 @@ function wrap(frag: DocumentFragment): Element {
   span.append(frag);
   return span;
 }
-function guardSheet(el: Element, scope: string): Element {
+export function guardSheet(el: Element, scope: string): Element {
   let p = proxies.get(el);
   if (!p) {
     p = new Proxy(el, {
@@ -283,7 +283,8 @@ export function loadPreview(): Promise<PreviewClosure> {
         },
         raStop: () => envRun((c) => (c.api as unknown as { raStop?: () => void }).raStop?.()),
         dictDiscard: () => envRun((c) => (c.api as unknown as { dictDiscard?: () => void }).dictDiscard?.()),
-        renderPrintView: () => undefined,
+        // wave 5b: the Print Interior View's own (print's module), when full screen changes with it open
+        renderPrintView: () => printEnv.renderView(),
         statsPagesRefresh: () => deskEvents.dispatchEvent(new Event('measured')),
         noteBookEdited: () => undefined,
         autoSnapshot: () => null,

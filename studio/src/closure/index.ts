@@ -1012,6 +1012,15 @@ export const coverEnv: { serializeBook: () => Record<string, unknown>; downloadB
 
 /** Wave 5a (F1, F7, F8): what 1.0's export code reaches around its own, set by src/export: the sign-in dialog (2.0 has
  *  none before wave 7), Project Settings (2.0's dialog) and the phone's pane switch (the audit's "Take me there"). */
+/** Wave 5b (F2, F9): print's own module (src/print/print.ts sets these): 1.0's renderPrintControls and runPrintPreflight,
+ *  which the main closure's initExport calls (its #btnExport click and #btnPreflight), and renderPrintView, which the
+ *  preview's full screen calls (fsChanged) when the Print Interior View is open. Inert until the module is loaded. */
+export const printEnv: { controls: () => void; preflight: () => void; renderView: () => void } = {
+  controls: () => undefined,
+  preflight: () => undefined,
+  renderView: () => undefined,
+};
+
 export const exportEnv: { openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; serialize: (() => Record<string, unknown>) | null } = {
   /** During an export call: 1.0's own serializeBook on the export's state (src/export/state.ts); else the wrap's (4c). */
   serialize: null,
@@ -1106,8 +1115,9 @@ export function loadClosure(): Promise<Closure> {
         openAuth: () => exportEnv.openAuth(),
         openSettings: () => exportEnv.openSettings(),
         setMobilePane: (pane: string) => exportEnv.setMobilePane(pane),
-        runPrintPreflight: () => undefined,
-        renderPrintControls: () => undefined,
+        // wave 5b: print's own module (src/print/print.ts)
+        runPrintPreflight: () => printEnv.preflight(),
+        renderPrintControls: () => printEnv.controls(),
         downloadDocx: () => undefined,
         buildBoxSetEpub: () => undefined,
         renderBoxSetList: () => undefined,
