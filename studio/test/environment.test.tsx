@@ -89,7 +89,7 @@ async function exported(): Promise<Rec> {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined),
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined),
   ];
-  fireEvent.click($('btnExport'));
+  fireEvent.click($('btnLocalBackup'));
   await waitFor(() => expect(blob).not.toBeNull());
   sp.forEach((s) => s.mockRestore());
   return (JSON.parse(await blob!.text()) as Rec).book as Rec;

@@ -17,7 +17,7 @@ import { readBook } from '../../src/book/read';
 import { fixtures } from './fixtures';
 
 /* Wave 5a, task 2 (inventory F1, F7, F8): 1.0's export modal in the studio — its markup, wired by 1.0's own initExport,
-   opened from the top bar's "Export book" (1.0's #btnExport click), every handler run in the export session. Review
+   opened from the top bar's Export (1.0's #btnExport), every handler run in the export session. Review
    focus #3 (constraint 54): opening, switching presets, the validator, the inspector, the audit and closing write
    nothing but the preset (and switching back gives the book back exactly); #5: each test waits for what its action
    needs (the closure loaded and the modal wired: the opener enabled, 1.0's presets drawn). */
@@ -69,11 +69,11 @@ async function studioWith(doc: Rec) {
     </LocaleProvider>,
   );
   // the modal's markup is in place and 1.0's initExport has wired it: the top bar's opener is enabled
-  await waitFor(() => expect($('btnExportBook')?.getAttribute('aria-disabled')).toBeNull(), { timeout: 20_000 });
+  await waitFor(() => expect($('btnExport')?.getAttribute('aria-disabled')).toBeNull(), { timeout: 20_000 });
   return r;
 }
 async function openExport() {
-  await click($('btnExportBook'));
+  await click($('btnExport'));
   // 1.0's refreshExportTree drew the presets and the tree, and the modal is open
   await waitFor(() => expect(document.querySelectorAll('#platformGrid [data-platform]').length).toBe(11));
   expect(isOpen()).toBe(true);
@@ -94,7 +94,7 @@ async function downloaded(fn: () => Promise<void> | void): Promise<{ blob: Blob;
   return got;
 }
 async function backup(): Promise<Rec> {
-  const d = await downloaded(() => click($('btnExport')));
+  const d = await downloaded(() => click($('btnLocalBackup')));
   return (JSON.parse(await d[0]!.blob.text()) as { book: Rec }).book;
 }
 const want = (doc: Rec) => JSON.parse(JSON.stringify(readBook(doc).book)) as Rec;

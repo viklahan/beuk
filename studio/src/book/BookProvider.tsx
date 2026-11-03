@@ -38,6 +38,23 @@ import { REGISTRY_KEY, bookMeta, importToDevice, openStoredBook, registryEpoch, 
    place, keeping the chosen section. */
 
 export type Phase = 'starting' | 'empty' | 'open';
+/** Wave 5a, round 2 — 1.0's BEUK:local status, as far as 2.0's store knows it:
+ *  - checking: the desk is starting (the store not yet read);
+ *  - saved: the store holds the book (y-indexeddb writes every change as it happens; it was opened and synced);
+ *  - blocked / quota / error: storing a book failed (the start, or a book opened or replaced here), by the error's name
+ *    as 1.0's localClassifyError reads it;
+ *  - persisted: navigator.storage's standing answer (1.0's persisted(): true, false, or "unsupported" without the API);
+ *    null until it is known.
+ *  1.0's "saving" (its 1.2 s debounce) has no 2.0 signal: never shown. */
+export type LocalStatus = { status: 'checking' | 'saved' | 'blocked' | 'quota' | 'error'; errorName: string; persisted: boolean | 'unsupported' | null };
+/** 1.0's localClassifyError (client/index.html BEUK:local). */
+export function localClassifyError(e: unknown): 'quota' | 'blocked' | 'error' {
+  const name = (e && typeof e === 'object' && (e as { name?: unknown }).name) || 'Error';
+  if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED') return 'quota';
+  if (name === 'SecurityError' || name === 'InvalidStateError' || name === 'NotSupportedError' || name === 'UnknownError' || name === 'InvalidAccessError') return 'blocked';
+  return 'error';
+}
+const errName = (e: unknown): string => String((e && typeof e === 'object' && (e as { name?: unknown }).name) || 'Error');
 
 export type BookApi = {
   phase: Phase;
@@ -71,6 +88,8 @@ export type BookApi = {
    *  a backup opened — which is where 1.0 runs its sweep of old sample copies (sampleSweepPreRename). Asking takes it. */
   takeOutsideArrival: (ydoc: Y.Doc) => boolean;
   exportBackup: () => void;
+  /** Wave 5a, round 2: what the device store knows, as 1.0's local pill shows it (src/book/LocalPill.tsx). */
+  local: LocalStatus;
 };
 
 const BookContext = createContext<BookApi | null>(null);
@@ -101,6 +120,8 @@ export function BookProvider({ children }: { children: ReactNode }) {
   const [book, setBook] = useState<OpenBook | null>(null);
   const [rev, setRev] = useState(0);
   const [active, setActive] = useState<number | null>(null);
+  const [local, setLocal] = useState<LocalStatus>({ status: 'checking', errorName: '', persisted: null });
+  const failed = useCallback((e: unknown) => setLocal((l) => ({ ...l, status: localClassifyError(e), errorName: errName(e) })), []);
   const started = useRef(false);
   const current = useRef<OpenBook | null>(null);
   const outside = useRef(new WeakSet<Y.Doc>());
@@ -153,8 +174,13 @@ export function BookProvider({ children }: { children: ReactNode }) {
     if (started.current) return;
     started.current = true;
     void (async () => {
+      // 1.0's localAskPersist with no writing yet: only the standing answer is read, never asked for
+      const sm = typeof navigator !== 'undefined' ? navigator.storage : undefined;
+      if (!sm || typeof sm.persist !== 'function') setLocal((l) => ({ ...l, persisted: 'unsupported' }));
+      else if (typeof sm.persisted === 'function') void sm.persisted().then((p) => setLocal((l) => ({ ...l, persisted: !!p })), () => undefined);
       try {
         const r = await startBook(readLegacyBook);
+        setLocal((l) => ({ ...l, status: 'saved', errorName: '' }));
         if (r) {
           outside.current.add(r.book.ydoc);
           show(r.book);
@@ -162,8 +188,9 @@ export function BookProvider({ children }: { children: ReactNode }) {
           if (r.picsMissing > 0) toast(t('local.picsMissing', { n: r.picsMissing }), 'ImageOff');
           return;
         }
-      } catch {
-        /* storage refused or the book cannot be read: an empty desk, nothing written */
+      } catch (e) {
+        /* storage refused or the book cannot be read: an empty desk, nothing written — the pill says so */
+        failed(e);
       }
       show(null);
     })();
@@ -194,13 +221,16 @@ export function BookProvider({ children }: { children: ReactNode }) {
       try {
         const b = await importToDevice(doc);
         show(b);
+        setLocal((l) => ({ ...l, status: 'saved', errorName: '' }));
         return b;
       } catch (e) {
         if (prev && current.current === prev) prev.onStale = (stale) => reopen.current(stale);
+        // the device would not store the book (not a refused book): the pill says why, as 1.0's says a failed save
+        if (!(e instanceof BookImportError)) failed(e);
         throw e;
       }
     },
-    [show],
+    [show, failed],
   );
 
   const openBackupFile = useCallback(
@@ -327,10 +357,11 @@ export function BookProvider({ children }: { children: ReactNode }) {
       isLive,
       takeOutsideArrival,
       exportBackup,
+      local,
     };
     // rev: the book's meta or sections changed
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, book, rev, active, t, openBackupFile, replaceBook, replaceWith, isLive, takeOutsideArrival, exportBackup]);
+  }, [phase, book, rev, active, t, openBackupFile, replaceBook, replaceWith, isLive, takeOutsideArrival, exportBackup, local]);
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 }

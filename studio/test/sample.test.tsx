@@ -269,7 +269,7 @@ async function exported(): Promise<Rec> {
   });
   const b = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
   const cl = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-  fireEvent.click(document.getElementById('btnExport')!);
+  fireEvent.click(document.getElementById('btnLocalBackup')!);
   const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
   a.mockRestore();
   b.mockRestore();

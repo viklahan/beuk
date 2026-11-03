@@ -26,6 +26,7 @@ import { CoverMaker } from '../cover/CoverMaker';
 import { EXPORT_BUILT_EVENT, ExportModal, exportBuilt, exportOpen } from '../export/ExportModal';
 import { exportEnv } from '../closure/index';
 import { Icon } from './Icon';
+import { LocalPill } from '../book/LocalPill';
 import { LangMenu } from './LangMenu';
 import { ThemeButton } from './ThemeButton';
 
@@ -34,7 +35,8 @@ import { ThemeButton } from './ThemeButton';
    the outline (left), the writing page (centre) and the reader (right).
    Part C: the outline lists the open book's sections, the centre is the
    desk (an empty desk opens a backup; an open book edits the chosen
-   chapter), and Export downloads the book as a 1.0 backup file. The reader
+   chapter); wave 5a: Export opens 1.0's export modal, and the backup file is in 1.0's
+   local pill (src/book/LocalPill.tsx). The reader
    stays bare. Step 5 wave 1a wires Project Settings and History (the book
    tools row); Import keeps its place and look, aria-disabled until its
    wave. Every label is an existing 1.0 string key. */
@@ -53,7 +55,6 @@ export function Shell() {
   // 1.0's code in the closure reads t() and the interface language at call time
   syncClosureLocale(t as (k: string, p?: Record<string, unknown>) => string, lang);
   const bk = useBook();
-  const canExport = bk.phase === 'open';
   const [mobile, setMobile] = useState<MobilePane>('structure');
   // wave 3a: 1.0's cloudAfterSignIn → cloudLoadStreak — with a shelf and a writer signed in, the server's streak
   useEffect(() => {
@@ -100,6 +101,7 @@ export function Shell() {
     on();
     return () => window.removeEventListener(EXPORT_BUILT_EVENT, on);
   }, []);
+  const canExport = bookOpen && exportReady;
   exportEnv.openSettings = () => setDialog('settings');
   exportEnv.setMobilePane = (pane) => {
     if (pane === 'structure' || pane === 'center' || pane === 'preview') {
@@ -107,7 +109,6 @@ export function Shell() {
       setMstyle(false);
     }
   };
-  const canExportBook = bookOpen && exportReady;
 
   return (
     <div id="app" dir={dir}>
@@ -137,6 +138,7 @@ export function Shell() {
             {bk.author}
           </div>
         </div>
+        <LocalPill />
         <LangMenu />
         <ThemeButton />
         <button type="button" className="tb-btn" id="btnHomeport" data-tip="tips.homeport" aria-label={t('top.homeportAria')} onClick={() => openTab('/?home')}>
@@ -147,26 +149,16 @@ export function Shell() {
           <Icon name="LifeBuoy" />
           <span className="tb-label lbl-collapse">{t('top.help')}</span>
         </button>
-        <button
-          type="button"
-          className="tb-btn"
-          id="btnExportBook"
-          data-tip="tips.export"
-          aria-label={t('next.exportBook')}
-          aria-disabled={canExportBook ? undefined : 'true'}
-          onClick={canExportBook ? () => exportOpen() : undefined}
-        >
-          <Icon name="PackageCheck" />
-          <span className="tb-label lbl-collapse">{t('next.exportBook')}</span>
-        </button>
+        {/* wave 5a, round 2: 1.0's #btnExport opens the export modal (its aria-label is 1.0's own English, with no key);
+            the backup is in the local pill (src/book/LocalPill.tsx), where 1.0 keeps it */}
         <button
           type="button"
           className="tb-btn primary"
           id="btnExport"
-          aria-label={t('top.export')}
+          data-tip="tips.export"
+          aria-label="Export book"
           aria-disabled={canExport ? undefined : 'true'}
-          title={canExport ? t('local.backup') : undefined}
-          onClick={canExport ? bk.exportBackup : undefined}
+          onClick={canExport ? () => exportOpen() : undefined}
         >
           <Icon name="Download" />
           <span className="tb-label">{t('top.export')}</span>

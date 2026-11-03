@@ -146,7 +146,7 @@ describe('Project Settings in the studio', () => {
       });
       vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
       vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-      fireEvent.click($('btnExport'));
+      fireEvent.click($('btnLocalBackup'));
       const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
       vi.restoreAllMocks();
       return out.book;
@@ -184,7 +184,7 @@ describe('Project Settings in the studio', () => {
       });
       vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
       vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-      fireEvent.click($('btnExport'));
+      fireEvent.click($('btnLocalBackup'));
       const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
       vi.restoreAllMocks();
       return out.book;
