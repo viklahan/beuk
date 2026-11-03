@@ -119,7 +119,8 @@ describe('the export modal in the studio', { timeout: 90_000 }, () => {
     for (const id of ['btnDownloadDocx', 'btnBuildBoxSet', 'btnMsOpen', 'btnAcxOpen']) expect(($(id).closest('.fmt-sec') as HTMLElement).style.display, id).toBe('');
     // wave 5b: the print preflight and the print interior are 1.0's own now (src/print), shown
     for (const id of ['btnPreflight', 'btnOpenPrintView']) expect(($(id).closest('.fmt-sec') as HTMLElement).style.display, id).toBe('');
-    expect(($('btnStoreReady').closest('.st-entry') as HTMLElement).style.display).toBe('none');
+    // wave 5d: the store-ready check is 1.0's own now (test/store-ui.test.tsx), its entry shown where 1.0 has it
+    expect(($('btnStoreReady').closest('.st-entry') as HTMLElement).style.display).toBe('');
     await act(async () => void fireEvent.keyDown(document, { key: 'Escape' }));
     expect(isOpen()).toBe(false);
     expect(await backup()).toEqual(want(doc));

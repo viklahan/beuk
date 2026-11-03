@@ -257,7 +257,11 @@ export const VARS = ['insVarPick', 'insCache', 'insFacts',
   // stock results' renderer, wrapped so a thumbnail the policy refuses is never asked for
   'cmRecipe', 'cmElement', 'cmWrapGuides', 'cmItems', 'cmBlocks', 'ensureCoverBgImage', 'hcEnsureFlapPhoto', 'ensureWrapIcons', 'cmRenderStockResults',
   // wave 5a: the package inspector's file set and the file it shows (1.0's #btnCopyFile reads them)
-  'inspFilesCache', 'inspCurrent'];
+  'inspFilesCache', 'inspCurrent',
+  // wave 5d: the cover maker's opener as 1.0's storeAct calls it ("Open the cover maker", inside the export session): the
+  // studio points it at 2.0's own opener (src/cover/CoverMaker.tsx coverOpen: the maker on the Style session's state).
+  // Its only other caller, initCoverMaker's #btnCoverMake listener, is a stand-in button (CoverMaker.tsx)
+  'openCoverMaker'];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
   // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads

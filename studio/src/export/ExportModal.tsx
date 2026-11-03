@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useBook } from '../book/BookProvider';
 import { loadClosure, pageEnv, type Closure } from '../closure/index';
 import { coverReady } from '../cover/cover';
-import { translateCover } from '../cover/CoverMaker';
+import { coverOpen, translateCover } from '../cover/CoverMaker';
 import markup from '../generated/export-markup.json';
 import { useLocale } from '../i18n/LocaleProvider';
 import { drawIcons } from '../insights/insights';
@@ -28,13 +28,12 @@ import { printWire } from '../print/print';
    state of the open book and only a preset chosen is written. Every HTML string 1.0 writes into the dialogs goes
    through the Style session's cleaner (guardRoots). */
 
-/** The modal's sections that belong to later waves (their buttons reach inert stand-ins): hidden. Store-ready (5d); the
- *  archive (wave 7) is hidden by 1.0 itself until a shelf is linked. (Wave 5b: the print preflight and the print interior
- *  are 1.0's own now, src/print. Wave 5c: Word and the box set, the submission manuscript and the ACX script too.) */
+/** The modal's sections that belong to later waves (their buttons reach inert stand-ins): hidden. The archive (wave 7) is
+ *  hidden by 1.0 itself until a shelf is linked. (Wave 5b: the print preflight and the print interior are 1.0's own now,
+ *  src/print. Wave 5c: Word and the box set, the submission manuscript and the ACX script too. Wave 5d: the store-ready
+ *  check, its entry where 1.0 has it.) */
 export const LATER_WAVES: string[] = [];
 function hideLater(root: HTMLElement): void {
-  const st = root.querySelector<HTMLElement>('.st-entry');
-  if (st) st.style.display = 'none';
   for (const id of LATER_WAVES) {
     const sec = root.querySelector('#' + id)?.closest<HTMLElement>('.fmt-sec');
     if (sec) sec.style.display = 'none';
@@ -117,12 +116,13 @@ export function exportOpen(): void {
   exportRun(() => b.click());
 }
 
-/** The dialogs this component puts in place (wave 5c: and 1.0's ACX script and submission manuscript dialogs). */
-const DLGS = ['modal', 'insp', 'acx', 'ms'] as const;
+/** The dialogs this component puts in place (wave 5c: and 1.0's ACX script and submission manuscript dialogs; wave 5d:
+ *  the store-ready check's). */
+const DLGS = ['modal', 'insp', 'acx', 'ms', 'store'] as const;
 type Dlg = (typeof DLGS)[number];
 type Backs = Record<Dlg, HTMLElement | null>;
-const NO_BACKS: Backs = { modal: null, insp: null, acx: null, ms: null };
-const CLOSED: Record<Dlg, boolean> = { modal: false, insp: false, acx: false, ms: false };
+const NO_BACKS: Backs = { modal: null, insp: null, acx: null, ms: null, store: null };
+const CLOSED: Record<Dlg, boolean> = { modal: false, insp: false, acx: false, ms: false, store: false };
 
 export function ExportModal() {
   const { lang } = useLocale();
@@ -153,18 +153,21 @@ export function ExportModal() {
         coverReady(c);
         closure.current = c;
         // 1.0's own static markup (no script, no handler: the extractor checks), in 1.0's order: the ACX script's and the
-        // submission manuscript's dialogs (wave 5c), the export modal, the package inspector
-        el.innerHTML = markup.acx + markup.ms + markup.modal + markup.inspector;
+        // submission manuscript's dialogs (wave 5c), the export modal, the store-ready check's (wave 5d), the package
+        // inspector
+        el.innerHTML = markup.acx + markup.ms + markup.modal + markup.store + markup.inspector;
         const modal = el.querySelector<HTMLElement>('#modalExport')!;
         const insp = el.querySelector<HTMLElement>('#modalInspector')!;
         const acx = el.querySelector<HTMLElement>('#modalAcx')!;
         const ms = el.querySelector<HTMLElement>('#modalManuscript')!;
-        backs.current = { modal, insp, acx, ms };
+        const store = el.querySelector<HTMLElement>('#modalStore')!;
+        backs.current = { modal, insp, acx, ms, store };
         hideLater(modal);
         drawIcons(el);
         translateCover(c, el);
-        const openNow = () => ({ modal: modal.classList.contains('open'), insp: insp.classList.contains('open'), acx: acx.classList.contains('open'), ms: ms.classList.contains('open') });
-        for (const r of [modal, insp, acx, ms]) {
+        const openNow = () => ({ modal: modal.classList.contains('open'), insp: insp.classList.contains('open'), acx: acx.classList.contains('open'), ms: ms.classList.contains('open'),
+          store: store.classList.contains('open') });
+        for (const r of [modal, insp, acx, ms, store]) {
           guardRoots.add(r);
           off.push(() => guardRoots.delete(r));
           off.push(exportGuard(r));
@@ -185,6 +188,11 @@ export function ExportModal() {
             // and their bodies' listeners; #btnMsOpen and #btnAcxOpen are in the export modal
             cc.api.msInit();
             cc.api.acxInit();
+            // wave 5d: 1.0's own initStoreReady (1.0 runs it at start-up): the export modal's #btnStoreReady opens the
+            // check (openStoreReady), the selects, the server panel's buttons, Download report and Close; its "Open the
+            // cover maker" is 2.0's opener (the maker on the Style session's state, as Project Settings opens it)
+            cc.vars.openCoverMaker = () => coverOpen();
+            cc.api.initStoreReady();
             // 2.0 has no sign-in dialog yet (wave 7): 1.0's own switch keeps the modal open and opens nothing, after
             // its "Sign in to download the store-ready EPUB" (buildEpub, signed out)
             cc.api.buildEpub.noOpen = true;

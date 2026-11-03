@@ -886,6 +886,8 @@ export type ClosureVars = {
   // wave 5a: the package inspector's file set and the file it shows
   inspFilesCache: EpubFile[];
   inspCurrent: string;
+  // wave 5d: what 1.0's storeAct calls for "Open the cover maker" (ExportModal points it at 2.0's opener, coverOpen)
+  openCoverMaker: () => void;
 };
 
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
