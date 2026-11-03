@@ -7,8 +7,8 @@ import { useBook, type LocalStatus } from './BookProvider';
    device" pill (client/index.html BEUK:local: #localPill, #localPillBtn, #btnLocalBackupInline, #localPop with
    Export a backup and Open a backup…, #localBackupInput). The markup, classes, ids and keys are 1.0's; its CSS is
    extracted verbatim (src/generated/local.css). The words are 1.0's localStatusText / localDetailText on what 2.0's
-   store knows (BookProvider's LocalStatus): 2.0 has no save time (1.0's "Last saved {time}") and no "saving" signal,
-   so neither is ever shown. Export a backup is the book's backup download (bk.exportBackup); Open a backup… is the
+   store knows (BookProvider's LocalStatus; "Last saved {time}" is the store's last completed write, OpenBook.savedAt).
+   1.0's "saving" (its pause before a save) has no 2.0 counterpart: y-indexeddb writes each change at once. Export a backup is the book's backup download (bk.exportBackup); Open a backup… is the
    desk's own flow (bk.openBackupFile: it asks before replacing a book). The popover closes as 1.0's does: its
    buttons, a click outside it, Escape. */
 
@@ -29,10 +29,18 @@ export function localStatusText(s: LocalStatus, t: T): { full: string; short: st
       return { full: t('local.error', { name: s.errorName || 'Error' }), short: t('local.notSavedShort') };
   }
 }
-/** 1.0's localDetailText (without a save time: 2.0's store keeps none, so 1.0's "no time" sentence). */
-export function localDetailText(s: LocalStatus, t: T): string {
+/** 1.0's fmtLocalTime: the time of day in the interface language. */
+export function fmtLocalTime(ms: number, lang: string): string {
+  try {
+    return new Intl.DateTimeFormat(lang, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(new Date(ms));
+  } catch {
+    return new Date(ms).toLocaleTimeString();
+  }
+}
+/** 1.0's localDetailText; `savedAt` is the store's last completed write (OpenBook.savedAt; 0: none yet). */
+export function localDetailText(s: LocalStatus, t: T, savedAt = 0, lang = 'en'): string {
   if (failedOf(s)) return t('local.detailFailed');
-  let d = t('local.detailSavedNoTime');
+  let d = savedAt ? t('local.detailSaved', { time: fmtLocalTime(savedAt, lang) }) : t('local.detailSavedNoTime');
   if (s.persisted === true) d += ' ' + t('local.detailPersisted');
   else if (s.persisted === false) d += ' ' + t('local.detailEvictable');
   else if (s.persisted === 'unsupported') d += ' ' + t('local.detailUnsupported');
@@ -40,13 +48,23 @@ export function localDetailText(s: LocalStatus, t: T): string {
 }
 
 export function LocalPill() {
-  const { t } = useLocale();
+  const { t, lang } = useLocale();
   const bk = useBook();
   const s = bk.local;
   const [open, setOpen] = useState(false);
+  // the store's last completed write, followed as 1.0's pill follows its saves (only this small part re-renders)
+  const ob = bk.book;
+  const [savedAt, setSavedAt] = useState(() => ob?.savedAt ?? 0);
+  useEffect(() => {
+    setSavedAt(ob?.savedAt ?? 0);
+    if (!ob) return;
+    return ob.onWrite((err) => {
+      if (err === null) setSavedAt(ob.savedAt);
+    });
+  }, [ob]);
   const input = useRef<HTMLInputElement>(null);
   const txt = localStatusText(s, t as T);
-  const detail = localDetailText(s, t as T);
+  const detail = localDetailText(s, t as T, savedAt, lang);
   const failed = failedOf(s);
   const evictable = s.status === 'saved' && (s.persisted === false || s.persisted === 'unsupported');
 

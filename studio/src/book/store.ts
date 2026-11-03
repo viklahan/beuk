@@ -129,6 +129,10 @@ export async function listGenerations(): Promise<{ id: string; epoch: string; na
 /** How long after a change to the book's values the unnamed pictures are let go (one sweep for a burst of changes). */
 export const BLOB_GC_MS = 800;
 
+/** Wave 5a, round 2: the open book holding a Y.Doc (its device saves: 1.0's local pill). */
+const books = new WeakMap<Y.Doc, OpenBook>();
+export const bookOf = (ydoc: Y.Doc | null): OpenBook | null => (ydoc ? books.get(ydoc) ?? null : null);
+
 /** One open book (one generation): its Y.Doc, its persistence, and the tab channels. */
 export class OpenBook {
   readonly id: string;
@@ -144,6 +148,10 @@ export class OpenBook {
   private closed = false;
   private stale = false;
   private blobTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Wave 5a, round 2 (1.0's local pill): when a write of this book to the device last completed (ms; 0: none yet),
+   *  and who is told of each write's end (null: it completed; an error: the database refused it). */
+  savedAt = 0;
+  private writeListeners = new Set<(err: unknown) => void>();
 
   constructor(id: string, epoch: string, ydoc: Y.Doc, persistence: IndexeddbPersistence, textWarnings: TextWarning[] = []) {
     this.id = id;
@@ -152,8 +160,20 @@ export class OpenBook {
     this.persistence = persistence;
     this.textWarnings = textWarnings;
     ydoc.on('afterTransaction', this.watchBlobs);
+    books.set(ydoc, this);
     // The database deleted under us (a newer generation replaced it): stop writing, then go stale.
     void persistence._db.then((db) => {
+      // wave 5a, round 2: every write y-indexeddb makes is a readwrite transaction on this database — its end is the
+      // device save 1.0's local pill reports (complete: saved, at that time; abort or error: not saved, by its name)
+      const tx0 = db.transaction.bind(db);
+      db.transaction = ((names: string | string[], mode?: IDBTransactionMode, opts?: IDBTransactionOptions) => {
+        const tx = tx0(names, mode, opts);
+        if (mode === 'readwrite') {
+          tx.addEventListener('complete', () => this.writeDone(null));
+          tx.addEventListener('abort', () => this.writeDone(tx.error ?? new DOMException('The write was aborted', 'AbortError')));
+        }
+        return tx;
+      }) as typeof db.transaction;
       const prev = db.onversionchange;
       db.onversionchange = (e) => {
         this.markStale();
@@ -181,6 +201,17 @@ export class OpenBook {
         if (typeof m?.replaced === 'string' && m.replaced > this.epoch) this.markStale();
       };
     }
+  }
+
+  /** A write of this book to the device ended: completed (null) or refused (the error). */
+  writeDone(err: unknown): void {
+    if (err === null) this.savedAt = Date.now();
+    for (const f of this.writeListeners) f(err);
+  }
+  /** Be told of each write's end; returns the unsubscribe. */
+  onWrite(f: (err: unknown) => void): () => void {
+    this.writeListeners.add(f);
+    return () => this.writeListeners.delete(f);
   }
 
   /** After a change of this tab's to the book's values: the pictures no value names any more are let go (never one still
@@ -338,6 +369,7 @@ export async function importToDevice(doc: unknown): Promise<OpenBook> {
   await synced(persistence);
   remember(id, epoch, String(bookMeta(ydoc).title ?? ''));
   const book = new OpenBook(id, epoch, ydoc, persistence, res.textWarnings);
+  book.savedAt = Date.now(); // y-indexeddb wrote the whole book before it synced: the device holds it as of now
   book.announce();
   await dropOlderGenerations(id, epoch, [LEGACY_EPOCH, ...(previous ? [previous] : [])]);
   return book;
@@ -370,7 +402,9 @@ async function importLegacyOnce(book: unknown): Promise<{ book: OpenBook; import
   const persistence = new IndexeddbPersistence(dbNameFor(id, LEGACY_EPOCH), ydoc);
   await synced(persistence);
   remember(id, LEGACY_EPOCH, String(bookMeta(ydoc).title ?? ''));
-  return { book: new OpenBook(id, LEGACY_EPOCH, ydoc, persistence, res.textWarnings), imported: true };
+  const legacy = new OpenBook(id, LEGACY_EPOCH, ydoc, persistence, res.textWarnings);
+  legacy.savedAt = Date.now(); // written whole before it synced, as importToDevice's
+  return { book: legacy, imported: true };
 }
 
 /** What the studio opens at start-up: the last book, else any 2.0 book on this device, else 1.0's local book imported once

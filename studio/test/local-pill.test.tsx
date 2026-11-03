@@ -5,7 +5,7 @@ import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import { App } from '../src/App';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
-import { importToDevice } from '../src/book/store';
+import { bookOf, importToDevice } from '../src/book/store';
 
 /* The store's import, passed through — except when a test makes the device refuse it (as IndexedDB answers a full
    device: a QuotaExceededError). (Failing indexedDB.open itself also leaves y-indexeddb's own promise chains rejected
@@ -130,14 +130,22 @@ describe("the backup, in 1.0's local pill", { timeout: 60_000 }, () => {
     expect($('localPop').hidden).toBe(false);
     expect($('localPillBtn').getAttribute('aria-expanded')).toBe('true');
     expect($('localPopTitle').textContent).toBe(t('local.saved'));
+    // reopened from this device, nothing written yet this time: 1.0's sentence without a time
     expect($('localPopDetail').textContent).toBe(t('local.detailSavedNoTime') + ' ' + t('local.detailPersisted'));
+    // a write that completes (a change stored by y-indexeddb): "Last saved {time}", 1.0's words and time format
+    act(() => desk.ydoc!.getMap('meta').set('zzProbe', 1));
+    await waitFor(() => expect($('localPopDetail').textContent).toMatch(/\d{1,2}:\d{2}:\d{2}/));
+    const at = $('localPopDetail').textContent!;
+    const time = /(\d{1,2}:\d{2}:\d{2}\s?[AP]M)/.exec(at)?.[1];
+    expect(at).toBe(t('local.detailSaved', { time }) + ' ' + t('local.detailPersisted'));
+    act(() => desk.ydoc!.getMap('meta').delete('zzProbe'));
     expect($('btnLocalBackup').textContent).toBe(t('local.backup'));
     expect($('btnLocalOpenBackup').textContent).toBe(t('local.openBackup'));
     const d = await downloaded(() => click($('btnLocalBackup')));
     expect(d.length).toBe(1);
     expect(d[0]!.name).toMatch(/\.beuk-backup\.json$/);
     const out = (JSON.parse(await d[0]!.blob.text()) as { book: Rec }).book;
-    expect(out).toEqual(JSON.parse(JSON.stringify(readBook(doc).book)));
+    expect(out).toEqual(JSON.parse(JSON.stringify(readBook(doc).book))); // (the probe key was set and taken away)
     expect($('localPop').hidden).toBe(true);
     await click($('localPillBtn'));
     await act(async () => void fireEvent.keyDown(document, { key: 'Escape' }));
@@ -191,5 +199,20 @@ describe("the backup, in 1.0's local pill", { timeout: 60_000 }, () => {
     expect(toasts()).toContain(t('local.blocked'));
     refuse.error = null;
     r.unmount();
+  });
+
+  it("a write the store's database refuses (its transaction aborts with QuotaExceededError) is 1.0's quota; the next write that completes is saved again", async () => {
+    persisted(true);
+    await studioWith(book('real/lantern-coast-book-one'));
+    const ydoc = desk.ydoc!;
+    await new Promise((res) => setTimeout(res, 1500)); // the writes that follow an opening have ended
+    // the failure as the store reports an aborted readwrite transaction (bookOf: the open book of a Y.Doc)
+    act(() => bookOf(ydoc)!.writeDone(new DOMException('full', 'QuotaExceededError')));
+    expect($('localPill').getAttribute('data-state')).toBe('quota');
+    expect($('btnLocalBackupInline').hidden).toBe(false);
+    // the next write that really completes (a change of the book, stored by y-indexeddb) is saved again
+    act(() => ydoc.getMap('meta').set('zzProbe', 1));
+    await waitFor(() => expect($('localPill').getAttribute('data-state')).toBe('saved'), { timeout: 10_000 });
+    act(() => ydoc.getMap('meta').delete('zzProbe'));
   });
 });

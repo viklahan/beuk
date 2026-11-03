@@ -181,7 +181,8 @@ async function cspAndOffline() {
 
 /** 1.0's parts 2.0 has not ported yet (step 5): hidden before comparing. */
 const ONE_HIDE =
-  '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, .pane-fold, #tipLayer, .beuk-tip,' +
+  // wave 5a, round 2: the local pill (.local-wrap) is ported, so 1.0 shows it too
+  '#netPill, #btnAccount, #btnSupport, #updateBar, .pane-fold, #tipLayer, .beuk-tip,' +
   /* the sidebar's content below its two action buttons (step 5) */
   ' #bulkHint, #importSummary, #irReopen { display: none !important; }' + // wave 2c: Outline is ported, so 1.0 shows it too; wave 1c: the sample bar and its tour link are in both
   /* KNOWN 1.0 QUIRK, not reproduced: at phone widths 1.0 drops the pane
@@ -191,10 +192,9 @@ const ONE_HIDE =
      2.0's logical borders follow the LTR behaviour. Neutralised in 1.0
      so the rest of the comparison stays strict. */
   ' @media (max-width: 1023px) { html[dir="rtl"] #panes .pane { border: none !important; } }';
-/** 2.0's parts 1.0 has not (step 5 wave 5a: the top bar's "Export book", which opens 1.0's export modal: in 1.0 its own
- *  #btnExport does, and 2.0's #btnExport stays the backup download): hidden before comparing. */
-const TWO_HIDE = '#btnExportBook { display: none !important; }';
-const FRAME = ['#topbar', '#mobileTabs', '#panes', '#pane-structure', '#pane-center', '#pane-preview', '.center-tabs', '.side-actions', '#btnUiLang', '#btnTheme', '#btnHomeport', '#btnHelp', '#btnExport'];
+const FRAME = ['#topbar', '#mobileTabs', '#panes', '#pane-structure', '#pane-center', '#pane-preview', '.center-tabs', '.side-actions', '#btnUiLang', '#btnTheme', '#btnHomeport', '#btnHelp', '#btnExport',
+  // wave 5a, round 2: 1.0's local pill
+  '#localPill'];
 const STYLE_PROPS = ['display', 'background-color', 'background-image', 'color', 'font-family', 'font-size', 'font-weight', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
   'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color', 'border-radius', 'box-shadow'];
 const PIXEL_REGIONS = { desktop: ['#topbar', '.side-actions', '.sample-bar', '.center-tabs'], phone: ['#topbar', '#mobileTabs', '.side-actions'] };
@@ -262,7 +262,7 @@ async function compare(diffPage, { width, height, theme, lang }) {
   const file = `${width}-${theme}${lang ? '-' + lang : ''}`;
   const srv = await startServer({ repo: REPO });
   const one = await open(srv.origin + '/studio', { width, height, theme, lang, hide: ONE_HIDE });
-  const two = await open(srv.origin + '/next/', { width, height, theme, lang, hide: TWO_HIDE });
+  const two = await open(srv.origin + '/next/', { width, height, theme, lang });
   try {
     writeFileSync(path.join(OUT, `one-${file}.png`), await one.page.screenshot());
     writeFileSync(path.join(OUT, `two-${file}.png`), await two.page.screenshot());

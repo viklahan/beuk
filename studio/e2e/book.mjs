@@ -173,7 +173,9 @@ async function choose(page, i) {
 }
 async function exportBackup(page) {
   const dl = page.waitForEvent('download', { timeout: 60_000 });
-  await page.click('#btnExport');
+  // wave 5a, round 2: the backup is in 1.0's local pill (its popover's Export a backup), as in 1.0
+  await page.click('#localPillBtn');
+  await page.click('#btnLocalBackup');
   const d = await dl;
   const text = readFileSync(await d.path(), 'utf8');
   return { name: d.suggestedFilename(), text, json: JSON.parse(text) };
@@ -367,6 +369,8 @@ async function readOnlyRooms(page) {
   // wave 5a (constraint 54): the export modal browsed — every preset and the book's own again, the validator, the
   // audit, the inspector — and closed; nothing exported
   done.push(await exportBrowse(page));
+  // wave 5a, round 2: the local pill's popover opened, then closed by a click outside and by Escape; nothing backed up
+  done.push(await localPillBrowse(page));
   return done.join(' + ');
 }
 /** Wave 4b (constraint 38): the preview browsed — every device, pages turned both ways, a desk rail row, full screen on
@@ -795,7 +799,8 @@ async function latency(origin, opts = {}) {
 
 /* ---- screenshots, next to 1.0 ---- */
 const ONE_HIDE =
-  '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, .pane-fold, #tipLayer, .beuk-tip,' +
+  // wave 5a, round 2: the local pill (.local-wrap) is ported, so 1.0 shows it too
+  '#netPill, #btnAccount, #btnSupport, #updateBar, .pane-fold, #tipLayer, .beuk-tip,' +
   ' #bulkHint, #importSummary, #irReopen { display: none !important; }' + // wave 1c: the sample bar and its tour link are in both
   ' @media (max-width: 1023px) { html[dir="rtl"] #panes .pane { border: none !important; } }';
 
@@ -845,7 +850,6 @@ async function screenshots(origin) {
         const two = await openNext(c2, origin);
         await openBackup(two, f.file);
         await two.waitForSelector('#manuscript .ms-editor');
-        await two.addStyleTag({ content: W5A_TWO_HIDE }); // wave 5a: 2.0's own "Export book" (1.0's #btnExport opens the modal)
         for (const p of [one, two]) {
           await p.evaluate(() => document.fonts.ready);
           await p.waitForTimeout(3800); // toasts gone
@@ -1354,7 +1358,7 @@ async function w2bStandOn(page, nth) {
 /** The backup download while a dialog stands over the top bar (the button clicked from the page itself). */
 async function w2bExport(page) {
   const dl = page.waitForEvent('download', { timeout: 60_000 });
-  await page.evaluate(() => document.getElementById('btnExport').click());
+  await page.evaluate(() => document.getElementById('btnLocalBackup').click()); // wave 5a, round 2: the local pill's
   const d = await dl;
   return JSON.parse(readFileSync(await d.path(), 'utf8'));
 }
@@ -4222,22 +4226,21 @@ async function wave4cChecks(origin) {
    audit) and closed — the export is unchanged (here on two books; readOnlyRooms takes it into the 23-fixture gate).
    Constraint 55: the trial's 402, signed out and no shelf say 1.0's words and nothing is downloaded. The modal's
    regions beside 1.0's in Paper, Candlelight and Arabic (gated). */
-const W5A_TWO_HIDE = '#btnExportBook { display: none !important; }';
 /** 2.0 with a book open and its export modal wired (1.0's initExport run). */
 async function w5aOpen(ctx, origin, file) {
   const page = await openNext(ctx, origin);
   await openBackup(page, file);
-  await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExportBook')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+  await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExport')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
   return page;
 }
-async function w5aOpenModal(page, opener = '#btnExportBook') {
+async function w5aOpenModal(page, opener = '#btnExport') {
   await page.click(opener);
   await page.waitForFunction(() => document.getElementById('modalExport')?.classList.contains('open') && document.querySelectorAll('#platformGrid [data-platform]').length === 11, null, { timeout: 30_000 });
 }
 /** The modal browsed without exporting: every preset chosen, then the book's own again; the validator, the audit and
  *  the inspector (its first files opened) run; closed. Shared with readOnlyRooms (the 23-fixture gate). */
 async function exportBrowse(page) {
-  await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExportBook')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+  await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExport')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
   await w5aOpenModal(page);
   const own = await page.$eval('#platformGrid .active', (b) => b.getAttribute('data-platform'));
   const ids = await page.$$eval('#platformGrid [data-platform]', (bs) => bs.map((b) => b.getAttribute('data-platform')));
@@ -4256,6 +4259,18 @@ async function exportBrowse(page) {
   await page.click('#btnCloseExport');
   await page.waitForFunction(() => !document.getElementById('modalExport').classList.contains('open'), null, { timeout: 10_000 });
   return `the export modal (${ids.length} presets chosen and ${own} again, the validator, the audit, the inspector: ${Math.min(6, files.length)} of ${files.length} files)`;
+}
+/** Wave 5a, round 2: 1.0's local pill — its popover opened and closed twice (a click outside, Escape). */
+async function localPillBrowse(page) {
+  await page.click('#localPillBtn');
+  await page.waitForSelector('#localPop:not([hidden])', { timeout: 10_000 });
+  await page.mouse.click(4, 400);
+  await page.waitForSelector('#localPop', { state: 'hidden', timeout: 10_000 });
+  await page.click('#localPillBtn');
+  await page.waitForSelector('#localPop:not([hidden])', { timeout: 10_000 });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#localPop', { state: 'hidden', timeout: 10_000 });
+  return `the local pill (${await page.$eval('#localPill', (p) => p.getAttribute('data-state'))}; its popover opened and closed)`;
 }
 /** 1.0's body for a book (its page): applyBookDoc, then buildEpub's own lines (serializeBook less what it leaves home). */
 const W5A_ONE_BODY = (b) => {
@@ -4615,14 +4630,14 @@ async function wave5aGate(origin) {
       await ctx.close();
     }
   }
-  // the top bar keeps its look at a phone's width with the new opener (nothing spills)
+  // the top bar keeps its look at a phone's width with the local pill (nothing spills)
   const ctx = await newContext({ serviceWorkers: 'block' });
   try {
     const page = await w5aOpen(ctx, origin, fixtures.find((x) => x.name === 'real/lantern-coast-book-one').file);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(300);
     const fit = await page.evaluate(() => { const t = document.getElementById('topbar'); return [t.scrollWidth, t.clientWidth]; });
-    check(fit[0] <= fit[1], `wave5a: at 390 px the top bar holds "Export book" without spilling (${fit[0]} / ${fit[1]} px)`);
+    check(fit[0] <= fit[1], `wave5a round 2: at 390 px the top bar holds the local pill and Export without spilling (${fit[0]} / ${fit[1]} px)`);
     await harvestCsp(page);
   } finally {
     await ctx.close();
@@ -4676,6 +4691,28 @@ async function wave5aScreens(origin) {
         }
         const d = await pixelDiff(diffPage, await one.locator('#inspFiles').screenshot(), await two.locator('#inspFiles').screenshot());
         check(d.ratio <= PIXEL_TOLERANCE, `wave5a screenshots ${tag}: the inspector's #inspFiles differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        // round 2: 1.0's local pill and its open popover beside 2.0's (the inspector and the modal closed first)
+        for (const p of [one, two]) {
+          await p.evaluate(() => { document.getElementById('modalInspector')?.classList.remove('open'); document.getElementById('modalExport')?.classList.remove('open'); });
+          await p.waitForTimeout(400);
+        }
+        const st1 = await one.$eval('#localPill', (x) => x.getAttribute('data-state') + (x.hasAttribute('data-evictable') ? ' evictable' : ''));
+        const st2 = await two.$eval('#localPill', (x) => x.getAttribute('data-state') + (x.hasAttribute('data-evictable') ? ' evictable' : ''));
+        check(st1 === st2, `wave5a round 2 ${tag}: the local pill's state is 1.0's (1.0 "${st1}", 2.0 "${st2}")`);
+        const dp = await pixelDiff(diffPage, await one.locator('#localPill').screenshot(), await two.locator('#localPill').screenshot());
+        check(dp.ratio <= PIXEL_TOLERANCE, `wave5a round 2 screenshots ${tag}: #localPill differs in ${(dp.ratio * 100).toFixed(2)}% of pixels [${dp.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        for (const p of [one, two]) {
+          await p.click('#localPillBtn');
+          await p.waitForSelector('#localPop:not([hidden])');
+          await p.waitForTimeout(300);
+        }
+        // "Last saved {time}": each app's own last write — the time itself is masked in the pixels and compared as text
+        const noTime = (x) => x.replace(/[\d\u0660-\u0669]{1,2}:[\d\u0660-\u0669]{2}:[\d\u0660-\u0669]{2}[\s\u202f\u200f]*(AM|PM|ص|م)?/g, '{time}');
+        const [d1, d2] = [await one.$eval('#localPopDetail', (x) => x.textContent), await two.$eval('#localPopDetail', (x) => x.textContent)];
+        check(noTime(d1) === noTime(d2) && noTime(d2).includes('{time}'), `wave5a round 2 ${tag}: the popover's words are 1.0's, with the time of the store's last write (${JSON.stringify(noTime(d2).slice(0, 80))})`);
+        const mask = (p) => p.locator('#localPop').screenshot({ mask: [p.locator('#localPopDetail')] });
+        const dq = await pixelDiff(diffPage, await mask(one), await mask(two));
+        check(dq.ratio <= PIXEL_TOLERANCE, `wave5a round 2 screenshots ${tag}: the open #localPop (its time masked) differs in ${(dq.ratio * 100).toFixed(2)}% of pixels [${dq.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
         writeFileSync(path.join(OUT, `w5a-one-${tag}.png`), await one.screenshot());
         writeFileSync(path.join(OUT, `w5a-two-${tag}.png`), await two.screenshot());
         await harvestCsp(one);

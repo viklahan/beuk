@@ -198,6 +198,16 @@ export function BookProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => () => void current.current?.close(), []);
 
+  // wave 5a, round 2: each device write's end (OpenBook.onWrite): a refused one is 1.0's not saved, by its name; a
+  // completed one after that is saved again (the state object is kept when nothing changes: no re-render per keystroke)
+  useEffect(() => {
+    if (!book) return;
+    return book.onWrite((err) => {
+      if (err === null) setLocal((l) => (l.status === 'saved' ? l : { ...l, status: 'saved', errorName: '' }));
+      else failed(err);
+    });
+  }, [book, failed]);
+
   // Re-read the title and the outline when the book's meta, its list of sections or a section's own fields change
   // (wave 2c: a retype, the include eye; typing inside a chapter touches only its text fragment, never these).
   useEffect(() => {
