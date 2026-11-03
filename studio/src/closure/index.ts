@@ -1052,6 +1052,7 @@ export const exportEnv: {
   openSettings: () => void;
   setMobilePane: (pane: string) => void;
   serialize: (() => Record<string, unknown>) | null;
+  resume: <T>(v: T) => T;
   expandPick: (files: unknown[]) => Promise<{ files: unknown[]; skipped: unknown[] }>;
   volumeFromFile: (file: unknown) => Promise<unknown>;
 } = {
@@ -1060,6 +1061,9 @@ export const exportEnv: {
   openAuth: () => undefined,
   openSettings: () => undefined,
   setMobilePane: () => undefined,
+  /** Wave 5c: a value 1.0's export code waits on, held to the export session while an export call is running
+   *  (src/export/state.ts: exportResume); as it is otherwise. */
+  resume: (v) => v,
   /** Wave 5c: Add a Book's pick and its volume (src/export/state.ts sets them). */
   expandPick: async (files) => ({ files, skipped: [] }),
   volumeFromFile: async () => {
@@ -1088,13 +1092,19 @@ export function loadClosure(): Promise<Closure> {
       const c = m.createClosure({
         state: null,
         toast: (msg: string, icon?: string, action?: { label: string; ms?: number; onClick: () => void }) => structEnv.toast(msg, icon, action),
-        samplePicsRequire: async () => undefined,
+        // wave 5c: what 1.0's export code waits on (the sample's pictures, a zip being made, a font fetched) resumes in
+        // the export session when an export call asked for it (exportEnv.resume), so 1.0's continuation — the file name,
+        // the box set's volumes — reads the open book's state, not one another part of the studio set meanwhile
+        samplePicsRequire: () => exportEnv.resume(Promise.resolve(undefined)),
         // wave 5a: 1.0's vendored JSZip, loaded with its integrity when a book opens (src/export/export.ts loadJszip); the
         // closure's `new JSZip()` makes the page's own (1.0's code reads window.JSZip where it checks for it)
         JSZip: function JSZipOfPage(this: unknown, ...args: unknown[]) {
           const Z = (globalThis as { JSZip?: new (...a: unknown[]) => unknown }).JSZip;
           if (!Z) throw new Error('JSZip is not loaded');
-          return new Z(...args);
+          const z = new Z(...args) as { generateAsync?: (...a: unknown[]) => unknown };
+          const gen = z.generateAsync;
+          if (typeof gen === 'function') z.generateAsync = (...a: unknown[]) => exportEnv.resume(gen.apply(z, a));
+          return z;
         },
         t: (k, p) => currentT(k, p),
         UI_STRINGS: untitledStrings(),
@@ -1147,7 +1157,7 @@ export function loadClosure(): Promise<Closure> {
         samplePicsHold: () => false,
         serializeBook: () => (exportEnv.serialize ? exportEnv.serialize() : coverEnv.serializeBook()),
         downloadBlob: (blob: Blob, name: string) => coverEnv.downloadBlob(blob, name),
-        fetch: ((input: RequestInfo | URL, init?: RequestInit) => coverEnv.fetch(input, init)) as typeof fetch,
+        fetch: ((input: RequestInfo | URL, init?: RequestInit) => exportEnv.resume(coverEnv.fetch(input, init))) as typeof fetch,
         // wave 5a (F1, F7, F8): the export's surroundings (exportEnv, src/export), and the later waves' parts of 1.0's
         // initExport, inert (their sections are hidden)
         openAuth: () => exportEnv.openAuth(),

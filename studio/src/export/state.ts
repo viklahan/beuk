@@ -309,6 +309,8 @@ export function expandPick(files: unknown[]): Promise<{ files: unknown[]; skippe
 }
 exportEnv.volumeFromFile = volumeFromFile;
 exportEnv.expandPick = expandPick;
+/** Wave 5c: inside an export call, what 1.0's code waits on resumes in the session (exportResume); else as it is. */
+exportEnv.resume = <T,>(v: T): T => (depth > 0 || lingering > 0 ? exportResume(v) : v);
 
 /* ---- wave 5b (constraint 58): the print settings, written back ----
    A print control changes 1.0's state.print* (initPrint's and initPrintView's listeners); the key it changed is
@@ -388,6 +390,17 @@ export function exportBegin(): (() => void) | null {
       exportFlush();
     }
   };
+}
+
+/** Wave 5c: until the next task after an event on the export's dialogs, what 1.0's listener waits on resumes in the
+ *  session (exportEnv.resume) — an async function's next step, straight after its event, has no wrapped value of its own
+ *  yet. The session itself has ended (what the event changed is written); the closure still holds its state. */
+let lingering = 0;
+export function exportLinger(): void {
+  lingering++;
+  setTimeout(() => {
+    lingering--;
+  }, 0);
 }
 
 /** 1.0's export code on the open book: `fn` runs on 1.0's (corrected) state of it; a preset changed is written when it

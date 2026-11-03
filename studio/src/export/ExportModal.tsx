@@ -11,7 +11,7 @@ import { StackEntry } from '../shell/Dialog';
 import { useToast } from '../shell/Toasts';
 import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
-import { exportBegin, exportBody, exportReset, exportRun, exportUi, loadSerialize } from './state';
+import { exportBegin, exportBody, exportLinger, exportReset, exportRun, exportUi, loadSerialize } from './state';
 import { printWire } from '../print/print';
 
 /* Step 5 wave 5a (inventory F1, F7, F8): 1.0's export modal and package inspector — their markup, verbatim
@@ -28,10 +28,10 @@ import { printWire } from '../print/print';
    state of the open book and only a preset chosen is written. Every HTML string 1.0 writes into the dialogs goes
    through the Style session's cleaner (guardRoots). */
 
-/** The modal's sections that belong to later waves (their buttons reach inert stand-ins): hidden. Store-ready (5d), Word,
- *  the submission manuscript, the ACX script and the box set (5c); the archive (wave 7) is hidden by 1.0 itself until a
- *  shelf is linked. (Wave 5b: the print preflight and the print interior are 1.0's own now, src/print.) */
-export const LATER_WAVES = ['btnDownloadDocx', 'btnMsOpen', 'btnAcxOpen', 'btnBuildBoxSet'];
+/** The modal's sections that belong to later waves (their buttons reach inert stand-ins): hidden. Store-ready (5d); the
+ *  archive (wave 7) is hidden by 1.0 itself until a shelf is linked. (Wave 5b: the print preflight and the print interior
+ *  are 1.0's own now, src/print. Wave 5c: Word and the box set, the submission manuscript and the ACX script too.) */
+export const LATER_WAVES: string[] = ['btnMsOpen', 'btnAcxOpen'];
 function hideLater(root: HTMLElement): void {
   const st = root.querySelector<HTMLElement>('.st-entry');
   if (st) st.style.display = 'none';
@@ -62,7 +62,11 @@ export function exportGuard(root: HTMLElement): () => void {
     const close = () => {
       const e2 = end;
       end = null;
-      e2?.();
+      if (!e2) return;
+      e2();
+      // wave 5c: what 1.0's listener continues with straight after the event (an async function's next step, before
+      // anything it waits on is wrapped) still runs on the open book's state, until the next task
+      exportLinger();
     };
     root.addEventListener(type, open, true);
     window.addEventListener(type, close);
