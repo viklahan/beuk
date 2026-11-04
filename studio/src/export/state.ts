@@ -388,9 +388,9 @@ function flushStore(c: Closure, s: Session): boolean {
  *  importSandboxed — with 2.0's correction of the volume after it, src/import/import.ts importWire), inside an export
  *  call: its answer resumes in the export session. For the tests (5c's seam, closed). */
 export async function volumeFromFile(file: unknown): Promise<unknown> {
-  const { importWire } = await import('../import/import');
-  await importWire();
-  const p = exportRun((cc) => cc.vars.manuscriptFileToVolume(file));
+  const vol = exportEnv.volume;
+  if (!vol) throw new Error('the import is not wired (src/import/import.ts importWire)');
+  const p = exportRun(() => vol(file));
   if (!p) throw new Error('no book');
   return p;
 }

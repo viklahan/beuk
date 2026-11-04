@@ -1202,6 +1202,9 @@ export const exportEnv: {
   serialize: (() => Record<string, unknown>) | null;
   resume: <T>(v: T) => T;
   resuming: () => boolean;
+  /** Wave 6: Add a Book's volume through 1.0's manuscriptFileToVolume as the export modal's listener calls it (set by
+   *  src/import/import.ts importWire; null before). */
+  volume: ((file: unknown) => Promise<unknown>) | null;
 } = {
   /** During an export call: 1.0's own serializeBook on the export's state (src/export/state.ts); else the wrap's (4c). */
   serialize: null,
@@ -1212,6 +1215,7 @@ export const exportEnv: {
    *  (src/export/state.ts: exportResume); as it is otherwise. */
   resume: (v) => v,
   resuming: () => false,
+  volume: null,
   // (wave 6: Add a Book's pick and its volume are 1.0's own — src/import/import.ts importWire — and 5c's two stand-ins
   // that stood here are gone)
 };

@@ -13,7 +13,7 @@ import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
 import { exportBegin, exportBody, exportLinger, exportReset, exportRun, exportUi, loadSerialize } from './state';
 import { printWire } from '../print/print';
-import { importWire } from '../import/import';
+import { importUi, importWire } from '../import/import';
 
 /* Step 5 wave 5a (inventory F1, F7, F8): 1.0's export modal and package inspector — their markup, verbatim
    (client/index.html #modalExport and #modalInspector, extracted at build time into src/generated/export-markup.json):
@@ -99,6 +99,9 @@ export function loadJszip(): Promise<void> {
   }
   return jszipLoad;
 }
+
+// wave 6: the import reads an EPUB, a zip and a .docx's parts with the same JSZip
+importUi.jszip = loadJszip;
 
 /** Whether the modal's markup is in place and wired (the top bar's opener waits for it). Announced on the window. */
 let built = false;

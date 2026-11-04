@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useBook } from '../book/BookProvider';
-import { closureIfLoaded, type Closure } from '../closure/index';
+import { closureIfLoaded, pageToast, type Closure } from '../closure/index';
+import { useToast } from '../shell/Toasts';
+import { toastIcon } from '../style/StyleTab';
 import { translateCover } from '../cover/CoverMaker';
 import markup from '../generated/import-markup.json';
 import { useLocale } from '../i18n/LocaleProvider';
@@ -77,6 +79,10 @@ export function ImportHost() {
   const { lang } = useLocale();
   const bk = useBook();
   const confirm = useConfirm();
+  const toast = useToast();
+  // 1.0's import toasts outside any part's call (its refusals, "Imported …") reach the page's toaster — also on a device
+  // with no book yet, where nothing else has set it (the cover maker sets the same toaster once a book is open)
+  pageToast.fn = (msg, icon) => toast(msg, toastIcon(icon));
   const host = useRef<HTMLDivElement | null>(null);
   const back = useRef<HTMLElement | null>(null);
   const closure = useRef<Closure | null>(null);
@@ -103,8 +109,8 @@ export function ImportHost() {
     setSampleRecord(ydoc, sig);
   };
 
-  // wired once a book is on the desk (1.0's initImportReport reads the desk's report)
-  const bookOpen = bk.phase === 'open' && !!bk.book;
+  // wired once the desk has started (with a book, or none yet: an import onto the empty desk opens the first one)
+  const bookOpen = bk.phase !== 'starting';
   useLayoutEffect(() => {
     const el = host.current;
     const slot = document.getElementById(IMPORT_SLOT);
@@ -116,6 +122,9 @@ export function ImportHost() {
       .then((c) => {
         if (!alive) return;
         closure.current = c;
+        // 1.0's import opens a zip and an EPUB with JSZip (1.0 loads it with the page; 5a loads it when a book opens, and
+        // a device with no book yet has none open)
+        void importUi.jszip();
         // 1.0's own static markup (no script, no handler: the extractor checks): the summary and the reopen button under
         // the Import button, as 1.0 has them; the report and the file input at the end of the page
         slot.innerHTML = markup.summary + markup.reopen;
@@ -136,7 +145,7 @@ export function ImportHost() {
         off.push(() => mo.disconnect());
         // 1.0's initImport (the Import button opens #fileInput; a file chosen is handleImportFile's) and initImportReport,
         // once on this markup
-        // (the desk's Y.Doc is set by EnvironmentHost's effect: until it is, the next task tries again)
+        // (the desk's Y.Doc is set by EnvironmentHost's effect: until 1.0's code runs, the next task tries again)
         const init = () => {
           if (!alive) return;
           const ran = importRun((cc) => {
@@ -144,7 +153,11 @@ export function ImportHost() {
             cc.api.initImportReport();
             return true;
           });
-          if (ran) setBuilt(true);
+          if (ran) {
+            setBuilt(true);
+            // the test seam (e2e): is a whole-book write still in flight
+            (window as unknown as { beukImport?: unknown }).beukImport = { pending: () => !!importPending(), ready: true };
+          }
           else setTimeout(init, 20);
         };
         init();

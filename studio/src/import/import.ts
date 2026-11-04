@@ -1,7 +1,6 @@
 import type * as Y from 'yjs';
 import { exportBook } from '@book/editor/index.js';
-import { TOP_LEVEL_KEYS } from '@book/schema.js';
-import { closureIfLoaded, exportEnv, importEnv, loadSample, pageEnv, writeEnv, type Closure, type HistoryEntry, type State } from '../closure/index';
+import { closureIfLoaded, exportEnv, importEnv, loadClosure, loadSample, pageEnv, writeEnv, type Closure, type HistoryEntry, type State } from '../closure/index';
 import { desk } from '../environment/page';
 import { arriveForExport, loadSerialize, serializeIfLoaded } from '../export/state';
 import { exportSafe } from '../export/safe';
@@ -37,19 +36,23 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
 type Whole = { doc: Rec | null; sample?: boolean };
-type Sess = { c: Closure; ydoc: Y.Doc; book: Rec; state: State & Rec; pre: Rec; whole: Whole | null; untouched: boolean };
+/** `ydoc` null: no book on this device yet (the empty desk: 1.0's empty book, buildEmptyBook). */
+type Sess = { c: Closure; ydoc: Y.Doc | null; book: Rec; state: State & Rec; pre: Rec; whole: Whole | null; untouched: boolean };
 
 /** Where a whole book goes (ImportHost: the BookProvider's replaceWith), and where the page's toasts go. */
 export const importUi: {
-  replace: (doc: Rec, from: Y.Doc) => Promise<Y.Doc | null>;
+  replace: (doc: Rec, from: Y.Doc | null) => Promise<Y.Doc | null>;
   /** The new generation an import (or Undo the whole import) opened: not "another book opening" (the summary stays). */
   ownArrival: Y.Doc | null;
   /** The sample record of a generation the sample's Undo opened (sample.ts setSampleRecord after its fingerprint). */
   sampleArrived: (ydoc: Y.Doc) => void;
   /** The calm confirm 1.0's import asks (ImportHost: the studio's useConfirm); before that, writeEnv's. */
   confirm: (o: Rec) => Promise<unknown>;
+  /** 1.0's vendored JSZip loaded (src/export/ExportModal.tsx loadJszip, set there). */
+  jszip: () => Promise<void>;
 } = {
   confirm: (o) => writeEnv.confirm(o),
+  jszip: async () => undefined,
   replace: async () => null,
   ownArrival: null,
   sampleArrived: () => undefined,
@@ -70,6 +73,13 @@ export function importStateOf(c: Closure, ydoc: Y.Doc): { book: Rec; state: Stat
   return { book, state: st };
 }
 
+/** 1.0's empty desk (no book on the device): its empty book arrived on a fresh state. */
+function emptyDesk(c: Closure): { book: Rec; state: State & Rec } {
+  const book = c.api.buildEmptyBook() as Rec;
+  const st = arriveForExport(c, book) as State & Rec;
+  st.history = [];
+  return { book, state: st };
+}
 /** 1.0's chopSnapDoc, over its serializeBook of the session's state: the book less History and the report, the pictures,
  *  fonts, cover and research files last (formatVersion stays, as in 1.0's snapshots; wave 1a's snapshotDoc leaves it out
  *  of the snapshots 2.0's History takes itself). */
@@ -138,7 +148,7 @@ function applyBookDoc(doc: unknown, opts?: unknown): boolean {
  *  session's desk so 1.0's next lines read it; that book is what the session writes. */
 function restoreSnapshot(id: string): boolean {
   const s = sess;
-  if (!s) return false;
+  if (!s || !s.ydoc) return false;
   const doc = restoreDoc(s.c, s.ydoc, id);
   if (!doc) return false;
   applyBookDoc(clone(doc), { keepHistory: true });
@@ -149,7 +159,7 @@ function restoreSnapshot(id: string): boolean {
 /** 1.0's applySampleBookSync (Undo the whole import of the untouched sample): wave 1c's sample arrival. */
 function applySampleBookSync(): void {
   const s = sess;
-  if (!s || !s.c.sample) return;
+  if (!s || !s.ydoc || !s.c.sample) return;
   const doc = sampleArrival(s.c, s.ydoc, s.untouched);
   applyBookDoc(clone(doc), { keepHistory: true });
   s.whole = { doc, sample: true };
@@ -169,7 +179,7 @@ export function importBegin(): (() => void) | null {
   const c = closureIfLoaded();
   const ydoc = desk.ydoc;
   const ser = serializeIfLoaded();
-  if (!c || !ydoc || !ser) return null;
+  if (!c || !ser) return null;
   if (sess && depth > 0) {
     depth++;
     c.setState(sess.state);
@@ -181,11 +191,12 @@ export function importBegin(): (() => void) | null {
     };
   }
   styleSettle(); // a held Style edit is in the book before the import reads it
-  const untouched = deskIsUntouchedSample(c, ydoc);
-  const { book, state } = importStateOf(c, ydoc);
+  const untouched = ydoc ? deskIsUntouchedSample(c, ydoc) : false;
+  // no book on this device yet: the desk is 1.0's empty book (an import onto it opens the first book)
+  const { book, state } = ydoc ? importStateOf(c, ydoc) : emptyDesk(c);
   c.setState(state);
   const sampleWas = c.api.sampleState.loaded;
-  c.api.sampleState.loaded = sampleLoaded(ydoc);
+  c.api.sampleState.loaded = ydoc ? sampleLoaded(ydoc) : false;
   sess = { c, ydoc, book, state, pre: clone(state) as Rec, whole: null, untouched };
   depth = 1;
   const keep = { snapshot: importEnv.snapshot, edited: importEnv.edited, serialize: exportEnv.serialize, confirm: importEnv.confirm };
@@ -276,7 +287,7 @@ function importFlush(s: Sess, ser: (c: Closure) => Rec): void {
     else if (k === 'meta') out.meta = patchInto(s.book.meta, s.pre.meta, st.meta);
     else out[k] = clone(st[k] ?? null);
   }
-  if (!idsOk(out.sections as unknown[])) return;
+  if (!s.ydoc || !idsOk(out.sections as unknown[])) return;
   writeBook(s.ydoc, s.book, out);
 }
 
@@ -299,9 +310,8 @@ function patchInto(base: unknown, before: unknown, after: unknown): unknown {
  *  over it; its reopen button and the summary are 1.0's own DOM, outside the generation. */
 function startReplace(s: Sess, doc: Rec, sample: boolean): void {
   const c = s.c;
-  // the book format's own keys only (serializeBook writes exactly those)
-  const book: Rec = {};
-  for (const k of Object.keys(doc)) if ((TOP_LEVEL_KEYS as readonly string[]).includes(k) || k === 'formatVersion') book[k] = doc[k];
+  // (1.0's serializeBook output, or History's restore: the book format's own keys, as a backup carries them)
+  const book = doc;
   pending = (async () => {
     const y = await importUi.replace(book, s.ydoc);
     if (!y) {
@@ -375,7 +385,7 @@ function resumable(f: unknown): unknown {
   return f;
 }
 export async function importWire(): Promise<Closure> {
-  const [{ loadClosure }] = await Promise.all([import('../closure/index'), loadSerialize()]);
+  await loadSerialize();
   const c = await loadClosure();
   if (wired.has(c.vars)) return c;
   wired.add(c.vars);
@@ -444,11 +454,11 @@ export async function importWire(): Promise<Closure> {
     );
   };
   v.boxSetExpandPick = (files: unknown[]) => exportEnv.resume(expand((Array.isArray(files) ? files : []).map(resumable)));
+  exportEnv.volume = (f: unknown) => v.manuscriptFileToVolume(f);
   return c;
 }
 async function jszip(): Promise<void> {
-  const { loadJszip } = await import('../export/ExportModal');
-  await loadJszip();
+  await importUi.jszip();
 }
 
 /** For Undo the whole import of the untouched sample: the sample's own chunk is fetched ahead (irUndoAll is synchronous). */

@@ -27,6 +27,8 @@ let c: Closure;
 let ser: (c: Closure) => Rec;
 const REPO = path.join(import.meta.dirname, '..', '..') + path.sep;
 beforeAll(async () => {
+  // wave 6: Add a Book's volumes are 1.0's own (src/import/import.ts importWire wires them)
+  await (await import('../src/import/import')).importWire();
   c = await loadClosure();
   await loadSample();
   ser = await loadSerialize();

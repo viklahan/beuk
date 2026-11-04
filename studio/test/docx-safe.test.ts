@@ -28,6 +28,8 @@ type Rec = Record<string, unknown>;
 const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralForms: meta.pluralForms as PluralForms }, 'en', k, p);
 let c: Closure;
 beforeAll(async () => {
+  // wave 6: Add a Book's volumes are 1.0's own (src/import/import.ts importWire wires them)
+  await (await import('../src/import/import')).importWire();
   c = await loadClosure();
   setClosureT(t);
   setClosureLang('en');

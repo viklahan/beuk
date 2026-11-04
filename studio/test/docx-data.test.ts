@@ -27,6 +27,8 @@ const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralF
 let c: Closure;
 let ser: (c: Closure) => Rec;
 beforeAll(async () => {
+  // wave 6: Add a Book's volumes are 1.0's own (src/import/import.ts importWire wires them)
+  await (await import('../src/import/import')).importWire();
   c = await loadClosure();
   ser = await loadSerialize();
   setClosureT(t);
