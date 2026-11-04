@@ -68436,6 +68436,12 @@
         async run() {
           const bad = [], notes = [];
           const keepVols = state.boxSetVolumes;
+          /* Book One is the desk's own book, and the box set's credit is its author: on a desk with none (a fresh, empty
+             desk) the validator rightly asks for one, which is not what this check is about — it credits Book One for its
+             run and puts the desk's credit back after. */
+          const keepCredit = { title: state.meta.title, author: state.meta.author };
+          if (!String(state.meta.author || "").trim()) state.meta.author = "L. Frank Baum";
+          if (!String(state.meta.title || "").trim()) state.meta.title = "The Oz Books";
           try {
             /* Picture ids taken from the open book itself, so the added books collide with Book One. */
             const own = (state.images || []).filter((im) => im && im.id).slice(0, 2).map((im) => im.id);
@@ -68480,7 +68486,7 @@
             const errs = validateEpubPackage(files).results.filter((r) => r.level === "error");
             if (errs.length) bad.push("validator: " + errs.map((r) => r.id + " " + r.detail).join(" | ").slice(0, 400));
             else notes.push("validator: 0 errors");
-          } finally { state.boxSetVolumes = keepVols; }
+          } finally { state.boxSetVolumes = keepVols; state.meta.title = keepCredit.title; state.meta.author = keepCredit.author; }
           return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : notes.join("; "));
         } });
       /* ==== /BEUK:boxsetvols ==== */
