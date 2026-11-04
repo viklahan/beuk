@@ -411,6 +411,9 @@ export async function importWire(): Promise<Closure> {
         else if (name.endsWith('.pdf')) await loadPdfjs(c);
         if (name.endsWith('.epub') || name.endsWith('.docx') || name.endsWith('.zip')) await jszip();
         const run = await read(file);
+        // a whole-book write still in flight (an import before this one): this import waits for its new book, and its
+        // confirm then asks over that book (V's ruling 2026-11-04: nothing of the first is lost)
+        while (importPending()) await importPending();
         const wrapped = Object.assign(() => importRun(() => run()), run.raw !== undefined ? { raw: run.raw } : {});
         return wrapped;
       })(),
