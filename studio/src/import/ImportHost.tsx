@@ -23,17 +23,35 @@ import { importBegin, importPending, importRun, importUi, importWire } from './i
 
 /** 1.0's listeners on the report and the summary are all click listeners (initImport, initImportReport). */
 const EVENTS = ['click'] as const;
-/** Every event on `root` opens an import session before 1.0's listener runs; the event's arrival back at the window (or
- *  the next task) closes it, writing what changed. While a whole-book write is in flight (an import, Undo the whole
- *  import), the report's buttons wait: the event is held back (the book they would act on is being replaced). */
+/** Every click on `root` opens an import session before 1.0's listener runs; its arrival back at the window (or the next
+ *  task) closes it, writing what changed. While a whole-book write is in flight (an import, Undo the whole import), a
+ *  click is HELD: kept, and given again to the same element (or the button of the same report item, redrawn) once the new
+ *  book is open — the book it acts on is the one being written, so it waits for it (V's ruling 2026-11-04). */
 function importGuard(root: HTMLElement): () => void {
   const off: (() => void)[] = [];
+  const held: (() => void)[] = [];
+  const replay = () => {
+    // the next task: the new generation is open (and, should another write have started, wait for it too)
+    setTimeout(() => {
+      const p = importPending();
+      if (p) return void p.finally(replay);
+      for (const f of held.splice(0)) f();
+    }, 0);
+  };
   for (const type of EVENTS) {
     let end: (() => void) | null = null;
     const open = (e: Event) => {
-      if (importPending()) {
+      const p = importPending();
+      if (p) {
         e.stopImmediatePropagation();
         e.preventDefault();
+        const el = e.target instanceof Element ? e.target : null;
+        const item = el?.closest('[data-irundo]')?.getAttribute('data-irundo') ?? null;
+        held.push(() => {
+          const again = el && el.isConnected ? el : item ? root.querySelector(`[data-irundo="${CSS.escape(item)}"]`) : null;
+          if (again instanceof HTMLElement) again.click();
+        });
+        if (held.length === 1) void p.finally(replay);
         return;
       }
       end?.();

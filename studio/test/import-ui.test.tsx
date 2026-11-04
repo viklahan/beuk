@@ -13,7 +13,7 @@ import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { styleReset } from '../src/style/session';
 import { exportReset } from '../src/export/state';
-import { importPending } from '../src/import/import';
+import { importPending, importUi } from '../src/import/import';
 import { readBook } from '../../src/book/read';
 import { exportBook } from '../../src/book/editor/index';
 import { fixtures } from './fixtures';
@@ -274,5 +274,64 @@ describe("wave 6: the import report (task 3, constraint 79)", () => {
     await choose(new File([evil], 'evil.md', { type: 'text/markdown' }), null);
     expect((window as unknown as { __pw?: unknown }).__pw).toBeUndefined();
     for (const id of ['modalImportReport', 'importSummary', 'irReopen']) expect(hazards($(id).outerHTML), id).toEqual([]);
+  }, 60_000);
+});
+
+describe("V's ruling 2026-11-04: the report and a second import while a whole-book write is in flight", () => {
+  /** Hold the import's whole-book write until `open()` (the book store's real write after it). */
+  function gateWrites() {
+    const real = importUi.replace;
+    let open: () => void = () => undefined;
+    const gate = new Promise<void>((r) => (open = r));
+    Object.defineProperty(importUi, 'replace', { configurable: true, get: () => async (doc: Rec, from: unknown) => (await gate, real(doc, from as never)), set: () => undefined });
+    return { open: () => open(), restore: () => Object.defineProperty(importUi, 'replace', { configurable: true, writable: true, value: real }) };
+  }
+  it('a click on the report during the write is held and then given (Close closes the report once the new book is open)', async () => {
+    await studioWith(book(LANTERN));
+    const g = gateWrites();
+    try {
+      const input = $('fileInput') as HTMLInputElement;
+      Object.defineProperty(input, 'files', { configurable: true, value: [fileOf('plain-manuscript.txt')] });
+      await act(async () => void fireEvent.change(input));
+      await waitFor(() => expect(document.body.textContent).toContain(t('import.replaceTitle')));
+      await click(button(t('import.replaceYes'))!);
+      await waitFor(() => expect($('modalImportReport').classList.contains('open')).toBe(true));
+      expect(importPending()).not.toBeNull();
+      await click($('btnIrClose'));
+      expect($('modalImportReport').classList.contains('open')).toBe(true); // held, not lost
+      g.open();
+      await settle();
+      expect($('modalImportReport').classList.contains('open')).toBe(false);
+      expect((live().meta as Rec).title).toBe('THE NIGHT FERRY');
+    } finally {
+      g.restore();
+    }
+  }, 60_000);
+  it("a second import while the first's write is in flight waits for the first book, then asks over it", async () => {
+    await studioWith(book(LANTERN));
+    const g = gateWrites();
+    try {
+      const input = $('fileInput') as HTMLInputElement;
+      Object.defineProperty(input, 'files', { configurable: true, value: [fileOf('plain-manuscript.txt')] });
+      await act(async () => void fireEvent.change(input));
+      await waitFor(() => expect(document.body.textContent).toContain(t('import.replaceTitle')));
+      await click(button(t('import.replaceYes'))!);
+      await waitFor(() => expect(importPending()).not.toBeNull());
+      Object.defineProperty(input, 'files', { configurable: true, value: [fileOf('frontmatter.md')] });
+      await act(async () => void fireEvent.change(input));
+      await act(() => tick(50));
+      expect(button(t('import.replaceYes'))).toBeUndefined(); // the second waits
+      g.open();
+      await waitFor(() => expect((live().meta as Rec).title).toBe('THE NIGHT FERRY'));
+      await waitFor(() => expect(document.body.textContent).toContain(t('import.replaceTitle')));
+      await click(button(t('import.replaceYes'))!);
+      await settle();
+      expect((live().meta as Rec).title).toBe('The Salt Road');
+      const h = (live().history as Rec[])[0]!;
+      expect(h.auto).toBe('import');
+      expect((((h.doc ?? h.chopDoc) as Rec).meta as Rec).title).toBe('THE NIGHT FERRY'); // the first book, kept in History
+    } finally {
+      g.restore();
+    }
   }, 60_000);
 });
