@@ -1,4 +1,5 @@
-import type * as Y from 'yjs';
+import * as Y from 'yjs';
+import { BODY, SECS, sectionByKey, sectionKeys, sectionPlain } from '@book/editor/index.js';
 import { bookState, closureIfLoaded, pageEnv, structEnv, styleEnv, writeEnv, type Closure, type State } from '../closure/index';
 import { setMeta } from '../book/hooks';
 import { placeKey } from '../notebook/notebook';
@@ -49,19 +50,62 @@ type Hidden = { images: Map<unknown, Rec>; fonts: Map<unknown, Rec>; cover?: Rec
 type Sig = { json: Partial<Record<Key, string>>; images: unknown[][]; fonts: unknown[][]; cover: unknown[][] };
 
 let session: Session | null = null;
-const versions = new WeakMap<Y.Doc, { n: number }>();
-function verOf(ydoc: Y.Doc): { n: number } {
+/** A doc's transactions since the session last matched it: `n` counts them; `touched` holds the section keys whose
+ *  body text alone changed; `full` is set by anything else (meta, the order, the layout, a section's own fields, the
+ *  blobs, a v1 doc). The session's own writes (styleFlush) are not counted: its state already holds them. */
+type Ver = { n: number; touched: Set<string>; full: boolean };
+const versions = new WeakMap<Y.Doc, Ver>();
+function verOf(ydoc: Y.Doc): Ver {
   let v = versions.get(ydoc);
   if (!v) {
-    v = { n: 0 };
+    v = { n: 0, touched: new Set(), full: false };
     const box = v;
-    ydoc.on('afterTransaction', () => {
+    ydoc.on('afterTransaction', (tr: Y.Transaction) => {
+      if (flushing && session?.ydoc === ydoc) return;
       box.n++;
+      if (box.full) return;
+      for (const type of tr.changed.keys()) {
+        const key = bodyKeyOf(ydoc, type);
+        if (key === null) {
+          box.full = true;
+          box.touched.clear();
+          return;
+        }
+        box.touched.add(key);
+      }
     });
     versions.set(ydoc, v);
   }
   return v;
 }
+/** The session matches the doc as it stands. */
+function settled(ydoc: Y.Doc): void {
+  const v = verOf(ydoc);
+  v.touched.clear();
+  v.full = false;
+}
+const isCurrent = (v: Ver): boolean => !v.full && v.touched.size === 0;
+/** The `secs` key of the section whose body `type` is inside (the body fragment itself or anything under it), else
+ *  null: a change anywhere else. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function bodyKeyOf(ydoc: Y.Doc, type: Y.AbstractType<any>): string | null {
+  const secs = ydoc.getMap(SECS);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let cur: Y.AbstractType<any> = type;
+  for (;;) {
+    const item = cur._item;
+    if (!item) return null; // a root type (meta, order, layout, blobs, secs itself)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parent = item.parent as Y.AbstractType<any>;
+    if (item.parentSub === BODY && parent instanceof Y.Map && cur instanceof Y.XmlFragment && !(cur instanceof Y.XmlElement)) {
+      const p = parent._item;
+      return p && p.parent === secs && typeof p.parentSub === 'string' ? p.parentSub : null;
+    }
+    cur = parent;
+  }
+}
+/** Session counters (tests and the e2e read them): full rebuilds, section patches, and the sections the last patch read. */
+export const styleStats = { builds: 0, patches: 0, lastRead: 0 };
 
 /** What 1.0's serializeBook writes for the Style keys of the closure's current state (undefined: no key). */
 export function serializedStyle(c: Closure): Out {
@@ -121,7 +165,41 @@ function build(c: Closure, ydoc: Y.Doc): Session {
   const s: Session = { ydoc, state: st, ver: verOf(ydoc).n, base: { json: {}, images: [], fonts: [], cover: [] }, hidden };
   session = s;
   s.base = sigOf(serializedStyle(c));
+  settled(ydoc);
+  styleStats.builds++;
   return s;
+}
+
+/** Only section bodies changed since the session matched the doc: each touched section read again (exportBook's
+ *  sectionPlain, ARRIVE's normalizeSection) and put in its place; the state and every other section stay the same
+ *  objects. False (nothing changed) when a touched section is gone or not where the state holds it: rebuild. */
+function patch(c: Closure, s: Session): boolean {
+  const y = s.ydoc;
+  const v = verOf(y);
+  const list = (s.state as unknown as { sections: Rec[] }).sections;
+  if (!Array.isArray(list)) return false;
+  const keys = sectionKeys(y);
+  if (keys.length !== list.length) return false;
+  const next: Array<[number, Rec]> = [];
+  for (const key of v.touched) {
+    const i = keys.indexOf(key);
+    const map = sectionByKey(y, key);
+    if (i < 0 || !(map instanceof Y.Map)) return false;
+    const plain = sectionPlain(map, `sections[${i}]`) as Rec;
+    const stored = typeof plain.id === 'string' && plain.id ? plain.id : null;
+    if (stored !== null && list[i]!.id !== stored) return false;
+    const sec = c.api.normalizeSection(structuredClone(plain));
+    if (stored === null) sec.id = list[i]!.id; // the id normalizeSection minted when the state was built stays
+    next.push([i, sec]);
+  }
+  const out = list.slice();
+  for (const [i, sec] of next) out[i] = sec;
+  (s.state as unknown as { sections: Rec[] }).sections = out;
+  s.ver = v.n;
+  styleStats.patches++;
+  styleStats.lastRead = next.length;
+  settled(y);
+  return true;
 }
 
 /** 1.0's state of the open book, current. Null without a book or a closure. */
@@ -130,12 +208,18 @@ export function styleEnter(): Closure | null {
   const ydoc = desk.ydoc;
   if (!c || !ydoc) return null;
   const s = session;
-  if (s && s.ydoc === ydoc && s.ver === verOf(ydoc).n) {
+  const v = verOf(ydoc);
+  if (s && s.ydoc === ydoc && (s.ver === v.n || isCurrent(v))) {
     // the book is unchanged: another session (the preview, the export, My themes) only set its own state into the
     // closure. Ours stands again. Rebuilding here would drop an edit a call still open has made (it has no held flag
     // until its call ends): seen as a header style lost when the preview redrew inside the select's change.
     if (c.getState() !== s.state) c.setState(s.state);
     return c;
+  }
+  // wave 4b's cost, removed: a keystroke re-reads only the section it changed (the state keeps any held edit)
+  if (s && s.ydoc === ydoc && !v.full && v.touched.size) {
+    if (c.getState() !== s.state) c.setState(s.state);
+    if (patch(c, s)) return c;
   }
   if (s && (held || depth > 0)) styleFlush(); // a held edit, or an open call's edit, is written before the state is built again
   session = build(c, ydoc);
@@ -195,7 +279,8 @@ export function styleFlush(): void {
     flushing = false;
   }
   s.base = sig;
-  s.ver = verOf(y).n;
+  // the session's own writes are not counted (verOf), so a keystroke made before them is still owed to the state
+  if (isCurrent(verOf(y))) s.ver = verOf(y).n;
   if (keys.includes('cover')) delete s.hidden.cover;
 }
 

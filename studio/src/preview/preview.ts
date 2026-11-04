@@ -319,6 +319,8 @@ export function loadPreview(): Promise<PreviewClosure> {
 
 /* ---- the preview's state ---- */
 let shownDoc: Y.Doc | null = null;
+/** The sections list the preview last pointed its reader into (a patch replaces it; see pvRefresh). */
+let shownList: unknown = null;
 /** 1.0 always holds a book (an empty desk at least): the preview's state with no book open is 1.0's blank book. */
 let emptyState: State | null = null;
 function noBookState(): State | null {
@@ -337,10 +339,13 @@ export function pvRefresh(): boolean {
   if (prev) Object.assign(view, { device: prev.device ?? view.device, page: prev.page ?? view.page, pageCount: prev.pageCount ?? view.pageCount });
   const st = ((desk.ydoc && styleEnter() ? styleState() : null) ?? noBookState()) as (State & Rec) | null;
   if (!st) return false;
-  if (st !== prev) {
-    st.device = view.device;
-    st.page = view.page;
-    st.pageCount = view.pageCount;
+  // a typed section read again (the Style session's patch) keeps the state object but gives the section a new one
+  if (st !== prev || st.sections !== shownList) {
+    if (st !== prev) {
+      st.device = view.device;
+      st.page = view.page;
+      st.pageCount = view.pageCount;
+    }
     // the same book, read again: 1.0's reader keeps its place in a section it already shows (its section objects
     // persist in 1.0; here each read of the book makes new ones)
     const v = pc.vars as { pvShownId?: unknown; pvShownSec?: unknown };
@@ -349,7 +354,8 @@ export function pvRefresh(): boolean {
       if (again) v.pvShownSec = again;
     }
     shownDoc = desk.ydoc;
-    pc.setState(st);
+    shownList = st.sections;
+    if (st !== prev) pc.setState(st);
   }
   const sec = desk.active === null ? undefined : st.sections[desk.active];
   st.activeId = sec ? sec.id : null;
@@ -468,6 +474,7 @@ export function stopPreview(): void {
   uninstall = null;
   started = false;
   shownDoc = null;
+  shownList = null;
   shownOnPhone = false;
 }
 /** 1.0's renderPreview now, on the book as it stands. With no book open, the page is empty (1.0's empty desk). */
