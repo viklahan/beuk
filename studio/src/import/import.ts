@@ -159,7 +159,14 @@ function restoreSnapshot(id: string): boolean {
 /** 1.0's applySampleBookSync (Undo the whole import of the untouched sample): wave 1c's sample arrival. */
 function applySampleBookSync(): void {
   const s = sess;
-  if (!s || !s.ydoc || !s.c.sample) return;
+  // review of wave 6 (Critical 1): without the sample's own chunk (a reload since the sample was loaded) the sample cannot
+  // arrive now. 1.0's irUndoAll would go on to clear the report while the book keeps the import: stop it here instead
+  // (the book and its report stay; the chunk is on its way, sampleAhead, so the next try works)
+  if (!s || !s.ydoc) return;
+  if (!s.c.sample) {
+    sampleAhead();
+    throw new Error('the sample is still loading — try Undo the whole import again in a moment');
+  }
   const doc = sampleArrival(s.c, s.ydoc, s.untouched);
   applyBookDoc(clone(doc), { keepHistory: true });
   s.whole = { doc, sample: true };
@@ -198,6 +205,8 @@ export function importBegin(): (() => void) | null {
   const sampleWas = c.api.sampleState.loaded;
   c.api.sampleState.loaded = ydoc ? sampleLoaded(ydoc) : false;
   sess = { c, ydoc, book, state, pre: clone(state) as Rec, whole: null, untouched };
+  const rep = state.importReport as { undo?: { sample?: unknown } } | null;
+  if (rep && rep.undo && rep.undo.sample && !c.sample) sampleAhead();
   depth = 1;
   const keep = { snapshot: importEnv.snapshot, edited: importEnv.edited, serialize: exportEnv.serialize, confirm: importEnv.confirm };
   importEnv.snapshot = sessionSnapshot;
@@ -462,6 +471,8 @@ async function jszip(): Promise<void> {
 }
 
 /** For Undo the whole import of the untouched sample: the sample's own chunk is fetched ahead (irUndoAll is synchronous). */
+export const loadSampleHook: { fn: (() => void) | null } = { fn: null };
 export function sampleAhead(): void {
+  if (loadSampleHook.fn) return loadSampleHook.fn();
   void loadSample().catch(() => undefined);
 }

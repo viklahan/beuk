@@ -9,7 +9,7 @@ import { loadClosure, setClosureLang, setClosureT, writeEnv, type Closure } from
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { exportReset, loadSerialize } from '../src/export/state';
-import { importPending, importUi, importWire } from '../src/import/import';
+import { importPending, importRun, importUi, importWire } from '../src/import/import';
 import { styleRelease } from '../src/style/session';
 import { fixtures } from './fixtures';
 import { maskVarying, textCorpus, type CorpusFile } from './import-fixture';
@@ -172,5 +172,30 @@ describe('wave 6: the import report rides with the book (constraint 79)', () => 
     const o = await createImportOracle(t);
     o.api.applyBookDoc(structuredClone(exportBook(y)) as never);
     expect(o.getState().importReport).toEqual(rep);
+  });
+});
+
+describe("review of wave 6 (Critical 1): Undo the whole import of the untouched sample before the sample's chunk is here", () => {
+  it('refuses rather than clearing the report while the book keeps the import; the chunk is fetched as soon as such a report is read', async () => {
+    const report = { v: 1, id: 'r1', file: 'x.md', format: 'md', at: new Date(0).toISOString(), dismissed: false, kept: false, checked: [], scanOk: false, carried: null,
+      undo: { snapId: null, preDoc: null, sample: true }, items: [] };
+    const doc = { ...(c.api.buildEmptyBook() as Rec), importReport: report };
+    const y = new Y.Doc();
+    importBook(structuredClone(doc), y);
+    desk.ydoc = y;
+    const keep = c.sample;
+    c.sample = null; // the page was reloaded: the sample's own chunk is not loaded
+    const loads: number[] = [];
+    const { loadSampleHook } = await import('../src/import/import');
+    loadSampleHook.fn = () => void loads.push(1);
+    try {
+      expect(() => importRun((cc) => cc.api.irUndoAll())).toThrow();
+      expect((exportBook(y) as Rec).importReport).toEqual(report);
+      expect(loads.length).toBeGreaterThan(0);
+    } finally {
+      c.sample = keep;
+      loadSampleHook.fn = null;
+      y.destroy();
+    }
   });
 });
