@@ -4,6 +4,7 @@ import { TOP_LEVEL_KEYS } from '@book/schema.js';
 import { closureIfLoaded, exportEnv, importEnv, loadSample, pageEnv, writeEnv, type Closure, type HistoryEntry, type State } from '../closure/index';
 import { desk } from '../environment/page';
 import { arriveForExport, loadSerialize, serializeIfLoaded } from '../export/state';
+import { exportSafe } from '../export/safe';
 import { restoreDoc, withStableIds } from '../history/history';
 import { deskIsUntouchedSample, sampleArrival, sampleLoaded } from '../sample/sample';
 import { carry, idsOk, writeBook } from '../structure/structure';
@@ -429,7 +430,19 @@ export async function importWire(): Promise<Closure> {
   // Add a Book (5c's seam closed): 1.0's own boxSetExpandPick and manuscriptFileToVolume. 1.0's listener awaits them and
   // then adds the volume to the open book's list, so their answers (and the file reads inside them) resume in the
   // export session (5c's exportEnv.resume)
-  v.manuscriptFileToVolume = (f: unknown) => exportEnv.resume(toVolume(resumable(f)));
+  // 5c's correction stays: a volume is any file a writer picks, and 1.0's box set writes its values unescaped (5c's 1.0
+  // finding), so each volume is corrected as the open book is (exportSafe), in the session, before 1.0's listener takes it
+  v.manuscriptFileToVolume = (f: unknown) => {
+    const read = exportEnv.resume(toVolume(resumable(f)));
+    return exportEnv.resume(
+      read.then((vol) => {
+        const st = c.getState();
+        exportSafe(c, vol as never, vol);
+        if (c.getState() !== st) c.setState(st);
+        return vol;
+      }),
+    );
+  };
   v.boxSetExpandPick = (files: unknown[]) => exportEnv.resume(expand((Array.isArray(files) ? files : []).map(resumable)));
   return c;
 }

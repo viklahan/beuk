@@ -11,7 +11,7 @@ const studioHtml = (): string => readFileSync(path.join(import.meta.dirname, '..
    createImportOracle(env) — its own state, its own copy of every top-level `let`. */
 
 export const ORACLE_ROOTS = ['applyBookDoc', 'serializeBook', 'readImportFile', 'buildEmptyBook', 'isEmptyDesk', 'sampleState', 'autoSnapshot', 'restoreSnapshot',
-  'irUndoItem', 'irUndoAll', 'irDismiss', 'irUndoAllAvailability', 'normalizeImportReport', 'importConfirmReplace', 'irRenderReport'];
+  'irUndoItem', 'irUndoAll', 'irDismiss', 'irUndoAllAvailability', 'normalizeImportReport', 'importConfirmReplace', 'irRenderReport', 'manuscriptFileToVolume', 'boxSetExpandPick'];
 /** 1.0's redraws and page hooks (and the string tables and interface language, which the studio owns), stubbed. */
 export const ORACLE_STUBS = ['$', 't', 'UI_STRINGS', 'getUiLang', 'uiLangState', 'tCountForm', 'uiPluralCategory', 'fmtDateIntl', 'icons', 'cloudConfirm', 'cloud',
   'net', 'apiFetch', 'cloudDirty', 'renderSidebar', 'syncEditor', 'renderStudio', 'syncStudioControls', 'renderPreview', 'updateStats', 'refreshExportTree',

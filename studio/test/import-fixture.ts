@@ -57,7 +57,10 @@ export function maskVarying(doc: unknown): unknown {
   const fresh = new Map<string, string>();
   const walk = (v: unknown, key: string) => {
     if (typeof v === 'string') {
-      if (ID_KEYS.has(key) && (/^s[0-9a-z]{7}$/.test(v) || /^urn:uuid:[0-9a-f-]{36}$/.test(v)) && !fresh.has(v)) fresh.set(v, '#id' + fresh.size);
+      if (!ID_KEYS.has(key)) return;
+      // an id 1.0 makes of two fresh ones (a volume's picture: "<volume id>-<uid>") counts each part
+      const parts = /^urn:uuid:/.test(v) ? [v] : v.split('-');
+      for (const x of parts) if ((/^s[0-9a-z]{7}$/.test(x) || /^urn:uuid:[0-9a-f-]{36}$/.test(x)) && !fresh.has(x)) fresh.set(x, '#id' + fresh.size);
       return;
     }
     if (Array.isArray(v)) v.forEach((x) => walk(x, key));

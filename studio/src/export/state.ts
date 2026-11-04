@@ -383,36 +383,17 @@ function flushStore(c: Closure, s: Session): boolean {
   return true;
 }
 
-/** Wave 5c: Add a Book's volume from a file (1.0's manuscriptFileToVolume, its Beuk-backup half): 1.0's own
- *  localParseBackup and bookDocToVolume, on the open book's state (the volume's defaults are the open book's), the
- *  volume's values then corrected as the open book's are (exportSafe: a hostile volume is a hostile book). A
- *  manuscript or a zip of books is 1.0's import (wave 6). The continuation 1.0's listener runs after it is in the
- *  export session (exportResume). */
-export function volumeFromFile(file: unknown): Promise<unknown> {
-  const f = file as File;
-  const read = (async () => {
-    const name = String(f && f.name);
-    if (!/\.json$/i.test(name)) throw new Error('Beuk 2.0 adds Beuk backups (.json) here for now; manuscripts and zips of books come with the import');
-    const text = await f.text();
-    const vol = exportRun((cc) => {
-      const book = cc.api.localParseBackup(text);
-      if (!book) throw new Error('this is not a Beuk backup file');
-      const v = cc.api.bookDocToVolume(book, name);
-      exportSafe(cc, v as unknown as State & Rec, v);
-      return v;
-    });
-    if (!vol) throw new Error('unknown error');
-    return vol;
-  })();
-  return exportResume(read);
+/** Add a Book's volume from a file, as the export modal's own listener reads it (wave 6: 1.0's manuscriptFileToVolume —
+ *  a Beuk backup through localParseBackup and bookDocToVolume, a manuscript through 1.0's own reader on a desk of its own,
+ *  importSandboxed — with 2.0's correction of the volume after it, src/import/import.ts importWire), inside an export
+ *  call: its answer resumes in the export session. For the tests (5c's seam, closed). */
+export async function volumeFromFile(file: unknown): Promise<unknown> {
+  const { importWire } = await import('../import/import');
+  await importWire();
+  const p = exportRun((cc) => cc.vars.manuscriptFileToVolume(file));
+  if (!p) throw new Error('no book');
+  return p;
 }
-/** Wave 5c: Add a Book's pick (1.0's boxSetExpandPick): the files as picked; a zip is not opened here (1.0's import,
- *  wave 6) — volumeFromFile names it. */
-export function expandPick(files: unknown[]): Promise<{ files: unknown[]; skipped: unknown[] }> {
-  return exportResume(Promise.resolve({ files: Array.isArray(files) ? files.slice() : [], skipped: [] }));
-}
-exportEnv.volumeFromFile = volumeFromFile;
-exportEnv.expandPick = expandPick;
 /** Wave 5c: inside an export call, what 1.0's code waits on resumes in the session (exportResume); else as it is. */
 exportEnv.resume = <T,>(v: T): T => (depth > 0 || lingering > 0 ? exportResume(v) : v);
 exportEnv.resuming = (): boolean => depth > 0 || lingering > 0;

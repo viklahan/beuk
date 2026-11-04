@@ -679,7 +679,7 @@ async function buildOwnModule(html, epubSource, o) {
     if (src.names.includes(n) || new RegExp('(^|[^\\w$.])' + n + '\\s*\\(').test(src.code)) fail(`${n} is in LOCAL_ONLY but the ${o.what} code declares or calls it`);
   }
   const lifted = ts.createSourceFile(o.file, src.code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-  for (const [name, allowed] of [['UI_STRINGS', UI_STRINGS_READERS], ['FileReader', []]]) {
+  for (const [name, allowed] of [['UI_STRINGS', UI_STRINGS_READERS], ['FileReader', o.fileReaders || []]]) {
     const readers = [];
     for (const st of lifted.statements) {
       let hit = false;
@@ -714,7 +714,7 @@ async function buildOwnModule(html, epubSource, o) {
     `export const ${o.prefix}_SUPPLIED_NAMES = ${JSON.stringify(supplied)};`,
     `export function ${o.fn}(env) {`,
     '  let state = env.state;',
-    ...supplied.filter((n) => n !== 'state').map((n) => `  const ${n} = env.${n};`),
+    ...supplied.filter((n) => n !== 'state').map((n) => `  ${SUPPLIED_LETS.includes(n) ? 'let' : 'const'} ${n} = env.${n};`),
   ].join('\n');
   const tail = [
     '',
@@ -929,5 +929,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
  *  passed in — 1.0's own applyBookDoc, serializeBook, History and import, with only its redraws stubbed, as the import's
  *  oracle in Node. Never emitted into src/generated, never imported by the app. */
 export function buildTestModule(html, epubSource, o) {
-  return buildOwnModule(html, epubSource, { roots: o.roots, suppliedOwn: o.supplied, varsOwn: o.vars || [], what: o.what, file: o.what + '.js', prefix: o.prefix, fn: o.fn, title: o.title });
+  return buildOwnModule(html, epubSource, { roots: o.roots, suppliedOwn: o.supplied, varsOwn: o.vars || [], what: o.what, file: o.what + '.js', prefix: o.prefix, fn: o.fn, title: o.title, fileReaders: o.fileReaders });
 }
