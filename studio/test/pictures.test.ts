@@ -257,7 +257,8 @@ describe('constraint 14: History keeps restoring the OLD pictures', () => {
     const restored = restoreDoc(c, ydoc, snap.id)!;
     expect(restored).not.toBe(null);
     const a = { ...original }, b = { ...restored };
-    for (const k of ['history', 'historyPool', 'importReport']) {
+    // formatVersion: 1.0's label, which a snapshot carries as 1.0's do (V, 2026-11-04), so the restored book carries it
+    for (const k of ['history', 'historyPool', 'importReport', 'formatVersion']) {
       delete a[k];
       delete b[k];
     }
@@ -267,7 +268,7 @@ describe('constraint 14: History keeps restoring the OLD pictures', () => {
     const y2 = new Y.Doc();
     importBook(restored, y2);
     const e2 = exportBook(y2);
-    for (const k of ['history', 'historyPool', 'importReport']) delete e2[k];
+    for (const k of ['history', 'historyPool', 'importReport', 'formatVersion']) delete e2[k];
     expect(json(e2)).toBe(json(a));
   });
 
@@ -280,7 +281,8 @@ describe('constraint 14: History keeps restoring the OLD pictures', () => {
     const snap = history(ydoc).find((s) => s.auto === 'imgremove')!;
     const restored = restoreDoc(c, ydoc, snap.id)!;
     const a = { ...original }, b = { ...restored };
-    for (const k of ['history', 'historyPool', 'importReport']) {
+    // formatVersion: 1.0's label, which a snapshot carries as 1.0's do (V, 2026-11-04), so the restored book carries it
+    for (const k of ['history', 'historyPool', 'importReport', 'formatVersion']) {
       delete a[k];
       delete b[k];
     }
