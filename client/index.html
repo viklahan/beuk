@@ -39185,6 +39185,8 @@
         const keepHistory = state.history, keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
         const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn, keepEditAt = cloud.lastEditAt;
         const keepRebase = wlogRebase;
+        /* the box set's volumes added so far stay the open book's (the arrivals below are other books: applyBookDoc would clear them) */
+        const keepVolumes = state.boxSetVolumes;
         const quiet = ["toast", "noteBookEdited", "markWritingActivity", "autoSnapshot", "offerDetectedLanguage", "renderImportSummary"];
         const hooks = quiet.map((h) => window[h]);
         quiet.forEach((h) => { window[h] = () => {}; });
@@ -39199,6 +39201,7 @@
           irAbort();
           applyBookDoc(keepDoc, { keepHistory: true });
           state.history = keepHistory;
+          state.boxSetVolumes = keepVolumes;
           sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson;
           cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; cloud.lastEditAt = keepEditAt;
           wlogRebase = keepRebase;
