@@ -76,3 +76,10 @@ describe("wave 6: the import is 1.0's code (decision 1)", () => {
     expect(gen).toMatch(/\n {2}let cloudDirty = env\.cloudDirty;/);
   });
 });
+
+describe("V's ruling 2026-11-04 (1.0 bugs are fixed, in 1.0): pdf.js never tries WebAssembly", () => {
+  it("1.0's own pdfExtract opens a PDF with useWasm: false (the served CSP has no 'wasm-unsafe-eval'), and the closure lifts that text", () => {
+    const gen = readFileSync(CLOSURE_JS, 'utf8');
+    for (const src of [studioHtml(), gen]) expect(src).toMatch(/lib\.getDocument\(\{ data, [^}]*useWasm: false/);
+  });
+});

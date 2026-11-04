@@ -41498,7 +41498,7 @@
       }
       async function pdfExtract(lib, data, opts) {
         opts = opts || {};
-        const task = lib.getDocument({ data, verbosity: 0, fontExtraProperties: true, disableFontFace: true, useSystemFonts: false, stopAtErrors: false, isOffscreenCanvasSupported: typeof OffscreenCanvas !== "undefined" });
+        const task = lib.getDocument({ data, verbosity: 0, useWasm: false, /* the served policy has no 'wasm-unsafe-eval': pdf.js decodes on its JavaScript paths, never trying WebAssembly */ fontExtraProperties: true, disableFontFace: true, useSystemFonts: false, stopAtErrors: false, isOffscreenCanvasSupported: typeof OffscreenCanvas !== "undefined" });
         const doc = await task.promise;
         const out = { numPages: doc.numPages, title: "", author: "", pages: [], textChars: 0, links: 0, imgErrors: 0, badGlyphs: 0, rtlChars: 0 };
         try {
