@@ -199,3 +199,48 @@ describe("review of wave 6 (Critical 1): Undo the whole import of the untouched 
     }
   });
 });
+
+describe("V's ruling 2026-11-04: Undo the whole import of the untouched sample raises 1.0's toast.sampleLoaded", () => {
+  it("as 1.0's applySampleBookSync does, with the sample's words and chapters", async () => {
+    const { loadSample } = await import('../src/closure/index');
+    const { sampleArrival, setSampleRecord, sampleSigOf } = await import('../src/sample/sample');
+    await loadSample();
+    const sdoc = sampleArrival(c, null, false);
+    const y = new Y.Doc();
+    importBook(structuredClone(sdoc), y);
+    setSampleRecord(y, sampleSigOf(c, y));
+    desk.ydoc = y;
+    let handed: Rec | null = null;
+    importUi.replace = async (doc) => {
+      handed = structuredClone(doc);
+      const y2 = new Y.Doc();
+      importBook(structuredClone(doc), y2);
+      return y2;
+    };
+    const f = textCorpus().find((x) => x.name === 'frontmatter.md')!;
+    await c.api.handleImportFile(new File([f.text], f.name));
+    for (let i = 0; i < 5; i++) await tick();
+    await importPending();
+    expect(((handed as unknown as Rec).importReport as Rec & { undo: Rec }).undo.sample).toBe(true);
+    // the imported book on the desk; Undo the whole import
+    const y2 = new Y.Doc();
+    importBook(structuredClone(handed), y2);
+    desk.ydoc = y2;
+    const { structEnv } = await import('../src/closure/index');
+    const toasts: string[] = [];
+    const keep = structEnv.toast;
+    structEnv.toast = (m) => void toasts.push(m);
+    try {
+      importRun((cc) => cc.api.irUndoAll());
+      for (let i = 0; i < 5; i++) await tick();
+      await importPending();
+    } finally {
+      structEnv.toast = keep;
+    }
+    const st = c.getState();
+    void st;
+    expect(toasts.filter((x) => x.startsWith('Sample story loaded — ')).length, toasts.join(' | ')).toBe(1);
+    y.destroy();
+    y2.destroy();
+  });
+});

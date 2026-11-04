@@ -1,6 +1,6 @@
 import type * as Y from 'yjs';
 import { exportBook } from '@book/editor/index.js';
-import { closureIfLoaded, exportEnv, importEnv, loadClosure, loadSample, pageEnv, writeEnv, type Closure, type HistoryEntry, type State } from '../closure/index';
+import { closureIfLoaded, closureT, exportEnv, importEnv, loadClosure, loadSample, pageEnv, structEnv, writeEnv, type Closure, type HistoryEntry, type State } from '../closure/index';
 import { desk } from '../environment/page';
 import { arriveForExport, loadSerialize, serializeIfLoaded } from '../export/state';
 import { exportSafe } from '../export/safe';
@@ -170,6 +170,9 @@ function applySampleBookSync(): void {
   const doc = sampleArrival(s.c, s.ydoc, s.untouched);
   applyBookDoc(clone(doc), { keepHistory: true });
   s.whole = { doc, sample: true };
+  // 1.0's applySampleBookSync's own toast, on the sample as it arrived (V's ruling 2026-11-04)
+  const st = s.c.getState();
+  structEnv.toast(closureT()('toast.sampleLoaded', { words: s.c.api.fmtNum(s.c.api.bookWordTotal()), chapters: st.sections.filter((x) => x.type === 'chapter').length }), 'book-open');
 }
 
 importEnv.applyBookDoc = applyBookDoc;
