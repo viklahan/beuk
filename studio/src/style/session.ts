@@ -405,14 +405,18 @@ const TAGS = new Set(['div', 'span', 'p', 'b', 'i', 'em', 'strong', 'small', 'br
   'ul', 'li', 'a',
   // wave 5c: the ACX script's and the submission manuscript's dialogs (acxRender, msRender: headings, the file and
   // pronunciation tables, the contact block's address field)
-  'h3', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'textarea']);
+  'h3', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'textarea',
+  // wave 6: the import report (irRenderReport: its groups as <details>, each item's before and after as <code>)
+  'details', 'summary', 'code']);
 const ATTRS = new Set(['class', 'id', 'title', 'alt', 'role', 'tabindex', 'type', 'value', 'label', 'for', 'min', 'max', 'step', 'checked', 'disabled', 'selected',
   'placeholder', 'xmlns', 'viewbox', 'focusable', 'width', 'height', 'x', 'y', 'cx', 'cy', 'r', 'rx', 'ry', 'd', 'fill', 'stroke', 'stroke-width',
   'stroke-linecap', 'stroke-linejoin', 'opacity', 'src', 'style',
   // wave 4c: the cover maker's spine and back controls (sbBuildControls: a text's maxlength, a file input's accept)
   'maxlength', 'accept',
   // wave 5c: the manuscript's fields (a textarea's rows, the e-mail field's autocomplete) and its title page's dir
-  'rows', 'autocomplete', 'dir']);
+  'rows', 'autocomplete', 'dir',
+  // wave 6: a report group shown open (irRenderReport: the dropped group, or one of six items or fewer)
+  'open']);
 const STYLE_PROPS = new Set(['font-family', 'font-size', 'font-weight', 'font-style', 'font-variant', 'text-align', 'text-transform', 'letter-spacing',
   'line-height', 'opacity', 'margin', 'margin-top', 'margin-bottom', 'display', '--sw',
   // wave 4c: the cover maker's swatches (background) and the hardcover legend (color, background), paint values only
@@ -430,6 +434,9 @@ const SVG_PATH = /^[\d\s.,MLHVCSQTAZmlhvcsqtaz+-]*$/;
 const MEDIA = /^[\w.+-]+\/[\w.+-]+$/;
 /** Wave 5a: 1.0's error-dictionary link (beukCodeLinkHtml: /help/errors/BEUK-<letter><3 digits>). */
 const HELP_LINK = /^\/help\/errors\/BEUK-[A-Z]\d{3}$/;
+/** Wave 6: the import report's chips, each a link to its own group in the same dialog (irRenderReport: #ir-g-<group>). */
+const IR_LINK = /^#ir-g-[a-z]+$/;
+const linkOk = (v: string): boolean => HELP_LINK.test(v) || IR_LINK.test(v);
 
 function cleanStyle(v: string): string {
   const out: string[] = [];
@@ -447,7 +454,7 @@ function cleanAttr(el: Element, name: string, value: string): string | null {
   const n = name.toLowerCase();
   if (n.startsWith('data-') || n.startsWith('aria-')) return /^[\w-]+$/.test(n.slice(5)) ? value : null;
   // wave 5a: a link only as 1.0's validator writes one (beukCodeLinkHtml): to this site's error dictionary, a new tab
-  if (n === 'href') return el.tagName.toLowerCase() === 'a' && HELP_LINK.test(value) ? value : null;
+  if (n === 'href') return el.tagName.toLowerCase() === 'a' && linkOk(value) ? value : null;
   if (n === 'target') return el.tagName.toLowerCase() === 'a' && value === '_blank' ? value : null;
   if (n === 'rel') return el.tagName.toLowerCase() === 'a' && /^noopener( noreferrer)?$/.test(value) ? value : null;
   if (!ATTRS.has(n)) return null;
@@ -472,7 +479,7 @@ export function cleanFragment(root: DocumentFragment | Element): void {
       }
       // wave 5a: a link stands only as 1.0's validator writes it — an HTML <a> to the error dictionary; any other <a>
       // (an SVG one, one to anywhere else) goes, with its content
-      if (el.tagName.toLowerCase() === 'a' && !(el.namespaceURI === 'http://www.w3.org/1999/xhtml' && HELP_LINK.test(el.getAttribute('href') || ''))) {
+      if (el.tagName.toLowerCase() === 'a' && !(el.namespaceURI === 'http://www.w3.org/1999/xhtml' && linkOk(el.getAttribute('href') || ''))) {
         el.remove();
         continue;
       }

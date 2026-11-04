@@ -1,7 +1,7 @@
 import type * as Y from 'yjs';
 import { exportBook } from '@book/editor/index.js';
 import { TOP_LEVEL_KEYS } from '@book/schema.js';
-import { closureIfLoaded, exportEnv, importEnv, loadSample, pageEnv, type Closure, type HistoryEntry, type State } from '../closure/index';
+import { closureIfLoaded, exportEnv, importEnv, loadSample, pageEnv, writeEnv, type Closure, type HistoryEntry, type State } from '../closure/index';
 import { desk } from '../environment/page';
 import { arriveForExport, loadSerialize, serializeIfLoaded } from '../export/state';
 import { restoreDoc, withStableIds } from '../history/history';
@@ -45,7 +45,10 @@ export const importUi: {
   ownArrival: Y.Doc | null;
   /** The sample record of a generation the sample's Undo opened (sample.ts setSampleRecord after its fingerprint). */
   sampleArrived: (ydoc: Y.Doc) => void;
+  /** The calm confirm 1.0's import asks (ImportHost: the studio's useConfirm); before that, writeEnv's. */
+  confirm: (o: Rec) => Promise<unknown>;
 } = {
+  confirm: (o) => writeEnv.confirm(o),
   replace: async () => null,
   ownArrival: null,
   sampleArrived: () => undefined,
@@ -184,9 +187,10 @@ export function importBegin(): (() => void) | null {
   c.api.sampleState.loaded = sampleLoaded(ydoc);
   sess = { c, ydoc, book, state, pre: clone(state) as Rec, whole: null, untouched };
   depth = 1;
-  const keep = { snapshot: importEnv.snapshot, edited: importEnv.edited, serialize: exportEnv.serialize };
+  const keep = { snapshot: importEnv.snapshot, edited: importEnv.edited, serialize: exportEnv.serialize, confirm: importEnv.confirm };
   importEnv.snapshot = sessionSnapshot;
   importEnv.edited = () => undefined;
+  importEnv.confirm = (o) => importUi.confirm(o);
   exportEnv.serialize = () => ser(c);
   let done = false;
   return () => {
@@ -201,6 +205,7 @@ export function importBegin(): (() => void) | null {
     } finally {
       importEnv.snapshot = keep.snapshot;
       importEnv.edited = keep.edited;
+      importEnv.confirm = keep.confirm;
       exportEnv.serialize = keep.serialize;
       c.api.sampleState.loaded = sampleWas;
     }

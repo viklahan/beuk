@@ -25,6 +25,7 @@ import { PreviewPane } from '../preview/PreviewPane';
 import { CoverMaker } from '../cover/CoverMaker';
 import { EXPORT_BUILT_EVENT, ExportModal, exportBuilt, exportOpen } from '../export/ExportModal';
 import { PrintModals } from '../print/PrintModals';
+import { IMPORT_BUILT_EVENT, IMPORT_SLOT, ImportHost, importBuilt } from '../import/ImportHost';
 import { exportEnv } from '../closure/index';
 import { Icon } from './Icon';
 import { LocalPill } from '../book/LocalPill';
@@ -103,6 +104,14 @@ export function Shell() {
     return () => window.removeEventListener(EXPORT_BUILT_EVENT, on);
   }, []);
   const canExport = bookOpen && exportReady;
+  // wave 6: 1.0's Import button works once 1.0's initImport has wired it (src/import/ImportHost.tsx)
+  const [importReady, setImportReady] = useState(importBuilt());
+  useEffect(() => {
+    const on = () => setImportReady(importBuilt());
+    window.addEventListener(IMPORT_BUILT_EVENT, on);
+    on();
+    return () => window.removeEventListener(IMPORT_BUILT_EVENT, on);
+  }, []);
   exportEnv.openSettings = () => setDialog('settings');
   exportEnv.setMobilePane = (pane) => {
     if (pane === 'structure' || pane === 'center' || pane === 'preview') {
@@ -188,7 +197,9 @@ export function Shell() {
       <main id="panes" data-mobile={mobile}>
         <aside id="pane-structure" className="pane">
           <div className="side-actions">
-            <button type="button" className="side-btn" id="btnImport" aria-disabled="true" title={t('side.importTitle')}>
+            {/* wave 6: 1.0's Import Document (#btnImport), wired by 1.0's own initImport (src/import/ImportHost.tsx): it opens
+                1.0's #fileInput */}
+            <button type="button" className="side-btn" id="btnImport" aria-disabled={importReady ? undefined : 'true'} title={t('side.importTitle')}>
               <Icon name="FileUp" />
               {t('side.import')}
             </button>
@@ -203,6 +214,9 @@ export function Shell() {
               {t('side.settings')}
             </button>
           </div>
+          {/* wave 6: 1.0's "Recognised in your manuscript" summary and the import report's reopen button, under the Import
+              button as in 1.0 (their markup is 1.0's, put in place by ImportHost) */}
+          <div id={IMPORT_SLOT} style={{ display: 'contents' }} />
           {bk.phase !== 'starting' && <SampleBar openHistory={() => setDialog('history')} />}
           {structure.matterLib}
           <div id="structureScroll">
@@ -345,6 +359,8 @@ export function Shell() {
       {bookOpen ? <ExportModal key={'export:' + bk.book!.id + ':' + bk.book!.epoch} /> : null}
       {/* wave 5b: 1.0's print view and Print Interior View, in place before the preview starts (its full screen wires them) */}
       <PrintModals />
+      {/* wave 6: 1.0's import and its report, outside the book's generations (an import opens a new one) */}
+      <ImportHost />
     </div>
   );
 }

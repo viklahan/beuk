@@ -1015,6 +1015,8 @@ export const importEnv: {
   snapshot: ((kind: string) => unknown) | null;
   edited: (() => void) | null;
   resume: <T>(v: T) => T;
+  /** Inside an import session: the confirm 1.0's import asks (the studio's calm confirm, src/import/ImportHost.tsx). */
+  confirm: ((o: Record<string, unknown>) => Promise<unknown>) | null;
 } = {
   applyBookDoc: () => false,
   restoreSnapshot: () => false,
@@ -1024,6 +1026,7 @@ export const importEnv: {
   snapshot: null,
   edited: null,
   resume: (v) => v,
+  confirm: null,
 };
 /** 1.0's `cloud`, as far as cmStockGate reads it: is a shelf there, and who is signed in (pictures/stock.ts probes). */
 /** Wave 2c: what 1.0's structure and outline functions call around their own code (BROWSER_SUPPLIED): selectSection
@@ -1294,7 +1297,7 @@ export function loadClosure(): Promise<Closure> {
         // wave 3a: the streak's heartbeat, the calm confirm, 1.0's icons() and fmtDateIntl
         cloudHeartbeat: () => writeEnv.heartbeat(),
         // wave 6: the import's confirms (replace the desk, Undo the whole import, Dismiss) resume in an import session
-        cloudConfirm: (o: Record<string, unknown>) => importEnv.resume(writeEnv.confirm(o)),
+        cloudConfirm: (o: Record<string, unknown>) => (importEnv.confirm ? importEnv.resume(importEnv.confirm(o)) : writeEnv.confirm(o)),
         icons: () => drawIcons(document),
         fmtDateIntl,
         // wave 3a (A9-A11): the page 1.0's Zen, Read Aloud and dictation code reaches (src/environment/page.ts)
