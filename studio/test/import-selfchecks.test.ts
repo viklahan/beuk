@@ -42,10 +42,6 @@ export const SKIP: Record<string, string> = {
   'import.replace.unlinks-shelf': "the shelf link (cloud.linkedId) is wave 7's: before it nothing is linked, and the branch stays dormant (replaceBodyChapters runs it as 1.0's text)",
   'pdf.bookmarks.read-with-their-pages': PDFJS,
   'boxset.zip-and-pdf': PDFJS + ' (its PDF volume)',
-  // a LEAD, not a pass: on 1.0's lifted code it reads "Tik Tok of Oz" for a file named "Tik-Tok of Oz.md" — 1.0's own
-  // imCleanFileName turns every hyphen of a file name into a space, so 1.0's check may fail in 1.0 itself; the e2e runs it
-  // in 1.0's own page (wave6 'selfcheck') to settle it
-  'boxset.volumes.whole-books': "LEAD (1.0 finding?): its Markdown volume 'Tik-Tok of Oz.md' reads as 'Tik Tok of Oz' through 1.0's imCleanFileName; run in 1.0's page by the e2e",
   'import.pdf': PDFJS,
 };
 
@@ -142,8 +138,6 @@ describe("wave 6: 1.0's import self-checks, run verbatim (review focus #5)", () 
       document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
       const m = mod.run(env()) as unknown as { checks: { id: string; run: () => unknown }[]; api: Record<string, (...a: unknown[]) => unknown> };
       const empty = m.api.buildEmptyBook() as Rec & { meta: Rec };
-      // 5c's ruling 5: the box set's check runs on 1.0's empty book with a title and an author (1.0 runs it on the desk's book)
-      if (ck.id === 'boxset.volumes.whole-books') Object.assign(empty.meta, { title: 'The Desk Book', author: 'A. Writer' });
       m.api.applyBookDoc(empty);
       const c = m.checks.find((x) => (x as unknown as { id: string }).id === ck.id)!;
       let r: { pass: boolean; detail?: string };
@@ -157,6 +151,6 @@ describe("wave 6: 1.0's import self-checks, run verbatim (review focus #5)", () 
     console.log(results.map((r) => (r.pass ? 'PASS ' : 'FAIL ') + r.id + (r.pass ? '' : ' — ' + r.detail)).join('\n'));
     expect(results.filter((r) => !r.pass)).toEqual([]);
     expect(results.length).toBe(mod.checks.length - Object.keys(SKIP).length);
-    expect(results.length).toBe(33);
+    expect(results.length).toBe(34);
   }, 600_000);
 });

@@ -38336,7 +38336,12 @@
         s = s.replace(/^copy of\s+/i, "");
         let prev;
         do { prev = s; s = s.replace(/\s*\(\d+\)\s*$/, "").replace(/[\s_-]+copy\s*$/i, "").trim(); } while (s !== prev);
-        const words = s.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+        /* A slug ("my-book-title", "salt_and_iron", "the-long-way-home_final v3") reads as words; a name already
+           written with spaces keeps the hyphens inside its own words ("Tik-Tok of Oz", "The Forty-Five
+           Guardsmen"). A word joined by an underscore is a slug's word either way; a lone "-" between words is
+           a separator, never a word. */
+        const spaced = /\s/.test(s);
+        const words = s.split(/\s+/).flatMap((w) => (!spaced || /_/.test(w) ? w.split(/[-_]+/) : [w.replace(/^[-_]+|[-_]+$/g, "")])).filter(Boolean);
         let end = words.length;
         while (end > 0 && IM_FILE_TOKEN_RE.test(words[end - 1])) end--;
         const kept = words.slice(0, end);
@@ -64055,7 +64060,7 @@
                 ["Final Frontier.txt", "Final Frontier", ""],
                 ["draft.md", "draft", ""],
                 ["Copy of salt_and_iron - Copy.docx", "salt and iron", ""],
-                ["harbour-log-v2.1.md", "harbour log", "v2.1"]
+                ["harbour-log-v2.1.md", "harbour log", "v2.1"], ["Tik-Tok of Oz.md", "Tik-Tok of Oz", ""], ["my-book-title.md", "my book title", ""], ["The Forty-Five Guardsmen - draft.docx", "The Forty-Five Guardsmen", "draft"]
               ];
               const clean = cases.map((c) => { const r = imCleanFileName(c[0]); return [c[0], r.value, r.stripped, r.value === c[1] && r.stripped === c[2]]; });
               const cleanOk = clean.every((c) => c[3]);
