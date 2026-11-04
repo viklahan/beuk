@@ -39187,7 +39187,9 @@
         const keepRebase = wlogRebase;
         /* the box set's volumes added so far stay the open book's (the arrivals below are other books: applyBookDoc would clear them) */
         const keepVolumes = state.boxSetVolumes;
-        const quiet = ["toast", "noteBookEdited", "markWritingActivity", "autoSnapshot", "offerDetectedLanguage", "renderImportSummary"];
+        /* the open book's own summary stays as it stands (an arrival hides it); the file's import opens no report of its own */
+        const summaryBox = $("importSummary"), keepSummary = summaryBox ? summaryBox.style.display : null;
+        const quiet = ["toast", "noteBookEdited", "markWritingActivity", "autoSnapshot", "offerDetectedLanguage", "renderImportSummary", "irOpenReport"];
         const hooks = quiet.map((h) => window[h]);
         quiet.forEach((h) => { window[h] = () => {}; });
         try {
@@ -39202,6 +39204,7 @@
           applyBookDoc(keepDoc, { keepHistory: true });
           state.history = keepHistory;
           state.boxSetVolumes = keepVolumes;
+          if (summaryBox) summaryBox.style.display = keepSummary;
           sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson;
           cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; cloud.lastEditAt = keepEditAt;
           wlogRebase = keepRebase;

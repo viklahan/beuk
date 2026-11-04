@@ -160,6 +160,13 @@ describe('Word and the box set in the studio (F3, F4)', { timeout: 120_000 }, ()
     expect(rows.map((r) => r.querySelector('.bs-title')!.textContent)).toEqual([(doc.meta as Rec).title, (v2.meta as Rec).title, (v3.meta as Rec).title]);
     expect(toasts()).toContain('Added as Book Two: ' + (v2.meta as Rec).title);
     expect(toasts().some((x) => x.startsWith('Could not add draft.docx: '))).toBe(true);
+    // V's ruling 2026-11-04: Add a Book of a manuscript opens no import report and shows no summary
+    const md = new File(['# Chapter 1' + String.fromCharCode(10, 10) + 'Text.'], 'extra.md', { type: 'text/markdown' });
+    await addBooks([md]);
+    await waitFor(() => expect($('boxSetList').querySelectorAll('.bs-row').length).toBe(4));
+    expect($('modalImportReport')?.classList.contains('open') ?? false).toBe(false);
+    expect(($('importSummary')?.style.display ?? 'none')).toBe('none');
+    await click($('boxSetList').querySelectorAll('[data-bsremove]')[2]!);
     const files = exportRun((cc) => cc.api.boxSetFiles())!;
     const binary = new Set(files.filter((f) => f.binary).map((f) => f.path));
     const other = exportRun((cc) => ({ ...(cc.getState() as Rec), boxSetVolumes: [] }))!;

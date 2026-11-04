@@ -282,7 +282,7 @@ export const VARS = ['insVarPick', 'insCache', 'insFacts',
   // its own, with 1.0's quiet hooks — markWritingActivity, offerDetectedLanguage, renderImportSummary are 1.0's own
   // functions here, so its window[h] silencing reaches them through these setters; lastImportFound: the summary drawn
   // again over the new generation
-  'readImportFile', 'importConfirmReplace', 'importSandboxed', 'markWritingActivity', 'offerDetectedLanguage', 'renderImportSummary', 'lastImportFound',
+  'readImportFile', 'importConfirmReplace', 'importSandboxed', 'markWritingActivity', 'offerDetectedLanguage', 'renderImportSummary', 'irOpenReport', 'lastImportFound',
   // Add a Book's import half (5c's stand-ins gone): 1.0's listener awaits these two and then adds the volume to the open
   // book's state, so their answers resume in the export session (src/import/import.ts)
   'manuscriptFileToVolume', 'boxSetExpandPick'];

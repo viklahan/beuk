@@ -924,6 +924,7 @@ export type ClosureVars = {
   markWritingActivity: () => void;
   offerDetectedLanguage: (det: unknown) => void;
   renderImportSummary: (labels: string[]) => void;
+  irOpenReport: () => void;
   lastImportFound: string[];
   manuscriptFileToVolume: (file: unknown) => Promise<Record<string, unknown>>;
   boxSetExpandPick: (files: unknown[]) => Promise<{ files: File[]; skipped: { name: string; why: string }[] }>;

@@ -425,12 +425,13 @@ export async function importWire(): Promise<Closure> {
   v.importSandboxed = (run: () => unknown) => {
     const ser = serializeIfLoaded();
     const prev = c.getState();
-    const keep = { mwa: v.markWritingActivity, odl: v.offerDetectedLanguage, ris: v.renderImportSummary, quiet: importEnv.quiet, serialize: exportEnv.serialize, rebase: v.wlogRebase };
+    const keep = { mwa: v.markWritingActivity, odl: v.offerDetectedLanguage, ris: v.renderImportSummary, ior: v.irOpenReport, quiet: importEnv.quiet, serialize: exportEnv.serialize, rebase: v.wlogRebase };
     const noop = () => undefined;
     importEnv.quiet = true;
     v.markWritingActivity = noop;
     v.offerDetectedLanguage = noop;
     v.renderImportSummary = noop;
+    v.irOpenReport = noop; // V's ruling 2026-11-04: a sandboxed import opens no report (1.0's importSandboxed quiets it too)
     if (ser) exportEnv.serialize = () => ser(c);
     sandbox++;
     try {
@@ -441,6 +442,7 @@ export async function importWire(): Promise<Closure> {
       v.markWritingActivity = keep.mwa;
       v.offerDetectedLanguage = keep.odl;
       v.renderImportSummary = keep.ris;
+      v.irOpenReport = keep.ior;
       exportEnv.serialize = keep.serialize;
       v.wlogRebase = keep.rebase;
       c.setState(prev);

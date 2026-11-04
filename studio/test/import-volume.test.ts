@@ -115,3 +115,29 @@ describe("wave 6: Add a Book reads a manuscript with 1.0's own reader (decision 
     y.destroy();
   });
 });
+
+describe("V's ruling 2026-11-04 (1.0 bugs are fixed, in 1.0): Add a Book of a manuscript", () => {
+  it("1.0's importSandboxed keeps the volumes added before, opens no report and shows no summary, and leaves no hook on window", async () => {
+    const o = await createImportOracle(t, { mammoth: (globalThis as Rec).mammoth });
+    o.api.applyBookDoc(structuredClone(LANTERN()) as never);
+    const earlier = { meta: { title: 'Earlier' }, sections: [] };
+    (o.getState() as Rec).boxSetVolumes = [earlier];
+    const opened: string[] = [];
+    const w = globalThis as unknown as Rec;
+    const before = ['toast', 'noteBookEdited', 'markWritingActivity', 'autoSnapshot', 'offerDetectedLanguage', 'renderImportSummary', 'irOpenReport'].filter((h) => Object.hasOwn(w, h));
+    w.irOpenReport = () => void opened.push('report');
+    w.renderImportSummary = (l: unknown[]) => void (l && l.length && opened.push('summary'));
+    try {
+      const md = textCorpus().find((x) => x.name === 'frontmatter.md')!;
+      const vol = (await o.api.manuscriptFileToVolume(new File([md.text], md.name) as never)) as Rec & { meta: Rec };
+      expect(vol.meta.title).toBe('The Salt Road');
+      expect((o.getState() as Rec).boxSetVolumes).toEqual([earlier]);
+      expect(opened).toEqual([]);
+    } finally {
+      delete w.irOpenReport;
+      delete w.renderImportSummary;
+    }
+    // the quiet hooks are put back as they stood: no own property left behind where there was none
+    expect(['toast', 'noteBookEdited', 'markWritingActivity', 'autoSnapshot', 'offerDetectedLanguage', 'renderImportSummary', 'irOpenReport'].filter((h) => Object.hasOwn(w, h))).toEqual(before);
+  });
+});

@@ -38,5 +38,11 @@ export async function createImportOracle(t: (k: string, p?: Rec) => string, extr
     apiFetch: async () => null, cloudDirty: false, $: () => null, document: globalThis.document, window: globalThis };
   for (const n of ORACLE_STUBS) if (!(n in env)) env[n] = noop;
   Object.assign(env, extra);
+  // 1.0 swaps a page hook by assigning window[name] (importSandboxed's quiet hooks; its checks' window.toast): each
+  // supplied function answers through window[name] while one is set there
+  const w = globalThis as unknown as Rec;
+  for (const [n, f] of Object.entries(env))
+    if (typeof f === 'function' && !['$', 't', 'JSZip', 'getUiLang', 'fmtDateIntl'].includes(n))
+      env[n] = (...a: unknown[]) => (typeof w[n] === 'function' ? (w[n] as (...x: unknown[]) => unknown)(...a) : (f as (...x: unknown[]) => unknown)(...a));
   return new Function('env', code)(env) as Oracle;
 }
