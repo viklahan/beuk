@@ -758,6 +758,35 @@ export type ClosureApi = {
   buildStoreReportHtml: (a?: StoreAudit) => string;
   downloadStoreReport: () => void;
   printPlacements: () => (Record<string, unknown> & { dpi: number })[];
+  // wave 6 (G1, G2): the import and its report, 1.0's own (scripts/extract-closure.mjs EXTRA_ROOTS)
+  readImportFile: (file: unknown) => Promise<(() => unknown) & { raw?: string }>;
+  handleImportFile: (file: unknown, opts?: { replaceOk?: boolean }) => Promise<void>;
+  importConfirmReplace: (name: string) => Promise<unknown>;
+  importExpandZips: (entries: { file: unknown; path?: string }[], opts?: { accept?: (name: string) => boolean }, depth?: number) => Promise<{ entries: { file: File; path: string }[]; skipped: { name: string; why: string }[] }>;
+  importSandboxed: (run: () => unknown) => Record<string, unknown>;
+  manuscriptFileToBookDoc: (file: unknown) => Promise<Record<string, unknown>>;
+  replaceBodyChapters: (chapters: unknown[], sourceName: string, identity?: unknown) => void;
+  parseManuscript: (text: string, fallbackTitle: string, identity?: unknown) => Record<string, unknown>[];
+  importFoundList: (pieces: unknown[]) => string[];
+  renderImportSummary: (labels: string[]) => void;
+  initImport: () => void;
+  initImportReport: () => void;
+  irRenderReport: () => void;
+  irUndoItem: (id: string) => { ok: boolean; why?: string };
+  irUndoAll: () => boolean;
+  irUndoAllAvailability: () => { ok: boolean; via?: string; why?: string };
+  irDismiss: () => void;
+  irOpenReport: () => void;
+  irCloseReport: () => void;
+  irSyncReopen: () => void;
+  irAbort: () => void;
+  boxSetExpandPick: (files: unknown[]) => Promise<{ files: File[]; skipped: { name: string; why: string }[] }>;
+  manuscriptFileToVolume: (file: unknown) => Promise<Record<string, unknown>>;
+  PDFJS_DIR: string;
+  PDFJS_FILES: { file: string; sri: string; global: string }[];
+  bulkIsManuscript: (name: string) => boolean;
+  snapshotBookDoc: () => Record<string, unknown>;
+  irOnLangChange: () => void;
 };
 /** Wave 5d: one of 1.0's per-store rule tables (STORE_RULES). */
 export type StoreRules = Record<string, unknown> & { id: string; name: string; sources: string[]; inks: (Record<string, unknown> & { id: string })[]; bindings: Record<string, Record<string, unknown> & { trims: unknown[] }> };
@@ -888,6 +917,16 @@ export type ClosureVars = {
   inspCurrent: string;
   // wave 5d: what 1.0's storeAct calls for "Open the cover maker" (ExportModal points it at 2.0's opener, coverOpen)
   openCoverMaker: () => void;
+  // wave 6: what src/import/import.ts wraps around 1.0's import (importWire), and the summary's last labels
+  readImportFile: (file: unknown) => Promise<(() => unknown) & { raw?: string }>;
+  importConfirmReplace: (name: string) => Promise<unknown>;
+  importSandboxed: (run: () => unknown) => Record<string, unknown>;
+  markWritingActivity: () => void;
+  offerDetectedLanguage: (det: unknown) => void;
+  renderImportSummary: (labels: string[]) => void;
+  lastImportFound: string[];
+  manuscriptFileToVolume: (file: unknown) => Promise<Record<string, unknown>>;
+  boxSetExpandPick: (files: unknown[]) => Promise<{ files: File[]; skipped: { name: string; why: string }[] }>;
 };
 
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
@@ -958,6 +997,33 @@ const liveDesk = {
 export const pictureEnv: { autoSnapshot: (kind: string) => unknown; editSeq: () => number } = {
   autoSnapshot: () => null,
   editSeq: () => 0,
+};
+/** Wave 6 (G1, G2): what 1.0's import reaches outside the import (BROWSER_SUPPLIED), filled in by src/import/import.ts.
+ *  - applyBookDoc / restoreSnapshot / applySampleBookSync: a book arriving on the import session's desk (1.0's arrival
+ *    lines, History's restore, wave 1c's sample);
+ *  - untouched: 1.0's deskIsUntouchedSample for the open book, as it stood when the session began;
+ *  - quiet: 1.0's importSandboxed silences its hooks (toast, noteBookEdited, autoSnapshot …) while it runs;
+ *  - snapshot / edited: inside an import session, 1.0's autoSnapshot and noteBookEdited act on the session's state (the
+ *    book is written whole when it ends);
+ *  - resume: a value 1.0's import waits on (a confirm) resumes in an import session. */
+export const importEnv: {
+  applyBookDoc: (doc: unknown, opts?: unknown) => boolean;
+  restoreSnapshot: (id: string) => boolean;
+  applySampleBookSync: () => void;
+  untouched: () => boolean;
+  quiet: boolean;
+  snapshot: ((kind: string) => unknown) | null;
+  edited: (() => void) | null;
+  resume: <T>(v: T) => T;
+} = {
+  applyBookDoc: () => false,
+  restoreSnapshot: () => false,
+  applySampleBookSync: () => undefined,
+  untouched: () => false,
+  quiet: false,
+  snapshot: null,
+  edited: null,
+  resume: (v) => v,
 };
 /** 1.0's `cloud`, as far as cmStockGate reads it: is a shelf there, and who is signed in (pictures/stock.ts probes). */
 /** Wave 2c: what 1.0's structure and outline functions call around their own code (BROWSER_SUPPLIED): selectSection
@@ -1156,6 +1222,27 @@ const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitl
 /** The UI_STRINGS 1.0's code is given: every pack's "misc.untitledBook" alone (imIsPlaceholderTitle reads it). */
 export const untitledStrings = (): Record<string, Record<string, string>> => Object.fromEntries(UNTITLED.map((s, i) => [String(i), { 'misc.untitledBook': s }]));
 
+/** Wave 5a: 1.0's vendored JSZip, loaded with its integrity when a book opens (src/export/export.ts loadJszip); the
+ *  closure's `new JSZip()` makes the page's own (1.0's code reads window.JSZip where it checks for it). Wave 6: and its
+ *  static JSZip.loadAsync (1.0's import reads a zip, an EPUB and a .docx's parts with it). */
+const jszipOfPage = Object.assign(
+  function JSZipOfPage(this: unknown, ...args: unknown[]) {
+    const Z = (globalThis as { JSZip?: new (...a: unknown[]) => unknown }).JSZip;
+    if (!Z) throw new Error('JSZip is not loaded');
+    const z = new Z(...args) as { generateAsync?: (...a: unknown[]) => unknown };
+    const gen = z.generateAsync;
+    if (typeof gen === 'function') z.generateAsync = (...a: unknown[]) => exportEnv.resume(gen.apply(z, a));
+    return z;
+  },
+  {
+    loadAsync: (...a: unknown[]): unknown => {
+      const Z = (globalThis as { JSZip?: { loadAsync: (...x: unknown[]) => unknown } }).JSZip;
+      if (!Z) return Promise.reject(new Error('JSZip is not loaded'));
+      return exportEnv.resume(Z.loadAsync(...a));
+    },
+  },
+);
+
 let loading: Promise<Closure> | null = null;
 let loaded: Closure | null = null;
 let share: Record<string, unknown> | null = null;
@@ -1172,34 +1259,29 @@ export function loadClosure(): Promise<Closure> {
     loading = import('../generated/closure.js').then((m) => {
       const c = m.createClosure({
         state: null,
-        toast: (msg: string, icon?: string, action?: { label: string; ms?: number; onClick: () => void }) => structEnv.toast(msg, icon, action),
+        // wave 6: 1.0's importSandboxed silences it while a file becomes a book on a desk of its own (importEnv.quiet)
+        toast: (msg: string, icon?: string, action?: { label: string; ms?: number; onClick: () => void }) => (importEnv.quiet ? undefined : structEnv.toast(msg, icon, action)),
         // wave 5c: what 1.0's export code waits on (the sample's pictures, a zip being made, a font fetched) resumes in
         // the export session when an export call asked for it (exportEnv.resume), so 1.0's continuation — the file name,
         // the box set's volumes — reads the open book's state, not one another part of the studio set meanwhile
         samplePicsRequire: () => exportEnv.resume(Promise.resolve(undefined)),
         // wave 5a: 1.0's vendored JSZip, loaded with its integrity when a book opens (src/export/export.ts loadJszip); the
         // closure's `new JSZip()` makes the page's own (1.0's code reads window.JSZip where it checks for it)
-        JSZip: function JSZipOfPage(this: unknown, ...args: unknown[]) {
-          const Z = (globalThis as { JSZip?: new (...a: unknown[]) => unknown }).JSZip;
-          if (!Z) throw new Error('JSZip is not loaded');
-          const z = new Z(...args) as { generateAsync?: (...a: unknown[]) => unknown };
-          const gen = z.generateAsync;
-          if (typeof gen === 'function') z.generateAsync = (...a: unknown[]) => exportEnv.resume(gen.apply(z, a));
-          return z;
-        },
+        JSZip: jszipOfPage,
         t: (k, p) => currentT(k, p),
         UI_STRINGS: untitledStrings(),
         getUiLang: () => currentLang,
         deskState: liveDesk,
         deskSignature: () => previewEnv.deskSignature(),
         // wave 2b: the image library's surroundings (see pictureEnv); 1.0's redraws after an edit are React's re-render here
-        autoSnapshot: (kind: string) => pictureEnv.autoSnapshot(kind),
+        // wave 6: inside an import session, the session's own (1.0's autoSnapshot on its state); silenced by importSandboxed
+        autoSnapshot: (kind: string) => (importEnv.quiet ? null : importEnv.snapshot ? importEnv.snapshot(kind) : pictureEnv.autoSnapshot(kind)),
         local: {
           get editSeq() {
             return pictureEnv.editSeq();
           },
         },
-        noteBookEdited: () => writeEnv.noteBookEdited(),
+        noteBookEdited: () => (importEnv.quiet ? undefined : importEnv.edited ? importEnv.edited() : writeEnv.noteBookEdited()),
         imglibRefresh: () => undefined,
         cloud: cloudFacts,
         // wave 2c: 1.0's redraws after a structural edit are React's re-render from the Y.Doc; selectSection see structEnv
@@ -1211,7 +1293,8 @@ export function loadClosure(): Promise<Closure> {
         olRender: () => undefined,
         // wave 3a: the streak's heartbeat, the calm confirm, 1.0's icons() and fmtDateIntl
         cloudHeartbeat: () => writeEnv.heartbeat(),
-        cloudConfirm: (o: Record<string, unknown>) => writeEnv.confirm(o),
+        // wave 6: the import's confirms (replace the desk, Undo the whole import, Dismiss) resume in an import session
+        cloudConfirm: (o: Record<string, unknown>) => importEnv.resume(writeEnv.confirm(o)),
         icons: () => drawIcons(document),
         fmtDateIntl,
         // wave 3a (A9-A11): the page 1.0's Zen, Read Aloud and dictation code reaches (src/environment/page.ts)
@@ -1255,10 +1338,6 @@ export function loadClosure(): Promise<Closure> {
         // wave 5b: print's own module (src/print/print.ts)
         runPrintPreflight: () => printEnv.preflight(),
         renderPrintControls: () => printEnv.controls(),
-        // wave 5c: Add a Book's import half (src/export/state.ts: a Beuk backup through 1.0's own localParseBackup and
-        // bookDocToVolume; a zip or a manuscript is 1.0's import, wave 6)
-        boxSetExpandPick: (files: unknown[]) => exportEnv.expandPick(files),
-        manuscriptFileToVolume: (f: unknown) => exportEnv.volumeFromFile(f),
         renderArchiveList: () => undefined,
         cloudLoadArchive: () => undefined,
         // wave 5d (F10): the store check's shelf half (see shelf above); its continuation (storeRunServer's next step)
@@ -1267,6 +1346,14 @@ export function loadClosure(): Promise<Closure> {
         storeUpload: () => exportEnv.resume(shelfStandIns.storeUpload()),
         storeCreateJob: () => exportEnv.resume(shelfStandIns.storeCreateJob()),
         storeRefreshJobs: (out: unknown) => exportEnv.resume(shelfStandIns.storeRefreshJobs(out)),
+        // wave 6 (G1, G2): the import's surroundings (importEnv, src/import/import.ts); the sample bar and Project
+        // Settings' language hint are React's re-render
+        applyBookDoc: (doc: unknown, opts?: unknown) => importEnv.applyBookDoc(doc, opts),
+        restoreSnapshot: (id: string) => importEnv.restoreSnapshot(id),
+        applySampleBookSync: () => importEnv.applySampleBookSync(),
+        deskIsUntouchedSample: () => importEnv.untouched(),
+        renderSampleButton: () => undefined,
+        refreshLangHint: () => undefined,
       });
       share = c.share;
       // wave 4c: a picture id is a key of 1.0's coverImgCache: never Object.prototype's (as the server's WRAP_API)

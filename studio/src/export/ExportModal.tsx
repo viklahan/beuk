@@ -13,6 +13,7 @@ import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
 import { exportBegin, exportBody, exportLinger, exportReset, exportRun, exportUi, loadSerialize } from './state';
 import { printWire } from '../print/print';
+import { importWire } from '../import/import';
 
 /* Step 5 wave 5a (inventory F1, F7, F8): 1.0's export modal and package inspector — their markup, verbatim
    (client/index.html #modalExport and #modalInspector, extracted at build time into src/generated/export-markup.json):
@@ -216,7 +217,8 @@ export function ExportModal() {
         (window as unknown as { beukExport?: unknown }).beukExport = exportSeam;
         // wave 5b: 1.0's initPrint and initPrintView on this markup (the print section) and the print dialogs
         // (src/print/print.ts); the modal is usable once they are wired
-        return printWire().then(() => {
+        // wave 6: 1.0's import around Add a Book (src/import/import.ts: its answers resume in the export session)
+        return Promise.all([printWire(), importWire()]).then(() => {
           if (alive) setBuilt(true);
         });
       })

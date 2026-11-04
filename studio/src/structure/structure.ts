@@ -146,7 +146,7 @@ export function writeBook(ydoc: Y.Doc, before: Rec, after: Rec): boolean {
  *  - the sections take 1.0's order; a section 1.0 made is taken whole; in one that stood, each key whose normalised
  *    value changed takes 1.0's value (a planning field as olSectionFields gives it, as serializeBook writes it), and a
  *    key 1.0 took away is removed. A section's keys 1.0 did not touch stay exactly as stored. */
-function carry(c: Closure, book: Rec, pre: Rec, st: State, outline: boolean): Rec {
+export function carry(c: Closure, book: Rec, pre: Rec, st: State, outline: boolean): Rec {
   const out = clone(book);
   for (const k of Object.keys(st)) {
     if (k === 'sections' || k === 'history' || k === 'historyPool' || k === 'outline') continue;

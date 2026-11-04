@@ -29,6 +29,8 @@ const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralF
 // 1.0's vendored JSZip, as the page loads it (jsdom runs no <script src>): its UMD sets the global JSZip (require's own
 // exports are empty here)
 createRequire(import.meta.url)('../../client/assets/vendor/jszip.min.js');
+import { loadMammoth } from './vendor';
+loadMammoth();
 const JSZip = (globalThis as unknown as { JSZip: { loadAsync: (b: ArrayBuffer) => Promise<{ files: Record<string, { dir: boolean; async: (t: string) => Promise<string> }> }> } }).JSZip;
 let c: Closure;
 beforeAll(async () => {

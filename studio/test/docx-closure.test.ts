@@ -39,7 +39,7 @@ export const WAVE5C = {
 };
 
 describe("wave 5c: Word, the box set, the manuscript and the ACX script are 1.0's code (constraint 64)", () => {
-  it('the four builders and their dialogs are lifted, never supplied; only the import half of Add a Book is supplied', () => {
+  it('the four builders and their dialogs are lifted, never supplied (wave 6: and the import half of Add a Book)', () => {
     for (const [what, names] of Object.entries(WAVE5C))
       for (const n of names) {
         expect(CLOSURE_NAMES, what + ' ' + n).toContain(n);
@@ -47,9 +47,10 @@ describe("wave 5c: Word, the box set, the manuscript and the ACX script are 1.0'
       }
     for (const n of ['downloadDocx', 'buildBoxSetEpub', 'renderBoxSetList', 'buildDocxFiles', 'boxSetFiles', 'bookDocToVolume', 'localParseBackup', 'msInit', 'msFiles', 'msPlan',
       'acxInit', 'acxBuildPlan', 'acxZipEntries']) expect(CLOSURE_ROOTS, n).toContain(n);
+    // wave 6: 5c's two stand-ins are gone; Add a Book's import half is 1.0's own (test/import-closure.test.ts)
     for (const n of ['boxSetExpandPick', 'manuscriptFileToVolume']) {
-      expect(CLOSURE_SUPPLIED, n).toContain(n);
-      expect(CLOSURE_NAMES, n).not.toContain(n);
+      expect(CLOSURE_NAMES, n).toContain(n);
+      expect(CLOSURE_SUPPLIED, n).not.toContain(n);
     }
   });
 

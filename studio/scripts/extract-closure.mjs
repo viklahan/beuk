@@ -207,6 +207,18 @@ export const EXTRA_ROOTS = [
   'openStoreReady', 'storeRunServer', 'storeRecheck', 'buildStoreReportHtml', 'downloadStoreReport', 'initStoreReady',
   // (already lifted for the audit: named so the tests run 1.0's own store self-checks, studio/test/store-selfchecks.test.ts)
   'printPlacements', 'printEdgeSections', 'sectionLabel',
+  // wave 6 (G1, G2): the import, 1.0's own (BEUK:onereader) — the one reader of every file (readImportFile: DOCX through
+  // mammoth with the core-identity, language and XML scans; RTF; Markdown / text with YAML frontmatter; EPUB; PDF through
+  // pdf.js), the Import button's path (handleImportFile: a zip of one manuscript, the refusals, importConfirmReplace, the
+  // whole-book replace replaceBodyChapters), the sandboxed import of a file into a book (importSandboxed,
+  // manuscriptFileToBookDoc: Add a Book's volumes, and wave 7's bulk import), the "Recognised in your manuscript" summary
+  // and initImport; the import report (irBegin / irFinish record it; irRenderReport, irUndoItem, irUndoAll, irDismiss,
+  // irOpenReport, irSyncReopen and initImportReport show and act on it); and Add a Book's import half (boxSetExpandPick,
+  // manuscriptFileToVolume: 5c's stand-ins are gone). What 1.0's import reaches outside it is supplied (BROWSER_SUPPLIED)
+  'readImportFile', 'handleImportFile', 'importConfirmReplace', 'importExpandZips', 'importSandboxed', 'manuscriptFileToBookDoc', 'replaceBodyChapters',
+  'parseManuscript', 'importFoundList', 'renderImportSummary', 'initImport', 'initImportReport', 'irRenderReport', 'irUndoItem', 'irUndoAll',
+  'irUndoAllAvailability', 'irDismiss', 'irOpenReport', 'irCloseReport', 'irSyncReopen', 'irAbort', 'boxSetExpandPick', 'manuscriptFileToVolume',
+  'PDFJS_DIR', 'PDFJS_FILES', 'bulkIsManuscript', 'snapshotBookDoc', 'irOnLangChange',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -263,7 +275,19 @@ export const VARS = ['insVarPick', 'insCache', 'insFacts',
   // wave 5d: the cover maker's opener as 1.0's storeAct calls it ("Open the cover maker", inside the export session): the
   // studio points it at 2.0's own opener (src/cover/CoverMaker.tsx coverOpen: the maker on the Style session's state).
   // Its only other caller, initCoverMaker's #btnCoverMake listener, is a stand-in button (CoverMaker.tsx)
-  'openCoverMaker'];
+  'openCoverMaker',
+  // wave 6: what 2.0 wraps around 1.0's import (src/import/import.ts importWire). readImportFile: the libraries first
+  // (mammoth on the first .docx, pdf.js on the first .pdf, JSZip), and 1.0's synchronous step run in the import session
+  // (the book written whole after it); importConfirmReplace: read on the open book's state; importSandboxed: on a state of
+  // its own, with 1.0's quiet hooks — markWritingActivity, offerDetectedLanguage, renderImportSummary are 1.0's own
+  // functions here, so its window[h] silencing reaches them through these setters; lastImportFound: the summary drawn
+  // again over the new generation
+  'readImportFile', 'importConfirmReplace', 'importSandboxed', 'markWritingActivity', 'offerDetectedLanguage', 'renderImportSummary', 'lastImportFound',
+  // Add a Book's import half (5c's stand-ins gone): 1.0's listener awaits these two and then adds the volume to the open
+  // book's state, so their answers resume in the export session (src/import/import.ts)
+  'manuscriptFileToVolume', 'boxSetExpandPick'];
+/** Wave 6: supplied names 1.0's lifted code assigns (importSandboxed restores `cloudDirty`): emitted as `let`. */
+export const SUPPLIED_LETS = ['cloudDirty'];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
   // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads
@@ -307,7 +331,7 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // (wave 5c lifts downloadDocx, buildBoxSetEpub, renderBoxSetList and bookWord: 1.0's own now.) Add a Book's import half
   // stays supplied: a zip of books and a manuscript volume are 1.0's import (wave 6); 2.0's stand-ins read a Beuk backup
   // with 1.0's own localParseBackup and bookDocToVolume (src/export/state.ts volumeFromFile)
-  'runPrintPreflight', 'renderPrintControls', 'boxSetExpandPick', 'manuscriptFileToVolume',
+  'runPrintPreflight', 'renderPrintControls',
   'renderArchiveList', 'cloudLoadArchive',
   // review of 5c (Minor 2): the page's crypto, its digest resuming in the export session (src/closure/index.ts)
   'crypto',
@@ -315,7 +339,14 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // no shelf copy before wave 7, so the seam is 2.0's storeMakePrintJob, answering { needShelf: true } without a request
   // (src/print/print.ts shelfPrintJob, the same one 5b's print-ready panel uses); the three that would talk to the
   // server after a job exists are refusing stand-ins (no request: src/store/store.ts)
-  'storeMakePrintJob', 'storeUpload', 'storeCreateJob', 'storeRefreshJobs'];
+  'storeMakePrintJob', 'storeUpload', 'storeCreateJob', 'storeRefreshJobs',
+  // wave 6 (G1, G2): what 1.0's import reaches outside the import (src/import/import.ts). applyBookDoc: 1.0's arrival of a
+  // book on the desk — 2.0's re-typed data lines of it (src/export/state.ts arriveForExport) with its History, box-set
+  // and import-summary rules; restoreSnapshot (Undo the whole import, its snapshot): History's restore (history.ts
+  // restoreDoc); applySampleBookSync (its untouched sample): wave 1c's sample (sample.ts sampleArrival);
+  // deskIsUntouchedSample: wave 1c's fingerprint, read when the import starts; renderSampleButton and refreshLangHint:
+  // React re-renders the sample bar and Project Settings from the Y.Doc
+  'applyBookDoc', 'restoreSnapshot', 'applySampleBookSync', 'deskIsUntouchedSample', 'renderSampleButton', 'refreshLangHint'];
 /** Wave 5a: 1.0's serializeBook, emitted as its own sub-module (closure-serialize.js, createSerialize(share)): the main
  *  closure keeps `serializeBook` SUPPLIED (the wrap download's book stays wave 4c's), and the export's request body is
  *  1.0's own serializeBook run on 1.0's state of the open book as applyBookDoc holds it (src/export/state.ts). */
@@ -596,7 +627,7 @@ export async function buildClosureModule(html, epubSource) {
     `export const STUDIO_SHA = ${JSON.stringify(src.studioSha)};`,
     'export function createClosure(env) {',
     '  let state = env.state;',
-    ...supplied.filter((n) => n !== 'state').map((n) => `  const ${n} = env.${n};`),
+    ...supplied.filter((n) => n !== 'state').map((n) => `  ${SUPPLIED_LETS.includes(n) ? 'let' : 'const'} ${n} = env.${n};`),
   ].join('\n');
   const tail = [
     '',
@@ -827,7 +858,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; boxSetExpandPick: (files: unknown[]) => Promise<{ files: unknown[]; skipped: unknown[] }>; manuscriptFileToVolume: (f: unknown) => Promise<unknown>; renderArchiveList: () => void; cloudLoadArchive: () => void; crypto: unknown; storeMakePrintJob: (o?: unknown) => Promise<unknown>; storeUpload: (...a: unknown[]) => Promise<unknown>; storeCreateJob: (...a: unknown[]) => Promise<unknown>; storeRefreshJobs: (out: unknown) => Promise<boolean> };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; renderArchiveList: () => void; cloudLoadArchive: () => void; crypto: unknown; storeMakePrintJob: (o?: unknown) => Promise<unknown>; storeUpload: (...a: unknown[]) => Promise<unknown>; storeCreateJob: (...a: unknown[]) => Promise<unknown>; storeRefreshJobs: (out: unknown) => Promise<boolean>; applyBookDoc: (doc: unknown, opts?: unknown) => boolean; restoreSnapshot: (id: string) => boolean; applySampleBookSync: () => void; deskIsUntouchedSample: () => boolean; renderSampleButton: () => void; refreshLangHint: () => void };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 
@@ -892,4 +923,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       console.error(e.message);
       process.exit(1);
     });
+}
+
+/** Wave 6, for the tests only (studio/test/import-oracle.ts): a module of its own from any roots, its supplied names
+ *  passed in — 1.0's own applyBookDoc, serializeBook, History and import, with only its redraws stubbed, as the import's
+ *  oracle in Node. Never emitted into src/generated, never imported by the app. */
+export function buildTestModule(html, epubSource, o) {
+  return buildOwnModule(html, epubSource, { roots: o.roots, suppliedOwn: o.supplied, varsOwn: o.vars || [], what: o.what, file: o.what + '.js', prefix: o.prefix, fn: o.fn, title: o.title });
 }
