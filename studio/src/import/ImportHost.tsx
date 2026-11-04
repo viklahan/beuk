@@ -180,7 +180,8 @@ export function ImportHost() {
   const ydoc = bk.book?.ydoc ?? null;
   useEffect(() => {
     if (!ydoc || !closure.current) return;
-    if (importUi.ownArrival !== ydoc) {
+    // (a whole-book write of the import in flight: the generation it opens is the import's own)
+    if (importUi.ownArrival !== ydoc && !importPending()) {
       const box = document.getElementById('importSummary');
       if (box) box.style.display = 'none';
     }

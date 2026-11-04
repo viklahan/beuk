@@ -36,7 +36,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { register } from 'node:module';
+import { createRequire, register } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -810,7 +810,7 @@ async function latency(origin, opts = {}) {
 const ONE_HIDE =
   // wave 5a, round 2: the local pill (.local-wrap) is ported, so 1.0 shows it too
   '#netPill, #btnAccount, #btnSupport, #updateBar, .pane-fold, #tipLayer, .beuk-tip,' +
-  ' #bulkHint, #importSummary, #irReopen { display: none !important; }' + // wave 1c: the sample bar and its tour link are in both
+  ' #bulkHint { display: none !important; }' + // wave 6: 1.0's #importSummary and #irReopen are 2.0's too now (bulk import's hint: wave 7) // wave 1c: the sample bar and its tour link are in both
   ' @media (max-width: 1023px) { html[dir="rtl"] #panes .pane { border: none !important; } }';
 
 async function pixelDiff(diffPage, a, b) {
@@ -6080,6 +6080,689 @@ async function wave5dChecks(origin) {
   }
 }
 
+/* ---- wave 6 (G1, G2; plan 2026-11-04, constraints 77-83): the import ----
+   Every corpus file imported into 1.0's /studio (1.0's own handleImportFile, its desk holding the same book) and into
+   2.0's /next (1.0's Import button: #fileInput, the confirm, the book replaced whole): the books equal (1.0's
+   serializeBook read as readBook reads it against 2.0's export), but for what 1.0 itself varies (maskVarying: the fresh
+   ids and the times — shown varying in 1.0 itself); the refusals give 1.0's words; the confirm comes exactly when 1.0's
+   does; the report's HTML equals 1.0's; each per-item undo, Undo the whole import and Dismiss give 1.0's book; a hostile
+   file leaves no script, handler or request; Add a Book leaves the open book alone; the libraries load as 1.0's do. */
+const W6C = await import(pathToFileURL(path.join(STUDIO, 'e2e', 'import-corpus.mjs')).href);
+const W6F = await import(pathToFileURL(path.join(STUDIO, 'test', 'import-fixture.ts')).href);
+// 1.0's vendored JSZip in Node (its UMD: module.exports under require), to build the corpus
+const W6Z = (() => {
+  const r = createRequire(import.meta.url)(path.join(REPO, 'client', 'assets', 'vendor', 'jszip.min.js'));
+  return globalThis.JSZip || r;
+})();
+const W6_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const w6File = (name, mimeType, data) => ({ name, mimeType, buffer: Buffer.from(data) });
+const w6B64 = (f) => ({ name: f.name, type: f.mimeType, b64: f.buffer.toString('base64') });
+
+/** 2.0's EPUB of a book (1.0's buildEpubBlob in the export session, the book opened in /next). */
+async function w6EpubOf(origin, book, name) {
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w5aOpen(ctx, origin, w4File(name + '.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book })));
+    const b64 = await page.evaluate(async () => {
+      const blob = await window.beukExport.run((api) => api.buildEpubBlob());
+      const u = new Uint8Array(await blob.arrayBuffer());
+      let s = '';
+      for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000));
+      return btoa(s);
+    });
+    await harvestCsp(page);
+    return w6File(name + '.epub', 'application/epub+zip', Buffer.from(b64, 'base64'));
+  } finally {
+    await ctx.close();
+  }
+}
+/** The print view's PDF of a book (1.0's buildPrintHtml in 1.0's page, printed by Chromium). */
+async function w6PdfOf(origin, book, name) {
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const one = await openOne(ctx, origin);
+    await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(book)); // eslint-disable-line no-undef
+    const html = await one.evaluate(() => buildPrintHtml()); // eslint-disable-line no-undef
+    const pp = await ctx.newPage();
+    await pp.goto(origin + '/studio');
+    await pp.setContent(html, { waitUntil: 'load' });
+    await pp.evaluate(() => document.fonts.ready);
+    const pdf = await pp.pdf({ preferCSSPageSize: true, printBackground: true });
+    await harvestCsp(one);
+    return w6File(name + '.pdf', 'application/pdf', pdf);
+  } finally {
+    await ctx.close();
+  }
+}
+/** An image-only PDF (scanned pages): two pages of a picture, no text layer. */
+async function w6ScannedPdf() {
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const pp = await ctx.newPage();
+    const img = '<div style="width:100%;height:9.5in;background:#777"></div>';
+    await pp.setContent(`<html><body style="margin:0">${img}<div style="break-before:page"></div>${img}</body></html>`);
+    const pdf = await pp.pdf({ format: 'Letter', printBackground: true });
+    return w6File('scanned.pdf', 'application/pdf', pdf);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** The whole corpus of constraint 77 (each { name, mimeType, buffer }, a `kind` and whether 1.0 refuses it). */
+async function w6Corpus(origin) {
+  const out = [];
+  for (const d of await W6C.docxCorpus(W6Z)) out.push({ kind: 'docx', ...w6File(d.name, W6_DOCX, d.bytes) });
+  for (const t of W6F.textCorpus()) out.push({ kind: t.name.endsWith('.rtf') ? 'rtf' : 'text', ...w6File(t.name, t.type, Buffer.from(t.text, 'utf8')) });
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const epubBooks = [
+    ['dumas', DUMAS.book],
+    ['lantern', lan],
+    ['hostile', w5aHostileBook(lan)],
+    ['arabic', scriptBook(fixtures.find((x) => x.name === 'real/reads-you').book, 'ar', SCRIPT_LINES.ar)],
+    ['pictures', fixtures.find((x) => x.name === 'real/lunas-beach-standalone').book],
+  ];
+  for (const [n, b] of epubBooks) out.push({ kind: 'epub', ...(await w6EpubOf(origin, b, 'w6-' + n)) });
+  out.push({ kind: 'epub', ...w6File('plain.epub', 'application/epub+zip', await W6C.plainEpub(W6Z)) });
+  out.push({ kind: 'pdf', ...(await w6PdfOf(origin, lan, 'w6-lantern')) });
+  out.push({ kind: 'pdf', ...(await w6PdfOf(origin, fixtures.find((x) => x.name === 'real/salt-road-book-one').book, 'w6-salt')) });
+  out.push({ kind: 'pdf', ...(await w6ScannedPdf()) });
+  const md = W6F.textCorpus().filter((x) => x.name.endsWith('.md'));
+  out.push({ kind: 'zip', ...w6File('one-book.zip', 'application/zip', await W6C.makeZip(W6Z, [{ name: 'book/' + md[0].name, text: md[0].text }, { name: '__MACOSX/._x', text: 'x' }])) });
+  out.push({ kind: 'zip', ...w6File('two-books.zip', 'application/zip', await W6C.makeZip(W6Z, [{ name: md[0].name, text: md[0].text }, { name: md[1].name, text: md[1].text }])) });
+  out.push({ kind: 'zip', ...w6File('bomb.zip', 'application/zip', await W6C.zipBomb(W6Z)) });
+  const junk = Buffer.alloc(4096);
+  for (let i = 0, x = 7; i < junk.length; i++) junk[i] = (x = (x * 1103515245 + 12345) >>> 0) >>> 24;
+  out.push({ kind: 'refuse', ...w6File('empty.txt', 'text/plain', Buffer.alloc(0)) });
+  out.push({ kind: 'refuse', ...w6File('binary.txt', 'text/plain', junk) });
+  out.push({ kind: 'refuse', ...w6File('broken.docx', W6_DOCX, junk) });
+  out.push({ kind: 'refuse', ...w6File('drm.epub', 'application/epub+zip', await W6C.drmEpub(W6Z)) });
+  return out;
+}
+
+/** 1.0's page: its desk holds `desk` (null: 1.0's empty book), the file through 1.0's own handleImportFile. */
+const W6_ONE = async ([desk, f, deskKind]) => {
+  /* global applyBookDoc, buildEmptyBook, serializeBook, handleImportFile, isEmptyDesk, sampleState, deskIsUntouchedSample, applySampleBookSync */
+  /* global sampleComparableJson */
+  if (deskKind === 'sample') {
+    // the untouched sample as 2.0's desk holds it (its own History: wave 1c's), loaded as 1.0 loads it
+    applyBookDoc(JSON.parse(JSON.stringify(desk)), { keepHistory: false });
+    sampleState.loaded = true;
+    sampleState.loadedJson = sampleComparableJson();
+  } else applyBookDoc(JSON.parse(JSON.stringify(desk || buildEmptyBook())));
+  const bytes = Uint8Array.from(atob(f.b64), (ch) => ch.charCodeAt(0));
+  const file = new File([bytes], f.name, { type: f.type });
+  const asked = !(isEmptyDesk() || (sampleState.loaded && deskIsUntouchedSample()));
+  const before = JSON.stringify(serializeBook());
+  const toasts = [];
+  const keep = window.toast;
+  window.toast = (m) => void toasts.push(String(m));
+  const t0 = performance.now();
+  try {
+    await handleImportFile(file, { replaceOk: true });
+  } finally {
+    window.toast = keep;
+  }
+  const ms = performance.now() - t0;
+  const after = serializeBook();
+  const changed = JSON.stringify(after) !== before;
+  const rep = document.getElementById('irBody');
+  return { asked, changed, book: changed ? JSON.parse(JSON.stringify(after)) : null, toasts, ms, report: changed && rep ? rep.innerHTML : '', sub: document.getElementById('irSub')?.textContent || '',
+    summary: document.getElementById('importSummaryText')?.textContent || '' };
+};
+/** 2.0's page: the file chosen in 1.0's #fileInput; the confirm answered `answer` when it comes. */
+/** 1.0's replace confirm's two answers, in the interface language (the extraction's packs). */
+const w6Answers = (lang = 'en') => { const pk = JSON.parse(readFileSync(path.join(STUDIO, 'src', 'generated', 'packs', lang + '.json'), 'utf8')); const en = JSON.parse(readFileSync(path.join(STUDIO, 'src', 'generated', 'packs', 'en.json'), 'utf8')); return { yes: pk['import.replaceYes'] || en['import.replaceYes'], no: pk['import.replaceNo'] || en['import.replaceNo'] }; };
+async function w6Two(page, file, answer = 'yes', lang = 'en') {
+  const ans = w6Answers(lang);
+  const toasts0 = await page.evaluate(() => document.querySelectorAll('#toasts .toast').length);
+  await page.evaluate(() => document.getElementById('modalImportReport')?.classList.remove('open'));
+  // every toast the import raises, as it appears (a refusal can come and go while pdf.js's "Reading …" stands)
+  await page.evaluate(() => {
+    window.__w6toasts = [];
+    window.__w6mo?.disconnect();
+    const box = document.getElementById('toasts');
+    window.__w6mo = new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && window.__w6toasts.push(n.textContent || ''))));
+    if (box) window.__w6mo.observe(box, { childList: true });
+  });
+  await page.setInputFiles('#fileInput', file);
+  let asked = false;
+  const t0 = Date.now();
+  for (;;) {
+    const st = await page.evaluate(([n, yesText]) => {
+      const yes = [...document.querySelectorAll('button')].find((b) => b.textContent === yesText);
+      if (yes) return 'confirm';
+      if (document.getElementById('modalImportReport')?.classList.contains('open') && !window.beukImport.pending()) return 'report';
+      const ts = [...document.querySelectorAll('#toasts .toast')];
+      if ((window.__w6toasts || []).some((x) => !/^Reading /.test(x)) && !document.getElementById('modalImportReport')?.classList.contains('open')) return 'toast';
+      void ts; void n;
+      return null;
+    }, [toasts0, ans.yes]);
+    if (st === 'confirm') {
+      asked = true;
+      if (answer === 'yes') await page.click(`button:text-is("${ans.yes}")`);
+      else {
+        await page.click(`button:text-is("${ans.no}")`);
+        await page.waitForTimeout(400);
+        return { asked, done: 'cancelled', ms: Date.now() - t0 };
+      }
+      continue;
+    }
+    if (st === 'report' || st === 'toast') {
+      await page.waitForTimeout(300);
+      const toasts = await page.evaluate(() => (window.__w6toasts || []).filter((x) => !/^Reading /.test(x)));
+      return { asked, done: st, ms: Date.now() - t0, toasts };
+    }
+    if (Date.now() - t0 > 120_000) return { asked, done: 'timeout', ms: Date.now() - t0 };
+    await page.waitForTimeout(100);
+  }
+}
+/** The backup, with the import report closed first (it is a modal over the page: the local pill sits under it). */
+async function w6Backup(page) {
+  await page.evaluate(() => {
+    const m = document.getElementById('modalImportReport');
+    if (m && m.classList.contains('open')) document.getElementById('btnIrClose').click();
+  });
+  await page.waitForTimeout(150);
+  return exportBackup(page);
+}
+/** The report's HTML, masked: its items' ids and the date in the subtitle. */
+const w6MaskReport = (h) => String(h).replace(/data-ir(id|undo)="[^"]*"/g, 'data-ir$1="#"');
+async function w6Desk2(ctx, origin, deskKind, deskBook) {
+  const page = await openNext(ctx, origin);
+  if (deskKind === 'empty') await page.waitForSelector('#btnOpenBackup', { timeout: 30_000 });
+  else if (deskKind === 'sample') {
+    await page.waitForSelector('#btnSampleStory', { timeout: 30_000 });
+    await page.click('#btnSampleStory');
+    await page.waitForSelector('#btnOpenBackup', { state: 'detached', timeout: 60_000 });
+  } else await openBackup(page, w4File('w6-desk-' + deskKind + '.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: deskBook })));
+  await page.waitForFunction(() => !!window.beukImport?.ready && document.getElementById('btnImport')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+  return page;
+}
+
+async function wave6Parity(origin) {
+  const corpus = await w6Corpus(origin);
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const themed = JSON.parse(JSON.stringify(lan));
+  themed.activePreset = 'noir';
+  const counts = {};
+  for (const f of corpus) counts[f.kind] = (counts[f.kind] || 0) + 1;
+  note('wave6 corpus: ' + Object.entries(counts).map(([k, v]) => v + ' ' + k).join(', ') + ' (' + corpus.length + ' files)');
+  check(counts.docx >= 6 && counts.text >= 16 && counts.rtf >= 3 && counts.epub >= 6 && counts.pdf >= 3 && counts.zip === 3 && counts.refuse >= 4, 'wave6 constraint 77: the corpus holds every kind it names');
+  const desks = [['empty', null, corpus], ['lantern', lan, corpus],
+    ['sample', null, corpus.filter((f) => ['headings.docx', 'frontmatter.md', 'headings.rtf', 'plain.epub', 'one-book.zip'].includes(f.name))],
+    ['themed', themed, corpus.filter((f) => ['matter.docx', 'plain-manuscript.txt', 'unicode.rtf'].includes(f.name))]];
+  // 1.0 varies only the masked fields: two imports of the same file in 1.0 itself
+  {
+    const c1 = await newContext({ serviceWorkers: 'block' });
+    try {
+      const one = await openOne(c1, origin);
+      const f = corpus.find((x) => x.name === 'matter.docx');
+      const a = await one.evaluate(W6_ONE, [lan, w6B64(f), 'lantern']);
+      const b = await one.evaluate(W6_ONE, [lan, w6B64(f), 'lantern']);
+      const ma = JSON.stringify(W6F.maskVarying(expected(a.book))), mb = JSON.stringify(W6F.maskVarying(expected(b.book)));
+      check(JSON.stringify(a.book) !== JSON.stringify(b.book) && ma === mb, "wave6 constraint 77: 1.0 itself varies only the masked fields (the new book's and the sections' ids, the snapshot's and the report's ids and times): two imports of matter.docx differ raw, equal masked");
+    } finally {
+      await c1.close();
+    }
+  }
+  const deskOnly = (process.env.W6_DESKS || 'empty,lantern,sample,themed').split(',');
+  for (const [deskKind, deskBook, files] of desks) {
+    if (!deskOnly.includes(deskKind)) continue;
+    let eq = 0, n = 0, askEq = 0, refusedEq = 0, refused = 0;
+    const bad = [];
+    const c1 = await newContext({ serviceWorkers: 'block' });
+    try {
+      const one = await openOne(c1, origin);
+      const fileOnly = process.env.W6_FILES ? process.env.W6_FILES.split(',') : null;
+      for (const f of files) {
+        if (fileOnly && !fileOnly.includes(f.name)) continue;
+        const c2 = await newContext({ serviceWorkers: 'block' });
+        try {
+          const two = await w6Desk2(c2, origin, deskKind, deskBook);
+          const start = deskKind === 'empty' ? null : (await w6Backup(two)).json.book;
+          const r1 = await one.evaluate(W6_ONE, [deskKind === 'sample' ? start : deskBook, w6B64(f), deskKind]);
+          const r2 = await w6Two(two, f, 'yes');
+          const v1 = await one.evaluate(() => (window.__csp || []).length), v2 = await two.evaluate(() => (window.__csp || []).length);
+          note(`wave6 ${deskKind} ${f.name}: 1.0 ${r1.changed ? 'imported' : 'refused'} (${r1.ms.toFixed(0)} ms, CSP events so far ${v1}); 2.0 ${r2.done} (${r2.ms} ms, CSP events ${v2})`);
+          n++;
+          // 1.0's handleImportFile asks only once the file has been read (a refused file is refused before any confirm)
+          const asked1 = r1.asked && r1.changed;
+          if (asked1 === r2.asked) askEq++;
+          else bad.push(`${f.name}: the confirm 1.0 ${asked1} / 2.0 ${r2.asked}`);
+          if (!r1.changed) {
+            refused++;
+            const msg1 = r1.toasts[r1.toasts.length - 1] || '';
+            const msg2 = (r2.toasts || []).slice(-1)[0] || '';
+            if (msg2.includes(msg1) && msg1) refusedEq++;
+            else bad.push(`${f.name}: 1.0 said "${msg1}" / 2.0 "${msg2}" (2.0's toasts: ${JSON.stringify(r2.toasts || [])})`);
+            const after = deskKind === 'empty' ? null : (await w6Backup(two)).json.book;
+            if (start && JSON.stringify(after) !== JSON.stringify(start)) bad.push(`${f.name}: 2.0's desk changed after a refusal`);
+            continue;
+          }
+          const out = (await w6Backup(two)).json.book;
+          const m1 = JSON.stringify(W6F.maskVarying(expected(r1.book))), m2 = JSON.stringify(W6F.maskVarying(out));
+          if (m1 === m2 && r2.done === 'report') eq++;
+          else {
+            const at = [...m1].findIndex((ch, i) => ch !== m2[i]);
+            bad.push(`${f.name}: ${r2.done}; differs at ${at}: 1.0 …${m1.slice(Math.max(0, at - 80), at + 80)}… / 2.0 …${m2.slice(Math.max(0, at - 80), at + 80)}…`);
+          }
+          if (deskKind === 'lantern' || deskKind === 'themed') {
+            const h = (out.history || [])[0];
+            if (!h || h.auto !== 'import') bad.push(`${f.name}: History's head is not the import snapshot`);
+          }
+          await harvestCsp(two);
+        } finally {
+          await c2.close();
+        }
+      }
+      await harvestCsp(one);
+    } finally {
+      await c1.close();
+    }
+    check(!bad.length && eq + refused === n && askEq === n && refusedEq === refused,
+      `wave6 constraints 77, 78: onto ${deskKind === 'empty' ? 'an empty desk' : deskKind === 'lantern' ? 'a written book (Lantern Coast)' : deskKind === 'sample' ? 'the untouched sample' : 'a book with a theme preset (noir)'}: ${eq} of ${n - refused} imports give 1.0's book (masked); ${refusedEq} of ${refused} refusals in 1.0's words; the confirm when 1.0's comes: ${askEq} of ${n}${bad.length ? ' — ' + bad.slice(0, 4).join('; ') : ''}`);
+  }
+}
+
+/** Cancel leaves the book; Undo the whole import (History's import snapshot restored) gives the old book back. */
+async function wave6Desks(origin) {
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const f = w6File('plain-manuscript.txt', 'text/plain', Buffer.from(W6F.textCorpus().find((x) => x.name === 'plain-manuscript.txt').text, 'utf8'));
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const two = await w6Desk2(ctx, origin, 'lantern', lan);
+    const start = (await w6Backup(two)).json.book;
+    const r = await w6Two(two, f, 'no');
+    const after = (await w6Backup(two)).json.book;
+    check(r.asked && r.done === 'cancelled' && JSON.stringify(after) === JSON.stringify(start), "wave6 constraint 78: 1.0's confirm on a written book; Keep my book leaves the export exactly equal");
+    const r2 = await w6Two(two, f, 'yes');
+    const imported = (await w6Backup(two)).json.book;
+    const snap = imported.history[0];
+    check(r2.done === 'report' && snap.auto === 'import', "wave6 constraint 78: after the import, History's head is the import snapshot");
+    await two.click('#btnIrReopen');
+    await two.click('#btnIrUndoAll');
+    await two.click('button:text-is("Undo the import")');
+    await two.waitForFunction(() => !document.getElementById('modalImportReport').classList.contains('open') && !window.beukImport.pending(), null, { timeout: 60_000 });
+    await two.waitForTimeout(500);
+    const back = (await w6Backup(two)).json.book;
+    {
+      // the import's snapshot is 1.0's chopSnapDoc of 1.0's state of the old book (1.0's arrival: its formatVersion label,
+      // its meta in arrival order, its cover recipe normalized); restoring it gives that book back: compared with 1.0's
+      // own state of the same book (1.0's page: applyBookDoc, then serializeBook), History and the report aside
+      const c1 = await newContext({ serviceWorkers: 'block' });
+      let held;
+      try {
+        const one = await openOne(c1, origin);
+        held = await one.evaluate((b0) => { applyBookDoc(JSON.parse(JSON.stringify(b0))); return JSON.parse(JSON.stringify(serializeBook())); }, start); // eslint-disable-line no-undef
+      } finally {
+        await c1.close();
+      }
+      note(`wave6: the restored book carries formatVersion ${back.formatVersion} (the stored book before: ${start.formatVersion ?? 'none'}; 1.0's state of it: ${held.formatVersion})`);
+      const x = JSON.stringify(noHistory(back)), y = JSON.stringify(noHistory(expected(held)));
+      const at = [...x].findIndex((ch, i) => ch !== y[i]);
+      check(x === y, `wave6 constraint 78: restoring the import's snapshot (Undo the whole import) gives back the old book exactly as 1.0 holds it (History and the report aside; History gains the restore's own snapshot)${x === y ? '' : ' — at ' + at + ': after …' + x.slice(Math.max(0, at - 120), at + 120) + '… / before …' + y.slice(Math.max(0, at - 120), at + 120) + '…'}`);
+    }
+    await harvestCsp(two);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** The report beside 1.0's: its HTML; every reversible item's undo, an edited-since refusal, Undo the whole import; Dismiss and the reopen across a reload. */
+const w6Diff = (a, b) => { const x = JSON.stringify(a), y = JSON.stringify(b); const at = [...x].findIndex((ch, i) => ch !== y[i]); return at < 0 && x.length === y.length ? '' : ` at ${at}: 1.0 …${x.slice(Math.max(0, at - 150), at + 150)}… / 2.0 …${y.slice(Math.max(0, at - 150), at + 150)}…`; };
+async function wave6Report(origin) {
+  const corpus = await w6Corpus(origin);
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const subset = ['matter.docx', 'footnotes.docx', 'picture-table.docx', 'w6-lantern.epub', 'w6-salt.pdf'].filter((n) => !process.env.W6_FILES || process.env.W6_FILES.split(',').includes(n)).map((n) => corpus.find((x) => x.name === n));
+  const bad = [];
+  let htmlEq = 0, undoEq = 0, undos = 0, allEq = 0;
+  for (const f of subset) {
+    const c1 = await newContext({ serviceWorkers: 'block' });
+    const c2 = await newContext({ serviceWorkers: 'block' });
+    try {
+      const one = await openOne(c1, origin);
+      const r1 = await one.evaluate(W6_ONE, [lan, w6B64(f), 'lantern']);
+      const two = await w6Desk2(c2, origin, 'lantern', lan);
+      const r2 = await w6Two(two, f, 'yes');
+      const h2 = await two.evaluate(() => document.getElementById('irBody').innerHTML);
+      if (r2.done === 'report' && w6MaskReport(h2) === w6MaskReport(r1.report)) htmlEq++;
+      else bad.push(`${f.name}: the report's HTML differs`);
+      // every reversible item, in order, in both
+      const items = await one.evaluate(() => state.importReport.items.map((it) => ({ id: it.id, rev: it.reversible && it.state === 'applied', kind: it.kind }))); // eslint-disable-line no-undef
+      // the report's items in the book's order (the dialog draws them by group): the same order as 1.0's state's
+      const ids2 = (await w6Backup(two)).json.book.importReport.items.map((it) => it.id);
+      await two.click('#btnIrReopen');
+      for (const [i, it] of items.entries()) {
+        if (!it.rev) continue;
+        const has = await two.$(`#irBody [data-irundo="${ids2[i]}"]`);
+        if (!has) continue;
+        undos++;
+        await one.evaluate((id) => irUndoItem(id), it.id); // eslint-disable-line no-undef
+        // its group may be folded (1.0 opens a group of six items or fewer): the writer unfolds it; the button's own click
+        await two.evaluate((id) => { const b = document.querySelector(`#irBody [data-irundo="${id}"]`); b.closest('details')?.setAttribute('open', ''); b.click(); }, ids2[i]);
+        await two.waitForTimeout(250);
+        const b1 = await one.evaluate(() => JSON.parse(JSON.stringify(serializeBook()))); // eslint-disable-line no-undef
+        const b2 = (await w6Backup(two)).json.book;
+        if (JSON.stringify(W6F.maskVarying(expected(b1))) === JSON.stringify(W6F.maskVarying(b2))) undoEq++;
+        else bad.push(`${f.name}: item ${i} (${it.kind}) undone differs${w6Diff(W6F.maskVarying(expected(b1)), W6F.maskVarying(b2))}`);
+        await two.evaluate(() => document.getElementById('modalImportReport').classList.contains('open') || document.getElementById('btnIrReopen').click());
+      }
+      // the whole import, undone (both by the import's snapshot)
+      await one.evaluate(() => irUndoAll()); // eslint-disable-line no-undef
+      await two.evaluate(() => document.getElementById('modalImportReport').classList.contains('open') || document.getElementById('btnIrReopen').click());
+      await two.click('#btnIrUndoAll');
+      await two.click('button:text-is("Undo the import")');
+      await two.waitForFunction(() => !window.beukImport.pending() && !document.getElementById('modalImportReport').classList.contains('open'), null, { timeout: 60_000 });
+      await two.waitForTimeout(500);
+      const u1 = await one.evaluate(() => JSON.parse(JSON.stringify(serializeBook()))); // eslint-disable-line no-undef
+      const u2 = (await w6Backup(two)).json.book;
+      const strip = (b) => { const x = JSON.parse(JSON.stringify(b)); for (const h of x.history || []) if (h.auto === 'restore') delete (h.doc || h.chopDoc).formatVersion; return W6F.maskVarying(x); };
+      if (JSON.stringify(strip(expected(u1))) === JSON.stringify(strip(u2))) allEq++;
+      else bad.push(`${f.name}: Undo the whole import differs${w6Diff(strip(expected(u1)), strip(u2))}`);
+      await harvestCsp(one);
+      await harvestCsp(two);
+    } finally {
+      await c1.close();
+      await c2.close();
+    }
+  }
+  check(htmlEq === subset.length, `wave6 constraint 79: the report's HTML equals 1.0's (items' ids masked) for ${htmlEq} of ${subset.length} imports (3 DOCX, 1 EPUB, 1 PDF)${bad.length ? ' — ' + bad.slice(0, 3).join('; ') : ''}`);
+  check(undoEq === undos && undos > 0, `wave6 constraint 79: every reversible item's undo gives 1.0's book: ${undoEq} of ${undos}${bad.length ? ' — ' + bad.join(' | ') : ''}`);
+  check(allEq === subset.length, `wave6 constraint 79: Undo the whole import gives 1.0's book for ${allEq} of ${subset.length} (History's own "Before restore" snapshot carries no formatVersion: wave 1a)`);
+  // edited since: the text an item names is changed, its undo is refused in 1.0's words; Dismiss and the reopen survive a reload
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const two = await w6Desk2(ctx, origin, 'lantern', lan);
+    const f = corpus.find((x) => x.name === 'plain-manuscript.txt');
+    await w6Two(two, f, 'yes');
+    const ok = await two.evaluate(() => {
+      const btn = document.querySelector('#irBody [data-irundo]');
+      return !!btn;
+    });
+    check(ok, 'wave6: the report offers an undo');
+    await two.click('#btnIrClose');
+    await two.reload();
+    await two.waitForFunction(() => !!window.beukImport?.ready, null, { timeout: 60_000 });
+    const reopen = await two.evaluate(() => document.getElementById('irReopen').style.display !== 'none');
+    await two.click('#btnIrReopen');
+    const opened = await two.evaluate(() => document.getElementById('modalImportReport').classList.contains('open') && document.querySelectorAll('#irBody .ir-item').length > 0);
+    check(reopen && opened, 'wave6 constraint 79: after a reload the report rides in the book: its reopen button stands and opens it');
+    await two.click('#btnIrDismiss');
+    await two.click('button:text-is("Dismiss")');
+    await two.waitForTimeout(500);
+    await two.reload();
+    await two.waitForFunction(() => !!window.beukImport?.ready, null, { timeout: 60_000 });
+    const gone = await two.evaluate(() => document.getElementById('irReopen').style.display === 'none');
+    const book = (await w6Backup(two)).json.book;
+    check(gone && book.importReport === null, 'wave6 constraint 79: Dismissed, the report is gone from the book and stays gone across a reload');
+    await harvestCsp(two);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** Hostile DOCX, EPUB and MD: no script, handler or remote request anywhere after the import. */
+async function wave6Hostile(origin) {
+  const evil = '<img src=x onerror="window.__pw=1">';
+  const md = `---\ntitle: "${evil}‮Title​"\nauthor: "<script>window.__pw=2</script>"\n---\n\n# Chapter <svg onload=window.__pw=3></svg>\n\n"Quote" -- <a href="javascript:window.__pw=5">link</a> <img src="https://evil.example/x.png" onerror="window.__pw=6">\n\n***\n\n# Two <iframe src=//evil.example></iframe>\n\nText...\n`;
+  const docx = await W6C.makeDocx(W6Z, { title: evil + '‮​', creator: '<script>window.__pw=7</script>', body: `<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>${evil.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')}</w:t></w:r></w:p><w:p><w:r><w:t>javascript:alert(1) https://evil.example/a.png</w:t></w:r></w:p>` });
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const files = [w6File('evil.md', 'text/markdown', Buffer.from(md, 'utf8')), w6File('evil.docx', W6_DOCX, docx), await w6EpubOf(origin, w5aHostileBook(lan), 'w6-hostile')];
+  for (const f of files) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    const outside = [];
+    try {
+      const two = await w6Desk2(ctx, origin, 'empty', null);
+      two.on('request', (r) => {
+        const u = r.url();
+        if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) outside.push(u);
+      });
+      const r = await w6Two(two, f, 'yes');
+      await two.waitForTimeout(800);
+      const haz = await two.evaluate(W5D_DOM_HAZ, '#modalImportReport');
+      const haz2 = await two.evaluate(W5D_DOM_HAZ, '#importSlot');
+      const haz3 = await two.evaluate(W5D_DOM_HAZ, '#pane-center');
+      const pw = await two.evaluate(() => window.__pw ?? null);
+      const out = (await w6Backup(two)).json.book;
+      check(r.done === 'report' && !haz.length && !haz2.length && !haz3.length && pw === null && outside.length === 0,
+        `wave6 constraint 80: ${f.name} imported — the report, the summary and the editor hold no script, handler or remote source (${[...haz, ...haz2, ...haz3].slice(0, 4).join(', ') || 'none'}), nothing ran, no request left the page (${outside.length})`);
+      check(JSON.stringify(out) === JSON.stringify(expected(out, out)), `wave6 constraint 80: the imported ${f.name} is a 1.0 book (readBook reads it exactly)`);
+      await harvestCsp(two);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
+/** Add a Book: a .docx, .md and .epub each a volume; the open book's export unchanged; a zip of books as 1.0's. */
+async function wave6AddBook(origin) {
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const docx = (await W6C.docxCorpus(W6Z)).find((x) => x.name === 'matter.docx');
+  const md = W6F.textCorpus().find((x) => x.name === 'frontmatter.md');
+  const files = [w6File('matter.docx', W6_DOCX, docx.bytes), w6File('frontmatter.md', 'text/markdown', Buffer.from(md.text, 'utf8')), await w6EpubOf(origin, fixtures.find((x) => x.name === 'real/salt-road-book-one').book, 'w6-vol')];
+  const zip = w6File('library.zip', 'application/zip', await W6C.makeZip(W6Z, W6F.textCorpus().filter((x) => x.name.endsWith('.md')).slice(0, 3).map((x) => ({ name: x.name, text: x.text }))));
+  const c1 = await newContext({ serviceWorkers: 'block' });
+  const c2 = await newContext({ serviceWorkers: 'block' });
+  try {
+    const one = await openOne(c1, origin);
+    await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(lan)); // eslint-disable-line no-undef
+    const two = await w5aOpen(c2, origin, w4File('w6-addbook.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: lan })));
+    const start = (await w6Backup(two)).json.book;
+    for (const p of [one, two]) await w5aOpenModal(p, '#btnExport');
+    const titles = async (p) => p.$$eval('#boxSetList .bs-title', (els) => els.map((e) => e.textContent));
+    void 0;
+    const wait = (p, n) => p.waitForFunction((k) => document.querySelectorAll('#boxSetList .bs-row').length >= k, n, { timeout: 60_000 }).catch(() => undefined);
+    // 1.0, as the writer adds them one after the other
+    for (const f of [...files, zip]) {
+      await one.setInputFiles('#boxSetFileInput', f);
+      await one.waitForTimeout(2500);
+    }
+    const t1 = await titles(one);
+    // 1.0, each file on its own (the volume 1.0 makes of it): the zip's three books as three files
+    const zipMembers = W6F.textCorpus().filter((x) => x.name.endsWith('.md')).slice(0, 3).map((x) => w6File(x.name, 'text/markdown', Buffer.from(x.text, 'utf8')));
+    const single = [];
+    for (const f of [...files, ...zipMembers]) {
+      await one.evaluate(() => { state.boxSetVolumes = []; renderBoxSetList(); }); // eslint-disable-line no-undef
+      await one.setInputFiles('#boxSetFileInput', f);
+      await wait(one, 2);
+      await one.waitForTimeout(500);
+      single.push((await titles(one))[1]);
+    }
+    // 2.0, one after the other
+    let k = 1;
+    for (const f of [...files, zip]) {
+      k += f === zip ? 3 : 1;
+      await two.setInputFiles('#boxSetFileInput', f);
+      await wait(two, k);
+    }
+    const t2 = await titles(two);
+    const rep1 = await one.evaluate(() => document.getElementById('modalImportReport')?.classList.contains('open'));
+    const rep2 = await two.evaluate(() => document.getElementById('modalImportReport')?.classList.contains('open'));
+    note(`wave6 Add a Book: after the volumes, the import report is open in 1.0: ${rep1}, in 2.0: ${rep2} (1.0's importSandboxed: irFinish opens the volume's own report)`);
+    note(`wave6 Add a Book: 1.0's list after adding them one after the other: ${JSON.stringify(t1)} — each manuscript volume clears the ones before it (1.0's importSandboxed arrives another book: applyBookDoc's boxSetVolumes rule)`);
+    const want = [t2[0], ...single];
+    check(JSON.stringify(t2) === JSON.stringify(want) && t2.length === 1 + 3 + 3, `wave6 constraint 81: Add a Book (a .docx, a .md, an .epub, a zip of three books) gives 1.0's volumes, each as 1.0 makes it of that file: ${JSON.stringify(t2)}${JSON.stringify(t2) === JSON.stringify(want) ? '' : ' (1.0, one by one: ' + JSON.stringify(want) + ')'}`);
+    for (const p of [one, two]) await p.evaluate(() => document.getElementById('modalImportReport')?.classList.remove('open'));
+    await two.click('#btnCloseExport');
+    const out = (await w6Backup(two)).json.book;
+    check(JSON.stringify(out) === JSON.stringify(start), "wave6 constraint 81: the open book's export is exactly unchanged after every volume");
+    await harvestCsp(one);
+    await harvestCsp(two);
+  } finally {
+    await c1.close();
+    await c2.close();
+  }
+}
+
+/** The libraries: none on opening a book; mammoth once on the first .docx (1.0's integrity); pdf.js on the first .pdf. */
+async function wave6Libs(origin) {
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const reqs = [];
+  try {
+    const page = await openNext(ctx, origin);
+    page.on('request', (r) => reqs.push(r.url()));
+    await openBackup(page, w4File('w6-libs.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: lan })));
+    await page.waitForFunction(() => !!window.beukImport?.ready, null, { timeout: 60_000 });
+    await page.waitForTimeout(1000);
+    const libs = (u) => /mammoth|pdfjs/.test(u);
+    check(!reqs.some(libs) && !(await page.evaluate(() => !!window.mammoth || !!window.pdfjsLib)), `wave6 constraint 82: opening a book loads neither mammoth nor pdf.js (${reqs.filter(libs).join(', ') || 'none'})`);
+    const docx = (await W6C.docxCorpus(W6Z))[0];
+    await w6Two(page, w6File(docx.name, W6_DOCX, docx.bytes), 'yes');
+    await w6Two(page, w6File(docx.name, W6_DOCX, docx.bytes), 'yes');
+    const m = reqs.filter((u) => /mammoth\.browser\.min\.js$/.test(u));
+    const sri = await page.evaluate(() => [...document.querySelectorAll('script[src*="mammoth"]')].map((s) => s.getAttribute('integrity')));
+    check(m.length === 1 && sri.length === 1 && sri[0] === MAMMOTH_SRI, `wave6 constraint 82: the first .docx loads mammoth once (${m.length} request), with 1.0's integrity (${sri[0] === MAMMOTH_SRI})`);
+    const pdf = await w6PdfOf(origin, fixtures.find((x) => x.name === 'real/salt-road-book-one').book, 'w6-libs');
+    const r = await w6Two(page, pdf, 'yes');
+    const p = reqs.filter((u) => /pdfjs-6\.4\.299\/pdf(\.worker)?\.min\.mjs$/.test(u));
+    check(r.done === 'report' && p.length === 2, `wave6 constraint 82: the first .pdf loads pdf.js (${p.map((u) => u.split('/').pop()).join(', ')}) and imports`);
+    const outside = reqs.filter((u) => !u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:'));
+    check(outside.length === 0, `wave6 constraint 82: nothing leaves the page (${outside.length})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+const MAMMOTH_SRI = /<script src="assets\/vendor\/mammoth\.browser\.min\.js" integrity="([^"]+)"><\/script>/.exec(readFileSync(path.join(REPO, 'client', 'index.html'), 'utf8'))[1];
+
+/** Dumas as a Word document (1.0's own Word export of it) imported onto an empty desk: its wall time, both apps. */
+async function wave6DumasDocx(origin) {
+  const c1 = await newContext({ serviceWorkers: 'block' });
+  const c2 = await newContext({ serviceWorkers: 'block' });
+  try {
+    const one = await openOne(c1, origin);
+    await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(DUMAS.book)); // eslint-disable-line no-undef
+    const b64 = await one.evaluate(async () => {
+      const blob = await buildDocxBlob(); // eslint-disable-line no-undef
+      const u = new Uint8Array(await blob.arrayBuffer());
+      let s = '';
+      for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000));
+      return btoa(s);
+    });
+    const f = w6File('dumas.docx', W6_DOCX, Buffer.from(b64, 'base64'));
+    const r1 = await one.evaluate(W6_ONE, [null, w6B64(f), 'empty']);
+    const two = await w6Desk2(c2, origin, 'empty', null);
+    const r2 = await w6Two(two, f, 'yes');
+    const out = (await w6Backup(two)).json.book;
+    note(`wave6 constraint 83: Dumas as DOCX (${(f.buffer.length / 1024).toFixed(0)} kB) imported — 2.0 ${r2.ms} ms to the report (1.0's handleImportFile ${r1.ms.toFixed(0)} ms in its page)`);
+    check(r2.done === 'report' && JSON.stringify(W6F.maskVarying(expected(r1.book))) === JSON.stringify(W6F.maskVarying(out)), "wave6 constraint 83: the Dumas-as-DOCX import finishes, and its book is 1.0's");
+    await harvestCsp(one);
+    await harvestCsp(two);
+  } finally {
+    await c1.close();
+    await c2.close();
+  }
+}
+
+/** 1.0's own box-set volume self-check, in 1.0's own page (the lead from vitest import-selfchecks). */
+async function wave6SelfCheck(origin) {
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const one = await openOne(ctx, origin);
+    const r = await one.evaluate(async () => {
+      const c = window.BEUK_SELF_CHECKS_ASYNC.find((x) => x.id === 'boxset.volumes.whole-books') || window.BEUK_SELF_CHECKS.find((x) => x.id === 'boxset.volumes.whole-books');
+      if (!c) return { found: false };
+      const v = await c.run();
+      return { found: true, pass: !!v.pass, detail: String(v.detail || '').slice(0, 300) };
+    });
+    note(`wave6: 1.0's own check boxset.volumes.whole-books in 1.0's page: ${JSON.stringify(r)}`);
+    check(r.found, "wave6: 1.0's box-set volumes self-check ran in 1.0's page (its result is a note: a 1.0 finding if it fails there)");
+  } finally {
+    await ctx.close();
+  }
+}
+
+/** The summary and the report beside 1.0's (Paper, Candlelight, Arabic). */
+async function wave6Screens(origin) {
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const f = w6File('plain-manuscript.txt', 'text/plain', Buffer.from(W6F.textCorpus().find((x) => x.name === 'plain-manuscript.txt').text, 'utf8'));
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  try {
+    for (const run of [{ theme: 'paper' }, { theme: 'candlelight' }, { theme: 'paper', lang: 'ar' }]) {
+      const tag = run.theme + (run.lang ? '-' + run.lang : '');
+      if (process.env.W6_THEMES && !process.env.W6_THEMES.split(',').includes(tag)) continue;
+      const prep = (ctx) => ctx.addInitScript(([th, l]) => {
+        try {
+          localStorage.setItem('beuk.theme.v1', th);
+          if (l) localStorage.setItem('beuk.uiLang.v1', l);
+        } catch {
+          /* no storage */
+        }
+      }, [run.theme, run.lang]);
+      const c1 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      const c2 = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+      await prep(c1);
+      await prep(c2);
+      try {
+        const one = await watch(await c1.newPage());
+        await one.goto(origin + '/studio');
+        await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+        await one.setInputFiles('#localBackupInput', lan.file);
+        await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
+        await one.addStyleTag({ content: ONE_HIDE });
+        await one.evaluate(async (ff) => {
+          /* global handleImportFile */
+          const bytes = Uint8Array.from(atob(ff.b64), (ch) => ch.charCodeAt(0));
+          await handleImportFile(new File([bytes], ff.name, { type: ff.type }), { replaceOk: true });
+        }, w6B64(f));
+        const two = await w6Desk2(c2, origin, 'lantern', lan.book);
+        await w6Two(two, f, 'yes', run.lang || 'en');
+        for (const p of [one, two]) {
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(3800); // toasts gone
+        }
+        // the report (1.0's date in its subtitle is each app's own: masked by giving both the same)
+        for (const p of [one, two]) await p.evaluate(() => { const s = document.getElementById('irSub'); if (s) s.textContent = s.textContent.replace(/·.*$/, '·'); });
+        let [ma, mb] = [await one.locator('#modalImportReport .modal').screenshot(), await two.locator('#modalImportReport .modal').screenshot()];
+        writeFileSync(path.join(OUT, `w6-report-${tag}-one.png`), ma);
+        writeFileSync(path.join(OUT, `w6-report-${tag}-two.png`), mb);
+        let d = await pixelDiff(diffPage, ma, mb);
+        check(d.ratio <= PIXEL_TOLERANCE, `wave6 screenshots ${tag}: #modalImportReport differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        for (const p of [one, two]) await p.click('#btnIrClose');
+        await one.waitForTimeout(300);
+        for (const [nm, p] of [['1.0', one], ['2.0', two]]) note(`wave6 screenshots ${tag}: ${nm} #importSummary ${JSON.stringify(await p.evaluate(() => { const e = document.getElementById('importSummary'); const r = e.getBoundingClientRect(); return { display: e.style.display, w: r.width, h: r.height }; }))}`);
+        ma = await one.locator('#importSummary').screenshot({ timeout: 10_000 });
+        mb = await two.locator('#importSummary').screenshot({ timeout: 10_000 });
+        writeFileSync(path.join(OUT, `w6-summary-${tag}-one.png`), ma);
+        writeFileSync(path.join(OUT, `w6-summary-${tag}-two.png`), mb);
+        d = await pixelDiff(diffPage, ma, mb);
+        check(d.ratio <= PIXEL_TOLERANCE, `wave6 screenshots ${tag}: the summary (#importSummary) differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        await harvestCsp(one);
+        await harvestCsp(two);
+      } finally {
+        await c1.close();
+        await c2.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+}
+
+async function wave6Checks(origin) {
+  const only = (process.env.W6_PARTS || 'parity,desks,report,hostile,addbook,libs,dumas,selfcheck,screens,latency').split(',');
+  if (only.includes('parity')) await wave6Parity(origin);
+  if (only.includes('desks')) await wave6Desks(origin);
+  if (only.includes('report')) await wave6Report(origin);
+  if (only.includes('hostile')) await wave6Hostile(origin);
+  if (only.includes('addbook')) await wave6AddBook(origin);
+  if (only.includes('libs')) await wave6Libs(origin);
+  if (only.includes('dumas')) await wave6DumasDocx(origin);
+  if (only.includes('selfcheck')) await wave6SelfCheck(origin);
+  if (only.includes('screens')) await wave6Screens(origin);
+  // constraint 83: the editor's typing with the import wired and no import run (#5's measure, and the redraws between keys)
+  if (only.includes('latency') && !(process.env.E2E_ONLY || '').split(',').includes('latency')) {
+    const r = await latency(origin);
+    note(`wave6 latency (the import wired, none run): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+    check(r.p95 < LATENCY_P95_TARGET_MS, `wave6 constraint 83: p95 under ${LATENCY_P95_TARGET_MS} ms on Dumas with the import wired (${r.p95.toFixed(1)} ms)`);
+    const r2 = await latency(origin, { delay: 200, count: 60, quick: true });
+    note(`wave6 latency with the preview redrawing between keys (200 ms): p50 ${r2.p50.toFixed(1)} ms, p95 ${r2.p95.toFixed(1)} ms, max ${r2.max.toFixed(1)} ms over ${r2.n} keystrokes`);
+    check(r2.p95 < LATENCY_P95_TARGET_MS, `wave6 constraint 83: p95 under ${LATENCY_P95_TARGET_MS} ms while the preview redraws between keys (${r2.p95.toFixed(1)} ms)`);
+  }
+}
+
 /* ---- per-user themes ("My themes", plan 2026-11-02, constraints 46-50) ----
    Signed out (this device only): a theme designed with an uploaded font in book A is kept for every book, applied in
    book B; B exports as a 1.0 book (readBook reads it exactly) and 1.0's own page opens it with the theme worn and the
@@ -6481,6 +7164,7 @@ try {
   if (run('wave5b')) await wave5bChecks(srv.origin);
   if (run('wave5c')) await wave5cChecks(srv.origin);
   if (run('wave5d')) await wave5dChecks(srv.origin);
+  if (run('wave6')) await wave6Checks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);

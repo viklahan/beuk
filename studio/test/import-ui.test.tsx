@@ -20,6 +20,12 @@ import { fixtures } from './fixtures';
 import { hazards } from './hazards';
 import { maskVarying, textCorpus } from './import-fixture';
 import { createImportOracle, type Oracle } from './import-oracle';
+import { createRequire } from 'node:module';
+import { loadMammoth } from './vendor';
+// @ts-expect-error — a plain .mjs module, no types
+import { docxCorpus } from '../e2e/import-corpus.mjs';
+createRequire(import.meta.url)('../../client/assets/vendor/jszip.min.js');
+loadMammoth();
 
 /* Wave 6, tasks 2 and 3 (G1, G2; constraints 77–80, decisions 4, 5, 7): 1.0's Import button and its report in the studio.
    - The sidebar's Import Document is 1.0's #btnImport, wired by 1.0's own initImport: it opens 1.0's #fileInput (1.0's
@@ -103,7 +109,7 @@ const fileOf = (name: string) => {
   return new File([f.text], f.name, { type: f.type });
 };
 async function oracleImport(deskBook: Rec, file: File): Promise<Oracle> {
-  const o = await createImportOracle(t);
+  const o = await createImportOracle(t, { mammoth: (globalThis as Rec).mammoth });
   o.api.applyBookDoc(structuredClone(deskBook) as never);
   const run = (await o.api.readImportFile(file as never)) as () => void;
   run();
@@ -182,11 +188,17 @@ describe("wave 6: 1.0's Import button, the replace and the summary (task 2)", ()
 });
 
 describe("wave 6: the import report (task 3, constraint 79)", () => {
-  it("every reversible item's undo gives 1.0's book; then Undo the whole import gives 1.0's book back", async () => {
+  for (const name of ['plain-manuscript.txt', 'picture-table.docx'])
+  it(`${name}: every reversible item's undo gives 1.0's book; then Undo the whole import gives 1.0's book back`, async () => {
     const deskBook = book(LANTERN);
     await studioWith(deskBook);
-    await choose(fileOf('plain-manuscript.txt'), 'yes');
-    const o = await oracleImport(deskBook, fileOf('plain-manuscript.txt'));
+    const file = async () => {
+      if (!name.endsWith('.docx')) return fileOf(name);
+      const d = ((await docxCorpus((globalThis as Rec).JSZip)) as { name: string; bytes: Uint8Array }[]).find((x) => x.name === name)!;
+      return new File([d.bytes as BlobPart], name, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    };
+    await choose(await file(), 'yes');
+    const o = await oracleImport(deskBook, await file());
     const repO = o.getState().importReport as { items: Rec[] };
     const rep2 = () => live().importReport as { items: Rec[] };
     expect(rep2().items.map((x) => x.kind)).toEqual(repO.items.map((x) => x.kind));
@@ -195,6 +207,7 @@ describe("wave 6: the import report (task 3, constraint 79)", () => {
     for (const [itO, i] of reversible) {
       const id2 = String(rep2().items[i]!.id);
       const btn = document.querySelector(`#irBody [data-irundo="${id2}"]`);
+      if (btn) btn.closest('details')?.setAttribute('open', '');
       expect(btn, `item ${i} (${itO.kind}) has 1.0's undo button`).not.toBeNull();
       await click(btn);
       await settle();
