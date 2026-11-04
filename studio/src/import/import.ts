@@ -191,14 +191,10 @@ export function importBegin(): (() => void) | null {
   const ser = serializeIfLoaded();
   if (!c || !ser) return null;
   if (sess && depth > 0) {
+    // inside a session: the same one; whichever end comes last ends it (finish)
     depth++;
     c.setState(sess.state);
-    let done = false;
-    return () => {
-      if (done) return;
-      done = true;
-      depth--;
-    };
+    return once(endOne);
   }
   styleSettle(); // a held Style edit is in the book before the import reads it
   const untouched = ydoc ? deskIsUntouchedSample(c, ydoc) : false;
@@ -216,14 +212,10 @@ export function importBegin(): (() => void) | null {
   importEnv.edited = () => undefined;
   importEnv.confirm = (o) => importUi.confirm(o);
   exportEnv.serialize = () => ser(c);
-  let done = false;
-  return () => {
-    if (done) return;
-    done = true;
-    depth--;
-    if (depth > 0) return;
+  finish = () => {
     const s = sess!;
     sess = null;
+    finish = null;
     try {
       importFlush(s, ser);
     } finally {
@@ -234,7 +226,22 @@ export function importBegin(): (() => void) | null {
       c.api.sampleState.loaded = sampleWas;
     }
   };
+  return once(endOne);
 }
+/** What ends the open session (its flush and its hooks put back), run by the last end of the session's depth. */
+let finish: (() => void) | null = null;
+function endOne(): void {
+  depth--;
+  if (depth === 0 && finish) finish();
+}
+const once = (f: () => void): (() => void) => {
+  let done = false;
+  return () => {
+    if (done) return;
+    done = true;
+    f();
+  };
+};
 
 /** `fn` (1.0's code) in an import session; the session ends (and writes) when it returns. */
 export function importRun<T>(fn: (c: Closure) => T): T | undefined {
@@ -251,7 +258,7 @@ export function importRun<T>(fn: (c: Closure) => T): T | undefined {
 /** A value 1.0's import waits on (a confirm): its continuation runs in an import session, ended in the next task (the
  *  caller's own continuation, a microtask later, still runs in it). Outside a session, as it is. */
 export function importResume<T>(v: T): T {
-  if (!v || typeof (v as { then?: unknown }).then !== 'function' || (!sess && !lingering)) return v;
+  if (!v || typeof (v as { then?: unknown }).then !== 'function' || !sess) return v;
   const p = v as unknown as Promise<unknown>;
   const step = (f: (x: unknown) => unknown) => (x: unknown) => {
     const end = importBegin();
@@ -265,15 +272,6 @@ export function importResume<T>(v: T): T {
   return Promise.resolve(wrapped) as unknown as T;
 }
 importEnv.resume = (v) => importResume(v);
-/** After an event on the report (or an import step), until the next task, what 1.0's listener waits on resumes in a
- *  session too (its cloudConfirm is asked straight after the click, before anything is wrapped). */
-let lingering = 0;
-export function importLinger(): void {
-  lingering++;
-  setTimeout(() => {
-    lingering--;
-  }, 0);
-}
 
 /** What the session changed, written. */
 function importFlush(s: Sess, ser: (c: Closure) => Rec): void {

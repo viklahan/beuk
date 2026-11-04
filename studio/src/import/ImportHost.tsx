@@ -11,7 +11,7 @@ import { drawIcons } from '../insights/insights';
 import { setSampleRecord, sampleSigOf } from '../sample/sample';
 import { StackEntry, useConfirm } from '../shell/Dialog';
 import { guardRoots } from '../style/session';
-import { importBegin, importLinger, importPending, importRun, importUi, importWire } from './import';
+import { importBegin, importPending, importRun, importUi, importWire } from './import';
 
 /* Step 5 wave 6 (G1, G2): 1.0's import in the studio — its markup, verbatim (client/index.html #importSummary and #irReopen
    under the Import button, #modalImportReport, #fileInput; extracted at build time into src/generated/import-markup.json),
@@ -21,7 +21,8 @@ import { importBegin, importLinger, importPending, importRun, importUi, importWi
    and runs every event on the report and the summary in an import session (src/import/import.ts). Every HTML string
    1.0 writes into them goes through the Style session's cleaner (guardRoots). */
 
-const EVENTS = ['click', 'change', 'input', 'keydown', 'pointerdown', 'pointerup'] as const;
+/** 1.0's listeners on the report and the summary are all click listeners (initImport, initImportReport). */
+const EVENTS = ['click'] as const;
 /** Every event on `root` opens an import session before 1.0's listener runs; the event's arrival back at the window (or
  *  the next task) closes it, writing what changed. While a whole-book write is in flight (an import, Undo the whole
  *  import), the report's buttons wait: the event is held back (the book they would act on is being replaced). */
@@ -30,7 +31,7 @@ function importGuard(root: HTMLElement): () => void {
   for (const type of EVENTS) {
     let end: (() => void) | null = null;
     const open = (e: Event) => {
-      if (importPending() && type !== 'keydown') {
+      if (importPending()) {
         e.stopImmediatePropagation();
         e.preventDefault();
         return;
@@ -50,7 +51,6 @@ function importGuard(root: HTMLElement): () => void {
       end = null;
       if (!e2) return;
       e2();
-      importLinger();
     };
     root.addEventListener(type, open, true);
     window.addEventListener(type, close);
