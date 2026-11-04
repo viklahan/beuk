@@ -6456,7 +6456,8 @@ async function wave6Report(origin) {
       await two.waitForTimeout(500);
       const u1 = await one.evaluate(() => JSON.parse(JSON.stringify(serializeBook()))); // eslint-disable-line no-undef
       const u2 = (await w6Backup(two)).json.book;
-      const strip = (b) => { const x = JSON.parse(JSON.stringify(b)); for (const h of x.history || []) if (h.auto === 'restore') delete (h.doc || h.chopDoc).formatVersion; return W6F.maskVarying(x); };
+      // (V, 2026-11-04: History's own snapshots carry 1.0's formatVersion label too: compared as they are)
+      const strip = (b) => W6F.maskVarying(JSON.parse(JSON.stringify(b)));
       if (JSON.stringify(strip(expected(u1))) === JSON.stringify(strip(u2))) allEq++;
       else bad.push(`${f.name}: Undo the whole import differs${w6Diff(strip(expected(u1)), strip(u2))}`);
       await harvestCsp(one);
@@ -6468,7 +6469,7 @@ async function wave6Report(origin) {
   }
   check(htmlEq === subset.length, `wave6 constraint 79: the report's HTML equals 1.0's (items' ids masked) for ${htmlEq} of ${subset.length} imports (3 DOCX, 1 EPUB, 1 PDF)${bad.length ? ' — ' + bad.slice(0, 3).join('; ') : ''}`);
   check(undoEq === undos && undos > 0, `wave6 constraint 79: every reversible item's undo gives 1.0's book: ${undoEq} of ${undos}${bad.length ? ' — ' + bad.join(' | ') : ''}`);
-  check(allEq === subset.length, `wave6 constraint 79: Undo the whole import gives 1.0's book for ${allEq} of ${subset.length} (History's own "Before restore" snapshot carries no formatVersion: wave 1a)`);
+  check(allEq === subset.length, `wave6 constraint 79: Undo the whole import gives 1.0's book for ${allEq} of ${subset.length}`);
   // edited since: the text an item names is changed, its undo is refused in 1.0's words; Dismiss and the reopen survive a reload
   const ctx = await newContext({ serviceWorkers: 'block' });
   try {

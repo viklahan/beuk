@@ -27,8 +27,9 @@ import { setMetaMany } from '../book/hooks';
 
    Differences, each a consequence of the Y.Doc (see the wave report):
    - a snapshot's `doc` is the book as exportBook writes it (1.0:
-     serializeBook), less history, historyPool, importReport (as 1.0) and
-     formatVersion (a 2.0 key serializeBook never writes);
+     serializeBook), less history, historyPool and importReport (as 1.0), with
+     1.0's formatVersion label first (V's ruling 2026-11-04: serializeBook always writes `formatVersion: 1`, so
+     every 1.0 snapshot carries it; 1.0 reads it as a label, BEUK:bookformat);
    - a whole-book restore returns a new book document; the studio opens it
      as a NEW generation, exactly like opening a backup (store.ts
      importToDevice), instead of 1.0's applyBookDoc on the same desk;
@@ -71,11 +72,12 @@ export function live(c: Closure, ydoc: Y.Doc): Live {
 /** 1.0's chopSnapDoc, over the exported book: the book less its History and import report; pictures, fonts, cover and
  *  research files kept as the book holds them (1.0 shares them in memory; histPack names them when saving). */
 export function snapshotDoc(book: Rec): SnapDoc {
-  const d = clone(book);
+  // 1.0's serializeBook writes formatVersion: 1 first, whatever the book stored
+  const d = { formatVersion: 1, ...clone(book) } as Rec;
+  d.formatVersion = 1;
   delete d.history;
   delete d.historyPool;
   delete d.importReport;
-  delete d.formatVersion;
   const imgs = (d.images as unknown[]) || [], fonts = (d.fonts as unknown[]) || [], cover = d.cover;
   const rsf = isRec(d.research) ? (d.research.files as unknown[] | undefined) : null;
   d.images = [];

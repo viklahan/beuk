@@ -181,6 +181,7 @@ describe("1.0's history self-checks, on the Y.Doc", () => {
       delete o.history;
       delete o.historyPool;
       delete o.importReport;
+      delete o.formatVersion; // 1.0's label: a snapshot carries it as 1.0's do (V, 2026-11-04), so a restored book carries it as 1.0's restore writes it
       return o;
     };
     expect(strip(back)).toEqual(strip(replaced));
@@ -388,6 +389,7 @@ describe('review focus #1: a replace you can undo (through the store)', () => {
       delete o.history;
       delete o.historyPool;
       delete o.importReport;
+      delete o.formatVersion; // 1.0's label: a snapshot carries it as 1.0's do (V, 2026-11-04), so a restored book carries it as 1.0's restore writes it
       return o;
     };
     expect(strip(back)).toEqual(strip(oldExport));
@@ -405,6 +407,7 @@ describe('review focus #1: a replace you can undo (through the store)', () => {
       delete o.history;
       delete o.historyPool;
       delete o.importReport;
+      delete o.formatVersion; // 1.0's label: a snapshot carries it as 1.0's do (V, 2026-11-04), so a restored book carries it as 1.0's restore writes it
       return o;
     };
     for (const [i, A] of all.entries()) {

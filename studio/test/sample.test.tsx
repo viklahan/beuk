@@ -281,6 +281,7 @@ const strip = (x: Rec) => {
   delete o.history;
   delete o.historyPool;
   delete o.importReport;
+  delete o.formatVersion; // 1.0's label: a snapshot carries it as 1.0's do (V, 2026-11-04), so a restored book carries it as 1.0's restore writes it
   return o;
 };
 /** The open book's Y.Doc, reached through the open chapter editor's collaboration binding. */

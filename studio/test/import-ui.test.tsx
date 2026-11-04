@@ -221,17 +221,10 @@ describe("wave 6: the import report (task 3, constraint 79)", () => {
     await click(button(t('ir.confirmUndoAllYes'))!);
     await settle();
     o.api.irUndoAll();
-    // the whole book is 1.0's but for one label: History's own restore (wave 1a, history.ts restoreDoc) takes its
-    // "Before restore" snapshot without formatVersion, as every 2.0 History snapshot is taken (1.0's carries it)
+    // the whole book is 1.0's, History's own "Before restore" snapshot included: it carries 1.0's formatVersion label too
     const restoreSnap = (d: Rec) => { const h = (d.history as Rec[]).find((x) => x.auto === 'restore')!; return { doc: (h.doc ?? h.chopDoc) as Rec }; };
     expect('formatVersion' in (restoreSnap(stored(ser(o))).doc as Rec)).toBe(true);
-    expect('formatVersion' in (restoreSnap(live()).doc as Rec)).toBe(false);
-    const noLabel = (d: Rec) => {
-      const x = structuredClone(d);
-      delete (restoreSnap(x).doc as Rec).formatVersion;
-      return maskVarying(x);
-    };
-    expect(noLabel(live())).toEqual(noLabel(stored(ser(o))));
+    expect(maskVarying(live())).toEqual(maskVarying(stored(ser(o))));
     expect(live().importReport).toBeNull();
     expect(live()).not.toEqual(before);
     expect((live().meta as Rec).title).toBe((deskBook.meta as Rec).title);
