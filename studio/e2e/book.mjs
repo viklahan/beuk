@@ -6645,6 +6645,22 @@ async function wave6DumasDocx(origin) {
     const r1 = await one.evaluate(W6_ONE, [null, w6B64(f), 'empty']);
     const two = await w6Desk2(c2, origin, 'empty', null);
     const r2 = await w6Two(two, f, 'yes');
+    // the cost of one event on the report (V, 2026-11-04): a click opens an import session on Dumas (exportBook, 1.0's
+    // arrival, History unpacked), 1.0's listener runs, the session ends; Close and the reopen button, five times each
+    const cost = await two.evaluate(() => {
+      const ms = [];
+      for (let i = 0; i < 5; i++) {
+        for (const id of ['btnIrClose', 'btnIrReopen']) {
+          const t0 = performance.now();
+          document.getElementById(id).click();
+          ms.push(performance.now() - t0);
+        }
+      }
+      ms.sort((x, y) => x - y);
+      return { median: ms[Math.floor(ms.length / 2)], max: ms[ms.length - 1] };
+    });
+    note(`wave6: one click on the import report with Dumas on the desk (an import session around 1.0's listener): median ${cost.median.toFixed(1)} ms, max ${cost.max.toFixed(1)} ms over 10 clicks`);
+    check(cost.median < 50, `wave6 (V, 2026-11-04): a report event on Dumas costs under ~50 ms (median ${cost.median.toFixed(1)} ms)`);
     const out = (await w6Backup(two)).json.book;
     note(`wave6 constraint 83: Dumas as DOCX (${(f.buffer.length / 1024).toFixed(0)} kB) imported — 2.0 ${r2.ms} ms to the report (1.0's handleImportFile ${r1.ms.toFixed(0)} ms in its page)`);
     check(r2.done === 'report' && JSON.stringify(W6F.maskVarying(expected(r1.book))) === JSON.stringify(W6F.maskVarying(out)), "wave6 constraint 83: the Dumas-as-DOCX import finishes, and its book is 1.0's");
