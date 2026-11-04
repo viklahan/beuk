@@ -71,7 +71,9 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // step 5 wave 5c: Word, the box set, the submission manuscript and the ACX script (1.0's data-lucide names)
   'FileType2', 'BookPlus', 'FilePenLine', 'Headphones',
   // step 5 wave 5d: the store-ready check — its entry, the modal's buttons, the verdict and the rows (1.0's data-lucide names)
-  'Store', 'BadgeCheck', 'Server', 'RefreshCw', 'HelpCircle', 'OctagonX', 'Wand2', 'CheckSquare'];
+  'Store', 'BadgeCheck', 'Server', 'RefreshCw', 'HelpCircle', 'OctagonX', 'Wand2', 'CheckSquare',
+  // wave 6: the import report (its title and reopen button), and the import's toasts (imported, reading a PDF, the language found)
+  'ListChecks', 'FileCheck2', 'Loader', 'Languages'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);
