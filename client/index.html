@@ -39191,6 +39191,7 @@
         const summaryBox = $("importSummary"), keepSummary = summaryBox ? summaryBox.style.display : null;
         const quiet = ["toast", "noteBookEdited", "markWritingActivity", "autoSnapshot", "offerDetectedLanguage", "renderImportSummary", "irOpenReport"];
         const hooks = quiet.map((h) => window[h]);
+        const own = quiet.map((h) => Object.prototype.hasOwnProperty.call(window, h));
         quiet.forEach((h) => { window[h] = () => {}; });
         try {
           applyBookDoc(buildEmptyBook(), { keepHistory: true });
@@ -39199,7 +39200,7 @@
           run();
           return JSON.parse(JSON.stringify(serializeBook()));
         } finally {
-          quiet.forEach((h, i) => { window[h] = hooks[i]; });
+          quiet.forEach((h, i) => { if (own[i]) window[h] = hooks[i]; else delete window[h]; }); /* put back as they stood: no hook left behind where there was none */
           irAbort();
           applyBookDoc(keepDoc, { keepHistory: true });
           state.history = keepHistory;
