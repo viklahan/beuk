@@ -52256,7 +52256,7 @@
         btn.setAttribute("data-acct-sig", sig);
         if (cloud.user) {
           const initial = String(cloud.user.email || "?").trim().charAt(0).toUpperCase() || "?";
-          btn.innerHTML = '<span class="acct-avatar">' + esc(initial) + '</span><span class="sync-dot' + (cloud.syncStatus === "saving" ? " saving" : "") + (syncTyping ? " typing" : "") + '"></span>';
+          btn.innerHTML = '<span class="acct-avatar">' + esc(initial) + '</span><span class="sync-dot' + (cloud.syncStatus === "saving" ? " saving" + (syncTyping ? " typing" : "") : "") + '"></span>';
           btn.title = t("top.accountTitle", { email: cloud.user.email }); /* BEUK:bugs */
         } else {
           btn.innerHTML = '<i data-lucide="cloud"></i><span class="tb-label">' + t("top.signIn") + "</span>";

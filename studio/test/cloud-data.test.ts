@@ -209,7 +209,8 @@ describe('1.0 fix (V, 2026-11-04): the account button is redrawn only when what 
     for (let i = 0; i < 5; i++) cm.api.noteBookEdited();
     await tick(0);
     mo.disconnect();
-    expect(seen.map((r) => r.type + ':' + (r.attributeName ?? ''))).toEqual([]);
+    // (BEUK:pulse, 14ac4ff: the first key marks the dot still — one class change on the dot — and nothing more is written)
+    expect(seen.map((r) => r.type + ':' + (r.attributeName ?? '') + ':' + (r.target as Element).className)).toEqual(['attributes:class:sync-dot saving typing']);
     // what it shows changes: it is drawn again
     cm.api.setSyncStatus('saved');
     expect(btn.querySelector('.sync-dot')!.className).toBe('sync-dot');
