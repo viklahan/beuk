@@ -15,11 +15,16 @@
    - 1.0's fonts and icon (same name when they change): stale-while-revalidate.
    - Everything else: untouched.
 
-   Updates: a new worker takes over at once (skipWaiting + claim) and
-   deletes the old build's cache. A page still running the OLD build can
-   then fail to load a language pack it had not loaded yet (its old
-   hashed chunk is gone); the page catches that and offers a reload
-   (src/shell/LangMenu.tsx).
+   Updates (wave 7b, H5, as 1.0's worker): a new worker WAITS. The page
+   shows 1.0's update bar ("A new Beuk is ready" · Reload · Later); Reload
+   posts SKIP_WAITING, the new worker takes over (claim) and deletes the
+   old build's cache, and the tab that asked reloads. No page is reloaded
+   by itself (src/cloud/platform.ts). The first install has nothing to
+   wait for and activates at once. A page still running an OLD build after
+   another tab took the update can fail to load a language pack it had not
+   loaded yet (its old hashed chunk is gone); it catches that and offers a
+   reload (src/shell/LangMenu.tsx). BEUK_PING is answered with the cache
+   name (BEUK_SHELL_READY), which 1.0's error report names as the build.
 
    1.0's own worker (/sw.js, scope /) never sees /next/ pages once this
    one is installed (the longest matching scope wins), and since shell
@@ -49,8 +54,15 @@ function ensurePrecache() {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(precache().then(() => self.skipWaiting()));
+  event.waitUntil(precache());
 });
+
+self.addEventListener('message', (event) => {
+  const d = event.data;
+  if (d && d.type === 'SKIP_WAITING') self.skipWaiting();
+  if (d && d.type === 'BEUK_PING' && event.source) event.source.postMessage({ type: 'BEUK_SHELL_READY', cache: CACHE });
+});
+
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(

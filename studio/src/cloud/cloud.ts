@@ -823,7 +823,9 @@ export function cloudReset(): void {
     loadedCloud.vars.cloudSaveTimer = null;
     loadedCloud.vars.cloudRetryTimer = null;
     loadedCloud.vars.cloudDirty = false;
-    // wave 7b: 1.0's beta record, as a fresh page has it
+    // wave 7b: 1.0's pwa record and beta record, as a fresh page has them
+    Object.assign(loadedCloud.api.pwa as Rec, { manifest: null, swSource: '', swState: 'idle', shellCached: false, updateWaiting: null, updateDismissed: false, installPrompt: null, installed: false, reloading: false });
+
     Object.assign(loadedCloud.api.beta as Rec, { shares: [], comments: [], loading: false, error: '', newLink: null, showResolved: false, busy: false, opts: { days: '0', allow: true, nameReq: true } });
   }
 }

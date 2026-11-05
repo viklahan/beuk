@@ -9,6 +9,7 @@ import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import { covRun } from '../covenant/covenant';
 import { CoverRow } from '../cover/CoverRow';
+import { cloudIfLoaded } from '../cloud/cloud';
 import { bookLanguages, formFromMeta, langHint, rightsPreviewLine, settingsChange, supportEmailFrom, type SettingsForm } from './settings';
 
 /* Project Settings (1.0 #modalSettings), with 1.0's markup, ids and keys:
@@ -20,8 +21,9 @@ import { bookLanguages, formFromMeta, langHint, rightsPreviewLine, settingsChang
    1.0's beukSupportLoad).
 
    Not here yet, each in its own wave (their places are marked below):
-   "Detect from my text" (language detection, wave 3), the install button (wave 7 with the app shell) and
-   the error-report toggle (error reporting, wave 7).
+   "Detect from my text" (language detection, wave 3). (Wave 7b: the install button, 1.0's renderInstallArea, and
+   the error-report toggle, 1.0's BEUK:errors, are here.)
+
 
    Save writes the book's `meta` once, through Yjs, and only when it
    changes (settings.ts settingsChange). Cancel, Escape and the backdrop
@@ -76,7 +78,13 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     };
   }, [open, ydoc]);
 
+  // wave 7b (H5): 1.0's renderInstallArea once the About box is on the page (and again with the language)
+  useEffect(() => {
+    if (open) cloudIfLoaded()?.api.renderInstallArea();
+  }, [open, form, lang]);
+
   const meta: Rec = ydoc ? bookMeta(ydoc) : {};
+
   const a11yPh = useMemo(() => {
     if (!c || !ydoc || !open) return '';
     bookState(c, ydoc); // 1.0's state for this book: the default summary depends on its pictures
@@ -283,6 +291,16 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         <p className="cover-note" id="installHint">
           {t('about.installHint')}
         </p>
+        {/* wave 7b (H5): 1.0's quiet Install button and its "installed" line; 1.0's renderInstallArea shows one of the three
+            (src/cloud/platform.ts keeps the browser's prompt) */}
+        <button className="tb-btn" id="btnInstall" type="button" style={{ display: 'none' }}>
+          <Icon name="Download" />
+          <span>{t('pwa.install')}</span>
+        </button>
+        <p className="cover-note" id="installedLine" style={{ display: 'none' }}>
+          {t('pwa.installed')}
+        </p>
+
         {/* ==== BEUK:legal ==== the legal pages live on the studio's server: no server, no links to pages that aren't there */}
         <p className="cover-note legal-line" id="legalLinksSettings" hidden={!facts.server}>
           <span>{t('legal.settingsLine')}</span>{' '}

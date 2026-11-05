@@ -467,7 +467,12 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   // reopen); the reader's page is the server's (/read) and is not here
   'BETA_TOKENS_KEY', 'beta', 'betaTokens', 'betaRememberToken', 'betaLinkFor', 'betaGate', 'betaInjectStyles', 'betaInjectDom', 'betaFmtDate',
   'betaRenderButton', 'betaRenderSection', 'betaLoadShares', 'betaCreate', 'betaCopy', 'betaOnClick', 'betaSectionName', 'betaRenderComments',
-  'betaLoadComments', 'betaOpenComments', 'betaCloseComments', 'betaLocate', 'betaOnCommentsClick', 'betaRenderChrome', 'betaOnLangChange'];
+  'betaLoadComments', 'betaOpenComments', 'betaCloseComments', 'betaLocate', 'betaOnCommentsClick', 'betaRenderChrome', 'betaOnLangChange',
+  // wave 7b (H5): the platform's install area and update bar (1.0's pwa record, isStandalone, renderInstallArea,
+  // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /next/), its listeners
+  // 1.0's initPlatform lines (src/cloud/platform.ts)
+  'pwa', 'isStandalone', 'renderInstallArea', 'pwaOnLangChange', 'showUpdateBar', 'wireUpdateFlow'];
+
 /** What the cloud module takes from its page and from the rest of the studio (src/cloud/cloud.ts). */
 export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', 'fmtDateIntl', 'location', 'setTimeout', 'setInterval',
   // the one `cloud` (src/closure/index.ts cloudFacts: every module reads the same object)

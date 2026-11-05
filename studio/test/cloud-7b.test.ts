@@ -11,6 +11,8 @@ import { desk as pageDesk } from '../src/environment/page';
 import { importWire } from '../src/import/import';
 import { exportBook } from '../../src/book/editor/index';
 import { textCorpus } from './import-fixture';
+import { platformInit } from '../src/cloud/platform';
+
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { bootCloud, cloudReset, cloudUi, deskChanged, loadCloud, type CloudClosure } from '../src/cloud/cloud';
 import { fixtures } from './fixtures';
@@ -491,4 +493,97 @@ describe('day 22 unpaid (constraint 93): the server refuses, and the client says
     await cm.api.cloudArchiveExport('markdown', new Blob(['x']), 'a.md', null);
     expect(toasts).toContain('That file couldn’t be archived just now — it is still yours to download above');
   }, 60_000);
+});
+
+describe('offline, the install area and the update bar (H5)', () => {
+  const edit = (y: Y.Doc, title: string) => y.getMap('meta').set('meta', { ...(y.getMap('meta').get('meta') as Rec), title });
+  const puts = () => net.requests.filter((r) => r.method === 'PUT' && r.path.startsWith('/api/manuscripts'));
+
+  it("offline: 1.0's pill and words; an edit stays on the device (no save) until the connection returns, then saves once with no conflict", async () => {
+    const { y, id } = await linked(SALT());
+    const rev = cloudFacts.baseRevision as number;
+    expect(($('netPill') as HTMLElement).hidden).toBe(true);
+    cm.api.setConnectivity(false);
+    expect(($('netPill') as HTMLElement).hidden).toBe(false);
+    expect($('netPillText').textContent).toBe('Offline — you can keep writing here'); // 1.0's markup words (data-i18n offline.header)
+    edit(y, 'Written offline');
+    await tick(2900);
+    expect(puts()).toEqual([]);
+    expect($('syncText').textContent).toBe(t('offline.savedHere') + ' · ' + t('offline.pending', { n: 1 }));
+    cm.api.setConnectivity(true);
+    for (let i = 0; i < 60 && puts().length === 0; i++) await tick(100);
+    await tick(500);
+    expect(puts().map((r) => r.path)).toEqual(['/api/manuscripts/' + id]);
+    expect(cloudFacts.conflict).toBe(null);
+    expect(cloudFacts.baseRevision).toBe(rev + 1);
+    expect(cloudFacts.pendingSyncs).toBe(0);
+  }, 30_000);
+
+  /** A service worker container and registration, as the browser hands them out (jsdom has none). */
+  function fakeSw(waiting: boolean) {
+    const posted: unknown[] = [];
+    const worker = { state: 'installed', postMessage: (m: unknown) => void posted.push(m), addEventListener: () => undefined };
+    const reg = { waiting: waiting ? worker : null, installing: null as unknown, listeners: {} as Record<string, () => void>, addEventListener(type: string, fn: () => void) { this.listeners[type] = fn; } };
+    const on: Record<string, ((e?: unknown) => void)[]> = {};
+    const sw = { controller: {}, addEventListener: (type: string, fn: (e?: unknown) => void) => void (on[type] ||= []).push(fn), removeEventListener: () => undefined, fire: (type: string, e?: unknown) => (on[type] || []).forEach((f) => f(e)) };
+    // (1.0's wireUpdateFlow reads the page's own navigator.serviceWorker.controller)
+    Object.defineProperty(navigator, 'serviceWorker', { value: sw, configurable: true });
+    return { posted, worker, reg, sw };
+  }
+
+  it("a new worker waiting: 1.0's bar shows; Later hides it; it never reloads by itself, and Reload asks the worker as 1.0 does", async () => {
+    document.body.insertAdjacentHTML('beforeend', markup.updateBar);
+    const f = fakeSw(true);
+    let reloads = 0;
+    const off = platformInit(cm, { sw: f.sw as never, registration: Promise.resolve(f.reg as never), reload: () => void reloads++ });
+    await tick(10);
+    expect(($('updateBar') as HTMLElement).hidden).toBe(false);
+    expect($('updateBar').textContent).toContain('A new Beuk is ready');
+    // another tab took the update: this page is NOT reloaded by itself (2.0: unsaved writing is never thrown away)
+    f.sw.fire('controllerchange');
+    expect(reloads).toBe(0);
+    $('btnUpdateLater').click();
+    expect(($('updateBar') as HTMLElement).hidden).toBe(true);
+    // a later worker: the bar stays dismissed this session (1.0's pwa.updateDismissed)
+    (cm.api.pwa as Rec).updateDismissed = false;
+    cm.api.showUpdateBar(f.worker);
+    $('btnUpdateReload').click();
+    expect(f.posted).toEqual([{ type: 'SKIP_WAITING' }]);
+    f.sw.fire('controllerchange');
+    expect(reloads).toBe(1);
+    off();
+  }, 30_000);
+
+  it("an update found while the page is open: the bar comes when the new worker is installed (1.0's wireUpdateFlow)", async () => {
+    document.body.insertAdjacentHTML('beforeend', markup.updateBar);
+    const f = fakeSw(false);
+    const off = platformInit(cm, { sw: f.sw as never, registration: Promise.resolve(f.reg as never), reload: () => undefined });
+    await tick(10);
+    expect(($('updateBar') as HTMLElement).hidden).toBe(true);
+    let change: (() => void) | null = null;
+    const nw = { state: 'installing', postMessage: () => undefined, addEventListener: (_t: string, fn: () => void) => void (change = fn) };
+    f.reg.installing = nw;
+    f.reg.listeners.updatefound!();
+    nw.state = 'installed';
+    change!();
+    expect(($('updateBar') as HTMLElement).hidden).toBe(false);
+    off();
+  }, 30_000);
+
+  it("the install area: 1.0's hint without a prompt, the Install button with one, the installed line after", async () => {
+    document.body.insertAdjacentHTML('beforeend', '<p id="installHint"></p><button id="btnInstall" style="display:none;"></button><p id="installedLine" style="display:none;"></p>');
+    const off = platformInit(cm, { sw: null, registration: Promise.resolve(null), reload: () => undefined });
+    cm.api.renderInstallArea();
+    expect([$('installHint').style.display, $('btnInstall').style.display, $('installedLine').style.display]).toEqual(['', 'none', 'none']);
+    let prompted = 0;
+    const ev = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), { prompt: async () => void prompted++, userChoice: Promise.resolve({ outcome: 'accepted' }) });
+    window.dispatchEvent(ev);
+    expect(ev.defaultPrevented).toBe(true);
+    expect([$('installHint').style.display, $('btnInstall').style.display]).toEqual(['none', '']);
+    $('btnInstall').click();
+    await tick(10);
+    expect(prompted).toBe(1);
+    expect($('installedLine').style.display).toBe('');
+    off();
+  }, 30_000);
 });

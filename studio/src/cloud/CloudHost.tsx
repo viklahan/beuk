@@ -13,6 +13,8 @@ import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
 import { authAnnounce, bootCloud, cloudLang, cloudUi, deskChanged, loadCloud, type CloudClosure } from './cloud';
 import { importWire } from '../import/import';
+import { platformInit } from './platform';
+import { swRegistration } from '../sw-register';
 
 /* Step 5 wave 7a (H1-H4): 1.0's shelf in the studio — its markup, verbatim (client/index.html #modalAuth, #modalShelf,
    #btnAccount, #netPill, #syncRow; extracted at build time into src/generated/cloud-markup.json), wired as 1.0's
@@ -234,6 +236,9 @@ export function CloudHost() {
       off.push(() => mo.disconnect());
       off.push(() => beta.remove());
       wire(c, off);
+      // wave 7b (H5): 1.0's initPlatform lines — the install area and the update bar (src/cloud/platform.ts)
+      off.push(platformInit(c, { sw: typeof navigator !== 'undefined' && 'serviceWorker' in navigator ? navigator.serviceWorker : null, registration: swRegistration(), reload: () => window.location.reload() }));
+
       deskChanged(cloudUi.ydoc());
       void bootCloud();
     });
