@@ -222,7 +222,8 @@ describe('the store-ready check in the studio', { timeout: 120_000 }, () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const doc = LANTERN();
     await studioWith(doc);
-    const sent = () => fetchSpy.mock.calls.filter((x) => /\/api\/(exports|jobs)/.test(String(x[0]))).length;
+    // (wave 7b: signed in, 1.0's initExport lists the archive — its GET /api/exports; the store check itself sends nothing)
+    const sent = () => fetchSpy.mock.calls.filter((x) => /\/api\/(exports|jobs)/.test(String(x[0])) && String((x[1] as RequestInit | undefined)?.method || 'GET') !== 'GET').length;
     const fonts = () => document.querySelector('#storeReport [data-st-id="fonts"]') as HTMLElement;
     // offline
     await openStore();

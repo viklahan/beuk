@@ -52,8 +52,10 @@ describe("wave 6: the import is 1.0's code (decision 1)", () => {
       expect(CLOSURE_SUPPLIED, n).toContain(n);
       expect(CLOSURE_NAMES, n).not.toContain(n);
     }
-    // G3 (bulk import to the shelf) is wave 7's: nothing of it is lifted
-    for (const n of ['startBulkImport', 'bulkRun', 'cloudLoadShelf', 'cloudSaveRun']) expect(CLOSURE_NAMES, n).not.toContain(n);
+    // G3 (bulk import to the shelf) is lifted in wave 7b (the main closure, on this import); the shelf's own code stays in
+    // the shelf's module (supplied here, never declared)
+    for (const n of ['startBulkImport', 'bulkRunQueue', 'bulkBuildBook']) expect(CLOSURE_NAMES, n).toContain(n);
+    for (const n of ['cloudLoadShelf', 'cloudSaveRun', 'shelfGetBook', 'renderShelfList']) expect(CLOSURE_NAMES, n).not.toContain(n);
   });
 
   it("each of their declarations' text in the closure equals 1.0's source, character for character", () => {
