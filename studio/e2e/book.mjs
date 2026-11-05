@@ -4514,6 +4514,8 @@ async function wave5aHostile(origin) {
   const tch = twin.sections.find((x) => x.kind === 'body' && x.type === 'chapter');
   twin.sections.push({ ...JSON.parse(JSON.stringify(tch)), id: 'hostsec', content: 'A plain type.', plateId: null, title: 'Typed' });
   const hctx = await newContext({ serviceWorkers: 'block' });
+  // wave 7a: the same shelf as the hostile run's (1.0's account button shows when a shelf answers: the top bar is the same)
+  await w5aRoutes(hctx, { bodies: [] });
   const honest = await w5aOpen(hctx, origin, w4File('w5a-twin.json', JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: twin })));
   const lookHonest = await honest.evaluate(W4B_LOOK);
   await hctx.close();
@@ -4622,7 +4624,11 @@ async function wave5aNetworkRun(origin) {
       const one = await openOne(ctx, origin);
       const want = await one.evaluate((k) => t(k), key);
       check(msg.includes(want) && downloads === 0 && bodies.length === (key === 'plan.pausedToast' ? 1 : 0), `wave5a constraint 55: ${label}: 1.0's words ("${want.slice(0, 60)}…"), ${bodies.length} request(s), no file (${JSON.stringify(msg.slice(0, 100))})`);
-      check(await page.evaluate(() => document.getElementById('modalExport').classList.contains('open')), `wave5a: ${label}: the modal stays open (1.0's buildEpub.noOpen: 2.0 has no sign-in dialog yet)`);
+      // wave 7a: signed out, 1.0's buildEpub closes the modal and opens its sign-in dialog (2.0 has it now: 5a's noOpen is
+      // gone); otherwise the modal stays open, as in 1.0
+      const st = await page.evaluate(() => ({ exp: document.getElementById('modalExport').classList.contains('open'), auth: !!document.getElementById('modalAuth')?.classList.contains('open') }));
+      if (label === 'signed out') check(!st.exp && st.auth, `wave5a: ${label}: as 1.0, the modal closes and the sign-in dialog opens (${JSON.stringify(st)})`);
+      else check(st.exp, `wave5a: ${label}: the modal stays open, as 1.0's (${JSON.stringify(st)})`);
       await harvestCsp(page);
       await harvestCsp(one);
     } finally {
