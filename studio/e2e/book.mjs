@@ -802,7 +802,7 @@ async function latency(origin, opts = {}) {
       const key = `${fn} ${path.basename(n.callFrame.url || '')}:${n.callFrame.lineNumber + 1}`;
       self.set(key, (self.get(key) || 0) + (n.hitCount || 0) * dt);
     }
-    const top = [...self].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const top = [...self].sort((a, b) => b[1] - a[1]).slice(0, Number(process.env.LAT_TOP || 6));
     note('profile, 100 keystrokes, top self time: ' + top.map(([k, v]) => `${k} ${v.toFixed(1)} ms`).join(' | '));
     await harvestCsp(page);
     return { p50, p95, max, n: lat.length, section: big, ...size, top };
@@ -7620,7 +7620,12 @@ async function wave7aScreens(srv) {
 
 /* 91: the Dumas typing measure with the shelf signed in and the autosave running. */
 async function wave7aLatency(srv) {
-  const r = await latency(srv.origin, { prepare: async (ctx) => w7aSignUp(ctx, srv.origin, w7aEmail('l')), afterOpen: async (page) => { await w7aWait(page, () => window.beukCloud?.cloud?.user, null, 30_000); if (process.env.W7A_LAT_NOOP) await page.evaluate(() => { window.beukCloud.api.noteBookEdited = () => undefined; }); } });
+  // wave 7b, the carried latency finding — knobs for the A/B (each reported in step5-wave7b-report.md):
+  // W7A_LAT_OUT=1 the same real server, signed out; W7A_LAT_CSS=<css> a style added after the book opens (e.g. the sync
+  // dot's pulse switched off); W7A_LAT_DOT=1 one extra element running 1.0's syncPulse (signed out, the pulse alone);
+  // LAT_TOP=<n> more lines of the profile
+  const out = !!process.env.W7A_LAT_OUT;
+  const r = await latency(srv.origin, { prepare: async (ctx) => (out ? undefined : w7aSignUp(ctx, srv.origin, w7aEmail('l'))), afterOpen: async (page) => { await w7aWait(page, out ? () => window.beukCloud?.cloud?.available : () => window.beukCloud?.cloud?.user, null, 30_000); if (process.env.W7A_LAT_CSS) await page.addStyleTag({ content: process.env.W7A_LAT_CSS }); if (process.env.W7A_LAT_DOT) await page.evaluate(() => { const d = document.createElement('span'); d.className = 'sync-dot saving'; d.style.cssText = 'position:fixed;left:4px;top:4px;display:block'; document.body.appendChild(d); }); if (process.env.W7A_LAT_NOOP) await page.evaluate(() => { window.beukCloud.api.noteBookEdited = () => undefined; }); } });
   note(`wave7a latency (signed in, autosave running): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
   check(r.p95 < LATENCY_P95_TARGET_MS, `wave7a constraint 91: p95 under ${LATENCY_P95_TARGET_MS} ms on Dumas, signed in (${r.p95.toFixed(1)} ms)`);
 }
