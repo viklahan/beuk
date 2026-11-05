@@ -8087,7 +8087,19 @@ async function wave7bErrors(srv) {
         check(JSON.stringify(Object.keys(body)) === JSON.stringify(['kind', 'message', 'stack', 'build', 'lang', 'device', 'at']), `wave7b constraint 96: the report is 1.0's shape (${Object.keys(body).join(', ')})`);
         const text = sent[0]?.body || '';
         const leaks = ['Hostile', 'evil.example', '__pw', 'Writer ', 'w7b-hostile', email, W7A_PW].filter((x) => text.includes(x));
-        check(leaks.length === 0 && !sent[0]?.headers.cookie, `wave7b decision 5: the report carries no book text, title, file name, e-mail, password or cookie (${leaks.length ? 'found: ' + leaks.join(', ') : 'none of them'}): ${text.slice(0, 220)}`);
+        check(leaks.length === 0 && !sent[0]?.headers.cookie, `wave7b decision 5: an error that does not quote the book: the report carries no book text, title, file name, e-mail, password or cookie (${leaks.length ? 'found: ' + leaks.join(', ') : 'none of them'}): ${text.slice(0, 220)}`);
+        // review I-2: an error that DOES quote the open book (its title unquoted; a passage in a quote cut off, as a
+        // library's content error may write it) — what 1.0's filter leaves is recorded, not passed (For V)
+        const n0 = sent.length;
+        w7bProbe.on = true;
+        await page.evaluate((h) => {
+          setTimeout(() => { throw new Error('wave7b-probe: Cannot open ' + h.title + ' (chapter 2)'); }, 0);
+          setTimeout(() => { throw new Error('wave7b-probe: Invalid content for node paragraph: <"' + h.para); }, 10);
+        }, { title: hostile.meta.title, para: String(hostile.sections.find((s) => String(s.content || '').length > 80).content).slice(0, 50) });
+        await page.waitForTimeout(1500);
+        w7bProbe.on = false;
+        note(`wave7b decision 5, KNOWN GAP (For V): errors that quote the book send, after 1.0's filter: ${JSON.stringify(sent.slice(n0).map((x) => JSON.parse(x.body).message))}`);
+
       }
       check(outside.length === 0, `wave7b constraint 96: no request left ${origin} (${outside.length})`);
       await harvestCsp(page);

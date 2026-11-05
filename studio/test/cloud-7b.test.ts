@@ -679,3 +679,36 @@ describe('help codes (I9): /help/errors/<code> links', () => {
     expect(hazards(html)).toEqual([]);
   });
 });
+
+describe('review I-2: an error that quotes the open book (decision 5)', () => {
+  // KNOWN GAP, for V (not fixed: 1.0's filter is production's error reporting, V's call): 1.0's own note says "an error
+  // that quotes a few of your own words could still carry them" — an unquoted title does (OBSERVED: "Cannot open Salt Road
+  // — Book One (chapter 2)" is sent as it is), and so does a passage in a quote cut off and never closed (OBSERVED, 1.0's
+  // beukErrScrub run alone: '…paragraph: <"This book follows the hybrid-narrative archetype: ' is kept). Whether 2.0's
+  // libraries throw such messages (ProseMirror's content errors) is a LEAD, not checked. it.fails: passes only while the
+  // gap stands.
+  it.fails("KNOWN GAP (For V): an error naming the open book's title unquoted, or quoting a passage cut off, carries it", async () => {
+    desk(SALT());
+    await bootCloud();
+    localStorage.setItem('beuk.errors.v1', 'on');
+    const seen: string[] = [];
+    const real = globalThis.fetch;
+    globalThis.fetch = (async (u: RequestInfo | URL, init: RequestInit = {}) => {
+      if (String(u) === '/api/client-errors') seen.push(String(init.body));
+      return real(u, init);
+    }) as typeof fetch;
+    const off = platformInit(cm, { sw: null, registration: Promise.resolve(null), reload: () => undefined });
+    const book = SALT();
+    const title = String((book.meta as Rec).title);
+    const para = String(((book.sections as Rec[]).find((x) => String(x.content || '').length > 80)!.content)).slice(0, 50);
+    const msg = `Invalid content for node paragraph: <"${para}`; // a quote cut off, never closed
+    window.dispatchEvent(new ErrorEvent('error', { error: Object.assign(new Error(msg), { stack: 'Error: ' + msg }), message: msg }));
+    window.dispatchEvent(new ErrorEvent('error', { error: new Error(`Cannot open ${title} (chapter 2)`), message: `Cannot open ${title} (chapter 2)` }));
+    await tick(50);
+    off();
+    expect(seen.length).toBe(2);
+    const leaked = [para.slice(0, 20), title].filter((x) => seen.some((b) => b.includes(x)));
+    console.info('I-2 RECORD: sent', JSON.stringify(seen.map((b) => (JSON.parse(b) as Rec).message)), 'leaked', JSON.stringify(leaked));
+    expect(leaked).toEqual([]);
+  }, 30_000);
+});
