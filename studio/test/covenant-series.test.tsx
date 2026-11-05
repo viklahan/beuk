@@ -23,7 +23,7 @@ import { SeriesConflict } from '../src/covenant/CovenantDialog';
 type Rec = Record<string, unknown>;
 const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralForms: meta.pluralForms as PluralForms }, 'en', k, p);
 let c: Closure;
-const cloud = cloudFacts as typeof cloudFacts & { shelf?: unknown; linkedId?: unknown; baseUpdatedAt?: unknown };
+const cloud = cloudFacts as unknown as { available: boolean; user: unknown; shelf?: unknown; linkedId?: unknown; baseUpdatedAt?: unknown };
 type Net = Closure['api']['bibleSeriesNet'];
 let keepNet: Net;
 

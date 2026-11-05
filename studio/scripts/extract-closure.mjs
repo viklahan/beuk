@@ -219,6 +219,9 @@ export const EXTRA_ROOTS = [
   'parseManuscript', 'importFoundList', 'renderImportSummary', 'initImport', 'initImportReport', 'irRenderReport', 'irUndoItem', 'irUndoAll',
   'irUndoAllAvailability', 'irDismiss', 'irOpenReport', 'irCloseReport', 'irSyncReopen', 'irAbort', 'boxSetExpandPick', 'manuscriptFileToVolume',
   'PDFJS_DIR', 'PDFJS_FILES', 'bulkIsManuscript', 'snapshotBookDoc', 'irOnLangChange',
+  // wave 7a (H4): Keep both's snapshot of the shelf copy (1.0's snapshotForeignDoc), run on History's state of the open
+  // book (src/cloud/cloud.ts): the cloud module reaches it supplied
+  'snapshotForeignDoc',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -287,7 +290,10 @@ export const VARS = ['insVarPick', 'insCache', 'insFacts',
   // book's state, so their answers resume in the export session (src/import/import.ts)
   'manuscriptFileToVolume', 'boxSetExpandPick'];
 /** Wave 6: supplied names 1.0's lifted code assigns (importSandboxed restores `cloudDirty`): emitted as `let`. */
-export const SUPPLIED_LETS = ['cloudDirty'];
+export const SUPPLIED_LETS = ['cloudDirty',
+  // wave 7a: the cloud module's billingDate reads uiLangState as 1.0's string (toLocaleDateString's locale): 2.0 sets it
+  // when the interface language changes (src/cloud/cloud.ts), through the module's vars
+  'uiLangState'];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
   // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads
@@ -415,6 +421,50 @@ export const PRINT_SUPPLIED = ['t', 'document', 'window', 'setTimeout', 'request
 /** 1.0's top-level lets of the print module the studio reads or sets: the sinks (printUnlink, sidewaysPrintPages, as
  *  the preview's), and buildPrintHtml (the print document, checked as a whole before the frame or a file gets it). */
 export const PRINT_VARS = ['printUnlink', 'sidewaysPrintPages', 'buildPrintHtml'];
+
+/** Wave 7a (inventory H1-H4): the shelf's OWN module, src/generated/closure-cloud.js (createCloudClosure). 1.0's cloud
+ *  code (client/index.html "cloud" to "Platform hardening", the reconciliation and conflict of its platform section,
+ *  BEUK:local's reconcile on sign-in, and the store check's server half) lifted whole: the transport (apiFetch, its
+ *  guards and answer shapes, the billing notice, the unreachable retry), the shelf pictures (BEUK:pics: stored once,
+ *  hydrated from the desk), the probe, the dirty flag and the autosave (noteBookEdited, cloudAutosaveTick, the
+ *  single-flight save with If-Match and its 409/428/404/413 answers), the sync line and the account button, the shelf
+ *  list, its guard and the opening of a shelf book, the first sign-in's link or bring offer, the sign-in dialog
+ *  (register, log in, forgot), sign out, the account box (change password, sign out everywhere), the portal line (the
+ *  unconfirmed address and its resend), the plan line and its two redirects, the reconnect flush and the three-way
+ *  conflict, and storeMakePrintJob with its three neighbours (the print-ready PDF and the store check's server jobs).
+ *  Its `state` is 2.0's (src/cloud/cloud.ts: 1.0's state of the open book, read when 1.0's code reads it); the
+ *  book's arrival, its serialization, History, the device record and the page's other parts are supplied. */
+export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackForShelf', 'picHydrate', 'picLearnDesk', 'shelfGetBook', 'cloudProbe',
+  'cloudNoteUnreachable', 'cloudGoLocal', 'noteBookEdited', 'cloudAutosaveTick', 'cloudQueueTick', 'cloudSaveNow', 'cloudSaveRun', 'setSyncStatus',
+  'cloudSaveOwner', 'cloudSettleStatus', 'renderSyncLine', 'renderCloudChrome', 'renderAccountButton', 'cloudLoadStreak', 'cloudHeartbeat', 'cloudLoadShelf',
+  'renderShelfList', 'deskHoldsUnshelvedWork', 'shelfGuardPutDeskOnShelf', 'cloudOpenBook', 'cloudAfterSignIn', 'cloudBringBook', 'setAuthMode', 'openAuth',
+  'closeAuth', 'cloudAuthErrorText', 'cloudAuthSubmit', 'cloudSignOut', 'cloudEnsureLinked', 'acctAuthModeHook', 'acctForgotSubmit', 'acctSay',
+  'acctChangePassword', 'acctSignOutEverywhere', 'portalTakeFreshSignIn', 'portalNote', 'portalRender', 'portalRefresh', 'portalResend', 'billingDate',
+  'billingPlanRender', 'billingGo', 'billingNotePaused', 'planReconciliation', 'cloudReconnectFlush', 'raiseConflict', 'resolveConflict',
+  'localReconcileOnSignIn', 'localLinkSnapshot', 'storeMakePrintJob', 'storeUpload', 'storeCreateJob', 'storeRefreshJobs', 'net', 'setConnectivity',
+  'onReconnect', 'renderNetPill', 'bookDocsSame', 'bookIdsMatch', 'picIsRef', 'PIC_REF'];
+/** What the cloud module takes from its page and from the rest of the studio (src/cloud/cloud.ts). */
+export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', 'fmtDateIntl', 'location', 'setTimeout', 'setInterval',
+  // the one `cloud` (src/closure/index.ts cloudFacts: every module reads the same object)
+  'cloud',
+  // the open book: 1.0's serializeBook of it, a whole book arriving on the desk (the backup-open path: a new generation),
+  // History (a snapshot of the desk, a shelf copy kept as a snapshot), the empty-desk and untouched-sample tests
+  'serializeBook', 'applyBookDoc', 'takeSnapshot', 'snapshotForeignDoc', 'pruneAutoSnapshots', 'isEmptyDesk', 'deskIsUntouchedSample',
+  // the sample's pictures and its record (always on 2.0's desk; the record is per generation), the sample bar
+  'samplePicsMissingInState', 'samplePicsEnsure', 'sampleSweepPreRename', 'sampleState', 'renderSampleButton',
+  // the device record (1.0's BEUK:local): 2.0's link store beside the book (src/cloud/cloud.ts)
+  'local', 'localRestorePromise', 'localMarkDirty', 'localWriteLinkNow', 'localNoteLinkChanged', 'localNoteSignedOut', 'localFailed',
+  // the rest of the page: the editor's focus, the streak, the series Covenant (the main closure's), wave 7b's parts
+  // (bulk import, beta links, the archive) and the print-ready panel's job record (print's module)
+  'focusEditor', 'renderStreak', 'bibleSeriesFlush', 'bibleSeriesRefresh', 'bibleSeriesSignOut', 'bibleSeriesModalReset', 'bibleSeriesResolve',
+  'renderBulkChrome', 'betaRenderChrome', 'renderArchiveList', 'printReadyUi',
+  // the calm confirm (2.0's useConfirm, 1.0's cloudConfirm), and the print file storeMakePrintJob uploads (print's module,
+  // in the export session)
+  'cloudConfirm', 'buildPrintHtml', 'preparePrintPress', 'printFilename',
+  // the picture hash worker (1.0's page-relative assets/pichash.js, from /next/)
+  'Worker'];
+/** 1.0's top-level lets of the cloud module the studio reads or sets. */
+export const CLOUD_VARS = ['uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloudRetryTimer', 'cloudSaveInFlight', 'cloudSaveFollowUp', 'authMode', 'portalFreshSignIn', 'billingPausedSaid'];
 
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile',
@@ -656,6 +706,13 @@ export function buildPrintModule(html, epubSource) {
     fn: 'createPrintClosure', title: 'Print (wave 5b)',
   });
 }
+/** Wave 7a: the shelf's own module (CLOUD_ROOTS): createCloudClosure(env) → { api, vars, setState, getState }. */
+export function buildCloudModule(html, epubSource) {
+  return buildOwnModule(html, epubSource, {
+    roots: CLOUD_ROOTS, suppliedOwn: CLOUD_SUPPLIED, varsOwn: CLOUD_VARS, what: 'cloud', file: 'closure-cloud.js', prefix: 'CLOUD',
+    fn: 'createCloudClosure', title: 'The shelf (wave 7a)',
+  });
+}
 /** A module of its own (the preview's, print's): its roots' declarations and everything they reach, with its own
  *  `state` and its own supplied names. */
 async function buildOwnModule(html, epubSource, o) {
@@ -698,8 +755,10 @@ async function buildOwnModule(html, epubSource, o) {
   const api = o.roots.filter((n) => src.names.includes(n));
   const missingRoots = o.roots.filter((n) => !src.names.includes(n));
   if (missingRoots.length) fail(`${o.prefix}_ROOTS names no lifted declaration: ${missingRoots.join(', ')}`);
-  const vars = o.varsOwn.filter((n) => src.names.includes(n));
-  const unlifted = o.varsOwn.filter((n) => !src.names.includes(n));
+  // wave 7a: a supplied let (SUPPLIED_LETS) of this module may be a VAR too (its setter re-assigns the module's own copy)
+  const ownLet = (n) => SUPPLIED_LETS.includes(n) && supplied.includes(n);
+  const vars = o.varsOwn.filter((n) => src.names.includes(n) || ownLet(n));
+  const unlifted = o.varsOwn.filter((n) => !src.names.includes(n) && !ownLet(n));
   if (unlifted.length) fail(`${o.prefix}_VARS names no lifted declaration: ${unlifted.join(', ')}`);
   // wave 5b: a VAR gets a setter, so it must be a let or a function (a const cannot be re-assigned: the build refuses it)
   const consts = vars.filter((v) => new RegExp('^const\\s+' + v + '\\b', 'm').test(src.code));
@@ -881,6 +940,13 @@ export declare const PRINT_SUPPLIED_NAMES: string[];
 export declare function createPrintClosure(env: Record<string, unknown>): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; setState(s: unknown): void; getState(): any };
 `;
 
+const CLOUD_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. The shelf (wave 7a). */
+export declare const CLOUD_NAMES: string[];
+export declare const CLOUD_API: string[];
+export declare const CLOUD_SUPPLIED_NAMES: string[];
+export declare function createCloudClosure(env: Record<string, unknown>): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; setState(s: unknown): void; getState(): any };
+`;
+
 const SERIALIZE_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. Wave 5a: 1.0's serializeBook. */
 export declare const SERIALIZE_NAMES: string[];
 export declare function createSerialize(share: Record<string, unknown>): { serializeBook: () => Record<string, unknown> };
@@ -913,12 +979,16 @@ export async function writeClosure() {
   writeFileSync(path.join(dir, 'closure-print.js'), pr.code);
   writeFileSync(path.join(dir, 'closure-print.d.ts'), PRINT_DTS);
   out.print = pr;
+  const cl = await buildCloudModule(html, epub);
+  writeFileSync(path.join(dir, 'closure-cloud.js'), cl.code);
+  writeFileSync(path.join(dir, 'closure-cloud.d.ts'), CLOUD_DTS);
+  out.cloud = cl;
   return out;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   writeClosure()
-    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js; the sample: ${o.sample.names.length} → closure-sample.js; the test oracle: ${o.oracle.names.length} → closure-oracle.js; the preview: ${o.preview.names.length} → closure-preview.js; print: ${o.print.names.length} → closure-print.js`))
+    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js; the sample: ${o.sample.names.length} → closure-sample.js; the test oracle: ${o.oracle.names.length} → closure-oracle.js; the preview: ${o.preview.names.length} → closure-preview.js; print: ${o.print.names.length} → closure-print.js; the shelf: ${o.cloud.names.length} → closure-cloud.js`))
     .catch((e) => {
       console.error(e.message);
       process.exit(1);

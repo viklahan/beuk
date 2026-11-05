@@ -14,6 +14,7 @@ import { toBook } from '../editor/bridge';
 import { desk } from '../environment/page';
 import { covEnv, covReset, covRun, covRunPaused, covSettle, covUi } from './covenant';
 import { installSeriesNet, installSeriesRetry } from './net';
+import { cloudIfLoaded } from '../cloud/cloud';
 import { probeCloud } from '../pictures/stock';
 import { covenantDesk, setMarksClosure } from './marks';
 import { drawIcons } from '../insights/insights';
@@ -112,8 +113,11 @@ export function CovenantHost() {
  *  to 1.0's bibleSeriesResolve. The book's own shelf conflict (Keep both) is the shelf's, wave 7. */
 export function SeriesConflict() {
   const { t } = useLocale();
-  const answer = (choice: 'shelf' | 'mine') => () => {
-    const done = covRun((c) => c.api.bibleSeriesResolve(choice));
+  const answer = (choice: 'shelf' | 'mine' | 'both') => () => {
+    // wave 7a: 1.0's initPlatform wires the three buttons to resolveConflict, which asks the series Covenant first
+    const cm = cloudIfLoaded();
+    if (cm) return void cm.api.resolveConflict(choice);
+    const done = choice !== 'both' && covRun((c) => c.api.bibleSeriesResolve(choice));
     if (!done) document.getElementById('modalConflict')?.classList.remove('open');
   };
   if (typeof document === 'undefined') return null;
@@ -132,7 +136,7 @@ export function SeriesConflict() {
           <button className="tb-btn" id="btnConflictShelf" type="button" onClick={answer('shelf')}>
             {t('offline.useShelf')}
           </button>
-          <button className="tb-btn" id="btnConflictBoth" type="button">
+          <button className="tb-btn" id="btnConflictBoth" type="button" onClick={answer('both')}>
             {t('offline.keepBoth')}
           </button>
           <button className="tb-btn primary" id="btnConflictMine" type="button" onClick={answer('mine')}>

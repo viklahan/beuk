@@ -1,4 +1,4 @@
-import { cloudFacts, type ClosureApi, type StockPhoto } from '../closure/index';
+import { cloudBootHook, cloudFacts, type ClosureApi, type StockPhoto } from '../closure/index';
 import { bytesToBase64, sniffPicture } from './pictures';
 import { stockUrls } from './scene';
 
@@ -48,6 +48,8 @@ export function stockThumb(ph: StockPhoto): string | null {
 let probed: Promise<void> | null = null;
 /** /api/health (a shelf is there) and /api/auth/me (who is signed in), as 1.0 learns them. */
 export function probeCloud(fetcher: typeof fetch = globalThis.fetch?.bind(globalThis)): Promise<void> {
+  // wave 7a: the shelf's boot (1.0's initCloud) answers who is signed in; a second probe could only race it
+  if (cloudBootHook.p) return cloudBootHook.p.catch(() => undefined);
   if (!probed) {
     probed = (async () => {
       let available = false;

@@ -506,6 +506,9 @@ export type ClosureApi = {
   bibleSeriesForget: (uid: unknown) => void;
   bibleAuthSignedOut: (me: unknown) => boolean;
   bibleSeriesResolve: (choice: string) => boolean;
+  bibleSeriesModalReset: () => void;
+  /** Wave 7a: Keep both's snapshot of the shelf copy (1.0's), on History's state of the open book. */
+  snapshotForeignDoc: (doc: unknown, name: string) => HistoryEntry;
   bibleSeriesRaise: () => void;
   bibleSeriesFlushOnHide: () => void;
   bibleJoinStart: () => unknown;
@@ -1049,7 +1052,43 @@ export const pageEnv: { $: (id: string) => unknown; activeSection: () => unknown
   setCenterTab: () => undefined,
   closeUiLangMenu: () => undefined,
 };
-export const cloudFacts: { available: boolean; user: unknown; serverStreak: unknown; lastHeartbeatAt: number } = { available: false, user: null, serverStreak: null, lastHeartbeatAt: 0 };
+/** Wave 7a: THE one `cloud` (1.0's own object, client/index.html "const cloud = {"): its fields and their first values are
+ *  1.0's (test/cloud-closure.test.ts compares them with 1.0's literal). Every module reads this object: the main closure,
+ *  the preview, print and the shelf's own module (src/cloud/cloud.ts), which signs in, links and saves through it. */
+export type CloudState = {
+  available: boolean;
+  user: { id?: string; email?: string } | null | unknown;
+  serverStreak: unknown;
+  linkedId: string | null;
+  linkState: 'unlinked' | 'linked' | 'declined';
+  shelf: unknown[];
+  archive: unknown[];
+  sessionEdited: boolean;
+  editedBeforeSignIn: boolean;
+  lastHeartbeatAt: number;
+  syncStatus: string;
+  pendingSyncs: number;
+  baseUpdatedAt: string | null;
+  baseRevision: number | null;
+  shelfUpdatedAt: string | null;
+  conflict: { doc: unknown; updatedAt: string | null; revision: number | null } | null;
+  lastEditAt: number;
+  shelfError?: unknown;
+};
+export const CLOUD_FIRST: Readonly<CloudState> = Object.freeze({
+  available: false, user: null, serverStreak: null, linkedId: null, linkState: 'unlinked', shelf: [], archive: [], sessionEdited: false,
+  editedBeforeSignIn: false, lastHeartbeatAt: 0, syncStatus: 'saved', pendingSyncs: 0, baseUpdatedAt: null, baseRevision: null, shelfUpdatedAt: null,
+  conflict: null, lastEditAt: 0,
+} as CloudState);
+export const cloudFacts: CloudState = { ...CLOUD_FIRST, shelf: [], archive: [] };
+/** Wave 7a: the shelf's boot (src/cloud/cloud.ts bootCloud: 1.0's initCloud probe and me), when it has started: the
+ *  earlier waves' probe (pictures/stock.ts probeCloud) waits for it instead of asking again. */
+export const cloudBootHook: { p: Promise<void> | null } = { p: null };
+/** Tests: 1.0's first values again (a fresh page). */
+export function resetCloudFacts(): void {
+  for (const k of Object.keys(cloudFacts)) delete (cloudFacts as Record<string, unknown>)[k];
+  Object.assign(cloudFacts, { ...CLOUD_FIRST, shelf: [], archive: [] });
+}
 /** Wave 3b (C6): what 1.0's Covenant code reaches around its own (BROWSER_SUPPLIED), filled in by src/covenant: the
  *  shelf's transport (1.0's apiFetch), the room's open (2.0's Dialog), and the desk mirror's entry points — 2.0 draws
  *  the marks as ProseMirror decorations, so a redraw, the card's hide and a line's height are 2.0's own. */
@@ -1173,8 +1212,17 @@ const closureCrypto = {
  *  say store.serverNeedShelf). The three names the store check would reach only once a job exists are refusing
  *  stand-ins: no request, their call recorded (shelf.refused; the tests hold it empty). Wave 7 lifts 1.0's four. */
 export const shelf: { asked: number; refused: string[] } = { asked: 0, refused: [] };
-export async function shelfPrintJob(): Promise<{ needShelf: true }> {
+/** Wave 7a: the seams light up — 1.0's own storeMakePrintJob and its three neighbours, in the shelf's module
+ *  (src/cloud/cloud.ts sets these once it has loaded; before that, and in tests without it, the stand-ins answer). */
+export const shelfEnv: { makePrintJob: ((o?: unknown) => Promise<unknown>) | null; upload: ((...a: unknown[]) => Promise<unknown>) | null; createJob: ((...a: unknown[]) => Promise<unknown>) | null; refreshJobs: ((out: unknown) => Promise<boolean>) | null } = {
+  makePrintJob: null,
+  upload: null,
+  createJob: null,
+  refreshJobs: null,
+};
+export async function shelfPrintJob(o?: unknown): Promise<unknown> {
   shelf.asked++;
+  if (shelfEnv.makePrintJob) return shelfEnv.makePrintJob(o);
   return { needShelf: true };
 }
 const shelfStandIns = {
@@ -1345,10 +1393,10 @@ export function loadClosure(): Promise<Closure> {
         cloudLoadArchive: () => undefined,
         // wave 5d (F10): the store check's shelf half (see shelf above); its continuation (storeRunServer's next step)
         // resumes in the export session
-        storeMakePrintJob: () => exportEnv.resume(shelfPrintJob()),
-        storeUpload: () => exportEnv.resume(shelfStandIns.storeUpload()),
-        storeCreateJob: () => exportEnv.resume(shelfStandIns.storeCreateJob()),
-        storeRefreshJobs: (out: unknown) => exportEnv.resume(shelfStandIns.storeRefreshJobs(out)),
+        storeMakePrintJob: (o?: unknown) => exportEnv.resume(shelfPrintJob(o)),
+        storeUpload: (...a: unknown[]) => exportEnv.resume(shelfEnv.upload ? shelfEnv.upload(...a) : shelfStandIns.storeUpload()),
+        storeCreateJob: (...a: unknown[]) => exportEnv.resume(shelfEnv.createJob ? shelfEnv.createJob(...a) : shelfStandIns.storeCreateJob()),
+        storeRefreshJobs: (out: unknown) => exportEnv.resume(shelfEnv.refreshJobs ? shelfEnv.refreshJobs(out) : shelfStandIns.storeRefreshJobs(out)),
         // wave 6 (G1, G2): the import's surroundings (importEnv, src/import/import.ts); the sample bar and Project
         // Settings' language hint are React's re-render
         applyBookDoc: (doc: unknown, opts?: unknown) => importEnv.applyBookDoc(doc, opts),

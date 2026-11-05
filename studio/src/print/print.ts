@@ -1,4 +1,4 @@
-import { closureLang, closureT, cloudFacts, coverEnv, exportEnv, fmtDateIntl, pageEnv, printEnv, shelf, shelfPrintJob, untitledStrings, type State } from '../closure/index';
+import { closureLang, closureT, cloudFacts, coverEnv, exportEnv, fmtDateIntl, pageEnv, printEnv, shelf, shelfEnv, shelfPrintJob, untitledStrings, type State } from '../closure/index';
 import { exportBegin, exportRun, exportStateListeners, exportUi } from '../export/state';
 import { drawIcons } from '../insights/insights';
 import { guardSheet } from '../preview/preview';
@@ -123,8 +123,9 @@ export function loadPrint(): Promise<PrintClosure> {
         a11yJumpTo: (jump: unknown) => exportRun((c) => c.api.a11yJumpTo(jump)),
         openAuth: () => exportEnv.openAuth(),
         cloud: cloudFacts,
-        storeMakePrintJob: () => shelfPrintJob(),
-        storeRefreshJobs: async () => true,
+        storeMakePrintJob: (o?: unknown) => shelfPrintJob(o),
+        // wave 7a: 1.0's own, in the shelf's module (before it loads: nothing to re-read)
+        storeRefreshJobs: (out: unknown) => (shelfEnv.refreshJobs ? shelfEnv.refreshJobs(out) : Promise.resolve(true)),
         cloudLoadArchive: () => undefined,
         noteBookEdited: () => undefined,
         autoSnapshot: () => null,
@@ -179,7 +180,6 @@ export async function printWire(): Promise<void> {
     exportRun(() => {
       pc.api.initPrint();
       pc.api.initPrintView();
-      (pc.api.printReadyUi as unknown as { noOpen: boolean }).noOpen = true;
     });
   } finally {
     rewiring = false;

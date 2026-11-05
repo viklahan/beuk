@@ -29,6 +29,7 @@ import { IMPORT_BUILT_EVENT, IMPORT_SLOT, ImportHost, importBuilt } from '../imp
 import { exportEnv } from '../closure/index';
 import { Icon } from './Icon';
 import { LocalPill } from '../book/LocalPill';
+import { CLOUD_SLOTS, CloudHost, CloudSlot } from '../cloud/CloudHost';
 import { LangMenu } from './LangMenu';
 import { ThemeButton } from './ThemeButton';
 
@@ -148,8 +149,11 @@ export function Shell() {
             {bk.author}
           </div>
         </div>
+        {/* wave 7a: 1.0's offline pill, before the local pill; its account button, after the language menu (src/cloud/CloudHost.tsx) */}
+        <CloudSlot id={CLOUD_SLOTS.net} />
         <LocalPill />
         <LangMenu />
+        <CloudSlot id={CLOUD_SLOTS.account} />
         <ThemeButton />
         <button type="button" className="tb-btn" id="btnHomeport" data-tip="tips.homeport" aria-label={t('top.homeportAria')} onClick={() => openTab('/?home')}>
           <Icon name="Anchor" />
@@ -286,7 +290,8 @@ export function Shell() {
                 <span className="side-tool-lab">{t('side.toolNotebook')}</span>
               </button>
             </div>
-            {/* the shelf line (#syncRow): wave 7 */}
+            {/* wave 7a: the shelf line (#syncRow), 1.0's own */}
+            <CloudSlot id={CLOUD_SLOTS.sync} />
             {bookOpen && <SideStatus />}
           </div>
         </aside>
@@ -361,6 +366,8 @@ export function Shell() {
       <PrintModals />
       {/* wave 6: 1.0's import and its report, outside the book's generations (an import opens a new one) */}
       <ImportHost />
+      {/* wave 7a: 1.0's shelf, sign-in and account (src/cloud/CloudHost.tsx) */}
+      <CloudHost />
     </div>
   );
 }
