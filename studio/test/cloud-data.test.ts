@@ -194,3 +194,24 @@ describe('opening a shelf book of another book id keeps its link (found by the e
     expect(cloudFacts.linkState).toBe('linked');
   }, 30_000);
 });
+
+describe('1.0 fix (V, 2026-11-04): the account button is redrawn only when what it shows changes', () => {
+  it('an edit while signed in (setSyncStatus "saving" again) writes nothing into #btnAccount', async () => {
+    desk(fixtures('real')[0]!.book);
+    cloudFacts.available = true;
+    cloudFacts.user = { id: 'u', email: 'writer@example.test' };
+    cm.api.setSyncStatus('saving');
+    const btn = document.getElementById('btnAccount')!;
+    expect(btn.querySelector('.acct-avatar')!.textContent).toBe('W');
+    const seen: MutationRecord[] = [];
+    const mo = new MutationObserver((r) => seen.push(...r));
+    mo.observe(btn, { attributes: true, childList: true, subtree: true, characterData: true });
+    for (let i = 0; i < 5; i++) cm.api.noteBookEdited();
+    await tick(0);
+    mo.disconnect();
+    expect(seen.map((r) => r.type + ':' + (r.attributeName ?? ''))).toEqual([]);
+    // what it shows changes: it is drawn again
+    cm.api.setSyncStatus('saved');
+    expect(btn.querySelector('.sync-dot')!.className).toBe('sync-dot');
+  });
+});

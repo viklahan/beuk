@@ -52190,6 +52190,14 @@
       function renderAccountButton() {
         const btn = $("btnAccount"); if (!btn) return;
         btn.style.display = cloud.available ? "" : "none";
+        /* BEUK:acctsig — drawn again only when what it shows changes: every edit signed in calls setSyncStatus("saving"),
+           and rewriting the button (and its title, which the tooltip sweep then absorbs with a layout read) on each
+           keystroke cost the typing (V, 2026-11-04: 2.0's Dumas measure, p95 +4 ms) */
+        const sig = cloud.user
+          ? "u|" + String(cloud.user.email || "") + "|" + (cloud.syncStatus === "saving" ? 1 : 0) + "|" + t("top.accountTitle", { email: cloud.user.email })
+          : "o|" + t("top.signIn") + "|" + t("top.signInTitle");
+        if (btn.getAttribute("data-acct-sig") === sig) return;
+        btn.setAttribute("data-acct-sig", sig);
         if (cloud.user) {
           const initial = String(cloud.user.email || "?").trim().charAt(0).toUpperCase() || "?";
           btn.innerHTML = '<span class="acct-avatar">' + esc(initial) + '</span><span class="sync-dot' + (cloud.syncStatus === "saving" ? " saving" : "") + '"></span>';
