@@ -720,3 +720,22 @@ describe('review I-2: an error that quotes the open book (decision 5)', () => {
     off();
   }, 30_000);
 });
+
+describe("the sync dot's pulse while typing (constraint 99; the main session's ruling, for V)", () => {
+  const edit = (y: Y.Doc, title: string) => y.getMap('meta').set('meta', { ...(y.getMap('meta').get('meta') as Rec), title });
+  it('while keys are coming the dot shows gold and still (.typing); it pulses again once typing has been idle for 600 ms', async () => {
+    const { y } = await linked(SALT());
+    cm.api.renderAccountButton();
+    edit(y, 'One');
+    const dot = () => $('btnAccount').querySelector('.sync-dot') as HTMLElement;
+    expect(dot().classList.contains('saving')).toBe(true);
+    expect(dot().classList.contains('typing')).toBe(true);
+    await tick(400);
+    edit(y, 'Two');
+    await tick(400);
+    expect(dot().classList.contains('typing')).toBe(true); // 400 ms since the last key
+    await tick(350);
+    expect(dot().classList.contains('typing')).toBe(false);
+    expect(dot().classList.contains('saving')).toBe(true);
+  }, 30_000);
+});

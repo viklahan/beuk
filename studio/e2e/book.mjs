@@ -8089,7 +8089,7 @@ async function wave7bErrors(srv) {
         const leaks = ['Hostile', 'evil.example', '__pw', 'Writer ', 'w7b-hostile', email, W7A_PW].filter((x) => text.includes(x));
         check(leaks.length === 0 && !sent[0]?.headers.cookie, `wave7b decision 5: an error that does not quote the book: the report carries no book text, title, file name, e-mail, password or cookie (${leaks.length ? 'found: ' + leaks.join(', ') : 'none of them'}): ${text.slice(0, 220)}`);
         // review I-2: an error that DOES quote the open book (its title unquoted; a passage in a quote cut off, as a
-        // library's content error may write it) — what 1.0's filter leaves is recorded, not passed (For V)
+        // library's content error may write it): since b3d978d nothing of the message is sent
         const n0 = sent.length;
         w7bProbe.on = true;
         await page.evaluate((h) => {
@@ -8098,7 +8098,9 @@ async function wave7bErrors(srv) {
         }, { title: hostile.meta.title, para: String(hostile.sections.find((s) => String(s.content || '').length > 80).content).slice(0, 50) });
         await page.waitForTimeout(1500);
         w7bProbe.on = false;
-        note(`wave7b decision 5, KNOWN GAP (For V): errors that quote the book send, after 1.0's filter: ${JSON.stringify(sent.slice(n0).map((x) => JSON.parse(x.body).message))}`);
+        const quoting = sent.slice(n0).map((x) => x.body);
+        const qLeaks = ['Hostile', 'evil.example', '__pw', 'Invalid content', 'chapter 2', String(hostile.sections.find((s) => String(s.content || '').length > 80).content).slice(0, 12)].filter((x) => quoting.some((b) => b.includes(x)));
+        check(quoting.length === 2 && qLeaks.length === 0, `wave7b decision 5 (V's ruling, review I-2): errors that quote the open book send none of it — ${quoting.length} reports, messages ${JSON.stringify(quoting.map((b) => JSON.parse(b).message))}${qLeaks.length ? ', found: ' + qLeaks.join(', ') : ''}`);
 
       }
       check(outside.length === 0, `wave7b constraint 96: no request left ${origin} (${outside.length})`);
