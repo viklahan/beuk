@@ -24,8 +24,6 @@ export type PlatformOpts = {
   reload: () => void;
 };
 
-/** The worker's cache name, as its BEUK_SHELL_READY names it (1.0's beukErrBuild). */
-export const platformFacts: { build: string } = { build: 'unknown' };
 
 export function platformInit(cm: CloudClosure, o: PlatformOpts): () => void {
   const a = cm.api;
@@ -43,7 +41,7 @@ export function platformInit(cm: CloudClosure, o: PlatformOpts): () => void {
     const sw = o.sw;
     listen(sw as unknown as EventTarget, 'message', (e) => {
       const d = (e as MessageEvent).data as Rec | null;
-      if (d && d.type === 'BEUK_SHELL_READY' && typeof d.cache === 'string' && /^[A-Za-z0-9._-]{1,40}$/.test(d.cache)) platformFacts.build = d.cache;
+      if (d && d.type === 'BEUK_SHELL_READY' && typeof d.cache === 'string' && /^[A-Za-z0-9._-]{1,40}$/.test(d.cache)) cm.vars.beukErrBuild = d.cache;
     });
     listen(sw as unknown as EventTarget, 'controllerchange', () => {
       // 2.0: only the tab that asked for the update reloads (1.0 reloads every tab, after its device save)
@@ -118,6 +116,21 @@ export function platformInit(cm: CloudClosure, o: PlatformOpts): () => void {
       /* 1.0: the prompt went away */
     }
   }
+  /* BEUK:errors — 1.0's two window listeners: an error the page raises, and a promise nobody caught; 1.0's own
+     beukReportError decides (opt-in, scrubbed, once each, at most five) */
+  listen(window, 'error', (ev) => {
+    const e = ev as ErrorEvent;
+    // a picture or script that failed to load (1.0: a target that is not the window; here: an element — the same
+    // events in a browser, and jsdom's window is not the global's)
+    if (!e || (typeof Element !== 'undefined' && e.target instanceof Element)) return;
+
+    const err = e.error as { message?: string; stack?: string } | null;
+    a.beukReportError('error', (err && err.message) || e.message, (err && err.stack) || (e.filename || '') + ':' + (e.lineno || 0) + ':' + (e.colno || 0));
+  });
+  listen(window, 'unhandledrejection', (ev) => {
+    const r = (ev as PromiseRejectionEvent).reason as { message?: string; stack?: string } | string | null;
+    a.beukReportError('rejection', (r && typeof r === 'object' && r.message) || (typeof r === 'string' ? r : 'unhandled rejection'), (r && typeof r === 'object' && r.stack) || '');
+  });
   a.renderInstallArea();
   return () => {
     alive = false;

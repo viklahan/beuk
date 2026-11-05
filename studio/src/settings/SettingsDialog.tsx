@@ -47,7 +47,28 @@ function serverFacts(): Promise<{ server: boolean; support: string | null }> {
   }
   return probes;
 }
+/** 1.0's BEUK:errors opt-in (localStorage beuk.errors.v1 = "on"), as its beukErrorsOn and wireErrToggle read and write it. */
+const ERRORS_KEY = 'beuk.errors.v1';
+function errsRead(): boolean {
+  const cm = cloudIfLoaded();
+  if (cm) return !!cm.api.beukErrorsOn();
+  try {
+    return localStorage.getItem(ERRORS_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+function errsWrite(on: boolean): boolean {
+  try {
+    if (on) localStorage.setItem(ERRORS_KEY, 'on');
+    else localStorage.removeItem(ERRORS_KEY);
+  } catch {
+    /* 1.0: storage refused, nothing kept */
+  }
+  return errsRead();
+}
 /** Tests only: forget the probes. */
+
 export function resetServerFacts(): void {
   probes = null;
 }
@@ -78,6 +99,11 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     };
   }, [open, ydoc]);
 
+  // wave 7b (I9): 1.0's error-report toggle (wireErrToggle: checked = beukErrorsOn(), set or removed on change)
+  const [errsOn, setErrsOn] = useState(false);
+  useEffect(() => {
+    if (open) setErrsOn(errsRead());
+  }, [open]);
   // wave 7b (H5): 1.0's renderInstallArea once the About box is on the page (and again with the language)
   useEffect(() => {
     if (open) cloudIfLoaded()?.api.renderInstallArea();
@@ -287,7 +313,15 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       <div className="about-box">
         <h3>{t('about.title')}</h3>
         <p className="cover-note">{t('about.offlineLine')}</p>
-        {/* #errReportsRow, the error-report toggle: error reporting is wave 7 */}
+        {/* wave 7b (I9): 1.0's #errReportsRow — its toggle reads and writes beuk.errors.v1 as 1.0's wireErrToggle does */}
+        <div id="errReportsRow" style={{ margin: '10px 0' }}>
+          <label className="acx-check" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="checkbox" id="setErrReports" checked={errsOn} onChange={(e) => setErrsOn(errsWrite(e.target.checked))} /> <span>{t('errs.toggle')}</span>
+          </label>
+          <p className="cover-note" style={{ marginTop: 6 }}>
+            {t('errs.note')}
+          </p>
+        </div>
         <p className="cover-note" id="installHint">
           {t('about.installHint')}
         </p>

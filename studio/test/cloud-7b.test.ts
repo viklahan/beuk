@@ -587,3 +587,78 @@ describe('offline, the install area and the update bar (H5)', () => {
     off();
   }, 30_000);
 });
+
+describe('error reports (I9): opt-in, 1.0\'s shape, nothing of the book', () => {
+  /** Every request to /api/client-errors, with what fetch was asked (credentials, keepalive). */
+  function reports() {
+    const seen: { body: Rec; init: RequestInit }[] = [];
+    const real = globalThis.fetch;
+    globalThis.fetch = (async (u: RequestInfo | URL, init: RequestInit = {}) => {
+      if (String(u) === '/api/client-errors') seen.push({ body: JSON.parse(String(init.body)) as Rec, init });
+      return real(u, init);
+    }) as typeof fetch;
+    return seen;
+  }
+  const throwAt = (message: string) => window.dispatchEvent(new ErrorEvent('error', { error: Object.assign(new Error(message), { stack: 'Error: ' + message + '\n    at f (https://beuk.example/next/assets/index-abc.js:12:34)' }), message }));
+
+  it('off by default: an error the page raises sends nothing', async () => {
+    desk(SALT());
+    await bootCloud();
+    const seen = reports();
+    const off = platformInit(cm, { sw: null, registration: Promise.resolve(null), reload: () => undefined });
+    throwAt('Cannot read properties of undefined');
+    await tick(50);
+    expect(seen).toEqual([]);
+    off();
+  }, 30_000);
+
+  it("on (beuk.errors.v1 = on): one report of 1.0's shape per distinct error, without cookies; book text, titles, file names and e-mails scrubbed", async () => {
+    const hostile = BOOK('real/salt-road-book-one');
+    (hostile.meta as Rec).title = '<img src=x onerror="window.__pw=1"> The Salt Road of Secrets';
+    desk(hostile);
+    await bootCloud();
+    localStorage.setItem('beuk.errors.v1', 'on');
+    const seen = reports();
+    const off = platformInit(cm, { sw: null, registration: Promise.resolve(null), reload: () => undefined });
+    const title = String((hostile.meta as Rec).title);
+    // an error the page itself raises while the hostile book is open, and one that quotes what 1.0's filter promises to
+    // take out: a long passage, a file name, an e-mail address, a long token, a web address's query
+    const passage = String(((hostile.sections as Rec[]).find((x) => String(x.content || '').length > 80)!.content as string)).replace(/["\s]+/g, ' ').slice(0, 60);
+    throwAt("Cannot read properties of null (reading 'textContent')");
+    throwAt("Cannot read properties of null (reading 'textContent')"); // the same error: reported once
+    throwAt(`Could not read "${passage}" from "My Draft Final v3.docx" for ada.quill@example.test at /api/x?token=abc (9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c)`);
+    await tick(50);
+    expect(seen.length).toBe(2);
+    for (const { body, init } of seen) {
+      expect(Object.keys(body)).toEqual(['kind', 'message', 'stack', 'build', 'lang', 'device', 'at']);
+      expect(body.kind).toBe('error');
+      expect(init.credentials).toBe('omit');
+      expect(init.method).toBe('POST');
+      const sent = JSON.stringify(body) + String(body.message) + String(body.stack);
+      for (const leak of [title, '<img', 'Salt Road', passage, 'My Draft Final', '.docx', 'ada.quill', 'example.test', '9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c', 'token=abc', 'correct horse battery'])
+        expect(sent).not.toContain(leak);
+    }
+    expect(seen[0]!.body.message).toBe("Cannot read properties of null (reading 'textContent')");
+    expect(seen[1]!.body.message).toBe('Could not read "[…]" from "[file]" for [email] at /api/x ([token])');
+    // at most 1.0's five per page
+    for (let i = 0; i < 8; i++) throwAt('another error ' + i);
+    await tick(50);
+    expect(seen.length).toBe(5);
+    off();
+    void hazards;
+  }, 30_000);
+});
+
+describe('help codes (I9): /help/errors/<code> links', () => {
+  it("1.0's EPUBCheck result links a message's BEUK code to the error dictionary, and only a real code", () => {
+    const html = cm.api.epubCheckResultHtml({ status: 'done', result: { passed: false, counts: { fatal: 0, errors: 1, warnings: 0, infos: 0, usages: 0 }, messages: [
+      { severity: 'ERROR', message: 'RSC-005 a finding', location: 'OEBPS/Text/c.xhtml', beuk: 'BEUK-E123' },
+      { severity: 'ERROR', message: 'another', beuk: 'BEUK-E1"><script>x</script>' },
+    ] } }) as string;
+    const box = document.createElement('div');
+    box.innerHTML = html;
+    const links = [...box.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+    expect(links).toEqual(['/help/errors/BEUK-E123']);
+    expect(hazards(html)).toEqual([]);
+  });
+});

@@ -471,7 +471,11 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   // wave 7b (H5): the platform's install area and update bar (1.0's pwa record, isStandalone, renderInstallArea,
   // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /next/), its listeners
   // 1.0's initPlatform lines (src/cloud/platform.ts)
-  'pwa', 'isStandalone', 'renderInstallArea', 'pwaOnLangChange', 'showUpdateBar', 'wireUpdateFlow'];
+  'pwa', 'isStandalone', 'renderInstallArea', 'pwaOnLangChange', 'showUpdateBar', 'wireUpdateFlow',
+  // wave 7b (I9): the opt-in error report (BEUK:errors, BEUK:errscrub) — off unless beuk.errors.v1 is "on"; the message
+  // and stack scrubbed of addresses, e-mails, ids, tokens, long quotes and file names; at most five a page, each once;
+  // sent without cookies to POST /api/client-errors. Its window listeners are 1.0's lines (src/cloud/platform.ts)
+  'BEUK_ERRORS_KEY', 'BEUK_ERR_MAX', 'beukErrorsOn', 'beukErrScrub', 'beukErrDevice', 'beukReportError', 'beukErrBuild', 'beukErrCount', 'beukErrSeen'];
 
 /** What the cloud module takes from its page and from the rest of the studio (src/cloud/cloud.ts). */
 export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', 'fmtDateIntl', 'location', 'setTimeout', 'setInterval',
@@ -497,7 +501,10 @@ export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', '
   // the picture hash worker (1.0's page-relative assets/pichash.js, from /next/)
   'Worker'];
 /** 1.0's top-level lets of the cloud module the studio reads or sets. */
-export const CLOUD_VARS = ['uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloudRetryTimer', 'cloudSaveInFlight', 'cloudSaveFollowUp', 'authMode', 'portalFreshSignIn', 'billingPausedSaid'];
+export const CLOUD_VARS = ['uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloudRetryTimer', 'cloudSaveInFlight', 'cloudSaveFollowUp', 'authMode', 'portalFreshSignIn', 'billingPausedSaid',
+  // wave 7b (I9): the error report's build stamp (the worker's BEUK_SHELL_READY) and its count (tests: a fresh page)
+  'beukErrBuild', 'beukErrCount'];
+
 
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile',

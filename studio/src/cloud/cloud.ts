@@ -584,10 +584,15 @@ export function loadCloud(): Promise<CloudClosure> {
           get href() {
             return window.location.href;
           },
-          // wave 7b: a beta link is this site's (1.0's betaLinkFor: location.origin + "/read/" + token)
+          // wave 7b: a beta link is this site's (1.0's betaLinkFor: location.origin + "/read/" + token); an error report
+          // goes only from a page served over http(s) (1.0's beukReportError)
           get origin() {
             return window.location.origin;
           },
+          get protocol() {
+            return window.location.protocol;
+          },
+
         },
         setTimeout: (fn: () => void, ms?: number) => globalThis.setTimeout(fn, ms),
         setInterval: (fn: () => void, ms?: number) => globalThis.setInterval(fn, ms),
@@ -823,7 +828,10 @@ export function cloudReset(): void {
     loadedCloud.vars.cloudSaveTimer = null;
     loadedCloud.vars.cloudRetryTimer = null;
     loadedCloud.vars.cloudDirty = false;
-    // wave 7b: 1.0's pwa record and beta record, as a fresh page has them
+    // wave 7b: 1.0's pwa record, beta record and error-report counts, as a fresh page has them
+    loadedCloud.vars.beukErrCount = 0;
+    for (const k of Object.keys(loadedCloud.api.beukErrSeen as Rec)) delete (loadedCloud.api.beukErrSeen as Rec)[k];
+
     Object.assign(loadedCloud.api.pwa as Rec, { manifest: null, swSource: '', swState: 'idle', shellCached: false, updateWaiting: null, updateDismissed: false, installPrompt: null, installed: false, reloading: false });
 
     Object.assign(loadedCloud.api.beta as Rec, { shares: [], comments: [], loading: false, error: '', newLink: null, showResolved: false, busy: false, opts: { days: '0', allow: true, nameReq: true } });

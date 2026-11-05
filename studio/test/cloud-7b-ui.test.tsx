@@ -204,7 +204,25 @@ describe('wave 7b in the studio', () => {
     expect(toasts()).not.toContain(t('beta.cMoved'));
   }, 90_000);
 
+  it("Project Settings: 1.0's error-report toggle, off by default, writes beuk.errors.v1 as 1.0 does; 1.0's install hint", async () => {
+    await studio(off);
+    await click($('btnSettings2'));
+    await waitFor(() => expect($('setErrReports')).not.toBe(null));
+    const cb = $('setErrReports') as HTMLInputElement;
+    expect(cb.checked).toBe(false);
+    expect($('errReportsRow').textContent).toContain(t('errs.toggle'));
+    expect($('errReportsRow').textContent).toContain(t('errs.note'));
+    await act(() => void fireEvent.click(cb));
+    expect(localStorage.getItem('beuk.errors.v1')).toBe('on');
+    await act(() => void fireEvent.click(cb));
+    expect(localStorage.getItem('beuk.errors.v1')).toBe(null);
+    // 1.0's renderInstallArea: no prompt kept, so the hint (and not the button)
+    await waitFor(() => expect($('btnInstall').style.display).toBe('none'));
+    expect($('installHint').style.display).toBe('');
+  }, 60_000);
+
   it('signed out: the archive section stays hidden in the export modal', async () => {
+
 
     await studio(off);
     await waitFor(() => expect($('btnExport').getAttribute('aria-disabled')).toBeNull(), { timeout: 20_000 });
