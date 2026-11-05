@@ -81,7 +81,7 @@ export const cloudUi: {
 /* ---- the desk as the shelf code sees it ---- */
 
 /** A whole book on its way to the desk (applyBookDoc's new generation, not open yet). */
-let arriving: { doc: Rec; bookId: string | null; from: Y.Doc | null } | null = null;
+let arriving: { doc: Rec; bookId: string | null; from: Y.Doc | null; toasts: [string, string | undefined][] } | null = null;
 /** History's snapshot of the desk 1.0's resolveConflict took just before its applyBookDoc: the arrival leads with it. */
 let headSnap: { snap: HistoryEntry; ydoc: Y.Doc } | null = null;
 
@@ -182,7 +182,7 @@ function applyBookDoc(doc: unknown): boolean {
   }
   headSnap = null;
   const m = isRec(book.meta) ? (book.meta as Rec) : {};
-  const mine = { doc: book, bookId: typeof m.bookId === 'string' ? m.bookId : null, from };
+  const mine = { doc: book, bookId: typeof m.bookId === 'string' ? m.bookId : null, from, toasts: [] as [string, string | undefined][] };
   arriving = mine;
   serCache = null;
   void (async () => {
@@ -200,8 +200,10 @@ function applyBookDoc(doc: unknown): boolean {
       if (arriving !== mine) return;
       arriving = null;
       serCache = null;
-      if (y) deskChanged(y, true);
-      else {
+      if (y) {
+        deskChanged(y, true);
+        for (const [msg, icon] of mine.toasts) pageToast.fn(msg, icon);
+      } else {
         // review C1: the new generation did not open — the desk is still the book it was, so its link is put back as this
         // device stored it (1.0's code had already set the arriving book's link; a write of that is dropped)
         clearTimeout(linkTimer);
@@ -513,7 +515,9 @@ export function loadCloud(): Promise<CloudClosure> {
       void loadPrint().then((pc) => (printMod = pc as unknown as { api: Rec }));
       const cm = m.createCloudClosure({
         state: stateProxy,
-        toast: (msg: string, icon?: string) => pageToast.fn(msg, icon),
+        // carried from 7a (the double toast): what 1.0's code says while a book is arriving (its "opened" toast) waits for
+        // the arrival — said when the new generation opens, dropped when it does not (the honest words are said there)
+        toast: (msg: string, icon?: string) => (arriving ? void arriving.toasts.push([msg, icon]) : pageToast.fn(msg, icon)),
         samplePicsRequire: async () => undefined,
         JSZip: undefined,
         t: (k: string, p?: Rec) => closureT()(k, p),
@@ -584,7 +588,6 @@ export function loadCloud(): Promise<CloudClosure> {
         // wave 7b: bulk import, beta links and the archive list
         renderBulkChrome: () => undefined,
         betaRenderChrome: () => undefined,
-        renderArchiveList: () => undefined,
         printReadyUi,
         cloudConfirm: (o: Rec) => cloudUi.confirm(o),
         // the print file storeMakePrintJob uploads: print's own code, on the open book's export state
@@ -599,6 +602,9 @@ export function loadCloud(): Promise<CloudClosure> {
       shelfEnv.upload = (...a) => cm.api.storeUpload(...a);
       shelfEnv.createJob = (...a) => cm.api.storeCreateJob(...a);
       shelfEnv.refreshJobs = (out) => cm.api.storeRefreshJobs(out);
+      // wave 7b: the archive list (1.0's initExport and the print-ready panel call these)
+      shelfEnv.renderArchiveList = () => cm.api.renderArchiveList();
+      shelfEnv.loadArchive = () => cm.api.cloudLoadArchive();
       if (typeof window !== 'undefined') (window as unknown as { beukCloud?: unknown }).beukCloud = cloudSeam;
       return cm;
     });

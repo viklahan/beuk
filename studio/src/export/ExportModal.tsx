@@ -12,7 +12,7 @@ import { StackEntry } from '../shell/Dialog';
 import { useToast } from '../shell/Toasts';
 import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
-import { exportBegin, exportBody, exportLinger, exportReset, exportRun, exportUi, loadSerialize } from './state';
+import { exportBegin, exportBody, exportLinger, exportReset, exportResume, exportRun, exportUi, loadSerialize } from './state';
 import { printWire } from '../print/print';
 import { importUi, importWire } from '../import/import';
 
@@ -205,6 +205,7 @@ export function ExportModal() {
               exportEnv.openAuth = () => undefined;
             });
           });
+          off.push(archiveWire(c, modal));
         } finally {
           pageEnv.$ = page$;
         }
@@ -214,7 +215,10 @@ export function ExportModal() {
         // (src/print/print.ts); the modal is usable once they are wired
         // wave 6: 1.0's import around Add a Book (src/import/import.ts: its answers resume in the export session)
         return Promise.all([printWire(), importWire()]).then(() => {
-          if (alive) setBuilt(true);
+          if (!alive) return;
+          setBuilt(true);
+          // wave 7b: 1.0's renderCloudChrome shows the archive (and the beta links) for a signed-in writer
+          cloudIfLoaded()?.api.renderCloudChrome();
         });
       })
       .catch(() => undefined);
@@ -251,6 +255,39 @@ export function ExportModal() {
       })}
     </>
   );
+}
+
+/** Wave 7b (H1's archive): 1.0's four archive buttons, as 1.0's initCloud wires them — each builds its file with 1.0's
+ *  own export code in the export session (the click opened it; what the build waits on resumes in it) and hands it to
+ *  1.0's cloudArchiveExport in the shelf's module. 2.0's sample keeps its pictures on the desk (4c: samplePicsReady and
+ *  samplePicsHold never hold here). */
+function archiveWire(c: Closure, modal: HTMLElement): () => void {
+  const off: (() => void)[] = [];
+  const arc = (format: string, blob: Blob, filename: string, preset: unknown) => cloudIfLoaded()?.api.cloudArchiveExport(format, blob, filename, preset);
+  const jszipMissing = () => {
+    if ((window as unknown as { JSZip?: unknown }).JSZip) return false;
+    exportUi.toast(closureT()('toast.jszipLoading'), 'loader');
+    return true;
+  };
+  const on = (id: string, fn: () => unknown) => {
+    const b = modal.querySelector<HTMLElement>('#' + id);
+    if (!b) return;
+    b.addEventListener('click', fn);
+    off.push(() => b.removeEventListener('click', fn));
+  };
+  on('btnArcEpub', async () => {
+    if (jszipMissing()) return;
+    const blob = (await exportResume(c.api.buildEpubBlob())) as Blob;
+    return arc('epub', blob, c.api.platformFilename(), (c.getState() as unknown as { exportPlatform?: unknown }).exportPlatform);
+  });
+  on('btnArcMd', () => arc('markdown', new Blob([c.api.buildMarkdown()], { type: 'text/markdown;charset=utf-8' }), c.api.slug(c.getState().meta.title) + '.md', null));
+  on('btnArcHtml', () => arc('html', new Blob([c.api.buildStandaloneHtml()], { type: 'text/html;charset=utf-8' }), c.api.slug(c.getState().meta.title) + '.html', null));
+  on('btnArcDocx', async () => {
+    if (jszipMissing()) return;
+    const blob = (await exportResume(c.api.buildDocxBlob())) as Blob;
+    return arc('docx', blob, c.api.slug(c.getState().meta.title) + '.docx', null);
+  });
+  return () => off.forEach((f) => f());
 }
 
 /** The test seam (e2e): 1.0's export code on the open book's (corrected) state, inside the export session. */

@@ -126,7 +126,8 @@ export function loadPrint(): Promise<PrintClosure> {
         storeMakePrintJob: (o?: unknown) => shelfPrintJob(o),
         // wave 7a: 1.0's own, in the shelf's module (before it loads: nothing to re-read)
         storeRefreshJobs: (out: unknown) => (shelfEnv.refreshJobs ? shelfEnv.refreshJobs(out) : Promise.resolve(true)),
-        cloudLoadArchive: () => undefined,
+        // wave 7b: 1.0's own (the shelf's module): a print-ready PDF done is listed in the archive
+        cloudLoadArchive: () => shelfEnv.loadArchive?.() ?? null,
         noteBookEdited: () => undefined,
         autoSnapshot: () => null,
         local: { editSeq: 0 },

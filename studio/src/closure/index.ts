@@ -1214,11 +1214,21 @@ const closureCrypto = {
 export const shelf: { asked: number; refused: string[] } = { asked: 0, refused: [] };
 /** Wave 7a: the seams light up — 1.0's own storeMakePrintJob and its three neighbours, in the shelf's module
  *  (src/cloud/cloud.ts sets these once it has loaded; before that, and in tests without it, the stand-ins answer). */
-export const shelfEnv: { makePrintJob: ((o?: unknown) => Promise<unknown>) | null; upload: ((...a: unknown[]) => Promise<unknown>) | null; createJob: ((...a: unknown[]) => Promise<unknown>) | null; refreshJobs: ((out: unknown) => Promise<boolean>) | null } = {
+export const shelfEnv: {
+  makePrintJob: ((o?: unknown) => Promise<unknown>) | null;
+  upload: ((...a: unknown[]) => Promise<unknown>) | null;
+  createJob: ((...a: unknown[]) => Promise<unknown>) | null;
+  refreshJobs: ((out: unknown) => Promise<boolean>) | null;
+  /** Wave 7b: 1.0's renderArchiveList and cloudLoadArchive, in the shelf's module once it has loaded (before: nothing). */
+  renderArchiveList: (() => void) | null;
+  loadArchive: (() => unknown) | null;
+} = {
   makePrintJob: null,
   upload: null,
   createJob: null,
   refreshJobs: null,
+  renderArchiveList: null,
+  loadArchive: null,
 };
 export async function shelfPrintJob(o?: unknown): Promise<unknown> {
   shelf.asked++;
@@ -1389,8 +1399,9 @@ export function loadClosure(): Promise<Closure> {
         // wave 5b: print's own module (src/print/print.ts)
         runPrintPreflight: () => printEnv.preflight(),
         renderPrintControls: () => printEnv.controls(),
-        renderArchiveList: () => undefined,
-        cloudLoadArchive: () => undefined,
+        // wave 7b: the archive list is the shelf's module's (1.0's initExport opens the modal with them, signed in)
+        renderArchiveList: () => shelfEnv.renderArchiveList?.(),
+        cloudLoadArchive: () => shelfEnv.loadArchive?.() ?? null,
         // wave 5d (F10): the store check's shelf half (see shelf above); its continuation (storeRunServer's next step)
         // resumes in the export session
         storeMakePrintJob: (o?: unknown) => exportEnv.resume(shelfPrintJob(o)),

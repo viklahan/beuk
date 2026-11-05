@@ -444,7 +444,9 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   'acctChangePassword', 'acctSignOutEverywhere', 'portalTakeFreshSignIn', 'portalNote', 'portalRender', 'portalRefresh', 'portalResend', 'billingDate',
   'billingPlanRender', 'billingGo', 'billingNotePaused', 'planReconciliation', 'cloudReconnectFlush', 'raiseConflict', 'resolveConflict',
   'localReconcileOnSignIn', 'localLinkSnapshot', 'storeMakePrintJob', 'storeUpload', 'storeCreateJob', 'storeRefreshJobs', 'net', 'setConnectivity',
-  'onReconnect', 'renderNetPill', 'bookDocsSame', 'bookIdsMatch', 'picIsRef', 'PIC_REF'];
+  'onReconnect', 'renderNetPill', 'bookDocsSame', 'bookIdsMatch', 'picIsRef', 'PIC_REF',
+  // wave 7b: the archive list (H1's remainder) — the shelf's exports, a file saved there, and EPUBCheck on one
+  'cloudLoadArchive', 'renderArchiveList', 'cloudArchiveExport', 'cloudRunEpubCheck', 'epubCheckResultHtml'];
 /** What the cloud module takes from its page and from the rest of the studio (src/cloud/cloud.ts). */
 export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', 'fmtDateIntl', 'location', 'setTimeout', 'setInterval',
   // the one `cloud` (src/closure/index.ts cloudFacts: every module reads the same object)
@@ -459,7 +461,7 @@ export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', '
   // the rest of the page: the editor's focus, the streak, the series Covenant (the main closure's), wave 7b's parts
   // (bulk import, beta links, the archive) and the print-ready panel's job record (print's module)
   'focusEditor', 'renderStreak', 'bibleSeriesFlush', 'bibleSeriesRefresh', 'bibleSeriesSignOut', 'bibleSeriesModalReset', 'bibleSeriesResolve',
-  'renderBulkChrome', 'betaRenderChrome', 'renderArchiveList', 'printReadyUi',
+  'renderBulkChrome', 'betaRenderChrome', 'printReadyUi',
   // the calm confirm (2.0's useConfirm, 1.0's cloudConfirm), and the print file storeMakePrintJob uploads (print's module,
   // in the export session)
   'cloudConfirm', 'buildPrintHtml', 'preparePrintPress', 'printFilename',

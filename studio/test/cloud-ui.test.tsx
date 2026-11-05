@@ -358,7 +358,8 @@ describe('the seams light up (constraint 89)', () => {
     // declined: 1.0's cloudEnsureLinked refuses, and 1.0 says the shelf is needed; nothing is sent
     await click($('btnPrintReadyPdf'));
     await waitFor(() => expect($('printReadyNote').textContent).toBe(t('store.serverNeedShelf')));
-    expect(net.requests.filter((r) => /\/api\/(exports|jobs)/.test(r.path))).toEqual([]);
+    // (wave 7b: 1.0's initExport lists the archive for a signed-in writer — its one GET — and nothing else is sent)
+    expect(net.requests.filter((r) => /\/api\/(exports|jobs)/.test(r.path)).map((r) => r.method + ' ' + r.path)).toEqual(['GET /api/exports']);
     // brought to the shelf (1.0's Bring it to my shelf), the same button makes the job
     cloudFacts.linkState = 'unlinked';
     await click($('btnPrintReadyPdf'));
