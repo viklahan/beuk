@@ -84,6 +84,7 @@ export function probeCloud(fetcher: typeof fetch = globalThis.fetch?.bind(global
 /** Tests only: forget the probe. */
 export function resetCloudProbe(): void {
   probed = null;
+  cloudBootHook.p = null; // wave 7a: and the shelf's boot answer (the next probe asks again)
   cloudFacts.available = false;
   cloudFacts.user = null;
 }
