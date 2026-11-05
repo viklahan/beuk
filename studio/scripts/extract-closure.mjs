@@ -232,7 +232,10 @@ export const EXTRA_ROOTS = [
   'startBulkImport', 'bulkPrepareEntries', 'bulkRunQueue', 'bulkBuildBook', 'bulkBatchContext', 'bulkShelfFingerprints', 'bulkCreateShelfBook',
   'renderBulkSummary', 'renderBulkChrome', 'bulkCollectDrop', 'bulkWalkEntry', 'bulkParseFrontmatter', 'bulkResolveVaultText', 'bulkHashText',
   'bulkFingerprint', 'bulkDocWords', 'bulkIsImage', 'bulkBusy',
+  // (lifted already for the preview's inline Markdown: named so 1.0's bulk vault self-check reaches it through the api)
+  'inlineMd',
 ];
+
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
  *  lifted too, in 1.0's order, after the declarations (ONE SOURCE: nothing retyped). */
