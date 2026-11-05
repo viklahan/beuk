@@ -39189,6 +39189,10 @@
         const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
         const keepHistory = state.history, keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
         const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn, keepEditAt = cloud.lastEditAt;
+        /* BEUK:onereader (V, 2026-11-04) — the open book's shelf link: a file's import clears the desk it runs on
+           (replaceBodyChapters unlinks it, BEUK:importshelf), and that desk is the sandbox's, not the open book's. A bulk
+           import or Add a Book left the open book unlinked, so its next save put a second copy of it on the shelf. */
+        const keepLink = { linkedId: cloud.linkedId, linkState: cloud.linkState, baseRevision: cloud.baseRevision, baseUpdatedAt: cloud.baseUpdatedAt, shelfUpdatedAt: cloud.shelfUpdatedAt };
         const keepRebase = wlogRebase;
         /* the box set's volumes added so far stay the open book's (the arrivals below are other books: applyBookDoc would clear them) */
         const keepVolumes = state.boxSetVolumes;
@@ -39213,6 +39217,7 @@
           if (summaryBox) summaryBox.style.display = keepSummary;
           sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson;
           cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; cloud.lastEditAt = keepEditAt;
+          Object.assign(cloud, keepLink);
           wlogRebase = keepRebase;
           renderSampleButton();
         }
