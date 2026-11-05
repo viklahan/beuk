@@ -655,8 +655,11 @@ describe('error reports (I9): opt-in, 1.0\'s shape, nothing of the book', () => 
       for (const leak of [title, '<img', 'Salt Road', passage, 'My Draft Final', '.docx', 'ada.quill', 'example.test', '9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c', 'token=abc', 'correct horse battery'])
         expect(sent).not.toContain(leak);
     }
-    expect(seen[0]!.body.message).toBe("Cannot read properties of null (reading 'textContent')");
-    expect(seen[1]!.body.message).toBe('Could not read "[…]" from "[file]" for [email] at /api/x ([token])');
+    // V's ruling (review I-2): no free text from an error message is sent — only the error's name (and a help code), and
+    // the stack's frames as function (path:line:col)
+    expect(seen[0]!.body.message).toBe('Error');
+    expect(seen[1]!.body.message).toBe('Error');
+    for (const { body } of seen) expect(body.stack).toBe('at f (/next/assets/index-abc.js:12:34)');
     // at most 1.0's five per page
     for (let i = 0; i < 8; i++) throwAt('another error ' + i);
     await tick(50);
@@ -681,13 +684,10 @@ describe('help codes (I9): /help/errors/<code> links', () => {
 });
 
 describe('review I-2: an error that quotes the open book (decision 5)', () => {
-  // KNOWN GAP, for V (not fixed: 1.0's filter is production's error reporting, V's call): 1.0's own note says "an error
-  // that quotes a few of your own words could still carry them" — an unquoted title does (OBSERVED: "Cannot open Salt Road
-  // — Book One (chapter 2)" is sent as it is), and so does a passage in a quote cut off and never closed (OBSERVED, 1.0's
-  // beukErrScrub run alone: '…paragraph: <"This book follows the hybrid-narrative archetype: ' is kept). Whether 2.0's
-  // libraries throw such messages (ProseMirror's content errors) is a LEAD, not checked. it.fails: passes only while the
-  // gap stands.
-  it.fails("KNOWN GAP (For V): an error naming the open book's title unquoted, or quoting a passage cut off, carries it", async () => {
+  // V's ruling (2026-11-04, review I-2): the report carries no free text of the error at all, so an error that quotes
+  // the open book (its title unquoted, a passage in a quote cut off and never closed — what 1.0's filter let through)
+  // sends none of it.
+  it("an error naming the open book's title unquoted, or quoting a passage cut off, sends none of it (only names and frames)", async () => {
     desk(SALT());
     await bootCloud();
     localStorage.setItem('beuk.errors.v1', 'on');
@@ -705,10 +705,18 @@ describe('review I-2: an error that quotes the open book (decision 5)', () => {
     window.dispatchEvent(new ErrorEvent('error', { error: Object.assign(new Error(msg), { stack: 'Error: ' + msg }), message: msg }));
     window.dispatchEvent(new ErrorEvent('error', { error: new Error(`Cannot open ${title} (chapter 2)`), message: `Cannot open ${title} (chapter 2)` }));
     await tick(50);
-    off();
     expect(seen.length).toBe(2);
-    const leaked = [para.slice(0, 20), title].filter((x) => seen.some((b) => b.includes(x)));
-    console.info('I-2 RECORD: sent', JSON.stringify(seen.map((b) => (JSON.parse(b) as Rec).message)), 'leaked', JSON.stringify(leaked));
+    const leaked = [para.slice(0, 20), para.slice(0, 8), title, 'Salt Road', 'chapter 2', 'Invalid content'].filter((x) => seen.some((b) => b.includes(x)));
     expect(leaked).toEqual([]);
+    expect(seen.map((b) => (JSON.parse(b) as Rec).message)).toEqual(['Error', 'Error']);
+    // a help code in the message, and a TypeError, keep what V allows: the name and the code
+    const stack = 'TypeError: Cannot read ' + title + ' (BEUK-E123)\n    at g (https://beuk.example/next/assets/a.js?v=2#h:1:2)\n    at https://beuk.example/next/b.js:3:4';
+    window.dispatchEvent(new ErrorEvent('error', { error: Object.assign(new TypeError('x'), { stack }), message: 'Uncaught TypeError: Cannot read ' + title + ' (BEUK-E123)' }));
+    await tick(50);
+    const third = JSON.parse(seen[2]!) as Rec;
+    expect(third.message).toBe('TypeError BEUK-E123');
+    expect(third.stack).toBe('at g (/next/assets/a.js:1:2)\nat /next/b.js:3:4');
+    expect(seen[2]).not.toContain('Salt Road');
+    off();
   }, 30_000);
 });

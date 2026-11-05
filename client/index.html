@@ -9557,10 +9557,28 @@
         try {
           if (!beukErrorsOn() || beukErrCount >= BEUK_ERR_MAX) return;
           if (!/^https?:$/.test(location.protocol) || typeof fetch !== "function") return;
-          const msg = beukErrScrub(String(message == null ? "" : message).replace(/\s+/g, " ").trim()).slice(0, 300);
-          if (!msg || msg === "Script error.") return; /* cross-origin: nothing to learn */
-          const stk = beukErrScrub(String(stack == null ? "" : stack).split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 15).join("\n")).slice(0, 2000);
-          const key = kind + "|" + msg + "|" + (stk.split("\n").filter((l) => /:\d+/.test(l))[0] || "");
+          const raw = String(message == null ? "" : message).replace(/\s+/g, " ").trim();
+          if (!raw || raw === "Script error.") return; /* cross-origin: nothing to learn */
+          /* BEUK:errname (V, 2026-11-04) — no free text of the error leaves the page: an error's message can quote anything
+             (a title unquoted, a passage cut off mid-quote) and no pattern filter catches all of it. Sent: the error's name and
+             a help code it names, and the stack's frames as function (path:line:col) — no message line, no address beyond its
+             path, no query. The message itself stays here, only to tell one error from another. */
+          const src = String(stack == null ? "" : stack);
+          const named = /^\s*(?:Uncaught\s+)?([A-Z][A-Za-z]{0,40})(?::|\s*$)/.exec(src.split("\n")[0] || "") || /^\s*(?:Uncaught\s+)?([A-Z][A-Za-z]{0,40}(?:Error|Exception))\b/.exec(raw);
+          const code = /\bBEUK-[A-Z]\d{3}\b/.exec(raw + "\n" + src);
+          const msg = (named ? named[1] : kind === "rejection" ? "Rejection" : "Error") + (code ? " " + code[0] : "");
+          const frame = (line) => {
+            const m = /^(?:at\s+)?(?:(.*?)\s*\(|(.*?)@)?([^\s()@]*?):(\d+):(\d+)\)?$/.exec(line.trim());
+            if (!m) return "";
+            let where = m[3];
+            try { if (/^[a-z][\w+.-]*:\/\//i.test(where)) where = new URL(where).pathname; } catch (e) { return ""; }
+            where = where.replace(/[?#].*$/, "");
+            const fn = String(m[1] || m[2] || "").trim();
+            const pos = where + ":" + m[4] + ":" + m[5];
+            return "at " + (fn && /^[\w$.<> ]{1,80}$/.test(fn) ? fn + " (" + pos + ")" : pos);
+          };
+          const stk = src.split("\n").map(frame).filter(Boolean).slice(0, 15).join("\n").slice(0, 2000);
+          const key = kind + "|" + beukErrScrub(raw).slice(0, 300) + "|" + (stk.split("\n")[0] || "");
           if (beukErrSeen[key]) return;
           beukErrSeen[key] = 1;
           beukErrCount++;
