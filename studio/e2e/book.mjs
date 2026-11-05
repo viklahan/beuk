@@ -934,7 +934,11 @@ async function historyChecks(origin) {
       await titleIs(page, A.book.meta.title);
       const back = await exportBackup(page);
       check(label.includes('Before opening a backup') && rbody.includes('Before opening a backup'), `wave 1a #1: History lists "${label.trim()}", and Restore asks first ("${rbody.slice(0, 50)}…")`);
-      check(JSON.stringify(noHistory(back.json.book)) === JSON.stringify(noHistory(old.json.book)), 'wave 1a #1: "Restore the whole book" brings the old book back exactly (export-equal, key order included, History aside)');
+      // formatVersion is 1.0's label, not content (BEUK:bookformat: bookDocsSame and the sample fingerprint ignore it);
+      // a snapshot carries it as 1.0's serializeBook writes it (14e2e98), so a restored book may gain `formatVersion: 1`
+      const noLabel = (b) => { const o = noHistory(b); delete o.formatVersion; return o; };
+      const labelOk = back.json.book.formatVersion === undefined || back.json.book.formatVersion === 1;
+      check(labelOk && JSON.stringify(noLabel(back.json.book)) === JSON.stringify(noLabel(old.json.book)), `wave 1a #1: "Restore the whole book" brings the old book back exactly (export-equal, key order included, History and 1.0's formatVersion label aside; label ${JSON.stringify(back.json.book.formatVersion)})`);
       check(back.json.book.history[0]?.auto === 'restore' && back.json.book.history[1]?.auto === 'backup', `wave 1a #1: and the restore is itself undoable (History: ${JSON.stringify(back.json.book.history.map((h) => h.auto))})`);
       const gens = await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name).filter((n) => n.startsWith('beuk-next-book-')));
       note(`book generations on the device after the restore: ${gens.length}`);
