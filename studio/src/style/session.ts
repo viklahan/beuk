@@ -416,7 +416,10 @@ const ATTRS = new Set(['class', 'id', 'title', 'alt', 'role', 'tabindex', 'type'
   // wave 5c: the manuscript's fields (a textarea's rows, the e-mail field's autocomplete) and its title page's dir
   'rows', 'autocomplete', 'dir',
   // wave 6: a report group shown open (irRenderReport: the dropped group, or one of six items or fewer)
-  'open']);
+  'open',
+  // wave 7b: the new beta link's field (betaRenderSection: readonly)
+  'readonly']);
+
 const STYLE_PROPS = new Set(['font-family', 'font-size', 'font-weight', 'font-style', 'font-variant', 'text-align', 'text-transform', 'letter-spacing',
   'line-height', 'opacity', 'margin', 'margin-top', 'margin-bottom', 'display', '--sw',
   // wave 4c: the cover maker's swatches (background) and the hardcover legend (color, background), paint values only
@@ -436,7 +439,9 @@ const MEDIA = /^[\w.+-]+\/[\w.+-]+$/;
 const HELP_LINK = /^\/help\/errors\/BEUK-[A-Z]\d{3}$/;
 /** Wave 6: the import report's chips, each a link to its own group in the same dialog (irRenderReport: #ir-g-<group>). */
 const IR_LINK = /^#ir-g-[a-z]+$/;
-const linkOk = (v: string): boolean => HELP_LINK.test(v) || IR_LINK.test(v);
+/** Wave 7b: the archive's Download link (renderArchiveList: /api/exports/<id>/download, this site's own). */
+const ARC_LINK = /^\/api\/exports\/[0-9a-f-]{36}\/download$/;
+const linkOk = (v: string): boolean => HELP_LINK.test(v) || IR_LINK.test(v) || ARC_LINK.test(v);
 
 function cleanStyle(v: string): string {
   const out: string[] = [];

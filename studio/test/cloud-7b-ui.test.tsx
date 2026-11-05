@@ -156,6 +156,11 @@ describe('wave 7b in the studio', () => {
     const post = net.requests.find((r) => r.method === 'POST' && r.path.startsWith('/api/exports'))!;
     expect(post.path).toMatch(/^\/api\/exports\?manuscriptId=[0-9a-f-]{36}&format=markdown&filename=[^&]+\.md$/);
     await waitFor(() => expect($('archiveList').querySelectorAll('.arc-row').length).toBe(1));
+    // 1.0's Download link for the archived file, through the studio's cleaner (the export modal is a guarded root)
+    const a = $('archiveList').querySelector('.arc-row a');
+    expect(a?.getAttribute('href')).toMatch(/^\/api\/exports\/[0-9a-f-]{36}\/download$/);
+    expect(a?.textContent).toBe('Download');
+
   }, 90_000);
 
   it('signed out: the archive section stays hidden in the export modal', async () => {
