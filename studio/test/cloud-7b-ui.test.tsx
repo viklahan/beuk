@@ -16,6 +16,7 @@ import { cloudReset, cloudUi } from '../src/cloud/cloud';
 import { resetCloudProbe } from '../src/pictures/stock';
 import { exportBook } from '../../src/book/editor/index';
 import { live } from '../src/history/history';
+import { activeEditor, activeEditorSectionId } from '../src/editor/active';
 import { fixtures } from './fixtures';
 import { installCanvas } from './print-fixture';
 import { hazards } from './hazards';
@@ -163,7 +164,48 @@ describe('wave 7b in the studio', () => {
 
   }, 90_000);
 
+  it("beta links: 1.0's share section after the archive; a reader's comment opens from the sidebar and jumps to its passage in 2.0's editor", async () => {
+    await studio(off);
+    await signUp(email(), true);
+    await waitFor(() => expect(cloudFacts.linkState).toBe('linked'));
+    await waitFor(() => expect($('btnExport').getAttribute('aria-disabled')).toBeNull(), { timeout: 20_000 });
+    await click($('btnExport'));
+    await waitFor(() => expect(isOpen('modalExport')).toBe(true));
+    expect($('archiveSec').nextElementSibling?.id).toBe('betaSec');
+    await waitFor(() => expect($('betaSec').textContent).toContain(t('beta.none')));
+    await click($('btnBetaCreate'));
+    await waitFor(() => expect($('betaNewUrl')).not.toBe(null), { timeout: 20_000 });
+    const token = Object.values(JSON.parse(localStorage.getItem('beuk.betaTokens.v1')!) as Record<string, string>)[0]!;
+    expect(($('betaNewUrl') as HTMLInputElement).value).toBe(location.origin + '/read/' + token);
+    expect($('betaNewUrl').hasAttribute('readonly')).toBe(true);
+    await waitFor(() => expect($('betaSec').querySelectorAll('.beta-row').length).toBe(1));
+    // a reader leaves a comment on a passage of chapter 2
+    const book = exportBook(desk.ydoc!) as Rec;
+    const secs = book.sections as Rec[];
+    const idx = secs.findIndex((s, i) => s.type === 'chapter' && i > secs.findIndex((x) => x.type === 'chapter'));
+    const content = String(secs[idx]!.content);
+    const quote = content.split(/\n\s*\n/)[1]!.split(/\s+/).slice(0, 5).join(' ');
+    const r = await net.fetch('/read/' + token + '/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ readerName: 'Ann', sectionId: secs[idx]!.id, paragraph: 1, quote, body: 'This line.' }) });
+    expect(r.status).toBe(201);
+    await click($('btnCloseExport'));
+    expect($('btnBetaComments').getAttribute('aria-label')).toBe(t('beta.cOpen'));
+    await click($('btnBetaComments'));
+    await waitFor(() => expect(isOpen('modalBetaComments')).toBe(true));
+    await waitFor(() => expect($('betaCBody').querySelector('[data-bc-jump]')).not.toBe(null), { timeout: 20_000 });
+    await click($('betaCBody').querySelector('[data-bc-jump]'));
+    expect(isOpen('modalBetaComments')).toBe(false);
+    // 2.0's editor holds that chapter, the quoted words selected
+    await waitFor(() => expect(activeEditorSectionId()).toBe(secs[idx]!.id), { timeout: 10_000 });
+    await waitFor(() => {
+      const ed = activeEditor()!.editor;
+      const { from, to } = ed.state.selection;
+      expect(ed.state.doc.textBetween(from, to, ' ')).toBe(quote);
+    }, { timeout: 10_000 });
+    expect(toasts()).not.toContain(t('beta.cMoved'));
+  }, 90_000);
+
   it('signed out: the archive section stays hidden in the export modal', async () => {
+
     await studio(off);
     await waitFor(() => expect($('btnExport').getAttribute('aria-disabled')).toBeNull(), { timeout: 20_000 });
     await click($('btnExport'));

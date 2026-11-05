@@ -26,6 +26,8 @@ import { deskIsUntouchedSample } from '../sample/sample';
 import { covRun } from '../covenant/covenant';
 import { printRun, loadPrint } from '../print/print';
 import { bookMeta } from '../book/store';
+import { desk as pageDesk } from '../environment/page';
+import { activeEditor, activeEditorSectionId } from '../editor/active';
 
 /* Step 5 wave 7a (inventory H1-H4): the shelf. 1.0's own cloud code (client/index.html, lifted into its own module by
    scripts/extract-closure.mjs: src/generated/closure-cloud.js) runs here — the transport and its guards, the shelf
@@ -68,7 +70,12 @@ export const cloudUi: {
   iconRoots: () => ParentNode[];
   /** Where a redirect goes (billing's checkout and portal): the page's own location by default. */
   go: (url: string) => void;
+  /** Wave 7b (H7): 1.0's betaJump in 2.0's editor — the comment's section opened, its passage selected (CloudHost). */
+  jump: (c: Rec) => Promise<void>;
 } = {
+  jump: (c) => betaJumpInStudio(c),
+
+
   ydoc: () => null,
   replace: async () => null,
   focusEditor: () => undefined,
@@ -101,12 +108,26 @@ const stateProxy = new Proxy({} as Rec, {
   get(_t, k) {
     if (k === 'meta') return deskMeta();
     if (k === 'history') return [];
+    // wave 7b (H7): 1.0's beta code reads the open book's sections (an empty book has nothing to share; the comments are
+    // grouped and named by them)
+    if (k === 'sections') return deskSections();
     return undefined;
   },
   set() {
     return true; // resolveConflict's re-seat of History: the arrival already leads with the snapshot (applyBookDoc)
   },
 });
+
+/** Wave 7b: 1.0's state.sections of the desk (its arrival's lines), cached for an unchanged book. */
+let secCache: { key: unknown; ver: number; out: unknown[] } | null = null;
+function deskSections(): unknown[] {
+  const key = arriving ? arriving.doc : cloudUi.ydoc();
+  const ver = arriving ? -1 : key ? verOf(key as Y.Doc) : 0;
+  if (secCache && secCache.key === key && secCache.ver === ver) return secCache.out;
+  const out = onDesk((_c, st) => ((st as unknown as { sections?: unknown[] }).sections ?? []).slice(), [] as unknown[]);
+  secCache = { key, ver, out };
+  return out;
+}
 
 /** The book format v1 of the desk: the arriving book, else the open book's exportBook. */
 function deskBook(): Rec | null {
@@ -246,6 +267,35 @@ function snapshotForeignDoc(doc: unknown, name: string): unknown {
   } finally {
     c.setState(prev);
   }
+}
+
+/* ---- wave 7b (H7): a comment's "Jump to paragraph", in 2.0's editor ---- */
+
+/** 1.0's betaJump, line by line, in 2.0's editor: the comment's section (1.0's state of the desk) opened in the desk, the
+ *  comments closed, the passage found by 1.0's own betaLocate (the quoted words, else the paragraph), 1.0's "moved" toast
+ *  when it is not exact, and the passage selected in the chapter's editor (1.0's #editorArea stand-in maps its text
+ *  offsets) and brought into view. 2.0 mounts the chapter's editor after the selection: the selection waits for it. */
+export async function betaJumpInStudio(c: Rec): Promise<void> {
+  const cm = loadedCloud;
+  if (!cm) return;
+  const secs = deskSections() as Rec[];
+  const i = secs.findIndex((x) => x && x.id === c.sectionId);
+  if (i < 0) return;
+  const s = secs[i]!;
+  cm.api.betaCloseComments();
+  pageDesk.select(i);
+  pageDesk.setCenter('content');
+  const hit = cm.api.betaLocate(s.content, c) as { start: number; end: number; exact: boolean } | null;
+  if (!hit || !hit.exact) pageToast.fn(closureT()('beta.cMoved'), 'info');
+  if (!hit) return;
+  for (let k = 0; k < 60 && activeEditorSectionId() !== s.id; k++) await new Promise((r) => setTimeout(r, 50));
+  if (activeEditorSectionId() !== s.id) return;
+  const area = pageEnv.$('editorArea') as { focus: () => void; setSelectionRange: (a: number, b: number) => void } | null;
+  if (!area) return;
+  area.focus();
+  area.setSelectionRange(hit.start, hit.end);
+  const ed = activeEditor()?.editor;
+  if (ed && !ed.isDestroyed) ed.view.dispatch(ed.state.tr.scrollIntoView());
 }
 
 /* ---- the device's link (1.0's BEUK:local link record, per book) ---- */
@@ -534,6 +584,10 @@ export function loadCloud(): Promise<CloudClosure> {
           get href() {
             return window.location.href;
           },
+          // wave 7b: a beta link is this site's (1.0's betaLinkFor: location.origin + "/read/" + token)
+          get origin() {
+            return window.location.origin;
+          },
         },
         setTimeout: (fn: () => void, ms?: number) => globalThis.setTimeout(fn, ms),
         setInterval: (fn: () => void, ms?: number) => globalThis.setInterval(fn, ms),
@@ -589,7 +643,8 @@ export function loadCloud(): Promise<CloudClosure> {
         // wave 7b (G3): bulk import's chrome is 1.0's renderBulkChrome, in the main closure with the rest of bulk import
         renderBulkChrome: () => closureIfLoaded()?.api.renderBulkChrome(),
 
-        betaRenderChrome: () => undefined,
+        // wave 7b (H7): a comment's "Jump to paragraph" — 2.0's editor (cloudUi.jump, set by CloudHost)
+        betaJump: (c: Rec) => void cloudUi.jump(c),
         printReadyUi,
         cloudConfirm: (o: Rec) => cloudUi.confirm(o),
         // the print file storeMakePrintJob uploads: print's own code, on the open book's export state
@@ -749,6 +804,7 @@ export function cloudReset(): void {
   arriving = null;
   headSnap = null;
   serCache = null;
+  secCache = null;
   linkBook = null;
   local.signedOut = false;
   local.restoredLink = null;
@@ -767,5 +823,8 @@ export function cloudReset(): void {
     loadedCloud.vars.cloudSaveTimer = null;
     loadedCloud.vars.cloudRetryTimer = null;
     loadedCloud.vars.cloudDirty = false;
+    // wave 7b: 1.0's beta record, as a fresh page has it
+    Object.assign(loadedCloud.api.beta as Rec, { shares: [], comments: [], loading: false, error: '', newLink: null, showResolved: false, busy: false, opts: { days: '0', allow: true, nameReq: true } });
   }
 }
+

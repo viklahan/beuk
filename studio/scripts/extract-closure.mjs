@@ -460,7 +460,14 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   'localReconcileOnSignIn', 'localLinkSnapshot', 'storeMakePrintJob', 'storeUpload', 'storeCreateJob', 'storeRefreshJobs', 'net', 'setConnectivity',
   'onReconnect', 'renderNetPill', 'bookDocsSame', 'bookIdsMatch', 'picIsRef', 'PIC_REF',
   // wave 7b: the archive list (H1's remainder) — the shelf's exports, a file saved there, and EPUBCheck on one
-  'cloudLoadArchive', 'renderArchiveList', 'cloudArchiveExport', 'cloudRunEpubCheck', 'epubCheckResultHtml'];
+  'cloudLoadArchive', 'renderArchiveList', 'cloudArchiveExport', 'cloudRunEpubCheck', 'epubCheckResultHtml',
+  // wave 7b (H7): beta readers, the author's side (BEUK:beta) — the share section in the export modal (create with its
+  // expiry and comment settings, the list, copy, republish, revoke), the token kept on this device only
+  // (beuk.betaTokens.v1), the sidebar's Comments button and the reader comments dialog (grouped by section, resolve,
+  // reopen); the reader's page is the server's (/read) and is not here
+  'BETA_TOKENS_KEY', 'beta', 'betaTokens', 'betaRememberToken', 'betaLinkFor', 'betaGate', 'betaInjectStyles', 'betaInjectDom', 'betaFmtDate',
+  'betaRenderButton', 'betaRenderSection', 'betaLoadShares', 'betaCreate', 'betaCopy', 'betaOnClick', 'betaSectionName', 'betaRenderComments',
+  'betaLoadComments', 'betaOpenComments', 'betaCloseComments', 'betaLocate', 'betaOnCommentsClick', 'betaRenderChrome', 'betaOnLangChange'];
 /** What the cloud module takes from its page and from the rest of the studio (src/cloud/cloud.ts). */
 export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', 'fmtDateIntl', 'location', 'setTimeout', 'setInterval',
   // the one `cloud` (src/closure/index.ts cloudFacts: every module reads the same object)
@@ -475,7 +482,10 @@ export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', '
   // the rest of the page: the editor's focus, the streak, the series Covenant (the main closure's), wave 7b's parts
   // (bulk import, beta links, the archive) and the print-ready panel's job record (print's module)
   'focusEditor', 'renderStreak', 'bibleSeriesFlush', 'bibleSeriesRefresh', 'bibleSeriesSignOut', 'bibleSeriesModalReset', 'bibleSeriesResolve',
-  'renderBulkChrome', 'betaRenderChrome', 'printReadyUi',
+  'renderBulkChrome', 'printReadyUi',
+  // wave 7b (H7): a comment's "Jump to paragraph" lands in 2.0's editor (1.0's betaJump drives its textarea): 2.0's own
+  'betaJump',
+
   // the calm confirm (2.0's useConfirm, 1.0's cloudConfirm), and the print file storeMakePrintJob uploads (print's module,
   // in the export session)
   'cloudConfirm', 'buildPrintHtml', 'preparePrintPress', 'printFilename',

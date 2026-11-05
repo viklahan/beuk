@@ -210,6 +210,18 @@ export function ExportModal() {
           pageEnv.$ = page$;
         }
         opener = stub;
+        // wave 7b (H7): 1.0's betaInit line on #btnExport (after initExport's): a fresh share section, its list loaded
+        const betaOpen = () => {
+          const cm = cloudIfLoaded();
+          if (!cm) return;
+          const b = cm.api.beta as { newLink: unknown; error: string };
+          b.newLink = null;
+          b.error = '';
+          cm.api.betaRenderSection();
+          if (cm.api.betaGate() === 'ready') void cm.api.betaLoadShares();
+        };
+        stub.addEventListener('click', betaOpen);
+
         (window as unknown as { beukExport?: unknown }).beukExport = exportSeam;
         // wave 5b: 1.0's initPrint and initPrintView on this markup (the print section) and the print dialogs
         // (src/print/print.ts); the modal is usable once they are wired
@@ -217,8 +229,11 @@ export function ExportModal() {
         return Promise.all([printWire(), importWire()]).then(() => {
           if (!alive) return;
           setBuilt(true);
-          // wave 7b: 1.0's renderCloudChrome shows the archive (and the beta links) for a signed-in writer
-          cloudIfLoaded()?.api.renderCloudChrome();
+          // wave 7b: 1.0's betaInjectDom puts the share section after the archive (this modal is built again for each
+          // book), and 1.0's renderCloudChrome shows the archive and the beta links for a signed-in writer
+          const cm = cloudIfLoaded();
+          cm?.api.betaInjectDom();
+          cm?.api.renderCloudChrome();
         });
       })
       .catch(() => undefined);

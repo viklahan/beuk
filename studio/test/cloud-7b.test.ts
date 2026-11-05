@@ -15,7 +15,7 @@ import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { bootCloud, cloudReset, cloudUi, deskChanged, loadCloud, type CloudClosure } from '../src/cloud/cloud';
 import { fixtures } from './fixtures';
 import { hazards } from './hazards';
-import { browser, startShelf, type Shelf } from './cloud-server';
+import { browser, fakeStripe, startShelf, type Shelf } from './cloud-server';
 
 /* Wave 7b: the shelf's remaining parts (the archive list, beta links, bulk import, offline, error reports), 1.0's own
    code in the shelf's module, against the REAL server (test/cloud-server.ts). The harness is wave 7a's review harness
@@ -325,5 +325,116 @@ describe('bulk import to the shelf (G3)', () => {
     await tick(300);
     expect(net.requests.slice(n)).toEqual([]);
     void closureIfLoaded;
+  }, 30_000);
+});
+
+describe('beta readers: share links and comments (H7)', () => {
+  const sec = () => $('betaSec');
+  const tokens = () => JSON.parse(localStorage.getItem('beuk.betaTokens.v1') || '{}') as Record<string, string>;
+  async function ready() {
+    const r = await linked(SALT());
+    cm.api.betaInjectDom();
+    cm.api.renderCloudChrome();
+    return r;
+  }
+  async function create(days = '0') {
+    const b = cm.vars.beta ?? cm.api.beta;
+    b.opts.days = days;
+    await cm.api.betaCreate();
+    await tick(50);
+  }
+
+  it("signed out, 1.0's section says so and offers 1.0's sign-in; nothing is asked of the server", async () => {
+    desk(SALT());
+    await bootCloud();
+    cm.api.betaInjectDom();
+    cm.api.renderCloudChrome();
+    expect(sec().querySelector('[data-beta-gate]')!.getAttribute('data-beta-gate')).toBe('signedOut');
+    expect(sec().textContent).toContain(t('beta.signedOut'));
+    expect(paths(/^\/api\/shares/)).toEqual([]);
+  }, 30_000);
+
+  it("create: 1.0's POST /api/shares body, the token kept only in beuk.betaTokens.v1, the link shown once, the list as 1.0 lists it", async () => {
+    const { id } = await ready();
+    await create();
+    const post = net.requests.find((r) => r.method === 'POST' && r.path === '/api/shares')!;
+    expect(JSON.parse(post.body!)).toEqual({ manuscriptId: id, allowComments: true, readerNameRequired: true });
+    const tk = tokens();
+    expect(Object.keys(tk).length).toBe(1);
+    const token = Object.values(tk)[0]!;
+    expect(token).toMatch(/^[A-Za-z0-9_-]{20,64}$/);
+    expect(($('betaNewUrl') as HTMLInputElement).value).toBe(location.origin + '/read/' + token);
+    const rows = sec().querySelectorAll('.beta-row');
+    expect(rows.length).toBe(1);
+    expect(rows[0]!.querySelector('.beta-st')!.textContent).toBe(t('beta.stActive'));
+    expect(rows[0]!.querySelector('[data-beta-copy]')).not.toBe(null);
+    expect(paths(/^\/api\/shares/)).toEqual(['POST /api/shares', 'GET /api/shares?manuscriptId=<id>']);
+    // the token is nowhere else this device keeps (the book, the shelf link store)
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)!;
+      if (k !== 'beuk.betaTokens.v1') expect(localStorage.getItem(k)).not.toContain(token);
+    }
+  }, 30_000);
+
+  it('a link that expires: 1.0 sends expiresInDays and lists its expiry; revoke asks first, then POSTs revoke as 1.0 does', async () => {
+    await ready();
+    await create('7');
+    const post = net.requests.find((r) => r.method === 'POST' && r.path === '/api/shares')!;
+    expect((JSON.parse(post.body!) as Rec).expiresInDays).toBe(7);
+    expect(sec().querySelector('.beta-row .a-meta')!.textContent).toContain(t('beta.expires', { date: '' }).trim().split(' ')[0]!);
+    const asked: Rec[] = [];
+    cloudUi.confirm = async (o) => (asked.push(o), true);
+    const shareId = sec().querySelector('.beta-row')!.getAttribute('data-share-id')!;
+    (sec().querySelector('[data-beta-revoke]') as HTMLElement).click();
+    for (let i = 0; i < 40 && !toasts.includes(t('beta.revokedToast')); i++) await tick(50);
+    expect(asked[0]!.title).toBe(t('beta.revokeTitle'));
+    expect(net.requests.find((r) => r.path === '/api/shares/' + shareId + '/revoke')!.body).toBe('{}');
+    expect(toasts).toContain(t('beta.revokedToast'));
+    await tick(100);
+    expect(sec().querySelector('.beta-st')!.textContent).toBe(t('beta.stRevoked'));
+  }, 30_000);
+
+  it("a reader's comments: listed as 1.0 groups them, resolved as 1.0 resolves them; a hostile comment is text", async () => {
+    await ready();
+    await create();
+    const token = Object.values(tokens())[0]!;
+    const book = SALT();
+    const s0 = (book.sections as Rec[]).find((s) => s.type === 'chapter')!;
+    const evil = '<img src=x onerror="window.__pw=1"><script>window.__pw=2</script>';
+    const leave = (body: Rec) => net.fetch('/read/' + token + '/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    expect((await leave({ readerName: 'Ann', sectionId: s0.id, paragraph: 0, quote: '', body: 'Lovely opening.' })).status).toBe(201);
+    expect((await leave({ readerName: '<b onmouseover="window.__pw=3">x</b>', sectionId: s0.id, paragraph: 1, quote: evil, body: evil })).status).toBe(201);
+
+    document.body.insertAdjacentHTML('beforeend', '');
+    cm.api.betaOpenComments();
+    for (let i = 0; i < 40 && !$('betaCBody').querySelector('.bc-item'); i++) await tick(50);
+    expect(paths(/^\/api\/shares\/comments/)).toEqual(['GET /api/shares/comments?manuscriptId=<id>']);
+    const items = $('betaCBody').querySelectorAll('.bc-item');
+    expect(items.length).toBe(2);
+    expect($('betaCBody').querySelector('.bc-sec')!.textContent).toBe([s0.number, s0.title].filter(Boolean).join(' · ') || String(s0.type));
+    expect(hazards($('modalBetaComments').innerHTML)).toEqual([]);
+    expect((window as unknown as { __pw?: unknown }).__pw).toBe(undefined);
+    expect(items[1]!.querySelector('.bc-body')!.textContent).toBe(evil);
+    const first = items[0]!.getAttribute('data-comment-id')!;
+    (items[0]!.querySelector('[data-bc-resolve]') as HTMLElement).click();
+    for (let i = 0; i < 40 && $('betaCBody').querySelectorAll('.bc-item').length !== 1; i++) await tick(50);
+    expect(net.requests.some((r) => r.method === 'POST' && r.path.endsWith('/comments/' + first + '/resolve'))).toBe(true);
+    expect($('betaCBody').querySelectorAll('.bc-item').length).toBe(1); // resolved ones hidden, as 1.0 shows them
+  }, 30_000);
+
+  it('Jump to paragraph: 1.0 closes the comments and 2.0 opens that chapter (betaJump is 2.0\'s, through the studio)', async () => {
+    await ready();
+    await create();
+    const token = Object.values(tokens())[0]!;
+    const s0 = (SALT().sections as Rec[]).find((s) => s.type === 'chapter')!;
+    await net.fetch('/read/' + token + '/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ readerName: 'Ann', sectionId: s0.id, paragraph: 0, quote: '', body: 'Here.' }) });
+    const jumped: unknown[] = [];
+    cloudUi.jump = async (c) => void jumped.push(c);
+    cm.api.betaOpenComments();
+    for (let i = 0; i < 40 && !$('betaCBody').querySelector('[data-bc-jump]'); i++) await tick(50);
+    ($('betaCBody').querySelector('[data-bc-jump]') as HTMLElement).click();
+    await tick(50);
+    expect(jumped.length).toBe(1);
+    expect((jumped[0] as Rec).sectionId).toBe(s0.id);
   }, 30_000);
 });

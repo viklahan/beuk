@@ -270,6 +270,9 @@ export function Shell() {
                 <Icon name="History" />
                 <span className="side-tool-lab">{t('side.toolHistory')}</span>
               </button>
+              {/* wave 7b: 1.0's reader Comments button, after History (src/cloud/CloudHost.tsx) */}
+              <CloudSlot id={CLOUD_SLOTS.beta} />
+
               <button
                 className="side-tool"
                 id="btnBible"

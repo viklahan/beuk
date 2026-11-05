@@ -30,6 +30,8 @@ export const CLOUD_SLOTS = {
   // wave 7b: bulk import's hint under the Import button (G3), the update bar under the header (H5)
   bulkHint: 'cloudBulkHintSlot',
   update: 'cloudUpdateSlot',
+  // wave 7b: the sidebar's reader Comments button, after History (H7)
+  beta: 'cloudBetaSlot',
 } as const;
 export function CloudSlot({ id }: { id: string }) {
   // React never renders children here: 1.0's code owns what is inside
@@ -106,6 +108,9 @@ function wire(cm: CloudClosure, off: (() => void)[]): void {
   // billingInit
   on('btnPlanUpgrade', 'click', () => void a.billingGo('/api/billing/checkout', $('btnPlanUpgrade')), off);
   on('btnPlanManage', 'click', () => void a.billingGo('/api/billing/portal', $('btnPlanManage')), off);
+  // betaInjectDom's line for the Comments button (wave 7b, H7): it opens 1.0's reader comments
+  on('btnBetaComments', 'click', () => a.betaOpenComments(), off);
+
   // initBulk (wave 7b, G3): 1.0's three doors — the file picker, the folder picker, a drop on the shelf panel — feed 1.0's
   // startBulkImport (the main closure's, on the import wiring: each file made a book on a desk of its own)
   const bulk = (entries: unknown[]) => void importWire().then((c) => c.api.startBulkImport(entries)).catch(() => undefined);
@@ -183,7 +188,7 @@ export function CloudHost() {
   };
 
   const started = bk.phase !== 'starting';
-  const [open, setOpen] = useState<'auth' | 'shelf' | null>(null);
+  const [open, setOpen] = useState<'auth' | 'shelf' | 'beta' | null>(null);
   const cm = useRef<CloudClosure | null>(null);
   useLayoutEffect(() => {
     const el = host.current;
@@ -201,23 +206,33 @@ export function CloudHost() {
         return s;
       };
       const slots = [slot(CLOUD_SLOTS.account, markup.account), slot(CLOUD_SLOTS.net, markup.netPill), slot(CLOUD_SLOTS.sync, markup.syncRow),
-        slot(CLOUD_SLOTS.bulkHint, markup.bulkHint), slot(CLOUD_SLOTS.update, markup.updateBar)];
+        slot(CLOUD_SLOTS.bulkHint, markup.bulkHint), slot(CLOUD_SLOTS.update, markup.updateBar),
+        // wave 7b (H7): the sidebar's Comments button, the element 1.0's betaInjectDom makes after History (put in place
+        // here, so React's tools row is never written into by 1.0's code; its listener is 1.0's line, in wire)
+        slot(CLOUD_SLOTS.beta, '<button class="side-tool" id="btnBetaComments" type="button"></button>')];
+      // 1.0's betaInjectDom: its styles, the reader comments dialog (on <body>), and the share section after the archive
+      // when the export modal is in place (ExportModal calls it again whenever it builds the modal)
+      c.api.betaInjectDom();
       const mc = closureIfLoaded();
       for (const r of [el, ...slots]) {
         if (!r) continue;
         drawIcons(r);
         if (mc) translateCover(mc, r);
       }
-      for (const id of ['modalAuth', 'modalShelf']) {
+      for (const id of ['modalAuth', 'modalShelf', 'modalBetaComments']) {
         const m = document.getElementById(id)!;
         guardRoots.add(m);
         off.push(() => guardRoots.delete(m));
       }
-      const auth = document.getElementById('modalAuth')!, shelf = document.getElementById('modalShelf')!;
-      const mo = new MutationObserver(() => setOpen(auth.classList.contains('open') ? 'auth' : shelf.classList.contains('open') ? 'shelf' : null));
+      const auth = document.getElementById('modalAuth')!, shelf = document.getElementById('modalShelf')!, beta = document.getElementById('modalBetaComments')!;
+      const mo = new MutationObserver(() =>
+        setOpen(beta.classList.contains('open') ? 'beta' : auth.classList.contains('open') ? 'auth' : shelf.classList.contains('open') ? 'shelf' : null),
+      );
       mo.observe(auth, { attributes: true, attributeFilter: ['class'] });
       mo.observe(shelf, { attributes: true, attributeFilter: ['class'] });
+      mo.observe(beta, { attributes: true, attributeFilter: ['class'] });
       off.push(() => mo.disconnect());
+      off.push(() => beta.remove());
       wire(c, off);
       deskChanged(cloudUi.ydoc());
       void bootCloud();
@@ -255,9 +270,11 @@ export function CloudHost() {
     c.api.renderCloudChrome();
     c.api.renderSyncLine();
     if (document.getElementById('modalShelf')?.classList.contains('open')) c.api.renderShelfList();
+    // wave 7b: 1.0's betaOnLangChange (the Comments button, the share section, the comments dialog if open)
+    c.api.betaOnLangChange();
   }, [lang]);
 
-  const target = open ? document.getElementById(open === 'auth' ? 'modalAuth' : 'modalShelf') : null;
+  const target = open ? document.getElementById(open === 'auth' ? 'modalAuth' : open === 'beta' ? 'modalBetaComments' : 'modalShelf') : null;
   const box = { get current() { return target?.querySelector<HTMLElement>('.modal') ?? null; } };
   return open && target
     ? createPortal(
@@ -267,6 +284,7 @@ export function CloudHost() {
             const c = cm.current;
             if (!c) return;
             if (open === 'auth') c.api.closeAuth();
+            else if (open === 'beta') c.api.betaCloseComments();
             else {
               target.classList.remove('open');
               cloudUi.focusEditor();
