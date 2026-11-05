@@ -438,3 +438,57 @@ describe('beta readers: share links and comments (H7)', () => {
     expect((jumped[0] as Rec).sectionId).toBe(s0.id);
   }, 30_000);
 });
+
+describe('day 22 unpaid (constraint 93): the server refuses, and the client says so as 1.0 does', () => {
+  let stripe: Awaited<ReturnType<typeof fakeStripe>>;
+  let on: Shelf;
+  beforeAll(async () => {
+    stripe = await fakeStripe();
+    on = await startShelf({ stripeWebhookSecret: 'whsec_test_placeholder', stripeSecretKey: 'sk_test_placeholder', stripePriceId: 'price_fixture', stripeApiBase: stripe.base });
+  }, 60_000);
+  afterAll(async () => {
+    await on.close();
+    await stripe.close();
+  });
+  /** Linked on the billing server, then the trial ended a day ago. */
+  async function paused() {
+    net = browser(on.base);
+    globalThis.fetch = net.fetch;
+    const r = await linked(SALT());
+    pageDesk.ydoc = r.y;
+    await on.db.query("update users set trial_ends_at = now() - interval '1 day' where email = $1", [(cloudFacts.user as Rec).email]);
+    toasts.length = 0;
+    return r;
+  }
+
+  it("a beta link refused: 1.0's words for the server's refusal stay in the share section (1.0 fix)", async () => {
+    await paused();
+    cm.api.betaInjectDom();
+    cm.api.renderCloudChrome();
+    const n = net.requests.length;
+    await cm.api.betaCreate();
+    await tick(50);
+    expect(net.requests.slice(n).filter((r) => r.method !== 'GET').map((r) => r.method + ' ' + r.path)).toEqual(['POST /api/shares']);
+    const alert = $('betaSec').querySelector('[role="alert"]');
+    expect(alert?.textContent?.startsWith(t('beta.failed', { error: '' }))).toBe(true);
+    expect(alert?.textContent).toContain('paused');
+    expect(toasts).toContain(t('plan.pausedToast')); // 1.0's apiFetch: a 402 that says paused, said once
+  }, 60_000);
+
+  it('a bulk import refused: each file reported as 1.0 reports a shelf that did not answer; the open book keeps its shelf link (1.0 fix)', async () => {
+    const { id } = await paused();
+    const c = await importWire();
+    $('bulkSummary').style.display = 'none';
+    c.api.startBulkImport([{ file: new File(['# A\n\nSome text here.\n'], 'a.md'), path: 'a.md' }]);
+    for (let i = 0; i < 200 && $('bulkSummary').style.display === 'none'; i++) await tick(50);
+    expect($('bulkSummary').textContent).toContain('a.md — ' + t('bulk.reasonShelf'));
+    expect(cloudFacts.linkedId).toBe(id);
+    expect(cloudFacts.linkState).toBe('linked');
+  }, 60_000);
+
+  it("the archive refused: 1.0's own words", async () => {
+    await paused();
+    await cm.api.cloudArchiveExport('markdown', new Blob(['x']), 'a.md', null);
+    expect(toasts).toContain('That file couldn’t be archived just now — it is still yours to download above');
+  }, 60_000);
+});

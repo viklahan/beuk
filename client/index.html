@@ -73514,7 +73514,11 @@
           } else beta.error = (r && r.__error) || "the server could not be reached";
         } finally {
           beta.busy = false;
+          /* BEUK:beta (V, 2026-11-04) — the list's reload cleared the refusal's words at once (a link refused on day 22
+             unpaid said nothing): they stand until the next try */
+          const refusal = beta.error;
           await betaLoadShares();
+          if (refusal && !beta.error) { beta.error = refusal; betaRenderSection(); }
         }
       }
       async function betaCopy(text) {
