@@ -331,6 +331,8 @@ export function deskChanged(ydoc: Y.Doc | null, own = false): void {
   watched = null;
   serCache = null;
   const id = ydoc ? (typeof metaOf(ydoc).bookId === 'string' ? (metaOf(ydoc).bookId as string) : null) : null;
+  // the shelf's own arrival, seen by the studio before its promise settles (React's effect runs first): still its own
+  if (arriving && ydoc && arriving.bookId === id) own = true;
   if (id !== linkBook) {
     const before = linkBook;
     linkBook = id;

@@ -166,3 +166,31 @@ describe('register, bring the book, save, edit, autosave (H1, H2)', () => {
     expect(document.getElementById('syncText')!.textContent).toBe(t('sync.onShelf'));
   }, 40_000);
 });
+
+describe('opening a shelf book of another book id keeps its link (found by the e2e)', () => {
+  it("the studio's own redraw sees the new generation before applyBookDoc's promise settles: the link is the opened book's", async () => {
+    const b = browser(shelf.base);
+    globalThis.fetch = b.fetch;
+    const [one, two] = [fixtures('real').find((f) => f.name === 'real/salt-road-book-one')!.book, fixtures('real').find((f) => f.name === 'real/reads-you')!.book];
+    desk(one);
+    await bootCloud();
+    const reg = await b.fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'race@example.test', password: 'correct horse battery' }) });
+    cloudFacts.user = ((await reg.json()) as Rec).user;
+    await cm.api.cloudBringBook();
+    expect(cloudFacts.linkState).toBe('linked');
+    const made = (await (await b.fetch('/api/manuscripts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'Two', doc: two }) })).json()) as { manuscript: { id: string } };
+    // as BookProvider + CloudHost do it: the new generation is shown (and its effect runs) before replace() resolves
+    cloudUi.replace = async (doc) => {
+      await tick(0); // the device store writes first (importToDevice awaits)
+      const y2 = new Y.Doc();
+      importBook(structuredClone(doc), y2);
+      cloudUi.ydoc = () => y2;
+      deskChanged(y2);
+      return y2;
+    };
+    await cm.api.cloudOpenBook(made.manuscript.id);
+    await tick(50);
+    expect(cloudFacts.linkedId).toBe(made.manuscript.id);
+    expect(cloudFacts.linkState).toBe('linked');
+  }, 30_000);
+});

@@ -5,7 +5,10 @@
    - /next/<file>       → client/next/<file> (the 2.0 build)
    - /next/<route>      → client/next/index.html (the app's own routes),
                           or state.navStatus when set (a 502 during a deploy)
-   - /api/*             → 404 JSON (no shelf in these runs)
+   - /api/*             → 404 JSON (no shelf in these runs), or, opt-in (wave 7a, constraint 84: startServer({ api: true })),
+                          the REAL app (src/app.ts) on an embedded Postgres (PGlite, as tests/helpers.ts runs it), its
+                          mail captured and never sent, billing off unless the caller passes Stripe test settings
+                          pointed at a fake on 127.0.0.1. The earlier waves keep the 404.
    - anything else      → client/<path>, else 404
    Every response carries the Content-Security-Policy (and the other
    default headers) copied from the Caddyfile at start, so the browser
@@ -13,6 +16,7 @@
 import { createServer } from 'node:http';
 import { readFileSync, statSync, createReadStream } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -37,7 +41,30 @@ export function caddyHeaders(caddyfile) {
   return out;
 }
 
-export function startServer({ repo, port = 0 }) {
+/** Wave 7a: the real app for /api/*, on PGlite (no Docker), loaded through tsx (the server is TypeScript). */
+async function realApi(repo, overrides = {}) {
+  const tsx = await import(pathToFileURL(path.join(repo, 'node_modules', 'tsx', 'dist', 'esm', 'api', 'index.mjs')).href);
+  tsx.register();
+  const helpers = await import(pathToFileURL(path.join(repo, 'tests', 'helpers.ts')).href);
+  const { buildApp } = await import(pathToFileURL(path.join(repo, 'src', 'app.ts')).href);
+  const db = await helpers.createTestDb();
+  const mail = {
+    sent: [],
+    status: () => ({ configured: true, transport: 'smtp', from: 'beuk@example.test', detail: 'captured (e2e): nothing is sent' }),
+    send: async (m) => {
+      mail.sent.push(m);
+      return { delivered: true, messageId: '<e2e-' + mail.sent.length + '@example.test>' };
+    },
+    verify: async () => ({ ok: true, detail: 'e2e' }),
+  };
+  const clock = { now: null };
+  const config = helpers.testConfig(overrides);
+  const app = buildApp({ db, config, mailer: mail, now: () => clock.now || new Date() });
+  return { app, db, mail, clock, config };
+}
+
+export async function startServer({ repo, port = 0, api = false, apiConfig = {} }) {
+  const shelf = api ? await realApi(repo, apiConfig) : null;
   const client = path.join(repo, 'client');
   const next = path.join(client, 'next');
   const headers = caddyHeaders(readFileSync(path.join(repo, 'Caddyfile'), 'utf8'));
@@ -72,6 +99,11 @@ export function startServer({ repo, port = 0 }) {
       const f = path.resolve(base, '.' + rel);
       return f === base || f.startsWith(base + path.sep) ? f : null;
     };
+    if (p.startsWith('/api/') && shelf) {
+      // the app sets its own headers for its answers
+      for (const k of Object.keys(headers)) res.removeHeader(k);
+      return shelf.app(req, res);
+    }
     if (p.startsWith('/api/')) {
       res.statusCode = 404;
       res.setHeader('Content-Type', 'application/json');
@@ -112,6 +144,7 @@ export function startServer({ repo, port = 0 }) {
         origin,
         headers,
         state,
+        shelf,
         stop: () =>
           new Promise((r) => {
             for (const s of sockets) s.destroy();

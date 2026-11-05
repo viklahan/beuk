@@ -734,6 +734,8 @@ async function onePackedPics(origin) {
 async function latency(origin, opts = {}) {
   const delay = opts.delay ?? 30, count = opts.count ?? 300;
   const ctx = await newContext({ serviceWorkers: 'block' });
+  // wave 7a: a context made ready first (signed in on the shelf server)
+  if (opts.prepare) await opts.prepare(ctx);
   try {
     const page = await openNext(ctx, origin);
     await openBackup(page, DUMAS.file);
@@ -7155,6 +7157,474 @@ async function userThemesChecks(origin) {
   if (parts.includes('hostile')) await userThemesHostile(origin);
 }
 
+/* ---- wave 7a: sign-in, the shelf, conflicts, account (constraints 84-91) ----
+   A server of its own for this step (serve.mjs { api: true }): the REAL app (src/app.ts) on PGlite, mail captured, never
+   sent; billing on against a fake Stripe on 127.0.0.1 for the day-22 states. 1.0 (/studio) and 2.0 (/next) run beside
+   each other on the same origin, as the same account. 1.0's own functions are called by name in its page (its classic
+   script's globals), the way the earlier waves drive it. */
+const W7A_PW = 'correct horse battery';
+let w7aSeq = 0;
+const w7aEmail = (tag) => `w7a-${tag}-${++w7aSeq}-${Date.now()}@example.test`;
+async function w7aFakeStripe() {
+  const { createServer } = await import('node:http');
+  const calls = [];
+  const s = createServer((req, res) => {
+    calls.push(`${req.method} ${req.url}`);
+    res.setHeader('content-type', 'application/json');
+    if (req.url.startsWith('/v1/checkout/sessions')) return res.end(JSON.stringify({ id: 'cs_1', url: 'https://checkout.example.test/1' }));
+    if (req.url.startsWith('/v1/billing_portal/sessions')) return res.end(JSON.stringify({ id: 'bps_1', url: 'https://portal.example.test/1' }));
+    res.statusCode = 404;
+    res.end('{}');
+  });
+  await new Promise((r) => s.listen(0, '127.0.0.1', r));
+  return { base: `http://127.0.0.1:${s.address().port}`, calls, close: () => new Promise((r) => s.close(r)) };
+}
+/** Sign up `email` in this context (its pages share the session cookie). */
+async function w7aSignUp(ctx, origin, email) {
+  const r = await ctx.request.post(origin + '/api/auth/register', { data: { email, password: W7A_PW } });
+  return r.status();
+}
+/** Every manuscript write a page sends (method, path, body). */
+function w7aWrites(page) {
+  const out = [];
+  page.on('request', (r) => {
+    const u = new URL(r.url());
+    if (u.pathname.startsWith('/api/') && r.method() !== 'GET') out.push({ method: r.method(), path: u.pathname + u.search, body: r.postData(), headers: r.headers() });
+  });
+  return out;
+}
+const w7aManuscriptWrites = (list) => list.filter((x) => x.path.startsWith('/api/manuscripts') && (x.method === 'PUT' || x.method === 'POST'));
+/** 2.0 on the shelf server, signed in, with `file` open (its backup). */
+async function w7aNext(ctx, origin, file) {
+  const page = await openNext(ctx, origin);
+  const seen = [];
+  w7aNet.set(page, seen);
+  page.on("response", (r) => { const u = new URL(r.url()); if (u.pathname.startsWith("/api/")) seen.push({ method: r.request().method(), path: u.pathname, status: r.status() }); });
+  page.on("console", (m) => { if (process.env.W7A_CONSOLE) console.log("     [page]", m.type(), m.text().slice(0, 300)); });
+  await openBackup(page, file);
+  await w7aWait(page, () => window.beukCloud?.cloud?.user && window.beukCloud.cloud.available, null, 30_000);
+  return page;
+}
+async function w7aOne(ctx, origin) {
+  const one = await openOne(ctx, origin);
+  await w7aWait(one, () => typeof cloud !== 'undefined' && cloud.available && !!cloud.user, null, 30_000);
+  return one;
+}
+/** waitForFunction, which on a timeout says where the shelf stood (the cloud fields, the sync line, the open dialogs). */
+const w7aNet = new WeakMap();
+async function w7aWait(page, fn, arg, timeout = 60_000) {
+  try {
+    return await page.waitForFunction(fn, arg, { timeout });
+  } catch (e) {
+    const at = await page.evaluate(() => { const c = window.beukCloud?.cloud; return JSON.stringify({ user: !!c?.user, available: c?.available, linkState: c?.linkState, linkedId: c?.linkedId, syncStatus: c?.syncStatus, rev: c?.baseRevision, dirty: window.beukCloud?.dirty, arriving: window.beukCloud?.arriving?.(), sync: document.getElementById("syncText")?.textContent, open: [...document.querySelectorAll(".modal-back.open")].map((x) => x.id), confirm: document.getElementById("confirmTitle")?.textContent, toasts: [...document.querySelectorAll("#toasts .toast")].map((x) => x.textContent) }); }).catch(() => "?");
+    const net = (w7aNet.get(page) || []).slice(-8).map((x) => x.method + " " + x.path + " " + (x.status ?? ""));
+    throw new Error(String(e.message).split(String.fromCharCode(10))[0] + " — the shelf stood: " + at + " — its last requests: " + JSON.stringify(net));
+  }
+}
+const w7aId = (s) => String(s).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<id>');
+
+/* 85: parity beside 1.0 — the shelf copy 2.0 sends equals 1.0's for the same book, and each app opens the other's. */
+async function wave7aParity(srv) {
+  const origin = srv.origin;
+  const list = (process.env.W7A_FIXTURES || '').split(',').filter(Boolean);
+  const books = list.length ? fixtures.filter((f) => list.includes(f.name)) : fixtures;
+  const hostile = (await import(pathToFileURL(path.join(STUDIO, 'test', 'export-fixture.ts')).href).catch(() => null));
+  void hostile;
+  let same = 0, opened2 = 0, opened1 = 0;
+  const bad = [];
+  for (const f of books) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      check((await w7aSignUp(ctx, origin, w7aEmail('p'))) === 201, `wave7a parity ${f.name}: signed up`);
+      const page = await w7aNext(ctx, origin, f.file);
+      const w2 = w7aWrites(page);
+      const start = (await exportBackup(page)).json.book;
+      await page.click('#btnAccount');
+      await page.waitForSelector('#modalShelf.open');
+      await page.click('#btnBringBook');
+      await w7aWait(page, () => window.beukCloud.cloud.linkState === 'linked', null, 60_000);
+      const post2 = w7aManuscriptWrites(w2).find((x) => x.method === 'POST');
+      const id2 = await page.evaluate(() => window.beukCloud.cloud.linkedId);
+      // 1.0: the same book on its desk, brought to the shelf by its own cloudBringBook
+      const one = await w7aOne(ctx, origin);
+      const w1 = w7aWrites(one);
+      await one.evaluate(async (b) => {
+        applyBookDoc(JSON.parse(JSON.stringify(b)));
+        await cloudBringBook();
+      }, start);
+      const post1 = w7aManuscriptWrites(w1).find((x) => x.method === 'POST');
+      const id1 = await one.evaluate(() => cloud.linkedId);
+      const eq = !!post1 && !!post2 && post1.body === post2.body;
+      if (eq) same++;
+      else bad.push(f.name + ' (save)');
+      // 1.0 opens 2.0's copy: what 1.0 then holds is what it held of its own
+      const mine1 = await one.evaluate(() => JSON.stringify(serializeBook()));
+      await one.evaluate(async (id) => {
+        cloudDirty = false;
+        await cloudOpenBook(id);
+      }, id2);
+      const got1 = await one.evaluate(() => JSON.stringify(serializeBook()));
+      if (got1 === mine1) opened1++;
+      else bad.push(f.name + ' (1.0 opens 2.0\'s)');
+      // 2.0 opens 1.0's copy from its shelf list
+      await page.bringToFront();
+      await page.evaluate(() => document.getElementById('modalShelf').classList.remove('open'));
+      await page.click('#btnAccount');
+      await page.waitForSelector(`#shelfList [data-open-book="${id1}"]`, { timeout: 30_000 });
+      await page.click(`#shelfList [data-open-book="${id1}"]`);
+      await w7aWait(page, (id) => window.beukCloud.cloud.linkedId === id && !window.beukCloud.arriving(), id1, 60_000);
+      await page.waitForTimeout(300);
+      const back = (await exportBackup(page)).json.book;
+      if (JSON.stringify(noHistory(back)) === JSON.stringify(noHistory(start))) opened2++;
+      else bad.push(f.name + " (2.0 opens 1.0's)");
+      await harvestCsp(page);
+      await harvestCsp(one);
+    } finally {
+      await ctx.close();
+    }
+  }
+  check(same === books.length, `wave7a constraint 85: the shelf copy 2.0 sends equals 1.0's, byte for byte, for ${same} of ${books.length} books${bad.length ? ' — ' + bad.join('; ') : ''}`);
+  check(opened1 === books.length, `wave7a constraint 85: 1.0 opens 2.0's shelf copy as its own for ${opened1} of ${books.length}`);
+  check(opened2 === books.length, `wave7a constraint 85: 2.0 opens 1.0's shelf copy as the book it sent for ${opened2} of ${books.length} (History aside: 1.0's open keeps it as 1.0 wrote it)`);
+}
+
+/* 86 + decision 3: two devices raise 1.0's three-way notice; two tabs of one device never do. */
+async function wave7aConflict(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const email = w7aEmail('c');
+  const devA = await newContext({ serviceWorkers: 'block' });
+  const devB = await newContext({ serviceWorkers: 'block' });
+  try {
+    await w7aSignUp(devA, origin, email);
+    const a = await w7aNext(devA, origin, f.file);
+    await a.click('#btnAccount');
+    await a.waitForSelector('#modalShelf.open');
+    await a.click('#btnBringBook');
+    await w7aWait(a, () => window.beukCloud.cloud.linkState === 'linked', null, 60_000);
+    const id = await a.evaluate(() => window.beukCloud.cloud.linkedId);
+    await a.evaluate(() => document.getElementById('modalShelf').classList.remove('open'));
+    // device B: the same account, the book opened from its shelf
+    const login = await devB.request.post(origin + '/api/auth/login', { data: { email, password: W7A_PW } });
+    check(login.status() === 200, 'wave7a constraint 86: device B signed in');
+    const b = await openNext(devB, origin);
+    await w7aWait(b, () => window.beukCloud?.cloud?.user, null, 30_000);
+    await b.click('#btnAccount');
+    await b.waitForSelector(`#shelfList [data-open-book="${id}"]`, { timeout: 30_000 });
+    await b.click(`#shelfList [data-open-book="${id}"]`);
+    await w7aWait(b, (x) => window.beukCloud.cloud.linkedId === x && !window.beukCloud.arriving(), id, 60_000);
+    await b.waitForSelector('#manuscript .ms-editor', { timeout: 30_000 });
+    // A types and saves; then B types (its base is the older revision)
+    for (const [p, word] of [[a, ' Alpha-side.'], [b, ' Beta-side.']]) {
+      await p.bringToFront();
+      await p.click('#manuscript .ms-editor');
+      await focused(p);
+      await p.keyboard.press('End');
+      await p.keyboard.type(word);
+      if (p === a) await w7aWait(a, () => window.beukCloud.cloud.syncStatus === 'saved' && !window.beukCloud.dirty, null, 30_000);
+    }
+    await b.waitForSelector('#modalConflict.open', { timeout: 30_000 });
+    const words = await b.evaluate(() => ({ title: document.getElementById('conflictTitle').textContent, buttons: ['btnConflictShelf', 'btnConflictBoth', 'btnConflictMine'].map((x) => document.getElementById(x).textContent) }));
+    // 1.0's own words for the notice, in its page
+    const one = await w7aOne(devB, origin);
+    const want = await one.evaluate(() => ({ title: t('offline.conflictTitle'), buttons: [t('offline.useShelf'), t('offline.keepBoth'), t('offline.keepMine')] }));
+    check(JSON.stringify(words) === JSON.stringify(want), `wave7a constraint 86: device B shows 1.0's three-way notice: ${JSON.stringify(words)}`);
+    await b.bringToFront();
+    await b.click('#btnConflictBoth');
+    await w7aWait(b, () => !document.getElementById('modalConflict').classList.contains('open') && window.beukCloud.cloud.syncStatus === 'saved', null, 30_000);
+    const hb = (await exportBackup(b)).json.book;
+    check(Array.isArray(hb.history) && hb.history[0] && hb.history[0].auto === 'conflict', `wave7a constraint 86: Keep both — History's newest snapshot is the shelf copy ("${hb.history?.[0]?.name}")`);
+    const shelf = await (await devB.request.get(origin + '/api/manuscripts/' + id)).json();
+    const text = JSON.stringify(shelf.manuscript.doc.sections);
+    check(text.includes('Beta-side.') && !text.includes('Alpha-side.'), 'wave7a constraint 86: Keep both — the shelf holds device B\'s writing; device A\'s is kept in B\'s History');
+    await harvestCsp(a);
+    await harvestCsp(b);
+    await harvestCsp(one);
+  } finally {
+    await devA.close();
+    await devB.close();
+  }
+  // decision 3: two tabs of one device on the same book — one writer, no conflict
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    await w7aSignUp(ctx, origin, w7aEmail('t'));
+    const t1 = await w7aNext(ctx, origin, f.file);
+    await t1.click('#btnAccount');
+    await t1.waitForSelector('#modalShelf.open');
+    await t1.click('#btnBringBook');
+    await w7aWait(t1, () => window.beukCloud.cloud.linkState === 'linked', null, 60_000);
+    await t1.evaluate(() => document.getElementById('modalShelf').classList.remove('open'));
+    const w1 = w7aWrites(t1);
+    const t2 = await watch(await ctx.newPage());
+    const w2 = w7aWrites(t2);
+    await t2.goto(origin + '/next/');
+    await w7aWait(t2, () => window.beukCloud?.cloud?.user && window.beukCloud.cloud.linkState === 'linked', null, 30_000);
+    const leaders = [await t1.evaluate(() => window.beukCloud.leader()), await t2.evaluate(() => window.beukCloud.leader())];
+    check(leaders.filter(Boolean).length === 1, `wave7a decision 3: one writer for the book on this device (leaders ${JSON.stringify(leaders)})`);
+    for (const [p, word] of [[t2, ' Tab-two.'], [t1, ' Tab-one.'], [t2, ' Tab-two again.']]) {
+      await p.bringToFront();
+      await p.click('#manuscript .ms-editor');
+      await focused(p);
+      await p.keyboard.press('End');
+      await p.keyboard.type(word);
+      await p.waitForTimeout(3500);
+    }
+    await t1.waitForTimeout(3000);
+    const puts = [...w7aManuscriptWrites(w1), ...w7aManuscriptWrites(w2)];
+    const conflicts = [await t1.$('#modalConflict.open'), await t2.$('#modalConflict.open')].filter(Boolean).length;
+    const fromFollower = (leaders[0] ? w7aManuscriptWrites(w2) : w7aManuscriptWrites(w1)).length;
+    check(conflicts === 0, `wave7a decision 3: two tabs raise no conflict (${conflicts} notices)`);
+    check(fromFollower === 0 && puts.length >= 1, `wave7a decision 3: only the writer tab saves (${puts.length} saves, ${fromFollower} from the other tab)`);
+    const status = [await t1.evaluate(() => window.beukCloud.cloud.syncStatus), await t2.evaluate(() => window.beukCloud.cloud.syncStatus)];
+    note(`wave7a decision 3: the sync status in each tab: ${JSON.stringify(status)}`);
+    const id = await t1.evaluate(() => window.beukCloud.cloud.linkedId);
+    const shelf = await (await ctx.request.get(origin + '/api/manuscripts/' + id)).json();
+    const text = JSON.stringify(shelf.manuscript.doc.sections);
+    check(['Tab-two.', 'Tab-one.', 'Tab-two again.'].every((w) => text.includes(w)), 'wave7a decision 3: the shelf holds the writing of both tabs');
+    await harvestCsp(t1);
+    await harvestCsp(t2);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/* 87: opening, switching books, viewing the account, leaving and coming back send no manuscript write. */
+async function wave7aNoEdit(srv) {
+  const origin = srv.origin;
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    await w7aSignUp(ctx, origin, w7aEmail('g'));
+    const page = await w7aNext(ctx, origin, fixtures.find((x) => x.name === 'real/salt-road-book-one').file);
+    await page.click('#btnAccount');
+    await page.waitForSelector('#modalShelf.open');
+    await page.click('#btnBringBook');
+    await w7aWait(page, () => window.beukCloud.cloud.linkState === 'linked', null, 60_000);
+    const id1 = await page.evaluate(() => window.beukCloud.cloud.linkedId);
+    // a second book on the shelf (made through the API, as another device would)
+    const made = await (await ctx.request.post(origin + '/api/manuscripts', { data: { title: 'Second', doc: fixtures.find((x) => x.name === 'real/reads-you').book } })).json();
+    const writes = w7aWrites(page);
+    const steps = [];
+    await page.reload();
+    await w7aWait(page, () => window.beukCloud?.cloud?.user && window.beukCloud.cloud.linkState === 'linked', null, 30_000);
+    steps.push('reload');
+    for (const id of [made.manuscript.id, id1]) {
+      await page.click('#btnAccount');
+      await page.waitForSelector(`#shelfList [data-open-book="${id}"]`, { timeout: 30_000 });
+      await page.click(`#shelfList [data-open-book="${id}"]`);
+      await w7aWait(page, (x) => window.beukCloud.cloud.linkedId === x && !window.beukCloud.arriving(), id, 60_000);
+      steps.push('opened ' + w7aId(id));
+    }
+    await page.click('#btnAccount');
+    await page.waitForSelector('#modalShelf.open');
+    await page.click('#acctBox summary');
+    await page.click('#btnCloseShelf');
+    steps.push('account viewed');
+    await page.evaluate(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    await page.waitForTimeout(4000);
+    steps.push('hidden and back, 4 s');
+    const w = w7aManuscriptWrites(writes);
+    check(w.length === 0, `wave7a constraint 87: ${steps.join(', ')} — ${w.length} manuscript writes${w.length ? ' ' + JSON.stringify(w.map((x) => x.method + ' ' + w7aId(x.path))) : ''}`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/* 88 + 89: the day-22 states (trial, paid, day 22 unpaid, signed out, offline) beside 1.0: the plan line, the print-ready
+   panel's words and the server's refusal as the only lock; in the paid state the print-ready job's requests equal 1.0's. */
+async function wave7aDay22(srv) {
+  const origin = srv.origin;
+  const db = srv.shelf.db;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  for (const st of ['trial', 'paid', 'day22', 'signedout', 'offline']) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const email = w7aEmail(st);
+      if (st !== 'signedout') await w7aSignUp(ctx, origin, email);
+      if (st === 'day22') await db.query("update users set trial_ends_at = now() - interval '1 day' where email = $1", [email]);
+      if (st === 'paid') {
+        const uid = (await db.query('select id from users where email = $1', [email])).rows[0].id;
+        await db.query("update users set trial_ends_at = now() - interval '1 day', stripe_customer_id = $2 where id = $1", [uid, 'cus_' + uid.slice(0, 8)]);
+        await db.query("insert into billing_subscriptions (stripe_subscription_id, user_id, stripe_customer_id, status, status_since, price_ids, livemode) values ($1, $2, $3, 'active', now(), $4, false)", ['sub_' + uid.slice(0, 8), uid, 'cus_' + uid.slice(0, 8), ['price_fixture']]);
+      }
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      await w7aWait(page, (so) => window.beukCloud?.cloud?.available && (so || !!window.beukCloud.cloud.user), st === 'signedout', 30_000);
+      const one = await openOne(ctx, origin);
+      await w7aWait(one, (so) => typeof cloud !== 'undefined' && cloud.available && (so || !!cloud.user), st === 'signedout', 30_000);
+      const start = (await exportBackup(page)).json.book;
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+      if (st === 'offline') {
+        await ctx.setOffline(true);
+        for (const p of [page, one]) await p.evaluate(() => window.dispatchEvent(new Event('offline')));
+      }
+      // the plan line (signed in)
+      if (st !== 'signedout' && st !== 'offline') {
+        await page.click('#btnAccount');
+        await page.waitForSelector('#modalShelf.open');
+        await page.waitForTimeout(800);
+        const two = await page.evaluate(() => ({ hidden: document.getElementById('planLine').hidden, text: document.getElementById('planText').textContent, up: document.getElementById('btnPlanUpgrade').hidden, mg: document.getElementById('btnPlanManage').hidden }));
+        await one.evaluate(() => { renderShelfList(); $('modalShelf').classList.add('open'); return portalRefresh(); });
+        await one.waitForTimeout(800);
+        const oneSaw = await one.evaluate(() => ({ hidden: document.getElementById('planLine').hidden, text: document.getElementById('planText').textContent, up: document.getElementById('btnPlanUpgrade').hidden, mg: document.getElementById('btnPlanManage').hidden }));
+        check(JSON.stringify(two) === JSON.stringify(oneSaw), `wave7a constraint 88 (${st}): the plan line reads as 1.0's: ${JSON.stringify(two)}${JSON.stringify(two) === JSON.stringify(oneSaw) ? '' : ' — 1.0: ' + JSON.stringify(oneSaw)}`);
+        await page.click('#btnCloseShelf');
+        await one.evaluate(() => $('modalShelf').classList.remove('open'));
+      }
+      // the print-ready panel: the same button in each app, the words it ends on, the requests it sent
+      const w2 = w7aWrites(page), w1 = w7aWrites(one);
+      await page.bringToFront();
+      await page.click('#btnExport');
+      await page.waitForSelector('#modalExport.open #btnPrintReadyPdf', { timeout: 60_000 });
+      await page.click('#btnPrintReadyPdf');
+      await page.waitForTimeout(6000);
+      const twoNote = await page.evaluate(() => document.getElementById('printReadyNote')?.textContent ?? '');
+      await one.bringToFront();
+      await one.evaluate(() => { $('modalExport').classList.add('open'); $('btnPrintReadyPdf').click(); });
+      await one.waitForTimeout(6000);
+      const oneNote = await one.evaluate(() => document.getElementById('printReadyNote')?.textContent ?? '');
+      check(twoNote === oneNote, `wave7a constraint 88 (${st}): the print-ready panel says 1.0's words: "${twoNote.slice(0, 110)}"${twoNote === oneNote ? '' : ' — 1.0: "' + oneNote.slice(0, 110) + '"'}`);
+      const shape = (l) => l.filter((x) => /\/api\/(exports|jobs)/.test(x.path)).map((x) => x.method + ' ' + w7aId(x.path).replace(/filename=[^&]*/, 'filename=<f>') + (x.path.startsWith('/api/jobs') ? ' ' + Object.keys(JSON.parse(x.body || '{}')).join(',') : ''));
+      const r2 = shape(w2), r1 = shape(w1);
+      check(JSON.stringify(r2) === JSON.stringify(r1), `wave7a constraint ${st === 'paid' ? 89 : 88} (${st}): the server requests equal 1.0's: ${JSON.stringify(r2)}`);
+      if (st === 'day22' || st === 'signedout' || st === 'offline') check(r2.length === 0 || st === 'day22', `wave7a constraint 88 (${st}): nothing is sent the server would refuse unless 1.0 sends it too (${r2.length} sent, 1.0 ${r1.length})`);
+      await harvestCsp(page);
+      await harvestCsp(one);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
+/* 90: a hostile display name and a hostile shelf title carry nothing into any modal; no password reaches storage. */
+async function wave7aSafety(srv) {
+  const origin = srv.origin;
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const email = '"><img src=x onerror=window.__pw=1>' + w7aEmail('h');
+    const st = await w7aSignUp(ctx, origin, email);
+    note(`wave7a constraint 90: a hostile e-mail address signs up with ${st} (the server's own check)`);
+    if (st !== 201) await w7aSignUp(ctx, origin, w7aEmail('h2'));
+    const evil = '<img src=x onerror="window.__pw=1"><script>window.__pw=2</script>';
+    await ctx.request.post(origin + '/api/manuscripts', { data: { title: evil, doc: { meta: { title: evil }, sections: [{ id: 's1', kind: 'body', type: 'chapter', title: evil, content: 'x' }] } } });
+    const page = await w7aNext(ctx, origin, fixtures.find((x) => x.name === 'real/reads-you').file);
+    await page.click('#btnAccount');
+    await page.waitForSelector('#shelfList .shelf-row', { timeout: 30_000 });
+    const html = await page.evaluate(() => document.getElementById('modalShelf').outerHTML + document.getElementById('btnAccount').outerHTML);
+    const live = await page.evaluate(() => ({ pw: window.__pw ?? null, imgs: document.querySelectorAll('#modalShelf img, #btnAccount img').length, scripts: document.querySelectorAll('#modalShelf script').length }));
+    check(live.pw === null && live.imgs === 0 && live.scripts === 0 && !/\son[a-z]+=/i.test(html), `wave7a constraint 90: a hostile title on the shelf: nothing ran, no element or handler carried in (${JSON.stringify(live)})`);
+    const store = await page.evaluate(() => JSON.stringify(localStorage));
+    check(!store.includes(W7A_PW_PROBE) && !/password/i.test(store), 'wave7a constraint 90: no credential in localStorage');
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+const W7A_PW_PROBE = W7A_PW;
+
+/* Screenshots (the Finish): the sign-in dialog, the shelf, the account box and the conflict notice beside 1.0's, in Paper,
+   Candlelight and Arabic. */
+async function wave7aScreens(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const diffCtx = await newContext();
+  const diffPage = await diffCtx.newPage();
+  const out = [];
+  try {
+    for (const look of ['paper', 'candlelight', 'ar']) {
+      const ctx = await newContext({ serviceWorkers: 'block' });
+      await ctx.addInitScript((l) => {
+        if (l === 'candlelight') localStorage.setItem('beuk.theme.v1', 'candlelight');
+        if (l === 'ar') localStorage.setItem('beuk.uiLang.v1', 'ar');
+      }, look);
+      try {
+        const page = await openNext(ctx, origin);
+        await openBackup(page, f.file);
+        await w7aWait(page, () => window.beukCloud?.cloud?.available, null, 30_000);
+        const one = await openOne(ctx, origin);
+        await w7aWait(one, () => typeof cloud !== 'undefined' && cloud.available, null, 30_000);
+        const shot = async (p, sel) => {
+          await p.waitForTimeout(400);
+          const el = await p.$(sel);
+          return el ? el.screenshot({ animations: 'disabled' }) : null;
+        };
+        // the sign-in dialog
+        await page.click('#btnAccount');
+        await one.evaluate(() => openAuth());
+        const a2 = await shot(page, '#modalAuth .modal'), a1 = await shot(one, '#modalAuth .modal');
+        await page.keyboard.press('Escape');
+        await one.evaluate(() => closeAuth());
+        // signed in: the shelf and the account box
+        const email = w7aEmail('s' + look);
+        await w7aSignUp(ctx, origin, email);
+        await page.reload();
+        await w7aWait(page, () => window.beukCloud?.cloud?.user, null, 30_000);
+        await one.reload();
+        await w7aWait(one, () => typeof cloud !== 'undefined' && !!cloud.user, null, 30_000);
+        await page.click('#btnAccount');
+        await page.waitForSelector('#modalShelf.open');
+        await one.evaluate(() => $('btnAccount').click());
+        for (const p of [page, one]) await p.evaluate(() => { document.getElementById('acctBox').open = true; });
+        const s2 = await shot(page, '#modalShelf .modal'), s1 = await shot(one, '#modalShelf .modal');
+        await page.keyboard.press('Escape');
+        await one.evaluate(() => $('modalShelf').classList.remove('open'));
+        // the conflict notice, as each app words it for this book
+        await page.evaluate(() => window.beukCloud.api.raiseConflict({ doc: {}, updatedAt: '2026-11-01T10:00:00.000Z' }));
+        await one.evaluate(() => raiseConflict({ doc: {}, updatedAt: '2026-11-01T10:00:00.000Z' }));
+        const c2 = await shot(page, '#modalConflict .modal'), c1 = await shot(one, '#modalConflict .modal');
+        for (const [name, x, y] of [['auth', a2, a1], ['shelf', s2, s1], ['conflict', c2, c1]]) {
+          if (!x || !y) {
+            out.push(`${look} ${name}: not drawn`);
+            continue;
+          }
+          writeFileSync(path.join(OUT, `w7a-${look}-${name}-next.png`), x);
+          writeFileSync(path.join(OUT, `w7a-${look}-${name}-1.0.png`), y);
+          const d = await pixelDiff(diffPage, x, y);
+          out.push(`${look} ${name}: ${(d.ratio * 100).toFixed(2)} %${d.size[0] !== d.size[2] || d.size[1] !== d.size[3] ? ' (sizes ' + d.size.join('×') + ')' : ''}`);
+        }
+        await harvestCsp(page);
+        await harvestCsp(one);
+      } finally {
+        await ctx.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+  note('wave7a screenshots (2.0 against 1.0, pixels over the delta): ' + out.join('; '));
+}
+
+/* 91: the Dumas typing measure with the shelf signed in and the autosave running. */
+async function wave7aLatency(srv) {
+  const r = await latency(srv.origin, { prepare: async (ctx) => w7aSignUp(ctx, srv.origin, w7aEmail('l')) });
+  note(`wave7a latency (signed in, autosave running): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+  check(r.p95 < LATENCY_P95_TARGET_MS, `wave7a constraint 91: p95 under ${LATENCY_P95_TARGET_MS} ms on Dumas, signed in (${r.p95.toFixed(1)} ms)`);
+}
+
+async function wave7aChecks() {
+  const stripe = await w7aFakeStripe();
+  const srv = await startServer({ repo: REPO, api: true, apiConfig: { stripeWebhookSecret: 'whsec_test_placeholder', stripeSecretKey: 'sk_test_placeholder', stripePriceId: 'price_fixture', stripeApiBase: stripe.base } });
+  note(`wave7a: the real server on ${srv.origin} (PGlite), billing in test mode against a fake Stripe on ${stripe.base}`);
+  const only = (process.env.W7A_PARTS || 'parity,conflict,noedit,day22,safety,screens,latency').split(',');
+  try {
+    if (only.includes('parity')) await wave7aParity(srv);
+    if (only.includes('conflict')) await wave7aConflict(srv);
+    if (only.includes('noedit')) await wave7aNoEdit(srv);
+    if (only.includes('day22')) await wave7aDay22(srv);
+    if (only.includes('safety')) await wave7aSafety(srv);
+    if (only.includes('screens')) await wave7aScreens(srv);
+    if (only.includes('latency')) await wave7aLatency(srv);
+    const sent = srv.shelf.mail.sent.length;
+    note(`wave7a: ${sent} mail(s) captured by the server, none sent; Stripe calls (all to the fake on 127.0.0.1): ${stripe.calls.length}`);
+  } finally {
+    await srv.stop().catch(() => undefined);
+    await stripe.close();
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -7186,6 +7656,7 @@ try {
   if (run('wave5c')) await wave5cChecks(srv.origin);
   if (run('wave5d')) await wave5dChecks(srv.origin);
   if (run('wave6')) await wave6Checks(srv.origin);
+  if (run('wave7a')) await wave7aChecks();
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
