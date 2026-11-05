@@ -78,7 +78,7 @@ export const EPUB_CLOSURE: readonly string[] = [
   'normalizeWrapColor', 'normalizeWrapFont', 'normalizeWrapIcon', 'normalizeWrapSpine', 'olCleanTag',
   'olSectionFields', 'olTagKey', 'ornamentHtml', 'ornamentSvg', 'packagedContentImages', 'packagedImages',
   'packagedImagesImpl', 'parseContainers', 'parseImageLine', 'parseXmlDoc', 'partDividerHtml',
-  'pivEnsureStyle', 'pivFootnoteCutCss', 'pivGeometry', 'plateHtml', 'plateImage', 'platformFilename',
+  'picDataSrc', 'pivEnsureStyle', 'pivFootnoteCutCss', 'pivGeometry', 'plateHtml', 'plateImage', 'platformFilename',
   'platformPreset', 'printAccent', 'printBaseFontPt', 'printBigLead', 'printBigType', 'printBleedOn',
   'printBlendHex', 'printColourCss', 'printFootnoteCss', 'printHexRgb', 'printInkFor', 'printLayoutCss',
   'printLayoutNow', 'printMargins', 'printMarginsAuto', 'printNoteFontPt', 'printNoteLinePt',
