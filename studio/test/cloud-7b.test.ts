@@ -543,9 +543,10 @@ describe('offline, the install area and the update bar (H5)', () => {
     expect(reloads).toBe(0);
     $('btnUpdateLater').click();
     expect(($('updateBar') as HTMLElement).hidden).toBe(true);
-    // a later worker: the bar stays dismissed this session (1.0's pwa.updateDismissed)
+    // a later deployment's worker (review I-1: a new one, not the worker the other tab already took)
     (cm.api.pwa as Rec).updateDismissed = false;
-    cm.api.showUpdateBar(f.worker);
+    const later = { state: 'installed', postMessage: (m: unknown) => void f.posted.push(m), addEventListener: () => undefined };
+    cm.api.showUpdateBar(later);
     $('btnUpdateReload').click();
     expect(f.posted).toEqual([{ type: 'SKIP_WAITING' }]);
     f.sw.fire('controllerchange');
@@ -553,7 +554,24 @@ describe('offline, the install area and the update bar (H5)', () => {
     off();
   }, 30_000);
 
+  it('review I-1: another tab took the update first — Reload here still reloads (the worker it would ask is already active)', async () => {
+    document.body.insertAdjacentHTML('beforeend', markup.updateBar);
+    const f = fakeSw(true);
+    let reloads = 0;
+    const off = platformInit(cm, { sw: f.sw as never, registration: Promise.resolve(f.reg as never), reload: () => void reloads++ });
+    await tick(10);
+    expect(($('updateBar') as HTMLElement).hidden).toBe(false);
+    // tab B pressed Reload: the new worker took over; this tab is not reloaded by it
+    f.worker.state = 'activated';
+    f.sw.fire('controllerchange');
+    expect(reloads).toBe(0);
+    $('btnUpdateReload').click();
+    expect(reloads).toBe(1);
+    off();
+  }, 30_000);
+
   it("an update found while the page is open: the bar comes when the new worker is installed (1.0's wireUpdateFlow)", async () => {
+
     document.body.insertAdjacentHTML('beforeend', markup.updateBar);
     const f = fakeSw(false);
     const off = platformInit(cm, { sw: f.sw as never, registration: Promise.resolve(f.reg as never), reload: () => undefined });

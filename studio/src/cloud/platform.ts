@@ -33,6 +33,8 @@ export function platformInit(cm: CloudClosure, o: PlatformOpts): () => void {
     off.push(() => t.removeEventListener(type, fn));
   };
   let asked = false;
+  /** The waiting worker the bar offered when the controller last changed (another tab took it, or this one). */
+  let took: unknown = null;
   let alive = true;
 
   /* The service worker: mind the update (1.0's initPlatform; the registration is 2.0's own) */
@@ -43,6 +45,9 @@ export function platformInit(cm: CloudClosure, o: PlatformOpts): () => void {
       if (d && d.type === 'BEUK_SHELL_READY' && typeof d.cache === 'string' && /^[A-Za-z0-9._-]{1,40}$/.test(d.cache)) cm.vars.beukErrBuild = d.cache;
     });
     listen(sw as unknown as EventTarget, 'controllerchange', () => {
+      // review I-1: another tab may have taken the update: this tab's Reload then reloads at once (the worker it would ask
+      // is already in charge, and would never change the controller again)
+      took = pwa.updateWaiting;
       // 2.0: only the tab that asked for the update reloads (1.0 reloads every tab, after its device save)
       if (!asked || pwa.reloading) return;
       pwa.reloading = true;
@@ -84,9 +89,14 @@ export function platformInit(cm: CloudClosure, o: PlatformOpts): () => void {
     const id = t && t.closest ? t.closest('#btnInstall, #btnUpdateReload, #btnUpdateLater')?.id : null;
     if (id === 'btnInstall') void install();
     else if (id === 'btnUpdateReload') {
-      const w = pwa.updateWaiting as { postMessage: (m: unknown) => void } | null;
+      const w = pwa.updateWaiting as { postMessage: (m: unknown) => void; state?: string } | null;
       asked = true;
-      if (w) {
+      if (w && (w === took || w.state === 'activated' || w.state === 'redundant')) {
+
+        pwa.reloading = true;
+        o.reload();
+      } else if (w) {
+
         try {
           w.postMessage({ type: 'SKIP_WAITING' });
         } catch {
