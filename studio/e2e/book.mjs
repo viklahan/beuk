@@ -7604,8 +7604,8 @@ async function wave7aScreens(srv) {
         await page.click('#btnAccount');
         await page.waitForSelector('#modalShelf.open');
         await one.evaluate(() => $('btnAccount').click());
-        // 1.0's bulk import (#shelfBulk) is wave 7b's (G3): 2.0 keeps it hidden, so 1.0's is hidden for the comparison
-        await one.evaluate(() => { document.getElementById('shelfBulk').style.display = 'none'; });
+        // (wave 7b: 2.0 shows 1.0's bulk import block too, G3: compared as it stands in both)
+
         for (const p of [page, one]) await p.evaluate(() => { document.getElementById('acctBox').open = true; });
         const s2 = await shot(page, '#modalShelf .modal'), s1 = await shot(one, '#modalShelf .modal');
         await page.keyboard.press('Escape');
