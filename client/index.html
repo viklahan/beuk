@@ -52077,7 +52077,7 @@
         }
         /* ==== /BEUK:pics ==== */
         /* ==== BEUK:savesync ==== */
-        if (cloudSaveOwner() !== sentFor && !(sentFor.endsWith("|") && res && res.manuscript && cloud.linkedId === res.manuscript.id)) {
+        if (cloudSaveOwner() !== sentFor && !(sentFor.split("|")[1] === "" && res && res.manuscript && cloud.linkedId === res.manuscript.id)) {
           cloudSettleStatus();
           if (cloudDirty && cloud.user) cloudAutosaveTick();
           return;
@@ -52140,7 +52140,9 @@
       /* ==== BEUK:savesync ==== — which book a save is for: the account
          and the shelf copy it was sent to ("|" = not on the shelf yet). */
       function cloudSaveOwner() {
-        return ((cloud.user && cloud.user.id) || "") + "|" + (cloud.linkedId || "");
+        /* BEUK:savesync (V, 2026-11-04) — and the book on the desk: an unlinked book's owner was "<user>|" alone, so a POST in
+           flight when another unlinked book came to the desk linked THAT book to the first one's new shelf copy */
+        return ((cloud.user && cloud.user.id) || "") + "|" + (cloud.linkedId || "") + "|" + String((state.meta && state.meta.bookId) || "");
       }
       /* A save that does not run (nothing new, the conflict notice is
          waiting, the shelf is out of reach) never leaves "Saving to your
