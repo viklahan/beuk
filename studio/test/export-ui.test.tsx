@@ -189,7 +189,7 @@ describe('the export modal in the studio', { timeout: 90_000 }, () => {
     expect(await backup()).toEqual(want(doc));
   });
 
-  it("the store-ready EPUB with no shelf or signed out: 1.0's own words, nothing sent, the modal stays open", async () => {
+  it("the store-ready EPUB with no shelf or signed out: 1.0's own words, nothing sent; signed out, the sign-in opens as in 1.0", async () => {
     const doc = LANTERN();
     await studioWith(doc);
     await openExport();
@@ -200,7 +200,9 @@ describe('the export modal in the studio', { timeout: 90_000 }, () => {
     await click($('btnBuildEpub'));
     await waitFor(() => expect(toasts()).toContain(t('epub.signin')));
     expect(fetchSpy.mock.calls.filter(([u]) => String(u).includes('/api/epub'))).toEqual([]);
-    expect(isOpen()).toBe(true);
+    // wave 7a: 1.0's buildEpub, signed out, closes the export modal and opens the sign-in dialog (5a's noOpen is gone)
+    expect(isOpen()).toBe(false);
+    await waitFor(() => expect(document.getElementById('modalAuth')?.classList.contains('open')).toBe(true));
     expect(($('btnBuildEpub') as HTMLButtonElement).disabled).toBe(false);
   });
 });

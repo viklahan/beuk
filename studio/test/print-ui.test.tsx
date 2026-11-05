@@ -210,7 +210,11 @@ describe("1.0's print section, print view and print-ready panel in the studio", 
     cloudFacts.available = true;
     await click($('btnPrintReadyPdf'));
     await waitFor(() => expect($('printReadyNote').textContent).toBe(t('pr.signin')));
-    expect(isOpen('modalExport')).toBe(true); // 2.0 has no sign-in dialog yet: the modal stays open
+    // wave 7a: as 1.0, the export modal closes and the sign-in dialog opens; the modal is opened again for the next step
+    expect(isOpen('modalExport')).toBe(false);
+    await waitFor(() => expect(document.getElementById('modalAuth')?.classList.contains('open')).toBe(true));
+    document.getElementById('modalAuth')!.classList.remove('open');
+    await openExport();
     cloudFacts.user = { id: 'u', email: 'u@beuk.test' };
     const made = printJobs.made;
     await click($('btnPrintReadyPdf'));
