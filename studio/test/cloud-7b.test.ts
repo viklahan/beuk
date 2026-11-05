@@ -6,7 +6,11 @@ import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import markup from '../src/generated/cloud-markup.json';
 import exportMarkup from '../src/generated/export-markup.json';
-import { cloudFacts, loadClosure, pageToast, resetCloudFacts, setClosureLang, setClosureT } from '../src/closure/index';
+import { closureIfLoaded, cloudFacts, loadClosure, pageToast, resetCloudFacts, setClosureLang, setClosureT } from '../src/closure/index';
+import { desk as pageDesk } from '../src/environment/page';
+import { importWire } from '../src/import/import';
+import { exportBook } from '../../src/book/editor/index';
+import { textCorpus } from './import-fixture';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { bootCloud, cloudReset, cloudUi, deskChanged, loadCloud, type CloudClosure } from '../src/cloud/cloud';
 import { fixtures } from './fixtures';
@@ -128,6 +132,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   globalThis.fetch = realFetch;
+  pageDesk.ydoc = null;
+
   cloudReset();
   resetCloudFacts();
   localStorage.clear();
@@ -216,5 +222,108 @@ describe('the archive list (H1)', () => {
     expect($('archiveSec').style.display).toBe('none');
     expect(cm.api.cloudLoadArchive()).toBe(null);
     expect(paths(/^\/api\/exports/)).toEqual([]);
+  }, 30_000);
+});
+
+describe('bulk import to the shelf (G3)', () => {
+  const file = (name: string, text: string, type = 'text/plain') => new File([text], name, { type });
+  /** 1.0's startBulkImport on `entries`, in the studio's import wiring; resolves when 1.0's summary is shown. */
+  async function bulk(entries: { file: File; path: string }[]) {
+    const c = await importWire();
+    $('bulkSummary').style.display = 'none';
+    c.api.startBulkImport(entries);
+    for (let i = 0; i < 300 && $('bulkSummary').style.display === 'none'; i++) await tick(50);
+    expect($('bulkSummary').style.display).toBe('');
+  }
+
+  it("signed in: 1.0's bulk block shows (and the sidebar's hint does not); signed out the hint shows, the block does not", async () => {
+    document.body.insertAdjacentHTML('beforeend', '<p id="bulkHint" style="display:none;"></p>');
+    desk(SALT());
+    await bootCloud();
+    cm.api.renderCloudChrome();
+    expect($('shelfBulk').style.display).toBe('none');
+    expect($('bulkHint').style.display).toBe('');
+    await signUp();
+    cm.api.renderCloudChrome();
+    expect($('shelfBulk').style.display).toBe('');
+    expect($('bulkHint').style.display).toBe('none');
+  }, 30_000);
+
+  it('many files become shelf books (POST /api/manuscripts each, as 1.0 posts them); the open book is untouched (decision 2)', async () => {
+    const { y } = await linked(SALT());
+    pageDesk.ydoc = y;
+    const before = { update: Y.encodeStateAsUpdate(y), book: JSON.stringify(exportBook(y)) };
+    const corpus = textCorpus().filter((f) => /^(frontmatter\.md|plain-manuscript\.txt|headings\.rtf)$/.test(f.name));
+    expect(corpus.length).toBe(3);
+    const entries = corpus.map((f) => ({ file: file(f.name, f.text, f.type), path: f.name }));
+    // a duplicate in the batch, a file Beuk cannot read, and an empty one: each reported, none stops the queue
+    entries.push({ file: file('copy.txt', corpus.find((f) => f.name === 'plain-manuscript.txt')!.text), path: 'copy.txt' });
+    entries.push({ file: file('notes.xyz', 'x'), path: 'notes.xyz' });
+    entries.push({ file: file('blank.md', '   \n'), path: 'blank.md' });
+    const writesBefore = net.requests.length;
+    await bulk(entries);
+    const posts = net.requests.slice(writesBefore).filter((r) => r.path === '/api/manuscripts' && r.method === 'POST');
+    if (posts.length !== 3) console.log("SUMMARY", $("bulkSummary").textContent, JSON.stringify(net.requests.slice(writesBefore).map((r) => r.method + " " + r.path)));
+    expect(posts.length).toBe(3);
+    for (const p of posts) {
+      const body = JSON.parse(p.body!) as Rec;
+      expect(Object.keys(body)).toEqual(['title', 'doc']);
+      expect(Array.isArray((body.doc as Rec).sections)).toBe(true);
+    }
+    expect(net.requests.slice(writesBefore).filter((r) => r.method === 'PUT')).toEqual([]);
+    const sum = $('bulkSummary').textContent!;
+    expect(sum).toContain(t('bulk.summaryTitle'));
+    expect(sum).toContain(t('bulk.added', { n: 3 }));
+    expect(sum).toContain('copy.txt — ' + t('bulk.reasonDuplicate'));
+    expect(sum).toContain('notes.xyz — ' + t('bulk.reasonUnsupported'));
+    expect(sum).toContain('blank.md — ' + t('bulk.reasonUnreadable')); // (1.0's reader refuses a file with no text)
+    // decision 2: the desk, its Y.Doc and its History are byte-equal before and after
+    expect(Buffer.from(Y.encodeStateAsUpdate(y)).equals(Buffer.from(before.update))).toBe(true);
+    expect(JSON.stringify(exportBook(y))).toBe(before.book);
+    // the shelf list carries them (1.0's cloud.shelf.unshift, then cloudLoadShelf)
+    await tick(300);
+    expect((cloudFacts as unknown as { shelf: Rec[] }).shelf.length).toBe(4);
+  }, 60_000);
+
+  it('a file already on the shelf is skipped as 1.0 skips it; a refused POST is reported and the queue goes on', async () => {
+    const { y } = await linked(SALT());
+    pageDesk.ydoc = y;
+    const txt = textCorpus().find((f) => f.name === 'plain-manuscript.txt')!;
+    await bulk([{ file: file(txt.name, txt.text), path: txt.name }]);
+    // again: the shelf's own copy has the same title and words
+    const real = globalThis.fetch;
+    let refused = 0;
+    globalThis.fetch = (async (u: RequestInfo | URL, init?: RequestInit) => {
+      if (String(u) === '/api/manuscripts' && init?.method === 'POST' && refused++ === 0) return new Response(JSON.stringify({ error: 'nope' }), { status: 500 });
+      return real(u, init);
+    }) as typeof fetch;
+    const fm = textCorpus().find((f) => f.name === 'frontmatter.md')!;
+    const rtf = textCorpus().find((f) => f.name === 'headings.rtf')!;
+    await bulk([{ file: file(txt.name, txt.text), path: txt.name }, { file: file(fm.name, fm.text), path: fm.name }, { file: file(rtf.name, rtf.text), path: rtf.name }]);
+    const sum = $('bulkSummary').textContent!;
+    expect(sum).toContain(txt.name + ' — ' + t('bulk.reasonShelved'));
+    expect(sum).toContain(fm.name + ' — ' + t('bulk.reasonShelf'));
+    expect(sum).toContain(t('bulk.added', { n: 1 }));
+  }, 60_000);
+
+  it('a hostile file name is text in the summary: no element, handler or script', async () => {
+    const { y } = await linked(SALT());
+    pageDesk.ydoc = y;
+    const evil = '<img src=x onerror="window.__pw=1">.xyz';
+    await bulk([{ file: file(evil, 'x'), path: evil }]);
+    expect($('bulkSummary').textContent).toContain(evil);
+    expect(hazards($('bulkSummary').innerHTML)).toEqual([]);
+    expect((window as unknown as { __pw?: unknown }).__pw).toBe(undefined);
+  }, 30_000);
+
+  it('signed out, 1.0 imports nothing (no request)', async () => {
+    desk(SALT());
+    await bootCloud();
+    const c = await importWire();
+    const n = net.requests.length;
+    c.api.startBulkImport([{ file: file('a.md', '# A\n\nText.'), path: 'a.md' }]);
+    await tick(300);
+    expect(net.requests.slice(n)).toEqual([]);
+    void closureIfLoaded;
   }, 30_000);
 });

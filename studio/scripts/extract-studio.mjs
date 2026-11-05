@@ -652,8 +652,10 @@ export function extractImportMarkup(html) {
    sign-in dialog (#modalAuth) and the shelf dialog (#modalShelf), the account button (#btnAccount), the offline pill
    (#netPill) and the shelf line (#syncRow), into src/generated/cloud-markup.json. The calm confirm (#modalConfirm) and
    the conflict notice (#modalConflict) are already 2.0's (src/shell/Dialog.tsx, src/covenant/CovenantDialog.tsx). */
-export const CLOUD_SELECTOR = /\.net-(pill|dot)|\.acct-|\.sync-(dot|row)|\.portal-line|\.plan-line|\.auth-|\.legal-line|\.bring-box|\.shelf-/;
-const CLOUD_ANCHORS = ['.net-pill', '.net-dot', '.acct-avatar', '.sync-dot', '.sync-row', '.portal-line', '.plan-line', '.auth-forgot-row', '.legal-line', '.auth-note', '.acct-box', '.auth-err', '.bring-box', '.shelf-list', '.shelf-row', '.shelf-empty'];
+/* Wave 7b: and bulk import's block (.bulk-*, G3) and the update bar (.update-bar, H5). */
+export const CLOUD_SELECTOR = /\.net-(pill|dot)|\.acct-|\.sync-(dot|row)|\.portal-line|\.plan-line|\.auth-|\.legal-line|\.bring-box|\.shelf-|\.bulk-|\.update-bar/;
+const CLOUD_ANCHORS = ['.net-pill', '.net-dot', '.acct-avatar', '.sync-dot', '.sync-row', '.portal-line', '.plan-line', '.auth-forgot-row', '.legal-line', '.auth-note', '.acct-box', '.auth-err', '.bring-box', '.shelf-list', '.shelf-row', '.shelf-empty',
+  '.bulk-head', '.bulk-drop', '.bulk-progress', '.bulk-summary', '.update-bar'];
 export function extractCloudCss(html) {
   const tree = cssTree(headStyle(html));
   const taken = [];
@@ -692,8 +694,17 @@ export function extractCloudMarkup(html) {
   for (const id of ['shelfEmail', 'shelfSyncLine', 'portalLink', 'portalConfirm', 'btnPortalResend', 'portalPending', 'portalNote', 'planLine', 'planText', 'btnPlanUpgrade', 'btnPlanManage', 'shelfBring', 'btnBringBook', 'shelfList', 'acctBox', 'acctCurrent', 'acctNew', 'btnAcctChange', 'acctMsg', 'btnAcctEverywhere', 'btnSignOut', 'btnCloseShelf'])
     if (!shelf.includes('id="' + id + '"')) fail(`the shelf dialog no longer has #${id}`);
   if (!syncRow.includes('id="syncText"')) fail('the shelf line no longer has #syncText');
-  if (/<script|\son[a-z]+=/i.test(auth + shelf + account + netPill + syncRow)) fail("the shelf's markup carries a script or a handler attribute: the studio puts it in place as it is");
-  return { auth, shelf, account, netPill, syncRow };
+  // wave 7b: bulk import's two hidden pickers (after the page's other file inputs) and the sidebar's hint (G3); the
+  // update bar under the header (H5)
+  const bulkInputs = one(/<input type="file" id="bulkFileInput"[^>]*\/>\s*<input type="file" id="bulkFolderInput"[^>]*\/>/, "bulk import's pickers (#bulkFileInput, #bulkFolderInput)");
+  const bulkHint = one(/<p id="bulkHint"[^>]*>.*?<\/p>/, "bulk import's hint (#bulkHint)");
+  const updateBar = divBlock(html, html.indexOf('<div class="update-bar" id="updateBar"'), 'the update bar (#updateBar)');
+  for (const id of ['shelfBulk', 'btnBulkFiles', 'btnBulkFolder', 'bulkDropHint', 'bulkProgress', 'bulkSummary'])
+    if (!shelf.includes('id="' + id + '"')) fail(`the shelf dialog no longer has #${id}`);
+  for (const id of ['btnUpdateReload', 'btnUpdateLater']) if (!updateBar.includes('id="' + id + '"')) fail(`the update bar no longer has #${id}`);
+  if (/<script|\son[a-z]+=/i.test(auth + shelf + account + netPill + syncRow + bulkInputs + bulkHint + updateBar)) fail("the shelf's markup carries a script or a handler attribute: the studio puts it in place as it is");
+  return { auth, shelf, account, netPill, syncRow, bulkInputs, bulkHint, updateBar };
+
 }
 
 /* ---- the local pill's stylesheet (wave 5a, round 2) ----

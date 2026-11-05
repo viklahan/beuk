@@ -1,4 +1,4 @@
-import { cloudFacts, covEnv, type Closure } from '../closure/index';
+import { cloudFacts, covEnv, shelfEnv, type Closure } from '../closure/index';
 import { covRun, covSettle, resumeOn } from './covenant';
 
 /* 1.0's apiFetch / apiFetchReal (client/index.html "transport"), for the series Covenant: the guards run first and
@@ -15,7 +15,11 @@ export function setCovenantFetch(f: Fetcher | null): void {
 }
 
 export function apiFetch(path: string, opts: Record<string, unknown> = {}): Promise<Record<string, unknown> | null> | null {
+  // wave 7b: once the shelf's module has loaded, the one transport is 1.0's own apiFetch there (its billing notice on a
+  // 402 and its unreachable retry included); a test's own fetch (setCovenantFetch) keeps this copy
+  if (!fetcher && shelfEnv.apiFetch) return shelfEnv.apiFetch(path, opts) as Promise<Record<string, unknown> | null> | null;
   if (!cloudFacts.available) return null;
+
   if (opts.auth !== false && !cloudFacts.user) return null;
   return (async () => {
     try {

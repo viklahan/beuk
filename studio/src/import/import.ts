@@ -469,6 +469,21 @@ export async function importWire(): Promise<Closure> {
     );
   };
   v.boxSetExpandPick = (files: unknown[]) => exportEnv.resume(expand((Array.isArray(files) ? files : []).map(resumable)));
+  // wave 7b (G3, decision 2): 1.0's bulkBuildBook makes each file a book through importSandboxed, which reads the open
+  // book's state to put it back after: it runs in an import session on the open book, and that session writes nothing
+  // (importSandboxed's arrivals are its own; the session's state stands as it was)
+  const build = v.bulkBuildBook;
+  v.bulkBuildBook = (item: unknown, ctx: unknown) => {
+    let out: Record<string, unknown> = {};
+    let ran = false;
+    importRun(() => {
+      ran = true;
+      out = build(item, ctx);
+    });
+    if (!ran) throw new Error('unreadable'); // no closure, no serializeBook: 1.0's queue reports the file and goes on
+    return out;
+  };
+
   exportEnv.volume = (f: unknown) => v.manuscriptFileToVolume(f);
   return c;
 }

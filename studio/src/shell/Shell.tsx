@@ -178,6 +178,9 @@ export function Shell() {
           <span className="tb-label">{t('top.export')}</span>
         </button>
       </header>
+      {/* wave 7b: 1.0's update bar ("A new Beuk is ready"), under the header (src/cloud/CloudHost.tsx) */}
+      <CloudSlot id={CLOUD_SLOTS.update} />
+
 
       <nav id="mobileTabs">
         <button type="button" data-mpane="structure" className={active('structure', false)} onClick={tab('structure', false)}>
@@ -220,6 +223,8 @@ export function Shell() {
           </div>
           {/* wave 6: 1.0's "Recognised in your manuscript" summary and the import report's reopen button, under the Import
               button as in 1.0 (their markup is 1.0's, put in place by ImportHost) */}
+          {/* wave 7b: 1.0's bulk import hint, right under the side actions (src/cloud/CloudHost.tsx; 1.0's renderBulkChrome shows it) */}
+          <CloudSlot id={CLOUD_SLOTS.bulkHint} />
           <div id={IMPORT_SLOT} style={{ display: 'contents' }} />
           {bk.phase !== 'starting' && <SampleBar openHistory={() => setDialog('history')} />}
           {structure.matterLib}

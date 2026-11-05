@@ -12,6 +12,7 @@ import { useToast } from '../shell/Toasts';
 import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
 import { authAnnounce, bootCloud, cloudLang, cloudUi, deskChanged, loadCloud, type CloudClosure } from './cloud';
+import { importWire } from '../import/import';
 
 /* Step 5 wave 7a (H1-H4): 1.0's shelf in the studio — its markup, verbatim (client/index.html #modalAuth, #modalShelf,
    #btnAccount, #netPill, #syncRow; extracted at build time into src/generated/cloud-markup.json), wired as 1.0's
@@ -22,7 +23,14 @@ import { authAnnounce, bootCloud, cloudLang, cloudUi, deskChanged, loadCloud, ty
    CovenantDialog.tsx SeriesConflict, whose three buttons are 1.0's resolveConflict now). */
 
 /** The three slots Shell puts in 1.0's places: the account button (top bar), the offline pill, the shelf line. */
-export const CLOUD_SLOTS = { account: 'cloudAccountSlot', net: 'cloudNetSlot', sync: 'cloudSyncSlot' } as const;
+export const CLOUD_SLOTS = {
+  account: 'cloudAccountSlot',
+  net: 'cloudNetSlot',
+  sync: 'cloudSyncSlot',
+  // wave 7b: bulk import's hint under the Import button (G3), the update bar under the header (H5)
+  bulkHint: 'cloudBulkHintSlot',
+  update: 'cloudUpdateSlot',
+} as const;
 export function CloudSlot({ id }: { id: string }) {
   // React never renders children here: 1.0's code owns what is inside
   return <span id={id} style={{ display: 'contents' }} />;
@@ -98,6 +106,37 @@ function wire(cm: CloudClosure, off: (() => void)[]): void {
   // billingInit
   on('btnPlanUpgrade', 'click', () => void a.billingGo('/api/billing/checkout', $('btnPlanUpgrade')), off);
   on('btnPlanManage', 'click', () => void a.billingGo('/api/billing/portal', $('btnPlanManage')), off);
+  // initBulk (wave 7b, G3): 1.0's three doors — the file picker, the folder picker, a drop on the shelf panel — feed 1.0's
+  // startBulkImport (the main closure's, on the import wiring: each file made a book on a desk of its own)
+  const bulk = (entries: unknown[]) => void importWire().then((c) => c.api.startBulkImport(entries)).catch(() => undefined);
+  const toEntries = (files: FileList | null) => Array.prototype.slice.call(files || []).map((f: File) => ({ file: f, path: (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name }));
+  const fileInput = $('bulkFileInput') as HTMLInputElement | null, folderInput = $('bulkFolderInput') as HTMLInputElement | null;
+  on('btnBulkFiles', 'click', () => fileInput?.click(), off);
+  on('btnBulkFolder', 'click', () => folderInput?.click(), off);
+  on('bulkFileInput', 'change', () => {
+    bulk(toEntries(fileInput!.files));
+    fileInput!.value = '';
+  }, off);
+  on('bulkFolderInput', 'change', () => {
+    bulk(toEntries(folderInput!.files));
+    folderInput!.value = '';
+  }, off);
+  const zone = () => $('bulkDropHint');
+  for (const ev of ['dragenter', 'dragover'])
+    on('modalShelf', ev, (e) => {
+      e.preventDefault();
+      if (zone() && cloudFacts.user) zone()!.classList.add('over');
+    }, off);
+  for (const ev of ['dragleave', 'drop'])
+    on('modalShelf', ev, (e) => {
+      e.preventDefault();
+      zone()?.classList.remove('over');
+    }, off);
+  on('modalShelf', 'drop', (e) => {
+    if (!cloudFacts.user || !cloudFacts.available) return;
+    const dt = (e as DragEvent).dataTransfer;
+    void importWire().then((c) => c.api.bulkCollectDrop(dt, (entries: unknown[]) => c.api.startBulkImport(entries))).catch(() => undefined);
+  }, off);
   // initPlatform: the browser's word on the connection
   a.net.online = navigator.onLine !== false;
   const up = () => a.setConnectivity(true), down = () => a.setConnectivity(false);
@@ -155,13 +194,14 @@ export function CloudHost() {
     void loadCloud().then((c) => {
       if (!alive) return;
       cm.current = c;
-      el.innerHTML = markup.auth + markup.shelf;
+      el.innerHTML = markup.auth + markup.shelf + markup.bulkInputs;
       const slot = (id: string, html: string) => {
         const s = document.getElementById(id);
         if (s) s.innerHTML = html;
         return s;
       };
-      const slots = [slot(CLOUD_SLOTS.account, markup.account), slot(CLOUD_SLOTS.net, markup.netPill), slot(CLOUD_SLOTS.sync, markup.syncRow)];
+      const slots = [slot(CLOUD_SLOTS.account, markup.account), slot(CLOUD_SLOTS.net, markup.netPill), slot(CLOUD_SLOTS.sync, markup.syncRow),
+        slot(CLOUD_SLOTS.bulkHint, markup.bulkHint), slot(CLOUD_SLOTS.update, markup.updateBar)];
       const mc = closureIfLoaded();
       for (const r of [el, ...slots]) {
         if (!r) continue;
@@ -205,7 +245,8 @@ export function CloudHost() {
     first.current = lang;
     const c = cm.current, mc = closureIfLoaded();
     if (!c || !mc || !host.current) return;
-    for (const id of [CLOUD_SLOTS.account, CLOUD_SLOTS.net, CLOUD_SLOTS.sync]) {
+    for (const id of Object.values(CLOUD_SLOTS)) {
+
       const s = document.getElementById(id);
       if (s) translateCover(mc, s);
     }

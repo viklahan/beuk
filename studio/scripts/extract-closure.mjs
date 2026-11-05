@@ -224,6 +224,14 @@ export const EXTRA_ROOTS = [
   'snapshotForeignDoc',
   // (lifted for the series Covenant already: named so the shelf's raiseConflict reaches it through the api)
   'bibleSeriesModalReset',
+  // wave 7b (G3): bulk import to the shelf, 1.0's own — each file read by the one reader (readImportFile), made a book on
+  // a desk of its own (importSandboxed, inside bulkBuildBook), compared against the batch and the shelf, and created on
+  // the shelf (bulkCreateShelfBook: POST /api/manuscripts); its summary, its chrome and its drop walk. It reads the open
+  // book only through importSandboxed (the import session's, src/import/import.ts); the shelf's list, its reader of a
+  // shelf copy and its reload are the shelf's module's (supplied)
+  'startBulkImport', 'bulkPrepareEntries', 'bulkRunQueue', 'bulkBuildBook', 'bulkBatchContext', 'bulkShelfFingerprints', 'bulkCreateShelfBook',
+  'renderBulkSummary', 'renderBulkChrome', 'bulkCollectDrop', 'bulkWalkEntry', 'bulkParseFrontmatter', 'bulkResolveVaultText', 'bulkHashText',
+  'bulkFingerprint', 'bulkDocWords', 'bulkIsImage', 'bulkBusy',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -290,7 +298,10 @@ export const VARS = ['insVarPick', 'insCache', 'insFacts',
   'readImportFile', 'importConfirmReplace', 'importSandboxed', 'markWritingActivity', 'offerDetectedLanguage', 'renderImportSummary', 'irOpenReport', 'lastImportFound',
   // Add a Book's import half (5c's stand-ins gone): 1.0's listener awaits these two and then adds the volume to the open
   // book's state, so their answers resume in the export session (src/import/import.ts)
-  'manuscriptFileToVolume', 'boxSetExpandPick'];
+  'manuscriptFileToVolume', 'boxSetExpandPick',
+  // wave 7b (G3): bulkBuildBook runs in an import session (importSandboxed reads the open book's state to put it back
+  // after; nothing is written: decision 2), and bulkBusy is read and reset by the studio around a batch
+  'bulkBuildBook', 'bulkBusy'];
 /** Wave 6: supplied names 1.0's lifted code assigns (importSandboxed restores `cloudDirty`): emitted as `let`. */
 export const SUPPLIED_LETS = ['cloudDirty',
   // wave 7a: the cloud module's billingDate reads uiLangState as 1.0's string (toLocaleDateString's locale): 2.0 sets it
@@ -354,7 +365,10 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // restoreDoc); applySampleBookSync (its untouched sample): wave 1c's sample (sample.ts sampleArrival);
   // deskIsUntouchedSample: wave 1c's fingerprint, read when the import starts; renderSampleButton and refreshLangHint:
   // React re-renders the sample bar and Project Settings from the Y.Doc
-  'applyBookDoc', 'restoreSnapshot', 'applySampleBookSync', 'deskIsUntouchedSample', 'renderSampleButton', 'refreshLangHint'];
+  'applyBookDoc', 'restoreSnapshot', 'applySampleBookSync', 'deskIsUntouchedSample', 'renderSampleButton', 'refreshLangHint',
+  // wave 7b (G3): what bulk import reaches of the shelf — its list (cloud.shelf is the one `cloud`) redrawn, a shelf copy
+  // read for its fingerprint, the list loaded again after a batch: 1.0's own, in the shelf's module (src/cloud/cloud.ts)
+  'renderShelfList', 'shelfGetBook', 'cloudLoadShelf'];
 /** Wave 5a: 1.0's serializeBook, emitted as its own sub-module (closure-serialize.js, createSerialize(share)): the main
  *  closure keeps `serializeBook` SUPPLIED (the wrap download's book stays wave 4c's), and the export's request body is
  *  1.0's own serializeBook run on 1.0's state of the open book as applyBookDoc holds it (src/export/state.ts). */
@@ -473,7 +487,11 @@ export const CLOUD_VARS = ['uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloud
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile',
   // wave 4c: the cover maker's uploads (its art, the back flap's photo, an uploaded spine icon) and the chosen stock photo
-  'initCoverMaker', 'hcWireControls', 'sbWire', 'choosePexelsPhoto'];
+  'initCoverMaker', 'hcWireControls', 'sbWire', 'choosePexelsPhoto',
+  // wave 7b (G3): bulk import reads a batch's pictures (bulkFileToData: .png / .jpg as base64 for a vault's embeds); its
+  // callback goes on with the queue, whose shelf steps are promise callbacks of their own (nothing of the Style tab's)
+  'bulkFileToData'];
+
 /** Review round 2 (Minor 5): the session's cleaner wraps only what 1.0's `$` hands out (src/style/session.ts guarded()).
  *  A lifted cover-maker function (client/index.html "Cover maker" to "EPUB 3.2 packaging", and renderCoverSettings)
  *  may write HTML (innerHTML, outerHTML, insertAdjacentHTML) only into a `$()` result — directly, through a local set
@@ -921,7 +939,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; renderArchiveList: () => void; cloudLoadArchive: () => void; crypto: unknown; storeMakePrintJob: (o?: unknown) => Promise<unknown>; storeUpload: (...a: unknown[]) => Promise<unknown>; storeCreateJob: (...a: unknown[]) => Promise<unknown>; storeRefreshJobs: (out: unknown) => Promise<boolean>; applyBookDoc: (doc: unknown, opts?: unknown) => boolean; restoreSnapshot: (id: string) => boolean; applySampleBookSync: () => void; deskIsUntouchedSample: () => boolean; renderSampleButton: () => void; refreshLangHint: () => void };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; renderArchiveList: () => void; cloudLoadArchive: () => unknown; crypto: unknown; storeMakePrintJob: (o?: unknown) => Promise<unknown>; storeUpload: (...a: unknown[]) => Promise<unknown>; storeCreateJob: (...a: unknown[]) => Promise<unknown>; storeRefreshJobs: (out: unknown) => Promise<boolean>; applyBookDoc: (doc: unknown, opts?: unknown) => boolean; restoreSnapshot: (id: string) => boolean; applySampleBookSync: () => void; deskIsUntouchedSample: () => boolean; renderSampleButton: () => void; refreshLangHint: () => void; renderShelfList: () => void; shelfGetBook: (id: string, hydrate: boolean) => Promise<unknown>; cloudLoadShelf: () => unknown };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 

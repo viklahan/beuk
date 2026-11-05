@@ -790,6 +790,12 @@ export type ClosureApi = {
   bulkIsManuscript: (name: string) => boolean;
   snapshotBookDoc: () => Record<string, unknown>;
   irOnLangChange: () => void;
+  /** Wave 7b (G3): 1.0's bulk import. */
+  startBulkImport: (entries: unknown[]) => void;
+  bulkCollectDrop: (dt: unknown, cb: (entries: unknown[]) => void) => void;
+  renderBulkChrome: () => void;
+  bulkRunQueue: (items: unknown[], deps: Record<string, unknown>, onProgress: unknown, onDone: (summary: Record<string, unknown>) => void) => Record<string, unknown>;
+  bulkBuildBook: (item: unknown, ctx: unknown) => Record<string, unknown>;
 };
 /** Wave 5d: one of 1.0's per-store rule tables (STORE_RULES). */
 export type StoreRules = Record<string, unknown> & { id: string; name: string; sources: string[]; inks: (Record<string, unknown> & { id: string })[]; bindings: Record<string, Record<string, unknown> & { trims: unknown[] }> };
@@ -931,7 +937,11 @@ export type ClosureVars = {
   lastImportFound: string[];
   manuscriptFileToVolume: (file: unknown) => Promise<Record<string, unknown>>;
   boxSetExpandPick: (files: unknown[]) => Promise<{ files: File[]; skipped: { name: string; why: string }[] }>;
+  /** Wave 7b (G3). */
+  bulkBuildBook: (item: unknown, ctx: unknown) => Record<string, unknown>;
+  bulkBusy: boolean;
 };
+
 
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
 export type SampleApi = {
@@ -1100,8 +1110,10 @@ export const covEnv: {
   cardHide: () => void;
   offsetY: (area: unknown, offset: number) => number;
 } = {
-  apiFetch: () => null,
+  // (wave 7b: before src/covenant/net.ts installs its copy, 1.0's own transport in the shelf's module, once it has loaded)
+  apiFetch: (path, opts) => (shelfEnv.apiFetch ? shelfEnv.apiFetch(path, opts) : null),
   openBible: () => undefined,
+
   deskRender: () => undefined,
   deskSchedule: () => undefined,
   cardHide: () => undefined,
@@ -1222,6 +1234,12 @@ export const shelfEnv: {
   /** Wave 7b: 1.0's renderArchiveList and cloudLoadArchive, in the shelf's module once it has loaded (before: nothing). */
   renderArchiveList: (() => void) | null;
   loadArchive: (() => unknown) | null;
+  /** Wave 7b (G3): 1.0's renderShelfList, shelfGetBook and cloudLoadShelf (bulk import's shelf half), and 1.0's own
+   *  transport (apiFetch: the 402 notice and the unreachable retry), all the shelf's module's. */
+  renderShelfList: (() => void) | null;
+  getBook: ((id: string, hydrate: boolean) => unknown) | null;
+  loadShelf: (() => unknown) | null;
+  apiFetch: ((path: string, opts?: Record<string, unknown>) => unknown) | null;
 } = {
   makePrintJob: null,
   upload: null,
@@ -1229,6 +1247,10 @@ export const shelfEnv: {
   refreshJobs: null,
   renderArchiveList: null,
   loadArchive: null,
+  renderShelfList: null,
+  getBook: null,
+  loadShelf: null,
+  apiFetch: null,
 };
 export async function shelfPrintJob(o?: unknown): Promise<unknown> {
   shelf.asked++;
@@ -1416,7 +1438,13 @@ export function loadClosure(): Promise<Closure> {
         deskIsUntouchedSample: () => importEnv.untouched(),
         renderSampleButton: () => undefined,
         refreshLangHint: () => undefined,
+        // wave 7b (G3): bulk import's shelf half — 1.0's own, in the shelf's module (src/cloud/cloud.ts); before it loads
+        // there is no shelf (1.0's startBulkImport returns at once signed out)
+        renderShelfList: () => shelfEnv.renderShelfList?.(),
+        shelfGetBook: (id: string, hydrate: boolean) => Promise.resolve(shelfEnv.getBook ? shelfEnv.getBook(id, hydrate) : null),
+        cloudLoadShelf: () => shelfEnv.loadShelf?.() ?? null,
       });
+
       share = c.share;
       // wave 4c: a picture id is a key of 1.0's coverImgCache: never Object.prototype's (as the server's WRAP_API)
       Object.setPrototypeOf((c.api as unknown as ClosureApi).coverImgCache, null);

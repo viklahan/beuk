@@ -586,7 +586,9 @@ export function loadCloud(): Promise<CloudClosure> {
         bibleSeriesModalReset: () => covRun((c) => c.api.bibleSeriesModalReset()),
         bibleSeriesResolve: (choice: string) => !!covRun((c) => c.api.bibleSeriesResolve(choice)),
         // wave 7b: bulk import, beta links and the archive list
-        renderBulkChrome: () => undefined,
+        // wave 7b (G3): bulk import's chrome is 1.0's renderBulkChrome, in the main closure with the rest of bulk import
+        renderBulkChrome: () => closureIfLoaded()?.api.renderBulkChrome(),
+
         betaRenderChrome: () => undefined,
         printReadyUi,
         cloudConfirm: (o: Rec) => cloudUi.confirm(o),
@@ -605,6 +607,12 @@ export function loadCloud(): Promise<CloudClosure> {
       // wave 7b: the archive list (1.0's initExport and the print-ready panel call these)
       shelfEnv.renderArchiveList = () => cm.api.renderArchiveList();
       shelfEnv.loadArchive = () => cm.api.cloudLoadArchive();
+      // wave 7b (G3): bulk import's shelf half, and the one transport (1.0's apiFetch) for every module
+      shelfEnv.renderShelfList = () => cm.api.renderShelfList();
+      shelfEnv.getBook = (id, hydrate) => cm.api.shelfGetBook(id, hydrate);
+      shelfEnv.loadShelf = () => cm.api.cloudLoadShelf();
+      shelfEnv.apiFetch = (path, opts) => cm.api.apiFetch(path, opts);
+
       if (typeof window !== 'undefined') (window as unknown as { beukCloud?: unknown }).beukCloud = cloudSeam;
       return cm;
     });
