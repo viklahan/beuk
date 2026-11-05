@@ -64,6 +64,8 @@ export const cloudUi: {
   localFailed: () => boolean;
   /** 1.0's cloudConfirm: the studio's calm confirm (src/shell/Dialog.tsx useConfirm). */
   confirm: (o: Rec) => Promise<unknown>;
+  /** Where 1.0's shelf code puts icons (its icons() draws them there). */
+  iconRoots: () => ParentNode[];
   /** Where a redirect goes (billing's checkout and portal): the page's own location by default. */
   go: (url: string) => void;
 } = {
@@ -73,6 +75,7 @@ export const cloudUi: {
   localFailed: () => false,
   confirm: async () => false,
   go: (url) => window.location.assign(url),
+  iconRoots: () => (typeof document === 'undefined' ? [] : [document]),
 };
 
 /* ---- the desk as the shelf code sees it ---- */
@@ -242,7 +245,9 @@ let linkBook: string | null = null;
 const local: { signedOut: boolean; restoredLink: Link | null } = { signedOut: false, restoredLink: null };
 function writeLink(): void {
   const cm = loadedCloud;
-  const id = linkBook;
+  // the book the link fields describe: the arriving one while its generation opens (1.0 sets the link right after
+  // its applyBookDoc), else the desk's
+  const id = arriving ? arriving.bookId : linkBook;
   if (!cm || !id || !leader.is) return;
   const snap = cm.api.localLinkSnapshot() as Link | null;
   const all = readLinks();
@@ -293,7 +298,6 @@ function lead(bookId: string | null): void {
     leader.is = true;
     return;
   }
-  leader.is = false;
   let release: () => void = () => undefined;
   const held = new Promise<void>((r) => (release = r));
   let gone = false;
@@ -301,21 +305,37 @@ function lead(bookId: string | null): void {
     gone = true;
     release();
   };
+  const name = 'beuk-next-shelf-' + bookId;
+  // first, without waiting: free, this tab is the writer at once and keeps the link it holds (the book it just opened,
+  // or the one it had); taken, another tab of this device writes the book, and this one follows it
   void locks
-    .request('beuk-next-shelf-' + bookId, () => {
+    .request(name, { ifAvailable: true }, (lock) => {
       if (gone) return undefined;
-      leader.is = true;
-      // the tab that wrote before has gone: what it left unsaved comes due here
-      const l = storedLink(bookId);
-      const cm = loadedCloud;
-      if (cm && cloudFacts.user) {
-        takeLink(l);
-        if (l && l.shelfDirty) {
-          cm.vars.cloudDirty = true;
-          cm.api.cloudAutosaveTick();
-        }
+      if (lock) {
+        leader.is = true;
+        writeLink();
+        return held;
       }
-      return held;
+      leader.is = false;
+      takeLink(storedLink(bookId));
+      // queued: when the writer tab goes, this one becomes the writer, and what it left unsaved comes due here
+      void locks
+        .request(name, () => {
+          if (gone) return undefined;
+          leader.is = true;
+          const l = storedLink(bookId);
+          const cm = loadedCloud;
+          if (cm && cloudFacts.user) {
+            takeLink(l);
+            if (l && l.shelfDirty && cloudFacts.linkedId) {
+              cm.vars.cloudDirty = true;
+              cm.api.cloudAutosaveTick();
+            }
+          }
+          return held;
+        })
+        .catch(() => undefined);
+      return undefined;
     })
     .catch(() => undefined);
 }
@@ -352,6 +372,8 @@ export function deskChanged(ydoc: Y.Doc | null, own = false): void {
     } else if (!cm || before === null) local.restoredLink = storedLink(id);
   }
   lead(id);
+  // the shelf's own arrival: its link is the opened book's, on this device too
+  if (own) writeLink();
   if (!ydoc) return;
   const onUpdate = (_u: Uint8Array, origin: unknown, _d: Y.Doc, tr: Y.Transaction) => {
     versions.set(ydoc, verOf(ydoc) + 1);
@@ -395,6 +417,21 @@ const PageWorker =
       }
     : undefined;
 
+let linkTimer: ReturnType<typeof setTimeout> | undefined;
+let iconsQueued = false;
+function iconsOnce(): void {
+  if (iconsQueued) return;
+  iconsQueued = true;
+  const go = () => {
+    iconsQueued = false;
+    // only where 1.0's shelf code draws (the account button, the shelf line, the two dialogs): a scan of the whole page
+    // on every edit's frame cost the typing measure ~5 ms at p95 on Dumas (the preview's pages are in the page)
+    for (const r of cloudUi.iconRoots()) drawIcons(r);
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(go);
+  else setTimeout(go, 0);
+}
+
 export function loadCloud(): Promise<CloudClosure> {
   if (!loadingCloud) {
     loadingCloud = Promise.all([loadClosure(), loadSerialize(), import('../generated/closure-cloud.js')]).then(([, , m]) => {
@@ -408,7 +445,8 @@ export function loadCloud(): Promise<CloudClosure> {
         UI_STRINGS: untitledStrings(),
         uiLangState: closureLang(),
         $: (id: string) => pageEnv.$(id),
-        icons: () => drawIcons(document),
+        // 1.0's icons() after its redraws (the account button and sync line on every edit): once a frame here
+        icons: iconsOnce,
         fmtDateIntl,
         location: {
           set href(u: string) {
@@ -441,8 +479,15 @@ export function loadCloud(): Promise<CloudClosure> {
         local,
         localRestorePromise: null,
         localMarkDirty: () => undefined,
-        localWriteLinkNow: () => writeLink(),
-        localNoteLinkChanged: () => writeLink(),
+        localWriteLinkNow: () => {
+          clearTimeout(linkTimer);
+          writeLink();
+        },
+        // 1.0's localNoteLinkChanged: the link written after a 120 ms pause (localWriteLinkNow writes at once)
+        localNoteLinkChanged: () => {
+          clearTimeout(linkTimer);
+          linkTimer = setTimeout(writeLink, 120);
+        },
         localNoteSignedOut: () => {
           local.signedOut = true;
           local.restoredLink = null;

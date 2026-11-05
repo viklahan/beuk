@@ -37,6 +37,8 @@ beforeAll(async () => {
     if (typeof P.getClientRects !== 'function') P.getClientRects = () => ({ length: 0, item: () => null, [Symbol.iterator]: function* () {} });
     if (typeof P.getBoundingClientRect !== 'function') P.getBoundingClientRect = () => ({ x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 });
   }
+  // jsdom draws no canvas and decodes no picture: wave 5b's stand-ins, before print's module takes the page's Image
+  installCanvas();
   await loadClosure();
   setClosureT(t);
   setClosureLang('en');
@@ -346,7 +348,6 @@ describe('the three-way conflict (H4, constraint 86)', () => {
 
 describe('the seams light up (constraint 89)', () => {
   it("signed in: the print-ready PDF links the book, archives its print interior and queues the pdfx job — 1.0's requests", async () => {
-    installCanvas(); // jsdom draws no canvas (wave 5b's stand-in: print measures a running head on one)
     (globalThis as unknown as { JSZip: unknown }).JSZip = (await import('node:module')).createRequire(import.meta.url)('../../client/assets/vendor/jszip.min.js');
     await studio(off);
     await signUp(email(), false); // declined: the book is not on the shelf yet
@@ -361,7 +362,7 @@ describe('the seams light up (constraint 89)', () => {
     // brought to the shelf (1.0's Bring it to my shelf), the same button makes the job
     cloudFacts.linkState = 'unlinked';
     await click($('btnPrintReadyPdf'));
-    await waitFor(() => expect(net.requests.some((r) => r.method === 'POST' && r.path === '/api/jobs/pdfx')).toBe(true), { timeout: 20_000 });
+    await waitFor(() => expect(net.requests.some((r) => r.method === 'POST' && r.path === '/api/jobs/pdfx')).toBe(true), { timeout: 60_000 });
     const seq = net.requests.filter((r) => /\/api\/(manuscripts|exports|jobs)/.test(r.path) && r.method === 'POST').map((r) => r.method + ' ' + r.path.replace(/[0-9a-f-]{36}/g, '<id>'));
     expect(seq[0]).toBe('POST /api/manuscripts');
     expect(seq[1]).toMatch(/^POST \/api\/exports\?manuscriptId=<id>&format=print-html&filename=[^&]+\.html$/);

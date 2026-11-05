@@ -111,7 +111,9 @@ async function watch(page) {
   page.on('crash', () => csp.errors.push(`${page.url()}: the page CRASHED`));
   page.on('pageerror', (e) => csp.errors.push(`${page.url()}: ${e}`));
   page.on('console', (m) => {
-    if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of 404|net::ERR_INTERNET_DISCONNECTED/.test(m.text())) csp.errors.push(`${page.url()}: ${m.text()}`);
+    // wave 7a: the shelf's own answers the browser logs as failed loads — 401 (signed out: /api/auth/me), 402 (a paused
+    // account feature on day 22), 409 (a shelf conflict) — are the server's word, not page errors
+    if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of (404|401|402|409)|net::ERR_INTERNET_DISCONNECTED/.test(m.text())) csp.errors.push(`${page.url()}: ${m.text()}`);
   });
   return page;
 }
@@ -739,6 +741,7 @@ async function latency(origin, opts = {}) {
   try {
     const page = await openNext(ctx, origin);
     await openBackup(page, DUMAS.file);
+    if (opts.afterOpen) await opts.afterOpen(page);
     const book = expected(DUMAS.book);
     const secs = sectionsOf(book);
     let big = -1;
@@ -7407,6 +7410,7 @@ async function wave7aNoEdit(srv) {
     await page.reload();
     await w7aWait(page, () => window.beukCloud?.cloud?.user && window.beukCloud.cloud.linkState === 'linked', null, 30_000);
     steps.push('reload');
+    if (process.env.W7A_DEBUG) { for (let i = 0; i < 6; i++) { note('DBG ' + await page.evaluate(() => JSON.stringify({ ls: window.beukCloud.cloud.linkState, id: window.beukCloud.cloud.linkedId, dirty: window.beukCloud.dirty, st: window.beukCloud.cloud.syncStatus, leader: window.beukCloud.leader(), conflict: !!window.beukCloud.cloud.conflict }))); await page.waitForTimeout(700); } }
     for (const id of [made.manuscript.id, id1]) {
       await page.click('#btnAccount');
       await page.waitForSelector(`#shelfList [data-open-book="${id}"]`, { timeout: 30_000 });
@@ -7513,9 +7517,8 @@ async function wave7aSafety(srv) {
     const page = await w7aNext(ctx, origin, fixtures.find((x) => x.name === 'real/reads-you').file);
     await page.click('#btnAccount');
     await page.waitForSelector('#shelfList .shelf-row', { timeout: 30_000 });
-    const html = await page.evaluate(() => document.getElementById('modalShelf').outerHTML + document.getElementById('btnAccount').outerHTML);
-    const live = await page.evaluate(() => ({ pw: window.__pw ?? null, imgs: document.querySelectorAll('#modalShelf img, #btnAccount img').length, scripts: document.querySelectorAll('#modalShelf script').length }));
-    check(live.pw === null && live.imgs === 0 && live.scripts === 0 && !/\son[a-z]+=/i.test(html), `wave7a constraint 90: a hostile title on the shelf: nothing ran, no element or handler carried in (${JSON.stringify(live)})`);
+    const live = await page.evaluate(() => ({ pw: window.__pw ?? null, imgs: document.querySelectorAll('#modalShelf img, #btnAccount img').length, scripts: document.querySelectorAll('#modalShelf script').length, handlers: [...document.querySelectorAll('#modalShelf *, #btnAccount *')].filter((el) => [...el.attributes].some((a) => /^on/i.test(a.name))).length, shown: [...document.querySelectorAll('#shelfList .sh-title')].some((x) => x.textContent.includes('<script>')) }));
+    check(live.pw === null && live.imgs === 0 && live.scripts === 0 && live.handlers === 0 && live.shown, `wave7a constraint 90: a hostile title on the shelf: nothing ran, no element or handler carried in (${JSON.stringify(live)})`);
     const store = await page.evaluate(() => JSON.stringify(localStorage));
     check(!store.includes(W7A_PW_PROBE) && !/password/i.test(store), 'wave7a constraint 90: no credential in localStorage');
     await harvestCsp(page);
@@ -7564,9 +7567,14 @@ async function wave7aScreens(srv) {
         await w7aWait(page, () => window.beukCloud?.cloud?.user, null, 30_000);
         await one.reload();
         await w7aWait(one, () => typeof cloud !== 'undefined' && !!cloud.user, null, 30_000);
+        // 1.0's desk holds the same book (its reload opened its own device's book)
+        const start = (await exportBackup(page)).json.book;
+        await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
         await page.click('#btnAccount');
         await page.waitForSelector('#modalShelf.open');
         await one.evaluate(() => $('btnAccount').click());
+        // 1.0's bulk import (#shelfBulk) is wave 7b's (G3): 2.0 keeps it hidden, so 1.0's is hidden for the comparison
+        await one.evaluate(() => { document.getElementById('shelfBulk').style.display = 'none'; });
         for (const p of [page, one]) await p.evaluate(() => { document.getElementById('acctBox').open = true; });
         const s2 = await shot(page, '#modalShelf .modal'), s1 = await shot(one, '#modalShelf .modal');
         await page.keyboard.press('Escape');
@@ -7599,7 +7607,7 @@ async function wave7aScreens(srv) {
 
 /* 91: the Dumas typing measure with the shelf signed in and the autosave running. */
 async function wave7aLatency(srv) {
-  const r = await latency(srv.origin, { prepare: async (ctx) => w7aSignUp(ctx, srv.origin, w7aEmail('l')) });
+  const r = await latency(srv.origin, { prepare: async (ctx) => w7aSignUp(ctx, srv.origin, w7aEmail('l')), afterOpen: async (page) => { await w7aWait(page, () => window.beukCloud?.cloud?.user, null, 30_000); if (process.env.W7A_LAT_NOOP) await page.evaluate(() => { window.beukCloud.api.noteBookEdited = () => undefined; }); } });
   note(`wave7a latency (signed in, autosave running): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
   check(r.p95 < LATENCY_P95_TARGET_MS, `wave7a constraint 91: p95 under ${LATENCY_P95_TARGET_MS} ms on Dumas, signed in (${r.p95.toFixed(1)} ms)`);
 }
