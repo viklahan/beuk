@@ -7497,6 +7497,15 @@ async function wave7aDay22(srv) {
         await one.waitForTimeout(800);
         const oneSaw = await one.evaluate(() => ({ hidden: document.getElementById('planLine').hidden, text: document.getElementById('planText').textContent, up: document.getElementById('btnPlanUpgrade').hidden, mg: document.getElementById('btnPlanManage').hidden }));
         check(JSON.stringify(two) === JSON.stringify(oneSaw), `wave7a constraint 88 (${st}): the plan line reads as 1.0's: ${JSON.stringify(two)}${JSON.stringify(two) === JSON.stringify(oneSaw) ? '' : ' — 1.0: ' + JSON.stringify(oneSaw)}`);
+        // wave 7b (the 7a gap): the account box in this state, opened, beside 1.0's
+        const acct = (p) => p.evaluate(() => {
+          document.getElementById('acctBox').open = true;
+          const shown = (id) => { const e = document.getElementById(id); return !!e && !e.hidden && e.style.display !== 'none'; };
+          return { box: document.getElementById('acctBox').textContent.replace(/\s+/g, ' ').trim(), email: document.getElementById('shelfEmail').textContent, confirm: shown('portalConfirm'), signOut: shown('btnSignOut') };
+        });
+        const a2 = await acct(page), a1 = await acct(one);
+        check(JSON.stringify(a2) === JSON.stringify(a1), `wave7a constraint 88 (${st}): the account box reads as 1.0's${JSON.stringify(a2) === JSON.stringify(a1) ? '' : ' — 2.0: ' + JSON.stringify(a2).slice(0, 200) + ' — 1.0: ' + JSON.stringify(a1).slice(0, 200)}`);
+
         await page.click('#btnCloseShelf');
         await one.evaluate(() => $('modalShelf').classList.remove('open'));
       }
