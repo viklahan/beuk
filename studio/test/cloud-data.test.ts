@@ -215,3 +215,23 @@ describe('1.0 fix (V, 2026-11-04): the account button is redrawn only when what 
     expect(btn.querySelector('.sync-dot')!.className).toBe('sync-dot');
   });
 });
+
+describe('1.0 fix (V, 2026-11-04): the shelf line is written only when its words change', () => {
+  it('an edit while signed in writes nothing into #syncText or #shelfSyncLine when the words stand', async () => {
+    desk(fixtures('real')[0]!.book);
+    cloudFacts.available = true;
+    cloudFacts.user = { id: 'u', email: 'writer@example.test' };
+    cm.api.setSyncStatus('saving');
+    expect(document.getElementById('syncText')!.textContent).toBe(t('sync.saving'));
+    const seen: MutationRecord[] = [];
+    const mo = new MutationObserver((r) => seen.push(...r));
+    for (const id of ['syncText', 'shelfSyncLine']) mo.observe(document.getElementById(id)!, { childList: true, subtree: true, characterData: true });
+    for (let i = 0; i < 5; i++) cm.api.noteBookEdited();
+    await tick(0);
+    mo.disconnect();
+    expect(seen.length).toBe(0);
+    cm.api.setSyncStatus('saved');
+    expect(document.getElementById('syncText')!.textContent).toBe(t('sync.onShelf'));
+    expect(document.getElementById('shelfSyncLine')!.textContent).toBe(t('sync.onShelf'));
+  });
+});

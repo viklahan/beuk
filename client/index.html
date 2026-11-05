@@ -52171,9 +52171,11 @@
           else if (cloud.syncStatus !== "saving" && cloud.syncStatus !== "saved") s = t("local.notSavedShort");
         }
         if (cloud.user && cloud.pendingSyncs > 0) s += " · " + t("offline.pending", { n: cloud.pendingSyncs });
-        txt.textContent = s;
+        /* BEUK:acctsig — written only when the words change: every edit signed in comes through here, and rewriting the
+           same words dirtied the page's layout on each keystroke (V, 2026-11-04) */
+        if (txt.textContent !== s) txt.textContent = s;
         const shelfLine = $("shelfSyncLine");
-        if (shelfLine) shelfLine.textContent = s;
+        if (shelfLine && shelfLine.textContent !== s) shelfLine.textContent = s;
       }
 
       /* ---- header chrome ---- */
