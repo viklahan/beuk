@@ -52457,6 +52457,7 @@
         });
         btn.disabled = false; setAuthMode(authMode);
         if (r && r.user) {
+          $("authPassword").value = ""; /* BEUK:auth (V, 2026-11-04) — the password does not stay in the closed dialog */
           cloud.user = r.user;
           cloud.lastHeartbeatAt = 0;
           renderCloudChrome();
