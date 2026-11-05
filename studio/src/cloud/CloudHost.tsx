@@ -11,7 +11,7 @@ import { StackEntry, useConfirm } from '../shell/Dialog';
 import { useToast } from '../shell/Toasts';
 import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
-import { bootCloud, cloudLang, cloudUi, deskChanged, loadCloud, type CloudClosure } from './cloud';
+import { authAnnounce, bootCloud, cloudLang, cloudUi, deskChanged, loadCloud, type CloudClosure } from './cloud';
 
 /* Step 5 wave 7a (H1-H4): 1.0's shelf in the studio — its markup, verbatim (client/index.html #modalAuth, #modalShelf,
    #btnAccount, #netPill, #syncRow; extracted at build time into src/generated/cloud-markup.json), wired as 1.0's
@@ -59,7 +59,7 @@ function wire(cm: CloudClosure, off: (() => void)[]): void {
     setTimeout(() => $('authEmail')?.focus(), 30);
   }, off);
   on('btnAcctChange', 'click', () => void a.acctChangePassword(), off);
-  on('btnAcctEverywhere', 'click', () => void a.acctSignOutEverywhere(), off);
+  on('btnAcctEverywhere', 'click', () => void Promise.resolve(a.acctSignOutEverywhere()).finally(authAnnounce), off);
   on('acctNew', 'keydown', (e) => {
     if ((e as KeyboardEvent).key === 'Enter') void a.acctChangePassword();
   }, off);
@@ -77,10 +77,11 @@ function wire(cm: CloudClosure, off: (() => void)[]): void {
     if (cloudFacts.user) void a.portalRefresh();
   }, off);
   // initCloud, again
-  on('btnAuthSubmit', 'click', () => void a.cloudAuthSubmit(), off);
+  // review I5: the other tabs hear of a sign-in or sign-out made here
+  on('btnAuthSubmit', 'click', () => void Promise.resolve(a.cloudAuthSubmit()).finally(authAnnounce), off);
   for (const id of ['authEmail', 'authPassword'])
     on(id, 'keydown', (e) => {
-      if ((e as KeyboardEvent).key === 'Enter') void a.cloudAuthSubmit();
+      if ((e as KeyboardEvent).key === 'Enter') void Promise.resolve(a.cloudAuthSubmit()).finally(authAnnounce);
     }, off);
   on('btnCloseShelf', 'click', () => {
     $('modalShelf')!.classList.remove('open');
@@ -92,7 +93,7 @@ function wire(cm: CloudClosure, off: (() => void)[]): void {
       cloudUi.focusEditor();
     }
   }, off);
-  on('btnSignOut', 'click', () => void a.cloudSignOut(), off);
+  on('btnSignOut', 'click', () => void Promise.resolve(a.cloudSignOut()).finally(authAnnounce), off);
   on('btnBringBook', 'click', () => void a.cloudBringBook(), off);
   // billingInit
   on('btnPlanUpgrade', 'click', () => void a.billingGo('/api/billing/checkout', $('btnPlanUpgrade')), off);

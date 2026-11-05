@@ -153,9 +153,15 @@ export function deskSerialize(): Rec {
  *  snapshot of the desk just before). Synchronous as 1.0's: what 1.0 reads next (the title, a save of the book) is the
  *  arriving book's while its generation opens. */
 function applyBookDoc(doc: unknown): boolean {
-  if (!isRec(doc)) return false;
+  if (!isRec(doc)) {
+    headSnap = null; // review M1: a snapshot taken for an arrival that never comes leads no later book
+    return false;
+  }
   const read = readBook(structuredClone(doc));
-  if (read.status !== 'ok') return false;
+  if (read.status !== 'ok') {
+    headSnap = null;
+    return false;
+  }
   let book = read.book as unknown as Rec;
   const from = cloudUi.ydoc();
   const c = closureIfLoaded();
@@ -179,14 +185,32 @@ function applyBookDoc(doc: unknown): boolean {
   const mine = { doc: book, bookId: typeof m.bookId === 'string' ? m.bookId : null, from };
   arriving = mine;
   serCache = null;
-  void cloudUi
-    .replace(book, from)
+  void (async () => {
+    // review I4: a book another tab of this device is writing is not opened here (its generation would replace that
+    // tab's, with writing the shelf has not seen): 1.0's own "could not open" words
+    const free = mine.bookId === leader.book || (await lockFree(mine.bookId));
+    if (!free) {
+      pageToast.fn(closureT()('toast.bookOpenFail'), 'alert-triangle');
+      return null;
+    }
+    return cloudUi.replace(book, from);
+  })()
     .catch(() => null)
     .then((y) => {
       if (arriving !== mine) return;
       arriving = null;
       serCache = null;
       if (y) deskChanged(y, true);
+      else {
+        // review C1: the new generation did not open — the desk is still the book it was, so its link is put back as this
+        // device stored it (1.0's code had already set the arriving book's link; a write of that is dropped)
+        clearTimeout(linkTimer);
+        headSnap = null;
+        if (loadedCloud && cloudFacts.user) {
+          cloudFacts.conflict = null;
+          takeLink(storedLink(linkBook));
+        }
+      }
     });
   return true;
 }
@@ -244,6 +268,7 @@ let linkBook: string | null = null;
 /** 1.0's `local` as the lifted code reads it: signed out on this device, and the link this device last stored. */
 const local: { signedOut: boolean; restoredLink: Link | null } = { signedOut: false, restoredLink: null };
 function writeLink(): void {
+  linkTimer = undefined;
   const cm = loadedCloud;
   // the book the link fields describe: the arriving one while its generation opens (1.0 sets the link right after
   // its applyBookDoc), else the desk's
@@ -287,7 +312,7 @@ function takeLink(l: Link | null): void {
 
 /* ---- one writer per book on this device (decision 3) ---- */
 
-const leader: { is: boolean; book: string | null; release: (() => void) | null } = { is: true, book: null, release: null };
+const leader: { is: boolean; book: string | null; release: (() => void) | null; pending: boolean; edited: boolean } = { is: true, book: null, release: null, pending: false, edited: false };
 function lead(bookId: string | null): void {
   if (leader.book === bookId) return;
   leader.release?.();
@@ -301,37 +326,50 @@ function lead(bookId: string | null): void {
   let release: () => void = () => undefined;
   const held = new Promise<void>((r) => (release = r));
   let gone = false;
+  // review M3: a queued request (this tab following) is withdrawn when the desk moves to another book
+  const abort = typeof AbortController === 'function' ? new AbortController() : null;
   leader.release = () => {
     gone = true;
     release();
+    abort?.abort();
   };
+  // review I4: not the writer of this book until the lock answers (the link of a book another tab writes is not ours)
+  leader.is = false;
+  leader.pending = true; // an edit made before the lock answers is kept and noted once this tab is the writer
+  leader.edited = false;
   const name = 'beuk-next-shelf-' + bookId;
   // first, without waiting: free, this tab is the writer at once and keeps the link it holds (the book it just opened,
   // or the one it had); taken, another tab of this device writes the book, and this one follows it
   void locks
     .request(name, { ifAvailable: true }, (lock) => {
       if (gone) return undefined;
+      leader.pending = false;
       if (lock) {
         leader.is = true;
         writeLink();
+        if (leader.edited && loadedCloud) loadedCloud.api.noteBookEdited();
+        leader.edited = false;
         return held;
       }
       leader.is = false;
       takeLink(storedLink(bookId));
       // queued: when the writer tab goes, this one becomes the writer, and what it left unsaved comes due here
       void locks
-        .request(name, () => {
+        .request(name, abort ? { signal: abort.signal } : {}, () => {
           if (gone) return undefined;
           leader.is = true;
           const l = storedLink(bookId);
           const cm = loadedCloud;
+          if (cm && !cloudFacts.user && leader.edited) cm.api.noteBookEdited();
           if (cm && cloudFacts.user) {
+            const wasDirty = !!cm.vars.cloudDirty || leader.edited; // a save asked for, or writing typed here, while following
             takeLink(l);
-            if (l && l.shelfDirty && cloudFacts.linkedId) {
+            if (((l && l.shelfDirty) || wasDirty) && (cloudFacts.linkedId || wasDirty)) {
               cm.vars.cloudDirty = true;
               cm.api.cloudAutosaveTick();
             }
           }
+          leader.edited = false;
           return held;
         })
         .catch(() => undefined);
@@ -340,6 +378,26 @@ function lead(bookId: string | null): void {
     .catch(() => undefined);
 }
 export const shelfLeader = (): boolean => leader.is;
+/** Review I4: is the book's writer lock free on this device (no other tab writes it)? Without Web Locks: yes. */
+function lockFree(bookId: string | null): Promise<boolean> {
+  const locks = (globalThis.navigator as Navigator | undefined)?.locks;
+  if (!bookId || !locks || typeof locks.request !== 'function') return Promise.resolve(true);
+  return locks.request('beuk-next-shelf-' + bookId, { ifAvailable: true }, (l) => !!l).then((v) => !!v, () => true);
+}
+/** Review C2, I5: a shelf save waits while there is no book to send (between generations) or another tab writes it;
+ *  1.0's cloudSaveRun asks this through its samplePicsMissingInState / samplePicsEnsure seam and comes due again after. */
+const saveMustWait = (): boolean => (!arriving && !cloudUi.ydoc()) || !leader.is;
+function saveCanGo(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const t0 = Date.now();
+    const poll = () => {
+      if (!saveMustWait()) return resolve(true);
+      if (Date.now() - t0 > 30 * 60_000) return resolve(false);
+      setTimeout(poll, 200);
+    };
+    poll();
+  });
+}
 
 /* ---- the desk changes (another book, or a new generation) ---- */
 
@@ -355,9 +413,23 @@ export function deskChanged(ydoc: Y.Doc | null, own = false): void {
   if (arriving && ydoc && arriving.bookId === id) own = true;
   if (id !== linkBook) {
     const before = linkBook;
-    linkBook = id;
     const cm = loadedCloud;
-    if (cm && !own && before !== null) {
+    if (cm && before !== null) {
+      // review I2, I6: the outgoing book's link is written now (a write still in its pause belongs to it), and what was
+      // edited this session belongs to it alone
+      if (linkTimer !== undefined) {
+        clearTimeout(linkTimer);
+        linkTimer = undefined;
+        writeLink();
+      }
+      cloudFacts.sessionEdited = false;
+      cloudFacts.editedBeforeSignIn = false;
+      // review I1: "signed out on this device" was said of the book on the desk; another book keeps the link stored for it
+      local.signedOut = false;
+    }
+    linkBook = id;
+    // review M2: signed in, a book reaching an empty desk mid-session takes its stored link as another book would
+    if (cm && !own && (before !== null || (!!cloudFacts.user && !!id))) {
       // another book: its own link, as this device last stored it (1.0 keeps one desk; 2.0 one link per book)
       const l = storedLink(id);
       local.restoredLink = l;
@@ -381,6 +453,9 @@ export function deskChanged(ydoc: Y.Doc | null, own = false): void {
     // a real edit: typed here, or in another tab of this generation (BroadcastChannel) when this tab is the writer
     const fromTab = typeof BroadcastChannel === 'function' && origin instanceof BroadcastChannel;
     if (!(tr.local || fromTab)) return;
+    // not (yet) the writer: an edit typed HERE is kept and noted if this tab becomes the writer (its own lock may still be
+    // letting go: X → Y → X); a redundant save at most when another tab really was writing
+    if (!leader.is && tr.local) leader.edited = true;
     if (!leader.is || !loadedCloud) return;
     loadedCloud.api.noteBookEdited();
   };
@@ -471,14 +546,19 @@ export function loadCloud(): Promise<CloudClosure> {
           return !!c && !arriving && deskIsUntouchedSample(c, cloudUi.ydoc());
         },
         // the sample's pictures are always on 2.0's desk (4c); its record is per generation (wave 1c)
-        samplePicsMissingInState: () => false,
-        samplePicsEnsure: async () => true,
+        // (and, review C2/I5: a save waits while there is no desk to send or another tab writes the book — 1.0's own wait)
+        samplePicsMissingInState: () => saveMustWait(),
+        samplePicsEnsure: () => saveCanGo(),
         sampleSweepPreRename: () => undefined,
         sampleState: { loaded: false, loadedJson: null },
         renderSampleButton: () => undefined,
         local,
         localRestorePromise: null,
-        localMarkDirty: () => undefined,
+        // review C3: 1.0's device save writes the link with the edit (shelfDirty), signed out too: the link, after its pause
+        localMarkDirty: () => {
+          clearTimeout(linkTimer);
+          linkTimer = setTimeout(writeLink, 120);
+        },
         localWriteLinkNow: () => {
           clearTimeout(linkTimer);
           writeLink();
@@ -553,6 +633,7 @@ export function bootCloud(): Promise<void> {
       const me = (await cm.api.apiFetch('/api/auth/me', { auth: false })) as Rec | null;
       if (me && me.user) {
         cloudFacts.user = me.user;
+        knownUser = userId();
         cm.api.renderCloudChrome();
         if (leader.is) await cm.api.cloudAfterSignIn();
         else {
@@ -575,6 +656,58 @@ if (typeof window !== 'undefined') {
     if (e.key !== LINKS_KEY || leader.is || !loadedCloud || !cloudFacts.user) return;
     takeLink(storedLink(linkBook));
   });
+  // review I6: 1.0's localFlushOnHide — a link write still in its pause is written as the page goes (BEUK:bugs)
+  const flushLink = () => {
+    if (linkTimer === undefined) return;
+    clearTimeout(linkTimer);
+    linkTimer = undefined;
+    writeLink();
+  };
+  window.addEventListener('pagehide', flushLink);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushLink();
+  });
+}
+
+/* ---- review I5: a sign-in or sign-out in one tab reaches the others (the session cookie is the device's) ---- */
+const AUTH_CHANNEL = 'beuk-next-shelf-auth';
+let authChannel: BroadcastChannel | null = null;
+let knownUser: string | null = null;
+let hearing = false;
+const userId = (): string | null => ((cloudFacts.user as { id?: string } | null)?.id ?? null);
+/** After 1.0's sign-in, sign-out or sign-out-everywhere in this tab: tell the other tabs when the account changed. */
+export function authAnnounce(): void {
+  const now = userId();
+  if (now === knownUser) return;
+  knownUser = now;
+  if (hearing || !authChannel) return;
+  authChannel.postMessage({ auth: now ? 'in' : 'out' });
+}
+async function authHeard(kind: unknown): Promise<void> {
+  const cm = loadedCloud;
+  if (!cm || !cloudFacts.available) return;
+  hearing = true;
+  try {
+    if (kind === 'out') {
+      if (cloudFacts.user) await cm.api.cloudSignOut();
+    } else if (kind === 'in') {
+      const me = (await cm.api.apiFetch('/api/auth/me', { auth: false })) as Rec | null;
+      if (!me || !me.user || userId() === (me.user as { id?: string }).id) return;
+      cloudFacts.user = me.user;
+      cloudFacts.lastHeartbeatAt = 0;
+      cm.api.renderCloudChrome();
+      // the writer tab runs 1.0's after-sign-in work for its book; a follower takes the writer's link
+      if (leader.is) await cm.api.cloudAfterSignIn();
+      else takeLink(storedLink(linkBook));
+    }
+  } finally {
+    knownUser = userId();
+    hearing = false;
+  }
+}
+if (typeof BroadcastChannel === 'function') {
+  authChannel = new BroadcastChannel(AUTH_CHANNEL);
+  authChannel.onmessage = (e: MessageEvent) => void authHeard((e.data as { auth?: unknown } | null)?.auth);
 }
 
 /* ---- the test seam (vitest, e2e) ---- */
@@ -611,6 +744,9 @@ export function cloudReset(): void {
   leader.release = null;
   booting = null;
   cloudBootHook.p = null;
+  clearTimeout(linkTimer); // review M4
+  knownUser = null;
+  linkTimer = undefined;
   if (loadedCloud) {
     clearTimeout(loadedCloud.vars.cloudSaveTimer);
     clearInterval(loadedCloud.vars.cloudRetryTimer);

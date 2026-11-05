@@ -123,7 +123,8 @@ const toasts: string[] = [];
 beforeEach(() => {
   net = browser(shelf.base);
   globalThis.fetch = net.fetch;
-  document.body.innerHTML = markup.auth + markup.shelf + markup.account + markup.syncRow + markup.netPill;
+  // (wave 3b's #modalConflict, which 1.0's raiseConflict / resolveConflict open and close)
+  document.body.innerHTML = markup.auth + markup.shelf + markup.account + markup.syncRow + markup.netPill + '<div class="modal-back" id="modalConflict"><p id="conflictBody"></p></div>';
   replaces = [];
   toasts.length = 0;
   pageToast.fn = (m) => void toasts.push(m);
