@@ -265,7 +265,6 @@ describe('bulk import to the shelf (G3)', () => {
     const writesBefore = net.requests.length;
     await bulk(entries);
     const posts = net.requests.slice(writesBefore).filter((r) => r.path === '/api/manuscripts' && r.method === 'POST');
-    if (posts.length !== 3) console.log("SUMMARY", $("bulkSummary").textContent, JSON.stringify(net.requests.slice(writesBefore).map((r) => r.method + " " + r.path)));
     expect(posts.length).toBe(3);
     for (const p of posts) {
       const body = JSON.parse(p.body!) as Rec;

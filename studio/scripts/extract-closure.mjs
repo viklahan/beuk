@@ -508,7 +508,6 @@ export const CLOUD_VARS = ['uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloud
   // wave 7b (I9): the error report's build stamp (the worker's BEUK_SHELL_READY) and its count (tests: a fresh page)
   'beukErrBuild', 'beukErrCount'];
 
-
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile',
   // wave 4c: the cover maker's uploads (its art, the back flap's photo, an uploaded spine icon) and the chosen stock photo

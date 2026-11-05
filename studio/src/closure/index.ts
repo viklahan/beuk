@@ -942,7 +942,6 @@ export type ClosureVars = {
   bulkBusy: boolean;
 };
 
-
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
 export type SampleApi = {
   buildSampleBook: () => Record<string, unknown> & { sections: Record<string, unknown>[]; meta: Record<string, unknown> };

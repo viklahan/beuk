@@ -24,7 +24,6 @@ import { bookLanguages, formFromMeta, langHint, rightsPreviewLine, settingsChang
    "Detect from my text" (language detection, wave 3). (Wave 7b: the install button, 1.0's renderInstallArea, and
    the error-report toggle, 1.0's BEUK:errors, are here.)
 
-
    Save writes the book's `meta` once, through Yjs, and only when it
    changes (settings.ts settingsChange). Cancel, Escape and the backdrop
    write nothing. */
@@ -68,7 +67,6 @@ function errsWrite(on: boolean): boolean {
   return errsRead();
 }
 /** Tests only: forget the probes. */
-
 export function resetServerFacts(): void {
   probes = null;
 }
@@ -331,9 +329,6 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           <Icon name="Download" />
           <span>{t('pwa.install')}</span>
         </button>
-        <p className="cover-note" id="installedLine" style={{ display: 'none' }}>
-          {t('pwa.installed')}
-        </p>
 
         {/* ==== BEUK:legal ==== the legal pages live on the studio's server: no server, no links to pages that aren't there */}
         <p className="cover-note legal-line" id="legalLinksSettings" hidden={!facts.server}>
@@ -357,6 +352,10 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               {supportParts.slice(1).join('{email}')}
             </>
           ) : null}
+        </p>
+        {/* wave 7b (H5): 1.0's "installed" line, last in the About box as in 1.0 */}
+        <p className="cover-note" id="installedLine" style={{ display: 'none' }}>
+          {t('pwa.installed')}
         </p>
       </div>
       <div className="modal-actions">

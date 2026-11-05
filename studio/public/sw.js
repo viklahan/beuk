@@ -63,7 +63,6 @@ self.addEventListener('message', (event) => {
   if (d && d.type === 'BEUK_PING' && event.source) event.source.postMessage({ type: 'BEUK_SHELL_READY', cache: CACHE });
 });
 
-
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches

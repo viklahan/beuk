@@ -75,7 +75,6 @@ export const cloudUi: {
 } = {
   jump: (c) => betaJumpInStudio(c),
 
-
   ydoc: () => null,
   replace: async () => null,
   focusEditor: () => undefined,
@@ -592,7 +591,6 @@ export function loadCloud(): Promise<CloudClosure> {
           get protocol() {
             return window.location.protocol;
           },
-
         },
         setTimeout: (fn: () => void, ms?: number) => globalThis.setTimeout(fn, ms),
         setInterval: (fn: () => void, ms?: number) => globalThis.setInterval(fn, ms),
@@ -837,4 +835,3 @@ export function cloudReset(): void {
     Object.assign(loadedCloud.api.beta as Rec, { shares: [], comments: [], loading: false, error: '', newLink: null, showResolved: false, busy: false, opts: { days: '0', allow: true, nameReq: true } });
   }
 }
-

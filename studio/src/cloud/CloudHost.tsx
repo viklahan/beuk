@@ -270,7 +270,6 @@ export function CloudHost() {
     const c = cm.current, mc = closureIfLoaded();
     if (!c || !mc || !host.current) return;
     for (const id of Object.values(CLOUD_SLOTS)) {
-
       const s = document.getElementById(id);
       if (s) translateCover(mc, s);
     }

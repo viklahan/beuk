@@ -24,7 +24,6 @@ export type PlatformOpts = {
   reload: () => void;
 };
 
-
 export function platformInit(cm: CloudClosure, o: PlatformOpts): () => void {
   const a = cm.api;
   const pwa = a.pwa as Rec & { installPrompt: { prompt: () => Promise<unknown>; userChoice: Promise<{ outcome?: string }> } | null };

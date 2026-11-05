@@ -79,7 +79,6 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // wave 7b: the reader comments (its button, Jump to paragraph), revoked links, bulk import's file picker
   'MessageSquareQuote', 'CornerDownRight', 'Link2Off', 'Files'];
 
-
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);
 };
@@ -709,7 +708,6 @@ export function extractCloudMarkup(html) {
   for (const id of ['btnUpdateReload', 'btnUpdateLater']) if (!updateBar.includes('id="' + id + '"')) fail(`the update bar no longer has #${id}`);
   if (/<script|\son[a-z]+=/i.test(auth + shelf + account + netPill + syncRow + bulkInputs + bulkHint + updateBar)) fail("the shelf's markup carries a script or a handler attribute: the studio puts it in place as it is");
   return { auth, shelf, account, netPill, syncRow, bulkInputs, bulkHint, updateBar };
-
 }
 
 /* ---- the local pill's stylesheet (wave 5a, round 2) ----

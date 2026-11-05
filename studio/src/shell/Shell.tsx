@@ -181,7 +181,6 @@ export function Shell() {
       {/* wave 7b: 1.0's update bar ("A new Beuk is ready"), under the header (src/cloud/CloudHost.tsx) */}
       <CloudSlot id={CLOUD_SLOTS.update} />
 
-
       <nav id="mobileTabs">
         <button type="button" data-mpane="structure" className={active('structure', false)} onClick={tab('structure', false)}>
           <Icon name="ListTree" />

@@ -161,7 +161,6 @@ describe('wave 7b in the studio', () => {
     const a = $('archiveList').querySelector('.arc-row a');
     expect(a?.getAttribute('href')).toMatch(/^\/api\/exports\/[0-9a-f-]{36}\/download$/);
     expect(a?.textContent).toBe('Download');
-
   }, 90_000);
 
   it("beta links: 1.0's share section after the archive; a reader's comment opens from the sidebar and jumps to its passage in 2.0's editor", async () => {
@@ -222,8 +221,6 @@ describe('wave 7b in the studio', () => {
   }, 60_000);
 
   it('signed out: the archive section stays hidden in the export modal', async () => {
-
-
     await studio(off);
     await waitFor(() => expect($('btnExport').getAttribute('aria-disabled')).toBeNull(), { timeout: 20_000 });
     await click($('btnExport'));
