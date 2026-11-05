@@ -6,7 +6,7 @@ import meta from '../src/generated/strings-meta.json';
 import { App } from '../src/App';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { importToDevice } from '../src/book/store';
-import { loadClosure, resetCloudFacts, setClosureLang, setClosureT, cloudFacts } from '../src/closure/index';
+import { closureIfLoaded, loadClosure, resetCloudFacts, setClosureLang, setClosureT, cloudFacts } from '../src/closure/index';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
@@ -14,6 +14,8 @@ import { styleReset } from '../src/style/session';
 import { exportReset } from '../src/export/state';
 import { cloudReset, cloudUi } from '../src/cloud/cloud';
 import { resetCloudProbe } from '../src/pictures/stock';
+import { exportBook } from '../../src/book/editor/index';
+import { live } from '../src/history/history';
 import { fixtures } from './fixtures';
 import { hazards } from './hazards';
 import { browser, fakeStripe, startShelf, type Shelf } from './cloud-server';
@@ -29,6 +31,11 @@ let off: Shelf;
 const realFetch = globalThis.fetch;
 let net: ReturnType<typeof browser>;
 beforeAll(async () => {
+  // jsdom lays nothing out: the editor's scroll-into-view after 1.0's focusEditor reads these
+  for (const P of [Range.prototype, Element.prototype, Text.prototype] as unknown as Record<string, unknown>[]) {
+    if (typeof P.getClientRects !== 'function') P.getClientRects = () => ({ length: 0, item: () => null, [Symbol.iterator]: function* () {} });
+    if (typeof P.getBoundingClientRect !== 'function') P.getBoundingClientRect = () => ({ x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 });
+  }
   await loadClosure();
   setClosureT(t);
   setClosureLang('en');
@@ -267,5 +274,71 @@ describe('the shelf (H1) and safety (constraint 90)', () => {
     // opening and viewing send no save (constraint 87)
     await new Promise((res) => setTimeout(res, 3000));
     expect(manuscripts().length).toBe(before);
+  }, 60_000);
+});
+
+describe('the three-way conflict (H4, constraint 86)', () => {
+  /** Linked on the shelf; another device then saves its own version over the shelf copy; this desk edits too. */
+  async function twoPlaces(): Promise<{ id: string; rev: number }> {
+    await studio(off);
+    await signUp(email(), true);
+    await waitFor(() => expect(cloudFacts.linkState).toBe('linked'));
+    const id = cloudFacts.linkedId!, rev = cloudFacts.baseRevision!;
+    // the other device: its own copy of the book, its title changed, saved on the same revision
+    const got = (await (await net.fetch('/api/manuscripts/' + id)).json()) as { manuscript: { doc: Rec } };
+    const theirs = structuredClone(got.manuscript.doc);
+    (theirs.meta as Rec).title = 'Shelf side';
+    const put = await net.fetch('/api/manuscripts/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'If-Match': '"' + rev + '"' }, body: JSON.stringify({ title: 'Shelf side', doc: theirs }) });
+    expect(put.status).toBe(200);
+    // this desk: an edit of its own
+    const y = cloudUi.ydoc()!;
+    act(() => y.getMap('meta').set('meta', { ...(y.getMap('meta').get('meta') as Rec), title: 'Desk side' }));
+    await waitFor(() => expect(isOpen('modalConflict')).toBe(true), { timeout: 8000 });
+    expect($('conflictBody').textContent).toMatch(/^.*Desk side.*$/);
+    expect(cloudFacts.conflict).not.toBe(null);
+    return { id, rev };
+  }
+  const shelfDoc = async (id: string) => ((await (await net.fetch('/api/manuscripts/' + id)).json()) as { manuscript: { doc: Rec; revision: number } }).manuscript;
+  const historyNames = () => {
+    const h = (exportBookOf().history as { name?: string; auto?: string }[] | undefined) ?? [];
+    return h.map((x) => (x.auto || '') + ':' + (x.name || ''));
+  };
+  const exportBookOf = () => exportBook(cloudUi.ydoc()!) as Rec;
+  /** History as 1.0 holds it (unpacked: each snapshot's whole book). */
+  const unpacked = () => live(closureIfLoaded()!, cloudUi.ydoc()!).state.history;
+
+  it('Keep mine: the shelf copy is replaced by this desk', async () => {
+    const { id, rev } = await twoPlaces();
+    await click($('btnConflictMine'));
+    expect(isOpen('modalConflict')).toBe(false);
+    await waitFor(() => expect(toasts()).toContain(t('offline.resolvedMine')));
+    await waitFor(async () => expect((await shelfDoc(id)).revision).toBe(rev + 2));
+    expect(((await shelfDoc(id)).doc.meta as Rec).title).toBe('Desk side');
+    expect((exportBookOf().meta as Rec).title).toBe('Desk side');
+  }, 60_000);
+
+  it("Use the shelf copy: the desk becomes it, and this desk's writing is History's newest snapshot", async () => {
+    const { id, rev } = await twoPlaces();
+    await click($('btnConflictShelf'));
+    await waitFor(() => expect(toasts()).toContain(t('offline.resolvedShelf')));
+    await waitFor(() => expect(($('projectTitleDisplay').textContent)).toBe('Shelf side'));
+    expect(historyNames()[0]).toBe('conflict:' + t('offline.snapshotLocalName'));
+    expect((unpacked()[0]!.doc.meta as Rec).title).toBe('Desk side');
+    // the merged History rides the next save (1.0: cloudDirty = true)
+    await waitFor(async () => expect((await shelfDoc(id)).revision).toBe(rev + 2), { timeout: 8000 });
+    const s = await shelfDoc(id);
+    expect((s.doc.meta as Rec).title).toBe('Shelf side');
+    expect(((s.doc.history as { name: string }[])[0]!).name).toBe(t('offline.snapshotLocalName'));
+  }, 60_000);
+
+  it('Keep both: this desk stands, and the shelf copy is kept word for word as a History snapshot', async () => {
+    const { id, rev } = await twoPlaces();
+    await click($('btnConflictBoth'));
+    await waitFor(() => expect(toasts()).toContain(t('offline.resolvedBoth')));
+    expect((exportBookOf().meta as Rec).title).toBe('Desk side');
+    expect(historyNames()[0]).toBe('conflict:' + t('offline.snapshotShelfName'));
+    expect((unpacked()[0]!.doc.meta as Rec).title).toBe('Shelf side');
+    await waitFor(async () => expect((await shelfDoc(id)).revision).toBe(rev + 2), { timeout: 8000 });
+    expect(((await shelfDoc(id)).doc.meta as Rec).title).toBe('Desk side');
   }, 60_000);
 });

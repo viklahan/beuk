@@ -85,7 +85,13 @@ export function browser(base: string) {
     const body = typeof init.body === 'string' ? init.body : init.body == null ? null : '[binary]';
     requests.push({ method: (init.method || 'GET').toUpperCase(), path: url.pathname + url.search, body, headers });
     // (jsdom's AbortSignal is not Node's: 1.0's 4 s probe timeout is not carried to the server)
-    const res = await nodeFetch(url, { method: init.method, body: init.body as BodyInit | null | undefined, headers });
+    let res: Response;
+    try {
+      res = await nodeFetch(url, { method: init.method, body: init.body as BodyInit | null | undefined, headers });
+    } catch (e) {
+      if (process.env.CLOUD_DEBUG) console.log('FETCH-THREW', url.pathname, String(e), String((e as { cause?: unknown }).cause));
+      throw e;
+    }
     for (const sc of res.headers.getSetCookie?.() ?? []) {
       const pair = sc.split(';')[0]!;
       const eq = pair.indexOf('=');
