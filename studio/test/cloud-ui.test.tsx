@@ -17,6 +17,7 @@ import { resetCloudProbe } from '../src/pictures/stock';
 import { exportBook } from '../../src/book/editor/index';
 import { live } from '../src/history/history';
 import { fixtures } from './fixtures';
+import { installCanvas } from './print-fixture';
 import { hazards } from './hazards';
 import { browser, fakeStripe, startShelf, type Shelf } from './cloud-server';
 
@@ -341,4 +342,34 @@ describe('the three-way conflict (H4, constraint 86)', () => {
     await waitFor(async () => expect((await shelfDoc(id)).revision).toBe(rev + 2), { timeout: 8000 });
     expect(((await shelfDoc(id)).doc.meta as Rec).title).toBe('Desk side');
   }, 60_000);
+});
+
+describe('the seams light up (constraint 89)', () => {
+  it("signed in: the print-ready PDF links the book, archives its print interior and queues the pdfx job — 1.0's requests", async () => {
+    installCanvas(); // jsdom draws no canvas (wave 5b's stand-in: print measures a running head on one)
+    (globalThis as unknown as { JSZip: unknown }).JSZip = (await import('node:module')).createRequire(import.meta.url)('../../client/assets/vendor/jszip.min.js');
+    await studio(off);
+    await signUp(email(), false); // declined: the book is not on the shelf yet
+    await waitFor(() => expect(cloudFacts.linkState).toBe('declined'));
+    await waitFor(() => expect($('btnExport').getAttribute('aria-disabled')).toBeNull(), { timeout: 20_000 });
+    await click($('btnExport'));
+    await waitFor(() => expect(document.querySelectorAll('#trimGrid [data-trim]').length).toBeGreaterThan(10));
+    // declined: 1.0's cloudEnsureLinked refuses, and 1.0 says the shelf is needed; nothing is sent
+    await click($('btnPrintReadyPdf'));
+    await waitFor(() => expect($('printReadyNote').textContent).toBe(t('store.serverNeedShelf')));
+    expect(net.requests.filter((r) => /\/api\/(exports|jobs)/.test(r.path))).toEqual([]);
+    // brought to the shelf (1.0's Bring it to my shelf), the same button makes the job
+    cloudFacts.linkState = 'unlinked';
+    await click($('btnPrintReadyPdf'));
+    await waitFor(() => expect(net.requests.some((r) => r.method === 'POST' && r.path === '/api/jobs/pdfx')).toBe(true), { timeout: 20_000 });
+    const seq = net.requests.filter((r) => /\/api\/(manuscripts|exports|jobs)/.test(r.path) && r.method === 'POST').map((r) => r.method + ' ' + r.path.replace(/[0-9a-f-]{36}/g, '<id>'));
+    expect(seq[0]).toBe('POST /api/manuscripts');
+    expect(seq[1]).toMatch(/^POST \/api\/exports\?manuscriptId=<id>&format=print-html&filename=[^&]+\.html$/);
+    expect(seq[2]).toBe('POST /api/jobs/pdfx');
+    const job = JSON.parse(net.requests.find((r) => r.path === '/api/jobs/pdfx')!.body!) as Rec;
+    expect(Object.keys(job)).toEqual(['exportId']);
+    // the job on a server with no Ghostscript: 1.0's own words for what the server answered
+    await waitFor(() => expect($('printReadyNote').textContent).not.toBe(t('store.serverNeedShelf')), { timeout: 20_000 });
+    expect([t('pr.running'), t('pr.stillRunning')].some((w) => $('printReadyNote').textContent === w) || /^The print-ready PDF could not be made: /.test($('printReadyNote').textContent || '')).toBe(true);
+  }, 90_000);
 });
