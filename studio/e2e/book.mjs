@@ -8222,6 +8222,43 @@ async function wave7bScreens(srv) {
   note('wave7b screenshots (2.0 against 1.0, pixels over the delta): ' + out.join('; '));
 }
 
+/* V's ruling (2026-11-04, review I-3): 1.0's own page with 5a's hostile book on its desk runs nothing — no script ran
+   (window.__pw stays undefined) and no handler attribute stands anywhere in the DOM — after the book arrives and after its
+   chapters, the preview and the Style tab have drawn it. Its page errors are listed (the SyntaxError lead). */
+async function wave7bOneXss(srv) {
+  const origin = srv.origin;
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const hostile = w5aHostileBook(lan);
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const errs = [];
+  try {
+    const one = await ctx.newPage();
+    one.on('pageerror', (e) => errs.push(String(e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)));
+    one.on('console', (m) => { if (m.type() === 'error' && !/status of 40[0-9]/.test(m.text())) errs.push('console: ' + m.text() + ' ' + JSON.stringify(m.location())); });
+    await one.goto(origin + '/studio');
+    await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+    await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), hostile);
+    await one.waitForTimeout(1500);
+    // every section drawn in 1.0's editor and preview, then the Style tab
+    const n = await one.evaluate(() => state.sections.length);
+    for (let i = 0; i < n; i++) {
+      await one.evaluate((k) => { try { selectSection(state.sections[k].id); } catch (e) { window.__w7bSel = String(e); } }, i);
+      await one.waitForTimeout(120);
+    }
+    await one.evaluate(() => { try { document.querySelector('[data-ctab="style"], #tabStyle')?.click(); } catch (e) {} });
+    await one.waitForTimeout(1500);
+    const seen = await one.evaluate(() => ({
+      pw: window.__pw ?? null,
+      handlers: [...document.querySelectorAll('*')].flatMap((e) => [...e.attributes].filter((a) => /^on/i.test(a.name)).map((a) => e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + '.' + String(e.className).slice(0, 40) + ' ' + a.name)),
+      scripts: [...document.querySelectorAll('script')].filter((s) => /__pw/.test(s.textContent)).length,
+    }));
+    check(seen.pw === null && seen.handlers.length === 0 && seen.scripts === 0, `1.0 fix (review I-3): 1.0's page with the hostile book runs nothing — __pw ${seen.pw}, ${seen.handlers.length} handler attribute(s)${seen.handlers.length ? ' ' + JSON.stringify(seen.handlers.slice(0, 6)) : ''}, ${seen.scripts} hostile script element(s)`);
+    note(`1.0's page with the hostile book: page errors ${JSON.stringify(errs.slice(0, 6))}`);
+  } finally {
+    await ctx.close();
+  }
+}
+
 /* The 7a gap: the hostile book through the shelf parity run (constraint 85). */
 async function wave7bHostileParity(srv) {
   const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
@@ -8241,7 +8278,7 @@ async function wave7bChecks() {
   const stripe = await w7aFakeStripe();
   const srv = await startServer({ repo: REPO, api: true, apiConfig: { stripeWebhookSecret: 'whsec_test_placeholder', stripeSecretKey: 'sk_test_placeholder', stripePriceId: 'price_fixture', stripeApiBase: stripe.base } });
   note(`wave7b: the real server on ${srv.origin} (PGlite), billing in test mode against a fake Stripe on ${stripe.base}`);
-  const only = (process.env.W7B_PARTS || 'bulk,share,day22,archive,offline,update,errors,noedit,hostile,screens,latency').split(',');
+  const only = (process.env.W7B_PARTS || 'bulk,share,day22,archive,offline,update,errors,noedit,onexss,hostile,screens,latency').split(',');
   try {
     if (only.includes('bulk')) await wave7bBulk(srv);
     if (only.includes('share')) await wave7bShare(srv);
@@ -8251,7 +8288,9 @@ async function wave7bChecks() {
     if (only.includes('update')) await wave7bUpdate(srv);
     if (only.includes('errors')) await wave7bErrors(srv);
     if (only.includes('noedit')) await wave7bNoEdit(srv);
+    if (only.includes('onexss')) await wave7bOneXss(srv);
     if (only.includes('hostile')) await wave7bHostileParity(srv);
+
     if (only.includes('screens')) await wave7bScreens(srv);
     if (only.includes('latency')) await wave7aLatency(srv);
     note(`wave7b: ${srv.shelf.mail.sent.length} mail(s) captured by the server, none sent; Stripe calls (all to the fake on 127.0.0.1): ${stripe.calls.length}`);

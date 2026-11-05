@@ -19338,7 +19338,16 @@
         if (typeof ornamentId !== "string" || ornamentId.indexOf(FLOURISH_PREFIX) !== 0) return null;
         return imageById(ornamentId.slice(FLOURISH_PREFIX.length));
       }
-      const flourishSrc = (img, forExport, dataMedia) => (forExport && !dataMedia) ? "../Images/" + imageFileName(img) : "data:" + img.mediaType + ";base64," + img.data;
+      /* BEUK:picsrc (V, 2026-11-04) — a picture's (or an uploaded font's) bytes as a data: address, only when they are what
+         1.0 itself stores: a plain media type and base64 data. A crafted book's value (a quote, a handler, a url()) gives
+         no address at all — 1.0 wrote them into <img src>, CSS url() and FontFace unescaped, and a hostile book's
+         onerror ran in this page. */
+      function picDataSrc(mediaType, data) {
+        const mt = String(mediaType == null ? "" : mediaType), d = String(data == null ? "" : data);
+        if (!/^[\w.+-]+\/[\w.+-]+$/.test(mt) || !/^[A-Za-z0-9+/=\s]*$/.test(d)) return "";
+        return "data:" + mt + ";base64," + d;
+      }
+      const flourishSrc = (img, forExport, dataMedia) => (forExport && !dataMedia) ? "../Images/" + imageFileName(img) : picDataSrc(img.mediaType, img.data);
       function ornamentHtml(id, forExport, dataMedia) {
         if (typeof id === "string" && id.indexOf(FLOURISH_PREFIX) === 0) {
           const img = flourishOf(id);
@@ -20004,7 +20013,7 @@
              ctx.font ever matched (the type fell back to Georgia; tools/book-corpus/wrap-parity.mjs measured it).
              Firefox and Safari parse the family as a CSS family list instead and throw on a bare name that is not
              one ("Garamond 3", "1942 Report", "Font.v2"): there the quoted form is the name, so it is the retry. */
-          const fam = f.family.replace(/"/g, ""), src = 'url(data:' + f.mediaType + ";base64," + f.data + ")";
+          const fam = f.family.replace(/"/g, ""), src = 'url(' + picDataSrc(f.mediaType, f.data) + ")";
           let face;
           try { face = new FontFace(fam, src); } catch (e) { face = new FontFace('"' + fam + '"', src); }
           /* Into the document's font set at once: the face matches
@@ -25546,7 +25555,7 @@
       /* ---- the entry card ---- */
       function bibleImgSrc(id) {
         const im = id ? imageById(id) : null;
-        return im && typeof im.data === "string" ? esc("data:" + (im.mediaType || "image/jpeg") + ";base64," + im.data) : "";
+        return im && typeof im.data === "string" ? esc(picDataSrc(im.mediaType || "image/jpeg", im.data)) : "";
       }
       /* the card draws its two icons itself: a document-wide icon pass here
          would touch the whole studio under the writer's pointer */
@@ -26776,7 +26785,7 @@
       function rsViewHtml(f) {
         const k = rsKind(f), name = esc(f.name);
         if (rsIsRef(f.data)) return '<p class="nb-quiet">' + esc(t("rs.notHere")) + "</p>";
-        if (k === "image") return '<img class="rs-img" alt="' + name + '" src="data:' + esc(f.mediaType) + ";base64," + f.data + '">';
+        if (k === "image") return '<img class="rs-img" alt="' + name + '" src="' + picDataSrc(f.mediaType, f.data) + '">';
         if (k === "text") {
           const all = rsText(f), cap = rsLimits().textShown;
           return '<pre class="rs-text" dir="auto">' + esc(all.slice(0, cap)) + "</pre>" + (all.length > cap ? '<p class="nb-quiet">' + esc(t("rs.textCut", { n: fmtNum(cap) })) + "</p>" : "");
@@ -29559,7 +29568,7 @@
       function plateHtml(section, forExport, dataMedia, ownPage) {
         const p = plateImage(section);
         if (!p) return "";
-        const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(p.img) : "data:" + p.img.mediaType + ";base64," + p.img.data;
+        const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(p.img) : picDataSrc(p.img.mediaType, p.img.data);
         const imgTag = '<img src="' + src + '" alt="' + esc(altSaid(p.alt)) + '"/>';
         return ownPage
           ? '<div class="plate-full">' + imgTag + "</div>"
@@ -29609,13 +29618,13 @@
       function backdropLayerHtml(section, forExport, dataMedia) {
         const b = backdropImage(section);
         if (!b) return "";
-        const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(b.img) : "data:" + b.img.mediaType + ";base64," + b.img.data;
+        const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(b.img) : picDataSrc(b.img.mediaType, b.img.data);
         return '<div class="bd-layer bd-' + b.strength + '" style="background-image:url(' + src + ')" aria-hidden="true" role="presentation"></div>';
       }
       function imageFigure(tok, forExport, dataMedia) {
         const img = imageById(tok.id);
         if (!img) return forExport ? "" : '<figure class="book-img img-missing"><p class="empty-note">An image marker points to a picture that is no longer in this book\u2019s library.</p></figure>';
-        const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(img) : "data:" + img.mediaType + ";base64," + img.data;
+        const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(img) : picDataSrc(img.mediaType, img.data);
         /* A caption is read with the picture: set under it, inline
            emphasis kept, the alt text still the alt. */
         const cap = tok.caption ? "<figcaption>" + inlineMd(tok.caption) + "</figcaption>" : "";
@@ -29652,7 +29661,7 @@
       function sceneFigureHtml(section, idx, forExport, dataMedia) {
         const sc = sceneImageAt(section, idx);
         if (!sc) return "";
-        const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(sc.img) : "data:" + sc.img.mediaType + ";base64," + sc.img.data;
+        const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(sc.img) : picDataSrc(sc.img.mediaType, sc.img.data);
         let h = '<figure class="book-img scene-img"><img src="' + src + '" alt="' + esc(altSaid(sc.entry.alt)) + '"/>';
         if (String(sc.entry.caption || "").trim()) h += "<figcaption>" + escRedacted(sc.entry.caption) + "</figcaption>";
         return h + "</figure>";
@@ -29981,7 +29990,7 @@
         /* ch-untitled: a chapter with neither number nor title (a picture
            book's page) — picture-book print sets no opening for it. */
         const untitled = section.type === "chapter" && !section.number && !String(section.title || "").trim();
-        let h = '<header class="chapter-opening ch-' + style + (bdLayer ? " has-bd" : "") + (untitled ? " ch-untitled" : "") + '">' + (bdLayer || "");
+        let h = '<header class="chapter-opening ch-' + esc(style) + (bdLayer ? " has-bd" : "") + (untitled ? " ch-untitled" : "") + '">' + (bdLayer || "");
         if (section.type === "chapter" && section.number) h += '<p class="chapter-number">Chapter ' + esc(section.number) + "</p>";
         /* The heading flourish stands with the title — above it by
            default, or below it (under any subtitle) — book-wide,
@@ -30018,7 +30027,7 @@
         switch (section.type) {
           case "cover": {
             if (!state.cover) return '<div class="cover-page"><p class="empty-note">No cover image yet.</p></div>';
-            const src = (forExport && !dataCover) ? "../Images/cover." + state.cover.ext : "data:" + state.cover.mediaType + ";base64," + state.cover.data;
+            const src = (forExport && !dataCover) ? "../Images/cover." + state.cover.ext : picDataSrc(state.cover.mediaType, state.cover.data);
             return '<div class="cover-page"><img class="cover-img" src="' + src + '" alt="Cover of ' + esc(m.title) + '"/></div>';
           }
           case "frontispiece": {
@@ -30026,7 +30035,7 @@
             if (!tok) return forExport ? "" : '<p class="empty-note">This plate has no picture yet. Place one from the image library in the editor.</p>';
             const img = imageById(tok.id);
             if (!img) return forExport ? "" : '<p class="empty-note">This plate points to a picture that is no longer in the library.</p>';
-            const src = (forExport && !dataCover) ? "../Images/" + imageFileName(img) : "data:" + img.mediaType + ";base64," + img.data;
+            const src = (forExport && !dataCover) ? "../Images/" + imageFileName(img) : picDataSrc(img.mediaType, img.data);
             return frontispiecePlateHtml(src, tok);
           }
           case "halftitle": {
@@ -30058,7 +30067,7 @@
               tree.map((e) => li(e, e.s.type === "part" ? "toc-part" : "") + e.children.map((c) => li(c, "toc-child")).join("")).join("") + "</ol></div>";
           }
           default:
-            return '<header class="chapter-opening ch-' + (state.theme.headerStyle || "classic_centered") + '"><h1 class="chapter-title small">' + esc(section.title) + '</h1><div class="chapter-rule">' + ornamentHtml(state.theme.ornament, forExport, dataCover) + "</div></header>" +
+            return '<header class="chapter-opening ch-' + esc(state.theme.headerStyle || "classic_centered") + '"><h1 class="chapter-title small">' + esc(section.title) + '</h1><div class="chapter-rule">' + ornamentHtml(state.theme.ornament, forExport, dataCover) + "</div></header>" +
               contentBlocksToHtml(section.content, section, false, forExport, dataCover);
         }
       }
@@ -30567,7 +30576,7 @@
             const name = isPart
               ? (s.number ? t("import.type.part") + " " + s.number + " — " : "") + (s.title || t("side.untitled"))
               : s.kind === "body" ? (s.number ? t("side.chapterAbbr") + " " + s.number + " — " : "") + (s.title || t("side.untitled")) : s.title;
-            html += '<div class="sec-item' + (isActive ? " active" : "") + (gCollapsed && !isActive ? " og-hidden" : "") + (inBook(s) ? "" : " excluded") + (isPart ? " part-item" : "") + (g === "Body" && inPart && !isPart ? " in-part" : "") + '" data-sec="' + s.id + '" role="button" tabindex="0" draggable="true">' +
+            html += '<div class="sec-item' + (isActive ? " active" : "") + (gCollapsed && !isActive ? " og-hidden" : "") + (inBook(s) ? "" : " excluded") + (isPart ? " part-item" : "") + (g === "Body" && inPart && !isPart ? " in-part" : "") + '" data-sec="' + esc(s.id) + '" role="button" tabindex="0" draggable="true">' +
               '<span class="drag"><i data-lucide="' + (isPart ? "bookmark" : s.kind === "body" ? "grip-vertical" : s.type === "toc" ? "list-ordered" : s.type === "cover" ? "image" : "file-text") + '"></i></span>' +
               '<span class="sec-name">' + esc(name) + '</span>' +
               '<span class="sec-wc" id="wc-' + s.id + '"' + (s.included && emptyOut(s) ? ' title="' + esc(t("side.emptyOut")) + '"' : "") + '>' + (s.included && emptyOut(s) ? esc(t("side.emptyOutShort")) : fmtNum(sectionWords(s)) + " " + t("side.wordUnit", { count: sectionWords(s) })) + "</span>" +
@@ -33499,7 +33508,7 @@
         order.forEach((e) => { max[e.id] = Math.max(1, ...(men.per[e.id] || zero).counts); });
         h += '<div class="ol-gridwrap"><table class="ol-grid" id="olGrid" aria-label="' + esc(t("ol.gridAria")) + '"><thead><tr><th scope="col" class="ol-g-corner">' + esc(t("ol.gridSection")) + "</th>" +
           fields.map((f) => '<th scope="col" class="ol-g-fh"><span class="ol-g-ty">' + esc(t("ol.fieldType." + f.type)) + '</span><span class="ol-g-ent" dir="auto">' + esc(f.name) + "</span></th>").join("") +
-          threads.map((th) => '<th scope="col" class="ol-g-th" style="--ol-tc:var(--ol-c' + th.colour + ')"><span class="ol-g-ty">' + esc(t("ol.threadType")) + "</span>" +
+          threads.map((th) => '<th scope="col" class="ol-g-th" style="--ol-tc:var(--ol-c' + esc(th.colour) + ')"><span class="ol-g-ty">' + esc(t("ol.threadType")) + "</span>" +
             '<span class="ol-g-thname"><input type="text" dir="auto" maxlength="60" value="' + esc(th.name) + '" data-olthname="' + esc(th.id) + '" data-olkey="thn-' + esc(th.id) + '" aria-label="' + esc(t("ol.threadRename", { name: th.name })) + '">' +
             '<button type="button" class="ol-mini" data-olthdel="' + esc(th.id) + '" aria-label="' + esc(t("ol.threadDel", { name: th.name })) + '" title="' + esc(t("ol.threadDel", { name: th.name })) + '"><i data-lucide="x"></i></button></span></th>').join("") +
           order.map((e) => {
@@ -33512,7 +33521,7 @@
           fields.forEach((f) => { h += '<td class="ol-g-fld">' + olFieldControl(s, f, label) + "</td>"; });
           threads.forEach((th) => {
             const v = s.threads && typeof s.threads[th.id] === "string" ? s.threads[th.id] : "";
-            h += '<td class="ol-g-note" style="--ol-tc:var(--ol-c' + th.colour + ')"><textarea dir="auto" rows="' + Math.max(2, Math.min(5, Math.ceil(v.length / 26))) + '" maxlength="2000" data-olf="thread" data-olth="' + esc(th.id) + '" aria-label="' + esc(t("ol.threadNoteFor", { thread: th.name, sec: label })) + '">' + esc(v) + "</textarea></td>";
+            h += '<td class="ol-g-note" style="--ol-tc:var(--ol-c' + esc(th.colour) + ')"><textarea dir="auto" rows="' + Math.max(2, Math.min(5, Math.ceil(v.length / 26))) + '" maxlength="2000" data-olf="thread" data-olth="' + esc(th.id) + '" aria-label="' + esc(t("ol.threadNoteFor", { thread: th.name, sec: label })) + '">' + esc(v) + "</textarea></td>";
           });
           order.forEach((e) => {
             const n = i == null ? 0 : (men.per[e.id] || zero).counts[i] || 0;
@@ -34141,7 +34150,7 @@
         } else if (s.type === "cover") {
           const cov = state.cover;
           host.innerHTML = '<div class="gen-panel"><div class="cover-row">' +
-            '<div class="cover-thumb" id="genCoverThumb">' + (cov ? '<img src="data:' + cov.mediaType + ";base64," + cov.data + '" alt=""/>' : "<span>" + esc(t("set.noCover")) + "</span>") + "</div>" +
+            '<div class="cover-thumb" id="genCoverThumb">' + (cov ? '<img src="' + picDataSrc(cov.mediaType, cov.data) + '" alt=""/>' : "<span>" + esc(t("set.noCover")) + "</span>") + "</div>" +
             '<div class="cover-actions"><div class="gen-actions">' +
             '<button class="tb-btn" id="genCoverUpload" type="button"><i data-lucide="image-plus"></i>' + esc(cov ? t("gen.coverReplace") : t("set.uploadCover")) + "</button>" +
             '<button class="tb-btn" id="genCoverMake" type="button"><i data-lucide="palette"></i>' + esc(t("covermk.make")) + "</button>" +
@@ -34857,7 +34866,7 @@
         box.innerHTML = '<div class="sec-imgs"><h4><i data-lucide="images"></i>Images in this section</h4>' +
           toks.map((t, i) => {
             const im = imageById(t.id);
-            const thumb = im ? '<img src="data:' + im.mediaType + ";base64," + im.data + '" alt=""/>' : '<span class="si-missing">missing</span>';
+            const thumb = im ? '<img src="' + picDataSrc(im.mediaType, im.data) + '" alt=""/>' : '<span class="si-missing">missing</span>';
             return '<div class="sec-img-row">' + thumb +
               '<div class="si-main"><input class="txt-input si-alt" data-tokalt="' + i + '" type="text" value="' + esc(t.alt) + '" placeholder="Alt text for this image" aria-label="Alt text"/>' +
               '<input class="txt-input si-alt si-cap" data-tokcap="' + i + '" type="text" maxlength="300" value="' + esc(t.caption || "") + '" placeholder="' + esc(capPh) + '" aria-label="' + esc(capPh) + '"/>' +
@@ -34917,7 +34926,7 @@
           lib.innerHTML = '<p class="img-empty">No images in this book yet.<br/>Upload one and it can be placed in any section.</p>';
         } else {
           lib.innerHTML = state.images.map((im) =>
-            '<button type="button" class="img-cell' + (im.id === imgSelId ? " active" : "") + '" data-libimg="' + im.id + '"><img src="data:' + im.mediaType + ";base64," + im.data + '" alt=""/><span>' + esc(im.name) + "</span></button>"
+            '<button type="button" class="img-cell' + (im.id === imgSelId ? " active" : "") + '" data-libimg="' + esc(im.id) + '"><img src="' + picDataSrc(im.mediaType, im.data) + '" alt=""/><span>' + esc(im.name) + "</span></button>"
           ).join("");
           lib.querySelectorAll("[data-libimg]").forEach((b) => b.addEventListener("click", () => selectLibImage(b.getAttribute("data-libimg"))));
           imglibDecorate(lib, "data-libimg"); /* BEUK:imagelib */
@@ -35041,7 +35050,7 @@
         $("sceneBarLabel").innerHTML = "<b>" + esc(t("scene.barLabel", { n: info.at + 1, total: info.total })) + "</b>" +
           (im ? " · " + esc(im.name) : entry ? " · " + esc(t("scene.missing")) : "");
         const thumb = $("sceneBarThumb");
-        if (im) { thumb.src = "data:" + im.mediaType + ";base64," + im.data; thumb.style.display = ""; }
+        if (im) { thumb.src = picDataSrc(im.mediaType, im.data); thumb.style.display = ""; }
         else thumb.style.display = "none";
         $("sceneAddLabel").textContent = entry ? t("scene.replace") : t("scene.add");
         $("btnSceneRemove").style.display = entry ? "" : "none";
@@ -35088,7 +35097,7 @@
           lib.innerHTML = '<p class="img-empty">' + esc(t("scene.noLibrary")) + "</p>";
         } else {
           lib.innerHTML = state.images.map((im) =>
-            '<button type="button" class="img-cell' + (scenePending && im.id === scenePending.imageId ? " active" : "") + '" data-sceneimg="' + im.id + '"><img src="data:' + im.mediaType + ";base64," + im.data + '" alt=""/><span>' + esc(im.name) + "</span></button>"
+            '<button type="button" class="img-cell' + (scenePending && im.id === scenePending.imageId ? " active" : "") + '" data-sceneimg="' + esc(im.id) + '"><img src="' + picDataSrc(im.mediaType, im.data) + '" alt=""/><span>' + esc(im.name) + "</span></button>"
           ).join("");
           lib.querySelectorAll("[data-sceneimg]").forEach((b) => b.addEventListener("click", () => sceneSelectImage(b.getAttribute("data-sceneimg"))));
           imglibDecorate(lib, "data-sceneimg"); /* BEUK:imagelib */
@@ -35316,7 +35325,7 @@
         og.innerHTML = ORNAMENTS.map((o) =>
           '<button class="orn-btn' + (state.theme.ornament === o.id ? " active" : "") + '" data-orn="' + o.id + '">' + ornamentSvg(o.id) + '<span class="orn-name">' + o.name + "</span></button>"
         ).join("") + flourishImages().map((im) =>
-          '<button class="orn-btn' + (state.theme.ornament === FLOURISH_PREFIX + im.id ? " active" : "") + '" data-orn="' + FLOURISH_PREFIX + esc(im.id) + '"><img class="orn-thumb" src="data:' + im.mediaType + ";base64," + im.data + '" alt=""/><span class="orn-name">' + esc(im.name || im.id) + "</span></button>"
+          '<button class="orn-btn' + (state.theme.ornament === FLOURISH_PREFIX + im.id ? " active" : "") + '" data-orn="' + FLOURISH_PREFIX + esc(im.id) + '"><img class="orn-thumb" src="' + picDataSrc(im.mediaType, im.data) + '" alt=""/><span class="orn-name">' + esc(im.name || im.id) + "</span></button>"
         ).join("");
         og.querySelectorAll("[data-orn]").forEach((b) => b.addEventListener("click", () => {
           state.theme.ornament = b.getAttribute("data-orn"); state.activePreset = null;
@@ -35337,7 +35346,7 @@
         const list = $("flourishList"); if (!list) return;
         const fls = flourishImages();
         list.innerHTML = fls.length ? fls.map((im) =>
-          '<div class="flourish-row"><img src="data:' + im.mediaType + ";base64," + im.data + '" alt=""/><span class="fl-name">' + esc(im.name || im.id) + "</span>" +
+          '<div class="flourish-row"><img src="' + picDataSrc(im.mediaType, im.data) + '" alt=""/><span class="fl-name">' + esc(im.name || im.id) + "</span>" +
           '<button type="button" class="tb-btn fl-remove" data-flremove="' + esc(im.id) + '">' + esc(t("flourish.remove")) + "</button></div>"
         ).join("") : '<p class="flourish-empty">' + esc(t("flourish.empty")) + "</p>";
         list.querySelectorAll("[data-flremove]").forEach((b) => b.addEventListener("click", () => removeFlourishImage(b.getAttribute("data-flremove"))));
@@ -37215,7 +37224,7 @@
             if (cb) cb();
           };
           img.onerror = () => { if (hc.toneKey === key) hc.tone = { r: 60, g: 52, b: 44 }; if (cb) cb(); };
-          img.src = "data:" + state.cover.mediaType + ";base64," + state.cover.data;
+          img.src = picDataSrc(state.cover.mediaType, state.cover.data);
         }
         return { r: 60, g: 52, b: 44, pending: true };
       }
@@ -37331,7 +37340,7 @@
         } else {
           const img = document.createElement("img");
           img.alt = ""; img.draggable = false;
-          img.src = "data:" + state.cover.mediaType + ";base64," + state.cover.data;
+          img.src = picDataSrc(state.cover.mediaType, state.cover.data);
           front.appendChild(img);
         }
         const hinge = document.createElement("div"); hinge.className = "hc-hinge"; hinge.style.left = (0.32 * ppi) + "px";
@@ -42903,7 +42912,7 @@
       function renderCoverSettings() {
         const th = $("coverThumb"); if (!th) return;
         if (state.cover) {
-          th.innerHTML = '<img src="data:' + state.cover.mediaType + ";base64," + state.cover.data + '" alt=""/>';
+          th.innerHTML = '<img src="' + picDataSrc(state.cover.mediaType, state.cover.data) + '" alt=""/>';
           $("btnCoverRemove").style.display = "";
           $("coverNote").textContent = t("set.coverNoteSet", { name: state.cover.name, size: fmtBytes(Math.round(state.cover.data.length * 3 / 4)), ext: state.cover.ext });
         } else {
@@ -43235,7 +43244,7 @@
           const img = new Image();
           img.onload = () => { coverImgCache[recipe.bgImageId] = img; resolve(img); };
           img.onerror = () => resolve(null);
-          img.src = "data:" + im.mediaType + ";base64," + im.data;
+          img.src = picDataSrc(im.mediaType, im.data);
         });
       }
       function hexToRgb(hex) {
@@ -43499,7 +43508,7 @@
           const img = new Image();
           img.onload = () => { coverImgCache[id] = img; resolve(img); };
           img.onerror = () => resolve(null);
-          img.src = "data:" + im.mediaType + ";base64," + im.data;
+          img.src = picDataSrc(im.mediaType, im.data);
         })));
       }
       /* ==== /BEUK:spineback ==== */
@@ -43805,7 +43814,7 @@
           const img = new Image();
           img.onload = () => { coverImgCache[id] = img; resolve(img); };
           img.onerror = () => resolve(null);
-          img.src = "data:" + im.mediaType + ";base64," + im.data;
+          img.src = picDataSrc(im.mediaType, im.data);
         });
       }
       /* Flap copy on a dust jacket: the front flap carries the book
@@ -45184,7 +45193,7 @@
           grid.innerHTML = '<span class="cm-art-empty">' + t(cmRecipe.bgType === "duotone" && !cmRecipe.bgImageId ? "covermk.duoScene" : "covermk.noArt") + "</span>";
         } else {
           grid.innerHTML = state.images.map((im) =>
-            '<button type="button" class="cm-art-cell' + (cmRecipe.bgImageId === im.id ? " active" : "") + '" data-cmart="' + im.id + '" title="' + esc(im.name) + '"><img src="data:' + im.mediaType + ";base64," + im.data + '" alt=""/></button>'
+            '<button type="button" class="cm-art-cell' + (cmRecipe.bgImageId === im.id ? " active" : "") + '" data-cmart="' + esc(im.id) + '" title="' + esc(im.name) + '"><img src="' + picDataSrc(im.mediaType, im.data) + '" alt=""/></button>'
           ).join("");
           grid.querySelectorAll("[data-cmart]").forEach((b) => b.addEventListener("click", () => {
             cmRecipe.bgImageId = b.getAttribute("data-cmart");
@@ -45562,9 +45571,9 @@
           '    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>',
           '    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>',
           '    <item id="css" href="Styles/blitz.css" media-type="text/css"/>'
-        ].concat(state.cover ? ['    <item id="cover-image" href="Images/cover.' + state.cover.ext + '" media-type="' + state.cover.mediaType + '" properties="cover-image"/>'] : [])
-         .concat(packagedImages().map((img) => '    <item id="img-' + img.id + '" href="Images/' + imageFileName(img) + '" media-type="' + img.mediaType + '"/>'))
-         .concat(usedFonts.map((f) => '    <item id="font-' + f.id + '" href="Fonts/' + fontFileName(f) + '" media-type="' + f.mediaType + '"/>'))
+        ].concat(state.cover ? ['    <item id="cover-image" href="Images/cover.' + esc(state.cover.ext) + '" media-type="' + esc(state.cover.mediaType) + '" properties="cover-image"/>'] : [])
+         .concat(packagedImages().map((img) => '    <item id="img-' + esc(img.id) + '" href="Images/' + esc(imageFileName(img)) + '" media-type="' + esc(img.mediaType) + '"/>'))
+         .concat(usedFonts.map((f) => '    <item id="font-' + esc(f.id) + '" href="Fonts/' + esc(fontFileName(f)) + '" media-type="' + esc(f.mediaType) + '"/>'))
          .concat(plan.map((p) => '    <item id="' + p.id + '" href="' + p.file + '" media-type="application/xhtml+xml"/>'));
         /* BEUK:epub — the contents landmark lands on a spine item */
         const tocTarget = epubTocTarget((plan.find((p) => !p.plate && p.section.type === "toc") || {}).file);
@@ -45800,7 +45809,7 @@
       function buildStandaloneHtml() {
         const m = state.meta;
         const css = buildBookCss("") + "\n" +
-          (usedUploadedFonts().length ? fontFaceCss((f) => "data:" + f.mediaType + ";base64," + f.data) + "\n" : "") +
+          (usedUploadedFonts().length ? fontFaceCss((f) => picDataSrc(f.mediaType, f.data)) + "\n" : "") +
           "body { max-width: 38em; margin: 0 auto; padding: 2.5em 1.4em 4em; background: #fff; color: #191713; }\n" +
           "section.book-section + section.book-section { page-break-before: always; margin-top: 3em; }\n" +
           "figure.book-img.full-bleed { margin-left: -1.4em; margin-right: -1.4em; }\n" +
@@ -46684,7 +46693,7 @@
           /* The print document is its own page: the uploaded faces
              the book wears ride in as data-URI @font-face rules, so
              the interior prints in them exactly as the studio shows. */
-          (usedUploadedFonts().length ? fontFaceCss((f) => "data:" + f.mediaType + ";base64," + f.data) + "\n" : "") +
+          (usedUploadedFonts().length ? fontFaceCss((f) => picDataSrc(f.mediaType, f.data)) + "\n" : "") +
           /* Press ink: the interior's running text is pure black (#000) on the
              page colour, and every see-through effect the book look
              uses is printed as the solid tint it looks like (see the
@@ -47007,7 +47016,7 @@
          bake when one is ready (what buildPrintHtml then writes), else
          the original. Lets a check follow one backdrop into print. */
       function printBackdropCarried(img, strength) {
-        const src = "data:" + img.mediaType + ";base64," + img.data;
+        const src = picDataSrc(img.mediaType, img.data);
         const hit = printPressCache.get(printBackdropKey(strength, src, printBackdropBox(strength))) ||
           printPressCache.get(printBackdropKey(strength, src, printBackdropBox(strength, true)));
         return hit && hit.out ? { baked: true, data: hit.out.slice(hit.out.indexOf(",") + 1) } : { baked: false, data: img.data };
@@ -47317,7 +47326,7 @@
           } else {
             bleed.style.opacity = String({ whisper: 0.13, soft: 0.22, strong: 0.34 }[pairedBd.strength] || 0.13);
           }
-          bleed.style.backgroundImage = "url(data:" + pairedBd.img.mediaType + ";base64," + pairedBd.img.data + ")";
+          bleed.style.backgroundImage = "url(" + picDataSrc(pairedBd.img.mediaType, pairedBd.img.data) + ")";
           el.insertBefore(bleed, el.firstChild);
           el.classList.add("piv-paired");
         }
@@ -47326,7 +47335,7 @@
           const pl = plateImage(page.section);
           const im = document.createElement("img");
           im.className = "piv-plate-full";
-          im.src = "data:" + pl.img.mediaType + ";base64," + pl.img.data;
+          im.src = picDataSrc(pl.img.mediaType, pl.img.data);
           im.alt = pl.alt;
           if (bpx) im.style.objectPosition = side === "left" ? "right center" : "left center"; /* BEUK:bleed */
           el.insertBefore(im, host === el ? null : host);
@@ -47504,7 +47513,7 @@
           if (!imgs.length) { openPrintInteriorView(); return; }
           let pending = imgs.length;
           const done = () => { pending -= 1; if (pending <= 0) openPrintInteriorView(); };
-          imgs.forEach((im) => { const pic = new Image(); pic.onload = done; pic.onerror = done; pic.src = "data:" + im.mediaType + ";base64," + im.data; });
+          imgs.forEach((im) => { const pic = new Image(); pic.onload = done; pic.onerror = done; pic.src = picDataSrc(im.mediaType, im.data); });
         });
         $("btnClosePrintView").addEventListener("click", () => $("modalPrintView").classList.remove("open"));
         $("modalPrintView").addEventListener("click", (e) => { if (e.target === $("modalPrintView")) $("modalPrintView").classList.remove("open"); });
@@ -47662,10 +47671,10 @@
           '    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>',
           '    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>',
           '    <item id="css" href="Styles/blitz.css" media-type="text/css"/>'
-        ].concat(vols.map((vol, vi) => vol.cover ? '    <item id="' + (vi === firstCoverVi ? "cover-image" : "cover-" + volPrefix(vi)) + '" href="Images/' + volumeCoverFileName(vi, vol.cover) + '" media-type="' + vol.cover.mediaType + '"' + (vi === firstCoverVi ? ' properties="cover-image"' : "") + "/>" : null).filter(Boolean))
-         .concat(vols.flatMap((vol) => packagedImagesFor(vol.sections, vol.images).map((img) => '    <item id="img-' + img.id + '" href="Images/' + imageFileName(img) + '" media-type="' + img.mediaType + '"/>')))
-         .concat(bsFlourishImgs.map((img) => '    <item id="img-' + img.id + '" href="Images/' + imageFileName(img) + '" media-type="' + img.mediaType + '"/>'))
-         .concat(bsUsedFonts.map((f) => '    <item id="font-' + f.id + '" href="Fonts/' + fontFileName(f) + '" media-type="' + f.mediaType + '"/>'))
+        ].concat(vols.map((vol, vi) => vol.cover ? '    <item id="' + (vi === firstCoverVi ? "cover-image" : "cover-" + volPrefix(vi)) + '" href="Images/' + volumeCoverFileName(vi, vol.cover) + '" media-type="' + esc(vol.cover.mediaType) + '"' + (vi === firstCoverVi ? ' properties="cover-image"' : "") + "/>" : null).filter(Boolean))
+         .concat(vols.flatMap((vol) => packagedImagesFor(vol.sections, vol.images).map((img) => '    <item id="img-' + esc(img.id) + '" href="Images/' + esc(imageFileName(img)) + '" media-type="' + esc(img.mediaType) + '"/>')))
+         .concat(bsFlourishImgs.map((img) => '    <item id="img-' + esc(img.id) + '" href="Images/' + esc(imageFileName(img)) + '" media-type="' + esc(img.mediaType) + '"/>'))
+         .concat(bsUsedFonts.map((f) => '    <item id="font-' + esc(f.id) + '" href="Fonts/' + esc(fontFileName(f)) + '" media-type="' + esc(f.mediaType) + '"/>'))
          .concat(plan.map((e) => '    <item id="' + e.id + '" href="' + e.file + '" media-type="application/xhtml+xml"/>'));
         const opf =
           '<?xml version="1.0" encoding="UTF-8"?>\n<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="pub-id" version="3.0" xml:lang="' + esc(m.language) + '">\n' +
@@ -47822,7 +47831,7 @@
         const box = $("boxSetList"); if (!box) return;
         const row = (vi, title, metaLine, volId) =>
           '<div class="bs-row"><span class="bs-vol">BOOK ' + bookWord(vi).toUpperCase() + '</span><div class="bs-main"><div class="bs-title">' + esc(title) + '</div><div class="bs-meta">' + esc(metaLine) + '</div></div>' +
-          (volId ? '<button class="si-btn" data-bsremove="' + volId + '" title="Remove this book from the box set"><i data-lucide="trash-2"></i>Remove</button>' : '<span class="bs-vol">IN STUDIO</span>') + "</div>";
+          (volId ? '<button class="si-btn" data-bsremove="' + esc(volId) + '" title="Remove this book from the box set"><i data-lucide="trash-2"></i>Remove</button>' : '<span class="bs-vol">IN STUDIO</span>') + "</div>";
         const stats = (vol) => {
           const chs = (vol.sections || []).filter((s) => s.type === "chapter").length;
           const words = (vol.sections || []).reduce((n, s) => n + countWords(s.content, vol.meta && vol.meta.language), 0);
@@ -70436,7 +70445,7 @@
           const tok = imageTokensIn(s.content)[0];
           const img = tok ? imageById(tok.id) : null;
           if (!tok || !img) return "";
-          return frontispiecePlateHtml("data:" + img.mediaType + ";base64," + img.data, tok);
+          return frontispiecePlateHtml(picDataSrc(img.mediaType, img.data), tok);
         }
         if (AUTO_TYPES.includes(s.type)) return frontBackHtml(s, false, true);
         let h = "";
