@@ -42,7 +42,7 @@ function byName(statements: readonly ts.Statement[], sf: ts.SourceFile): Map<str
 describe("wave 5a: the browser's EPUB code is 1.0's, the same text as the server's EPUB_CLOSURE (constraint 52)", () => {
   it('every EPUB_CLOSURE name the browser does not supply is lifted, and every EPUB_ROOT is a root of the browser closure', () => {
     const epub = epubList('EPUB_CLOSURE');
-    expect(epub.length).toBe(301);
+    expect(epub.length).toBe(302); // 301 + picDataSrc (wave 7b, 1.0 fix 3d34720)
     const browserOwn = epub.filter((n) => SUPPLIED_BY_BROWSER.test(n));
     expect(browserOwn.sort()).toEqual(['$', 'UI_PLURAL_FORMS', 'UI_STRINGS', 't', 'tCountForm', 'uiLangState', 'uiPluralCategory', 'uiPluralRulesCache'].sort());
     expect(CLOSURE_SUPPLIED).toEqual(expect.arrayContaining(['t', 'UI_STRINGS', 'uiLangState', '$']));
@@ -75,7 +75,7 @@ describe("wave 5a: the browser's EPUB code is 1.0's, the same text as the server
       if (s.get(n) !== b.get(n)) unequal.push(n);
     }
     expect(unequal).toEqual([]);
-    expect(epub.length).toBe(293);
+    expect(epub.length).toBe(294); // 293 + picDataSrc (wave 7b, 1.0 fix 3d34720)
     expect(b.get('buildEpubBlob')).toBe(s.get('buildEpubBlob'));
     expect(b.get('buildEpubBlob')).toMatch(/new JSZip\(\)/);
   });

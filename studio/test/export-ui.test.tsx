@@ -162,7 +162,9 @@ describe('the export modal in the studio', { timeout: 90_000 }, () => {
     expect($('inspPath').textContent).toBe(files[1]!.path);
     await click(document.querySelector('#inspFiles [data-insp="OEBPS/package.opf"]'));
     expect($('inspPath').textContent).toBe('OEBPS/package.opf');
-    expect($('inspCode').textContent).toBe(files.find((f) => f.path === 'OEBPS/package.opf')!.content);
+    // dcterms:modified is the build's clock (whole seconds): the inspector's build and this one may fall in different seconds
+    const noStamp = (x: string) => x.replace(/<meta property="dcterms:modified">[^<]*<\/meta>/, '<meta property="dcterms:modified"/>');
+    expect(noStamp($('inspCode').textContent!)).toBe(noStamp(files.find((f) => f.path === 'OEBPS/package.opf')!.content));
     expect($('inspCode').querySelector('.tok-tag')).toBeTruthy();
     // 1.0 indents each file by its depth (the cleaner keeps its padding)
     expect((document.querySelector('#inspFiles [data-insp="OEBPS/package.opf"] .f-name') as HTMLElement).style.paddingLeft).toBe('12px');
