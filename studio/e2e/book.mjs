@@ -109,11 +109,20 @@ async function newContext(opts = {}) {
 }
 async function watch(page) {
   page.on('crash', () => csp.errors.push(`${page.url()}: the page CRASHED`));
-  page.on('pageerror', (e) => csp.errors.push(`${page.url()}: ${e}`));
+  // (wave 7b: the error-report part throws its own probe in the page)
+  page.on('pageerror', (e) => {
+    if (w7bProbe.on && /wave7b-probe/.test(String(e))) return;
+    if (w7bProbe.one && /\/studio/.test(page.url())) w7bProbe.oneErrors.push(String(e));
+    else csp.errors.push(`${page.url()}: ${e}`);
+  });
   page.on('console', (m) => {
     // wave 7a: the shelf's own answers the browser logs as failed loads — 401 (signed out: /api/auth/me), 402 (a paused
     // account feature on day 22), 409 (a shelf conflict) — are the server's word, not page errors
-    if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of (404|401|402|409)|net::ERR_INTERNET_DISCONNECTED/.test(m.text())) csp.errors.push(`${page.url()}: ${m.text()}`);
+    if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of (404|401|402|409)|net::ERR_INTERNET_DISCONNECTED/.test(m.text())) {
+      // (wave 7b: what 1.0's own page logs with the hostile book on its desk is 1.0's, reported apart)
+      if (w7bProbe.one && /\/studio/.test(page.url())) w7bProbe.oneErrors.push(m.text());
+      else csp.errors.push(`${page.url()}: ${m.text()}`);
+    }
   });
   return page;
 }
@@ -7234,12 +7243,12 @@ const w7aDiffKeys = (a, b) => [...new Set([...Object.keys(a || {}), ...Object.ke
 const w7aId = (s) => String(s).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<id>');
 
 /* 85: parity beside 1.0 — the shelf copy 2.0 sends equals 1.0's for the same book, and each app opens the other's. */
-async function wave7aParity(srv) {
+async function wave7aParity(srv, given = null) {
   const origin = srv.origin;
   const list = (process.env.W7A_FIXTURES || '').split(',').filter(Boolean);
   // a book with no sections array is refused as a backup by both apps (1.0's localParseBackup; #1 holds it): it never
-  // reaches a desk, so it never reaches the shelf
-  const books = (list.length ? fixtures.filter((f) => list.includes(f.name)) : fixtures).filter((f) => Array.isArray(f.book.sections));
+  // reaches a desk, so it never reaches the shelf (wave 7b: `given`, books of its own — the hostile book)
+  const books = (given || (list.length ? fixtures.filter((f) => list.includes(f.name)) : fixtures)).filter((f) => Array.isArray(f.book.sections));
   note(`wave7a parity: ${books.length} books (${fixtures.length - books.length} refused as backups by both apps: no sections array)`);
   let same = 0, opened2 = 0, opened1 = 0;
   const bad = [];
@@ -7651,6 +7660,586 @@ async function wave7aChecks() {
   }
 }
 
+/* ---- wave 7b: beta share, bulk import, the archive, offline and the update bar, error reports (constraints 92-99) ----
+   The real server again (serve.mjs { api: true }: src/app.ts on PGlite, mail captured, billing in test mode against a
+   fake Stripe on 127.0.0.1). 1.0 (/studio) and 2.0 (/next) beside each other on one origin, each as its own account
+   (separate shelves); 1.0's functions called by name in its page. W7B_PARTS picks the parts. */
+const w7bMaskIds = (s) => String(s).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<id>').replace(/\/read\/[A-Za-z0-9_-]{20,64}/g, '/read/<token>');
+/** The non-GET /api requests a page sends that match `re`, masked (method, path, body). */
+const w7bReq = (list, re) => list.filter((x) => re.test(x.path)).map((x) => x.method + ' ' + w7bMaskIds(x.path) + (x.body && !/^\/api\/exports\?/.test(x.path) ? ' ' + w7bMaskIds(x.body) : ''));
+/** Signed in on the shelf server, the book open in 2.0 and brought to the shelf (linked). */
+async function w7bNextLinked(ctx, origin, file, tag) {
+  await w7aSignUp(ctx, origin, w7aEmail(tag));
+  const page = await w7aNext(ctx, origin, file);
+  await page.click('#btnAccount');
+  await page.waitForSelector('#modalShelf.open');
+  await page.click('#btnBringBook');
+  await w7aWait(page, () => window.beukCloud.cloud.linkState === 'linked', null, 60_000);
+  await page.evaluate(() => document.getElementById('modalShelf').classList.remove('open'));
+  return page;
+}
+/** The same book in 1.0, its own account, brought to its shelf by 1.0's cloudBringBook. */
+async function w7bOneLinked(ctx, origin, book) {
+  const one = await w7aOne(ctx, origin);
+  await one.evaluate(async (b) => {
+    applyBookDoc(JSON.parse(JSON.stringify(b)));
+    await cloudBringBook();
+  }, book);
+  await w7aWait(one, () => cloud.linkState === 'linked', null, 60_000);
+  return one;
+}
+
+/* 92: bulk import beside 1.0 — the same files, the same shelf books (masked), the open book untouched, failures reported
+   as 1.0 reports them. */
+async function wave7bBulk(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const files = [];
+  for (const d of await W6C.docxCorpus(W6Z)) files.push(w6File(d.name, W6_DOCX, d.bytes));
+  for (const t of W6F.textCorpus()) files.push(w6File(t.name, t.type, Buffer.from(t.text, 'utf8')));
+  files.push(await w6EpubOf(origin, w5aHostileBook(f.book), 'w7b-hostile'));
+  files.push(w6File('<img src=x onerror="window.__pw=7">.md', 'text/markdown', Buffer.from('# Hostile name\n\nA book whose file name is markup.\n')));
+  files.push(w6File('notes.xyz', 'application/octet-stream', Buffer.from('x')));
+  files.push(w6File('blank.md', 'text/markdown', Buffer.from('   \n')));
+  files.push(w6File('copy-of-plain.txt', 'text/plain', Buffer.from(W6F.textCorpus().find((t) => t.name === 'plain-manuscript.txt').text, 'utf8')));
+  note(`wave7b bulk: ${files.length} files (${files.filter((x) => x.name.endsWith('.docx')).length} DOCX, ${W6F.textCorpus().length} MD/TXT/RTF, the hostile book's EPUB, a hostile file name, an unsupported file, an empty one, a duplicate)`);
+  /** The shelf books an account holds but `skipId`: title → its doc. */
+  const shelfBooks = async (ctx, skipId) => {
+    const list = (await (await ctx.request.get(origin + '/api/manuscripts')).json()).manuscripts.filter((m) => m.id !== skipId);
+    const out = {};
+    for (const m of list) out[m.title] = (await (await ctx.request.get(origin + '/api/manuscripts/' + m.id)).json()).manuscript.doc;
+    return out;
+  };
+  const runOne = async () => {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      await w7aSignUp(ctx, origin, w7aEmail('b1'));
+      const one = await w7aOne(ctx, origin);
+      await one.evaluate(() => { document.getElementById('bulkSummary').style.display = 'none'; });
+      await one.setInputFiles('#bulkFileInput', files);
+      await one.waitForFunction(() => document.getElementById('bulkSummary').style.display === '', null, { timeout: 300_000 });
+      await one.waitForTimeout(500);
+      const summary = await one.$eval('#bulkSummary', (x) => x.textContent);
+      const books = await shelfBooks(ctx, null);
+      const live = await one.evaluate(() => ({ pw: window.__pw ?? null }));
+      await harvestCsp(one);
+      return { summary, books, live };
+    } finally {
+      await ctx.close();
+    }
+  };
+  const r1 = await runOne();
+  const r1b = await runOne();
+  // the masks, shown varying in 1.0 itself: two runs of the same batch differ raw and are equal masked
+  const titles = Object.keys(r1.books);
+  const varied = titles.filter((k) => JSON.stringify(r1.books[k]) !== JSON.stringify(r1b.books[k])).length;
+  const maskEq = titles.filter((k) => JSON.stringify(W6F.maskVarying(r1.books[k])) === JSON.stringify(W6F.maskVarying(r1b.books[k]))).length;
+  check(titles.length > 0 && varied === titles.length && maskEq === titles.length, `wave7b constraint 92: the masks (maskVarying: the fresh ids and times 1.0 mints) vary in 1.0 itself — two 1.0 runs of the batch: ${varied} of ${titles.length} books differ raw, ${maskEq} of ${titles.length} equal masked`);
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w7bNextLinked(ctx, origin, f.file, 'b2');
+    const openId = await page.evaluate(() => window.beukCloud.cloud.linkedId);
+    const before = (await exportBackup(page)).json.book;
+    const writes = w7aWrites(page);
+    await page.click('#btnAccount');
+    await page.waitForSelector('#modalShelf.open');
+    check(await page.$eval('#shelfBulk', (x) => x.style.display === '' && x.getClientRects().length > 0), "wave7b G3: 1.0's bulk block shows in the shelf dialog, signed in");
+    await page.evaluate(() => { document.getElementById('bulkSummary').style.display = 'none'; });
+    await page.setInputFiles('#bulkFileInput', files);
+    await page.waitForFunction(() => document.getElementById('bulkSummary').style.display === '', null, { timeout: 300_000 });
+    await page.waitForTimeout(500);
+    const summary = await page.$eval('#bulkSummary', (x) => x.textContent);
+    check(summary === r1.summary, `wave7b constraint 92: 2.0's summary is 1.0's, word for word (each failure reported as 1.0 reports it; the queue never stopped)${summary === r1.summary ? '' : ' — 2.0: ' + summary.slice(0, 300) + ' — 1.0: ' + r1.summary.slice(0, 300)}`);
+    note('wave7b bulk summary (its last 400 characters: what was skipped and what failed): …' + summary.slice(-400));
+
+    const books = await shelfBooks(ctx, openId);
+    const t1 = Object.keys(r1.books).sort(), t2 = Object.keys(books).sort();
+    let eq = 0;
+    const bad = [];
+    for (const title of t1) {
+      if (!books[title]) {
+        bad.push(title + ' (missing in 2.0)');
+        continue;
+      }
+      if (JSON.stringify(W6F.maskVarying(books[title])) === JSON.stringify(W6F.maskVarying(r1.books[title]))) eq++;
+      else bad.push(title + w6Diff(W6F.maskVarying(r1.books[title]), W6F.maskVarying(books[title])));
+    }
+    check(t1.length > 0 && eq === t1.length && t2.length === t1.length, `wave7b constraint 92: the shelf books 2.0 made are JSON-equal to 1.0's (masked) for ${eq} of ${t1.length} (${t2.length} made by 2.0)${bad.length ? ' — ' + bad.slice(0, 4).join('; ') : ''}`);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.getElementById('modalShelf').classList.contains('open'));
+    const after = (await exportBackup(page)).json.book;
+    check(JSON.stringify(after) === JSON.stringify(before), 'wave7b decision 2: the open book is exactly as it was before the bulk import (its backup, byte for byte)');
+    check(await page.evaluate((id) => window.beukCloud.cloud.linkedId === id && window.beukCloud.cloud.linkState === 'linked', openId), 'wave7b decision 2: the open book keeps its shelf link');
+    const w = w7aManuscriptWrites(writes);
+    check(w.filter((x) => x.method === 'PUT').length === 0 && w.filter((x) => x.method === 'POST').length === t2.length, `wave7b decision 2: the bulk import sent ${w.filter((x) => x.method === 'POST').length} POSTs (one per book made) and ${w.filter((x) => x.method === 'PUT').length} PUTs`);
+    const live = await page.evaluate(() => ({ pw: window.__pw ?? null, scripts: document.querySelectorAll('#modalShelf script').length, handlers: [...document.querySelectorAll('#modalShelf *')].flatMap((e) => [...e.attributes]).filter((a) => /^on/i.test(a.name)).length }));
+    check(live.pw === null && r1.live.pw === null && live.scripts === 0 && live.handlers === 0, `wave7b constraint 97: a hostile file name and the hostile book carry no script or handler into the shelf dialog (${JSON.stringify(live)})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/* 93: share links beside 1.0 — create, list, expire, revoke with 1.0's requests and rows; comments resolve and jump. */
+async function wave7bShare(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const ctx1 = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w7bNextLinked(ctx, origin, f.file, 's2');
+    const book = (await exportBackup(page)).json.book;
+    await w7aSignUp(ctx1, origin, w7aEmail('s1'));
+    const one = await w7bOneLinked(ctx1, origin, book);
+    const w2 = w7aWrites(page), w1 = w7aWrites(one);
+    await w5aOpenModal(page);
+    await one.evaluate(() => document.getElementById('btnExport').click());
+    for (const p of [page, one]) await p.waitForFunction(() => !!document.getElementById('btnBetaCreate') && /No reading links/.test(document.getElementById('betaSec').textContent), null, { timeout: 30_000 });
+    for (const p of [page, one]) {
+      await p.selectOption('#betaExpiry', '7');
+      await p.click('#btnBetaCreate');
+      await p.waitForSelector('#betaNewUrl', { timeout: 30_000 });
+      await p.waitForFunction(() => document.querySelectorAll('#betaList .beta-row').length === 1, null, { timeout: 30_000 });
+    }
+    const rowsOf = (p) => p.$$eval('#betaList .beta-row', (rs) => rs.map((r) => r.textContent));
+    const r2 = await rowsOf(page), r1 = await rowsOf(one);
+    check(JSON.stringify(r2) === JSON.stringify(r1), `wave7b constraint 93: the list's rows are 1.0's: ${JSON.stringify(r2)}${JSON.stringify(r2) === JSON.stringify(r1) ? '' : ' — 1.0: ' + JSON.stringify(r1)}`);
+    const q2 = w7bReq(w2, /^\/api\/shares/), q1 = w7bReq(w1, /^\/api\/shares/);
+    check(JSON.stringify(q2) === JSON.stringify(q1), `wave7b constraint 93: create (7 days) sends 1.0's requests: ${JSON.stringify(q2)}${JSON.stringify(q2) === JSON.stringify(q1) ? '' : ' — 1.0: ' + JSON.stringify(q1)}`);
+    const tok2 = await page.evaluate(() => Object.values(JSON.parse(localStorage.getItem('beuk.betaTokens.v1') || '{}'))[0]);
+    check((await page.$eval('#betaNewUrl', (x) => x.value)) === origin + '/read/' + tok2, "wave7b constraint 93: the new link is this site's /read/<token>, as 1.0 makes it");
+    const elsewhere = await page.evaluate((tk) => Object.keys(localStorage).filter((k) => k !== 'beuk.betaTokens.v1' && String(localStorage.getItem(k)).includes(tk)), tok2);
+    check(elsewhere.length === 0, `wave7b constraint 97: the token is kept only in beuk.betaTokens.v1 (${elsewhere.length} other keys hold it)`);
+    // a reader's comments: one plain on a passage, one hostile
+    const sec = book.sections.find((s) => s.type === 'chapter' && String(s.content || '').split(/\n\s*\n/).length > 2);
+    const quote = String(sec.content).split(/\n\s*\n/)[1].split(/\s+/).slice(0, 5).join(' ');
+    const evil = '<img src=x onerror="window.__pw=9"><script>window.__pw=10</script>';
+    for (const [p, c] of [[page, ctx], [one, ctx1]]) {
+      const tk = await p.evaluate(() => Object.values(JSON.parse(localStorage.getItem('beuk.betaTokens.v1') || '{}'))[0]);
+      for (const body of [{ readerName: 'Ann', sectionId: sec.id, paragraph: 1, quote, body: 'This line.' }, { readerName: 'Bo', sectionId: sec.id, paragraph: 2, quote: evil, body: evil }]) {
+        const st = (await c.request.post(origin + '/read/' + tk + '/comments', { data: body })).status();
+        if (st !== 201) check(false, `wave7b: a reader's comment was refused (${st})`);
+      }
+    }
+    await page.click('#btnCloseExport');
+    await one.evaluate(() => document.getElementById('modalExport').classList.remove('open'));
+    await page.click('#btnBetaComments');
+    await one.evaluate(() => betaOpenComments());
+    for (const p of [page, one]) await p.waitForFunction(() => document.querySelectorAll('#betaCBody .bc-item').length === 2, null, { timeout: 30_000 });
+    const c2 = await page.$eval('#betaCBody', (x) => x.textContent), c1 = await one.$eval('#betaCBody', (x) => x.textContent);
+    check(c2 === c1, `wave7b constraint 93: the comments list reads as 1.0's${c2 === c1 ? '' : ' — 2.0: ' + c2.slice(0, 200) + ' — 1.0: ' + c1.slice(0, 200)}`);
+    const safe = await page.evaluate(() => ({ pw: window.__pw ?? null, scripts: document.querySelectorAll('#modalBetaComments script').length, handlers: [...document.querySelectorAll('#modalBetaComments *')].flatMap((e) => [...e.attributes]).filter((a) => /^on/i.test(a.name)).length }));
+    check(safe.pw === null && safe.scripts === 0 && safe.handlers === 0, `wave7b constraint 97: a hostile comment carries no script or handler into the comments dialog (${JSON.stringify(safe)})`);
+    const n2 = w2.length, n1 = w1.length;
+    for (const p of [page, one]) {
+      await p.click('#betaCBody .bc-item [data-bc-resolve]');
+      await p.waitForFunction(() => document.querySelectorAll('#betaCBody .bc-item').length === 1, null, { timeout: 30_000 });
+    }
+    const rq2 = w7bReq(w2.slice(n2), /^\/api\/shares/), rq1 = w7bReq(w1.slice(n1), /^\/api\/shares/);
+    check(JSON.stringify(rq2) === JSON.stringify(rq1) && rq2.length === 1, `wave7b constraint 93: resolve sends 1.0's request: ${JSON.stringify(rq2)}${JSON.stringify(rq2) === JSON.stringify(rq1) ? '' : ' — 1.0: ' + JSON.stringify(rq1)}`);
+    // Jump to paragraph: 2.0's editor, on the passage
+    await page.click('#betaShowResolved');
+    await page.waitForFunction(() => document.querySelectorAll('#betaCBody .bc-item').length === 2, null, { timeout: 30_000 });
+    await page.click('#betaCBody .bc-item [data-bc-jump]');
+    const landed = await page.waitForFunction(() => {
+      const ms = document.getElementById('manuscript');
+      const ed = ms?.beukEditor;
+      if (!ed || document.getElementById('modalBetaComments').classList.contains('open')) return null;
+      const { from, to } = ed.state.selection;
+      const txt = ed.state.doc.textBetween(from, to, ' ');
+      return txt ? { txt, section: ms.getAttribute('data-section') } : null;
+    }, null, { timeout: 30_000 }).then((h) => h.jsonValue());
+    const idx = book.sections.indexOf(sec);
+    check(landed.txt === quote && Number(landed.section) === idx, `wave7b constraint 93: Jump to paragraph lands in 2.0's editor on the passage (section ${landed.section} of ${idx}: "${landed.txt}")`);
+    // revoke, after 1.0's calm confirm
+    await one.evaluate(() => betaCloseComments());
+    await w5aOpenModal(page);
+
+    await one.evaluate(() => document.getElementById('btnExport').click());
+    const n2b = w2.length, n1b = w1.length;
+    for (const p of [page, one]) {
+      await p.waitForSelector('#betaList [data-beta-revoke]', { timeout: 30_000 });
+      await p.click('#betaList [data-beta-revoke]');
+      await p.waitForSelector('#modalConfirm.open #btnConfirmYes', { timeout: 10_000 });
+      await p.click('#modalConfirm.open #btnConfirmYes');
+      await p.waitForSelector('#betaList .beta-st.revoked', { timeout: 30_000 });
+    }
+    const v2 = w7bReq(w2.slice(n2b), /^\/api\/shares/), v1 = w7bReq(w1.slice(n1b), /^\/api\/shares/);
+    check(JSON.stringify(v2) === JSON.stringify(v1), `wave7b constraint 93: revoke sends 1.0's requests: ${JSON.stringify(v2)}${JSON.stringify(v2) === JSON.stringify(v1) ? '' : ' — 1.0: ' + JSON.stringify(v1)}`);
+    const rr2 = await rowsOf(page), rr1 = await rowsOf(one);
+    check(JSON.stringify(rr2) === JSON.stringify(rr1), `wave7b constraint 93: the revoked row reads as 1.0's: ${JSON.stringify(rr2)}`);
+    await harvestCsp(page);
+    await harvestCsp(one);
+  } finally {
+    await ctx1.close();
+    await ctx.close();
+  }
+}
+
+/* 93, day 22 unpaid: the server's refusal shown as 1.0 shows it (a beta link refused). */
+async function wave7bDay22(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const ctx1 = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w7bNextLinked(ctx, origin, f.file, 'd2');
+    const book = (await exportBackup(page)).json.book;
+    await w7aSignUp(ctx1, origin, w7aEmail('d1'));
+    const one = await w7bOneLinked(ctx1, origin, book);
+    for (const c of [ctx, ctx1]) {
+      const me = (await (await c.request.get(origin + '/api/auth/me')).json()).user;
+      await srv.shelf.db.query("update users set trial_ends_at = now() - interval '1 day' where id = $1", [me.id]);
+    }
+    const w2 = w7aWrites(page), w1 = w7aWrites(one);
+    await w5aOpenModal(page);
+    await one.evaluate(() => document.getElementById('btnExport').click());
+    for (const p of [page, one]) {
+      await p.waitForSelector('#btnBetaCreate', { timeout: 30_000 });
+      await p.click('#btnBetaCreate');
+      await p.waitForSelector('#betaSec [role="alert"]', { timeout: 30_000 });
+    }
+    const a2 = await page.$eval('#betaSec [role="alert"]', (x) => x.textContent), a1 = await one.$eval('#betaSec [role="alert"]', (x) => x.textContent);
+    check(a2 === a1, `wave7b constraint 93 (day 22): the refused link says 1.0's words for the server's refusal: "${a2.slice(0, 160)}"${a2 === a1 ? '' : ' — 1.0: "' + a1.slice(0, 160) + '"'}`);
+    const q2 = w7bReq(w2, /^\/api\/(shares|exports|manuscripts)/), q1 = w7bReq(w1, /^\/api\/(shares|exports|manuscripts)/);
+    check(JSON.stringify(q2) === JSON.stringify(q1), `wave7b constraint 93 (day 22): 2.0 sends only what 1.0 sends: ${JSON.stringify(q2)}${JSON.stringify(q2) === JSON.stringify(q1) ? '' : ' — 1.0: ' + JSON.stringify(q1)}`);
+    await harvestCsp(page);
+    await harvestCsp(one);
+  } finally {
+    await ctx1.close();
+    await ctx.close();
+  }
+}
+
+/* 94: the archive beside 1.0 — the list, a file saved there, the EPUBCheck request. */
+async function wave7bArchive(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const ctx1 = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w7bNextLinked(ctx, origin, f.file, 'a2');
+    const book = (await exportBackup(page)).json.book;
+    await w7aSignUp(ctx1, origin, w7aEmail('a1'));
+    const one = await w7bOneLinked(ctx1, origin, book);
+    const w2 = w7aWrites(page), w1 = w7aWrites(one);
+    await w5aOpenModal(page);
+    await one.evaluate(() => document.getElementById('btnExport').click());
+    for (const p of [page, one]) await p.waitForFunction(() => document.getElementById('archiveSec')?.style.display === '' && /Nothing archived yet/.test(document.getElementById('archiveList').textContent), null, { timeout: 30_000 });
+    for (const [id, n] of [['#btnArcMd', 1], ['#btnArcEpub', 2]])
+      for (const p of [page, one]) {
+        await p.click(id);
+        await p.waitForFunction((k) => document.querySelectorAll('#archiveList .arc-row').length === k, n, { timeout: 60_000 });
+      }
+    const rowsOf = (p) => p.$$eval('#archiveList .arc-row', (rs) => rs.map((r) => [r.textContent, r.querySelector('a')?.getAttribute('href')?.replace(/[0-9a-f-]{36}/, '<id>') ?? null]));
+    const r2 = await rowsOf(page), r1 = await rowsOf(one);
+    check(JSON.stringify(r2) === JSON.stringify(r1), `wave7b constraint 94: the archive list is 1.0's: ${JSON.stringify(r2)}${JSON.stringify(r2) === JSON.stringify(r1) ? '' : ' — 1.0: ' + JSON.stringify(r1)}`);
+    const q2 = w7bReq(w2, /^\/api\/exports/), q1 = w7bReq(w1, /^\/api\/exports/);
+    check(JSON.stringify(q2) === JSON.stringify(q1), `wave7b constraint 94: saving to the archive sends 1.0's requests: ${JSON.stringify(q2)}${JSON.stringify(q2) === JSON.stringify(q1) ? '' : ' — 1.0: ' + JSON.stringify(q1)}`);
+    const n2 = w2.length, n1 = w1.length;
+    for (const p of [page, one]) {
+      await p.click('#archiveList [data-epubcheck]');
+      await p.waitForFunction(() => { const b = document.getElementById('epubCheckResult'); return b && b.style.display === '' && !/is reading your book/.test(b.textContent); }, null, { timeout: 90_000 });
+    }
+    const e2 = w7bReq(w2.slice(n2), /^\/api\/jobs/), e1 = w7bReq(w1.slice(n1), /^\/api\/jobs/);
+    check(JSON.stringify(e2) === JSON.stringify(e1) && e2.length === 1, `wave7b constraint 94: Run EPUBCheck sends 1.0's request: ${JSON.stringify(e2)}${JSON.stringify(e2) === JSON.stringify(e1) ? '' : ' — 1.0: ' + JSON.stringify(e1)}`);
+    const t2 = await page.$eval('#epubCheckResult', (x) => x.textContent), t1 = await one.$eval('#epubCheckResult', (x) => x.textContent);
+    check(t2 === t1, `wave7b constraint 94: the EPUBCheck answer reads as 1.0's: "${t2.slice(0, 160)}"${t2 === t1 ? '' : ' — 1.0: "' + t1.slice(0, 160) + '"'}`);
+    note('wave7b archive: EPUBCheck on this server (no Java, no EPUBCHECK_JAR) answers: ' + t2.slice(0, 160) + ' — a real EPUBCheck run is not exercised (named gap)');
+    await harvestCsp(page);
+    await harvestCsp(one);
+  } finally {
+    await ctx1.close();
+    await ctx.close();
+  }
+}
+
+/* 95: offline — 1.0's pill and words; an edit stays on the device until the connection returns, then saves once. */
+async function wave7bOffline(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w7bNextLinked(ctx, origin, f.file, 'o2');
+    const one = await openOne(ctx, origin);
+    await page.bringToFront();
+    const writes = w7aWrites(page);
+    const rev = await page.evaluate(() => window.beukCloud.cloud.baseRevision);
+    await ctx.setOffline(true);
+    for (const p of [page, one]) await p.waitForFunction(() => document.getElementById('netPill') && !document.getElementById('netPill').hidden, null, { timeout: 10_000 });
+    const w2 = await page.$eval('#netPill', (x) => x.textContent), w1 = await one.$eval('#netPill', (x) => x.textContent);
+    check(w2 === w1, `wave7b constraint 95: offline, 2.0 shows 1.0's pill and words: "${w2}"${w2 === w1 ? '' : ' — 1.0: "' + w1 + '"'}`);
+    const ch = sectionsOf(f.book).findIndex((s) => s.type === 'chapter');
+    await choose(page, ch);
+    await page.click('#manuscript .ms-editor');
+    await page.keyboard.press('End');
+    await page.keyboard.type(' Written offline.', { delay: 20 });
+    await page.waitForTimeout(4000);
+    const off = w7aManuscriptWrites(writes);
+    const line = await page.$eval('#syncText', (x) => x.textContent);
+    check(off.length === 0, `wave7b constraint 95: an edit offline stays on the device: ${off.length} shelf saves while offline (the shelf line: "${line}")`);
+    await ctx.setOffline(false);
+    await w7aWait(page, () => window.beukCloud.cloud.syncStatus === 'saved' && !window.beukCloud.dirty, null, 60_000);
+    await page.waitForTimeout(1500);
+    const on = w7aManuscriptWrites(writes);
+    const conflict = await page.evaluate(() => !!window.beukCloud.cloud.conflict || !!document.getElementById('modalConflict')?.classList.contains('open'));
+    const rev2 = await page.evaluate(() => window.beukCloud.cloud.baseRevision);
+    check(on.length === 1 && on[0].method === 'PUT' && !conflict && rev2 === rev + 1, `wave7b constraint 95: back online it saves once, with no conflict against itself (${on.length} saves, revision ${rev} → ${rev2}, conflict ${conflict})`);
+    await harvestCsp(page);
+    await harvestCsp(one);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/* 95, decision 4: the update bar on a new worker; no page reloads by itself; only the tab that asks reloads. */
+async function wave7bUpdate(srv) {
+  const origin = srv.origin;
+  const swFile = path.join(REPO, 'client', 'next', 'sw.js');
+  const orig = readFileSync(swFile);
+  const ctx = await newContext();
+  try {
+    const a = await openNext(ctx, origin);
+    await a.waitForFunction(() => !!navigator.serviceWorker && !!navigator.serviceWorker.controller, null, { timeout: 30_000 }).catch(async () => {
+      await a.reload();
+      await a.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 30_000 });
+    });
+    await a.waitForSelector('#updateBar', { state: 'attached', timeout: 30_000 });
+    const scope = await a.evaluate(async () => (await navigator.serviceWorker.getRegistration()).scope);
+    check(scope === origin + '/next/', `wave7b decision 4: 2.0's worker is scoped to /next/ (${scope})`);
+    const cached = await a.evaluate(async () => {
+      const out = [];
+      for (const k of await caches.keys()) for (const r of await (await caches.open(k)).keys()) out.push(new URL(r.url).pathname);
+      return out;
+    });
+    check(cached.length > 0 && !cached.some((p) => p.startsWith('/api/') || p.startsWith('/studio')), `wave7b decision 4: the worker's caches hold no /api/ and nothing of 1.0's /studio (${cached.length} entries)`);
+    await a.evaluate(() => { window.__mark = 'a'; });
+    writeFileSync(swFile, Buffer.concat([orig, Buffer.from('\n/* wave7b e2e: a new deployment */\n')]));
+    await a.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+    await a.waitForFunction(() => document.getElementById('updateBar') && !document.getElementById('updateBar').hidden, null, { timeout: 30_000 });
+    const words = await a.$eval('#updateBar', (x) => x.textContent.replace(/\s+/g, ' ').trim());
+    const one = await openOne(ctx, origin);
+    const want = await one.$eval('#updateBar', (x) => x.textContent.replace(/\s+/g, ' ').trim());
+    check(words === want, `wave7b constraint 95: a new worker shows 1.0's update bar: "${words}"${words === want ? '' : ' — 1.0: "' + want + '"'}`);
+    await a.waitForTimeout(5000);
+    check((await a.evaluate(() => window.__mark)) === 'a', 'wave7b decision 4: the page with the bar never reloads by itself (5 s)');
+    await a.click('#btnUpdateLater');
+    check(await a.$eval('#updateBar', (x) => x.hidden), 'wave7b constraint 95: Later hides the bar');
+    const b = await openNext(ctx, origin);
+    await b.waitForFunction(() => document.getElementById('updateBar') && !document.getElementById('updateBar').hidden, null, { timeout: 30_000 });
+    await b.evaluate(() => { window.__mark = 'b'; });
+    const nav = b.waitForEvent('framenavigated', { timeout: 30_000 });
+    await b.click('#btnUpdateReload');
+    await nav;
+    await b.waitForSelector('#topbar');
+    check((await b.evaluate(() => window.__mark ?? null)) === null, 'wave7b constraint 95: Reload takes the new worker and reloads that tab');
+    await a.waitForTimeout(2000);
+    check((await a.evaluate(() => window.__mark)) === 'a', 'wave7b decision 4: the other tab is not reloaded by it');
+    await harvestCsp(a);
+    await harvestCsp(b);
+  } finally {
+    writeFileSync(swFile, orig);
+    await ctx.close();
+  }
+}
+
+/* 96: error reports — off by default; on, one report of 1.0's shape; nothing of the hostile book in it. */
+async function wave7bErrors(srv) {
+  const origin = srv.origin;
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const hostile = w5aHostileBook(lan);
+  const file = { name: 'w7b-hostile.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: hostile })) };
+  for (const on of [false, true]) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    if (on) await ctx.addInitScript(() => localStorage.setItem('beuk.errors.v1', 'on'));
+    try {
+      const email = w7aEmail('e');
+      await w7aSignUp(ctx, origin, email);
+      const page = await w7aNext(ctx, origin, file);
+      const sent = [], outside = [];
+      page.on('request', (r) => {
+        const u = r.url();
+        if (new URL(u).pathname === '/api/client-errors') sent.push({ body: r.postData() || '', headers: r.headers() });
+        if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) outside.push(u);
+      });
+      await page.click('#btnSettings2');
+      await page.waitForSelector('#setErrReports');
+      check((await page.$eval('#setErrReports', (x) => x.checked)) === on, `wave7b constraint 96: the opt-in reads ${on ? 'on' : 'off (the default)'} in Project Settings`);
+      await page.keyboard.press('Escape');
+      // an error the page raises while the hostile book is open (this run's own page error, not counted against it)
+      w7bProbe.on = true;
+      await page.evaluate(() => setTimeout(() => { throw new Error('wave7b-probe: Cannot read properties of null'); }, 0));
+      await page.waitForTimeout(1500);
+      w7bProbe.on = false;
+      if (!on) check(sent.length === 0, `wave7b constraint 96: off by default, an error sends nothing (${sent.length} reports)`);
+      else {
+        check(sent.length === 1, `wave7b constraint 96: on, one report of the error (${sent.length})`);
+        const body = sent[0] ? JSON.parse(sent[0].body) : {};
+        check(JSON.stringify(Object.keys(body)) === JSON.stringify(['kind', 'message', 'stack', 'build', 'lang', 'device', 'at']), `wave7b constraint 96: the report is 1.0's shape (${Object.keys(body).join(', ')})`);
+        const text = sent[0]?.body || '';
+        const leaks = ['Hostile', 'evil.example', '__pw', 'Writer ', 'w7b-hostile', email, W7A_PW].filter((x) => text.includes(x));
+        check(leaks.length === 0 && !sent[0]?.headers.cookie, `wave7b decision 5: the report carries no book text, title, file name, e-mail, password or cookie (${leaks.length ? 'found: ' + leaks.join(', ') : 'none of them'}): ${text.slice(0, 220)}`);
+      }
+      check(outside.length === 0, `wave7b constraint 96: no request left ${origin} (${outside.length})`);
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+const w7bProbe = { on: false, one: false, oneErrors: [] };
+
+/* 98: opening the share, archive and bulk dialogs, and going offline and back, send no manuscript PUT/POST. */
+async function wave7bNoEdit(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/salt-road-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w7bNextLinked(ctx, origin, f.file, 'g');
+    await page.waitForTimeout(3000);
+    const writes = w7aWrites(page);
+    const steps = [];
+    await w5aOpenModal(page);
+    await page.waitForSelector('#betaSec', { timeout: 30_000 });
+    await page.waitForTimeout(800);
+    steps.push('the export modal (the archive and share sections)');
+    await page.click('#btnCloseExport');
+    await page.click('#btnBetaComments');
+    await page.waitForSelector('#modalBetaComments.open');
+    await page.waitForTimeout(800);
+    await page.keyboard.press('Escape');
+    steps.push('the reader comments');
+    await page.click('#btnAccount');
+    await page.waitForSelector('#modalShelf.open #shelfBulk');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    steps.push('the shelf dialog (the bulk block)');
+    await ctx.setOffline(true);
+    await page.waitForTimeout(1500);
+    await ctx.setOffline(false);
+    await page.waitForTimeout(3500);
+    steps.push('offline and back');
+    const w = w7aManuscriptWrites(writes);
+    check(w.length === 0, `wave7b constraint 98: ${steps.join(', ')} — ${w.length} manuscript writes${w.length ? ' ' + JSON.stringify(w.map((x) => x.method + ' ' + w7aId(x.path))) : ''}`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
+/* Screenshots beside 1.0 (Paper, Candlelight, Arabic): the share section, the bulk block, the archive section, the net
+   pill, the update bar. */
+async function wave7bScreens(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const diffCtx = await newContext();
+  const diffPage = await diffCtx.newPage();
+  const out = [];
+  try {
+    for (const look of ['paper', 'candlelight', 'ar']) {
+      const ctx = await newContext({ serviceWorkers: 'block' });
+      await ctx.addInitScript((l) => {
+        if (l === 'candlelight') localStorage.setItem('beuk.theme.v1', 'candlelight');
+        if (l === 'ar') localStorage.setItem('beuk.uiLang.v1', 'ar');
+      }, look);
+      try {
+        const page = await w7bNextLinked(ctx, origin, f.file, 'x' + look);
+        const book = (await exportBackup(page)).json.book;
+        const id = await page.evaluate(() => window.beukCloud.cloud.linkedId);
+        const one = await w7aOne(ctx, origin);
+        // 1.0's desk holds the same book, linked to the same shelf copy (the same account)
+        await one.evaluate(([b, i]) => { applyBookDoc(JSON.parse(JSON.stringify(b))); cloud.linkedId = i; cloud.linkState = 'linked'; cloudDirty = false; renderCloudChrome(); }, [book, id]);
+        const shot = async (p, sel) => {
+          await p.waitForTimeout(400);
+          const el = await p.$(sel);
+          return el ? el.screenshot({ animations: 'disabled' }) : null;
+        };
+        const pairs = [];
+        await w5aOpenModal(page);
+        await one.evaluate(() => document.getElementById('btnExport').click());
+        for (const p of [page, one]) await p.waitForFunction(() => !!document.getElementById('betaSec') && document.getElementById('archiveSec').style.display === '' && !!document.querySelector('#betaList .shelf-empty') && !!document.querySelector('#archiveList .shelf-empty'), null, { timeout: 30_000 });
+        await page.waitForTimeout(800);
+
+        for (const p of [page, one]) await p.$eval('#archiveSec', (x) => x.scrollIntoView());
+        pairs.push(['archive', await shot(page, '#archiveSec'), await shot(one, '#archiveSec')]);
+        for (const p of [page, one]) await p.$eval('#betaSec', (x) => x.scrollIntoView());
+        pairs.push(['share', await shot(page, '#betaSec'), await shot(one, '#betaSec')]);
+        await page.click('#btnCloseExport');
+        await one.evaluate(() => document.getElementById('modalExport').classList.remove('open'));
+        await page.click('#btnAccount');
+        await page.waitForSelector('#modalShelf.open');
+        await one.evaluate(() => $('btnAccount').click());
+        for (const p of [page, one]) await p.$eval('#shelfBulk', (x) => x.scrollIntoView());
+        pairs.push(['bulk', await shot(page, '#shelfBulk'), await shot(one, '#shelfBulk')]);
+        await page.keyboard.press('Escape');
+        await one.evaluate(() => $('modalShelf').classList.remove('open'));
+        await page.evaluate(() => window.beukCloud.api.showUpdateBar({}));
+        await one.evaluate(() => showUpdateBar({}));
+        pairs.push(['update', await shot(page, '#updateBar'), await shot(one, '#updateBar')]);
+        await page.evaluate(() => window.beukCloud.api.setConnectivity(false));
+        await one.evaluate(() => setConnectivity(false));
+        pairs.push(['netPill', await shot(page, '#netPill'), await shot(one, '#netPill')]);
+        for (const [name, x, y] of pairs) {
+          if (!x || !y) {
+            out.push(`${look} ${name}: not drawn`);
+            continue;
+          }
+          writeFileSync(path.join(OUT, `w7b-${look}-${name}-next.png`), x);
+          writeFileSync(path.join(OUT, `w7b-${look}-${name}-1.0.png`), y);
+          const d = await pixelDiff(diffPage, x, y);
+          out.push(`${look} ${name}: ${(d.ratio * 100).toFixed(2)} %${d.size[0] !== d.size[2] || d.size[1] !== d.size[3] ? ' (sizes ' + d.size.join('×') + ')' : ''}`);
+        }
+        await harvestCsp(page);
+        await harvestCsp(one);
+      } finally {
+        await ctx.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+  note('wave7b screenshots (2.0 against 1.0, pixels over the delta): ' + out.join('; '));
+}
+
+/* The 7a gap: the hostile book through the shelf parity run (constraint 85). */
+async function wave7bHostileParity(srv) {
+  const lan = fixtures.find((x) => x.name === 'real/lantern-coast-book-one').book;
+  const hostile = w5aHostileBook(lan);
+  const file = path.join(OUT, 'w7b-hostile-book.json');
+  writeFileSync(file, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: hostile }));
+  w7bProbe.one = true;
+  try {
+    await wave7aParity(srv, [{ name: 'hostile (5a)', file, book: hostile }]);
+  } finally {
+    w7bProbe.one = false;
+  }
+  note(`wave7b (7a gap): 1.0's own page with the hostile book on its desk logged ${w7bProbe.oneErrors.length} error(s), not 2.0's: ${JSON.stringify(w7bProbe.oneErrors.slice(0, 3))}`);
+}
+
+async function wave7bChecks() {
+  const stripe = await w7aFakeStripe();
+  const srv = await startServer({ repo: REPO, api: true, apiConfig: { stripeWebhookSecret: 'whsec_test_placeholder', stripeSecretKey: 'sk_test_placeholder', stripePriceId: 'price_fixture', stripeApiBase: stripe.base } });
+  note(`wave7b: the real server on ${srv.origin} (PGlite), billing in test mode against a fake Stripe on ${stripe.base}`);
+  const only = (process.env.W7B_PARTS || 'bulk,share,day22,archive,offline,update,errors,noedit,hostile,screens,latency').split(',');
+  try {
+    if (only.includes('bulk')) await wave7bBulk(srv);
+    if (only.includes('share')) await wave7bShare(srv);
+    if (only.includes('day22')) await wave7bDay22(srv);
+    if (only.includes('archive')) await wave7bArchive(srv);
+    if (only.includes('offline')) await wave7bOffline(srv);
+    if (only.includes('update')) await wave7bUpdate(srv);
+    if (only.includes('errors')) await wave7bErrors(srv);
+    if (only.includes('noedit')) await wave7bNoEdit(srv);
+    if (only.includes('hostile')) await wave7bHostileParity(srv);
+    if (only.includes('screens')) await wave7bScreens(srv);
+    if (only.includes('latency')) await wave7aLatency(srv);
+    note(`wave7b: ${srv.shelf.mail.sent.length} mail(s) captured by the server, none sent; Stripe calls (all to the fake on 127.0.0.1): ${stripe.calls.length}`);
+  } finally {
+    await srv.stop().catch(() => undefined);
+    await stripe.close();
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -7683,6 +8272,7 @@ try {
   if (run('wave5d')) await wave5dChecks(srv.origin);
   if (run('wave6')) await wave6Checks(srv.origin);
   if (run('wave7a')) await wave7aChecks();
+  if (run('wave7b')) await wave7bChecks();
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);

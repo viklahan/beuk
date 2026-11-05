@@ -8,7 +8,9 @@
    - /api/*             → 404 JSON (no shelf in these runs), or, opt-in (wave 7a, constraint 84: startServer({ api: true })),
                           the REAL app (src/app.ts) on an embedded Postgres (PGlite, as tests/helpers.ts runs it), its
                           mail captured and never sent, billing off unless the caller passes Stripe test settings
-                          pointed at a fake on 127.0.0.1. The earlier waves keep the 404.
+                          pointed at a fake on 127.0.0.1. The earlier waves keep the 404. (Wave 7b: in that mode
+                          /read/* too, the beta readers' page and its comment API, as Caddy proxies /read*.)
+
    - anything else      → client/<path>, else 404
    Every response carries the Content-Security-Policy (and the other
    default headers) copied from the Caddyfile at start, so the browser
@@ -99,7 +101,8 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
       const f = path.resolve(base, '.' + rel);
       return f === base || f.startsWith(base + path.sep) ? f : null;
     };
-    if (p.startsWith('/api/') && shelf) {
+    // wave 7b: and the beta readers' page (/read/<token>…: Caddy proxies /read* to the app)
+    if ((p.startsWith('/api/') || p.startsWith('/read/')) && shelf) {
       // the app sets its own headers for its answers
       for (const k of Object.keys(headers)) res.removeHeader(k);
       return shelf.app(req, res);

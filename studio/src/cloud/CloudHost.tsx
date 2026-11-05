@@ -178,7 +178,11 @@ export function CloudHost() {
     return b ? b.ydoc : null;
   };
   cloudUi.confirm = (o) => confirm(o as never);
-  cloudUi.iconRoots = () => [host.current, ...Object.values(CLOUD_SLOTS).map((id) => document.getElementById(id))].filter((x): x is HTMLElement => !!x);
+  // (wave 7b: and the parts 1.0's shelf code draws in the export modal and on <body>: the archive, the share section, the
+  // EPUBCheck answer, the reader comments)
+  cloudUi.iconRoots = () =>
+    [host.current, ...[...Object.values(CLOUD_SLOTS), 'archiveSec', 'betaSec', 'modalBetaComments'].map((id) => document.getElementById(id))].filter((x): x is HTMLElement => !!x);
+
   cloudUi.localFailed = () => ['blocked', 'quota', 'error'].includes(live.current.local.status);
   cloudUi.focusEditor = () => {
     const h = document.getElementById('manuscript') as (HTMLElement & { beukEditor?: { commands: { focus: () => unknown } } }) | null;

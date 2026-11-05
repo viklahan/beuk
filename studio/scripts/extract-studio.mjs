@@ -75,7 +75,10 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // wave 6: the import report (its title and reopen button), and the import's toasts (imported, reading a PDF, the language found)
   'ListChecks', 'FileCheck2', 'Loader', 'Languages',
   // wave 7a: the sign-in and shelf dialogs, the account box and the shelf's toasts (1.0's data-lucide names)
-  'CloudUpload', 'KeyRound', 'LogOut', 'Archive'];
+  'CloudUpload', 'KeyRound', 'LogOut', 'Archive',
+  // wave 7b: the reader comments (its button, Jump to paragraph), revoked links, bulk import's file picker
+  'MessageSquareQuote', 'CornerDownRight', 'Link2Off', 'Files'];
+
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);
@@ -652,10 +655,12 @@ export function extractImportMarkup(html) {
    sign-in dialog (#modalAuth) and the shelf dialog (#modalShelf), the account button (#btnAccount), the offline pill
    (#netPill) and the shelf line (#syncRow), into src/generated/cloud-markup.json. The calm confirm (#modalConfirm) and
    the conflict notice (#modalConflict) are already 2.0's (src/shell/Dialog.tsx, src/covenant/CovenantDialog.tsx). */
-/* Wave 7b: and bulk import's block (.bulk-*, G3) and the update bar (.update-bar, H5). */
-export const CLOUD_SELECTOR = /\.net-(pill|dot)|\.acct-|\.sync-(dot|row)|\.portal-line|\.plan-line|\.auth-|\.legal-line|\.bring-box|\.shelf-|\.bulk-|\.update-bar/;
+/* Wave 7b: and bulk import's block (.bulk-*, G3), the update bar (.update-bar, H5), and the archive's list and its
+   EPUBCheck answer (.arc-*, .cr-*: H1's archive; the beta section's notes use .cr-wait too). */
+export const CLOUD_SELECTOR = /\.net-(pill|dot)|\.acct-|\.sync-(dot|row)|\.portal-line|\.plan-line|\.auth-|\.legal-line|\.bring-box|\.shelf-|\.bulk-|\.update-bar|\.arc-|\.cr-/;
 const CLOUD_ANCHORS = ['.net-pill', '.net-dot', '.acct-avatar', '.sync-dot', '.sync-row', '.portal-line', '.plan-line', '.auth-forgot-row', '.legal-line', '.auth-note', '.acct-box', '.auth-err', '.bring-box', '.shelf-list', '.shelf-row', '.shelf-empty',
-  '.bulk-head', '.bulk-drop', '.bulk-progress', '.bulk-summary', '.update-bar'];
+  '.bulk-head', '.bulk-drop', '.bulk-progress', '.bulk-summary', '.update-bar', '.arc-list', '.arc-row', '.cr-box', '.cr-wait'];
+
 export function extractCloudCss(html) {
   const tree = cssTree(headStyle(html));
   const taken = [];
