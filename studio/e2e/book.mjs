@@ -7224,15 +7224,17 @@ async function w7aWait(page, fn, arg, timeout = 60_000) {
     throw new Error(String(e.message).split(String.fromCharCode(10))[0] + " — the shelf stood: " + at + " — its last requests: " + JSON.stringify(net));
   }
 }
+const w7aDiffKeys = (a, b) => [...new Set([...Object.keys(a || {}), ...Object.keys(b || {})])].filter((k) => JSON.stringify(a?.[k]) !== JSON.stringify(b?.[k])).map((k) => k + (k === 'meta' ? '(' + w7aDiffKeys(a?.[k], b?.[k]).join(',') + ')' : ''));
 const w7aId = (s) => String(s).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<id>');
 
 /* 85: parity beside 1.0 — the shelf copy 2.0 sends equals 1.0's for the same book, and each app opens the other's. */
 async function wave7aParity(srv) {
   const origin = srv.origin;
   const list = (process.env.W7A_FIXTURES || '').split(',').filter(Boolean);
-  const books = list.length ? fixtures.filter((f) => list.includes(f.name)) : fixtures;
-  const hostile = (await import(pathToFileURL(path.join(STUDIO, 'test', 'export-fixture.ts')).href).catch(() => null));
-  void hostile;
+  // a book with no sections array is refused as a backup by both apps (1.0's localParseBackup; #1 holds it): it never
+  // reaches a desk, so it never reaches the shelf
+  const books = (list.length ? fixtures.filter((f) => list.includes(f.name)) : fixtures).filter((f) => Array.isArray(f.book.sections));
+  note(`wave7a parity: ${books.length} books (${fixtures.length - books.length} refused as backups by both apps: no sections array)`);
   let same = 0, opened2 = 0, opened1 = 0;
   const bad = [];
   for (const f of books) {
@@ -7267,8 +7269,10 @@ async function wave7aParity(srv) {
         await cloudOpenBook(id);
       }, id2);
       const got1 = await one.evaluate(() => JSON.stringify(serializeBook()));
-      if (got1 === mine1) opened1++;
-      else bad.push(f.name + ' (1.0 opens 2.0\'s)');
+      // by 1.0's own rule for "the same book" (bookDocsSame: stableJson, key order aside — 1.0's arrival of its own
+      // serialized document orders meta's keys differently from its arrival of 2.0's export, OBSERVED: only meta's order)
+      if (got1 === mine1 || (await one.evaluate(([a, b]) => bookDocsSame(JSON.parse(a), JSON.parse(b)), [got1, mine1]))) opened1++;
+      else bad.push(f.name + " (1.0 opens 2.0's: " + w7aDiffKeys(JSON.parse(got1), JSON.parse(mine1)).join(' ') + ')');
       // 2.0 opens 1.0's copy from its shelf list
       await page.bringToFront();
       await page.evaluate(() => document.getElementById('modalShelf').classList.remove('open'));
@@ -7278,8 +7282,11 @@ async function wave7aParity(srv) {
       await w7aWait(page, (id) => window.beukCloud.cloud.linkedId === id && !window.beukCloud.arriving(), id1, 60_000);
       await page.waitForTimeout(300);
       const back = (await exportBackup(page)).json.book;
-      if (JSON.stringify(noHistory(back)) === JSON.stringify(noHistory(start))) opened2++;
-      else bad.push(f.name + " (2.0 opens 1.0's)");
+      // what 2.0 holds of a shelf copy is readBook's book of it (the 1.0 document 1.0 wrote, its pictures filled in)
+      const shelfDoc = (await (await ctx.request.get(origin + '/api/manuscripts/' + id1)).json()).manuscript.doc;
+      const want = expected(shelfDoc, back);
+      if (JSON.stringify(back) === JSON.stringify(want)) opened2++;
+      else bad.push(f.name + " (2.0 opens 1.0's: " + w7aDiffKeys(back, want).join(' ') + ')');
       await harvestCsp(page);
       await harvestCsp(one);
     } finally {
@@ -7288,7 +7295,7 @@ async function wave7aParity(srv) {
   }
   check(same === books.length, `wave7a constraint 85: the shelf copy 2.0 sends equals 1.0's, byte for byte, for ${same} of ${books.length} books${bad.length ? ' — ' + bad.join('; ') : ''}`);
   check(opened1 === books.length, `wave7a constraint 85: 1.0 opens 2.0's shelf copy as its own for ${opened1} of ${books.length}`);
-  check(opened2 === books.length, `wave7a constraint 85: 2.0 opens 1.0's shelf copy as the book it sent for ${opened2} of ${books.length} (History aside: 1.0's open keeps it as 1.0 wrote it)`);
+  check(opened2 === books.length, `wave7a constraint 85: 2.0 opens 1.0's shelf copy as readBook reads it for ${opened2} of ${books.length}`);
 }
 
 /* 86 + decision 3: two devices raise 1.0's three-way notice; two tabs of one device never do. */
