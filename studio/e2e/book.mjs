@@ -8544,6 +8544,19 @@ async function lcPaths(p, app, reqs) {
     await p.click('#printReadyNote [data-pr-locked]');
     await p.waitForSelector('#modalLockPdf.open');
   }
+  // final review F1/F3: a password SASLprep deletes (soft hyphen; joiner + BOM) is refused up front, in lock.pdfEmpty, with no request and no file
+  {
+    const before = reqs.length;
+    out.empty = [];
+    for (const junk of ['\u00AD', '\u200D\uFEFF']) {
+      await p.fill('#lockPdfPw', junk);
+      await p.fill('#lockPdfPw2', junk);
+      await p.click('#btnLockPdfGo');
+      await p.waitForTimeout(150);
+      out.empty.push(await p.evaluate(() => ({ err: document.getElementById('lockPdfErr').textContent, open: document.getElementById('modalLockPdf').classList.contains('open'), pw: [document.getElementById('lockPdfPw').value, document.getElementById('lockPdfPw2').value] })));
+    }
+    out.emptyReqs = reqs.length - before;
+  }
   await p.fill('#lockPdfPw', LC_PW);
   await p.fill('#lockPdfPw2', LC_PW);
   out.marks.pdf = reqs.length;
@@ -8688,6 +8701,9 @@ async function lockcopyParity(srv) {
     const s = g2.stack;
     check(!!s && s.seen.every((x) => x.inside) && s.seen[0].id === 'lockPdfPw', `lockcopy 2.0 dialog stack: focus starts on the password and Tab / Shift+Tab stay inside the PDF dialog (${s ? s.seen.map((x) => x.id).join(' → ') : 'not run'})`);
     check(!!s && !s.after.lock && s.after.exp && s.after.pw === '' && s.after.focus === 'link', `lockcopy 2.0 dialog stack: Escape closes only the PDF dialog, empties it, and focus returns to the link (${JSON.stringify(s && s.after)})`);
+    for (const [who, g] of [['2.0', g2], ['1.0', g1]]) {
+      check(g.emptyReqs === 0 && g.empty.length === 2 && g.empty.every((x) => x.err === 'Type a password for the locked copy.' && x.open && x.pw.join('') === ''), `lockcopy ${who} pdf: a password SASLprep deletes (soft hyphen; joiner + BOM) is refused in the dialog's own words, nothing is requested, the dialog stays open and empty (${JSON.stringify(g.empty)}; ${g.emptyReqs} requests)`);
+    }
     await harvestCsp(two);
     await harvestCsp(one);
   } finally {

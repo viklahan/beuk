@@ -45744,7 +45744,7 @@
       async function buildEpub() {
         const btn = $("btnBuildEpub");
         if (typeof cloud === "undefined" || !cloud.available || !net.online) { toast(t("epub.offline"), "cloud-off"); return; }
-        if (!cloud.user) { toast(t("epub.signin"), "cloud"); if (!buildEpub.noOpen) { $("modalExport").classList.remove("open"); openAuth(); } return; }
+        if (!cloud.user) { toast(t("epub.signin"), "cloud"); if (!buildEpub.noOpen) { $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */ openAuth(); } return; }
         btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i>' + esc(t("epub.building")); icons();
         try {
           /* The desk's book, pictures inline (the shelf copy may be behind the desk); History, notes and research files do not go into an EPUB, so they stay home. */
@@ -45762,7 +45762,7 @@
           try { notes = JSON.parse(decodeURIComponent((r.__headers && r.__headers.get("X-Beuk-Notes")) || "%5B%5D")); } catch (e) { notes = []; }
           (Array.isArray(notes) ? notes : []).forEach((n) => toast(String(n), "alert-triangle"));
           downloadBlob(r.__blob, platformFilename());
-          $("modalExport").classList.remove("open");
+          $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */
           toast(platformPreset().name + " EPUB exported — " + epubPlan().length + " sections, " + Math.round(r.__blob.size / 1024) + " KB", "package-check");
         } catch (err) {
           toast(t("epub.failed", { error: err && err.message ? err.message : String(err) }), "alert-triangle");
@@ -47114,7 +47114,7 @@
         $("printSub").textContent = (state.meta.title || "Untitled Book") + " · " + tr.label + " trim" + (state.printLargePrint ? " · " + t("print.lpTag") : printPictureBookOn() ? " · " + t("print.pbTag") : "") + " · " + (state.printRecto ? "chapters open on recto (right-hand) pages" : "chapters open on the next page") + ". To make the PDF: Print / Save as PDF below, paper size " + tr.label + ", margins None, background graphics on. The downloaded Print HTML file prints exactly the same way.";
         const first = buildPrintHtml();
         $("printFrame").srcdoc = first;
-        $("modalExport").classList.remove("open");
+        $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */
         $("modalPrint").classList.add("open");
         icons();
         /* Pictures bake for press in the background (BEUK:print); the
@@ -47532,7 +47532,7 @@
       }
       function openPrintInteriorView() {
         if (samplePicsHold(() => openPrintInteriorView())) return; /* BEUK:slim — never without the sample's pictures */
-        $("modalExport").classList.remove("open");
+        $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */
         $("modalPrint").classList.remove("open");
         $("modalPrintView").classList.add("open");
         piv.spread = 0;
@@ -50275,7 +50275,7 @@
       }
       function a11yJumpTo(jump) {
         if (!jump) return;
-        $("modalExport").classList.remove("open");
+        $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */
         if (jump.kind === "settings") { openSettings(); return; }
         if (jump.kind === "section" && jump.sectionId) {
           selectSection(jump.sectionId);
@@ -51204,16 +51204,16 @@
         if (act.kind === "trim") { state.printTrim = act.trim; renderPrintControls(); noteBookEdited(); renderStoreReport(); return; }
         if (act.kind === "print") { $("modalStore").classList.remove("open"); preflightJumpTo({ kind: "print" }); return; }
         if (act.kind === "section") { $("modalStore").classList.remove("open"); a11yJumpTo({ kind: "section", sectionId: act.sectionId }); return; }
-        if (act.kind === "cover") { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); openCoverMaker(); return; }
+        if (act.kind === "cover") { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */ openCoverMaker(); return; }
         if (act.kind === "attest") { state.storeCheck.attestSpine = true; noteBookEdited(); renderStoreReport(); return; }
         if (act.kind === "ink") { state.storeCheck.ink = act.ink; noteBookEdited(); renderStoreReport(); return; }
         if (act.kind === "runServer") {
           /* storeRunServer stays silent when signed out; a button must never do nothing, so it asks for sign-in */
-          if (typeof cloud !== "undefined" && cloud.available && !cloud.user) { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); openAuth(); return; }
+          if (typeof cloud !== "undefined" && cloud.available && !cloud.user) { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */ openAuth(); return; }
           storeRunServer(); return;
         }
         if (act.kind === "recheck") { storeRecheck(); return; }
-        if (act.kind === "signin") { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); openAuth(); return; }
+        if (act.kind === "signin") { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */ openAuth(); return; }
         if (act.kind === "printBlack") { setBookPrintBlack(true); renderStoreReport(); return; }
         if (act.kind === "validate") { $("modalStore").classList.remove("open"); runValidation(); return; }
         if (!state.coverRecipe) return;
@@ -51343,7 +51343,7 @@
         if (!cloud.user) {
           /* a button must never do nothing: say so, then the sign-in the other server actions use */
           printReadySet("signin", t("pr.signin"));
-          if (!ui.noOpen) { $("modalExport").classList.remove("open"); openAuth(); }
+          if (!ui.noOpen) { $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */ openAuth(); }
           return;
         }
         ui.running = true;
@@ -51831,6 +51831,9 @@
         if (typeof password !== "string" || !password) throw new Error("A password is needed to lock the PDF.");
         const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
         const pwBytes = new TextEncoder().encode(lockSaslPrep(password)).slice(0, 127);
+        /* a password that SASLprep maps to nothing (only soft hyphens, joiners, variation selectors…) is an EMPTY user
+           password: readers open the file without asking. Refuse it, never write that file. */
+        if (!pwBytes.length) throw new Error("A password is needed to lock the PDF.");
         const fileKey = lockRandom(32);
         try {
           if (lockFind(b.subarray(0, Math.min(b.length, 1024)), "%PDF-", 0, false) < 0) throw new Error("This file is not a PDF, so it cannot be locked.");
@@ -51971,8 +51974,50 @@
         0x4cc5d4be, 0xcb3e42b6, 0x597f299c, 0xfc657e2a, 0x5fcb6fab, 0x3ad6faec, 0x6c44198c, 0x4a475817
       ]);
       const LOCK_SHA512_IV = new Uint32Array([0x6a09e667, 0xf3bcc908, 0xbb67ae85, 0x84caa73b, 0x3c6ef372, 0xfe94f82b, 0xa54ff53a, 0x5f1d36f1, 0x510e527f, 0xade682d1, 0x9b05688c, 0x2b3e6c1f, 0x1f83d9ab, 0xfb41bd6b, 0x5be0cd19, 0x137e2179]);
+      /* One SHA-512 compression (FIPS 180-4 §6.4.2): the chaining state (sh/sl: 8 words as high and low halves) takes the
+         block whose first 16 words are in wh/wl (80 long, the rest is the schedule). Shared by the spin and by
+         lockSha512Js, which the known-answer test feeds the FIPS 180-2 vectors. */
+      function lockSha512Compress(sh, sl, wh, wl) {
+        const K = LOCK_SHA512_K;
+        for (let j = 16; j < 80; j++) {
+          let xh = wh[j - 2], xl = wl[j - 2];
+          const s1h = ((xh >>> 19) | (xl << 13)) ^ ((xl >>> 29) | (xh << 3)) ^ (xh >>> 6); // σ1: ROTR 19, 61, SHR 6
+          const s1l = ((xl >>> 19) | (xh << 13)) ^ ((xh >>> 29) | (xl << 3)) ^ ((xl >>> 6) | (xh << 26));
+          xh = wh[j - 15]; xl = wl[j - 15];
+          const s0h = ((xh >>> 1) | (xl << 31)) ^ ((xh >>> 8) | (xl << 24)) ^ (xh >>> 7); // σ0: ROTR 1, 8, SHR 7
+          const s0l = ((xl >>> 1) | (xh << 31)) ^ ((xl >>> 8) | (xh << 24)) ^ ((xl >>> 7) | (xh << 25));
+          const lo = (s1l >>> 0) + (wl[j - 7] >>> 0) + (s0l >>> 0) + (wl[j - 16] >>> 0);
+          wh[j] = (s1h + wh[j - 7] + s0h + wh[j - 16] + ((lo / 0x100000000) | 0)) | 0;
+          wl[j] = lo | 0;
+        }
+        let ah = sh[0] | 0, al = sl[0] | 0, bh = sh[1] | 0, bl = sl[1] | 0, ch = sh[2] | 0, cl = sl[2] | 0, dh = sh[3] | 0, dl = sl[3] | 0;
+        let eh = sh[4] | 0, el = sl[4] | 0, fh = sh[5] | 0, fl = sl[5] | 0, gh = sh[6] | 0, gl = sl[6] | 0, hh = sh[7] | 0, hl = sl[7] | 0;
+        for (let j = 0; j < 80; j++) {
+          const S1h = ((eh >>> 14) | (el << 18)) ^ ((eh >>> 18) | (el << 14)) ^ ((el >>> 9) | (eh << 23)); // Σ1: ROTR 14, 18, 41
+          const S1l = ((el >>> 14) | (eh << 18)) ^ ((el >>> 18) | (eh << 14)) ^ ((eh >>> 9) | (el << 23));
+          const t1l = (hl >>> 0) + (S1l >>> 0) + (((el & fl) ^ (~el & gl)) >>> 0) + K[j * 2 + 1] + (wl[j] >>> 0);
+          const t1h = (hh + S1h + ((eh & fh) ^ (~eh & gh)) + K[j * 2] + wh[j] + ((t1l / 0x100000000) | 0)) | 0;
+          const S0h = ((ah >>> 28) | (al << 4)) ^ ((al >>> 2) | (ah << 30)) ^ ((al >>> 7) | (ah << 25)); // Σ0: ROTR 28, 34, 39
+          const S0l = ((al >>> 28) | (ah << 4)) ^ ((ah >>> 2) | (al << 30)) ^ ((ah >>> 7) | (al << 25));
+          const t2l = (S0l >>> 0) + (((al & bl) ^ (al & cl) ^ (bl & cl)) >>> 0);
+          const t2h = (S0h + ((ah & bh) ^ (ah & ch) ^ (bh & ch)) + ((t2l / 0x100000000) | 0)) | 0;
+          hh = gh; hl = gl; gh = fh; gl = fl; fh = eh; fl = el;
+          const el2 = (dl >>> 0) + (t1l >>> 0);
+          eh = (dh + t1h + ((el2 / 0x100000000) | 0)) | 0; el = el2 | 0;
+          dh = ch; dl = cl; ch = bh; cl = bl; bh = ah; bl = al;
+          const al2 = (t1l >>> 0) + (t2l >>> 0);
+          ah = (t1h + t2h + ((al2 / 0x100000000) | 0)) | 0; al = al2 | 0;
+        }
+        const regs = [ah, al, bh, bl, ch, cl, dh, dl, eh, el, fh, fl, gh, gl, hh, hl];
+        for (let j = 0; j < 8; j++) {
+          const lo = (sl[j] >>> 0) + (regs[j * 2 + 1] >>> 0);
+          sh[j] = (sh[j] + regs[j * 2] + ((lo / 0x100000000) | 0)) | 0;
+          sl[j] = lo | 0;
+        }
+      }
       function lockSha512Spin(h0, rounds) {
-        const K = LOCK_SHA512_K, IV = LOCK_SHA512_IV;
+        const IV = LOCK_SHA512_IV;
+        const sh = new Int32Array(8), sl = new Int32Array(8);
         const oh = new Int32Array(8), ol = new Int32Array(8), wh = new Int32Array(80), wl = new Int32Array(80);
         for (let j = 0; j < 8; j++) {
           oh[j] = (h0[j * 8] << 24) | (h0[j * 8 + 1] << 16) | (h0[j * 8 + 2] << 8) | h0[j * 8 + 3];
@@ -51986,48 +52031,45 @@
           wh[8] = ol[7]; wl[8] = 0x80000000 | 0;
           for (let j = 9; j < 15; j++) { wh[j] = 0; wl[j] = 0; }
           wh[15] = 0; wl[15] = 544;
-          for (let j = 16; j < 80; j++) {
-            let xh = wh[j - 2], xl = wl[j - 2];
-            const s1h = ((xh >>> 19) | (xl << 13)) ^ ((xl >>> 29) | (xh << 3)) ^ (xh >>> 6); // σ1: ROTR 19, 61, SHR 6
-            const s1l = ((xl >>> 19) | (xh << 13)) ^ ((xh >>> 29) | (xl << 3)) ^ ((xl >>> 6) | (xh << 26));
-            xh = wh[j - 15]; xl = wl[j - 15];
-            const s0h = ((xh >>> 1) | (xl << 31)) ^ ((xh >>> 8) | (xl << 24)) ^ (xh >>> 7); // σ0: ROTR 1, 8, SHR 7
-            const s0l = ((xl >>> 1) | (xh << 31)) ^ ((xl >>> 8) | (xh << 24)) ^ ((xl >>> 7) | (xh << 25));
-            const lo = (s1l >>> 0) + (wl[j - 7] >>> 0) + (s0l >>> 0) + (wl[j - 16] >>> 0);
-            wh[j] = (s1h + wh[j - 7] + s0h + wh[j - 16] + ((lo / 0x100000000) | 0)) | 0;
-            wl[j] = lo | 0;
-          }
-          let ah = IV[0] | 0, al = IV[1] | 0, bh = IV[2] | 0, bl = IV[3] | 0, ch = IV[4] | 0, cl = IV[5] | 0, dh = IV[6] | 0, dl = IV[7] | 0;
-          let eh = IV[8] | 0, el = IV[9] | 0, fh = IV[10] | 0, fl = IV[11] | 0, gh = IV[12] | 0, gl = IV[13] | 0, hh = IV[14] | 0, hl = IV[15] | 0;
-          for (let j = 0; j < 80; j++) {
-            const S1h = ((eh >>> 14) | (el << 18)) ^ ((eh >>> 18) | (el << 14)) ^ ((el >>> 9) | (eh << 23)); // Σ1: ROTR 14, 18, 41
-            const S1l = ((el >>> 14) | (eh << 18)) ^ ((el >>> 18) | (eh << 14)) ^ ((eh >>> 9) | (el << 23));
-            const t1l = (hl >>> 0) + (S1l >>> 0) + (((el & fl) ^ (~el & gl)) >>> 0) + K[j * 2 + 1] + (wl[j] >>> 0);
-            const t1h = (hh + S1h + ((eh & fh) ^ (~eh & gh)) + K[j * 2] + wh[j] + ((t1l / 0x100000000) | 0)) | 0;
-            const S0h = ((ah >>> 28) | (al << 4)) ^ ((al >>> 2) | (ah << 30)) ^ ((al >>> 7) | (ah << 25)); // Σ0: ROTR 28, 34, 39
-            const S0l = ((al >>> 28) | (ah << 4)) ^ ((ah >>> 2) | (al << 30)) ^ ((ah >>> 7) | (al << 25));
-            const t2l = (S0l >>> 0) + (((al & bl) ^ (al & cl) ^ (bl & cl)) >>> 0);
-            const t2h = (S0h + ((ah & bh) ^ (ah & ch) ^ (bh & ch)) + ((t2l / 0x100000000) | 0)) | 0;
-            hh = gh; hl = gl; gh = fh; gl = fl; fh = eh; fl = el;
-            const el2 = (dl >>> 0) + (t1l >>> 0);
-            eh = (dh + t1h + ((el2 / 0x100000000) | 0)) | 0; el = el2 | 0;
-            dh = ch; dl = cl; ch = bh; cl = bl; bh = ah; bl = al;
-            const al2 = (t1l >>> 0) + (t2l >>> 0);
-            ah = (t1h + t2h + ((al2 / 0x100000000) | 0)) | 0; al = al2 | 0;
-          }
-          const regs = [ah, al, bh, bl, ch, cl, dh, dl, eh, el, fh, fl, gh, gl, hh, hl];
-          for (let j = 0; j < 8; j++) {
-            const lo = (IV[j * 2 + 1] >>> 0) + (regs[j * 2 + 1] >>> 0);
-            oh[j] = (IV[j * 2] + regs[j * 2] + ((lo / 0x100000000) | 0)) | 0;
-            ol[j] = lo | 0;
-          }
+          for (let j = 0; j < 8; j++) { sh[j] = IV[j * 2] | 0; sl[j] = IV[j * 2 + 1] | 0; }
+          lockSha512Compress(sh, sl, wh, wl);
+          oh.set(sh); ol.set(sl);
         }
         const out = new Uint8Array(64);
         for (let j = 0; j < 8; j++) {
           out[j * 8] = oh[j] >>> 24; out[j * 8 + 1] = oh[j] >>> 16; out[j * 8 + 2] = oh[j] >>> 8; out[j * 8 + 3] = oh[j];
           out[j * 8 + 4] = ol[j] >>> 24; out[j * 8 + 5] = ol[j] >>> 16; out[j * 8 + 6] = ol[j] >>> 8; out[j * 8 + 7] = ol[j];
         }
-        oh.fill(0); ol.fill(0); wh.fill(0); wl.fill(0);
+        oh.fill(0); ol.fill(0); wh.fill(0); wl.fill(0); sh.fill(0); sl.fill(0);
+        return out;
+      }
+      /* SHA-512 of any message, in plain JS over the same compression: the known-answer test's hook (FIPS 180-2 vectors),
+         since the spin only ever hashes one fixed 68-byte block. Production does not call it. */
+      function lockSha512Js(msg) {
+        const IV = LOCK_SHA512_IV, sh = new Int32Array(8), sl = new Int32Array(8), wh = new Int32Array(80), wl = new Int32Array(80);
+        for (let j = 0; j < 8; j++) { sh[j] = IV[j * 2] | 0; sl[j] = IV[j * 2 + 1] | 0; }
+        const n = msg.length, total = Math.ceil((n + 17) / 128) * 128, blk = new Uint8Array(128);
+        for (let off = 0; off < total; off += 128) {
+          for (let k = 0; k < 128; k++) {
+            const at = off + k;
+            blk[k] = at < n ? msg[at] : at === n ? 0x80 : 0;
+          }
+          if (off + 128 === total) { /* the length in bits, 128-bit big-endian, in the last 16 bytes */
+            const hi = Math.floor(n / 0x20000000), lo = (n * 8) >>> 0;
+            blk[120] = hi >>> 24; blk[121] = hi >>> 16; blk[122] = hi >>> 8; blk[123] = hi;
+            blk[124] = lo >>> 24; blk[125] = lo >>> 16; blk[126] = lo >>> 8; blk[127] = lo;
+          }
+          for (let j = 0; j < 16; j++) {
+            wh[j] = (blk[j * 8] << 24) | (blk[j * 8 + 1] << 16) | (blk[j * 8 + 2] << 8) | blk[j * 8 + 3];
+            wl[j] = (blk[j * 8 + 4] << 24) | (blk[j * 8 + 5] << 16) | (blk[j * 8 + 6] << 8) | blk[j * 8 + 7];
+          }
+          lockSha512Compress(sh, sl, wh, wl);
+        }
+        const out = new Uint8Array(64);
+        for (let j = 0; j < 8; j++) {
+          out[j * 8] = sh[j] >>> 24; out[j * 8 + 1] = sh[j] >>> 16; out[j * 8 + 2] = sh[j] >>> 8; out[j * 8 + 3] = sh[j];
+          out[j * 8 + 4] = sl[j] >>> 24; out[j * 8 + 5] = sl[j] >>> 16; out[j * 8 + 6] = sl[j] >>> 8; out[j * 8 + 7] = sl[j];
+        }
         return out;
       }
       /* §2.3.4.11: H0 = SHA-512(salt ‖ password) on WebCrypto, then Hn = SHA-512(LE32(n − 1) ‖ Hn−1), LOCK_DOCX_SPIN
@@ -52295,6 +52337,8 @@
         const e = lockEls(scope);
         if (!lockCopyAllowed() || !e.on || !e.on.checked || !e.pw || !e.pw2) return { off: true };
         const pw = e.pw.value, pw2 = e.pw2.value;
+        /* the PDF's password is SASLprepped: one that maps to nothing would lock the file with an empty password */
+        if (scope === "pdf" && !lockSaslPrep(pw) && !lockSaslPrep(pw2)) return { error: "lock.pdfEmpty" };
         if (!pw && !pw2) return { error: "lock.empty" };
         if (pw !== pw2) return { error: "lock.mismatch" };
         return { password: pw };
@@ -52441,6 +52485,20 @@
       Object.assign(UI_STRINGS.ru, { "lock.toggle": "Защитить паролем", "lock.pw": "Пароль", "lock.pw2": "Введите ещё раз", "lock.note": "Читателю понадобится этот пароль, чтобы открыть файл. Отправьте его отдельно — сообщением или по телефону, а не в том же письме.", "lock.mismatch": "Пароли не совпадают.", "lock.empty": "Введите пароль или отключите защиту.", "lock.pdf": "Скачать защищённую копию", "lock.working": "Защищаем…", "lock.failed": "Не удалось защитить копию: {error}", "lock.done": "Защищённая копия скачана." });
       Object.assign(UI_STRINGS.tr, { "lock.toggle": "Parolayla kilitle", "lock.pw": "Parola", "lock.pw2": "Yeniden yazın", "lock.note": "Okuyucunuz dosyayı açmak için bu parolaya ihtiyaç duyar. Parolayı aynı e-postada değil, ayrıca mesajla ya da telefonla iletin.", "lock.mismatch": "İki parola eşleşmiyor.", "lock.empty": "Bir parola yazın ya da kilidi kapatın.", "lock.pdf": "Kilitli kopyayı indir", "lock.working": "Kilitleniyor…", "lock.failed": "Kopya kilitlenemedi: {error}", "lock.done": "Kilitli kopya indirildi." });
       Object.assign(UI_STRINGS["zh-Hans"], { "lock.toggle": "用密码锁定", "lock.pw": "密码", "lock.pw2": "再输入一次", "lock.note": "读者需要这个密码才能打开文件。请另行告知，比如发短信或打电话，不要写在同一封邮件里。", "lock.mismatch": "两次输入的密码不一致。", "lock.empty": "请输入密码，或关闭锁定。", "lock.pdf": "下载锁定的副本", "lock.working": "正在锁定…", "lock.failed": "无法锁定副本：{error}", "lock.done": "已下载锁定的副本。" });
+      /* BEUK:lockcopy — fix wave: the PDF dialog has no lock to turn off, so its empty-password message is its own (drafts for V's sign-off) */
+      Object.assign(UI_STRINGS.en, { "lock.pdfEmpty": "Type a password for the locked copy." });
+      Object.assign(UI_STRINGS.ar, { "lock.pdfEmpty": "اكتب كلمة مرور للنسخة المقفلة." });
+      Object.assign(UI_STRINGS.de, { "lock.pdfEmpty": "Geben Sie ein Passwort für die gesperrte Kopie ein." });
+      Object.assign(UI_STRINGS.es, { "lock.pdfEmpty": "Escribe una contraseña para la copia bloqueada." });
+      Object.assign(UI_STRINGS.fr, { "lock.pdfEmpty": "Saisissez un mot de passe pour la copie verrouillée." });
+      Object.assign(UI_STRINGS.it, { "lock.pdfEmpty": "Scrivi una password per la copia protetta." });
+      Object.assign(UI_STRINGS.ja, { "lock.pdfEmpty": "保護したコピー用のパスワードを入力してください。" });
+      Object.assign(UI_STRINGS.nl, { "lock.pdfEmpty": "Typ een wachtwoord voor de vergrendelde kopie." });
+      Object.assign(UI_STRINGS.pl, { "lock.pdfEmpty": "Wpisz hasło dla zabezpieczonej kopii." });
+      Object.assign(UI_STRINGS.pt, { "lock.pdfEmpty": "Escreva uma palavra-passe para a cópia bloqueada." });
+      Object.assign(UI_STRINGS.ru, { "lock.pdfEmpty": "Введите пароль для защищённой копии." });
+      Object.assign(UI_STRINGS.tr, { "lock.pdfEmpty": "Kilitli kopya için bir parola yazın." });
+      Object.assign(UI_STRINGS["zh-Hans"], { "lock.pdfEmpty": "请为锁定的副本输入密码。" });
       /* ---- the downloadable report: one self-contained HTML page ---- */
       function buildStoreReportHtml(a) {
         a = a || storeAudit();
@@ -74715,7 +74773,7 @@
       function betaOnClick(e) {
         const el = e.target && e.target.closest ? e.target.closest("[data-beta],[data-beta-copy],[data-beta-republish],[data-beta-revoke]") : null;
         if (!el) return;
-        if (el.getAttribute("data-beta") === "signin") { $("modalExport").classList.remove("open"); openAuth(); return; }
+        if (el.getAttribute("data-beta") === "signin") { $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */ openAuth(); return; }
         if (el.getAttribute("data-beta") === "create") { betaCreate(); return; }
         if (el.hasAttribute("data-beta-copy")) { betaCopy(el.getAttribute("data-beta-copy")); return; }
         if (el.hasAttribute("data-beta-republish")) {

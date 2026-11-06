@@ -316,6 +316,39 @@ describe('locked review copy: the controls and the three download points (task 3
     expect((note.querySelector('[data-pr-download]') as HTMLAnchorElement).getAttribute('href')).toBe('/api/exports/exp-42/download');
   });
 
+  /* Final review F1 + F3: a password SASLprep deletes would lock the PDF with an EMPTY password; the dialog refuses it up
+     front, in its own words (the PDF dialog has no lock to turn off), and fetches nothing. */
+  it('the PDF dialog refuses a password that is empty after SASLprep, and an empty one, in lock.pdfEmpty; nothing is fetched', async () => {
+    await studioWith(LANTERN());
+    await openExport();
+    await printReadyDone('exp-42');
+    const f = fetchPdf(onePagePdf());
+    for (const [a, b] of [['\u00AD', '\u00AD'], ['\u200D\uFEFF', '\u200D\uFEFF'], ['', '']] as [string, string][]) {
+      await lockPdfWith(a, b);
+      expect($('lockPdfErr').textContent, JSON.stringify(a)).toBe(t('lock.pdfEmpty'));
+      expect($('lockPdfErr').textContent).not.toBe(t('lock.empty'));
+      expect(isOpen('modalLockPdf')).toBe(true);
+      expect([inp('lockPdfPw').value, inp('lockPdfPw2').value]).toEqual(['', '']);
+      expect(f.mock.calls.filter((x) => /download$/.test(String(x[0]))).length).toBe(0);
+      expect(toasts()).not.toContain(t('lock.done'));
+    }
+  });
+
+  /* Final review F2: a programmatic close of the export modal (here: EPUB while signed out closes it for the sign-in)
+     leaves no password in the hidden fields. */
+  it('a programmatic close of the export modal (the EPUB sign-in) empties the Word lock fields', async () => {
+    await studioWith(LANTERN());
+    await openExport();
+    await click($('lockDocxOn'));
+    await type($('lockDocxPw'), 'typed then signed in');
+    await type($('lockDocxPw2'), 'typed then signed in');
+    cloudFacts.available = true;
+    await click($('btnBuildEpub'));
+    await waitFor(() => expect(document.getElementById('modalAuth')?.classList.contains('open')).toBe(true));
+    expect(isOpen('modalExport')).toBe(false);
+    expect([inp('lockDocxPw').value, inp('lockDocxPw2').value, inp('lockDocxOn').checked]).toEqual(['', '', true]);
+  });
+
   it('fields cleared: after success, a mismatch, a thrown lock error and closing the dialog both inputs are empty; the checkbox keeps its state', async () => {
     await studioWith(LANTERN());
     await openExport();
@@ -591,7 +624,7 @@ describe('locked review copy: the controls and the three download points (task 3
     expect(shown()).toEqual([true, true]);
   });
 
-  it('all 13 locales have the 10 keys (English verbatim; every {error} slot kept)', async () => {
+  it('all 13 locales have the 11 keys (English verbatim; every {error} slot kept)', async () => {
     const KEYS: Record<string, string> = {
       'lock.toggle': 'Lock with a password',
       'lock.pw': 'Password',
@@ -599,6 +632,7 @@ describe('locked review copy: the controls and the three download points (task 3
       'lock.note': 'Your reader needs this password to open the file. Send it separately, by text or a call, not in the same email.',
       'lock.mismatch': "The two passwords don't match.",
       'lock.empty': 'Type a password, or turn the lock off.',
+      'lock.pdfEmpty': 'Type a password for the locked copy.',
       'lock.pdf': 'Download locked copy',
       'lock.working': 'Locking…',
       'lock.failed': 'The copy could not be locked: {error}',

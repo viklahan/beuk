@@ -239,6 +239,8 @@ export const EXTRA_ROOTS = [
   'lockPdfBytes', 'lockSaslPrep',
   // task 2: the DOCX lock — ECMA-376 Agile encryption in a compound file, over WebCrypto
   'lockDocxBytes',
+  // final review F4: the hand-written SHA-512's known-answer hooks (lockSha512Js is not called in production)
+  'lockSha512Js', 'lockSha512Spin',
   // task 3: the lock controls and the download points' halves (the Word file and the manuscript reach them through
   // downloadDocx / msDownload; the print-ready PDF's dialog and the plan's day-22 note are named here, so the whole
   // BEUK:lockcopy block stands in the main closure as 1.0's text — the print and shelf modules lift their own copies)

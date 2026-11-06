@@ -521,6 +521,29 @@ describe('lockPdfBytes: AES-256 R6, opened by pdf.js (design 2026-11-06, task 1)
   }, 60_000);
 });
 
+/* Final review F1: a password SASLprep maps to nothing (RFC 4013 B.1: soft hyphen, joiners, variation selectors, BOM...) is
+   an EMPTY user password, and every reader opens that file without asking. lockPdfBytes refuses it. */
+describe('lockPdfBytes: a password that is empty after SASLprep (final review F1)', () => {
+  it.each([['\u00AD'], ['\u200D\uFEFF'], ['\uFE0F\u180B\u2060\u034F']])('refuses %j and never returns a file', async (pw) => {
+    expect(api.lockSaslPrep(pw)).toBe('');
+    let out: unknown = null;
+    let err: unknown = null;
+    try {
+      out = await api.lockPdfBytes(FIXTURE, pw);
+    } catch (e) {
+      err = e;
+    }
+    expect(out).toBeNull();
+    expect(err).toBeInstanceOf(Error);
+    expect(String((err as Error).message)).toBe('A password is needed to lock the PDF.');
+  }, 60_000);
+  it('a mapped-away character beside a real one still locks, and the file needs the password', async () => {
+    const out = await api.lockPdfBytes(FIXTURE, '\u00ADx');
+    expect(await refusal(out)).toEqual({ name: 'PasswordException', code: pdfjs.PasswordResponses.NEED_PASSWORD });
+    expect((await open(out, 'x')).pages).toBeGreaterThan(0);
+  }, 60_000);
+});
+
 /* Review focus 3 (task 2, step 6): a big book locks without freezing the tab. Budget: PDF ≤ 2 s per 10 MB, measured
    here and logged. The input is the fixture with an incremental update that adds one more stream, the fixture's own
    bytes again (raw, no filter): about 11.9 MB, every byte of it encrypted. */

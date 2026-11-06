@@ -95,7 +95,7 @@ describe('locked review copy: the PDF and DOCX locks are 1.0\'s, lifted (constra
     const block = html.slice(html.indexOf('/* ==== BEUK:lockcopy ===='), html.indexOf('/* ==== /BEUK:lockcopy ==== */'));
     const sfH = ts.createSourceFile('lock.js', block, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     const one = byName(sfH.statements, sfH);
-    expect(one.size).toBe(66); // every top-level declaration of the block: task 1's 32, task 2's 15, task 3's 17, task 4's 2 (lockAccessNote, lockAccessRefresh)
+    expect(one.size).toBe(68); // every top-level declaration of the block: task 1's 32, task 2's 15, task 3's 17, task 4's 2 (lockAccessNote, lockAccessRefresh), the fix wave's 2 (lockSha512Compress, lockSha512Js)
     const gen = readFileSync(CLOSURE_JS, 'utf8');
     const sfB = ts.createSourceFile('closure.js', gen, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     const create = sfB.statements.find((st): st is ts.FunctionDeclaration => ts.isFunctionDeclaration(st) && st.name?.text === 'createClosure');
