@@ -95,11 +95,47 @@ describe('locked review copy: the PDF and DOCX locks are 1.0\'s, lifted (constra
     const block = html.slice(html.indexOf('/* ==== BEUK:lockcopy ===='), html.indexOf('/* ==== /BEUK:lockcopy ==== */'));
     const sfH = ts.createSourceFile('lock.js', block, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     const one = byName(sfH.statements, sfH);
-    expect(one.size).toBe(47); // every top-level declaration of the block: task 1's 32, task 2's 15
+    expect(one.size).toBe(64); // every top-level declaration of the block: task 1's 32, task 2's 15, task 3's 17
     const gen = readFileSync(CLOSURE_JS, 'utf8');
     const sfB = ts.createSourceFile('closure.js', gen, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     const create = sfB.statements.find((st): st is ts.FunctionDeclaration => ts.isFunctionDeclaration(st) && st.name?.text === 'createClosure');
     const b = byName(create!.body!.statements, sfB);
     for (const [n, text] of one) expect(b.get(n), n).toBe(text);
+  });
+
+  /* Task 3: the controls and the download points' halves. The Word file and the manuscript reach them through 1.0's
+     downloadDocx / msDownload (main closure); the print-ready panel (print's module) lifts the PDF dialog and the PDF
+     lock with it, and the plan line (the shelf's module) the day-22 note: each module's copy is 1.0's text, never a
+     second version. */
+  it("task 3: the lock controls are roots of the main closure, and the print and shelf modules' lifted copies of the block are 1.0's text", () => {
+    for (const n of ['lockFieldsRead', 'lockFieldsClear', 'lockCopyAllowed', 'lockFieldsRender', 'lockPlanNote', 'lockPdfOpen', 'lockedPdfDownload']) {
+      expect(CLOSURE_ROOTS, n).toContain(n);
+      expect(CLOSURE_SUPPLIED, n).not.toContain(n);
+    }
+    const html = studioHtml();
+    const block = html.slice(html.indexOf('/* ==== BEUK:lockcopy ===='), html.indexOf('/* ==== /BEUK:lockcopy ==== */'));
+    const sfH = ts.createSourceFile('lock.js', block, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+    const one = byName(sfH.statements, sfH);
+    const lifted = (file: string, fn: string) => {
+      const gen = readFileSync(fileURLToPath(new URL('../src/generated/' + file, import.meta.url)), 'utf8');
+      const sf = ts.createSourceFile(file, gen, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+      const create = sf.statements.find((st): st is ts.FunctionDeclaration => ts.isFunctionDeclaration(st) && st.name?.text === fn);
+      expect(create?.body, fn).toBeTruthy();
+      return byName(create!.body!.statements, sf);
+    };
+    const print = lifted('closure-print.js', 'createPrintClosure');
+    const shelf = lifted('closure-cloud.js', 'createCloudClosure');
+    // what each reaches: the print panel the PDF dialog and the PDF lock; the plan line the day-22 note
+    for (const n of ['lockPdfOpen', 'lockPdfDialog', 'lockedPdfDownload', 'lockPdfBytes', 'lockCopyAllowed']) expect(print.has(n), 'print lifts ' + n).toBe(true);
+    for (const n of ['lockPlanNote', 'lockFieldsRender', 'lockCopyAllowed']) expect(shelf.has(n), 'the shelf lifts ' + n).toBe(true);
+    let compared = 0;
+    for (const [n, text] of one) {
+      for (const [where, m] of [['print', print], ['shelf', shelf]] as const) {
+        if (!m.has(n)) continue;
+        compared++;
+        expect(m.get(n), where + ' ' + n).toBe(text);
+      }
+    }
+    expect(compared).toBeGreaterThan(8);
   });
 });

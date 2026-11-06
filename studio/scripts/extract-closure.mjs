@@ -239,6 +239,10 @@ export const EXTRA_ROOTS = [
   'lockPdfBytes', 'lockSaslPrep',
   // task 2: the DOCX lock — ECMA-376 Agile encryption in a compound file, over WebCrypto
   'lockDocxBytes',
+  // task 3: the lock controls and the download points' halves (the Word file and the manuscript reach them through
+  // downloadDocx / msDownload; the print-ready PDF's dialog and the plan's day-22 note are named here, so the whole
+  // BEUK:lockcopy block stands in the main closure as 1.0's text — the print and shelf modules lift their own copies)
+  'lockFieldsRead', 'lockFieldsClear', 'lockCopyAllowed', 'lockFieldsRender', 'lockPlanNote', 'lockPdfOpen', 'lockedPdfDownload',
 ];
 
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK

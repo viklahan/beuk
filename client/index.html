@@ -3427,6 +3427,16 @@
         <h2 id="msH" data-i18n="ms.title"><i data-lucide="file-pen-line"></i>Submission Manuscript</h2>
         <p class="m-sub" data-i18n="ms.sub">Standard manuscript format.</p>
         <div id="msBody"></div>
+        <!-- BEUK:lockcopy — an optional lock, made in this browser; the password never leaves the device -->
+        <fieldset class="lock-fs" id="lockMs" style="border:0;padding:0;margin:10px 0 0;min-width:0;">
+          <label class="acx-check"><input type="checkbox" id="lockMsOn" name="lockcopy-ms-on" /> <span data-i18n="lock.toggle">Lock with a password</span></label>
+          <div id="lockMsFields" hidden>
+            <div><label class="field-lab" for="lockMsPw" data-i18n="lock.pw">Password</label><input class="txt-input" id="lockMsPw" name="lockcopy-ms-pw" type="password" autocomplete="new-password" /></div>
+            <div><label class="field-lab" for="lockMsPw2" data-i18n="lock.pw2">Type it again</label><input class="txt-input" id="lockMsPw2" name="lockcopy-ms-pw2" type="password" autocomplete="new-password" /></div>
+            <p class="acx-note" data-i18n="lock.note">Your reader needs this password to open the file. Send it separately, by text or a call, not in the same email.</p>
+            <p class="acx-note acx-warn" id="lockMsErr" role="alert" hidden></p>
+          </div>
+        </fieldset>
         <div class="modal-actions">
           <button class="tb-btn" id="btnMsClose" type="button" data-i18n="ms.close">Close</button>
           <button class="tb-btn primary" id="btnMsDownload" type="button" data-i18n="ms.download"><i data-lucide="download"></i>Download Manuscript (.docx)</button>
@@ -3515,6 +3525,16 @@
           <div class="fmt-actions">
             <button class="tb-btn" id="btnDownloadDocx" data-i18n="exp.downloadDocx"><i data-lucide="download"></i>Download .docx</button>
           </div>
+          <!-- BEUK:lockcopy — an optional lock, made in this browser; the password never leaves the device -->
+          <fieldset class="lock-fs" id="lockDocx" style="border:0;padding:0;margin:10px 0 0;min-width:0;">
+            <label class="acx-check"><input type="checkbox" id="lockDocxOn" name="lockcopy-docx-on" /> <span data-i18n="lock.toggle">Lock with a password</span></label>
+            <div id="lockDocxFields" hidden>
+              <div><label class="field-lab" for="lockDocxPw" data-i18n="lock.pw">Password</label><input class="txt-input" id="lockDocxPw" name="lockcopy-docx-pw" type="password" autocomplete="new-password" /></div>
+              <div><label class="field-lab" for="lockDocxPw2" data-i18n="lock.pw2">Type it again</label><input class="txt-input" id="lockDocxPw2" name="lockcopy-docx-pw2" type="password" autocomplete="new-password" /></div>
+              <p class="acx-note" data-i18n="lock.note">Your reader needs this password to open the file. Send it separately, by text or a call, not in the same email.</p>
+              <p class="acx-note acx-warn" id="lockDocxErr" role="alert" hidden></p>
+            </div>
+          </fieldset>
         </div>
 
         <!-- ==== BEUK:manuscript ==== -->
@@ -48189,15 +48209,25 @@
         return zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
       }
       async function downloadDocx() {
-        if (!window.JSZip) { toast(t("toast.jszipLoading"), "loader"); return; }
+        if (!window.JSZip) { lockFieldsClear("docx"); /* BEUK:lockcopy */ toast(t("toast.jszipLoading"), "loader"); return; }
         const btn = $("btnDownloadDocx");
+        if (btn.disabled) return; /* BEUK:lockcopy — one run at a time */
+        const lock = lockFieldsTake("docx"); /* BEUK:lockcopy — read once, emptied at once */
+        if (lock.error) return;
         btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i>Building…'; icons();
+        let locking = false;
         try {
           const blob = await buildDocxBlob();
-          downloadBlob(blob, slug(state.meta.title) + ".docx");
-          toast("Word document downloaded — headings, scene breaks and endnotes included", "file-type-2");
+          if (lock.password) {
+            locking = true; btn.innerHTML = '<i data-lucide="loader-2"></i>' + esc(t("lock.working")); icons();
+            await lockDocxDownload(blob, lock.password, slug(state.meta.title) + "-locked.docx");
+          } else {
+            downloadBlob(blob, slug(state.meta.title) + ".docx");
+            toast("Word document downloaded — headings, scene breaks and endnotes included", "file-type-2");
+          }
         } catch (err) {
-          toast("DOCX export failed: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
+          if (locking) toast(lockFailedText(err, lock.password), "alert-triangle");
+          else toast("DOCX export failed: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
         } finally {
           btn.disabled = false; btn.innerHTML = '<i data-lucide="download"></i>Download .docx'; icons();
         }
@@ -48464,17 +48494,27 @@
       }
       const msFilename = () => slug(state.meta.title || "book") + "-manuscript.docx";
       async function msDownload() {
-        if (!window.JSZip) { toast(t("toast.jszipLoading"), "loader"); return; }
+        if (!window.JSZip) { lockFieldsClear("ms"); /* BEUK:lockcopy */ toast(t("toast.jszipLoading"), "loader"); return; }
         const plan = msPlan();
-        if (!plan.body.length) { toast(t("ms.empty"), "alert-triangle"); return; }
+        if (!plan.body.length) { lockFieldsClear("ms"); /* BEUK:lockcopy */ toast(t("ms.empty"), "alert-triangle"); return; }
         const btn = $("btnMsDownload");
+        if (btn && btn.disabled) return; /* BEUK:lockcopy — one run at a time */
+        const lock = lockFieldsTake("ms"); /* BEUK:lockcopy — read once, emptied at once */
+        if (lock.error) return;
         if (btn) { btn.disabled = true; btn.textContent = t("ms.building"); }
+        let locking = false;
         try {
           const blob = await msBlob(plan);
-          downloadBlob(blob, msFilename());
-          toast(t("ms.done", { sections: fmtNum(plan.body.length), words: fmtNum(plan.rounded) }), "file-type-2");
+          if (lock.password) {
+            locking = true; if (btn) btn.textContent = t("lock.working");
+            await lockDocxDownload(blob, lock.password, msFilename().replace(/\.docx$/, "") + "-locked.docx");
+          } else {
+            downloadBlob(blob, msFilename());
+            toast(t("ms.done", { sections: fmtNum(plan.body.length), words: fmtNum(plan.rounded) }), "file-type-2");
+          }
         } catch (err) {
-          toast(t("ms.fail", { msg: err && err.message ? err.message : "unknown error" }), "alert-triangle");
+          if (locking) toast(lockFailedText(err, lock.password), "alert-triangle");
+          else toast(t("ms.fail", { msg: err && err.message ? err.message : "unknown error" }), "alert-triangle");
         } finally {
           if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="download"></i>' + esc(t("ms.download")); icons(); }
         }
@@ -48558,6 +48598,7 @@
       }
       function msOpen() {
         msRender();
+        lockFieldsRender(); /* BEUK:lockcopy */
         const ex = $("modalExport"); if (ex) ex.classList.remove("open");
         $("modalManuscript").classList.add("open");
       }
@@ -48568,6 +48609,7 @@
         $("btnMsClose").addEventListener("click", () => modal.classList.remove("open"));
         modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("open"); });
         $("btnMsDownload").addEventListener("click", msDownload);
+        lockFieldsWire("ms"); lockFieldsRender(); /* BEUK:lockcopy */
         const body = $("msBody");
         const take = (el, persist) => {
           const k = MS_FIELD_IDS[el.id]; if (!k) return;
@@ -51275,6 +51317,12 @@
           a.href = "/api/exports/" + encodeURIComponent(ui.exportId) + "/download";
           a.textContent = t("pr.btn"); a.setAttribute("data-pr-download", "1");
           el.appendChild(document.createTextNode(" ")); el.appendChild(a);
+          /* BEUK:lockcopy — the locked copy is a link of its own: the one above keeps its one meaning */
+          const lk = document.createElement("a");
+          const exportId = ui.exportId, base = printFilename().replace(/\.[^.]*$/, "") + "-pdfx";
+          lk.href = "#"; lk.textContent = t("lock.pdf"); lk.setAttribute("data-pr-locked", "1"); lk.hidden = !lockCopyAllowed();
+          lk.addEventListener("click", (e) => { e.preventDefault(); lockPdfOpen(exportId, base); });
+          el.appendChild(document.createTextNode(" ")); el.appendChild(lk);
         } else if (ui.paused) {
           const a = document.createElement("a");
           a.href = "/account"; a.target = "_blank"; a.rel = "noopener"; a.textContent = t("portal.page"); a.setAttribute("data-pr-plan", "1");
@@ -52188,7 +52236,193 @@
           if (h) h.fill(0);
         }
       }
+      /* ---- the controls (task 3): one fieldset per download point — a box, and, shown when it is ticked, the password
+         twice and the note. The Word file (#lockDocx) and the manuscript (#lockMs) have theirs beside their button; the
+         print-ready PDF's opens in a small dialog of its own (#modalLockPdf) from a separate link ([data-pr-locked]), so
+         "Download print-ready PDF" keeps its one meaning. The fields are read once and emptied at once, whatever comes
+         next: the password lives only in the running download, never in the page, a store, a request or a message.
+         Day 22 (the plan's access "paused") hides every lock control; the unlocked downloads never change. The plan's
+         access is kept on the page itself (data-plan-access on <html>), where every part of the studio that draws a
+         lock control reads the same fact (2.0 runs the plan line, the export and the print panel in separate modules). */
+      const LOCK_SCOPES = { docx: "lockDocx", ms: "lockMs", pdf: "lockPdf" };
+      function lockEls(scope) {
+        const id = LOCK_SCOPES[scope];
+        return { box: $(id), on: $(id + "On"), fields: $(id + "Fields"), pw: $(id + "Pw"), pw2: $(id + "Pw2"), err: $(id + "Err") };
+      }
+      /** The plan line's plan, as far as the lock needs it: billingPlanRender hands it every plan it draws. */
+      function lockPlanNote(p) {
+        const access = p && p.billingOn ? String(p.access || "") : "";
+        if (access) document.documentElement.setAttribute("data-plan-access", access);
+        else document.documentElement.removeAttribute("data-plan-access");
+        lockFieldsRender();
+      }
+      /** False only when the last plan drawn has access "paused" (day 22). No plan known (signed out, billing off): true. */
+      function lockCopyAllowed() {
+        return document.documentElement.getAttribute("data-plan-access") !== "paused";
+      }
+      /** Shows or hides every lock control by the plan; a hidden control keeps nothing typed. */
+      function lockFieldsRender() {
+        const ok = lockCopyAllowed();
+        for (const scope of ["docx", "ms"]) {
+          const e = lockEls(scope);
+          if (!e.box) continue;
+          e.box.hidden = !ok;
+          if (!ok) lockFieldsClear(scope);
+        }
+        document.querySelectorAll("[data-pr-locked]").forEach((a) => { a.hidden = !ok; });
+        if (!ok) lockPdfClose();
+      }
+      /** { password } when the lock is on and both fields agree; { off: true } when it is off (or not allowed);
+       *  { error } with the message's key otherwise. It reads and never empties: lockFieldsClear does. */
+      function lockFieldsRead(scope) {
+        const e = lockEls(scope);
+        if (!lockCopyAllowed() || !e.on || !e.on.checked || !e.pw || !e.pw2) return { off: true };
+        const pw = e.pw.value, pw2 = e.pw2.value;
+        if (!pw && !pw2) return { error: "lock.empty" };
+        if (pw !== pw2) return { error: "lock.mismatch" };
+        return { password: pw };
+      }
+      /** Both fields emptied; the box keeps its state. */
+      function lockFieldsClear(scope) {
+        const e = lockEls(scope);
+        if (e.pw) e.pw.value = "";
+        if (e.pw2) e.pw2.value = "";
+      }
+      /** The fieldset's one inline message (a key), or none. */
+      function lockFieldsSay(scope, key) {
+        const e = lockEls(scope);
+        if (!e.err) return;
+        e.err.textContent = key ? t(key) : "";
+        e.err.hidden = !key;
+      }
+      /** The fields, read once and emptied at once; a refusal said inline. */
+      function lockFieldsTake(scope) {
+        const got = lockFieldsRead(scope);
+        lockFieldsClear(scope);
+        lockFieldsSay(scope, got.error || "");
+        return got;
+      }
+      function lockFieldsWire(scope) {
+        const e = lockEls(scope);
+        if (!e.on || e.on.getAttribute("data-lock-wired")) return;
+        e.on.setAttribute("data-lock-wired", "1");
+        const sync = () => {
+          if (e.fields) e.fields.hidden = !e.on.checked;
+          if (!e.on.checked) { lockFieldsClear(scope); lockFieldsSay(scope, ""); }
+        };
+        e.on.addEventListener("change", sync);
+        for (const f of [e.pw, e.pw2]) if (f) f.addEventListener("input", () => lockFieldsSay(scope, ""));
+        sync();
+      }
+      /** A frame to paint the busy state before the lock's long synchronous spin (a hidden tab paints no frame: the
+       *  timer stands in). */
+      function lockYield() {
+        return new Promise((resolve) => {
+          let done = false;
+          const go = () => { if (!done) { done = true; resolve(); } };
+          if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => setTimeout(go, 0));
+          setTimeout(go, 50);
+        });
+      }
+      /** The lock's error as the writer reads it: its own fixed words, never the password. */
+      function lockFailedText(err, password) {
+        const msg = String((err && err.message) || err || "");
+        return t("lock.failed", { error: !msg || (password && msg.indexOf(password) >= 0) ? "unknown error" : msg });
+      }
+      /** The Word bytes of `blob`, locked, downloaded as `name`. */
+      async function lockDocxDownload(blob, password, name) {
+        await lockYield();
+        const out = await lockDocxBytes(new Uint8Array(await blob.arrayBuffer()), password);
+        downloadBlob(new Blob([out], { type: blob.type || "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }), name);
+        toast(t("lock.done"), "file-type-2");
+      }
+      /* ---- the print-ready PDF's locked copy: the same fieldset, in a small dialog on the dialog stack ---- */
+      function lockPdfDialog() {
+        let m = $("modalLockPdf");
+        if (m) return m;
+        m = document.createElement("div");
+        m.className = "modal-back"; m.id = "modalLockPdf"; m.style.zIndex = "79";
+        const field = (key, n) => '<div><label class="field-lab" for="lockPdfPw' + n + '" data-i18n="' + key + '">' + esc(t(key)) + '</label><input class="txt-input" id="lockPdfPw' + n +
+          '" name="lockcopy-pdf-pw' + n + '" type="password" autocomplete="new-password" /></div>';
+        m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="lockPdfH" style="max-width:440px;">' +
+          '<h2 id="lockPdfH"><i data-lucide="download"></i><span data-i18n="lock.pdf">' + esc(t("lock.pdf")) + "</span></h2>" +
+          '<fieldset class="lock-fs" id="lockPdf" style="border:0;padding:0;margin:10px 0 0;min-width:0;">' +
+          '<label class="acx-check"><input type="checkbox" id="lockPdfOn" name="lockcopy-pdf-on" checked disabled /> <span data-i18n="lock.toggle">' + esc(t("lock.toggle")) + "</span></label>" +
+          '<div id="lockPdfFields">' + field("lock.pw", "") + field("lock.pw2", "2") +
+          '<p class="acx-note" data-i18n="lock.note">' + esc(t("lock.note")) + "</p>" +
+          '<p class="acx-note acx-warn" id="lockPdfErr" role="alert" hidden></p></div></fieldset>' +
+          '<div class="modal-actions"><button class="tb-btn" id="btnLockPdfClose" type="button" data-i18n="exp.close">' + esc(t("exp.close")) + "</button>" +
+          '<button class="tb-btn primary" id="btnLockPdfGo" type="button" data-i18n="lock.pdf">' + esc(t("lock.pdf")) + "</button></div></div>";
+        document.body.appendChild(m);
+        const go = () => lockedPdfDownload(m.getAttribute("data-export") || "", m.getAttribute("data-base") || "");
+        $("btnLockPdfClose").addEventListener("click", lockPdfClose);
+        $("btnLockPdfGo").addEventListener("click", go);
+        m.addEventListener("click", (e) => { if (e.target === m) lockPdfClose(); });
+        /* Escape closes this dialog only (and empties it), never the export modal under it */
+        m.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); lockPdfClose(); }
+          else if (e.key === "Enter" && e.target && e.target.type === "password") { e.preventDefault(); go(); }
+        });
+        for (const n of ["", "2"]) $("lockPdfPw" + n).addEventListener("input", () => lockFieldsSay("pdf", ""));
+        icons();
+        return m;
+      }
+      function lockPdfOpen(exportId, baseName) {
+        if (!exportId || !lockCopyAllowed()) return;
+        const m = lockPdfDialog();
+        m.setAttribute("data-export", exportId);
+        m.setAttribute("data-base", baseName || "");
+        lockFieldsClear("pdf");
+        lockFieldsSay("pdf", "");
+        m.classList.add("open");
+        try { $("lockPdfPw").focus({ preventScroll: true }); } catch (e) {}
+      }
+      function lockPdfClose() {
+        const m = $("modalLockPdf");
+        if (!m) return;
+        m.classList.remove("open");
+        lockFieldsClear("pdf");
+        lockFieldsSay("pdf", "");
+      }
+      /** The stored print-ready PDF (GET /api/exports/<id>/download, this site's cookie), locked here, downloaded as
+       *  <base>-locked.pdf: the base is the stored file's own name when the server gives it, else `baseName`. */
+      async function lockedPdfDownload(exportId, baseName) {
+        const btn = $("btnLockPdfGo");
+        if (!btn || btn.disabled) return;
+        const lock = lockFieldsTake("pdf");
+        if (!lock.password) return;
+        btn.disabled = true; btn.textContent = t("lock.working");
+        try {
+          await lockYield();
+          const r = await fetch("/api/exports/" + encodeURIComponent(exportId) + "/download", { credentials: "same-origin" });
+          if (!r.ok) throw new Error("the server answered " + r.status);
+          const cd = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") || "");
+          const base = (cd ? cd[1].replace(/[\\/]/g, "_").replace(/\.pdf$/i, "") : "") || baseName || "beuk-export";
+          const out = await lockPdfBytes(new Uint8Array(await r.arrayBuffer()), lock.password);
+          downloadBlob(new Blob([out], { type: "application/pdf" }), base + "-locked.pdf");
+          toast(t("lock.done"), "download");
+          lockPdfClose();
+        } catch (e) {
+          toast(lockFailedText(e, lock.password), "alert-triangle");
+        } finally {
+          btn.disabled = false; btn.textContent = t("lock.pdf");
+        }
+      }
       /* ==== /BEUK:lockcopy ==== */
+      /* BEUK:lockcopy — the locked review copy's words (task 3). The 12 translations are drafts for V's sign-off. */
+      Object.assign(UI_STRINGS.en, { "lock.toggle": "Lock with a password", "lock.pw": "Password", "lock.pw2": "Type it again", "lock.note": "Your reader needs this password to open the file. Send it separately, by text or a call, not in the same email.", "lock.mismatch": "The two passwords don't match.", "lock.empty": "Type a password, or turn the lock off.", "lock.pdf": "Download locked copy", "lock.working": "Locking…", "lock.failed": "The copy could not be locked: {error}", "lock.done": "Locked copy downloaded." });
+      Object.assign(UI_STRINGS.ar, { "lock.toggle": "القفل بكلمة مرور", "lock.pw": "كلمة المرور", "lock.pw2": "اكتبها مرة أخرى", "lock.note": "يحتاج قارئك إلى كلمة المرور هذه لفتح الملف. أرسلها على حدة، برسالة نصية أو مكالمة، لا في البريد الإلكتروني نفسه.", "lock.mismatch": "كلمتا المرور غير متطابقتين.", "lock.empty": "اكتب كلمة مرور، أو أوقف القفل.", "lock.pdf": "تنزيل نسخة مقفلة", "lock.working": "جارٍ القفل…", "lock.failed": "تعذّر قفل النسخة: {error}", "lock.done": "تم تنزيل النسخة المقفلة." });
+      Object.assign(UI_STRINGS.de, { "lock.toggle": "Mit einem Passwort sperren", "lock.pw": "Passwort", "lock.pw2": "Noch einmal eingeben", "lock.note": "Wer die Datei liest, braucht dieses Passwort, um sie zu öffnen. Schicken Sie es getrennt, per SMS oder Anruf, nicht in derselben E-Mail.", "lock.mismatch": "Die beiden Passwörter stimmen nicht überein.", "lock.empty": "Geben Sie ein Passwort ein, oder schalten Sie die Sperre aus.", "lock.pdf": "Gesperrte Kopie herunterladen", "lock.working": "Wird gesperrt…", "lock.failed": "Die Kopie konnte nicht gesperrt werden: {error}", "lock.done": "Gesperrte Kopie heruntergeladen." });
+      Object.assign(UI_STRINGS.es, { "lock.toggle": "Bloquear con una contraseña", "lock.pw": "Contraseña", "lock.pw2": "Escríbela otra vez", "lock.note": "Tu lector necesita esta contraseña para abrir el archivo. Envíasela por separado, por mensaje o con una llamada, no en el mismo correo.", "lock.mismatch": "Las dos contraseñas no coinciden.", "lock.empty": "Escribe una contraseña o desactiva el bloqueo.", "lock.pdf": "Descargar copia bloqueada", "lock.working": "Bloqueando…", "lock.failed": "No se pudo bloquear la copia: {error}", "lock.done": "Copia bloqueada descargada." });
+      Object.assign(UI_STRINGS.fr, { "lock.toggle": "Verrouiller avec un mot de passe", "lock.pw": "Mot de passe", "lock.pw2": "Saisissez-le à nouveau", "lock.note": "Votre lecteur aura besoin de ce mot de passe pour ouvrir le fichier. Envoyez-le à part, par SMS ou par téléphone, pas dans le même e-mail.", "lock.mismatch": "Les deux mots de passe ne correspondent pas.", "lock.empty": "Saisissez un mot de passe, ou désactivez le verrou.", "lock.pdf": "Télécharger la copie verrouillée", "lock.working": "Verrouillage…", "lock.failed": "La copie n'a pas pu être verrouillée : {error}", "lock.done": "Copie verrouillée téléchargée." });
+      Object.assign(UI_STRINGS.it, { "lock.toggle": "Proteggi con una password", "lock.pw": "Password", "lock.pw2": "Scrivila di nuovo", "lock.note": "Chi legge ha bisogno di questa password per aprire il file. Mandala a parte, con un messaggio o una telefonata, non nella stessa email.", "lock.mismatch": "Le due password non coincidono.", "lock.empty": "Scrivi una password oppure disattiva la protezione.", "lock.pdf": "Scarica copia protetta", "lock.working": "Protezione in corso…", "lock.failed": "Non è stato possibile proteggere la copia: {error}", "lock.done": "Copia protetta scaricata." });
+      Object.assign(UI_STRINGS.ja, { "lock.toggle": "パスワードで保護する", "lock.pw": "パスワード", "lock.pw2": "もう一度入力", "lock.note": "読者がファイルを開くには、このパスワードが必要です。同じメールには書かず、メッセージや電話など別の方法で伝えてください。", "lock.mismatch": "2つのパスワードが一致しません。", "lock.empty": "パスワードを入力するか、保護をオフにしてください。", "lock.pdf": "保護したコピーをダウンロード", "lock.working": "保護しています…", "lock.failed": "コピーを保護できませんでした：{error}", "lock.done": "保護したコピーをダウンロードしました。" });
+      Object.assign(UI_STRINGS.nl, { "lock.toggle": "Vergrendelen met een wachtwoord", "lock.pw": "Wachtwoord", "lock.pw2": "Typ het nog een keer", "lock.note": "Uw lezer heeft dit wachtwoord nodig om het bestand te openen. Stuur het apart, per sms of telefonisch, niet in dezelfde e-mail.", "lock.mismatch": "De twee wachtwoorden komen niet overeen.", "lock.empty": "Typ een wachtwoord of zet de vergrendeling uit.", "lock.pdf": "Vergrendelde kopie downloaden", "lock.working": "Bezig met vergrendelen…", "lock.failed": "De kopie kon niet worden vergrendeld: {error}", "lock.done": "Vergrendelde kopie gedownload." });
+      Object.assign(UI_STRINGS.pl, { "lock.toggle": "Zabezpiecz hasłem", "lock.pw": "Hasło", "lock.pw2": "Wpisz je ponownie", "lock.note": "Czytelnik potrzebuje tego hasła, żeby otworzyć plik. Wyślij je osobno, SMS-em lub telefonicznie, nie w tym samym e-mailu.", "lock.mismatch": "Hasła nie są takie same.", "lock.empty": "Wpisz hasło albo wyłącz zabezpieczenie.", "lock.pdf": "Pobierz zabezpieczoną kopię", "lock.working": "Zabezpieczanie…", "lock.failed": "Nie udało się zabezpieczyć kopii: {error}", "lock.done": "Pobrano zabezpieczoną kopię." });
+      Object.assign(UI_STRINGS.pt, { "lock.toggle": "Bloquear com uma palavra-passe", "lock.pw": "Palavra-passe", "lock.pw2": "Escreva-a novamente", "lock.note": "O seu leitor precisa desta palavra-passe para abrir o ficheiro. Envie-a à parte, por SMS ou numa chamada, não no mesmo e-mail.", "lock.mismatch": "As duas palavras-passe não coincidem.", "lock.empty": "Escreva uma palavra-passe ou desligue o bloqueio.", "lock.pdf": "Transferir cópia bloqueada", "lock.working": "A bloquear…", "lock.failed": "Não foi possível bloquear a cópia: {error}", "lock.done": "Cópia bloqueada transferida." });
+      Object.assign(UI_STRINGS.ru, { "lock.toggle": "Защитить паролем", "lock.pw": "Пароль", "lock.pw2": "Введите ещё раз", "lock.note": "Читателю понадобится этот пароль, чтобы открыть файл. Отправьте его отдельно — сообщением или по телефону, а не в том же письме.", "lock.mismatch": "Пароли не совпадают.", "lock.empty": "Введите пароль или отключите защиту.", "lock.pdf": "Скачать защищённую копию", "lock.working": "Защищаем…", "lock.failed": "Не удалось защитить копию: {error}", "lock.done": "Защищённая копия скачана." });
+      Object.assign(UI_STRINGS.tr, { "lock.toggle": "Parolayla kilitle", "lock.pw": "Parola", "lock.pw2": "Yeniden yazın", "lock.note": "Okuyucunuz dosyayı açmak için bu parolaya ihtiyaç duyar. Parolayı aynı e-postada değil, ayrıca mesajla ya da telefonla iletin.", "lock.mismatch": "İki parola eşleşmiyor.", "lock.empty": "Bir parola yazın ya da kilidi kapatın.", "lock.pdf": "Kilitli kopyayı indir", "lock.working": "Kilitleniyor…", "lock.failed": "Kopya kilitlenemedi: {error}", "lock.done": "Kilitli kopya indirildi." });
+      Object.assign(UI_STRINGS["zh-Hans"], { "lock.toggle": "用密码锁定", "lock.pw": "密码", "lock.pw2": "再输入一次", "lock.note": "读者需要这个密码才能打开文件。请另行告知，比如发短信或打电话，不要写在同一封邮件里。", "lock.mismatch": "两次输入的密码不一致。", "lock.empty": "请输入密码，或关闭锁定。", "lock.pdf": "下载锁定的副本", "lock.working": "正在锁定…", "lock.failed": "无法锁定副本：{error}", "lock.done": "已下载锁定的副本。" });
       /* ---- the downloadable report: one self-contained HTML page ---- */
       function buildStoreReportHtml(a) {
         a = a || storeAudit();
@@ -52248,6 +52482,7 @@
         $("btnCopyMd").addEventListener("click", () => copyText(buildMarkdown(), t("toast.mdCopied")));
         $("btnDownloadHtml").addEventListener("click", function htmlDl() { if (samplePicsHold(htmlDl)) return; /* BEUK:slim */ downloadBlob(new Blob([buildStandaloneHtml()], { type: "text/html;charset=utf-8" }), slug(state.meta.title) + ".html"); toast(t("toast.htmlDownloaded"), "globe"); });
         $("btnDownloadDocx").addEventListener("click", downloadDocx);
+        lockFieldsWire("docx"); lockFieldsRender(); /* BEUK:lockcopy */
         $("btnBuildBoxSet").addEventListener("click", buildBoxSetEpub);
         $("btnBoxSetAdd").addEventListener("click", () => $("boxSetFileInput").click());
         $("boxSetFileInput").addEventListener("change", async () => {
@@ -53725,6 +53960,7 @@
         catch (e) { return String(iso || "").slice(0, 10); }
       }
       function billingPlanRender(p) {
+        if (typeof lockPlanNote === "function") lockPlanNote(p); /* BEUK:lockcopy — day 22 hides the lock controls */
         const line = $("planLine"), txt = $("planText"), up = $("btnPlanUpgrade"), mg = $("btnPlanManage");
         if (!line || !txt) return;
         if (!p || !p.billingOn) { line.hidden = true; txt.textContent = ""; return; }
@@ -53800,6 +54036,7 @@
           if (!open.length) return;
           const top = open[open.length - 1];
           if (top.id === "modalConfirm") { cloudConfirmDone(false); return; }
+          if (top.id === "modalLockPdf") { lockPdfClose(); return; } /* BEUK:lockcopy — closed, and emptied */
           top.classList.remove("open");
           if (top.id === "modalAuth" || top.id === "modalShelf") focusEditor();
           if (top.id === "modalBible" && typeof olOnStructure === "function") olOnStructure(); /* BEUK:outline — the Grid follows the Covenant */
