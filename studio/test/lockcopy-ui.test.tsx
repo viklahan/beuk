@@ -566,6 +566,31 @@ describe('locked review copy: the controls and the three download points (task 3
     expect(shown()).toEqual([true, true, true]);
   });
 
+  it("day 22 from boot (task 4, fix 1): GET /api/auth/me's access, mirrored, hides the lock before any plan is drawn; signed out or no access shows it; a later plan overrides it", async () => {
+    await studioWith(LANTERN());
+    await openExport();
+    const cloud = await loadCloud();
+    const me = (m: unknown) => act(async () => void (cloud.api.lockAccessNote as (m: unknown) => void)(m));
+    const shown = () => [!$('lockDocx').hidden, !$('lockMs').hidden];
+    await click($('lockDocxOn'));
+    await type($('lockDocxPw'), 'left behind');
+    await me({ user: { id: 'u1' }, access: { state: 'paused', daysLeft: 0, locked: ['exports'] } });
+    expect(shown()).toEqual([false, false]);
+    expect(document.documentElement.getAttribute('data-plan-access')).toBe('paused');
+    expect(inp('lockDocxPw').value).toBe('');
+    await me({ user: { id: 'u1' }, access: { state: 'trial', daysLeft: 9, locked: [] } });
+    expect(shown()).toEqual([true, true]);
+    await me({ user: { id: 'u1' }, access: { state: 'paused', daysLeft: 0, locked: [] } });
+    await me({ user: { id: 'u1' } }); // billing off: no access in the answer
+    expect(shown()).toEqual([true, true]);
+    await me({ user: { id: 'u1' }, access: { state: 'paused', daysLeft: 0, locked: [] } });
+    await me(null); // signed out
+    expect(shown()).toEqual([true, true]);
+    await me({ user: { id: 'u1' }, access: { state: 'paused', daysLeft: 0, locked: [] } });
+    await act(async () => void (cloud.api.billingPlanRender as (p: unknown) => void)({ billingOn: true, access: 'subscribed' }));
+    expect(shown()).toEqual([true, true]);
+  });
+
   it('all 13 locales have the 10 keys (English verbatim; every {error} slot kept)', async () => {
     const KEYS: Record<string, string> = {
       'lock.toggle': 'Lock with a password',

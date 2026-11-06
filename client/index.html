@@ -52258,6 +52258,15 @@
         else document.documentElement.removeAttribute("data-plan-access");
         lockFieldsRender();
       }
+      /** The access GET /api/auth/me reports at boot (`me.access.state`: the server's own word, mirrored, never judged here),
+       *  so day 22 hides the lock from the start; signed out (null) or no access in the answer (billing off): no plan known.
+       *  A plan drawn later (billingPlanRender → lockPlanNote) overrides it. */
+      function lockAccessNote(me) {
+        const access = me && me.user && me.access && typeof me.access.state === "string" ? me.access.state : "";
+        if (access) document.documentElement.setAttribute("data-plan-access", access);
+        else document.documentElement.removeAttribute("data-plan-access");
+        lockFieldsRender();
+      }
       /** False only when the last plan drawn has access "paused" (day 22). No plan known (signed out, billing off): true. */
       function lockCopyAllowed() {
         return document.documentElement.getAttribute("data-plan-access") !== "paused";
@@ -53630,6 +53639,7 @@
       async function cloudSignOut() {
         await apiFetch("/api/auth/logout", { method: "POST", body: "{}" });
         cloud.user = null; cloud.serverStreak = null;
+        if (typeof lockAccessNote === "function") lockAccessNote(null); /* BEUK:lockcopy — signed out: no plan known */
         if (typeof printReadyUi !== "undefined") { printReadyUi.pending = null; printReadyUi.sig = ""; } /* BEUK:printready — a job belongs to the account that made it */
         cloud.linkedId = null; cloud.linkState = "unlinked";
         cloud.shelf = []; cloud.archive = []; cloudDirty = false;
@@ -54052,6 +54062,7 @@
         renderCloudChrome();
         const me = await apiFetch("/api/auth/me", { auth: false });
         if (me && me.user) {
+          lockAccessNote(me); /* BEUK:lockcopy — day 22 hides the lock from boot (the server's access, mirrored) */
           cloud.user = me.user;
           renderCloudChrome();
           portalSignInWork = cloudAfterSignIn(); /* BEUK:portal */

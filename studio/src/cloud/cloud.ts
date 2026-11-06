@@ -704,6 +704,7 @@ export function bootCloud(): Promise<void> {
       cm.api.renderCloudChrome();
       const me = (await cm.api.apiFetch('/api/auth/me', { auth: false })) as Rec | null;
       if (me && me.user) {
+        cm.api.lockAccessNote(me); // BEUK:lockcopy — 1.0's boot line: day 22 hides the lock from boot
         cloudFacts.user = me.user;
         knownUser = userId();
         cm.api.renderCloudChrome();
@@ -765,6 +766,7 @@ async function authHeard(kind: unknown): Promise<void> {
     } else if (kind === 'in') {
       const me = (await cm.api.apiFetch('/api/auth/me', { auth: false })) as Rec | null;
       if (!me || !me.user || userId() === (me.user as { id?: string }).id) return;
+      cm.api.lockAccessNote(me); // BEUK:lockcopy — the other tab's account: its access, mirrored
       cloudFacts.user = me.user;
       cloudFacts.lastHeartbeatAt = 0;
       cm.api.renderCloudChrome();

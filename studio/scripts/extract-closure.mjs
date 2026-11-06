@@ -243,6 +243,8 @@ export const EXTRA_ROOTS = [
   // downloadDocx / msDownload; the print-ready PDF's dialog and the plan's day-22 note are named here, so the whole
   // BEUK:lockcopy block stands in the main closure as 1.0's text — the print and shelf modules lift their own copies)
   'lockFieldsRead', 'lockFieldsClear', 'lockCopyAllowed', 'lockFieldsRender', 'lockPlanNote', 'lockPdfOpen', 'lockedPdfDownload',
+  // task 4, fix 1: the boot's access note (the shelf's module lifts its own copy, CLOUD_ROOTS)
+  'lockAccessNote',
 ];
 
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
@@ -468,6 +470,8 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   'renderShelfList', 'deskHoldsUnshelvedWork', 'shelfGuardPutDeskOnShelf', 'cloudOpenBook', 'cloudAfterSignIn', 'cloudBringBook', 'setAuthMode', 'openAuth',
   'closeAuth', 'cloudAuthErrorText', 'cloudAuthSubmit', 'cloudSignOut', 'cloudEnsureLinked', 'acctAuthModeHook', 'acctForgotSubmit', 'acctSay',
   'acctChangePassword', 'acctSignOutEverywhere', 'portalTakeFreshSignIn', 'portalNote', 'portalRender', 'portalRefresh', 'portalResend', 'billingDate',
+  // locked review copy (task 4, fix 1): the access /api/auth/me reports at boot, mirrored for the day-22 hide
+  'lockAccessNote',
   'billingPlanRender', 'billingGo', 'billingNotePaused', 'planReconciliation', 'cloudReconnectFlush', 'raiseConflict', 'resolveConflict',
   'localReconcileOnSignIn', 'localLinkSnapshot', 'storeMakePrintJob', 'storeUpload', 'storeCreateJob', 'storeRefreshJobs', 'net', 'setConnectivity',
   'onReconnect', 'renderNetPill', 'bookDocsSame', 'bookIdsMatch', 'picIsRef', 'PIC_REF',

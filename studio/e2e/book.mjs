@@ -8727,7 +8727,13 @@ async function lockcopyDay22(srv) {
       const start = (await exportBackup(page)).json.book;
       await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
       const shown = (p) => p.evaluate(() => ({ docx: !document.getElementById('lockDocx').hidden, ms: !document.getElementById('lockMs').hidden, link: [...document.querySelectorAll('#printReadyNote [data-pr-locked]')].filter((a) => !a.hidden).length, access: document.documentElement.getAttribute('data-plan-access') }));
+      // straight after boot and sign-in, before any #btnAccount click: GET /api/auth/me's access already says the state
       const before = { two: await shown(page), one: await shown(one) };
+      for (const app of ['two', 'one']) {
+        const b = before[app];
+        const hide = st === 'day22';
+        check(b.docx === !hide && b.ms === !hide, `lockcopy day 22 (${st}) ${app === 'two' ? '2.0' : '1.0'}: straight after boot, before the account box, the Word and manuscript lock controls are ${hide ? 'hidden' : 'shown'} (Word ${b.docx}, manuscript ${b.ms}; plan access "${b.access}")`);
+      }
       // the plan, as each app learns it (the account box: 1.0's portalRefresh)
       await page.bringToFront();
       await page.click('#btnAccount');
@@ -8761,7 +8767,6 @@ async function lockcopyDay22(srv) {
         check(r.files[1] === 'PK' && r.files[3] === 'PK' && !/locked/.test(r.files[0] + r.files[2]), `lockcopy day 22 (${st}) ${app === 'two' ? '2.0' : '1.0'}: the unlocked Word and manuscript downloads work (${r.files[0]}, ${r.files[2]})`);
       }
       check(JSON.stringify({ ...res.two, note: 0 }) === JSON.stringify({ ...res.one, note: 0 }) && res.two.note === res.one.note, `lockcopy day 22 (${st}): 2.0 shows what 1.0 shows${JSON.stringify(res.two) === JSON.stringify(res.one) ? '' : ' — 2.0: ' + JSON.stringify(res.two) + ' — 1.0: ' + JSON.stringify(res.one)}`);
-      note(`lockcopy day 22 (${st}): before the plan is known (the account box not yet opened this session) the controls stood: 2.0 ${JSON.stringify(before.two)}, 1.0 ${JSON.stringify(before.one)}`);
       await harvestCsp(page);
       await harvestCsp(one);
     } finally {
@@ -8828,26 +8833,45 @@ async function lockcopyLatency(origin) {
     quick: true,
     beforeType: (page) => page.evaluate(([b64, pw]) => {
       const pdf = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-      const st = (window.__lcBg = { pdfMs: null, docxMs: null, error: null, startedAt: performance.now() });
+      const st = (window.__lcBg = { pdf: [], docx: [], error: null, stop: false, startedAt: performance.now(), endedAt: null });
       (async () => {
-        const t0 = performance.now();
-        await window.beukExport.run((api) => api.lockPdfBytes(pdf, pw));
-        st.pdfMs = performance.now() - t0;
         const z = new window.JSZip();
         z.file('[Content_Types].xml', '<Types/>');
         z.file('word/media/big.bin', pdf);
         const pkg = await z.generateAsync({ type: 'uint8array' });
-        const t1 = performance.now();
-        await window.beukExport.run((api) => api.lockDocxBytes(pkg, pw));
-        st.docxMs = performance.now() - t1;
+        // 1.0's two encryptors, called outside the export session (as the print panel's PDF lock runs: its module's crypto
+        // is the page's), so the measure is the lock's own work, not the session re-opened at each of its awaits
+        const api = window.beukExport.run((a) => a);
+        // a lock always running: a PDF lock, then a DOCX lock, again and again until the typing ends
+        while (!st.stop) {
+          const t0 = performance.now();
+          await api.lockPdfBytes(pdf, pw);
+          st.pdf.push(performance.now() - t0);
+          if (st.stop) break;
+          const t1 = performance.now();
+          await api.lockDocxBytes(pkg, pw);
+          st.docx.push(performance.now() - t1);
+          // a 50 ms breath between rounds: with none (fix round 1, OBSERVED) the tab crashed within ~1.5 s of PDF locks
+          // back to back, Lantern or Dumas, typing or not (LEAD, not confirmed: ~6 MB of buffers per lock outrunning the
+          // collector); 50 ms between rounds ran stable
+          await new Promise((r) => setTimeout(r, 50));
+        }
         st.endedAt = performance.now();
       })().catch((e) => { st.error = String(e && e.message); });
     }, [fx, LC_PW]),
-    afterType: (page) => page.evaluate(() => window.__lcBg),
+    afterType: (page) => page.evaluate(async () => {
+      const st = window.__lcBg;
+      st.typingEndedAt = performance.now();
+      st.stop = true;
+      for (let i = 0; i < 100 && st.endedAt === null && !st.error; i++) await new Promise((r) => setTimeout(r, 100));
+      return { pdf: st.pdf, docx: st.docx, error: st.error, startedAt: st.startedAt, typingEndedAt: st.typingEndedAt, endedAt: st.endedAt };
+    }),
   });
   const bg = r.bg || {};
-  note(`lockcopy latency (a PDF lock ${bg.pdfMs ? bg.pdfMs.toFixed(0) + ' ms' : 'unfinished'}, then a DOCX lock ${bg.docxMs ? bg.docxMs.toFixed(0) + ' ms' : 'unfinished'}, started with the typing${bg.endedAt ? ', ended ' + ((bg.endedAt - bg.startedAt) / 1000).toFixed(1) + ' s in' : ''}${bg.error ? '; error: ' + bg.error : ''}): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
-  check(!!bg.pdfMs && !!bg.docxMs && !bg.error, 'lockcopy latency: both locks ran to the end while the typing was measured');
+  const avg = (l) => (l && l.length ? (l.reduce((x, y) => x + y, 0) / l.length).toFixed(0) : '–');
+  const n = (bg.pdf || []).length + (bg.docx || []).length;
+  note(`lockcopy latency (locks running back to back (50 ms apart) for the whole typing run: ${(bg.pdf || []).length} PDF locks ~${avg(bg.pdf)} ms each, ${(bg.docx || []).length} DOCX locks ~${avg(bg.docx)} ms each, over ${bg.typingEndedAt ? ((bg.typingEndedAt - bg.startedAt) / 1000).toFixed(1) : '?'} s of typing${bg.error ? '; error: ' + bg.error : ''}): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+  check(!bg.error && n >= 4 && bg.endedAt !== null && bg.endedAt >= bg.typingEndedAt, `lockcopy latency: locks ran back to back until the typing ended (${n} locks, no error)`);
   check(r.p95 < LATENCY_P95_TARGET_MS, `lockcopy latency: Dumas p95 under ${LATENCY_P95_TARGET_MS} ms with a lock running (${r.p95.toFixed(1)} ms)`);
 }
 
