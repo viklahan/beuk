@@ -1213,7 +1213,13 @@ const closureCrypto = {
   get subtle() {
     const sub = globalThis.crypto?.subtle;
     if (!sub) return undefined;
-    return { digest: (alg: AlgorithmIdentifier, data: BufferSource) => exportEnv.resume(sub.digest(alg, data)) };
+    return {
+      digest: (alg: AlgorithmIdentifier, data: BufferSource) => exportEnv.resume(sub.digest(alg, data)),
+      // locked review copy (design 2026-11-06): 1.0's lock (BEUK:lockcopy) imports its AES keys and encrypts, nothing more
+      importKey: (format: 'raw', key: BufferSource, alg: AlgorithmIdentifier, extractable: boolean, usages: KeyUsage[]) =>
+        exportEnv.resume(sub.importKey(format, key, alg, extractable, usages)),
+      encrypt: (alg: AlgorithmIdentifier | AesCbcParams, key: CryptoKey, data: BufferSource) => exportEnv.resume(sub.encrypt(alg, key, data)),
+    };
   },
 };
 

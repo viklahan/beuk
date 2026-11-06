@@ -2,5 +2,6 @@
 *.png binary
 *.webp binary
 *.jpg binary
+*.pdf binary
 # Vendored studio libraries: byte-exact copies of pinned releases (SRI-hashed) — never normalise.
 client/assets/vendor/** binary

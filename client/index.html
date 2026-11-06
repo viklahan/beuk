@@ -51323,6 +51323,541 @@
         finally { ui.running = false; printReadyRender(); }
       }
       /* ==== /BEUK:printready ==== */
+      /* ==== BEUK:lockcopy ==== The locked review copy (design 2026-11-06): a PDF or DOCX the writer locks with a
+         password of their own, in this browser. The password never leaves the device: it is in no request, no error,
+         no log and no store, and every error thrown here is checked not to carry it.
+         lockPdfBytes(bytes, password) → Promise<Uint8Array>: the PDF standard security handler at AES-256, revision 6
+         (ISO 32000-2 §7.6.4; /V 5 /R 6, crypt filter AESV3, /P -4: every permission on). The owner password is 32
+         random bytes, used once and dropped. The file is written out again whole: every object (those inside object
+         streams too) as a plain indirect object, newest revision only, a classic xref table and a new trailer with
+         /Encrypt and /ID. Strings and streams are AES-256-CBC with a random 16-byte IV and PKCS#7; the Encrypt
+         dictionary, and the /Contents of a signature dictionary, are not. WebCrypto only (AES-CBC, SHA-256/384/512):
+         no library, no new CSP entry. */
+      /* RFC 4013 (SASLprep) over RFC 3454: C.1.2, the non-ASCII spaces (mapped to U+0020), and B.1, "commonly mapped
+         to nothing". U+200B ZERO WIDTH SPACE is in both tables; it is mapped to nothing here (the B.1 reading). */
+      const LOCK_SASL_SPACES = new Set([0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x3000]);
+      const LOCK_SASL_NOTHING = new Set([0x00AD, 0x034F, 0x1806, 0x180B, 0x180C, 0x180D, 0x200B, 0x200C, 0x200D, 0x2060, 0xFE00, 0xFE01, 0xFE02, 0xFE03, 0xFE04, 0xFE05, 0xFE06, 0xFE07, 0xFE08, 0xFE09, 0xFE0A, 0xFE0B, 0xFE0C, 0xFE0D, 0xFE0E, 0xFE0F, 0xFEFF]);
+      /* SASLprep's mapping and NFKC. Its prohibited output (controls, private use, tagging…) and its bidi rule would
+         refuse a password: here they pass through as typed (V: weak passwords are let through), as pdf.js reads them. */
+      function lockSaslPrep(password) {
+        let out = "";
+        for (const ch of String(password)) {
+          const c = ch.codePointAt(0);
+          if (LOCK_SASL_NOTHING.has(c)) continue;
+          out += LOCK_SASL_SPACES.has(c) ? " " : ch;
+        }
+        return out.normalize("NFKC");
+      }
+      function lockCat(parts) {
+        let n = 0;
+        for (const p of parts) n += p.length;
+        const out = new Uint8Array(n);
+        let o = 0;
+        for (const p of parts) { out.set(p, o); o += p.length; }
+        return out;
+      }
+      function lockRandom(n) { return crypto.getRandomValues(new Uint8Array(n)); }
+      /* AES-CBC on WebCrypto, which always pads (PKCS#7): `pad` false drops the padding block of a whole-block input */
+      async function lockAesCbc(key, iv, data, pad) {
+        const k = await crypto.subtle.importKey("raw", key, { name: "AES-CBC" }, false, ["encrypt"]);
+        const out = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", iv: iv }, k, data));
+        return pad ? out : out.slice(0, data.length);
+      }
+      /* ISO 32000-2 §7.6.4.3.4, Algorithm 2.B: the revision 6 hash of a password, a salt and (for the owner) /U */
+      async function lockPdfHash(pw, salt, udata) {
+        let k = new Uint8Array(await crypto.subtle.digest("SHA-256", lockCat([pw, salt, udata])));
+        let e = new Uint8Array(1);
+        for (let i = 0; i < 64 || e[e.length - 1] > i - 32; i++) {
+          const unit = lockCat([pw, k, udata]);
+          const k1 = new Uint8Array(unit.length * 64);
+          for (let j = 0; j < 64; j++) k1.set(unit, j * unit.length);
+          e = await lockAesCbc(k.subarray(0, 16), k.subarray(16, 32), k1, false);
+          let sum = 0;
+          for (let j = 0; j < 16; j++) sum += e[j];
+          k = new Uint8Array(await crypto.subtle.digest(["SHA-256", "SHA-384", "SHA-512"][sum % 3], e));
+        }
+        return k.slice(0, 32);
+      }
+      /* Algorithms 8, 9 and 10: /U and /UE from the user password, /O and /OE from the (random) owner password, /Perms */
+      async function lockPdfKeys(userPw, fileKey) {
+        const zero = new Uint8Array(16);
+        const uvs = lockRandom(8), uks = lockRandom(8);
+        const U = lockCat([await lockPdfHash(userPw, uvs, new Uint8Array(0)), uvs, uks]);
+        const UE = await lockAesCbc(await lockPdfHash(userPw, uks, new Uint8Array(0)), zero, fileKey, false);
+        const ownerPw = lockRandom(32);
+        const ovs = lockRandom(8), oks = lockRandom(8);
+        const O = lockCat([await lockPdfHash(ownerPw, ovs, U), ovs, oks]);
+        const OE = await lockAesCbc(await lockPdfHash(ownerPw, oks, U), zero, fileKey, false);
+        ownerPw.fill(0);
+        const perms = new Uint8Array(16);
+        new DataView(perms.buffer).setInt32(0, -4, true); // P, low-order byte first
+        perms.set([0xFF, 0xFF, 0xFF, 0xFF, 0x54, 0x61, 0x64, 0x62], 4); // the upper 32 bits of P, then "T" (EncryptMetadata) and "adb"
+        perms.set(lockRandom(4), 12);
+        const Perms = await lockAesCbc(fileKey, zero, perms, false); // ECB on one block = CBC with a zero IV
+        perms.fill(0);
+        return { U: U, UE: UE, O: O, OE: OE, Perms: Perms };
+      }
+      /* ---- reading the PDF: a lexer over the bytes, the xref (tables, streams, /Prev, /XRefStm), object streams ---- */
+      /* 1 whitespace, 2 delimiter, 0 regular (ISO 32000-1 §7.2.2) */
+      const LOCK_PDF_CLASS = (() => {
+        const c = new Uint8Array(256);
+        for (const x of [0, 9, 10, 12, 13, 32]) c[x] = 1;
+        for (const x of "()<>[]{}/%") c[x.charCodeAt(0)] = 2;
+        return c;
+      })();
+      function lockLatin1(b, s, e) {
+        let out = "";
+        for (let i = s; i < e; i += 8192) out += String.fromCharCode.apply(null, b.subarray(i, Math.min(e, i + 8192)));
+        return out;
+      }
+      function lockLatin1Bytes(s) {
+        const out = new Uint8Array(s.length);
+        for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 255;
+        return out;
+      }
+      function lockFind(b, word, from, back) {
+        const w = lockLatin1Bytes(word);
+        const last = b.length - w.length;
+        for (let i = back ? Math.min(from, last) : from; back ? i >= 0 : i <= last; back ? i-- : i++) {
+          let j = 0;
+          while (j < w.length && b[i + j] === w[j]) j++;
+          if (j === w.length) return i;
+        }
+        return -1;
+      }
+      function lockPdfSkip(b, p) {
+        for (;;) {
+          while (p < b.length && LOCK_PDF_CLASS[b[p]] === 1) p++;
+          if (p < b.length && b[p] === 0x25) { while (p < b.length && b[p] !== 10 && b[p] !== 13) p++; continue; }
+          return p;
+        }
+      }
+      /* the run of regular characters at p (after whitespace and comments): [start, end] */
+      function lockPdfWord(b, p) {
+        const s = lockPdfSkip(b, p);
+        let e = s;
+        while (e < b.length && LOCK_PDF_CLASS[b[e]] === 0) e++;
+        return [s, e];
+      }
+      function lockPdfFail(what) { return new Error("The PDF could not be read to lock it: " + what + "."); }
+      /* One value at r.p (r = { b, p }); r.p moves past it. Names keep their raw spelling; strings are their bytes. */
+      function lockPdfValue(r) {
+        const b = r.b;
+        let p = lockPdfSkip(b, r.p);
+        if (p >= b.length) throw lockPdfFail("it ends inside an object");
+        const c = b[p];
+        if (c === 0x2F) {
+          let q = p + 1;
+          while (q < b.length && LOCK_PDF_CLASS[b[q]] === 0) q++;
+          r.p = q;
+          return { t: "n", raw: lockLatin1(b, p, q) };
+        }
+        if (c === 0x28) {
+          const out = [];
+          let depth = 1, q = p + 1;
+          while (q < b.length) {
+            const x = b[q++];
+            if (x === 0x5C) {
+              const e = b[q++];
+              if (e === 0x6E) out.push(10); else if (e === 0x72) out.push(13); else if (e === 0x74) out.push(9);
+              else if (e === 0x62) out.push(8); else if (e === 0x66) out.push(12);
+              else if (e === 13) { if (b[q] === 10) q++; }
+              else if (e === 10) { /* a line continuation */ }
+              else if (e >= 0x30 && e <= 0x37) {
+                let v = e - 0x30;
+                for (let k = 0; k < 2 && b[q] >= 0x30 && b[q] <= 0x37; k++) v = v * 8 + (b[q++] - 0x30);
+                out.push(v & 255);
+              } else out.push(e);
+            } else if (x === 0x28) { depth++; out.push(x); }
+            else if (x === 0x29) { if (--depth === 0) break; out.push(x); }
+            else if (x === 13) { out.push(10); if (b[q] === 10) q++; }
+            else out.push(x);
+          }
+          if (depth) throw lockPdfFail("a string is not closed");
+          r.p = q;
+          return { t: "s", bytes: Uint8Array.from(out) };
+        }
+        if (c === 0x3C && b[p + 1] === 0x3C) {
+          const d = { t: "d", rawKeys: [], keys: [], vals: [] };
+          r.p = p + 2;
+          for (;;) {
+            const q = lockPdfSkip(b, r.p);
+            if (q >= b.length) throw lockPdfFail("a dictionary is not closed");
+            if (b[q] === 0x3E && b[q + 1] === 0x3E) { r.p = q + 2; return d; }
+            r.p = q;
+            const k = lockPdfValue(r);
+            if (k.t !== "n") throw lockPdfFail("a dictionary key is not a name");
+            d.rawKeys.push(k.raw); d.keys.push(lockPdfName(k.raw)); d.vals.push(lockPdfValue(r));
+          }
+        }
+        if (c === 0x3C) {
+          const out = [];
+          let q = p + 1, half = -1;
+          for (; q < b.length && b[q] !== 0x3E; q++) {
+            const x = b[q];
+            if (LOCK_PDF_CLASS[x] === 1) continue;
+            const v = x >= 0x30 && x <= 0x39 ? x - 0x30 : (x | 32) >= 0x61 && (x | 32) <= 0x66 ? (x | 32) - 0x57 : -1;
+            if (v < 0) throw lockPdfFail("a hex string holds a character that is not hex");
+            if (half < 0) half = v; else { out.push(half * 16 + v); half = -1; }
+          }
+          if (q >= b.length) throw lockPdfFail("a hex string is not closed");
+          if (half >= 0) out.push(half * 16);
+          r.p = q + 1;
+          return { t: "s", bytes: Uint8Array.from(out) };
+        }
+        if (c === 0x5B) {
+          const a = { t: "a", items: [] };
+          r.p = p + 1;
+          for (;;) {
+            const q = lockPdfSkip(b, r.p);
+            if (q >= b.length) throw lockPdfFail("an array is not closed");
+            if (b[q] === 0x5D) { r.p = q + 1; return a; }
+            r.p = q;
+            a.items.push(lockPdfValue(r));
+          }
+        }
+        const [s, e] = lockPdfWord(b, p);
+        if (e === s) throw lockPdfFail("an unexpected character at byte " + p);
+        const word = lockLatin1(b, s, e);
+        r.p = e;
+        if (/^\d+$/.test(word)) {
+          /* n g R: a reference */
+          const [s2, e2] = lockPdfWord(b, e);
+          if (e2 > s2 && /^\d+$/.test(lockLatin1(b, s2, e2))) {
+            const [s3, e3] = lockPdfWord(b, e2);
+            if (e3 - s3 === 1 && b[s3] === 0x52) { r.p = e3; return { t: "r", n: Number(word), g: Number(lockLatin1(b, s2, e2)) }; }
+          }
+          return { t: "#", raw: word };
+        }
+        if (/^[+-]?(\d+\.?\d*|\.\d+)$/.test(word)) return { t: "#", raw: word };
+        if (word === "true" || word === "false") return { t: "b", raw: word };
+        if (word === "null") return { t: "null" };
+        throw lockPdfFail("an unexpected word, " + JSON.stringify(word.slice(0, 20)) + ", at byte " + s);
+      }
+      function lockPdfName(raw) { return raw.slice(1).replace(/#([0-9A-Fa-f]{2})/g, (m, h) => String.fromCharCode(parseInt(h, 16))); }
+      function lockPdfGet(d, key) { if (!d || d.t !== "d") return undefined; const i = d.keys.indexOf(key); return i < 0 ? undefined : d.vals[i]; }
+      function lockPdfSet(d, key, v) {
+        const i = d.keys.indexOf(key);
+        if (i < 0) { d.rawKeys.push("/" + key); d.keys.push(key); d.vals.push(v); } else d.vals[i] = v;
+      }
+      function lockPdfInt(v) { return v && v.t === "#" && /^[+-]?\d+$/.test(v.raw) ? Number(v.raw) : null; }
+      /* The indirect object at byte `off`: { n, g, v, data } (data: the stream's raw bytes, or null). lengthOf(n) gives
+         an indirect /Length's number. */
+      function lockPdfObjectAt(b, off, lengthOf) {
+        const [s1, e1] = lockPdfWord(b, off);
+        const [s2, e2] = lockPdfWord(b, e1);
+        const [s3, e3] = lockPdfWord(b, e2);
+        if (!/^\d+$/.test(lockLatin1(b, s1, e1)) || !/^\d+$/.test(lockLatin1(b, s2, e2)) || lockLatin1(b, s3, e3) !== "obj") throw lockPdfFail("its cross-reference table points at byte " + off + ", where no object starts");
+        const r = { b: b, p: e3 };
+        const v = lockPdfValue(r);
+        let data = null;
+        const [s4, e4] = lockPdfWord(b, r.p);
+        if (v.t === "d" && lockLatin1(b, s4, e4) === "stream") {
+          let p = e4;
+          if (b[p] === 13 && b[p + 1] === 10) p += 2; else if (b[p] === 10 || b[p] === 13) p++;
+          const lv = lockPdfGet(v, "Length");
+          let len = lockPdfInt(lv);
+          if (len === null && lv && lv.t === "r") len = lengthOf(lv.n);
+          let end = -1;
+          if (len !== null && len >= 0 && p + len <= b.length) {
+            const [s5, e5] = lockPdfWord(b, p + len);
+            if (lockLatin1(b, s5, e5) === "endstream") end = p + len;
+          }
+          if (end < 0) {
+            /* a /Length that does not land on endstream: the data runs to the keyword, less its end-of-line */
+            end = lockFind(b, "endstream", p, false);
+            if (end < 0) throw lockPdfFail("a stream has no endstream");
+            if (end > p && b[end - 1] === 10) end--;
+            if (end > p && b[end - 1] === 13) end--;
+          }
+          data = b.subarray(p, end);
+        }
+        return { n: Number(lockLatin1(b, s1, e1)), g: Number(lockLatin1(b, s2, e2)), v: v, data: data };
+      }
+      async function lockInflate(data) {
+        const s = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate"));
+        return new Uint8Array(await new Response(s).arrayBuffer());
+      }
+      /* PNG predictors (ISO 32000-1 §7.4.4.4), as the xref streams of PDF 1.5+ writers use them */
+      function lockPngUnpredict(data, columns, colors, bpc) {
+        const bpp = Math.max(1, Math.ceil(colors * bpc / 8));
+        const row = Math.ceil(columns * colors * bpc / 8);
+        const rows = Math.floor(data.length / (row + 1));
+        const out = new Uint8Array(rows * row);
+        let prev = new Uint8Array(row);
+        for (let r = 0; r < rows; r++) {
+          const ft = data[r * (row + 1)];
+          const src = data.subarray(r * (row + 1) + 1, (r + 1) * (row + 1));
+          const cur = out.subarray(r * row, (r + 1) * row);
+          for (let i = 0; i < row; i++) {
+            const a = i >= bpp ? cur[i - bpp] : 0, up = prev[i], c = i >= bpp ? prev[i - bpp] : 0;
+            let x = src[i];
+            if (ft === 1) x += a;
+            else if (ft === 2) x += up;
+            else if (ft === 3) x += (a + up) >> 1;
+            else if (ft === 4) {
+              const pa = Math.abs(up - c), pb = Math.abs(a - c), pc = Math.abs(a + up - 2 * c);
+              x += pa <= pb && pa <= pc ? a : pb <= pc ? up : c;
+            } else if (ft !== 0) throw lockPdfFail("a PNG predictor row of an unknown type");
+            cur[i] = x & 255;
+          }
+          prev = cur;
+        }
+        return out;
+      }
+      /* A cross-reference or object stream's data, decoded: FlateDecode (with its predictor), or no filter */
+      async function lockPdfDecode(dict, data) {
+        let f = lockPdfGet(dict, "Filter"), parms = lockPdfGet(dict, "DecodeParms");
+        if (f && f.t === "a") { if (f.items.length > 1) throw lockPdfFail("an object stream has more than one filter"); f = f.items[0]; parms = parms && parms.t === "a" ? parms.items[0] : parms; }
+        if (!f) return data;
+        if (f.t !== "n" || lockPdfName(f.raw) !== "FlateDecode") throw lockPdfFail("an object stream uses a filter other than FlateDecode");
+        let out = await lockInflate(data);
+        const pred = lockPdfInt(lockPdfGet(parms, "Predictor")) || 1;
+        if (pred >= 10) out = lockPngUnpredict(out, lockPdfInt(lockPdfGet(parms, "Columns")) || 1, lockPdfInt(lockPdfGet(parms, "Colors")) || 1, lockPdfInt(lockPdfGet(parms, "BitsPerComponent")) || 8);
+        else if (pred !== 1) throw lockPdfFail("an object stream uses the TIFF predictor");
+        return out;
+      }
+      /* One xref section at byte `off`: its trailer and its rows [num, { type, off, gen } | { type: 2, stm, idx } | { type: 0 }] */
+      async function lockPdfXrefSection(b, off) {
+        const [s, e] = lockPdfWord(b, off);
+        const rows = [];
+        if (lockLatin1(b, s, e) === "xref") {
+          let p = e;
+          for (;;) {
+            const [ws, we] = lockPdfWord(b, p);
+            const w = lockLatin1(b, ws, we);
+            if (w === "trailer") {
+              const r = { b: b, p: we };
+              const trailer = lockPdfValue(r);
+              if (trailer.t !== "d") throw lockPdfFail("its trailer is not a dictionary");
+              return { trailer: trailer, rows: rows };
+            }
+            const [cs, ce] = lockPdfWord(b, we);
+            const start = Number(w), count = Number(lockLatin1(b, cs, ce));
+            if (!/^\d+$/.test(w) || !Number.isInteger(count)) throw lockPdfFail("its cross-reference table is malformed");
+            p = ce;
+            for (let i = 0; i < count; i++) {
+              const [os, oe] = lockPdfWord(b, p), [gs, ge] = lockPdfWord(b, oe), [ts, te] = lockPdfWord(b, ge);
+              const kind = lockLatin1(b, ts, te);
+              if (kind !== "n" && kind !== "f") throw lockPdfFail("its cross-reference table is malformed");
+              rows.push([start + i, kind === "n" ? { type: 1, off: Number(lockLatin1(b, os, oe)), gen: Number(lockLatin1(b, gs, ge)) } : { type: 0 }]);
+              p = te;
+            }
+          }
+        }
+        const x = lockPdfObjectAt(b, off, () => null);
+        const tp = lockPdfGet(x.v, "Type");
+        if (!x.data || !tp || lockPdfName(tp.raw) !== "XRef") throw lockPdfFail("no cross-reference section starts at byte " + off);
+        const data = await lockPdfDecode(x.v, x.data);
+        const W = (lockPdfGet(x.v, "W") || { items: [] }).items.map(lockPdfInt);
+        if (W.length !== 3 || W.some((w) => w === null || w < 0)) throw lockPdfFail("its cross-reference stream has no /W");
+        const idx = lockPdfGet(x.v, "Index");
+        const ranges = idx && idx.t === "a" ? idx.items.map(lockPdfInt) : [0, lockPdfInt(lockPdfGet(x.v, "Size"))];
+        const field = (p, w, dflt) => { if (!w) return dflt; let v = 0; for (let i = 0; i < w; i++) v = v * 256 + data[p + i]; return v; };
+        const rowLen = W[0] + W[1] + W[2];
+        let p = 0;
+        for (let k = 0; k + 1 < ranges.length; k += 2) {
+          for (let i = 0; i < ranges[k + 1]; i++, p += rowLen) {
+            if (p + rowLen > data.length) throw lockPdfFail("its cross-reference stream is shorter than its /Index");
+            const type = field(p, W[0], 1), f2 = field(p + W[0], W[1], 0), f3 = field(p + W[0] + W[1], W[2], 0);
+            rows.push([ranges[k] + i, type === 1 ? { type: 1, off: f2, gen: f3 } : type === 2 ? { type: 2, stm: f2, idx: f3 } : { type: 0 }]);
+          }
+        }
+        return { trailer: x.v, rows: rows };
+      }
+      /* Every live object of the newest revision: Map num → { g, v, data } (object streams and xref streams dropped,
+         their members written out plain), and the newest trailer */
+      async function lockPdfRead(b) {
+        const sx = lockFind(b, "startxref", b.length - 9, true);
+        if (sx < 0) throw lockPdfFail("it has no startxref");
+        const [ss, se] = lockPdfWord(b, sx + 9);
+        let off = Number(lockLatin1(b, ss, se));
+        const entries = new Map();
+        const seen = new Set();
+        let trailer = null;
+        const take = (rows) => { for (const [n, e] of rows) if (!entries.has(n)) entries.set(n, e); };
+        while (Number.isInteger(off) && off >= 0 && off < b.length && !seen.has(off)) {
+          seen.add(off);
+          const sec = await lockPdfXrefSection(b, off);
+          if (!trailer) trailer = sec.trailer;
+          /* a hybrid file's /XRefStm: its entries stand for the objects its table leaves free or out */
+          const stm = lockPdfInt(lockPdfGet(sec.trailer, "XRefStm"));
+          let rows = sec.rows;
+          if (stm !== null && !seen.has(stm)) {
+            seen.add(stm);
+            const mine = new Map(rows);
+            for (const [n, e] of (await lockPdfXrefSection(b, stm)).rows) if (!mine.has(n) || mine.get(n).type === 0) mine.set(n, e);
+            rows = [...mine];
+          }
+          take(rows);
+          const prev = lockPdfInt(lockPdfGet(sec.trailer, "Prev"));
+          off = prev === null ? NaN : prev;
+        }
+        if (!trailer) throw lockPdfFail("it has no cross-reference section");
+        const lengthOf = (n) => {
+          const e = entries.get(n);
+          if (!e || e.type !== 1) return null;
+          return lockPdfInt(lockPdfObjectAt(b, e.off, () => null).v);
+        };
+        const stms = new Map();
+        const objStm = async (n) => {
+          if (stms.has(n)) return stms.get(n);
+          const e = entries.get(n);
+          if (!e || e.type !== 1) throw lockPdfFail("an object stream is missing");
+          const o = lockPdfObjectAt(b, e.off, lengthOf);
+          if (!o.data) throw lockPdfFail("an object stream is not a stream");
+          const data = await lockPdfDecode(o.v, o.data);
+          const count = lockPdfInt(lockPdfGet(o.v, "N")), first = lockPdfInt(lockPdfGet(o.v, "First"));
+          const heads = [];
+          let p = 0;
+          for (let i = 0; i < count; i++) {
+            const [ns, ne] = lockPdfWord(data, p), [os, oe] = lockPdfWord(data, ne);
+            heads.push([Number(lockLatin1(data, ns, ne)), Number(lockLatin1(data, os, oe))]);
+            p = oe;
+          }
+          const got = { data: data, first: first, heads: heads };
+          stms.set(n, got);
+          return got;
+        };
+        const objs = new Map();
+        for (const n of [...entries.keys()].sort((x, y) => x - y)) {
+          const e = entries.get(n);
+          if (n === 0 || e.type === 0) continue;
+          if (e.type === 1) {
+            const o = lockPdfObjectAt(b, e.off, lengthOf);
+            if (o.n !== n) throw lockPdfFail("its cross-reference table points object " + n + " at object " + o.n);
+            objs.set(n, { g: o.g, v: o.v, data: o.data });
+          } else {
+            const s = await objStm(e.stm);
+            let h = s.heads[e.idx];
+            if (!h || h[0] !== n) h = s.heads.find((x) => x[0] === n);
+            if (!h) throw lockPdfFail("object " + n + " is not in its object stream");
+            objs.set(n, { g: 0, v: lockPdfValue({ b: s.data, p: s.first + h[1] }), data: null });
+          }
+        }
+        for (const [n, o] of [...objs]) {
+          const tp = o.data ? lockPdfGet(o.v, "Type") : null;
+          if (tp && tp.t === "n" && /^(XRef|ObjStm)$/.test(lockPdfName(tp.raw))) objs.delete(n);
+        }
+        return { objs: objs, trailer: trailer };
+      }
+      /* ---- writing the locked file ---- */
+      const LOCK_HEX = Array.from({ length: 256 }, (x, i) => (i < 16 ? "0" : "") + i.toString(16));
+      function lockHex(bytes) {
+        let s = "";
+        for (let i = 0; i < bytes.length; i++) s += LOCK_HEX[bytes[i]];
+        return s;
+      }
+      function lockPdfText(v) {
+        switch (v.t) {
+          case "n": case "#": case "b": return v.raw;
+          case "null": return "null";
+          case "r": return v.n + " " + v.g + " R";
+          case "s": return "<" + lockHex(v.bytes) + ">";
+          case "a": return "[" + v.items.map(lockPdfText).join(" ") + "]";
+          case "d": return "<<" + v.keys.map((k, i) => v.rawKeys[i] + " " + lockPdfText(v.vals[i])).join(" ") + ">>";
+        }
+        throw lockPdfFail("a value of an unknown kind");
+      }
+      /* every string of a value, to encrypt — bar a signature dictionary's /Contents (ISO 32000-2 §7.6.2) */
+      function lockPdfStrings(v, out) {
+        if (v.t === "s") out.push(v);
+        else if (v.t === "a") for (const x of v.items) lockPdfStrings(x, out);
+        else if (v.t === "d") {
+          const tp = lockPdfGet(v, "Type");
+          const sig = tp && tp.t === "n" && /^(Sig|DocTimeStamp)$/.test(lockPdfName(tp.raw));
+          v.vals.forEach((x, i) => { if (!(sig && v.keys[i] === "Contents")) lockPdfStrings(x, out); });
+        }
+        return out;
+      }
+      function lockPdfVersion(b, catalog) {
+        const head = /%PDF-(\d+)\.(\d+)/.exec(lockLatin1(b, 0, Math.min(b.length, 1024)));
+        const cv = lockPdfGet(catalog, "Version");
+        const m = cv && cv.t === "n" ? /^(\d+)\.(\d+)$/.exec(lockPdfName(cv.raw)) : null;
+        return Math.max(head ? Number(head[1]) * 10 + Number(head[2]) : 0, m ? Number(m[1]) * 10 + Number(m[2]) : 0);
+      }
+      async function lockPdfBytes(bytes, password) {
+        if (typeof password !== "string" || !password) throw new Error("A password is needed to lock the PDF.");
+        const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        const pwBytes = new TextEncoder().encode(lockSaslPrep(password)).slice(0, 127);
+        const fileKey = lockRandom(32);
+        try {
+          if (lockFind(b.subarray(0, Math.min(b.length, 1024)), "%PDF-", 0, false) < 0) throw new Error("This file is not a PDF, so it cannot be locked.");
+          const { objs, trailer } = await lockPdfRead(b);
+          if (lockPdfGet(trailer, "Encrypt")) throw new Error("This PDF is already locked.");
+          const root = lockPdfGet(trailer, "Root");
+          const catalog = root && root.t === "r" && objs.get(root.n) ? objs.get(root.n).v : null;
+          if (!catalog || catalog.t !== "d") throw lockPdfFail("it has no catalog");
+          const v20 = lockPdfVersion(b, catalog) >= 20;
+          const keys = await lockPdfKeys(pwBytes, fileKey);
+          const aes = await crypto.subtle.importKey("raw", fileKey, { name: "AES-CBC" }, false, ["encrypt"]);
+          const seal = async (data) => {
+            const iv = lockRandom(16);
+            return lockCat([iv, new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", iv: iv }, aes, data))]);
+          };
+          const strings = [];
+          for (const o of objs.values()) lockPdfStrings(o.v, strings);
+          for (let i = 0; i < strings.length; i += 256) {
+            const part = strings.slice(i, i + 256);
+            const sealed = await Promise.all(part.map((s) => seal(s.bytes)));
+            part.forEach((s, j) => { s.bytes = sealed[j]; });
+          }
+          for (const o of objs.values()) if (o.data) { o.data = await seal(o.data); lockPdfSet(o.v, "Length", { t: "#", raw: String(o.data.length) }); }
+          /* a PDF 1.x reader is told the file needs Adobe's extension level 8 (AESV3, R6), as qpdf writes it */
+          if (!v20) {
+            let ext = lockPdfGet(catalog, "Extensions");
+            if (!ext || ext.t !== "d") { ext = { t: "d", rawKeys: [], keys: [], vals: [] }; lockPdfSet(catalog, "Extensions", ext); }
+            const adbe = lockPdfGet(ext, "ADBE");
+            if (!(adbe && lockPdfInt(lockPdfGet(adbe, "ExtensionLevel")) >= 8)) {
+              lockPdfSet(ext, "ADBE", { t: "d", rawKeys: ["/BaseVersion", "/ExtensionLevel"], keys: ["BaseVersion", "ExtensionLevel"], vals: [{ t: "n", raw: "/1.7" }, { t: "#", raw: "8" }] });
+            }
+          }
+          let encNum = 1;
+          for (const n of objs.keys()) if (n >= encNum) encNum = n + 1;
+          const parts = [];
+          let pos = 0;
+          const put = (x) => { const u = typeof x === "string" ? lockLatin1Bytes(x) : x; parts.push(u); pos += u.length; };
+          put(v20 ? "%PDF-2.0\n%\xE2\xE3\xCF\xD3\n" : "%PDF-1.7\n%\xE2\xE3\xCF\xD3\n");
+          const offsets = new Map();
+          for (const n of [...objs.keys()].sort((x, y) => x - y)) {
+            const o = objs.get(n);
+            offsets.set(n, { off: pos, g: o.g });
+            put(n + " " + o.g + " obj\n" + lockPdfText(o.v));
+            if (o.data) { put("\nstream\n"); put(o.data); put("\nendstream"); }
+            put("\nendobj\n");
+          }
+          offsets.set(encNum, { off: pos, g: 0 });
+          put(encNum + " 0 obj\n<< /Filter /Standard /V 5 /R 6 /Length 256 /CF << /StdCF << /CFM /AESV3 /AuthEvent /DocOpen >> >> /StmF /StdCF /StrF /StdCF /EncryptMetadata true /P -4" +
+            " /U <" + lockHex(keys.U) + "> /UE <" + lockHex(keys.UE) + "> /O <" + lockHex(keys.O) + "> /OE <" + lockHex(keys.OE) + "> /Perms <" + lockHex(keys.Perms) + "> >>\nendobj\n");
+          /* the classic xref: one section, 0 to Size − 1, the free entries linked (ISO 32000-1 §7.5.4) */
+          const size = encNum + 1;
+          const free = [];
+          for (let n = 1; n < size; n++) if (!offsets.has(n)) free.push(n);
+          const nextFree = new Map(free.map((n, i) => [n, i + 1 < free.length ? free[i + 1] : 0]));
+          const xrefAt = pos;
+          let x = "xref\n0 " + size + "\n" + String(free.length ? free[0] : 0).padStart(10, "0") + " 65535 f\r\n";
+          for (let n = 1; n < size; n++) {
+            const o = offsets.get(n);
+            x += o ? String(o.off).padStart(10, "0") + " " + String(o.g).padStart(5, "0") + " n\r\n" : String(nextFree.get(n)).padStart(10, "0") + " 00001 f\r\n";
+          }
+          put(x);
+          const id = lockPdfGet(trailer, "ID");
+          const id0 = id && id.t === "a" && id.items[0] && id.items[0].t === "s" && id.items[0].bytes.length ? id.items[0].bytes : lockRandom(16);
+          const info = lockPdfGet(trailer, "Info");
+          put("trailer\n<< /Size " + size + " /Root " + lockPdfText(root) + (info && info.t === "r" && objs.has(info.n) ? " /Info " + lockPdfText(info) : "") +
+            " /ID [<" + lockHex(id0) + "><" + lockHex(lockRandom(16)) + ">] /Encrypt " + encNum + " 0 R >>\nstartxref\n" + xrefAt + "\n%%EOF\n");
+          return lockCat(parts);
+        } catch (e) {
+          /* never an error that carries the password (constraint 4) */
+          const msg = String((e && e.message) || e);
+          const prepped = lockSaslPrep(password);
+          throw new Error(msg.indexOf(password) >= 0 || (prepped && msg.indexOf(prepped) >= 0) ? "The PDF could not be locked." : msg);
+        } finally {
+          fileKey.fill(0);
+          pwBytes.fill(0);
+        }
+      }
+      /* ==== /BEUK:lockcopy ==== */
       /* ---- the downloadable report: one self-contained HTML page ---- */
       function buildStoreReportHtml(a) {
         a = a || storeAudit();
