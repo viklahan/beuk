@@ -9,10 +9,10 @@ import {
   clearSessionCookie,
   createSession,
   destroySession,
-  requireAuth,
   setSessionCookie,
   tokenHash,
 } from '../auth.js';
+import { requireSessionOrBearer } from '../oauth/bearer.js';
 import { initStreakState } from '../streak.js';
 import { accessSummary, accountAccess, type AccessDeps } from '../access.js';
 import { twoStepOn, twoStepStatus, verifySecondFactor } from '../twostep/store.js';
@@ -314,7 +314,9 @@ export function authRoutes(
   // Who is signed in, and (when the server can decide it) what their access
   // is: { state, daysLeft, locked }. The studio shows copy from this; the
   // routes themselves are gated by src/access.ts, not by the client.
-  router.get('/me', requireAuth(db), async (req, res, next) => {
+  // The MCP server asks the same question with an OAuth bearer token, so
+  // this one route takes cookie OR bearer (refusal bodies unchanged).
+  router.get('/me', requireSessionOrBearer(db, config), async (req, res, next) => {
     try {
       if (!access || !req.user) return res.json({ user: req.user });
       // A failed access lookup must never sign the writer out: the studio

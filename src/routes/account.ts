@@ -14,6 +14,7 @@ import {
   SESSION_COOKIE,
   tokenHash,
 } from '../auth.js';
+import { revokeUserOAuthTokens } from '../oauth/model.js';
 
 /**
  * P0 #5 account basics, mounted next to the M1 auth routes at /api/auth:
@@ -202,6 +203,9 @@ export function accountRoutes(
         );
         // A pending sign-in code step proved the OLD password: it dies too.
         await tx.query('delete from sign_in_challenges where user_id = $1', [row.user_id]);
+        // "Signs you out everywhere" includes OAuth: a reset is compromise
+        // recovery, so every MCP bearer/refresh token dies with the sessions.
+        await revokeUserOAuthTokens(tx, row.user_id);
         // Any other outstanding links for this account die with it.
         await tx.query(
           'update password_resets set used_at = now() where user_id = $1 and used_at is null',
@@ -247,6 +251,11 @@ export function accountRoutes(
           [user.id, currentHash],
         );
         await tx.query('delete from sign_in_challenges where user_id = $1', [user.id]);
+        // OAuth tokens are "other sessions" too — unlike this browser's
+        // cookie, none of them just proved the current password, so a
+        // password change revokes them all (the MCP client reconnects
+        // through /authorize).
+        await revokeUserOAuthTokens(tx, user.id);
         await tx.query(
           'update password_resets set used_at = now() where user_id = $1 and used_at is null',
           [user.id],
@@ -265,6 +274,10 @@ export function accountRoutes(
         const gone = await tx.query<{ id: string }>('delete from sessions where user_id = $1 returning id', [req.user!.id]);
         // A sign-in still waiting for its code is a way in too.
         await tx.query('delete from sign_in_challenges where user_id = $1', [req.user!.id]);
+        // OAuth 2.1: "everywhere" includes the MCP connector — every live
+        // consent, code, access and refresh token dies in the same
+        // transaction. `revoked` stays the SESSION count.
+        await revokeUserOAuthTokens(tx, req.user!.id);
         return gone;
       });
       clearSessionCookie(res, config.cookieSecure);

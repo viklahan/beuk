@@ -2,6 +2,7 @@ import { applyUpstreamKeepAlive } from './http-server.js';
 import type { Server } from 'node:http';
 import { buildApp } from './app.js';
 import { purgeExpiredSessions } from './auth.js';
+import { purgeExpiredOAuthTokens } from './oauth/model.js';
 import { createShutdown } from './shutdown.js';
 import { loadConfig } from './config.js';
 import { checkHelpContent, getHelpContent } from './help/content.js';
@@ -82,9 +83,10 @@ await jobsRunner?.recover().catch((err) => console.error('job recovery failed', 
 // Expired sessions: purge once at boot, then periodically (cheap
 // indexed delete; requireAuth already refuses expired ones).
 const purge = () =>
-  purgeExpiredSessions(db)
-    .then((n) => {
-      if (n) console.log(`sessions: purged ${n} expired`);
+  Promise.all([purgeExpiredSessions(db), purgeExpiredOAuthTokens(db)])
+    .then(([sessions, oauth]) => {
+      if (sessions) console.log(`sessions: purged ${sessions} expired`);
+      if (oauth) console.log(`oauth: purged ${oauth} expired tokens`);
     })
     .catch((err) => console.error('session purge failed', err));
 await purge();
