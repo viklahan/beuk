@@ -51334,9 +51334,10 @@
          dictionary, and the /Contents of a signature dictionary, are not. WebCrypto only (AES-CBC, SHA-256/384/512):
          no library, no new CSP entry. */
       /* RFC 4013 (SASLprep) over RFC 3454: C.1.2, the non-ASCII spaces (mapped to U+0020), and B.1, "commonly mapped
-         to nothing". U+200B ZERO WIDTH SPACE is in both tables; it is mapped to nothing here (the B.1 reading). */
-      const LOCK_SASL_SPACES = new Set([0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x3000]);
-      const LOCK_SASL_NOTHING = new Set([0x00AD, 0x034F, 0x1806, 0x180B, 0x180C, 0x180D, 0x200B, 0x200C, 0x200D, 0x2060, 0xFE00, 0xFE01, 0xFE02, 0xFE03, 0xFE04, 0xFE05, 0xFE06, 0xFE07, 0xFE08, 0xFE09, 0xFE0A, 0xFE0B, 0xFE0C, 0xFE0D, 0xFE0E, 0xFE0F, 0xFEFF]);
+         to nothing". U+200B ZERO WIDTH SPACE is in both tables; it is a space here (RFC 4013 §2.1 lists it with
+         the non-ASCII spaces, and pdf.js's saslPrep checks its spaces first, 8203 among them). */
+      const LOCK_SASL_SPACES = new Set([0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x200B, 0x202F, 0x205F, 0x3000]);
+      const LOCK_SASL_NOTHING = new Set([0x00AD, 0x034F, 0x1806, 0x180B, 0x180C, 0x180D, 0x200C, 0x200D, 0x2060, 0xFE00, 0xFE01, 0xFE02, 0xFE03, 0xFE04, 0xFE05, 0xFE06, 0xFE07, 0xFE08, 0xFE09, 0xFE0A, 0xFE0B, 0xFE0C, 0xFE0D, 0xFE0E, 0xFE0F, 0xFEFF]);
       /* SASLprep's mapping and NFKC. Its prohibited output (controls, private use, tagging…) and its bidi rule would
          refuse a password: here they pass through as typed (V: weak passwords are let through), as pdf.js reads them. */
       function lockSaslPrep(password) {

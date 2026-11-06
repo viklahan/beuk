@@ -458,23 +458,32 @@ describe('lockPdfBytes: AES-256 R6, opened by pdf.js (design 2026-11-06, task 1)
     expect((await open(narrow, 'ｐass')).text).toEqual(want);
   }, 120_000);
 
-  it('lockSaslPrep: non-ASCII spaces become U+0020, soft hyphen and ZWSP vanish, NFKC; prohibited output passes through', () => {
+  it('lockSaslPrep: non-ASCII spaces (ZWSP among them) become U+0020, soft hyphen vanishes, NFKC; prohibited output passes through', () => {
     const sp = api.lockSaslPrep;
-    for (const c of [' ', ' ', ' ', ' ', ' ', ' ', ' ', '　']) expect(sp('a' + c + 'b'), c.codePointAt(0)!.toString(16)).toBe('a b');
-    for (const c of ['­', '​', '͏', '᠆', '᠋', '‌', '‍', '⁠', '︀', '️', '﻿']) expect(sp('a' + c + 'b'), c.codePointAt(0)!.toString(16)).toBe('ab');
+    for (const c of ['\u00a0', '\u1680', '\u2000', '\u2005', '\u200a', '\u202f', '\u205f', '\u3000']) expect(sp('a' + c + 'b'), c.codePointAt(0)!.toString(16)).toBe('a b');
+    for (const c of ['\u00ad', '\u034f', '\u1806', '\u180b', '\u200c', '\u200d', '\u2060', '\ufe00', '\ufe0f', '\ufeff']) expect(sp('a' + c + 'b'), c.codePointAt(0)!.toString(16)).toBe('ab');
+    // U+200B is in C.1.2 and in B.1: a space (RFC 4013 §2.1 lists it with the spaces; pdf.js checks its spaces first)
+    expect(sp('a\u200bb')).toBe('a b');
     expect(sp('ｐass')).toBe('pass');
     expect(sp('ﬁx')).toBe('fix');
     expect(sp('Ⅸ')).toBe('IX');
-    expect(sp('é')).toBe('é');
+    expect(sp('e\u0301')).toBe('é');
     expect(sp('pässwörd')).toBe('pässwörd');
     expect(sp('密码本')).toBe('密码本');
     // RFC 4013 §2.3 would refuse these (C.2.1 controls, C.3 private use, C.9 tagging); V: "let them through"
     expect(sp('a\u0000b')).toBe('a\u0000b');
     expect(sp('a\u007fb')).toBe('a\u007fb');
-    expect(sp('ab')).toBe('ab');
+    expect(sp('a\ue000b')).toBe('a\ue000b');
     expect(sp('a\u{e0001}b')).toBe('a\u{e0001}b');
-    expect(sp('I ­love')).toBe('I love');
+    expect(sp('I\u00a0\u00adlove')).toBe('I love');
   });
+
+  it('U+200B is a SASLprep space (RFC 4013 C.1.2), as pdf.js reads it: "a\u200bb" opens with itself and with "a b"', async () => {
+    const orig = handMade(false);
+    const locked = await api.lockPdfBytes(orig, 'a\u200bb');
+    expect((await open(locked, 'a\u200bb')).pages).toBe(1);
+    expect((await open(locked, 'a b')).pages).toBe(1);
+  }, 60_000);
 
   it('a password with prohibited output still locks, and opens with the same string', async () => {
     const orig = handMade(false);
