@@ -53232,7 +53232,12 @@
           navigator.serviceWorker.addEventListener("message", (e) => {
             if (e.data && e.data.type === "BEUK_SHELL_READY") checkShellCached();
           });
+          /* BEUK:swfirst (V, 2026-11-04) — a page no worker controlled when it loaded is not reloaded when the first worker
+             claims it (a first visit): there is no older build to leave, and the reload interrupted whatever the writer had
+             just begun. An update (a controller replaced) still reloads, after the device save. */
+          const swHadController = !!navigator.serviceWorker.controller;
           navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (!swHadController) return;
             if (pwa.reloading) return;
             pwa.reloading = true;
             /* BEUK:local — the new worker reloads the page: land the

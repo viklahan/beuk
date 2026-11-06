@@ -8034,6 +8034,7 @@ async function wave7bUpdate(srv) {
   const swFile = path.join(REPO, 'client', 'next', 'sw.js');
   const orig = readFileSync(swFile);
   const ctx = await newContext();
+  const navs = [];
   try {
     const a = await openNext(ctx, origin);
     await a.waitForFunction(() => !!navigator.serviceWorker && !!navigator.serviceWorker.controller, null, { timeout: 30_000 }).catch(async () => {
@@ -8050,11 +8051,28 @@ async function wave7bUpdate(srv) {
     });
     check(cached.length > 0 && !cached.some((p) => p.startsWith('/api/') || p.startsWith('/studio')), `wave7b decision 4: the worker's caches hold no /api/ and nothing of 1.0's /studio (${cached.length} entries)`);
     await a.evaluate(() => { window.__mark = 'a'; });
+    // decision 4 (the gate of 0850ee1 saw page a navigate here): every navigation of a's main frame from now on is
+    // recorded, with Chromium's own reason for it, and any one is a failure
+    a.on('framenavigated', (fr) => { if (fr === a.mainFrame()) navs.push('navigated ' + fr.url()); });
+    const cdpA = await ctx.newCDPSession(a);
+    await cdpA.send('Page.enable');
+    cdpA.on('Page.frameRequestedNavigation', (e) => navs.push('requested: ' + e.reason + ' ' + e.disposition + ' ' + e.url));
+    cdpA.on('Page.frameScheduledNavigation', (e) => navs.push('scheduled: ' + e.reason + ' ' + e.url));
+    a.on('console', (m) => { if (process.env.W7B_DEBUG) console.log('   [a]', m.type(), m.text().slice(0, 200)); });
     writeFileSync(swFile, Buffer.concat([orig, Buffer.from('\n/* wave7b e2e: a new deployment */\n')]));
     await a.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
     await a.waitForFunction(() => document.getElementById('updateBar') && !document.getElementById('updateBar').hidden, null, { timeout: 30_000 });
     const words = await a.$eval('#updateBar', (x) => x.textContent.replace(/\s+/g, ' ').trim());
+    // (the gate's "Execution context was destroyed" was THIS page, 1.0's: on a first visit its worker installs, claims the
+    // page, and 1.0's controllerchange listener reloaded it — 1.0 fix below. Its main-frame navigations are recorded.)
     const one = await openOne(ctx, origin);
+    const oneNavs = [];
+    one.on('framenavigated', (fr) => { if (fr === one.mainFrame()) oneNavs.push(fr.url()); });
+    await one.evaluate(() => { window.__mark1 = 1; });
+    await one.waitForFunction(() => !!navigator.serviceWorker && !!navigator.serviceWorker.controller, null, { timeout: 30_000 }).catch(() => undefined);
+    await one.waitForTimeout(2500);
+    const kept = await one.evaluate(() => window.__mark1 ?? null).catch(() => null);
+    check(kept === 1 && oneNavs.length === 0, `1.0 fix (V, 2026-11-04): 1.0's page is not reloaded when its worker first takes control (navigations ${JSON.stringify(oneNavs)}, controlled ${await one.evaluate(() => !!navigator.serviceWorker.controller).catch(() => '?')})`);
     const want = await one.$eval('#updateBar', (x) => x.textContent.replace(/\s+/g, ' ').trim());
     check(words === want, `wave7b constraint 95: a new worker shows 1.0's update bar: "${words}"${words === want ? '' : ' — 1.0: "' + want + '"'}`);
     await a.waitForTimeout(5000);
@@ -8071,9 +8089,13 @@ async function wave7bUpdate(srv) {
     check((await b.evaluate(() => window.__mark ?? null)) === null, 'wave7b constraint 95: Reload takes the new worker and reloads that tab');
     await a.waitForTimeout(2000);
     check((await a.evaluate(() => window.__mark)) === 'a', 'wave7b decision 4: the other tab is not reloaded by it');
+    check(navs.length === 0, `wave7b decision 4: page a never navigated from the new worker's arrival to the end (${navs.length}${navs.length ? ': ' + JSON.stringify(navs.slice(0, 4)) : ''})`);
     await harvestCsp(a);
     await harvestCsp(b);
+  } catch (e) {
+    check(false, `wave7b decision 4: the update part threw (${String(e && e.message).split(String.fromCharCode(10))[0]} at ${String(e && e.stack).split(String.fromCharCode(10)).find((l) => l.includes("book.mjs")) || "?"}) — page a's navigations since the new worker: ${JSON.stringify(navs)}`);
   } finally {
+    // the deployed worker is put back whatever happened (a later step and the next run read client/next/sw.js)
     writeFileSync(swFile, orig);
     await ctx.close();
   }
