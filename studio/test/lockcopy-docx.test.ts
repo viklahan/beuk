@@ -497,8 +497,11 @@ describe('lockDocxBytes: ECMA-376 Agile encryption, opened by msoffcrypto-tool (
    - So a 10 MB Word file stands for the illustrated 300-page book: that .docx's parts plus 20 incompressible 512 KB
      pictures under word/media, stored. Its compound file needs DIFAT sectors (past 109 FAT sectors), and it goes
      through the oracle too. */
-describe('lockDocxBytes: the budget (review focus 3)', () => {
-  it('the largest fixture with 20 pictures, and a 10 MB Word file, each lock within 3 s', async () => {
+/** The two budget inputs, built once: the Dumas .docx (with its 20 pictures, which 1.0's Word export leaves out) and
+ *  the 10 MB Word file made from its parts plus 20 incompressible 512 KB pictures, stored. */
+let bigInputs: Promise<{ docx: Uint8Array; ten: Uint8Array }> | null = null;
+function budgetInputs() {
+  return (bigInputs ??= (async () => {
     const dumas = fixtures('real').reduce((a, b) => (b.text.length > a.text.length ? b : a));
     expect(dumas.name).toBe('real/dartagnan-01-three-musketeers');
     const book = structuredClone(dumas.book) as Rec & { sections: Rec[]; images?: Rec[] };
@@ -509,6 +512,17 @@ describe('lockDocxBytes: the budget (review focus 3)', () => {
     const docx = await docxOf(book);
     const z = await JSZip.loadAsync(docx);
     expect(Object.keys(z.files).filter((f) => f.startsWith('word/media/'))).toEqual([]);
+    const out = new JSZip();
+    for (const [p, f] of Object.entries(z.files)) if (!f.dir) out.file(p, (await f.async('uint8array')) as Uint8Array);
+    for (let i = 0; i < 20; i++) out.file(`word/media/picture${i + 1}.png`, randomBytes(512 * 1024));
+    const ten = await out.generateAsync({ type: 'uint8array', compression: 'STORE' });
+    expect(ten.length).toBeGreaterThan(10_000_000);
+    return { docx, ten };
+  })());
+}
+describe('lockDocxBytes: the budget (review focus 3)', () => {
+  it('the largest fixture with 20 pictures, and a 10 MB Word file, each lock within 3 s', async () => {
+    const { docx, ten } = await budgetInputs();
     const timed = async (what: string, bytes: Uint8Array) => {
       const t0 = performance.now();
       const locked = await api.lockDocxBytes(bytes, PW);
@@ -517,21 +531,22 @@ describe('lockDocxBytes: the budget (review focus 3)', () => {
       return { locked, ms };
     };
     const one = await timed('the Dumas + 20 pictures', docx);
-    const out = new JSZip();
-    for (const [p, f] of Object.entries(z.files)) if (!f.dir) out.file(p, (await f.async('uint8array')) as Uint8Array);
-    for (let i = 0; i < 20; i++) out.file(`word/media/picture${i + 1}.png`, randomBytes(512 * 1024));
-    const ten = await out.generateAsync({ type: 'uint8array', compression: 'STORE' });
-    expect(ten.length).toBeGreaterThan(10_000_000);
     const two = await timed('10 MB with 20 pictures', ten);
     const cfb = readCfb(two.locked);
     expect(cfb.header.difatSectors).toBeGreaterThan(0);
     expect(Number(cfb.stream('EncryptedPackage').readBigUInt64LE(0))).toBe(ten.length);
-    if (ORACLE) {
-      const r = oracle(two.locked, PW);
-      expect(r.code, r.err).toBe(0);
-      expect(Buffer.from(r.plain!).equals(Buffer.from(ten))).toBe(true);
-    }
     expect(one.ms).toBeLessThanOrEqual(3000);
     expect(two.ms).toBeLessThanOrEqual(3000);
+  }, 240_000);
+
+  withOracle('the 10 MB Word file, a compound file with DIFAT sectors (past 109 FAT sectors), opens in msoffcrypto', async () => {
+    const { ten } = await budgetInputs();
+    const locked = await api.lockDocxBytes(ten, PW);
+    const cfb = readCfb(locked);
+    expect(cfb.header.fatSectors).toBeGreaterThan(109);
+    expect(cfb.header.difatSectors).toBeGreaterThan(0);
+    const r = oracle(locked, PW);
+    expect(r.code, r.err).toBe(0);
+    expect(Buffer.from(r.plain!).equals(Buffer.from(ten))).toBe(true);
   }, 240_000);
 });
