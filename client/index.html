@@ -48602,6 +48602,7 @@
         msRender();
         lockFieldsClear("ms"); lockFieldsRender(); /* BEUK:lockcopy */
         const ex = $("modalExport"); if (ex) ex.classList.remove("open");
+        lockFieldsClear("docx"); /* BEUK:lockcopy — the export modal closes, so its Word password goes */
         $("modalManuscript").classList.add("open");
       }
       const MS_FIELD_IDS = { msLegal: "legalName", msAddress: "address", msPhone: "phone", msEmail: "email", msByline: "byline", msSurname: "surname", msPaper: "paper", msFont: "font", msItalics: "italics" };
@@ -49355,6 +49356,7 @@
         acxRender();
         /* one modal at a time, as the other export sub-dialogs do */
         const ex = $("modalExport"); if (ex) ex.classList.remove("open");
+        lockFieldsClear("docx"); /* BEUK:lockcopy — the export modal closes, so its Word password goes */
         $("modalAcx").classList.add("open");
       }
       function acxInit() {

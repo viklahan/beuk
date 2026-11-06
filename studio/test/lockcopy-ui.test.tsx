@@ -349,6 +349,20 @@ describe('locked review copy: the controls and the three download points (task 3
     expect([inp('lockDocxPw').value, inp('lockDocxPw2').value, inp('lockDocxOn').checked]).toEqual(['', '', true]);
   });
 
+  /* Final re-review: the export modal's own sub-dialogs (the manuscript, the audiobook pack) close it programmatically too. */
+  for (const btn of ['btnMsOpen', 'btnAcxOpen']) {
+    it(`opening a sub-dialog from the export modal (${btn}) empties the Word lock fields`, async () => {
+      await studioWith(LANTERN());
+      await openExport();
+      await click($('lockDocxOn'));
+      await type($('lockDocxPw'), 'typed then moved on');
+      await type($('lockDocxPw2'), 'typed then moved on');
+      await click($(btn));
+      expect(isOpen('modalExport')).toBe(false);
+      expect([inp('lockDocxPw').value, inp('lockDocxPw2').value, inp('lockDocxOn').checked]).toEqual(['', '', true]);
+    });
+  }
+
   it('fields cleared: after success, a mismatch, a thrown lock error and closing the dialog both inputs are empty; the checkbox keeps its state', async () => {
     await studioWith(LANTERN());
     await openExport();
