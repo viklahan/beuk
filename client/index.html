@@ -48229,6 +48229,7 @@
           if (locking) toast(lockFailedText(err, lock.password), "alert-triangle");
           else toast("DOCX export failed: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
         } finally {
+          lockFieldsClear("docx"); /* BEUK:lockcopy — nothing typed during the run survives it */
           btn.disabled = false; btn.innerHTML = '<i data-lucide="download"></i>Download .docx'; icons();
         }
       }
@@ -48516,6 +48517,7 @@
           if (locking) toast(lockFailedText(err, lock.password), "alert-triangle");
           else toast(t("ms.fail", { msg: err && err.message ? err.message : "unknown error" }), "alert-triangle");
         } finally {
+          lockFieldsClear("ms"); /* BEUK:lockcopy — nothing typed during the run survives it */
           if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="download"></i>' + esc(t("ms.download")); icons(); }
         }
       }
@@ -48598,7 +48600,7 @@
       }
       function msOpen() {
         msRender();
-        lockFieldsRender(); /* BEUK:lockcopy */
+        lockFieldsClear("ms"); lockFieldsRender(); /* BEUK:lockcopy */
         const ex = $("modalExport"); if (ex) ex.classList.remove("open");
         $("modalManuscript").classList.add("open");
       }
@@ -48606,8 +48608,8 @@
       function msInit() {
         const modal = $("modalManuscript"); if (!modal) return;
         $("btnMsOpen").addEventListener("click", msOpen);
-        $("btnMsClose").addEventListener("click", () => modal.classList.remove("open"));
-        modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("open"); });
+        $("btnMsClose").addEventListener("click", () => { modal.classList.remove("open"); lockFieldsClear("ms"); /* BEUK:lockcopy */ });
+        modal.addEventListener("click", (e) => { if (e.target === modal) { modal.classList.remove("open"); lockFieldsClear("ms"); /* BEUK:lockcopy */ } });
         $("btnMsDownload").addEventListener("click", msDownload);
         lockFieldsWire("ms"); lockFieldsRender(); /* BEUK:lockcopy */
         const body = $("msBody");
@@ -52405,6 +52407,7 @@
         } catch (e) {
           toast(lockFailedText(e, lock.password), "alert-triangle");
         } finally {
+          lockFieldsClear("pdf"); /* nothing typed during the run survives it */
           btn.disabled = false; btn.textContent = t("lock.pdf");
         }
       }
@@ -52467,9 +52470,9 @@
       /* ==== /BEUK:store ==== */
 
       function initExport() {
-        $("btnExport").addEventListener("click", () => { refreshExportTree(); renderBoxSetList(); renderPrintControls(); if (cloud.user) { renderArchiveList(); cloudLoadArchive(); } $("modalExport").classList.add("open"); });
-        $("btnCloseExport").addEventListener("click", () => $("modalExport").classList.remove("open"));
-        $("modalExport").addEventListener("click", (e) => { if (e.target === $("modalExport")) $("modalExport").classList.remove("open"); });
+        $("btnExport").addEventListener("click", () => { lockFieldsClear("docx"); /* BEUK:lockcopy */ refreshExportTree(); renderBoxSetList(); renderPrintControls(); if (cloud.user) { renderArchiveList(); cloudLoadArchive(); } $("modalExport").classList.add("open"); });
+        $("btnCloseExport").addEventListener("click", () => { $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */ });
+        $("modalExport").addEventListener("click", (e) => { if (e.target === $("modalExport")) { $("modalExport").classList.remove("open"); lockFieldsClear("docx"); /* BEUK:lockcopy */ } });
         $("btnBuildEpub").addEventListener("click", buildEpub);
         $("btnInspect").addEventListener("click", openInspector);
         $("btnValidate").addEventListener("click", runValidation);
@@ -54038,6 +54041,8 @@
           if (top.id === "modalConfirm") { cloudConfirmDone(false); return; }
           if (top.id === "modalLockPdf") { lockPdfClose(); return; } /* BEUK:lockcopy — closed, and emptied */
           top.classList.remove("open");
+          if (top.id === "modalExport") lockFieldsClear("docx"); /* BEUK:lockcopy */
+          if (top.id === "modalManuscript") lockFieldsClear("ms"); /* BEUK:lockcopy */
           if (top.id === "modalAuth" || top.id === "modalShelf") focusEditor();
           if (top.id === "modalBible" && typeof olOnStructure === "function") olOnStructure(); /* BEUK:outline — the Grid follows the Covenant */
         });

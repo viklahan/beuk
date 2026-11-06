@@ -337,11 +337,108 @@ describe('locked review copy: the controls and the three download points (task 3
     expect(isOpen('modalLockPdf')).toBe(false);
     expect(isOpen('modalExport')).toBe(true); // Escape closed the top dialog only
     expect([inp('lockPdfPw').value, inp('lockPdfPw2').value]).toEqual(['', '']);
-    // a Word lock that throws is the same: the box stays ticked, the fields are empty (unticking empties them too)
+    // unticking empties them too
     await click($('lockDocxOn'));
     await type($('lockDocxPw'), 'kept?');
     await click($('lockDocxOn'));
     expect([inp('lockDocxPw').value, inp('lockDocxOn').checked, $('lockDocxFields').hidden]).toEqual(['', false, true]);
+  });
+
+  /* Fix round 1 (I1): the export modal and the manuscript dialog, closed by Close, the backdrop and Escape with a
+     password typed, are empty when they open again (and the box keeps its state). */
+  it('fields cleared on every close: the export modal and the manuscript dialog, by Close, backdrop and Escape, reopen with both inputs empty', async () => {
+    await studioWith(LANTERN());
+    await openExport();
+    await click($('lockDocxOn'));
+    const fill = async (scope: 'Docx' | 'Ms') => {
+      await type($('lock' + scope + 'Pw'), 'typed then closed');
+      await type($('lock' + scope + 'Pw2'), 'typed then closed');
+    };
+    const empty = (scope: 'Docx' | 'Ms') => [inp('lock' + scope + 'Pw').value, inp('lock' + scope + 'Pw2').value, inp('lock' + scope + 'On').checked];
+    const closes: [string, (id: string, btn: string) => Promise<void>][] = [
+      ['Close', async (_id, btn) => void (await click($(btn)))],
+      ['backdrop', async (id) => void (await click($(id)))],
+      ['Escape', async () => void (await act(async () => void fireEvent.keyDown(document, { key: 'Escape' })))],
+    ];
+    for (const [how, close] of closes) {
+      await fill('Docx');
+      await close('modalExport', 'btnCloseExport');
+      expect(isOpen('modalExport'), how).toBe(false);
+      await openExport();
+      expect(empty('Docx'), 'export modal, ' + how).toEqual(['', '', true]);
+    }
+    await click($('btnMsOpen'));
+    await click($('lockMsOn'));
+    for (const [how, close] of closes) {
+      await fill('Ms');
+      await close('modalManuscript', 'btnMsClose');
+      expect(isOpen('modalManuscript'), how).toBe(false);
+      await openExport();
+      await click($('btnMsOpen'));
+      expect(empty('Ms'), 'manuscript dialog, ' + how).toEqual(['', '', true]);
+    }
+  });
+
+  /* Fix round 1 (I2): what is typed while a lock runs does not survive the run — success or throw, on all three paths.
+     The lock is held mid-run at its crypto step (the DOCX lock's HMAC sign; the PDF's download), released after typing. */
+  it('fields cleared after every run: text typed while a lock runs is gone when it finishes, on success and on a throw', async () => {
+    await studioWith(LANTERN());
+    await openExport();
+    const subtle = globalThis.crypto.subtle;
+    const realSign = subtle.sign.bind(subtle);
+    let gate: { release: (fail: boolean) => void } | null = null;
+    let held = 0;
+    vi.spyOn(subtle, 'sign').mockImplementation((alg, key, data) => {
+      held++;
+      return new Promise<ArrayBuffer>((res, rej) => {
+        gate = { release: (fail) => (fail ? rej(new Error('held lock refused')) : res(realSign(alg as AlgorithmIdentifier, key, data as BufferSource))) };
+      });
+    });
+    const midRun = async (scope: 'Docx' | 'Ms', btn: string, fail: boolean) => {
+      gate = null;
+      const before = held;
+      await type($('lock' + scope + 'Pw'), 'run pw');
+      await type($('lock' + scope + 'Pw2'), 'run pw');
+      await click($(btn));
+      await waitFor(() => expect(held).toBe(before + 1), { timeout: 20_000 });
+      await type($('lock' + scope + 'Pw'), 'typed mid-run');
+      await type($('lock' + scope + 'Pw2'), 'typed mid-run');
+      await act(async () => gate!.release(fail));
+      await waitFor(() => expect(($(btn) as HTMLButtonElement).disabled).toBe(false), { timeout: 20_000 });
+      expect([inp('lock' + scope + 'Pw').value, inp('lock' + scope + 'Pw2').value], scope + (fail ? ' throw' : ' success')).toEqual(['', '']);
+    };
+    await click($('lockDocxOn'));
+    await downloads(() => midRun('Docx', 'btnDownloadDocx', false), async () => undefined);
+    await midRun('Docx', 'btnDownloadDocx', true);
+    expect(toasts().some((x) => x === t('lock.failed', { error: 'held lock refused' }))).toBe(true);
+    await click($('btnMsOpen'));
+    await click($('lockMsOn'));
+    await downloads(() => midRun('Ms', 'btnMsDownload', false), async () => undefined);
+    await midRun('Ms', 'btnMsDownload', true);
+    // the PDF: held at its download
+    await act(async () => void $('modalManuscript').classList.remove('open'));
+    await openExport();
+    await printReadyDone('exp-run');
+    const real = globalThis.fetch;
+    let release: ((ok: boolean) => void) | null = null;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const u = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (!/\/download$/.test(u)) return real(input, init);
+      const ok = await new Promise<boolean>((r) => (release = r));
+      return new Response((ok ? onePagePdf() : new Uint8Array(Buffer.from('not a pdf'))) as BodyInit, { status: 200 });
+    });
+    for (const ok of [true, false]) {
+      release = null;
+      await lockPdfWith('pdf run');
+      await waitFor(() => expect(release).not.toBeNull(), { timeout: 20_000 });
+      await type($('lockPdfPw'), 'typed mid-run');
+      await type($('lockPdfPw2'), 'typed mid-run');
+      await downloads(async () => {
+        await act(async () => release!(ok));
+        await waitFor(() => expect(($('btnLockPdfGo') as HTMLButtonElement).disabled).toBe(false), { timeout: 20_000 });
+      }, async () => undefined);
+      expect([inp('lockPdfPw').value, inp('lockPdfPw2').value], 'pdf ' + (ok ? 'success' : 'throw')).toEqual(['', '']);
+    }
   });
 
   it('no leak: the password, its base64 and its hex are in no request, console line, storage write, beacon or toast, on all three paths and a failing one', async () => {
