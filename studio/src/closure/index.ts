@@ -1215,10 +1215,12 @@ const closureCrypto = {
     if (!sub) return undefined;
     return {
       digest: (alg: AlgorithmIdentifier, data: BufferSource) => exportEnv.resume(sub.digest(alg, data)),
-      // locked review copy (design 2026-11-06): 1.0's lock (BEUK:lockcopy) imports its AES keys and encrypts, nothing more
-      importKey: (format: 'raw', key: BufferSource, alg: AlgorithmIdentifier, extractable: boolean, usages: KeyUsage[]) =>
+      // locked review copy (design 2026-11-06): 1.0's lock (BEUK:lockcopy) imports its AES keys and encrypts (task 1); the
+      // DOCX lock (task 2) also imports an HMAC key and signs with it, nothing more
+      importKey: (format: 'raw', key: BufferSource, alg: AlgorithmIdentifier | HmacImportParams, extractable: boolean, usages: KeyUsage[]) =>
         exportEnv.resume(sub.importKey(format, key, alg, extractable, usages)),
       encrypt: (alg: AlgorithmIdentifier | AesCbcParams, key: CryptoKey, data: BufferSource) => exportEnv.resume(sub.encrypt(alg, key, data)),
+      sign: (alg: AlgorithmIdentifier, key: CryptoKey, data: BufferSource) => exportEnv.resume(sub.sign(alg, key, data)),
     };
   },
 };

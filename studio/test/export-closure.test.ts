@@ -83,10 +83,11 @@ describe("wave 5a: the browser's EPUB code is 1.0's, the same text as the server
 
 /* Locked review copy (design 2026-11-06), task 1 — global constraint 5 (one source): 1.0's PDF lock (BEUK:lockcopy) is
    lifted into the main closure, never supplied and never copied: each of its declarations' text there equals 1.0's.
-   The EPUB counts above do not move (the lock is no part of the EPUB build). */
-describe('locked review copy: the PDF lock is 1.0\'s, lifted (constraint 5)', () => {
-  it('lockPdfBytes and lockSaslPrep are roots of the main closure, and the whole BEUK:lockcopy block is 1.0\'s text', () => {
-    for (const n of ['lockPdfBytes', 'lockSaslPrep']) {
+   Task 2: and the DOCX lock (lockDocxBytes), in the same block. The EPUB counts above do not move (the lock is no part
+   of the EPUB build). */
+describe('locked review copy: the PDF and DOCX locks are 1.0\'s, lifted (constraint 5)', () => {
+  it('lockPdfBytes, lockSaslPrep and lockDocxBytes are roots of the main closure, and the whole BEUK:lockcopy block is 1.0\'s text', () => {
+    for (const n of ['lockPdfBytes', 'lockSaslPrep', 'lockDocxBytes']) {
       expect(CLOSURE_ROOTS, n).toContain(n);
       expect(CLOSURE_SUPPLIED, n).not.toContain(n);
     }
@@ -94,7 +95,7 @@ describe('locked review copy: the PDF lock is 1.0\'s, lifted (constraint 5)', ()
     const block = html.slice(html.indexOf('/* ==== BEUK:lockcopy ===='), html.indexOf('/* ==== /BEUK:lockcopy ==== */'));
     const sfH = ts.createSourceFile('lock.js', block, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     const one = byName(sfH.statements, sfH);
-    expect(one.size).toBe(32); // every top-level declaration of the block
+    expect(one.size).toBe(44); // every top-level declaration of the block: task 1's 32, task 2's 12
     const gen = readFileSync(CLOSURE_JS, 'utf8');
     const sfB = ts.createSourceFile('closure.js', gen, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     const create = sfB.statements.find((st): st is ts.FunctionDeclaration => ts.isFunctionDeclaration(st) && st.name?.text === 'createClosure');

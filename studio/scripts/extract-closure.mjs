@@ -237,6 +237,8 @@ export const EXTRA_ROOTS = [
   // locked review copy (design 2026-11-06), task 1: 1.0's PDF lock (BEUK:lockcopy) — AES-256 R6 over WebCrypto, and the
   // password's SASLprep; the download points that run them come in tasks 3 and 4
   'lockPdfBytes', 'lockSaslPrep',
+  // task 2: the DOCX lock — ECMA-376 Agile encryption in a compound file, over WebCrypto
+  'lockDocxBytes',
 ];
 
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK

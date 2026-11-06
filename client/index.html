@@ -51858,6 +51858,257 @@
           pwBytes.fill(0);
         }
       }
+      /* ---- the DOCX lock ----
+         lockDocxBytes(bytes, password) → Promise<Uint8Array>: ECMA-376 Agile encryption (MS-OFFCRYPTO §2.3.4.10–2.3.4.15)
+         as Word writes it: AES-256-CBC and SHA-512, 16-byte salts and blocks, a spin count of 100000, the package in
+         4096-byte segments and a dataIntegrity HMAC. The password is taken as typed, as UTF-16LE (surrogate pairs kept,
+         nothing normalised), as Office takes it. The secret key, the HMAC key, the verifier and both salts are fresh
+         random bytes. The container is a version 3 compound file (MS-CFB, 512-byte sectors) holding EncryptionInfo,
+         EncryptedPackage and the \x06DataSpaces storage (MS-OFFCRYPTO §2.1, §2.3.4.1), laid out as herumi/msoffice and
+         msoffcrypto-tool lay it out. WebCrypto only (SHA-512, AES-CBC, HMAC): no library, no new CSP entry. */
+      const LOCK_DOCX_SPIN = 100000;
+      /* §2.3.4.11–2.3.4.14: the block keys of the verifier input, the verifier hash, the key value and the HMAC key and value */
+      const LOCK_DOCX_BLK = {
+        verifierInput: new Uint8Array([0xFE, 0xA7, 0xD2, 0x76, 0x3B, 0x4B, 0x9E, 0x79]),
+        verifierValue: new Uint8Array([0xD7, 0xAA, 0x0F, 0x6D, 0x30, 0x61, 0x34, 0x4E]),
+        keyValue: new Uint8Array([0x14, 0x6E, 0x0B, 0xE7, 0xAB, 0xAC, 0xD0, 0xD6]),
+        hmacKey: new Uint8Array([0x5F, 0xB2, 0xAD, 0x01, 0x0C, 0xB9, 0xE1, 0xF6]),
+        hmacValue: new Uint8Array([0xA0, 0x67, 0x7F, 0x02, 0xB2, 0x2C, 0x84, 0x33]),
+      };
+      async function lockSha512(data) { return new Uint8Array(await crypto.subtle.digest("SHA-512", data)); }
+      function lockU32s(ns) {
+        const out = new Uint8Array(ns.length * 4);
+        const dv = new DataView(out.buffer);
+        ns.forEach((n, i) => dv.setUint32(i * 4, n, true));
+        return out;
+      }
+      /* UTF-16LE, code unit by code unit: a surrogate pair stays the pair it is */
+      function lockUtf16le(s) {
+        const out = new Uint8Array(s.length * 2);
+        for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); out[i * 2] = c & 255; out[i * 2 + 1] = c >> 8; }
+        return out;
+      }
+      function lockB64(bytes) {
+        let s = "";
+        for (let i = 0; i < bytes.length; i += 8192) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+        return btoa(s);
+      }
+      /* §2.3.4.11: H0 = SHA-512(salt ‖ password), then Hn = SHA-512(LE32(n − 1) ‖ Hn−1), LOCK_DOCX_SPIN times */
+      async function lockDocxSpin(pw, salt) {
+        let h = await lockSha512(lockCat([salt, pw]));
+        const unit = new Uint8Array(68);
+        const dv = new DataView(unit.buffer);
+        for (let i = 0; i < LOCK_DOCX_SPIN; i++) {
+          dv.setUint32(0, i, true);
+          unit.set(h, 4);
+          h.fill(0);
+          h = await lockSha512(unit);
+        }
+        unit.fill(0);
+        return h;
+      }
+      /* §2.3.4.15: the 8-byte LE size of the package, then each 4096-byte segment under the secret key, its IV
+         SHA-512(keyData salt ‖ LE32(segment))[0..16], the last segment padded with zeros to the 16-byte block */
+      async function lockDocxPackage(b, secret, keySalt) {
+        const out = new Uint8Array(8 + Math.ceil(b.length / 16) * 16);
+        const dv = new DataView(out.buffer);
+        dv.setUint32(0, b.length % 0x100000000, true);
+        dv.setUint32(4, Math.floor(b.length / 0x100000000), true);
+        const aes = await crypto.subtle.importKey("raw", secret, { name: "AES-CBC" }, false, ["encrypt"]);
+        const n = Math.ceil(b.length / 4096);
+        const segment = async (s) => {
+          const seg = b.subarray(s * 4096, Math.min(b.length, (s + 1) * 4096));
+          let plain = seg;
+          if (seg.length % 16) { plain = new Uint8Array(Math.ceil(seg.length / 16) * 16); plain.set(seg); }
+          const iv = (await lockSha512(lockCat([keySalt, lockU32s([s])]))).subarray(0, 16);
+          const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", iv: iv }, aes, plain));
+          out.set(sealed.subarray(0, plain.length), 8 + s * 4096);
+        };
+        for (let s0 = 0; s0 < n; s0 += 64) {
+          const batch = [];
+          for (let s = s0; s < Math.min(n, s0 + 64); s++) batch.push(segment(s));
+          await Promise.all(batch);
+        }
+        return out;
+      }
+      /* MS-OFFCRYPTO §2.1.2 UNICODE-LP-P4: a 4-byte length, the UTF-16LE, padded to 4 bytes */
+      function lockLp4(s) {
+        const u = lockUtf16le(s);
+        const out = new Uint8Array(4 + Math.ceil(u.length / 4) * 4);
+        out.set(lockU32s([u.length]), 0);
+        out.set(u, 4);
+        return out;
+      }
+      /* The compound file's entries, in herumi/msoffice's order and tree (each storage's children a red-black tree under
+         MS-CFB's order): the root, EncryptedPackage, \x06DataSpaces (Version, DataSpaceMap, DataSpaceInfo/
+         StrongEncryptionDataSpace, TransformInfo/StrongEncryptionTransform/\x06Primary: MS-OFFCRYPTO §2.1.5–2.1.8,
+         §2.2.6, the package mapped to the strong encryption transform), EncryptionInfo. */
+      function lockDocxEntries(pkg, info) {
+        const N = 0xFFFFFFFF, RED = 0, BLACK = 1;
+        const e = (name, type, color, left, right, child, data) => ({ name: name, type: type, color: color, left: left, right: right, child: child, data: data || new Uint8Array(0) });
+        const version = lockCat([lockLp4("Microsoft.Container.DataSpaces"), lockU32s([1, 1, 1])]); // reader, updater, writer 1.0
+        const mapEntry = lockCat([lockU32s([1, 0]), lockLp4("EncryptedPackage"), lockLp4("StrongEncryptionDataSpace")]);
+        const map = lockCat([lockU32s([8, 1, 4 + mapEntry.length]), mapEntry]);
+        const space = lockCat([lockU32s([8, 1]), lockLp4("StrongEncryptionTransform")]);
+        const id = lockLp4("{FF9A3F03-56EF-4613-BDD5-5A41C1D07246}");
+        const primary = lockCat([lockU32s([8 + id.length, 1]), id, lockLp4("Microsoft.Container.EncryptionTransform"), lockU32s([1, 1, 1, 0, 0, 0, 4])]);
+        return [
+          e("Root Entry", 5, RED, N, N, 10),
+          e("EncryptedPackage", 2, RED, N, N, N, pkg),
+          e("\u0006DataSpaces", 1, RED, N, N, 4),
+          e("Version", 2, BLACK, N, N, N, version),
+          e("DataSpaceMap", 2, BLACK, 3, 5, N, map),
+          e("DataSpaceInfo", 1, BLACK, N, 7, 6),
+          e("StrongEncryptionDataSpace", 2, BLACK, N, N, N, space),
+          e("TransformInfo", 1, RED, N, N, 8),
+          e("StrongEncryptionTransform", 1, BLACK, N, N, 9),
+          e("\u0006Primary", 2, BLACK, N, N, N, primary),
+          e("EncryptionInfo", 2, BLACK, 2, 1, N, info),
+        ];
+      }
+      /* MS-CFB version 3: a 512-byte header, then the FAT, the DIFAT (past 109 FAT sectors), the mini FAT, the directory,
+         the mini stream (every stream under 4096 bytes, in 64-byte mini sectors) and the large streams, each contiguous */
+      function lockCfb(dirs) {
+        const SS = 512, FREE = 0xFFFFFFFF, END = 0xFFFFFFFE;
+        const miniFat = [];
+        for (const d of dirs) {
+          d.start = END;
+          if (d.type !== 2 || !d.data.length || d.data.length >= 4096) continue;
+          const n = Math.ceil(d.data.length / 64);
+          d.start = miniFat.length;
+          for (let i = 0; i < n; i++) miniFat.push(i + 1 < n ? d.start + i + 1 : END);
+        }
+        const big = dirs.filter((d) => d.type === 2 && d.data.length >= 4096);
+        const nDir = Math.ceil(dirs.length / 4), nMiniFat = Math.ceil(miniFat.length / 128), nMini = Math.ceil(miniFat.length * 64 / SS);
+        let nBig = 0;
+        for (const d of big) nBig += Math.ceil(d.data.length / SS);
+        const rest = nMiniFat + nDir + nMini + nBig;
+        const difatFor = (f) => (f > 109 ? Math.ceil((f - 109) / 127) : 0);
+        let nFat = 1;
+        for (;;) {
+          const f = Math.ceil((rest + nFat + difatFor(nFat)) / 128);
+          if (f <= nFat) break;
+          nFat = f;
+        }
+        const nDifat = difatFor(nFat);
+        const difat0 = nFat, miniFat0 = difat0 + nDifat, dir0 = miniFat0 + nMiniFat, mini0 = dir0 + nDir;
+        const total = mini0 + nMini + nBig;
+        const out = new Uint8Array(SS + total * SS);
+        const dv = new DataView(out.buffer);
+        const at = (sector) => SS + sector * SS;
+        const fat = new Uint32Array(nFat * 128).fill(FREE);
+        const chain = (start, n) => { for (let i = 0; i < n; i++) fat[start + i] = i + 1 < n ? start + i + 1 : END; };
+        for (let i = 0; i < nFat; i++) fat[i] = 0xFFFFFFFD; // FATSECT
+        for (let i = 0; i < nDifat; i++) fat[difat0 + i] = 0xFFFFFFFC; // DIFSECT
+        chain(miniFat0, nMiniFat);
+        chain(dir0, nDir);
+        chain(mini0, nMini);
+        let s = mini0 + nMini;
+        for (const d of big) {
+          const n = Math.ceil(d.data.length / SS);
+          d.start = s;
+          chain(s, n);
+          out.set(d.data, at(s));
+          s += n;
+        }
+        /* the header */
+        out.set([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1], 0);
+        dv.setUint16(24, 0x003E, true); // minor version
+        dv.setUint16(26, 3, true); // major version 3
+        dv.setUint16(28, 0xFFFE, true); // little-endian
+        dv.setUint16(30, 9, true); // 512-byte sectors
+        dv.setUint16(32, 6, true); // 64-byte mini sectors
+        dv.setUint32(44, nFat, true);
+        dv.setUint32(48, dir0, true);
+        dv.setUint32(56, 4096, true); // the mini stream cutoff
+        dv.setUint32(60, nMiniFat ? miniFat0 : END, true);
+        dv.setUint32(64, nMiniFat, true);
+        dv.setUint32(68, nDifat ? difat0 : END, true);
+        dv.setUint32(72, nDifat, true);
+        for (let i = 0; i < 109; i++) dv.setUint32(76 + i * 4, i < nFat ? i : FREE, true);
+        for (let k = 0; k < nDifat; k++) {
+          for (let j = 0; j < 127; j++) {
+            const f = 109 + k * 127 + j;
+            dv.setUint32(at(difat0 + k) + j * 4, f < nFat ? f : FREE, true);
+          }
+          dv.setUint32(at(difat0 + k) + 508, k + 1 < nDifat ? difat0 + k + 1 : END, true);
+        }
+        for (let i = 0; i < fat.length; i++) dv.setUint32(at(0) + i * 4, fat[i], true);
+        for (let i = 0; i < nMiniFat * 128; i++) dv.setUint32(at(miniFat0) + i * 4, i < miniFat.length ? miniFat[i] : FREE, true);
+        for (const d of dirs) if (d.type === 2 && d.data.length && d.data.length < 4096) out.set(d.data, at(mini0) + d.start * 64);
+        /* the directory: 128 bytes an entry, the unused ones with no siblings and no child */
+        dirs[0].start = nMini ? mini0 : END; // the root: the mini stream's first sector, and its size
+        for (let i = 0; i < nDir * 4; i++) {
+          const o = at(dir0) + i * 128;
+          const d = dirs[i];
+          if (!d) { dv.setUint32(o + 68, FREE, true); dv.setUint32(o + 72, FREE, true); dv.setUint32(o + 76, FREE, true); continue; }
+          out.set(lockUtf16le(d.name), o);
+          dv.setUint16(o + 64, (d.name.length + 1) * 2, true);
+          out[o + 66] = d.type;
+          out[o + 67] = d.color;
+          dv.setUint32(o + 68, d.left, true);
+          dv.setUint32(o + 72, d.right, true);
+          dv.setUint32(o + 76, d.child, true);
+          dv.setUint32(o + 116, d.type === 1 ? 0 : d.start, true);
+          dv.setUint32(o + 120, d.type === 1 ? 0 : d.type === 5 ? miniFat.length * 64 : d.data.length, true);
+        }
+        return out;
+      }
+      async function lockDocxBytes(bytes, password) {
+        if (typeof password !== "string" || !password) throw new Error("A password is needed to lock the document.");
+        const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        const pw = lockUtf16le(password);
+        const secret = lockRandom(32), hmacKey = lockRandom(64), verifier = lockRandom(16);
+        let h = null;
+        try {
+          if (b.length >= 8 && b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) throw new Error("This document is already locked.");
+          if (b.length < 4 || b[0] !== 0x50 || b[1] !== 0x4B || b[2] !== 3 || b[3] !== 4) throw new Error("This file is not a Word document, so it cannot be locked.");
+          const pwSalt = lockRandom(16), keySalt = lockRandom(16);
+          /* §2.3.4.13: the password key encryptor — the verifier, its hash and the secret key, each under its own key
+             SHA-512(H ‖ block key)[0..32], the IV the password salt */
+          h = await lockDocxSpin(pw, pwSalt);
+          const underPw = async (blk, data) => {
+            const k = (await lockSha512(lockCat([h, blk]))).subarray(0, 32);
+            try { return await lockAesCbc(k, pwSalt, data, false); } finally { k.fill(0); }
+          };
+          const verifierHash = await lockSha512(verifier);
+          const encVerifierInput = await underPw(LOCK_DOCX_BLK.verifierInput, verifier);
+          const encVerifierValue = await underPw(LOCK_DOCX_BLK.verifierValue, verifierHash);
+          const encKeyValue = await underPw(LOCK_DOCX_BLK.keyValue, secret);
+          const pkg = await lockDocxPackage(b, secret, keySalt);
+          /* §2.3.4.14: an HMAC-SHA512 of the whole EncryptedPackage stream under a random 64-byte key; the key and the
+             HMAC each under the secret key, the IVs SHA-512(keyData salt ‖ block key)[0..16] */
+          const ivOf = async (blk) => (await lockSha512(lockCat([keySalt, blk]))).subarray(0, 16);
+          const mk = await crypto.subtle.importKey("raw", hmacKey, { name: "HMAC", hash: "SHA-512" }, false, ["sign"]);
+          const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mk, pkg));
+          const encHmacKey = await lockAesCbc(secret, await ivOf(LOCK_DOCX_BLK.hmacKey), hmacKey, false);
+          const encHmacValue = await lockAesCbc(secret, await ivOf(LOCK_DOCX_BLK.hmacValue), mac, false);
+          const params = 'saltSize="16" blockSize="16" keyBits="256" hashSize="64" cipherAlgorithm="AES" cipherChaining="ChainingModeCBC" hashAlgorithm="SHA512"';
+          const xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
+            '<encryption xmlns="http://schemas.microsoft.com/office/2006/encryption" xmlns:p="http://schemas.microsoft.com/office/2006/keyEncryptor/password" xmlns:c="http://schemas.microsoft.com/office/2006/keyEncryptor/certificate">' +
+            "<keyData " + params + ' saltValue="' + lockB64(keySalt) + '"/>' +
+            '<dataIntegrity encryptedHmacKey="' + lockB64(encHmacKey) + '" encryptedHmacValue="' + lockB64(encHmacValue) + '"/>' +
+            '<keyEncryptors><keyEncryptor uri="http://schemas.microsoft.com/office/2006/keyEncryptor/password">' +
+            '<p:encryptedKey spinCount="' + LOCK_DOCX_SPIN + '" ' + params + ' saltValue="' + lockB64(pwSalt) + '" encryptedVerifierHashInput="' + lockB64(encVerifierInput) +
+            '" encryptedVerifierHashValue="' + lockB64(encVerifierValue) + '" encryptedKeyValue="' + lockB64(encKeyValue) + '"/>' +
+            "</keyEncryptor></keyEncryptors></encryption>";
+          /* §2.3.4.10: version 4.4, reserved 0x40, then the XML */
+          const info = lockCat([new Uint8Array([4, 0, 4, 0, 0x40, 0, 0, 0]), new TextEncoder().encode(xml)]);
+          mac.fill(0);
+          verifierHash.fill(0);
+          return lockCfb(lockDocxEntries(pkg, info));
+        } catch (e) {
+          /* never an error that carries the password (constraint 4) */
+          const msg = String((e && e.message) || e);
+          throw new Error(msg.indexOf(password) >= 0 ? "The document could not be locked." : msg);
+        } finally {
+          secret.fill(0);
+          hmacKey.fill(0);
+          verifier.fill(0);
+          pw.fill(0);
+          if (h) h.fill(0);
+        }
+      }
       /* ==== /BEUK:lockcopy ==== */
       /* ---- the downloadable report: one self-contained HTML page ---- */
       function buildStoreReportHtml(a) {

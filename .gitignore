@@ -22,4 +22,6 @@ docs/superpowers/
 # Beuk 2.0 studio (studio/): its own node_modules, the extracted strings/tokens, and its build output
 studio/node_modules/
 studio/src/generated/
+# the locked review copy's DOCX oracle (msoffcrypto-tool), installed in a venv inside the worktree, never globally
+studio/e2e/oracles/.venv/
 client/next/
