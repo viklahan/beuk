@@ -298,6 +298,20 @@ describe('lockDocxBytes: ECMA-376 Agile encryption, opened by msoffcrypto-tool (
     }
   }, 240_000);
 
+  withOracle('a Word file under 4096 bytes: its EncryptedPackage goes into the mini stream, and still opens', async () => {
+    const z = new JSZip();
+    z.file('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>');
+    const tiny = await z.generateAsync({ type: 'uint8array' });
+    expect(tiny.length).toBeLessThan(4096 - 8);
+    const locked = await api.lockDocxBytes(tiny, PW);
+    const cfb = readCfb(locked);
+    expect(cfb.paths.get('EncryptedPackage')!.size).toBeLessThan(cfb.header.cutoff);
+    expect(Number(cfb.stream('EncryptedPackage').readBigUInt64LE(0))).toBe(tiny.length);
+    const r = oracle(locked, PW);
+    expect(r.code, r.err).toBe(0);
+    expect(Buffer.from(r.plain!).equals(Buffer.from(tiny))).toBe(true);
+  }, 60_000);
+
   withOracle('wrong password refused: "wrong" makes the oracle exit 1', async () => {
     const locked = await api.lockDocxBytes(inputs[0]!.bytes, PW);
     expect(oracle(locked, 'wrong').code).toBe(1);
