@@ -6013,7 +6013,34 @@ async function wave5dShelf(origin) {
       await page.click('#btnCloseStore');
       await page.click('#btnCloseExport');
       const out = (await exportBackup(page)).json.book;
-      check(ok && shelf.length === 0 && JSON.stringify(out) === JSON.stringify(start), `wave5d constraint 75: ${st}: 1.0's own words — ${said}; requests to /api/exports or /api/jobs: ${shelf.length}${shelf.length ? ' (' + shelf.join(', ') + ')' : ''}; the book unchanged`);
+      // wave 7b: signed in, 1.0 itself lists the archive when its export modal opens (initExport: renderArchiveList,
+      // cloudLoadArchive: GET /api/exports) — the same steps in 1.0's own page, and 2.0's requests must equal its
+      let want = [];
+      if (st === 'signedIn') {
+        const mine = shelf.splice(0);
+        const one = await openOne(ctx, origin);
+        await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+        await one.waitForFunction(() => typeof cloud !== 'undefined' && !!cloud.user, null, { timeout: 30_000 });
+        await one.evaluate(() => document.getElementById('btnExport').click());
+        await one.waitForFunction(() => document.getElementById('modalExport').classList.contains('open'));
+        await one.click('#btnStoreReady');
+        await one.waitForFunction(() => document.getElementById('modalStore')?.classList.contains('open'), null, { timeout: 30_000 });
+        await one.click('#btnStoreServer');
+        await one.waitForFunction((d) => document.getElementById('storeServerNote').textContent === d, w5dT('store.serverDone'), { timeout: 30_000 });
+        await one.click('#btnStoreRecheck');
+        await one.waitForTimeout(300);
+        want = shelf.splice(0);
+        shelf.push(...mine);
+        // and 1.0's words in that state, beside 2.0's
+        const oneSaw = await one.evaluate(() => {
+          const r = document.querySelector('#storeReport [data-st-id="fonts"]');
+          return { ev: r?.querySelector('.st-ev')?.textContent || '', note: document.getElementById('storeServerNote').textContent };
+        });
+        const same = oneSaw.ev === a.ev && oneSaw.note === a.note;
+        if (!same) ok = false;
+        said += same ? " — 1.0's page says the same" : ' — 1.0 says: "' + oneSaw.ev + '" (' + oneSaw.note + ')';
+      }
+      check(ok && JSON.stringify(shelf) === JSON.stringify(want) && JSON.stringify(out) === JSON.stringify(start), `wave5d constraint 75: ${st}: 1.0's own words — ${said}; requests to /api/exports or /api/jobs: ${shelf.length}${shelf.length ? ' (' + shelf.join(', ') + ')' : ''}${st === 'signedIn' ? ', 1.0 in its page: ' + JSON.stringify(want) : ''}; the book unchanged`);
       await harvestCsp(page);
     } finally {
       await ctx.close();
