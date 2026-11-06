@@ -141,15 +141,21 @@ export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}, access
   // this one route takes cookie OR bearer (refusal bodies unchanged).
   router.get('/me', requireSessionOrBearer(db, config), async (req, res, next) => {
     try {
-      if (!access || !req.user) return res.json({ user: req.user });
+      // Phase 2: a bearer-authed /me also says what the token may do —
+      // the MCP server's introspection reads scopes from here instead
+      // of touching the database. Cookie answers are unchanged
+      // (oauthScopes is only set for bearers; undefined serializes to
+      // nothing).
+      const scopes = req.oauthScopes;
+      if (!access || !req.user) return res.json({ user: req.user, scopes });
       // A failed access lookup must never sign the writer out: the studio
       // boots on this answer. Say who they are, leave `access` out, log it.
       try {
         const found = await accountAccess({ db, config, billing: access.billing, now: access.now }, req.user.id);
-        return res.json({ user: req.user, access: found ? accessSummary(found) : undefined });
+        return res.json({ user: req.user, scopes, access: found ? accessSummary(found) : undefined });
       } catch (err) {
         console.log(JSON.stringify({ event: 'auth.me.access_failed', at: new Date().toISOString(), userId: req.user.id, error: err instanceof Error ? err.message : String(err) }));
-        return res.json({ user: req.user });
+        return res.json({ user: req.user, scopes });
       }
     } catch (err) {
       return next(err);

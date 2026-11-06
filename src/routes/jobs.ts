@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../auth.js';
+import { sessionOrScopedBearer } from '../oauth/bearer.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { HTTP_CODES } from '../help/codes.js';
@@ -40,7 +40,9 @@ const JOB_COLUMNS =
 export function jobRoutes(db: Db, config: Config): { router: Router; runner: JobRunner } {
   const runner = new JobRunner(db, config);
   const router = Router();
-  router.use(requireAuth(db));
+  // Phase 2 (MCP): cookie sessions unchanged; an OAuth bearer reads job
+  // status with beuk:read, and starting a job demands beuk:write.
+  router.use(sessionOrScopedBearer(db, config));
   router.param('id', uuidParam('job not found'));
 
   async function createJob(reqUserId: string, kind: JobKind, body: unknown) {

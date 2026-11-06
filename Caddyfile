@@ -15,6 +15,25 @@
 	default_sni {$DEFAULT_SNI:beuk.invalid}
 }
 
+# ==== BEUK:mcp ==== Phase 2: the MCP server on its own subdomain
+# (https://mcp.beuk.studio; mcp.localhost locally — Caddy's internal CA
+# covers it). Its own site block, NOT a path on the main site: the MCP
+# origin is the OAuth resource identifier (RFC 9728), and keeping it
+# off the studio's origin means the studio's cookies never travel to
+# it. Production needs a DNS A record for mcp.<DOMAIN> before Let's
+# Encrypt can issue the certificate. Everything it serves is JSON
+# (metadata, health, the MCP endpoint) — no pages, so none of the main
+# site's CSP/header block applies here.
+mcp.{$DOMAIN} {
+	encode gzip
+	@hsts {
+		protocol https
+		not host mcp.localhost
+	}
+	header @hsts Strict-Transport-Security "max-age=31536000"
+	reverse_proxy mcp:3100
+}
+
 # WWW_DOMAIN (optional, e.g. www.beuk.studio): served on the same site
 # and permanently redirected to DOMAIN, so the studio, its cookies and
 # its local saves live on ONE origin. Unset/empty → expands to nothing
