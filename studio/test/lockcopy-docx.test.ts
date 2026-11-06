@@ -1,7 +1,7 @@
 // @vitest-environment node
 import 'fake-indexeddb/auto';
 import { spawnSync } from 'node:child_process';
-import { createDecipheriv, createHash, createHmac } from 'node:crypto';
+import { createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -45,7 +45,8 @@ const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralF
 const jszip = createRequire(import.meta.url)('../../client/assets/vendor/jszip.min.js') as unknown;
 (globalThis as { JSZip?: unknown }).JSZip ??= jszip;
 type Zip = { files: Record<string, { dir: boolean; async: (t: 'string' | 'uint8array') => Promise<string | Uint8Array> }> };
-const JSZip = (globalThis as unknown as { JSZip: { loadAsync: (b: Uint8Array) => Promise<Zip> } }).JSZip;
+type ZipOut = { file: (p: string, d: Uint8Array | string) => void; generateAsync: (o: Record<string, unknown>) => Promise<Uint8Array> };
+const JSZip = (globalThis as unknown as { JSZip: { new (): ZipOut; loadAsync: (b: Uint8Array) => Promise<Zip> } }).JSZip;
 
 /* ---------------- the oracle ---------------- */
 const ORACLES = fileURLToPath(new URL('../e2e/oracles/', import.meta.url));
@@ -473,4 +474,50 @@ describe('lockDocxBytes: ECMA-376 Agile encryption, opened by msoffcrypto-tool (
       expect(m).not.toContain(Buffer.from(secret, 'utf16le').toString('latin1'));
     }
   }, 60_000);
+});
+
+/* Review focus 3 (task 2, step 6): a big book locks without freezing the tab. Budget: DOCX ≤ 3 s including the
+   100000-round spin, measured here and logged.
+   - The largest fixture (the Dumas) with 20 pictures put into its first chapter: 1.0's Word export writes no picture
+     (buildDocxFiles has no media part), so the pictures leave its .docx as it is; asserted, so the number says so.
+   - So a 10 MB Word file stands for the illustrated 300-page book: that .docx's parts plus 20 incompressible 512 KB
+     pictures under word/media, stored. Its compound file needs DIFAT sectors (past 109 FAT sectors), and it goes
+     through the oracle too. */
+describe('lockDocxBytes: the budget (review focus 3)', () => {
+  it('the largest fixture with 20 pictures, and a 10 MB Word file, each lock within 3 s', async () => {
+    const dumas = fixtures('real').reduce((a, b) => (b.text.length > a.text.length ? b : a));
+    expect(dumas.name).toBe('real/dartagnan-01-three-musketeers');
+    const book = structuredClone(dumas.book) as Rec & { sections: Rec[]; images?: Rec[] };
+    const ch = book.sections.find((s) => s.kind === 'body' && String(s.content || '').length > 0)!;
+    const pics = Array.from({ length: 20 }, (_, i) => ({ id: 'budget' + i, name: 'pic' + i + '.png', mediaType: 'image/png', ext: 'png', data: randomBytes(384 * 1024).toString('base64') }));
+    book.images = [...(book.images || []), ...pics];
+    ch.content = pics.map((p) => `![Picture ${p.id}](img:${p.id})`).join('\n\n') + '\n\n' + String(ch.content);
+    const docx = await docxOf(book);
+    const z = await JSZip.loadAsync(docx);
+    expect(Object.keys(z.files).filter((f) => f.startsWith('word/media/'))).toEqual([]);
+    const timed = async (what: string, bytes: Uint8Array) => {
+      const t0 = performance.now();
+      const locked = await api.lockDocxBytes(bytes, PW);
+      const ms = performance.now() - t0;
+      console.log(`[budget] lockDocxBytes, ${what}: ${(bytes.length / 1e6).toFixed(2)} MB in ${ms.toFixed(0)} ms (budget 3000 ms)`);
+      return { locked, ms };
+    };
+    const one = await timed('the Dumas + 20 pictures', docx);
+    const out = new JSZip();
+    for (const [p, f] of Object.entries(z.files)) if (!f.dir) out.file(p, (await f.async('uint8array')) as Uint8Array);
+    for (let i = 0; i < 20; i++) out.file(`word/media/picture${i + 1}.png`, randomBytes(512 * 1024));
+    const ten = await out.generateAsync({ type: 'uint8array', compression: 'STORE' });
+    expect(ten.length).toBeGreaterThan(10_000_000);
+    const two = await timed('10 MB with 20 pictures', ten);
+    const cfb = readCfb(two.locked);
+    expect(cfb.header.difatSectors).toBeGreaterThan(0);
+    expect(Number(cfb.stream('EncryptedPackage').readBigUInt64LE(0))).toBe(ten.length);
+    if (ORACLE) {
+      const r = oracle(two.locked, PW);
+      expect(r.code, r.err).toBe(0);
+      expect(Buffer.from(r.plain!).equals(Buffer.from(ten))).toBe(true);
+    }
+    expect(one.ms).toBeLessThanOrEqual(3000);
+    expect(two.ms).toBeLessThanOrEqual(3000);
+  }, 240_000);
 });

@@ -520,3 +520,31 @@ describe('lockPdfBytes: AES-256 R6, opened by pdf.js (design 2026-11-06, task 1)
     for (const m of msgs) expect(m).not.toContain(secret);
   }, 60_000);
 });
+
+/* Review focus 3 (task 2, step 6): a big book locks without freezing the tab. Budget: PDF ≤ 2 s per 10 MB, measured
+   here and logged. The input is the fixture with an incremental update that adds one more stream, the fixture's own
+   bytes again (raw, no filter): about 11.9 MB, every byte of it encrypted. */
+describe('lockPdfBytes: the budget (review focus 3)', () => {
+  it('a synthetic 10 MB+ PDF (the fixture, repeated) locks within 2 s per 10 MB', async () => {
+    const tail = latin1(FIXTURE.subarray(FIXTURE.length - 400));
+    const size = Number(/\/Size (\d+)/.exec(tail)![1]);
+    const prev = Number(/startxref\s+(\d+)\s+%%EOF\s*$/.exec(tail)![1]);
+    const root = /\/Root (\d+ \d+ R)/.exec(tail)![1];
+    const info = /\/Info (\d+ \d+ R)/.exec(tail)![1];
+    const id = /\/ID \[[^\]]*\]/.exec(tail)![0];
+    const obj = cat(`\n${size} 0 obj\n<< /Length ${FIXTURE.length} >>\nstream\n`, FIXTURE, '\nendstream\nendobj\n');
+    const objAt = FIXTURE.length + 1;
+    const xrefAt = FIXTURE.length + obj.length;
+    const update = cat(obj, `xref\n${size} 1\n${String(objAt).padStart(10, '0')} 00000 n\r\ntrailer\n<< /Size ${size + 1} /Root ${root} /Info ${info} ${id} /Prev ${prev} >>\nstartxref\n${xrefAt}\n%%EOF\n`);
+    const big = new Uint8Array(cat(FIXTURE, update));
+    expect(big.length).toBeGreaterThan(10_000_000);
+    const t0 = performance.now();
+    const locked = await api.lockPdfBytes(big, FIXTURE_PW);
+    const ms = performance.now() - t0;
+    const budget = 2000 * (big.length / 10_000_000);
+    console.log(`[budget] lockPdfBytes: ${(big.length / 1e6).toFixed(1)} MB in ${ms.toFixed(0)} ms (budget ${budget.toFixed(0)} ms, ${(ms / (big.length / 1e7)).toFixed(0)} ms per 10 MB)`);
+    expect(locked.length).toBeGreaterThan(big.length);
+    expect(ms).toBeLessThanOrEqual(budget);
+    expect((await open(locked, FIXTURE_PW)).pages).toBe(fixtureOpen.pages);
+  }, 180_000);
+});
