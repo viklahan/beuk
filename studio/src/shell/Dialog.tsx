@@ -117,18 +117,23 @@ export function Dialog(props: DialogProps) {
 /** Wave 4c: a modal whose markup 1.0's own code opens and closes (`.modal-back.open`: the cover maker) takes its place
  *  on the stack while it is open — Escape closes only the top one, Tab stays inside it, focus moves in and returns to
  *  the opener — exactly as a <Dialog>. Render it while the modal is open. */
-export function StackEntry({ box, onClose }: { box: { current: HTMLElement | null }; onClose: () => void }) {
-  useStackEntry(box, onClose);
+export function StackEntry({ box, onClose, opener }: { box: { current: HTMLElement | null }; onClose: () => void; opener?: () => HTMLElement | null }) {
+  useStackEntry(box, onClose, opener);
   return null;
 }
 
-function useStackEntry(box: { current: HTMLElement | null }, onClose: () => void) {
+/** `opener` (locked review copy, task 4): where focus returns, for a dialog whose own code has already moved focus inside
+ *  it when it opens (1.0's lockPdfOpen), so the element focused at that moment is not the one that opened it. */
+function useStackEntry(box: { current: HTMLElement | null }, onClose: () => void, openerOf?: () => HTMLElement | null) {
   const stack = useContext(StackContext);
   if (!stack) throw new Error('<Dialog> outside <DialogStackProvider>');
   const close = useRef(onClose);
   close.current = onClose;
+  const openerFn = useRef(openerOf);
+  openerFn.current = openerOf;
   useLayoutEffect(() => {
-    const opener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+    const given = openerFn.current ? openerFn.current() : undefined;
+    const opener = given !== undefined ? given : document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
     const pop = stack.push({ id: ++seq, close: () => close.current(), el: () => box.current });
     const el = box.current;
     if (el && !el.contains(document.activeElement)) {
@@ -142,15 +147,22 @@ function useStackEntry(box: { current: HTMLElement | null }, onClose: () => void
     return () => {
       pop();
       // back to the opener, unless focus has already moved on to something else outside the dialog
-      const now = document.activeElement;
-      const lost = !now || now === document.body || (el ? el.contains(now) || !now.isConnected : true);
-      if (opener && opener.isConnected && lost) {
-        try {
-          opener.focus({ preventScroll: true });
-        } catch {
-          /* the opener went away */
+      const back = () => {
+        const now = document.activeElement;
+        const lost = !now || now === document.body || (el ? el.contains(now) || !now.isConnected : true);
+        const to = opener && !opener.isConnected && openerFn.current ? openerFn.current() : opener;
+        if (to && to.isConnected && lost) {
+          try {
+            to.focus({ preventScroll: true });
+          } catch {
+            /* the opener went away */
+          }
         }
-      }
+      };
+      // a named opener's dialog (1.0's markup, still in the page when it closes) keeps its focused control in the
+      // document, and React's commit puts focus back on that control after this cleanup: the return waits for the commit
+      if (openerFn.current) setTimeout(back, 0);
+      else back();
     };
   }, [stack]);
 }

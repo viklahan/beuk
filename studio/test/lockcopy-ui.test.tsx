@@ -591,3 +591,82 @@ describe('locked review copy: the controls and the three download points (task 3
     }
   });
 });
+
+/* Task 4: 2.0's dialog stack. The print-ready PDF's password dialog (#modalLockPdf) is made by 1.0's own lockPdfDialog,
+   appended to <body>; in the studio it takes its place on the dialog stack (src/shell/Dialog.tsx), as the export,
+   manuscript, ACX and store dialogs do: Tab stays inside it, focus moves in and returns to the link that opened it, and
+   Escape closes only it. And Escape on the export modal or the manuscript dialog (the stack's close) empties their
+   password fields at once, as 1.0's Escape handler does (not only on the next open). */
+describe("locked review copy: 2.0's dialog stack (task 4)", { timeout: 120_000 }, () => {
+  const tab = (shift = false) => act(async () => void fireEvent.keyDown(document.activeElement || document.body, { key: 'Tab', shiftKey: shift }));
+  const esc = () => act(async () => void fireEvent.keyDown(document.activeElement || document.body, { key: 'Escape' }));
+  const lockedLink = () => document.querySelector('#printReadyNote [data-pr-locked]') as HTMLAnchorElement;
+  async function openLockPdf() {
+    const a = lockedLink();
+    a.focus();
+    expect(document.activeElement).toBe(a);
+    await click(a);
+    await waitFor(() => expect(isOpen('modalLockPdf')).toBe(true));
+    await waitFor(() => expect($('modalLockPdf').contains(document.activeElement)).toBe(true));
+  }
+
+  it('#modalLockPdf is on the stack: Tab and Shift+Tab stay inside it, focus outside comes back in, and focus returns to the link on Close and on Escape', async () => {
+    await studioWith(LANTERN());
+    await openExport();
+    await printReadyDone('exp-stack');
+    await openLockPdf();
+    expect(document.activeElement).toBe($('lockPdfPw'));
+    // the last control, Tab: back to the first (the box is fixed on, so the first is the password)
+    $('btnLockPdfGo').focus();
+    await tab();
+    expect(document.activeElement, 'Tab from the last control').toBe($('lockPdfPw'));
+    await tab(true);
+    expect(document.activeElement, 'Shift+Tab from the first control').toBe($('btnLockPdfGo'));
+    // focus somewhere under the dialog (the export modal's close button): Tab brings it back inside
+    $('btnCloseExport').focus();
+    await tab();
+    expect($('modalLockPdf').contains(document.activeElement), 'Tab from outside').toBe(true);
+    // Close: closed, emptied, focus back on the link
+    await type($('lockPdfPw'), 'typed then closed');
+    await click($('btnLockPdfClose'));
+    expect(isOpen('modalLockPdf')).toBe(false);
+    expect(inp('lockPdfPw').value).toBe('');
+    await waitFor(() => expect(document.activeElement).toBe(lockedLink()));
+    // Escape: closes the PDF dialog only — the export modal under it stays open; focus back on the link
+    await openLockPdf();
+    await type($('lockPdfPw2'), 'typed then escaped');
+    await esc();
+    expect(isOpen('modalLockPdf')).toBe(false);
+    expect(isOpen('modalExport'), 'the export modal stays open').toBe(true);
+    expect(inp('lockPdfPw2').value).toBe('');
+    await waitFor(() => expect(document.activeElement).toBe(lockedLink()));
+    // Escape with focus outside the dialog (the stack's own close): closed and emptied too
+    await openLockPdf();
+    await type($('lockPdfPw'), 'typed, focus moved out');
+    (document.activeElement as HTMLElement).blur();
+    await esc();
+    expect(isOpen('modalLockPdf')).toBe(false);
+    expect(isOpen('modalExport')).toBe(true);
+    expect(inp('lockPdfPw').value).toBe('');
+  });
+
+  it('Escape on the export modal and the manuscript dialog empties their password fields at once (as 1.0), the box keeping its state', async () => {
+    await studioWith(LANTERN());
+    await openExport();
+    await click($('lockDocxOn'));
+    await type($('lockDocxPw'), 'typed then escaped');
+    await type($('lockDocxPw2'), 'typed then escaped');
+    await esc();
+    expect(isOpen('modalExport')).toBe(false);
+    expect([inp('lockDocxPw').value, inp('lockDocxPw2').value, inp('lockDocxOn').checked]).toEqual(['', '', true]);
+    await openExport();
+    await click($('btnMsOpen'));
+    await waitFor(() => expect(isOpen('modalManuscript')).toBe(true));
+    await click($('lockMsOn'));
+    await type($('lockMsPw'), 'typed then escaped');
+    await type($('lockMsPw2'), 'typed then escaped');
+    await esc();
+    expect(isOpen('modalManuscript')).toBe(false);
+    expect([inp('lockMsPw').value, inp('lockMsPw2').value, inp('lockMsOn').checked]).toEqual(['', '', true]);
+  });
+});

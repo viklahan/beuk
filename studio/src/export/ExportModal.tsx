@@ -262,13 +262,67 @@ export function ExportModal() {
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const box = (k: Dlg) => ({ get current() { return backs.current[k]?.querySelector<HTMLElement>('.modal') ?? null; } });
+  // locked review copy (task 4): the stack's close (Escape) of the export modal and the manuscript dialog empties their
+  // password fields, as 1.0's Escape handler does (BEUK:lockcopy: lockFieldsClear, 1.0's own)
+  const LOCK_SCOPE: Partial<Record<Dlg, 'docx' | 'ms'>> = { modal: 'docx', ms: 'ms' };
+  const stackClose = (k: Dlg) => {
+    backs.current[k]?.classList.remove('open');
+    const scope = LOCK_SCOPE[k];
+    if (scope) exportRun((cc) => cc.api.lockFieldsClear(scope));
+  };
   return (
     <>
       {DLGS.map((k) => {
         const back = backs.current[k];
-        return open[k] && back ? createPortal(<StackEntry key={k} box={box(k)} onClose={() => backs.current[k]?.classList.remove('open')} />, back) : null;
+        return open[k] && back ? createPortal(<StackEntry key={k} box={box(k)} onClose={() => stackClose(k)} />, back) : null;
       })}
+      <LockPdfStack />
     </>
+  );
+}
+
+/** Locked review copy (task 4): the print-ready PDF's password dialog (#modalLockPdf) — 1.0's own lockPdfDialog makes it
+ *  on first use and appends it to <body>, and 1.0's lockPdfOpen / lockPdfClose open and close it — takes its place on the
+ *  dialog stack while it is open, as the export modal's dialogs do: Tab stays inside it, Escape closes only it (its own
+ *  keydown does, and the stack's close is 1.0's Close button: closed and emptied), focus returns to the opener. 1.0's
+ *  lockPdfOpen has already moved focus to the password field when the stack sees it open, so the opener is named: the
+ *  print-ready panel's "Download locked copy" link, the dialog's one opener. */
+export const LOCK_PDF_OPENER = '#printReadyNote [data-pr-locked]:not([hidden])';
+function LockPdfStack() {
+  const [back, setBack] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    let watched: HTMLElement | null = null;
+    let mo: MutationObserver | null = null;
+    const sync = () => {
+      const el = document.getElementById('modalLockPdf');
+      if (el !== watched) {
+        mo?.disconnect();
+        mo = null;
+        watched = el;
+        setBack(el);
+        if (el) {
+          mo = new MutationObserver(() => setOpen(el.classList.contains('open')));
+          mo.observe(el, { attributes: true, attributeFilter: ['class'] });
+        }
+      }
+      setOpen(!!el && el.classList.contains('open'));
+    };
+    const body = new MutationObserver(sync);
+    body.observe(document.body, { childList: true });
+    sync();
+    return () => {
+      body.disconnect();
+      mo?.disconnect();
+    };
+  }, []);
+  if (!open || !back) return null;
+  return (
+    <StackEntry
+      box={{ get current() { return back.querySelector<HTMLElement>('.modal'); } }}
+      onClose={() => back.querySelector<HTMLElement>('#btnLockPdfClose')?.click()}
+      opener={() => document.querySelector<HTMLElement>(LOCK_PDF_OPENER)}
+    />
   );
 }
 

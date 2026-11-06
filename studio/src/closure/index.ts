@@ -758,6 +758,11 @@ export type ClosureApi = {
   initStoreReady: () => void;
   storeRunServer: () => Promise<void>;
   storeRecheck: () => Promise<void>;
+  // locked review copy (task 4): 1.0's lock (BEUK:lockcopy), as 2.0 calls it — the stack's close empties the fields; the
+  // e2e locks in the page with the two encryptors
+  lockFieldsClear: (scope: 'docx' | 'ms' | 'pdf') => void;
+  lockPdfBytes: (bytes: Uint8Array, password: string) => Promise<Uint8Array>;
+  lockDocxBytes: (bytes: Uint8Array, password: string) => Promise<Uint8Array>;
   buildStoreReportHtml: (a?: StoreAudit) => string;
   downloadStoreReport: () => void;
   printPlacements: () => (Record<string, unknown> & { dpi: number })[];

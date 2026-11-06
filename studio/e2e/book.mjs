@@ -779,10 +779,14 @@ async function latency(origin, opts = {}) {
     await focused(page);
     await page.keyboard.type(words.slice(0, 20), { delay: 30 }); // warm-up
     await page.evaluate(() => { window.__lat = []; });
+    // locked review copy (task 4): something started in the page right before the measured typing (a lock), and what it
+    // reports once the typing ends
+    if (opts.beforeType) await opts.beforeType(page);
     let text = '';
     while (text.length < 300) text += words;
     await page.keyboard.type(text.slice(0, count), { delay });
     await page.waitForTimeout(300);
+    const bg = opts.afterType ? await opts.afterType(page) : undefined;
     const lat = (await page.evaluate(() => window.__lat)).slice().sort((x, y) => x - y);
     const q = (p) => lat[Math.min(lat.length - 1, Math.ceil(p * lat.length) - 1)];
     const p50 = q(0.5), p95 = q(0.95), max = lat[lat.length - 1];
@@ -793,7 +797,7 @@ async function latency(origin, opts = {}) {
     check(lat.length >= count - 10, `#5 ${lat.length} keystrokes measured (${delay} ms between keys)`);
     if (opts.quick) {
       await harvestCsp(page);
-      return { p50, p95, max, n: lat.length, section: big, ...size, top: [] };
+      return { p50, p95, max, n: lat.length, section: big, ...size, top: [], bg };
     }
     console.log(`${p95 <= LATENCY_P95_TARGET_MS ? 'ok  ' : 'OVER'} #5 p95 keystroke-to-paint ${p95.toFixed(1)} ms (target ${LATENCY_P95_TARGET_MS} ms; reported, not gated)`);
     // a profile of 100 more keystrokes: the hottest functions by self time
@@ -8351,6 +8355,587 @@ async function wave7bChecks() {
   }
 }
 
+/* ---- locked review copy (design 2026-11-06, task 4): lockcopyChecks (E2E_ONLY=lockcopy) ----
+   The real server (serve.mjs { api: true }: src/app.ts on PGlite, billing in test mode against a fake Stripe on
+   127.0.0.1). 1.0 (/studio) and 2.0 (/next) side by side, each as its own account, the same book on each desk.
+   - Parity: the three locked paths (the export dialog's Word file, the submission manuscript, the print-ready PDF's
+     "Download locked copy") in both apps — the same controls, words, filenames and requests (method and path). Each
+     locked file goes through its oracle: the DOCX through msoffcrypto-tool (e2e/oracles/docx-decrypt.py, its venv), the
+     PDF through the vendored pdf.js in Chromium (1.0's own pdfLoadLib). The decrypted DOCX equals that side's unlocked
+     file byte for byte, the zip's entry dates masked (JSZip stamps each build with the time); the locked PDF opens with
+     the password to the unlocked PDF's pages (count, every page's text, page 1's pixels), is refused without it and
+     with a wrong one. The unlocked files are equal across the apps.
+   - The print-ready PDF: the pdfx job needs the renderer and Ghostscript, which this server has not. The job is NOT
+     run: the app's own requests go to the real server (the print interior uploaded, the job made), the job's poll is
+     answered "done" by the test (page route), and the finished file is a real archive row seeded on the real server
+     with the committed real Ghostscript output (studio/test/fixtures/pdfx-sample.pdf), downloaded through the real
+     /api/exports/<id>/download.
+   - No leak: every request of the context, from page load through all three locked downloads — its URL, every header
+     and the body: the password, its UTF-8 bytes in base64 and hex (and the password URL-encoded and UTF-16LE) appear
+     nowhere. Nor in localStorage, sessionStorage or a console line.
+   - 2.0's dialog stack: the PDF dialog keeps Tab inside it, Escape closes only it, focus returns to the link.
+   - Day 22 (7a's server states): trial and paid show the lock controls; day 22 hides them (after the plan is known:
+     the account box) and the unlocked downloads work. The hide is client-side only (no server request to refuse).
+   - Lock off: the downloads are 920efea's, byte for byte (dates masked), when LOCKCOPY_BASE names a checkout of 920efea
+     with its client/next built (a second static server serves it); without it, that comparison is reported NOT RUN.
+   - Latency: the Dumas p95 with a PDF lock and a DOCX lock started as the measured typing starts.
+   - Screenshots: the fieldset and the PDF dialog beside 1.0's, Paper, Candlelight and Arabic (gated as 5c's). */
+const LC_PW = 'Lantern-Ünlock ζ7!';
+const LC_FIXTURE = path.join(STUDIO, 'test', 'fixtures', 'pdfx-sample.pdf');
+const LC_ORACLE = path.join(STUDIO, 'e2e', 'oracles', 'docx-decrypt.py');
+const LC_PY = path.join(STUDIO, 'e2e', 'oracles', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+const lcSha = (b) => createHash('sha256').update(b).digest('hex');
+let lcSeq = 0;
+/** msoffcrypto-tool through the oracle script: { status: 'ok', bytes } | { status: 'refused' } | { status: 'missing' | 'error', detail }. */
+function lcDocxDecrypt(bytes, pw) {
+  if (!existsSync(LC_PY)) return { status: 'missing', detail: 'no venv at ' + LC_PY };
+  const n = ++lcSeq, inF = path.join(OUT, `lc-oracle-in-${n}.docx`), outF = path.join(OUT, `lc-oracle-out-${n}.docx`);
+  writeFileSync(inF, bytes);
+  const r = spawnSync(LC_PY, [LC_ORACLE, inF, outF, pw], { encoding: 'utf8', timeout: 120_000 });
+  if (r.status === 0) return { status: 'ok', bytes: readFileSync(outF) };
+  if (r.status === 1) return { status: 'refused', detail: (r.stderr || '').trim() };
+  return { status: r.status === 3 ? 'missing' : 'error', detail: ((r.stdout || '') + (r.stderr || '') + (r.error ? String(r.error) : '')).trim().slice(0, 200) };
+}
+function lcOracleVersion() {
+  if (!existsSync(LC_PY)) return null;
+  const r = spawnSync(LC_PY, [LC_ORACLE, '--probe'], { encoding: 'utf8', timeout: 60_000 });
+  return r.status === 0 ? r.stdout.trim() : null;
+}
+/** A zip with every entry's DOS time and date zeroed (central directory and local headers): what JSZip stamps per build. */
+function lcZipMaskDates(buf) {
+  const b = Buffer.from(buf);
+  let eocd = -1;
+  for (let i = b.length - 22; i >= Math.max(0, b.length - 65_557); i--) if (b.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) return null;
+  const count = b.readUInt16LE(eocd + 10);
+  let p = b.readUInt32LE(eocd + 16);
+  for (let k = 0; k < count; k++) {
+    if (b.readUInt32LE(p) !== 0x02014b50) return null;
+    b.writeUInt32LE(0, p + 12); // time, date
+    const local = b.readUInt32LE(p + 42);
+    if (b.readUInt32LE(local) !== 0x04034b50) return null;
+    b.writeUInt32LE(0, local + 10);
+    p += 46 + b.readUInt16LE(p + 28) + b.readUInt16LE(p + 30) + b.readUInt16LE(p + 32);
+  }
+  return b;
+}
+const lcSameZip = (a, b) => {
+  const x = lcZipMaskDates(a), y = lcZipMaskDates(b);
+  return !!x && !!y && x.equals(y);
+};
+/** Every request a context sends (URL, method, all headers, body), from its first page on. */
+function lcRecord(ctx) {
+  const reqs = [];
+  ctx.on('request', (r) => {
+    const e = { url: r.url(), method: r.method(), headers: r.headers(), body: r.postDataBuffer(), at: Date.now() };
+    reqs.push(e);
+    e.ready = r.allHeaders().then((h) => { e.headers = h; }, () => undefined);
+  });
+  return reqs;
+}
+/** Where the password (or a form of it) appears in the recorded requests. */
+async function lcLeaks(reqs, pw) {
+  await Promise.all(reqs.map((r) => r.ready));
+  const u8 = Buffer.from(pw, 'utf8');
+  const texts = [pw, u8.toString('base64'), u8.toString('hex'), u8.toString('hex').toUpperCase(), encodeURIComponent(pw), Buffer.from(pw, 'utf16le').toString('base64')];
+  const bins = [u8, Buffer.from(pw, 'utf16le'), ...texts.map((t) => Buffer.from(t, 'utf8'))];
+  const hits = [];
+  for (const r of reqs) {
+    let url = r.url;
+    try { url += ' ' + decodeURIComponent(r.url); } catch { /* not decodable */ }
+    if (texts.some((t) => url.includes(t))) hits.push('URL ' + r.method + ' ' + r.url.slice(0, 80));
+    for (const [k, v] of Object.entries(r.headers || {})) if (texts.some((t) => (k + ': ' + v).includes(t))) hits.push('header ' + k + ' of ' + r.method + ' ' + r.url.slice(0, 60));
+    if (r.body && bins.some((n) => r.body.indexOf(n) >= 0)) hits.push('body of ' + r.method + ' ' + r.url.slice(0, 60));
+  }
+  return hits;
+}
+const lcApi = (reqs, from = 0) => reqs.slice(from).filter((r) => /\/api\/(exports|jobs)/.test(new URL(r.url).pathname)).map((r) => r.method + ' ' + w7aId(new URL(r.url).pathname));
+async function lcDownload(page, click, timeout = 180_000) {
+  const dl = page.waitForEvent('download', { timeout });
+  await click();
+  const d = await dl;
+  return { name: d.suggestedFilename(), bytes: readFileSync(await d.path()) };
+}
+/** The controls of a fieldset or dialog, as the writer meets them (icons left out). */
+const LC_DESCRIBE = (sel) => {
+  const root = document.querySelector(sel);
+  if (!root) return null;
+  return [...root.querySelectorAll('*')].filter((e) => !e.closest('svg') && !['svg', 'i'].includes(e.tagName.toLowerCase())).map((e) =>
+    [e.tagName.toLowerCase(), e.id, e.getAttribute('name') || '', e.getAttribute('type') || '', e.getAttribute('autocomplete') || '', e.getAttribute('data-i18n') || '', e.hidden ? 'hidden' : '', e.disabled ? 'disabled' : '', e.checked ? 'checked' : '', e.children.length ? '' : (e.textContent || '').trim()].join('|'));
+};
+async function lcOpenExport(p, app) {
+  if (app === 'two') return w5aOpenModal(p);
+  await p.evaluate(() => document.getElementById('btnExport').click());
+  await p.waitForFunction(() => document.getElementById('modalExport')?.classList.contains('open') && document.querySelectorAll('#platformGrid [data-platform]').length === 11 && !!window.JSZip, null, { timeout: 30_000 });
+}
+/** The print-ready job's poll answered "done" (the job is NOT run here: see above), its file a real archive row seeded on
+ *  the real server with the committed Ghostscript output. Returns the seeded row's facts. */
+async function lcFakePdfxDone(ctx, origin, reqs) {
+  const seeded = { id: null, filename: null };
+  await ctx.route(/\/api\/jobs\/[0-9a-f-]{36}$/, async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    if (!seeded.id) {
+      const up = reqs.filter((x) => x.method === 'POST' && /\/api\/exports\?/.test(x.url) && /format=print-html/.test(x.url)).pop();
+      if (!up) return route.continue();
+      const q = new URL(up.url).searchParams;
+      seeded.filename = q.get('filename').replace(/\.[^.]*$/, '') + '-pdfx.pdf';
+      const r = await ctx.request.post(origin + '/api/exports?manuscriptId=' + encodeURIComponent(q.get('manuscriptId')) + '&format=pdfx&filename=' + encodeURIComponent(seeded.filename), { data: readFileSync(LC_FIXTURE), headers: { 'content-type': 'application/octet-stream' } });
+      seeded.id = (await r.json()).export?.id ?? null;
+    }
+    const id = new URL(route.request().url()).pathname.split('/').pop();
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ job: { id, kind: 'pdfx', sourceExportId: null, artifactExportId: seeded.id, status: 'done', result: { tool: 'ghostscript', artifactExportId: seeded.id }, createdAt: new Date().toISOString(), startedAt: null, finishedAt: new Date().toISOString() } }) });
+  });
+  return seeded;
+}
+/** Download print-ready PDF in the open export modal, through to the finished panel (its two links). */
+async function lcPrintReadyDone(p, app) {
+  if (app === 'two') await p.click('#btnPrintReadyPdf');
+  else await p.evaluate(() => document.getElementById('btnPrintReadyPdf').click());
+  await p.waitForSelector('#printReadyNote [data-pr-download]', { timeout: 120_000 });
+}
+/** One app through the three paths, lock off then on (the same book, the same password). */
+async function lcPaths(p, app, reqs) {
+  const out = { marks: {}, files: {}, controls: {}, stack: null };
+  await lcOpenExport(p, app);
+  out.files.docx = await lcDownload(p, () => p.click('#btnDownloadDocx'));
+  await p.check('#lockDocxOn');
+  out.controls.docx = await p.evaluate(LC_DESCRIBE, '#lockDocx');
+  await p.fill('#lockDocxPw', LC_PW);
+  await p.fill('#lockDocxPw2', LC_PW);
+  out.marks.docx = reqs.length;
+  out.files.docxLocked = await lcDownload(p, () => p.click('#btnDownloadDocx'));
+  await p.waitForFunction(() => !document.getElementById('btnDownloadDocx').disabled);
+  out.marks.docxEnd = reqs.length;
+  out.after = { docx: await p.evaluate(() => [document.getElementById('lockDocxPw').value, document.getElementById('lockDocxPw2').value, document.getElementById('lockDocxOn').checked]) };
+  await p.click('#btnMsOpen');
+  await p.waitForFunction(() => document.getElementById('modalManuscript').classList.contains('open'));
+  out.files.ms = await lcDownload(p, () => p.click('#btnMsDownload'));
+  await p.check('#lockMsOn');
+  out.controls.ms = await p.evaluate(LC_DESCRIBE, '#lockMs');
+  await p.fill('#lockMsPw', LC_PW);
+  await p.fill('#lockMsPw2', LC_PW);
+  out.marks.ms = reqs.length;
+  out.files.msLocked = await lcDownload(p, () => p.click('#btnMsDownload'));
+  await p.waitForFunction(() => !document.getElementById('btnMsDownload').disabled);
+  out.marks.msEnd = reqs.length;
+  out.after.ms = await p.evaluate(() => [document.getElementById('lockMsPw').value, document.getElementById('lockMsPw2').value, document.getElementById('lockMsOn').checked]);
+  await p.click('#btnMsClose');
+  await lcOpenExport(p, app);
+  out.marks.pr = reqs.length;
+  await lcPrintReadyDone(p, app);
+  out.files.pdf = await lcDownload(p, () => p.click('#printReadyNote [data-pr-download]'));
+  out.prLinks = await p.evaluate(() => [...document.querySelectorAll('#printReadyNote a')].map((a) => [a.textContent, a.getAttribute('href').replace(/[0-9a-f-]{36}/, '<id>'), a.hidden ? 'hidden' : '']));
+  await p.click('#printReadyNote [data-pr-locked]');
+  await p.waitForSelector('#modalLockPdf.open');
+  out.controls.pdf = await p.evaluate(LC_DESCRIBE, '#modalLockPdf .modal');
+  if (app === 'two') {
+    // 2.0's dialog stack (the fix in this task): Tab stays inside, Escape closes only this dialog, focus returns to the link
+    const where = () => p.evaluate(() => ({ inside: !!document.getElementById('modalLockPdf')?.contains(document.activeElement), id: document.activeElement?.id || document.activeElement?.getAttribute('data-pr-locked') && 'link' || document.activeElement?.tagName }));
+    const seen = [await where()];
+    for (let i = 0; i < 5; i++) {
+      await p.keyboard.press('Tab');
+      seen.push(await where());
+    }
+    for (let i = 0; i < 3; i++) {
+      await p.keyboard.press('Shift+Tab');
+      seen.push(await where());
+    }
+    await p.fill('#lockPdfPw', 'typed then escaped');
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(200);
+    const after = await p.evaluate(() => ({ lock: document.getElementById('modalLockPdf').classList.contains('open'), exp: document.getElementById('modalExport').classList.contains('open'), pw: document.getElementById('lockPdfPw').value, focus: document.activeElement?.getAttribute('data-pr-locked') ? 'link' : document.activeElement?.id || document.activeElement?.tagName }));
+    out.stack = { seen, after };
+    await p.click('#printReadyNote [data-pr-locked]');
+    await p.waitForSelector('#modalLockPdf.open');
+  }
+  await p.fill('#lockPdfPw', LC_PW);
+  await p.fill('#lockPdfPw2', LC_PW);
+  out.marks.pdf = reqs.length;
+  out.files.pdfLocked = await lcDownload(p, () => p.click('#btnLockPdfGo'));
+  await p.waitForFunction(() => !document.getElementById('modalLockPdf').classList.contains('open'), null, { timeout: 60_000 });
+  out.marks.pdfEnd = reqs.length;
+  out.after.pdf = await p.evaluate(() => [document.getElementById('lockPdfPw').value, document.getElementById('lockPdfPw2').value]);
+  out.store = await p.evaluate(() => JSON.stringify(localStorage) + JSON.stringify(sessionStorage));
+  return out;
+}
+/** pdf.js 6.4.299 (vendored, 1.0's pdfLoadLib) in the 1.0 page: opens `b64` without a password, with a wrong one and with
+ *  `pw`; the page count, every page's text (hashed), page 1 drawn (its PNG). */
+const LC_PDFJS = async ([b64, pw, canvasId]) => {
+  /* global pdfLoadLib */
+  const lib = await pdfLoadLib();
+  const data = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const hash = (s) => { let a = 0x811c9dc5; for (let i = 0; i < s.length; i++) a = Math.imul(a ^ s.charCodeAt(i), 0x01000193) >>> 0; return a.toString(16) + '.' + s.length; };
+  const open = async (password) => {
+    try {
+      const task = lib.getDocument({ data: data.slice(), password, verbosity: 0, useWasm: false, isOffscreenCanvasSupported: false });
+      const d = await task.promise;
+      return { ok: true, d, task };
+    } catch (e) {
+      return { ok: false, name: e && e.name, code: e && e.code };
+    }
+  };
+  const res = {};
+  for (const [k, v] of [['none', undefined], ['wrong', pw ? pw + 'x' : undefined]]) {
+    const r = await open(v);
+    res[k] = r.ok ? 'opened' : r.name + ' ' + r.code;
+    if (r.ok) await r.task.destroy();
+  }
+  const r = await open(pw || undefined);
+  if (!r.ok) return { ...res, right: r.name + ' ' + r.code };
+  res.right = 'opened';
+  res.pages = r.d.numPages;
+  const texts = [];
+  for (let i = 1; i <= r.d.numPages; i++) {
+    const pg = await r.d.getPage(i);
+    const tc = await pg.getTextContent();
+    texts.push(hash(tc.items.map((x) => x.str).join(' ')));
+  }
+  res.texts = texts;
+  const p1 = await r.d.getPage(1);
+  const vp = p1.getViewport({ scale: 1 });
+  let c = document.getElementById(canvasId);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.id = canvasId;
+    c.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;background:#fff';
+    document.body.appendChild(c);
+  }
+  c.width = Math.ceil(vp.width);
+  c.height = Math.ceil(vp.height);
+  await p1.render({ canvasContext: c.getContext('2d'), canvas: c, viewport: vp }).promise;
+  res.png = c.toDataURL('image/png').split(',')[1];
+  res.size = [c.width, c.height];
+  await r.task.destroy();
+  return res;
+};
+
+async function lockcopyParity(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const c2 = await newContext({ serviceWorkers: 'block', acceptDownloads: true }), c1 = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+  const r2 = lcRecord(c2), r1 = lcRecord(c1);
+  const consoleLines = [];
+  const diffCtx = await newContext();
+  const diffPage = await diffCtx.newPage();
+  try {
+    await lcFakePdfxDone(c2, origin, r2);
+    await lcFakePdfxDone(c1, origin, r1);
+    const two = await w7bNextLinked(c2, origin, f.file, 'lc2');
+    const book = (await exportBackup(two)).json.book;
+    await w7aSignUp(c1, origin, w7aEmail('lc1'));
+    const one = await w7bOneLinked(c1, origin, book);
+    for (const p of [two, one]) p.on('console', (m) => consoleLines.push(m.text()));
+    const g2 = await lcPaths(two, 'two', r2);
+    const g1 = await lcPaths(one, 'one', r1);
+    // the same controls, words and filenames
+    for (const k of ['docx', 'ms', 'pdf']) check(JSON.stringify(g2.controls[k]) === JSON.stringify(g1.controls[k]) && !!g1.controls[k]?.length, `lockcopy parity ${k}: 2.0's controls and words are 1.0's (${(g2.controls[k] || []).length} elements)${JSON.stringify(g2.controls[k]) === JSON.stringify(g1.controls[k]) ? '' : ' — 2.0: ' + JSON.stringify(g2.controls[k]).slice(0, 300) + ' — 1.0: ' + JSON.stringify(g1.controls[k]).slice(0, 300)}`);
+    check(JSON.stringify(g2.prLinks) === JSON.stringify(g1.prLinks), `lockcopy parity pdf: the finished panel's links are 1.0's: ${JSON.stringify(g2.prLinks)}${JSON.stringify(g2.prLinks) === JSON.stringify(g1.prLinks) ? '' : ' — 1.0: ' + JSON.stringify(g1.prLinks)}`);
+    const names = (g) => Object.fromEntries(Object.entries(g.files).map(([k, v]) => [k, v.name]));
+    check(JSON.stringify(names(g2)) === JSON.stringify(names(g1)), `lockcopy parity: the filenames are 1.0's: ${JSON.stringify(names(g2))}${JSON.stringify(names(g2)) === JSON.stringify(names(g1)) ? '' : ' — 1.0: ' + JSON.stringify(names(g1))}`);
+    const base = (n) => n.replace(/\.(docx|pdf)$/, '');
+    for (const g of [g2, g1]) {
+      check(g.files.docxLocked.name === base(g.files.docx.name) + '-locked.docx' && g.files.msLocked.name === base(g.files.ms.name) + '-locked.docx' && g.files.pdfLocked.name === base(g.files.pdf.name) + '-locked.pdf', `lockcopy ${g === g2 ? '2.0' : '1.0'}: each locked file is <the unlocked name>-locked (${g.files.docxLocked.name}, ${g.files.msLocked.name}, ${g.files.pdfLocked.name})`);
+      check(JSON.stringify(g.after) === JSON.stringify({ docx: ['', '', true], ms: ['', '', true], pdf: ['', ''] }), `lockcopy ${g === g2 ? '2.0' : '1.0'}: after each locked download both fields are empty and the box is kept (${JSON.stringify(g.after)})`);
+    }
+    // the requests: none during the two Word locks; the PDF path's are 1.0's (method and path)
+    for (const [g, r, who] of [[g2, r2, '2.0'], [g1, r1, '1.0']]) {
+      const during = [...r.slice(g.marks.docx, g.marks.docxEnd), ...r.slice(g.marks.ms, g.marks.msEnd)].filter((x) => new URL(x.url).origin === origin);
+      check(during.length === 0, `lockcopy ${who}: the Word and manuscript locks send no request (${during.length}${during.length ? ': ' + during.map((x) => x.method + ' ' + new URL(x.url).pathname).slice(0, 4).join(', ') : ''})`);
+    }
+    const q2 = lcApi(r2, g2.marks.pr), q1 = lcApi(r1, g1.marks.pr);
+    check(JSON.stringify(q2) === JSON.stringify(q1) && q2.filter((x) => /\/download$/.test(x)).length === 2, `lockcopy parity pdf: the print-ready path's requests are 1.0's (method and path): ${JSON.stringify(q2)}${JSON.stringify(q2) === JSON.stringify(q1) ? '' : ' — 1.0: ' + JSON.stringify(q1)}`);
+    for (const [g, r, who] of [[g2, r2, '2.0'], [g1, r1, '1.0']]) {
+      const lockReq = r.slice(g.marks.pdf, g.marks.pdfEnd).filter((x) => new URL(x.url).origin === origin).map((x) => x.method + ' ' + w7aId(new URL(x.url).pathname));
+      check(JSON.stringify(lockReq) === JSON.stringify(['GET /api/exports/<id>/download']), `lockcopy ${who}: "Download locked copy" sends one request, GET /api/exports/<id>/download (${JSON.stringify(lockReq)})`);
+    }
+    // no leak
+    const l2 = await lcLeaks(r2, LC_PW), l1 = await lcLeaks(r1, LC_PW);
+    check(l2.length === 0 && l1.length === 0, `lockcopy no leak: the password, its UTF-8 in base64 and hex (and URL-encoded, UTF-16LE) are in no URL, header or body of ${r2.length} (2.0) + ${r1.length} (1.0) requests from page load through the three locked downloads${l2.length + l1.length ? ' — ' + [...l2, ...l1].slice(0, 4).join('; ') : ''}`);
+    const pwForms = [LC_PW, Buffer.from(LC_PW).toString('base64'), Buffer.from(LC_PW).toString('hex')];
+    check(![g2.store, g1.store].some((s) => pwForms.some((x) => s.includes(x))), 'lockcopy no leak: nor in localStorage or sessionStorage (both apps)');
+    check(!consoleLines.some((s) => pwForms.some((x) => s.includes(x))), `lockcopy no leak: nor in a console line (${consoleLines.length} lines)`);
+    // the oracles
+    note('lockcopy oracles: ' + (lcOracleVersion() || 'msoffcrypto-tool NOT FOUND') + '; pdf.js 6.4.299 (client/assets/vendor/pdfjs-6.4.299) in ' + browser.version());
+    for (const [g, who] of [[g2, '2.0'], [g1, '1.0']]) {
+      for (const k of ['docx', 'ms']) {
+        const locked = g.files[k + 'Locked'].bytes, plain = g.files[k].bytes;
+        const cfb = locked.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]));
+        const ok = lcDocxDecrypt(locked, LC_PW), wrong = lcDocxDecrypt(locked, LC_PW + 'x');
+        check(cfb && ok.status === 'ok' && wrong.status === 'refused', `lockcopy ${who} ${k}: the locked file is a compound file that msoffcrypto-tool opens with the password and refuses with a wrong one (${ok.status}${ok.detail ? ' ' + ok.detail : ''} / ${wrong.status})`);
+        if (ok.status === 'ok') check(lcSameZip(ok.bytes, plain), `lockcopy ${who} ${k}: decrypted, it is this side's unlocked file byte for byte, entry dates masked (${ok.bytes.length} / ${plain.length} bytes; unmasked ${ok.bytes.equals(plain) ? 'equal too' : 'differ only where masked'})`);
+        if (who === '2.0') writeFileSync(path.join(OUT, `lc-sample-${g.files[k + 'Locked'].name}`), locked);
+      }
+    }
+    for (const k of ['docx', 'ms']) check(lcSameZip(g2.files[k].bytes, g1.files[k].bytes), `lockcopy parity ${k}: the unlocked files are equal across the apps, byte for byte, entry dates masked (${g2.files[k].bytes.length} / ${g1.files[k].bytes.length} bytes)`);
+    const fx = readFileSync(LC_FIXTURE);
+    check(g2.files.pdf.bytes.equals(fx) && g1.files.pdf.bytes.equals(fx), `lockcopy parity pdf: the unlocked print-ready PDF is the stored file in both apps, byte for byte (sha256 ${lcSha(fx).slice(0, 16)}…, ${fx.length} bytes)`);
+    writeFileSync(path.join(OUT, `lc-sample-${g2.files.pdfLocked.name}`), g2.files.pdfLocked.bytes);
+    // pdf.js in Chromium
+    const plainR = await one.evaluate(LC_PDFJS, [fx.toString('base64'), '', 'lcCanvasPlain']);
+    check(plainR.none === 'opened' && plainR.pages > 0, `lockcopy pdf.js: the unlocked fixture opens (${plainR.pages} pages)`);
+    for (const [g, who] of [[g2, '2.0'], [g1, '1.0']]) {
+      const b = g.files.pdfLocked.bytes;
+      const head = b.toString('latin1');
+      check(/\/Filter\s*\/Standard/.test(head) && /\/V\s+5/.test(head) && /\/R\s+6/.test(head) && /\/AESV3/.test(head) && !/\/RC4/.test(head), `lockcopy ${who} pdf: the locked copy declares the standard handler, /V 5 /R 6, AESV3 (${b.length} bytes)`);
+      const r = await one.evaluate(LC_PDFJS, [b.toString('base64'), LC_PW, 'lcCanvas']);
+      check(r.none === 'PasswordException 1' && r.wrong === 'PasswordException 2', `lockcopy ${who} pdf.js: refused without the password (${r.none}) and with a wrong one (${r.wrong})`);
+      check(r.right === 'opened' && r.pages === plainR.pages && JSON.stringify(r.texts) === JSON.stringify(plainR.texts), `lockcopy ${who} pdf.js: with the password it opens to the unlocked file's pages: ${r.pages} pages (unlocked ${plainR.pages}), every page's text the same (${r.texts ? r.texts.filter((x, i) => x === plainR.texts[i]).length : 0} of ${plainR.texts.length})`);
+      if (r.png) {
+        const shot = await one.locator('#lcCanvas').screenshot();
+        writeFileSync(path.join(OUT, `lc-pdfjs-page1-${who}.png`), shot);
+        const d = await pixelDiff(diffPage, Buffer.from(r.png, 'base64'), Buffer.from(plainR.png, 'base64'));
+        check(d.ratio === 0 && r.size.join() === plainR.size.join(), `lockcopy ${who} pdf.js: page 1 renders exactly as the unlocked file's (${(d.ratio * 100).toFixed(3)} % of pixels differ, ${r.size.join('×')}); screenshot lc-pdfjs-page1-${who}.png`);
+      }
+    }
+    await one.evaluate(() => { for (const id of ['lcCanvas', 'lcCanvasPlain']) document.getElementById(id)?.remove(); });
+    // 2.0's dialog stack
+    const s = g2.stack;
+    check(!!s && s.seen.every((x) => x.inside) && s.seen[0].id === 'lockPdfPw', `lockcopy 2.0 dialog stack: focus starts on the password and Tab / Shift+Tab stay inside the PDF dialog (${s ? s.seen.map((x) => x.id).join(' → ') : 'not run'})`);
+    check(!!s && !s.after.lock && s.after.exp && s.after.pw === '' && s.after.focus === 'link', `lockcopy 2.0 dialog stack: Escape closes only the PDF dialog, empties it, and focus returns to the link (${JSON.stringify(s && s.after)})`);
+    await harvestCsp(two);
+    await harvestCsp(one);
+  } finally {
+    await diffCtx.close();
+    await c1.close();
+    await c2.close();
+  }
+}
+
+/* Day 22 (7a's server states): one account, both apps on its desk (as wave7aDay22). */
+async function lockcopyDay22(srv) {
+  const origin = srv.origin;
+  const db = srv.shelf.db;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  for (const st of ['trial', 'paid', 'day22']) {
+    const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+    const reqs = lcRecord(ctx);
+    try {
+      const email = w7aEmail('lc' + st);
+      await w7aSignUp(ctx, origin, email);
+      if (st === 'day22') await db.query("update users set trial_ends_at = now() - interval '1 day' where email = $1", [email]);
+      if (st === 'paid') {
+        const uid = (await db.query('select id from users where email = $1', [email])).rows[0].id;
+        await db.query("update users set trial_ends_at = now() - interval '1 day', stripe_customer_id = $2 where id = $1", [uid, 'cus_' + uid.slice(0, 8)]);
+        await db.query("insert into billing_subscriptions (stripe_subscription_id, user_id, stripe_customer_id, status, status_since, price_ids, livemode) values ($1, $2, $3, 'active', now(), $4, false)", ['sub_' + uid.slice(0, 8), uid, 'cus_' + uid.slice(0, 8), ['price_fixture']]);
+      }
+      await lcFakePdfxDone(ctx, origin, reqs);
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      await w7aWait(page, () => window.beukCloud?.cloud?.available && !!window.beukCloud.cloud.user, null, 30_000);
+      const one = await openOne(ctx, origin);
+      await w7aWait(one, () => typeof cloud !== 'undefined' && cloud.available && !!cloud.user, null, 30_000);
+      const start = (await exportBackup(page)).json.book;
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+      const shown = (p) => p.evaluate(() => ({ docx: !document.getElementById('lockDocx').hidden, ms: !document.getElementById('lockMs').hidden, link: [...document.querySelectorAll('#printReadyNote [data-pr-locked]')].filter((a) => !a.hidden).length, access: document.documentElement.getAttribute('data-plan-access') }));
+      const before = { two: await shown(page), one: await shown(one) };
+      // the plan, as each app learns it (the account box: 1.0's portalRefresh)
+      await page.bringToFront();
+      await page.click('#btnAccount');
+      await page.waitForSelector('#modalShelf.open');
+      await page.waitForFunction(() => !!document.documentElement.getAttribute('data-plan-access'), null, { timeout: 30_000 });
+      await page.click('#btnCloseShelf');
+      await one.bringToFront();
+      await one.evaluate(() => { $('btnAccount').click(); }); // eslint-disable-line no-undef
+      await one.waitForFunction(() => !!document.documentElement.getAttribute('data-plan-access'), null, { timeout: 30_000 });
+      await one.evaluate(() => $('modalShelf').classList.remove('open')); // eslint-disable-line no-undef
+      const res = {};
+      for (const [p, app] of [[page, 'two'], [one, 'one']]) {
+        await p.bringToFront();
+        await lcOpenExport(p, app);
+        const plain = await lcDownload(p, () => p.click('#btnDownloadDocx'));
+        await p.click('#btnMsOpen');
+        await p.waitForFunction(() => document.getElementById('modalManuscript').classList.contains('open'));
+        const plainMs = await lcDownload(p, () => p.click('#btnMsDownload'));
+        await p.click('#btnMsClose');
+        await lcOpenExport(p, app);
+        if (app === 'two') await p.click('#btnPrintReadyPdf');
+        else await p.evaluate(() => document.getElementById('btnPrintReadyPdf').click());
+        await p.waitForTimeout(300);
+        await p.waitForFunction(() => !document.getElementById('btnPrintReadyPdf').disabled && !document.getElementById('printReadyNote').hidden, null, { timeout: 120_000 });
+        res[app] = { ...(await shown(p)), files: [plain.name, plain.bytes.subarray(0, 2).toString('latin1'), plainMs.name, plainMs.bytes.subarray(0, 2).toString('latin1')], note: await p.evaluate(() => document.getElementById('printReadyNote').textContent.slice(0, 90)) };
+      }
+      const want = st === 'day22' ? { docx: false, ms: false, link: 0 } : { docx: true, ms: true, link: 1 };
+      for (const app of ['two', 'one']) {
+        const r = res[app];
+        check(r.docx === want.docx && r.ms === want.ms && r.link === want.link, `lockcopy day 22 (${st}) ${app === 'two' ? '2.0' : '1.0'}: the lock controls are ${st === 'day22' ? 'hidden' : 'shown'} (Word ${r.docx}, manuscript ${r.ms}, locked-PDF links shown ${r.link}; plan access "${r.access}"; panel: "${r.note}")`);
+        check(r.files[1] === 'PK' && r.files[3] === 'PK' && !/locked/.test(r.files[0] + r.files[2]), `lockcopy day 22 (${st}) ${app === 'two' ? '2.0' : '1.0'}: the unlocked Word and manuscript downloads work (${r.files[0]}, ${r.files[2]})`);
+      }
+      check(JSON.stringify({ ...res.two, note: 0 }) === JSON.stringify({ ...res.one, note: 0 }) && res.two.note === res.one.note, `lockcopy day 22 (${st}): 2.0 shows what 1.0 shows${JSON.stringify(res.two) === JSON.stringify(res.one) ? '' : ' — 2.0: ' + JSON.stringify(res.two) + ' — 1.0: ' + JSON.stringify(res.one)}`);
+      note(`lockcopy day 22 (${st}): before the plan is known (the account box not yet opened this session) the controls stood: 2.0 ${JSON.stringify(before.two)}, 1.0 ${JSON.stringify(before.one)}`);
+      await harvestCsp(page);
+      await harvestCsp(one);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
+/* Lock off against 920efea: the same book's Word file and manuscript, lock off, from this build and from 920efea's (a
+   second static server on LOCKCOPY_BASE), in each app. The print-ready PDF's unlocked link is the server's stored file
+   (no server change on this branch; the parity part shows it byte-equal to the stored fixture). */
+async function lockcopyLockOff(origin) {
+  const baseRepo = process.env.LOCKCOPY_BASE;
+  if (!baseRepo) {
+    note('lockcopy lock off vs 920efea: NOT RUN (LOCKCOPY_BASE unset) — not a pass');
+    return;
+  }
+  const base = await startServer({ repo: path.resolve(baseRepo) });
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const head = spawnSync('git', ['-C', path.resolve(baseRepo), 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).stdout.trim();
+  note(`lockcopy lock off: 920efea's build (checkout ${head} at ${baseRepo}) on ${base.origin}, this build on ${origin}`);
+  try {
+    const got = {};
+    for (const [o, tag] of [[origin, 'head'], [base.origin, 'base']]) {
+      for (const app of ['two', 'one']) {
+        const ctx = await newContext({ serviceWorkers: 'block', acceptDownloads: true });
+        try {
+          let p;
+          if (app === 'two') p = await w5aOpen(ctx, o, f.file);
+          else {
+            const two = await w5aOpen(ctx, o, f.file);
+            const start = (await exportBackup(two)).json.book;
+            await two.close();
+            p = await openOne(ctx, o);
+            await p.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(f.book, start)); // eslint-disable-line no-undef
+          }
+          await lcOpenExport(p, app);
+          const docx = await lcDownload(p, () => p.click('#btnDownloadDocx'));
+          await p.click('#btnMsOpen');
+          await p.waitForFunction(() => document.getElementById('modalManuscript').classList.contains('open'));
+          const ms = await lcDownload(p, () => p.click('#btnMsDownload'));
+          got[tag + ' ' + app] = { docx, ms };
+          await harvestCsp(p);
+        } finally {
+          await ctx.close();
+        }
+      }
+    }
+    for (const app of ['two', 'one'])
+      for (const k of ['docx', 'ms']) {
+        const a = got['head ' + app][k], b = got['base ' + app][k];
+        check(a.name === b.name && lcSameZip(a.bytes, b.bytes), `lockcopy lock off ${app === 'two' ? '2.0' : '1.0'} ${k}: this build's download is 920efea's, byte for byte, entry dates masked (${a.name} ${a.bytes.length} bytes; 920efea ${b.name} ${b.bytes.length})`);
+      }
+  } finally {
+    await base.stop().catch(() => undefined);
+  }
+}
+
+/* Latency: the Dumas typing measure with a lock running in the page (a PDF lock of the real fixture, then a DOCX lock
+   of a package of the same size), both started as the measured typing starts. */
+async function lockcopyLatency(origin) {
+  const fx = readFileSync(LC_FIXTURE).toString('base64');
+  const r = await latency(origin, {
+    quick: true,
+    beforeType: (page) => page.evaluate(([b64, pw]) => {
+      const pdf = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const st = (window.__lcBg = { pdfMs: null, docxMs: null, error: null, startedAt: performance.now() });
+      (async () => {
+        const t0 = performance.now();
+        await window.beukExport.run((api) => api.lockPdfBytes(pdf, pw));
+        st.pdfMs = performance.now() - t0;
+        const z = new window.JSZip();
+        z.file('[Content_Types].xml', '<Types/>');
+        z.file('word/media/big.bin', pdf);
+        const pkg = await z.generateAsync({ type: 'uint8array' });
+        const t1 = performance.now();
+        await window.beukExport.run((api) => api.lockDocxBytes(pkg, pw));
+        st.docxMs = performance.now() - t1;
+        st.endedAt = performance.now();
+      })().catch((e) => { st.error = String(e && e.message); });
+    }, [fx, LC_PW]),
+    afterType: (page) => page.evaluate(() => window.__lcBg),
+  });
+  const bg = r.bg || {};
+  note(`lockcopy latency (a PDF lock ${bg.pdfMs ? bg.pdfMs.toFixed(0) + ' ms' : 'unfinished'}, then a DOCX lock ${bg.docxMs ? bg.docxMs.toFixed(0) + ' ms' : 'unfinished'}, started with the typing${bg.endedAt ? ', ended ' + ((bg.endedAt - bg.startedAt) / 1000).toFixed(1) + ' s in' : ''}${bg.error ? '; error: ' + bg.error : ''}): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+  check(!!bg.pdfMs && !!bg.docxMs && !bg.error, 'lockcopy latency: both locks ran to the end while the typing was measured');
+  check(r.p95 < LATENCY_P95_TARGET_MS, `lockcopy latency: Dumas p95 under ${LATENCY_P95_TARGET_MS} ms with a lock running (${r.p95.toFixed(1)} ms)`);
+}
+
+/* Screenshots: the Word file's fieldset (ticked: its fields shown) and the print-ready PDF's dialog, beside 1.0's, in
+   Paper, Candlelight and Arabic (gated as wave 5c's). */
+async function lockcopyScreens(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const diffCtx = await newContext();
+  const diffPage = await diffCtx.newPage();
+  try {
+    for (const run of [{ theme: 'paper' }, { theme: 'candlelight' }, { theme: 'paper', lang: 'ar' }]) {
+      const tag = run.theme + (run.lang ? '-' + run.lang : '');
+      const mk = async () => {
+        const c = await newContext({ serviceWorkers: 'block', reducedMotion: 'reduce' });
+        await c.addInitScript(([th, l]) => {
+          try {
+            localStorage.setItem('beuk.theme.v1', th);
+            if (l) localStorage.setItem('beuk.uiLang.v1', l);
+          } catch {
+            /* no storage */
+          }
+        }, [run.theme, run.lang]);
+        return c;
+      };
+      const c1 = await mk(), c2 = await mk();
+      const r1 = lcRecord(c1), r2 = lcRecord(c2);
+      try {
+        await lcFakePdfxDone(c1, origin, r1);
+        await lcFakePdfxDone(c2, origin, r2);
+        const two = await w7bNextLinked(c2, origin, f.file, 'lcs2');
+        const book = (await exportBackup(two)).json.book;
+        await w7aSignUp(c1, origin, w7aEmail('lcs1'));
+        const one = await w7bOneLinked(c1, origin, book);
+        const shots = {};
+        for (const [p, app] of [[two, 'two'], [one, 'one']]) {
+          await p.bringToFront();
+          await lcOpenExport(p, app);
+          await p.check('#lockDocxOn');
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(3800);
+          await p.locator('#lockDocx').scrollIntoViewIfNeeded();
+          shots[app + ' fieldset'] = await p.locator('#lockDocx').screenshot();
+          await lcPrintReadyDone(p, app);
+          await p.click('#printReadyNote [data-pr-locked]');
+          await p.waitForSelector('#modalLockPdf.open');
+          await p.evaluate(() => document.fonts.ready);
+          await p.waitForTimeout(3800);
+          shots[app + ' dialog'] = await p.locator('#modalLockPdf .modal').screenshot();
+          await p.click('#btnLockPdfClose');
+        }
+        for (const k of ['fieldset', 'dialog']) {
+          const a = shots['one ' + k], b = shots['two ' + k];
+          writeFileSync(path.join(OUT, `lc-${k}-${tag}-one.png`), a);
+          writeFileSync(path.join(OUT, `lc-${k}-${tag}-two.png`), b);
+          const d = await pixelDiff(diffPage, a, b);
+          check(d.ratio <= PIXEL_TOLERANCE, `lockcopy screenshots ${tag}: the ${k === 'fieldset' ? 'Word fieldset (#lockDocx)' : 'PDF dialog (#modalLockPdf)'} differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
+        }
+        await harvestCsp(two);
+        await harvestCsp(one);
+      } finally {
+        await c1.close();
+        await c2.close();
+      }
+    }
+  } finally {
+    await diffCtx.close();
+  }
+}
+
+async function lockcopyChecks(staticOrigin) {
+  const stripe = await w7aFakeStripe();
+  const srv = await startServer({ repo: REPO, api: true, apiConfig: { stripeWebhookSecret: 'whsec_test_placeholder', stripeSecretKey: 'sk_test_placeholder', stripePriceId: 'price_fixture', stripeApiBase: stripe.base } });
+  note(`lockcopy: the real server on ${srv.origin} (PGlite), billing in test mode against a fake Stripe on ${stripe.base}; the print-ready pdfx job is NOT run (no renderer, no Ghostscript here): its poll is answered "done" and its file is the committed real output, seeded`);
+  const only = (process.env.LOCKCOPY_PARTS || 'parity,day22,lockoff,latency,screens').split(',');
+  try {
+    if (only.includes('parity')) await lockcopyParity(srv);
+    if (only.includes('day22')) await lockcopyDay22(srv);
+    if (only.includes('lockoff')) await lockcopyLockOff(staticOrigin);
+    if (only.includes('latency')) await lockcopyLatency(staticOrigin);
+    if (only.includes('screens')) await lockcopyScreens(srv);
+  } finally {
+    await srv.stop().catch(() => undefined);
+    await stripe.close();
+  }
+}
+
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -8384,6 +8969,7 @@ try {
   if (run('wave6')) await wave6Checks(srv.origin);
   if (run('wave7a')) await wave7aChecks();
   if (run('wave7b')) await wave7bChecks();
+  if (run('lockcopy')) await lockcopyChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
