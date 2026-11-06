@@ -43,6 +43,10 @@ export const ACCOUNT_DELETED_TABLES = [
   'school_progress',
   'shares',
   'billing_subscriptions',
+  // OAuth 2.1 (migration 022): the user's MCP credentials (hashes) die
+  // with the account. oauth_clients has no FK to users — registrations
+  // are not account data — so it is in neither list, rightly.
+  'oauth_tokens',
 ] as const;
 /** Rows kept with user_id set null, and why. */
 export const ACCOUNT_DETACHED_TABLES: Readonly<Record<string, string>> = {
@@ -627,6 +631,7 @@ export async function deleteAccount(
     }
     await tx.query('update billing_subscriptions set user_id = null where user_id = $1', [userId]);
     await tx.query('update billing_events set user_id = null where user_id = $1', [userId]);
+    await del('oauth_tokens', 'delete from oauth_tokens where user_id = $1', [userId]);
     await del('sessions', 'delete from sessions where user_id = $1', [userId]);
     await del('users', 'delete from users where id = $1', [userId]);
   });

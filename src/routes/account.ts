@@ -13,6 +13,7 @@ import {
   SESSION_COOKIE,
   tokenHash,
 } from '../auth.js';
+import { revokeUserOAuthTokens } from '../oauth/model.js';
 
 /**
  * P0 #5 account basics, mounted next to the M1 auth routes at /api/auth:
@@ -194,6 +195,9 @@ export function accountRoutes(
           'delete from sessions where user_id = $1 returning id',
           [row.user_id],
         );
+        // "Signs you out everywhere" includes OAuth: a reset is compromise
+        // recovery, so every MCP bearer/refresh token dies with the sessions.
+        await revokeUserOAuthTokens(tx, row.user_id);
         // Any other outstanding links for this account die with it.
         await tx.query(
           'update password_resets set used_at = now() where user_id = $1 and used_at is null',
@@ -236,6 +240,11 @@ export function accountRoutes(
           'delete from sessions where user_id = $1 and token_hash <> $2 returning id',
           [user.id, currentHash],
         );
+        // OAuth tokens are "other sessions" too — unlike this browser's
+        // cookie, none of them just proved the current password, so a
+        // password change revokes them all (the MCP client reconnects
+        // through /authorize).
+        await revokeUserOAuthTokens(tx, user.id);
         await tx.query(
           'update password_resets set used_at = now() where user_id = $1 and used_at is null',
           [user.id],
@@ -254,6 +263,10 @@ export function accountRoutes(
         'delete from sessions where user_id = $1 returning id',
         [req.user!.id],
       );
+      // OAuth 2.1 (Phase 1): "everywhere" includes the MCP connector —
+      // every live consent, code, access and refresh token dies here too.
+      // The response keeps its shape (`revoked` stays the SESSION count).
+      await revokeUserOAuthTokens(db, req.user!.id);
       clearSessionCookie(res, config.cookieSecure);
       return res.json({ ok: true, revoked: revoked.rows.length });
     } catch (err) {

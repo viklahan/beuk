@@ -158,6 +158,21 @@
 		reverse_proxy app:3000
 	}
 
+	# OAuth 2.1 for the remote MCP server (src/routes/oauth.ts): the
+	# authorize + consent pages, and the RFC 8414 / RFC 9728 discovery
+	# documents, which MUST live at the origin root (/.well-known/…) —
+	# without these handles the static mount below would answer them
+	# with the studio's index.html.
+	handle /authorize* {
+		reverse_proxy app:3000
+	}
+	handle /.well-known/oauth-authorization-server* {
+		reverse_proxy app:3000
+	}
+	handle /.well-known/oauth-protected-resource* {
+		reverse_proxy app:3000
+	}
+
 	# Beuk School media (lesson video, audio and screenshots) straight
 	# from disk, with range requests so video seeks work. Produced by
 	# tools/school-media and copied to ./school-media on the box. The more

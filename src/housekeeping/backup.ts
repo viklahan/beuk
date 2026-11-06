@@ -47,6 +47,9 @@ export const BACKUP_TABLES = [
   'exports',
   'jobs',
   'sessions',
+  // OAuth 2.1 (migration 022): client REGISTRATIONS are data (public
+  // clients, no secret inside); the tokens themselves are excluded below.
+  'oauth_clients',
   'founders_applications',
   'shares',
   'share_comments',
@@ -62,6 +65,8 @@ export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
     'live credentials (single-use reset tokens); restore deletes every row so no pre-restore reset link keeps working',
   email_confirmations:
     'live credentials (single-use email-confirmation links); restore deletes the users they belong to (on delete cascade), so no pre-restore link keeps working',
+  oauth_tokens:
+    'live credentials (OAuth consent/code/access/refresh token hashes); restore deletes the users they belong to (on delete cascade), so no pre-restore bearer or refresh token keeps working — the MCP client reconnects through /authorize',
   housekeeping_audit: 'append-only evidence; a restore must not rewrite history',
   housekeeping_check_runs: 'append-only evidence; a restore must not rewrite history',
   housekeeping_signoffs: 'append-only evidence; a restore must not rewrite history',
