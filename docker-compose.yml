@@ -198,6 +198,42 @@ services:
       retries: 3
       start_period: 30s
 
+  # Phase 2: the Beuk MCP server (../beuk-ai — ITS OWN service and
+  # checkout; the deploy box needs beuk-ai next to beuk-saas, the same
+  # sibling layout as dev). A thin bearer-forwarding client over the
+  # app: no DATABASE_URL on purpose — the app owns every token check.
+  mcp:
+    build: ../beuk-ai
+    image: beuk-mcp:latest
+    restart: unless-stopped
+    logging: *default-logging
+    init: true
+    stop_grace_period: 15s
+    environment:
+      PORT: "3100"
+      # The app over the compose-internal network; the caller's bearer
+      # rides along on every request.
+      BEUK_API_BASE: http://app:3000
+      # This service's PUBLIC origin (the OAuth resource identifier) —
+      # https://mcp.beuk.studio in production. The default follows
+      # DOMAIN so the local stack works without extra settings.
+      MCP_PUBLIC_ORIGIN: ${MCP_PUBLIC_ORIGIN:-https://mcp.${DOMAIN:-localhost}}
+      # The authorization server (Phase 1, beuk-saas): must equal the
+      # app's public APP_BASE_URL.
+      AUTH_BASE_URL: ${APP_BASE_URL:-https://localhost}
+      SHUTDOWN_GRACE_MS: ${SHUTDOWN_GRACE_MS:-10000}
+    expose:
+      - "3100"
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped

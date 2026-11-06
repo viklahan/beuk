@@ -58,6 +58,35 @@ export function requireBearer(db: Db, config: Config, needed?: OAuthScope) {
   };
 }
 
+/** Phase 2: a whole router the studio (cookies) and the MCP server
+ *  (bearer) both use, with the scope decided BY METHOD — a bearer may
+ *  read (GET/HEAD need beuk:read) or write (anything else needs
+ *  beuk:write) exactly what its consent screen granted. A cookie
+ *  session passes untouched: the studio's behaviour does not change by
+ *  one byte. Built on requireSessionOrBearer so the refusal bodies
+ *  stay identical too. */
+export function sessionOrScopedBearer(db: Db, config: Config) {
+  const base = requireSessionOrBearer(db, config);
+  return (req: Request, res: Response, next: NextFunction): void => {
+    void base(req, res, (err?: unknown) => {
+      if (err) return next(err);
+      // No oauthScopes ⇒ the request authenticated with a cookie
+      // session (requireSessionOrBearer only sets it for bearers).
+      if (req.oauthScopes === undefined) return next();
+      const needed: OAuthScope = req.method === 'GET' || req.method === 'HEAD' ? 'beuk:read' : 'beuk:write';
+      if (!scopeGranted(req.oauthScopes, needed)) {
+        res.setHeader(
+          'WWW-Authenticate',
+          `Bearer realm="beuk", error="insufficient_scope", scope="${needed}"`,
+        );
+        res.status(403).json({ error: `this token is missing the ${needed} scope` });
+        return;
+      }
+      return next();
+    });
+  };
+}
+
 /** Cookie session first, bearer token second — for endpoints the studio
  *  (cookies) and the MCP server (bearer) both call, like /api/auth/me.
  *  The refusal bodies match requireAuth's exactly, so nothing the studio

@@ -434,3 +434,102 @@ test('a 401 names the protected-resource metadata (RFC 9728 discovery)', async (
   assert.match(header, /resource_metadata=/);
   assert.match(header, /invalid_token/);
 });
+
+/* ---- Phase 2: the API as an OAuth resource server (MCP tools call
+   these with the writer's bearer; the studio's cookies are untouched). */
+
+async function bearerFetch(
+  method: string,
+  path: string,
+  access: string,
+  body?: unknown,
+): Promise<{ status: number; body: Record<string, unknown>; header: (name: string) => string }> {
+  const res = await fetch(`${server.base}${path}`, {
+    method,
+    headers: {
+      authorization: `Bearer ${access}`,
+      ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  return {
+    status: res.status,
+    body: (await res.json()) as Record<string, unknown>,
+    header: (name: string) => res.headers.get(name) ?? '',
+  };
+}
+
+async function createBook(browser: Browser, title: string): Promise<string> {
+  const res = await fetch(`${server.base}/api/manuscripts`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', cookie: `beuk_session=${browser.cookie}` },
+    body: JSON.stringify({ title, doc: { title, sections: [] } }),
+  });
+  assert.equal(res.status, 201);
+  return ((await res.json()) as { manuscript: { id: string } }).manuscript.id;
+}
+
+test('a bearer-authed /me reports the token scopes; cookie answers stay scopeless', async () => {
+  const grant = await fullGrant('oauth-introspect@example.com', 'beuk:read beuk:export');
+  const viaBearer = await bearerFetch('GET', '/api/auth/me', grant.access);
+  assert.equal(viaBearer.status, 200);
+  assert.equal(viaBearer.body.scopes, 'beuk:read beuk:export');
+  const viaCookie = await fetch(`${server.base}/api/auth/me`, {
+    headers: { cookie: `beuk_session=${grant.browser.cookie}` },
+  });
+  assert.equal(viaCookie.status, 200);
+  assert.ok(!('scopes' in ((await viaCookie.json()) as Record<string, unknown>)), 'cookie /me carries no scopes key');
+});
+
+test('beuk:read bearer reads the shelf: list, one book, and its format check', async () => {
+  const grant = await fullGrant('oauth-shelf-read@example.com', 'beuk:read');
+  const bookId = await createBook(grant.browser, 'Bearer-Read Book');
+
+  const list = await bearerFetch('GET', '/api/manuscripts', grant.access);
+  assert.equal(list.status, 200);
+  const books = list.body.manuscripts as Array<{ id: string; title: string }>;
+  assert.ok(books.some((b) => b.id === bookId));
+
+  const one = await bearerFetch('GET', `/api/manuscripts/${bookId}`, grant.access);
+  assert.equal(one.status, 200);
+  assert.equal((one.body.manuscript as { title: string }).title, 'Bearer-Read Book');
+
+  const check = await bearerFetch('GET', `/api/manuscripts/${bookId}/check`, grant.access);
+  assert.equal(check.status, 200);
+  const found = check.body.check as { status: string; warnings: unknown[]; upgrades: unknown[]; preservedPaths: unknown[] };
+  // readBook never throws: an empty-sections doc reads as a book, with
+  // whatever honest warnings it earns — the shape is the contract here.
+  assert.ok(['ok', 'newer', 'failed'].includes(found.status));
+  assert.ok(Array.isArray(found.warnings));
+  assert.ok(Array.isArray(found.upgrades));
+  assert.ok(Array.isArray(found.preservedPaths));
+});
+
+test('a read-only bearer may not write: POST is 403 insufficient_scope naming beuk:write', async () => {
+  const grant = await fullGrant('oauth-shelf-readonly@example.com', 'beuk:read');
+  const refused = await bearerFetch('POST', '/api/manuscripts', grant.access, { doc: { title: 'No' } });
+  assert.equal(refused.status, 403);
+  assert.equal(refused.body.error, 'this token is missing the beuk:write scope');
+  assert.match(refused.header('www-authenticate'), /insufficient_scope/);
+  assert.match(refused.header('www-authenticate'), /scope="beuk:write"/);
+});
+
+test('a beuk:write bearer may write, exactly as consent granted', async () => {
+  const grant = await fullGrant('oauth-shelf-write@example.com', 'beuk:read beuk:write');
+  const created = await bearerFetch('POST', '/api/manuscripts', grant.access, {
+    title: 'Bearer-Written Book',
+    doc: { title: 'Bearer-Written Book', sections: [] },
+  });
+  assert.equal(created.status, 201);
+  assert.equal((created.body.manuscript as { title: string }).title, 'Bearer-Written Book');
+});
+
+test('beuk:read bearer reads jobs; an unknown job stays the same honest 404', async () => {
+  const grant = await fullGrant('oauth-jobs-read@example.com', 'beuk:read');
+  const list = await bearerFetch('GET', '/api/jobs', grant.access);
+  assert.equal(list.status, 200);
+  assert.deepEqual(list.body.jobs, []);
+  const missing = await bearerFetch('GET', '/api/jobs/00000000-0000-4000-8000-00000000dead', grant.access);
+  assert.equal(missing.status, 404);
+  assert.deepEqual(missing.body, { error: 'job not found' });
+});

@@ -2,8 +2,9 @@ import { Router, type Request } from 'express';
 import type { BackgroundTasks } from './account.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
-import { requireAuth } from '../auth.js';
+import { readBook } from '../book/index.js';
 import { observeBook } from '../book/observe.js';
+import { sessionOrScopedBearer } from '../oauth/bearer.js';
 import { uuidParam } from '../ids.js';
 import { HTTP_CODES } from '../help/codes.js';
 import { collectPicRefs, collectUnusedPictures, hydrateDoc, isMissingPictureError, missingPictures, writePictureRefs } from '../pictures.js';
@@ -80,7 +81,10 @@ const missingBody = (missing: string[]) => ({
 
 export function manuscriptRoutes(db: Db, config: Config, tasks: BackgroundTasks): Router {
   const router = Router();
-  router.use(requireAuth(db));
+  // Phase 2 (MCP): the studio's cookie sessions work as before; an
+  // OAuth bearer may also read (beuk:read) or write (beuk:write) the
+  // shelf, per what its consent screen granted.
+  router.use(sessionOrScopedBearer(db, config));
   router.param('id', uuidParam('manuscript not found'));
 
   // Every query below is owner-scoped: user_id always comes from the
@@ -166,6 +170,35 @@ export function manuscriptRoutes(db: Db, config: Config, tasks: BackgroundTasks)
       if (!row) return res.status(404).json({ error: 'manuscript not found' });
       res.set('ETag', etagOf(row.revision));
       return res.json({ manuscript: await withDoc(req, row) });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  // Phase 2 (MCP check_manuscript): readBook's honest findings for one
+  // book, read-only. readBook never throws and never modifies: status
+  // 'ok' | 'newer' | 'failed', the upgrade steps an older book took,
+  // every warning, and the PATHS of values preserved verbatim (the raw
+  // values themselves can be whole images — they stay home).
+  router.get('/:id/check', async (req, res, next) => {
+    try {
+      const result = await db.query<{ doc: unknown; title: string; revision: number }>(
+        'select doc, title, revision from manuscripts where id = $1 and user_id = $2',
+        [req.params.id, req.user!.id],
+      );
+      const row = result.rows[0];
+      if (!row) return res.status(404).json({ error: 'manuscript not found' });
+      const read = readBook(row.doc);
+      return res.json({
+        check: {
+          title: row.title,
+          revision: row.revision,
+          status: read.status,
+          upgrades: read.upgrades,
+          warnings: read.warnings,
+          preservedPaths: read.preserved.map((p) => p.path),
+        },
+      });
     } catch (err) {
       return next(err);
     }
