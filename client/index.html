@@ -52267,6 +52267,12 @@
         else document.documentElement.removeAttribute("data-plan-access");
         lockFieldsRender();
       }
+      /** After a sign-in or sign-up in this tab (whose answer carries no access): GET /api/auth/me again, mirrored as at boot.
+       *  No answer, or a server error: nothing is changed (it says nothing about the plan). */
+      async function lockAccessRefresh() {
+        const me = await apiFetch("/api/auth/me", { auth: false });
+        if (me && me.user && cloud.user && me.user.id === cloud.user.id) lockAccessNote(me);
+      }
       /** False only when the last plan drawn has access "paused" (day 22). No plan known (signed out, billing off): true. */
       function lockCopyAllowed() {
         return document.documentElement.getAttribute("data-plan-access") !== "paused";
@@ -53630,6 +53636,7 @@
           toast(authMode === "register" ? t("auth.welcomeNew") : t("auth.welcomeBackToast"), "cloud");
           focusEditor();
           portalFreshSignIn = true; /* BEUK:portal */
+          if (typeof lockAccessRefresh === "function") lockAccessRefresh(); /* BEUK:lockcopy — day 22 hides the lock at sign-in too */
           cloudAfterSignIn();
         } else {
           err.textContent = cloudAuthErrorText(r, authMode);

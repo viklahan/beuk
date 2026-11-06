@@ -95,7 +95,7 @@ describe('locked review copy: the PDF and DOCX locks are 1.0\'s, lifted (constra
     const block = html.slice(html.indexOf('/* ==== BEUK:lockcopy ===='), html.indexOf('/* ==== /BEUK:lockcopy ==== */'));
     const sfH = ts.createSourceFile('lock.js', block, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     const one = byName(sfH.statements, sfH);
-    expect(one.size).toBe(65); // every top-level declaration of the block: task 1's 32, task 2's 15, task 3's 17, task 4's 1 (lockAccessNote)
+    expect(one.size).toBe(66); // every top-level declaration of the block: task 1's 32, task 2's 15, task 3's 17, task 4's 2 (lockAccessNote, lockAccessRefresh)
     const gen = readFileSync(CLOSURE_JS, 'utf8');
     const sfB = ts.createSourceFile('closure.js', gen, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     const create = sfB.statements.find((st): st is ts.FunctionDeclaration => ts.isFunctionDeclaration(st) && st.name?.text === 'createClosure');
@@ -127,7 +127,7 @@ describe('locked review copy: the PDF and DOCX locks are 1.0\'s, lifted (constra
     const shelf = lifted('closure-cloud.js', 'createCloudClosure');
     // what each reaches: the print panel the PDF dialog and the PDF lock; the plan line the day-22 note
     for (const n of ['lockPdfOpen', 'lockPdfDialog', 'lockedPdfDownload', 'lockPdfBytes', 'lockCopyAllowed']) expect(print.has(n), 'print lifts ' + n).toBe(true);
-    for (const n of ['lockPlanNote', 'lockAccessNote', 'lockFieldsRender', 'lockCopyAllowed']) expect(shelf.has(n), 'the shelf lifts ' + n).toBe(true);
+    for (const n of ['lockPlanNote', 'lockAccessNote', 'lockAccessRefresh', 'lockFieldsRender', 'lockCopyAllowed']) expect(shelf.has(n), 'the shelf lifts ' + n).toBe(true);
     let compared = 0;
     for (const [n, text] of one) {
       for (const [where, m] of [['print', print], ['shelf', shelf]] as const) {

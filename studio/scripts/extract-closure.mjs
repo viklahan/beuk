@@ -243,8 +243,8 @@ export const EXTRA_ROOTS = [
   // downloadDocx / msDownload; the print-ready PDF's dialog and the plan's day-22 note are named here, so the whole
   // BEUK:lockcopy block stands in the main closure as 1.0's text — the print and shelf modules lift their own copies)
   'lockFieldsRead', 'lockFieldsClear', 'lockCopyAllowed', 'lockFieldsRender', 'lockPlanNote', 'lockPdfOpen', 'lockedPdfDownload',
-  // task 4, fix 1: the boot's access note (the shelf's module lifts its own copy, CLOUD_ROOTS)
-  'lockAccessNote',
+  // task 4, fixes 1-2: the access note at boot and after an in-tab sign-in (the shelf's module lifts its own copies)
+  'lockAccessNote', 'lockAccessRefresh',
 ];
 
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK

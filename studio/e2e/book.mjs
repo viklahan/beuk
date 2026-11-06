@@ -779,14 +779,10 @@ async function latency(origin, opts = {}) {
     await focused(page);
     await page.keyboard.type(words.slice(0, 20), { delay: 30 }); // warm-up
     await page.evaluate(() => { window.__lat = []; });
-    // locked review copy (task 4): something started in the page right before the measured typing (a lock), and what it
-    // reports once the typing ends
-    if (opts.beforeType) await opts.beforeType(page);
     let text = '';
     while (text.length < 300) text += words;
     await page.keyboard.type(text.slice(0, count), { delay });
     await page.waitForTimeout(300);
-    const bg = opts.afterType ? await opts.afterType(page) : undefined;
     const lat = (await page.evaluate(() => window.__lat)).slice().sort((x, y) => x - y);
     const q = (p) => lat[Math.min(lat.length - 1, Math.ceil(p * lat.length) - 1)];
     const p50 = q(0.5), p95 = q(0.95), max = lat[lat.length - 1];
@@ -797,7 +793,7 @@ async function latency(origin, opts = {}) {
     check(lat.length >= count - 10, `#5 ${lat.length} keystrokes measured (${delay} ms between keys)`);
     if (opts.quick) {
       await harvestCsp(page);
-      return { p50, p95, max, n: lat.length, section: big, ...size, top: [], bg };
+      return { p50, p95, max, n: lat.length, section: big, ...size, top: [] };
     }
     console.log(`${p95 <= LATENCY_P95_TARGET_MS ? 'ok  ' : 'OVER'} #5 p95 keystroke-to-paint ${p95.toFixed(1)} ms (target ${LATENCY_P95_TARGET_MS} ms; reported, not gated)`);
     // a profile of 100 more keystrokes: the hottest functions by self time
@@ -8775,6 +8771,62 @@ async function lockcopyDay22(srv) {
   }
 }
 
+/* Day 22, signed in inside the tab (fix round 2): an account past its trial signs in through each app's own sign-in
+   dialog, no reload, no account box. The Word and manuscript lock controls are hidden at once (1.0's cloudAuthSubmit
+   re-reads GET /api/auth/me and mirrors its access). That request carries no password. */
+async function lockcopySignIn(srv) {
+  const origin = srv.origin;
+  const db = srv.shelf.db;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const email = w7aEmail('lcsi');
+  const made = await newContext({ serviceWorkers: 'block' });
+  try {
+    await w7aSignUp(made, origin, email);
+  } finally {
+    await made.close();
+  }
+  await db.query("update users set trial_ends_at = now() - interval '1 day' where email = $1", [email]);
+  for (const app of ['two', 'one']) {
+    const who = app === 'two' ? '2.0' : '1.0';
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    const reqs = lcRecord(ctx);
+    try {
+      let p;
+      if (app === 'two') {
+        p = await openNext(ctx, origin);
+        await openBackup(p, f.file);
+        await w7aWait(p, () => window.beukCloud?.cloud?.available, null, 30_000);
+      } else {
+        p = await openOne(ctx, origin);
+        await w7aWait(p, () => typeof cloud !== 'undefined' && cloud.available, null, 30_000);
+      }
+      const shown = () => p.evaluate(() => ({ docx: !document.getElementById('lockDocx').hidden, ms: !document.getElementById('lockMs').hidden, access: document.documentElement.getAttribute('data-plan-access') }));
+      const before = await shown();
+      if (app === 'two') await p.click('#btnAccount');
+      else await p.evaluate(() => openAuth()); // eslint-disable-line no-undef
+      await p.waitForSelector('#modalAuth.open');
+      await p.fill('#authEmail', email);
+      await p.fill('#authPassword', W7A_PW);
+      const mark = reqs.length;
+      await p.click('#btnAuthSubmit');
+      if (app === 'two') await w7aWait(p, () => !!window.beukCloud?.cloud?.user, null, 30_000);
+      else await w7aWait(p, () => typeof cloud !== 'undefined' && !!cloud.user, null, 30_000);
+      await p.waitForFunction(() => !!document.documentElement.getAttribute('data-plan-access'), null, { timeout: 15_000 }).catch(() => undefined);
+      await p.waitForTimeout(500);
+      const after = await shown();
+      const shelfOpened = await p.evaluate(() => !!document.getElementById('modalShelf')?.classList.contains('open'));
+      check(before.docx && before.ms && !after.docx && !after.ms && !shelfOpened, `lockcopy day 22, signed in inside the tab (${who}): the Word and manuscript lock controls are hidden at once, no reload, no account box (before ${JSON.stringify(before)}, after ${JSON.stringify(after)}, shelf opened ${shelfOpened})`);
+      const since = reqs.slice(mark).filter((r) => new URL(r.url).origin === origin);
+      const me = since.filter((r) => new URL(r.url).pathname === '/api/auth/me');
+      const leaks = await lcLeaks(since.filter((r) => !/\/api\/auth\/(login|register)$/.test(new URL(r.url).pathname)), W7A_PW);
+      check(me.length >= 1 && me.every((r) => r.method === 'GET' && !r.body) && leaks.length === 0, `lockcopy day 22, signed in inside the tab (${who}): GET /api/auth/me is re-read after the sign-in (${me.length}), with no body, and no request after the sign-in POST carries the account password (${since.length} requests${leaks.length ? ' — ' + leaks.slice(0, 3).join('; ') : ''})`);
+      await harvestCsp(p);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
 /* Lock off against 920efea: the same book's Word file and manuscript, lock off, from this build and from 920efea's (a
    second static server on LOCKCOPY_BASE), in each app. The print-ready PDF's unlocked link is the server's stored file
    (no server change on this branch; the parity part shows it byte-equal to the stored fixture). */
@@ -8825,54 +8877,69 @@ async function lockcopyLockOff(origin) {
   }
 }
 
-/* Latency: the Dumas typing measure with a lock running in the page (a PDF lock of the real fixture, then a DOCX lock
-   of a package of the same size), both started as the measured typing starts. */
+/* Latency (fix round 2's ruling): a lock runs only from a click inside a dialog over the editor, so the writer cannot be
+   typing during one. The measure: in the Dumas book, 5 rounds of locks through the studio's own controls (the export
+   dialog's Word file and the manuscript, lock on, each downloaded) and the PDF lock of the real fixture, 50 ms apart,
+   all finished; the dialogs closed; then the Dumas typing run. The longest main-thread block of one Word-file lock
+   (Long Tasks) is a note, not a check. */
 async function lockcopyLatency(origin) {
   const fx = readFileSync(LC_FIXTURE).toString('base64');
+  const info = {};
   const r = await latency(origin, {
     quick: true,
-    beforeType: (page) => page.evaluate(([b64, pw]) => {
-      const pdf = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-      const st = (window.__lcBg = { pdf: [], docx: [], error: null, stop: false, startedAt: performance.now(), endedAt: null });
-      (async () => {
-        const z = new window.JSZip();
-        z.file('[Content_Types].xml', '<Types/>');
-        z.file('word/media/big.bin', pdf);
-        const pkg = await z.generateAsync({ type: 'uint8array' });
-        // 1.0's two encryptors, called outside the export session (as the print panel's PDF lock runs: its module's crypto
-        // is the page's), so the measure is the lock's own work, not the session re-opened at each of its awaits
-        const api = window.beukExport.run((a) => a);
-        // a lock always running: a PDF lock, then a DOCX lock, again and again until the typing ends
-        while (!st.stop) {
-          const t0 = performance.now();
-          await api.lockPdfBytes(pdf, pw);
-          st.pdf.push(performance.now() - t0);
-          if (st.stop) break;
-          const t1 = performance.now();
-          await api.lockDocxBytes(pkg, pw);
-          st.docx.push(performance.now() - t1);
-          // a 50 ms breath between rounds: with none (fix round 1, OBSERVED) the tab crashed within ~1.5 s of PDF locks
-          // back to back, Lantern or Dumas, typing or not (LEAD, not confirmed: ~6 MB of buffers per lock outrunning the
-          // collector); 50 ms between rounds ran stable
-          await new Promise((r) => setTimeout(r, 50));
-        }
-        st.endedAt = performance.now();
-      })().catch((e) => { st.error = String(e && e.message); });
-    }, [fx, LC_PW]),
-    afterType: (page) => page.evaluate(async () => {
-      const st = window.__lcBg;
-      st.typingEndedAt = performance.now();
-      st.stop = true;
-      for (let i = 0; i < 100 && st.endedAt === null && !st.error; i++) await new Promise((r) => setTimeout(r, 100));
-      return { pdf: st.pdf, docx: st.docx, error: st.error, startedAt: st.startedAt, typingEndedAt: st.typingEndedAt, endedAt: st.endedAt };
-    }),
+    afterOpen: async (page) => {
+      await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExport')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+      await page.evaluate(() => {
+        window.__lcLong = [];
+        try {
+          new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__lcLong.push({ at: e.startTime, ms: e.duration }); }).observe({ type: 'longtask', buffered: false });
+        } catch { /* no Long Tasks */ }
+      });
+      const docxBlocks = [], pdfMs = [], rounds = 5;
+      for (let i = 0; i < rounds; i++) {
+        await w5aOpenModal(page);
+        if (!(await page.isChecked('#lockDocxOn'))) await page.check('#lockDocxOn');
+        await page.fill('#lockDocxPw', LC_PW);
+        await page.fill('#lockDocxPw2', LC_PW);
+        const t0 = await page.evaluate(() => performance.now());
+        const d = await lcDownload(page, () => page.click('#btnDownloadDocx'));
+        await page.waitForFunction(() => !document.getElementById('btnDownloadDocx').disabled);
+        await page.waitForTimeout(50);
+        const t1 = await page.evaluate(() => performance.now());
+        docxBlocks.push(await page.evaluate(([x, y]) => Math.max(0, ...window.__lcLong.filter((e) => e.at >= x && e.at <= y).map((e) => e.ms)), [t0, t1]));
+        if (!/-locked\.docx$/.test(d.name)) throw new Error('not a locked download: ' + d.name);
+        await page.click('#btnMsOpen');
+        await page.waitForFunction(() => document.getElementById('modalManuscript').classList.contains('open'));
+        if (!(await page.isChecked('#lockMsOn'))) await page.check('#lockMsOn');
+        await page.fill('#lockMsPw', LC_PW);
+        await page.fill('#lockMsPw2', LC_PW);
+        const m = await lcDownload(page, () => page.click('#btnMsDownload'));
+        await page.waitForFunction(() => !document.getElementById('btnMsDownload').disabled);
+        if (!/-locked\.docx$/.test(m.name)) throw new Error('not a locked download: ' + m.name);
+        await page.click('#btnMsClose');
+        // the PDF lock (the panel's needs the shelf server; this static run calls 1.0's encryptor, as its click would)
+        pdfMs.push(await page.evaluate(async (b64) => {
+          const pdf = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+          const t = performance.now();
+          await window.beukExport.run((api) => api.lockPdfBytes(pdf, 'p'));
+          return performance.now() - t;
+        }, fx));
+        await page.waitForTimeout(50);
+      }
+      // every dialog closed: the editor next
+      await page.evaluate(() => { for (const id of ['modalExport', 'modalManuscript', 'modalLockPdf']) document.getElementById(id)?.classList.remove('open'); });
+      await page.waitForTimeout(300);
+      info.rounds = rounds;
+      info.docxBlocks = docxBlocks;
+      info.pdfMs = pdfMs;
+      info.open = await page.evaluate(() => [...document.querySelectorAll('.modal-back.open')].map((x) => x.id));
+    },
   });
-  const bg = r.bg || {};
-  const avg = (l) => (l && l.length ? (l.reduce((x, y) => x + y, 0) / l.length).toFixed(0) : '–');
-  const n = (bg.pdf || []).length + (bg.docx || []).length;
-  note(`lockcopy latency (locks running back to back (50 ms apart) for the whole typing run: ${(bg.pdf || []).length} PDF locks ~${avg(bg.pdf)} ms each, ${(bg.docx || []).length} DOCX locks ~${avg(bg.docx)} ms each, over ${bg.typingEndedAt ? ((bg.typingEndedAt - bg.startedAt) / 1000).toFixed(1) : '?'} s of typing${bg.error ? '; error: ' + bg.error : ''}): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
-  check(!bg.error && n >= 4 && bg.endedAt !== null && bg.endedAt >= bg.typingEndedAt, `lockcopy latency: locks ran back to back until the typing ended (${n} locks, no error)`);
-  check(r.p95 < LATENCY_P95_TARGET_MS, `lockcopy latency: Dumas p95 under ${LATENCY_P95_TARGET_MS} ms with a lock running (${r.p95.toFixed(1)} ms)`);
+  const maxBlock = Math.max(...(info.docxBlocks || [0]));
+  note(`lockcopy latency: ${info.rounds} rounds of locks before the typing (each: the Word file and the manuscript locked through their dialogs, and the PDF fixture locked in ${(info.pdfMs || []).map((x) => x.toFixed(0)).join('/')} ms), then the dialogs closed (${JSON.stringify(info.open)} open): p50 ${r.p50.toFixed(1)} ms, p95 ${r.p95.toFixed(1)} ms, max ${r.max.toFixed(1)} ms over ${r.n} keystrokes`);
+  note(`lockcopy latency: a DOCX lock stalls the page for about ${maxBlock.toFixed(0)} ms (the longest Long Task during each Word-file lock: ${(info.docxBlocks || []).map((x) => x.toFixed(0)).join(', ')} ms) — a note, not a check`);
+  check(info.rounds === 5 && Array.isArray(info.open) && info.open.length === 0, `lockcopy latency: ${info.rounds} rounds of locks ran to the end and every dialog was closed before the typing`);
+  check(r.p95 < LATENCY_P95_TARGET_MS, `lockcopy latency: Dumas p95 under ${LATENCY_P95_TARGET_MS} ms after the locks (${r.p95.toFixed(1)} ms)`);
 }
 
 /* Screenshots: the Word file's fieldset (ticked: its fields shown) and the print-ready PDF's dialog, beside 1.0's, in
@@ -8946,10 +9013,11 @@ async function lockcopyChecks(staticOrigin) {
   const stripe = await w7aFakeStripe();
   const srv = await startServer({ repo: REPO, api: true, apiConfig: { stripeWebhookSecret: 'whsec_test_placeholder', stripeSecretKey: 'sk_test_placeholder', stripePriceId: 'price_fixture', stripeApiBase: stripe.base } });
   note(`lockcopy: the real server on ${srv.origin} (PGlite), billing in test mode against a fake Stripe on ${stripe.base}; the print-ready pdfx job is NOT run (no renderer, no Ghostscript here): its poll is answered "done" and its file is the committed real output, seeded`);
-  const only = (process.env.LOCKCOPY_PARTS || 'parity,day22,lockoff,latency,screens').split(',');
+  const only = (process.env.LOCKCOPY_PARTS || 'parity,day22,signin,lockoff,latency,screens').split(',');
   try {
     if (only.includes('parity')) await lockcopyParity(srv);
     if (only.includes('day22')) await lockcopyDay22(srv);
+    if (only.includes('signin')) await lockcopySignIn(srv);
     if (only.includes('lockoff')) await lockcopyLockOff(staticOrigin);
     if (only.includes('latency')) await lockcopyLatency(staticOrigin);
     if (only.includes('screens')) await lockcopyScreens(srv);
