@@ -53696,8 +53696,8 @@
           toast(authMode === "register" ? t("auth.welcomeNew") : t("auth.welcomeBackToast"), "cloud");
           focusEditor();
           portalFreshSignIn = true; /* BEUK:portal */
-          if (typeof lockAccessRefresh === "function") lockAccessRefresh(); /* BEUK:lockcopy — day 22 hides the lock at sign-in too */
           cloudAfterSignIn();
+          if (typeof lockAccessRefresh === "function") lockAccessRefresh(); /* BEUK:lockcopy — day 22 hides the lock at sign-in too */
         } else {
           err.textContent = cloudAuthErrorText(r, authMode);
           err.style.display = "block"; /* BEUK:auth — "" fell back to the CSS display:none, hiding every sign-in error */
