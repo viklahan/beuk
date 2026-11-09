@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>The Lantern Coast — a reading copy</title>
+    <link rel="stylesheet" href="/help/warmth.css" />
+    <style nonce="golden-nonce-0001">
+.rd-head{max-width:46rem;margin:0 auto;padding:1.1rem 1.5rem .8rem;border-bottom:1px solid var(--line)}
+.rd-kicker{color:var(--ink-soft);font-style:italic;font-size:.95rem;margin:0}
+.rd-book{font-size:1.7rem;line-height:1.2;margin:.15em 0 0}
+.rd-by{color:var(--ink-soft);margin:.2em 0 0}
+.rd-nav{margin:.8rem 0 0}
+.rd-nav summary{cursor:pointer;color:var(--amber)}
+.rd-nav ol{margin:.5rem 0 0;padding-left:1.4rem}
+.rd-nav li{margin:.2em 0}
+.rd-nav a[aria-current]{font-weight:700;color:var(--ink);text-decoration:none}
+.rd-page{max-width:40rem;margin:0 auto;padding:1.2rem 1.5rem 2rem}
+.rd-page .ch-num{text-align:center;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);font-size:.95rem;margin:1.4em 0 0}
+.rd-page .ch-title{text-align:center;margin:.3em 0 .2em}
+.rd-page .ch-sub{text-align:center;font-style:italic;color:var(--ink-soft);margin:0 0 1.2em}
+.rd-page p{text-indent:1.4em;margin:0}
+.rd-page p.ch-num,.rd-page p.ch-sub,.rd-page .endnote,.rd-page .endnotes-h{text-indent:0}
+.rd-page h2+p,.rd-page .ch-sub+p,.rd-page .scene-break+p,.rd-page h3+p,.rd-page h4+p{text-indent:0}
+.rd-page .scene-break{text-align:center;margin:1em 0;color:var(--ink-soft)}
+.rd-page .redacted{background:currentColor;letter-spacing:0;user-select:none}
+.rd-page figure{margin:1.2em 0;text-align:center}
+.rd-page img{max-width:100%;height:auto}
+.rd-page figcaption{font-size:.95rem;color:var(--ink-soft);font-style:italic}
+.rd-page .endnotes{border-top:1px solid var(--line);margin-top:2em;padding-top:.6em;font-size:.98rem}
+.rd-page .endnotes-h{font-weight:700}
+.rd-page [data-p].has-notes{background:linear-gradient(transparent 60%,var(--amber-soft) 60%)}
+.rd-pager{display:flex;justify-content:space-between;gap:1rem;max-width:40rem;margin:0 auto;padding:0 1.5rem 1.5rem}
+.rd-box{max-width:40rem;margin:0 auto 2rem;padding:0 1.5rem}
+.rd-box h2{font-size:1.2rem}
+.rd-c{border:1px solid var(--line);background:#fffdf8;border-radius:8px;padding:.6rem .9rem;margin:.6rem 0}
+.rd-c q{display:block;font-style:italic;color:var(--ink-soft);margin-bottom:.3em}
+.rd-c .who{font-size:.92rem;color:var(--ink-soft)}
+.rd-form label{display:block;font-size:.95rem;margin:.5em 0 .2em}
+.rd-form input,.rd-form textarea{width:100%;font:inherit;font-size:1rem;padding:.45rem .6rem;border:1px solid var(--line);border-radius:6px;background:#fffdf8;color:var(--ink)}
+.rd-form button,.rd-float{font:inherit;font-size:1rem;background:var(--amber);color:#fff7ed;border:0;border-radius:999px;padding:.45rem 1.1rem;margin-top:.6rem;cursor:pointer}
+.rd-form .quote{font-style:italic;color:var(--ink-soft);border-left:3px solid var(--amber);padding-left:.7rem;margin:.4rem 0}
+.rd-hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+.rd-float{position:absolute;z-index:5;margin:0;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.rd-msg{font-size:.98rem;color:var(--ink-soft)}
+.rd-hint{font-size:.95rem;color:var(--ink-soft);font-style:italic}
+@media (max-width:520px){.rd-page,.rd-head,.rd-box,.rd-pager{padding-left:1rem;padding-right:1rem}.rd-book{font-size:1.4rem}}
+/* Full screen (BEUK:fullscreen): the button exists only once the script runs; without
+   element full screen (iPhone Safari) it offers "Just the text" instead, which hides the
+   page's surroundings (header details, comments, footer) and keeps the chapter. */
+.rd-full{float:right;font:inherit;font-size:.9rem;background:transparent;color:var(--amber);border:1px solid var(--line);border-radius:999px;padding:.3rem .85rem;margin:0 0 .4rem .8rem;cursor:pointer}
+[dir=rtl] .rd-full{float:left;margin:0 .8rem .4rem 0}
+.rd-full[aria-pressed=true]{background:var(--amber-soft)}
+.rd-full:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.rd-full[hidden]{display:none}
+html:fullscreen{background:var(--paper,#fbf8f1);overflow-y:auto}
+html.rd-imm .rd-kicker,html.rd-imm .rd-by,html.rd-imm .rd-box,html.rd-imm .site-foot{display:none}
+html.rd-imm .rd-head{position:sticky;top:0;z-index:4;background:var(--paper,#fbf8f1);padding-top:max(.6rem,env(safe-area-inset-top))}
+html.rd-imm .rd-book{font-size:1.15rem}
+html.rd-imm .rd-pager{padding-bottom:max(1.5rem,env(safe-area-inset-bottom))}
+</style>
+  </head>
+  <body>
+
+    <header class="rd-head">
+      <button type="button" class="rd-full" id="rdFull" hidden aria-pressed="false" aria-keyshortcuts="F" data-enter="Full screen" data-exit="Exit full screen" data-fill="Just the text" data-fill-exit="Show the whole page">Full screen</button>
+      <p class="rd-kicker">A reading copy, shared with you</p>
+      <h1 class="rd-book">The Lantern Coast</h1>
+      
+      <p class="rd-by">by A. Writer</p>
+      <details class="rd-nav"><summary>Chapters (3)</summary><ol><li><a href="/read/golden-token?c=0">Dedication</a></li><li><a href="/read/golden-token?c=1" aria-current="page">One · First Light</a></li><li><a href="/read/golden-token?c=2">Two · Fog</a></li></ol></details>
+    </header>
+    <main class="rd-page" id="rdRoot" data-base="/read/golden-token" data-section="sec-one" data-allow="1"
+      data-cta="Comment on this" data-empty="No comments on this chapter yet." data-anon="A reader"
+      data-sending="Sending…" data-thanks="Thank you — the writer will see your comment." data-failed="That didn’t send — please try again in a moment.">
+<p class="ch-num">One</p><h2 class="ch-title">First Light</h2><p data-p="0">It began with the tide.<a class="noteref" id="s2-fnref1" href="#s2-fn1"><sup>[1]</sup></a></p>
+<p data-p="1">The <em>second</em> paragraph, <strong>strong</strong>.</p>
+<div class="scene-break" data-p="2">❦</div>
+<figure data-p="3" class="book-img"><img src="/read/golden-token/img/img-chart" alt="A chart of the harbour"></figure>
+<div class="endnotes"><p class="endnotes-h">Notes</p><p class="endnote" id="s2-fn1" data-p="4"><a class="note-back" href="#s2-fnref1"><sup>[1]</sup></a> A note on tides.</p></div>
+    </main>
+    <nav class="rd-pager"><a href="/read/golden-token?c=0" rel="prev">← Dedication</a><a href="/read/golden-token?c=2" rel="next">Two · Fog →</a></nav>
+    <section class="rd-box" aria-label="Comments">
+      <h2>Comments on this chapter</h2>
+      <div id="rdList"><p class="rd-hint">Comments appear here when scripts are allowed.</p></div>
+      <form class="rd-form" id="rdForm" autocomplete="on">
+        <p class="rd-hint">Select a passage to comment on it, or write about the chapter as a whole.</p>
+        <p class="quote" id="rdQuote" hidden></p>
+        <label for="rdName">Your name</label>
+        <input id="rdName" name="readerName" maxlength="60" required />
+        <label for="rdBody">Your comment</label>
+        <textarea id="rdBody" name="body" rows="4" maxlength="2000" required></textarea>
+        <div class="rd-hp" aria-hidden="true"><label for="rdWebsite">Leave this empty</label><input id="rdWebsite" name="website" tabindex="-1" autocomplete="off" /></div>
+        <button type="submit">Send to the writer</button>
+        <p class="rd-msg" id="rdMsg" role="status"></p>
+      </form>
+    </section>
+    <footer class="site-foot"><p class="foot-note">A reading copy shared from Beuk — a typesetting studio for writers.</p><p class="foot-links"><a href="/privacy" rel="noreferrer">Privacy</a> · <a href="/terms" rel="noreferrer">Terms</a></p></footer>
+    <script nonce="golden-nonce-0001">
+(function(){
+  /* Full screen (BEUK:fullscreen): the Fullscreen API with the webkit one for Safari/iPad;
+     where neither exists (iPhone Safari) the button says "Just the text" and only hides
+     the page's surroundings. F toggles it (not while typing); Escape leaves it. */
+  var b=document.getElementById('rdFull'); if(!b) return;
+  var de=document.documentElement;
+  var can=!!((de.requestFullscreen||de.webkitRequestFullscreen)&&(document.fullscreenEnabled||document.webkitFullscreenEnabled));
+  function now(){return document.fullscreenElement||document.webkitFullscreenElement||null;}
+  function imm(){return de.classList.contains('rd-imm');}
+  function sync(){
+    var on=!!now()||imm(), native=can&&!imm();
+    b.setAttribute('aria-pressed',on?'true':'false');
+    b.textContent=b.getAttribute(on?(native?'data-exit':'data-fill-exit'):(can?'data-enter':'data-fill'));
+    b.title=b.textContent+' (F)';
+  }
+  function setImm(on){de.classList.toggle('rd-imm',on); sync();}
+  function toggle(){
+    if(imm()){setImm(false);return;}
+    if(now()){var x=document.exitFullscreen||document.webkitExitFullscreen; try{var r=x.call(document); if(r&&r.catch)r.catch(function(){});}catch(e){} return;}
+    if(can){try{var q=(de.requestFullscreen||de.webkitRequestFullscreen).call(de); if(q&&q.catch)q.catch(function(){can=false;setImm(true);});return;}catch(e){can=false;}}
+    setImm(true);
+  }
+  b.hidden=false; sync();
+  b.addEventListener('click',toggle);
+  document.addEventListener('fullscreenchange',sync); document.addEventListener('webkitfullscreenchange',sync);
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&imm()){e.preventDefault();setImm(false);return;}
+    if((e.key!=='f'&&e.key!=='F')||e.ctrlKey||e.metaKey||e.altKey||e.repeat||e.isComposing) return;
+    var t=e.target, tag=t&&t.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(t&&t.isContentEditable)) return;
+    e.preventDefault(); toggle();
+  });
+})();
+(function(){
+  var root=document.getElementById('rdRoot'); if(!root) return;
+  var base=root.getAttribute('data-base'); var sec=root.getAttribute('data-section');
+  var allow=root.getAttribute('data-allow')==='1';
+  var list=document.getElementById('rdList'); var form=document.getElementById('rdForm');
+  var qBox=document.getElementById('rdQuote'); var msg=document.getElementById('rdMsg');
+  var anchor={p:null,quote:''};
+  function el(tag,cls,text){var e=document.createElement(tag); if(cls)e.className=cls; if(text!=null)e.textContent=text; return e;}
+  function render(items){
+    list.textContent='';
+    var mine=items.filter(function(c){return c.sectionId===sec;});
+    document.querySelectorAll('[data-p].has-notes').forEach(function(n){n.classList.remove('has-notes');});
+    if(!mine.length){list.appendChild(el('p','rd-hint',root.getAttribute('data-empty')));return;}
+    mine.forEach(function(c){
+      var d=el('div','rd-c');
+      if(c.quote) d.appendChild(el('q',null,c.quote));
+      d.appendChild(el('div',null,c.body));
+      d.appendChild(el('div','who',(c.readerName||root.getAttribute('data-anon'))+' · '+new Date(c.createdAt).toLocaleDateString()));
+      list.appendChild(d);
+      if(c.paragraph!=null){var p=document.querySelector('.rd-page [data-p="'+c.paragraph+'"]'); if(p)p.classList.add('has-notes');}
+    });
+  }
+  function load(){fetch(base+'/comments',{credentials:'same-origin'}).then(function(r){return r.ok?r.json():{comments:[]};}).then(function(j){render(j.comments||[]);}).catch(function(){});}
+  load();
+  if(!allow||!form) return;
+  var btn=el('button','rd-float',root.getAttribute('data-cta')); btn.type='button'; btn.style.display='none'; document.body.appendChild(btn);
+  function setAnchor(p,quote){anchor.p=p;anchor.quote=quote; qBox.textContent=quote; qBox.hidden=!quote;}
+  document.addEventListener('selectionchange',function(){
+    var s=window.getSelection(); if(!s||s.isCollapsed||!s.rangeCount){btn.style.display='none';return;}
+    var node=s.anchorNode; var elx=node&&(node.nodeType===1?node:node.parentElement); var blk=elx&&elx.closest?elx.closest('.rd-page [data-p]'):null;
+    if(!blk){btn.style.display='none';return;}
+    var r=s.getRangeAt(0).getBoundingClientRect();
+    btn.style.top=(window.scrollY+r.bottom+8)+'px'; btn.style.left=Math.max(8,window.scrollX+r.left)+'px'; btn.style.display='';
+    btn.onclick=function(){setAnchor(parseInt(blk.getAttribute('data-p'),10),String(s.toString()).replace(/\s+/g,' ').trim().slice(0,500)); btn.style.display='none'; form.scrollIntoView({behavior:'smooth'}); form.querySelector('textarea').focus();};
+  });
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var fd=new FormData(form);
+    var payload={sectionId:sec,paragraph:anchor.p,quote:anchor.quote,body:String(fd.get('body')||''),readerName:String(fd.get('readerName')||''),website:String(fd.get('website')||'')};
+    msg.textContent=root.getAttribute('data-sending');
+    fetch(base+'/comments',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
+      .then(function(x){
+        if(!x.ok){msg.textContent=(x.j&&x.j.error)||root.getAttribute('data-failed');return;}
+        msg.textContent=root.getAttribute('data-thanks'); form.querySelector('textarea').value=''; setAnchor(null,''); load();
+      }).catch(function(){msg.textContent=root.getAttribute('data-failed');});
+  });
+})();
+</script>
+  </body>
+</html>
