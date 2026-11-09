@@ -219,6 +219,9 @@ export interface ReaderPageInput {
   chapter: number;
   allowComments: boolean;
   readerNameRequired: boolean;
+  /** Set on a named reading link: the reader's name and the link's
+   *  created_at (ISO). Absent on the open link. */
+  recipient?: { name: string; createdAt: string };
 }
 
 export function renderReaderPage(input: ReaderPageInput): string {

@@ -24,6 +24,11 @@ import {
  *   PUT    /api/shares/:id                     expiry / comment settings
  *   POST   /api/shares/:id/republish           refresh the frozen copy from the shelf
  *   POST   /api/shares/:id/revoke              close the link (410 from then on)
+ *   POST   /api/shares/:id/close-open          close only the open link; named links keep working
+ *   POST   /api/shares/:id/readers             add a named reading link {name, expiry?} → token ONCE
+ *   GET    /api/shares/:id/readers             the named links (opened dates, comment counts)
+ *   PUT    /api/shares/:id/readers/:rid        change a named link's expiry (never its name)
+ *   POST   /api/shares/:id/readers/:rid/revoke close one named link
  *   DELETE /api/shares/:id                     remove the share and its comments
  *   GET    /api/shares/:id/comments
  *   POST   /api/shares/:id/comments/:cid/resolve | /unresolve
@@ -35,6 +40,10 @@ import {
  *   GET  /read/:token/comments     the share's comments (no owner data, no IP hash)
  *   POST /read/:token/comments     leave a comment (rate-limited, capped, honeypot)
  * Revoked or expired → a calm 410 page (JSON 410 on the comment API).
+ *
+ * A token is either the share's open link (shares.token_hash) or a named
+ * link (share_recipients.token_hash): the same frozen copy, its own
+ * comments, its own expiry and close, combined with the share's.
  */
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{20,64}$/;
@@ -44,6 +53,11 @@ const SECTION_RE = /^[A-Za-z0-9_-]{1,100}$/;
 export const COMMENT_BODY_MAX = 2000;
 export const READER_NAME_MAX = 60;
 export const QUOTE_MAX = 500;
+/** Named reading links: a name is 1–60 code points; at most 50 links per
+ *  reading copy, closed and expired ones included (they are the trace). */
+export const RECIPIENT_NAME_MAX = 60;
+export const RECIPIENTS_PER_SHARE = 50;
+const UNIQUE_VIOLATION = '23505';
 
 export interface ShareLimits {
   /** Comments one client IP may post to one share per window. */
@@ -69,10 +83,13 @@ export function createShareLimiter(limits: ShareLimits, clock: () => number = Da
   const recent = (key: string, windowMs: number, nowMs: number) =>
     (hits.get(key) ?? []).filter((t) => nowMs - t < windowMs);
   return {
-    check(ip: string, shareId: string): 'ok' | 'ip' | 'share' {
+    /** `budget` is the per-share budget's key: the share id for the open
+     *  link (the default), `shareId:recipientId` for a named link. The
+     *  per-IP key is always per share. */
+    check(ip: string, shareId: string, budget: string = shareId): 'ok' | 'ip' | 'share' {
       const nowMs = clock();
       const ipKey = `ip:${shareId}:${ip}`;
-      const shareKey = `share:${shareId}`;
+      const shareKey = `share:${budget}`;
       const ipHits = recent(ipKey, limits.perIpWindowMs, nowMs);
       const shareHits = recent(shareKey, limits.perShareWindowMs, nowMs);
       if (ipHits.length >= limits.perIp) return 'ip';
@@ -120,6 +137,7 @@ interface ShareRow {
   created_at: string;
   expires_at: string | null;
   revoked_at: string | null;
+  open_link_closed_at: string | null;
   allow_comments: boolean;
   reader_name_required: boolean;
   reader_count?: string | number;
@@ -131,6 +149,29 @@ function status(row: Pick<ShareRow, 'revoked_at' | 'expires_at'>, now: Date): 'a
   if (row.revoked_at) return 'revoked';
   if (row.expires_at && new Date(row.expires_at).getTime() <= now.getTime()) return 'expired';
   return 'active';
+}
+
+/** A named link's status: closed if the share or the link is closed,
+ *  expired if either has expired. */
+function recipientStatus(
+  share: Pick<ShareRow, 'revoked_at' | 'expires_at'>,
+  recipient: Pick<RecipientRow, 'revoked_at' | 'expires_at'>,
+  now: Date,
+): 'active' | 'revoked' | 'expired' {
+  if (share.revoked_at || recipient.revoked_at) return 'revoked';
+  const a = status(share, now);
+  const b = status(recipient, now);
+  if (a === 'expired' || b === 'expired') return 'expired';
+  return 'active';
+}
+
+/** The open link's status: also closed once the writer closed it on its own. */
+function openLinkStatus(
+  share: Pick<ShareRow, 'revoked_at' | 'expires_at' | 'open_link_closed_at'>,
+  now: Date,
+): 'active' | 'revoked' | 'expired' {
+  if (share.revoked_at || share.open_link_closed_at) return 'revoked';
+  return status(share, now);
 }
 
 function iso(v: string | Date | null | undefined): string | null {
@@ -148,6 +189,7 @@ function shareJson(row: ShareRow, now: Date) {
     publishedAt: iso(row.published_at),
     expiresAt: iso(row.expires_at),
     revokedAt: iso(row.revoked_at),
+    openLinkClosedAt: iso(row.open_link_closed_at),
     allowComments: row.allow_comments,
     readerNameRequired: row.reader_name_required,
     sectionCount: Array.isArray(row.snapshot?.sections) ? row.snapshot.sections.length : 0,
@@ -167,7 +209,50 @@ interface CommentRow {
   reader_name: string;
   created_at: string;
   resolved_at: string | null;
+  recipient_id?: string | null;
   share_title?: string;
+}
+
+export interface RecipientRow {
+  id: string;
+  share_id: string;
+  name: string;
+  created_at: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+  first_opened_at: string | null;
+  last_opened_at: string | null;
+  comment_count?: string | number;
+}
+
+const RECIPIENT_COLS = `r.id, r.share_id, r.name, r.created_at, r.expires_at, r.revoked_at,
+  r.first_opened_at, r.last_opened_at`;
+
+function recipientJson(share: Pick<ShareRow, 'revoked_at' | 'expires_at'>, r: RecipientRow, now: Date) {
+  return {
+    id: r.id,
+    shareId: r.share_id,
+    name: r.name,
+    createdAt: iso(r.created_at),
+    expiresAt: iso(r.expires_at),
+    revokedAt: iso(r.revoked_at),
+    firstOpenedAt: iso(r.first_opened_at),
+    lastOpenedAt: iso(r.last_opened_at),
+    status: recipientStatus(share, r, now),
+    commentCount: Number(r.comment_count ?? 0),
+  };
+}
+
+/** A reader's name for a named link: NFC, then trimmed; 1–60 code points;
+ *  no control characters anywhere (so never a newline). Null = refused. */
+export function cleanRecipientName(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const n = v.normalize('NFC');
+  if (/\p{Cc}/u.test(n)) return null;
+  const t = n.trim();
+  const len = [...t].length;
+  if (len < 1 || len > RECIPIENT_NAME_MAX) return null;
+  return t;
 }
 
 function ownerCommentJson(c: CommentRow) {
@@ -180,6 +265,7 @@ function ownerCommentJson(c: CommentRow) {
     quote: c.quote,
     body: c.body,
     readerName: c.reader_name,
+    recipientId: c.recipient_id ?? null,
     createdAt: iso(c.created_at),
     resolvedAt: iso(c.resolved_at),
   };
@@ -204,7 +290,7 @@ function parseExpiry(body: Record<string, unknown>, now: Date): Date | null | un
 }
 
 const SHARE_COLS = `s.id, s.owner_id, s.manuscript_id, s.title, s.snapshot, s.published_at, s.created_at,
-  s.expires_at, s.revoked_at, s.allow_comments, s.reader_name_required`;
+  s.expires_at, s.revoked_at, s.open_link_closed_at, s.allow_comments, s.reader_name_required`;
 
 export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Router {
   const router = Router();
@@ -242,7 +328,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
            allow_comments, reader_name_required)
          values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          returning id, owner_id, manuscript_id, title, snapshot, published_at, created_at, expires_at,
-           revoked_at, allow_comments, reader_name_required`,
+           revoked_at, open_link_closed_at, allow_comments, reader_name_required`,
         [
           req.user!.id,
           manuscript.id,
@@ -293,7 +379,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
       if (!UUID_RE.test(filter)) return res.status(400).json({ error: 'manuscriptId is required' });
       const r = await db.query<CommentRow>(
         `select c.id, c.share_id, c.section_id, c.paragraph_index, c.quote, c.body, c.reader_name,
-           c.created_at, c.resolved_at, s.title as share_title
+           c.recipient_id, c.created_at, c.resolved_at, s.title as share_title
          from share_comments c join shares s on s.id = c.share_id
          where s.owner_id = $1 and s.manuscript_id = $2
          order by c.created_at desc`,
@@ -382,6 +468,151 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     }
   });
 
+  // Close only the open link: its token answers 410 from then on, the
+  // named links keep working. The share's own status does not change.
+  router.post('/:id/close-open', async (req, res, next) => {
+    try {
+      const share = await loadOwned(req);
+      if (!share) return res.status(404).json({ error: 'share not found' });
+      const r = await db.query<ShareRow>(
+        `update shares s set open_link_closed_at = coalesce(s.open_link_closed_at, now())
+         where s.id = $1 and s.owner_id = $2 returning ${SHARE_COLS}`,
+        [share.id, req.user!.id],
+      );
+      return res.json({ share: shareJson(r.rows[0], now()) });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  /* ---- named reading links ---- */
+
+  router.post('/:id/readers', async (req, res, next) => {
+    try {
+      const share = await loadOwned(req);
+      if (!share) return res.status(404).json({ error: 'share not found' });
+      if (share.revoked_at) return res.status(409).json({ error: 'this link is revoked — create a new one instead' });
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const name = cleanRecipientName(body.name);
+      if (name === null)
+        return res.status(400).json({ error: `a reader's name is 1 to ${RECIPIENT_NAME_MAX} characters, on one line` });
+      const expiry = parseExpiry(body, now());
+      if (expiry === 'bad')
+        return res.status(400).json({ error: 'expiresAt must be a future date (or null for no expiry)' });
+      const token = randomBytes(24).toString('base64url');
+      const outcome = await db.tx(async (tx) => {
+        // One add at a time per reading copy, so the cap holds under a race.
+        await tx.query('select id from shares where id = $1 for update', [share.id]);
+        const count = await tx.query<{ n: number }>(
+          'select count(*)::int as n from share_recipients where share_id = $1',
+          [share.id],
+        );
+        if (Number(count.rows[0]?.n ?? 0) >= RECIPIENTS_PER_SHARE) return 'cap' as const;
+        const dup = await tx.query('select 1 from share_recipients where share_id = $1 and lower(name) = lower($2)', [
+          share.id,
+          name,
+        ]);
+        if (dup.rows.length) return 'dup' as const;
+        const r = await tx.query<RecipientRow>(
+          `insert into share_recipients (share_id, name, token_hash, expires_at)
+           values ($1, $2, $3, $4)
+           returning id, share_id, name, created_at, expires_at, revoked_at, first_opened_at, last_opened_at`,
+          [share.id, name, sha256(token), expiry ? expiry.toISOString() : null],
+        );
+        return r.rows[0];
+      }).catch((err: { code?: string }) => {
+        if (err?.code === UNIQUE_VIOLATION) return 'dup' as const;
+        throw err;
+      });
+      if (outcome === 'cap')
+        return res.status(409).json({
+          error: `a reading copy can have up to ${RECIPIENTS_PER_SHARE} named links, closed ones included — this one is full`,
+        });
+      if (outcome === 'dup')
+        return res.status(409).json({ error: 'this reading copy already has a reader with that name' });
+      // The token is returned exactly once; only its hash is stored.
+      return res.status(201).json({ recipient: recipientJson(share, outcome, now()), token });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  router.get('/:id/readers', async (req, res, next) => {
+    try {
+      const share = await loadOwned(req);
+      if (!share) return res.status(404).json({ error: 'share not found' });
+      const r = await db.query<RecipientRow>(
+        `select ${RECIPIENT_COLS},
+           (select count(*) from share_comments c where c.recipient_id = r.id) as comment_count
+         from share_recipients r where r.share_id = $1
+         order by r.created_at asc, r.id asc`,
+        [share.id],
+      );
+      const at = now();
+      return res.json({ readers: r.rows.map((row) => recipientJson(share, row, at)) });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  const loadRecipient = async (share: ShareRow, rid: string): Promise<RecipientRow | null> => {
+    if (!UUID_RE.test(rid)) return null;
+    const r = await db.query<RecipientRow>(
+      `select ${RECIPIENT_COLS},
+         (select count(*) from share_comments c where c.recipient_id = r.id) as comment_count
+       from share_recipients r where r.id = $1 and r.share_id = $2`,
+      [rid, share.id],
+    );
+    return r.rows[0] ?? null;
+  };
+
+  router.put('/:id/readers/:rid', async (req, res, next) => {
+    try {
+      const share = await loadOwned(req);
+      if (!share) return res.status(404).json({ error: 'reader not found' });
+      const recipient = await loadRecipient(share, req.params.rid);
+      if (!recipient) return res.status(404).json({ error: 'reader not found' });
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      if (body.name !== undefined)
+        return res.status(400).json({ error: 'a reader’s name cannot be changed — close this link and add a new one' });
+      const expiry = parseExpiry(body, now());
+      if (expiry === 'bad')
+        return res.status(400).json({ error: 'expiresAt must be a future date (or null for no expiry)' });
+      if (expiry === undefined) return res.status(400).json({ error: 'nothing to update' });
+      const r = await db.query<RecipientRow>(
+        `update share_recipients r set expires_at = $3
+         where r.id = $1 and r.share_id = $2
+         returning ${RECIPIENT_COLS}`,
+        [recipient.id, share.id, expiry ? expiry.toISOString() : null],
+      );
+      return res.json({
+        recipient: recipientJson(share, { ...r.rows[0], comment_count: recipient.comment_count }, now()),
+      });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  router.post('/:id/readers/:rid/revoke', async (req, res, next) => {
+    try {
+      const share = await loadOwned(req);
+      if (!share) return res.status(404).json({ error: 'reader not found' });
+      const recipient = await loadRecipient(share, req.params.rid);
+      if (!recipient) return res.status(404).json({ error: 'reader not found' });
+      const r = await db.query<RecipientRow>(
+        `update share_recipients r set revoked_at = coalesce(r.revoked_at, now())
+         where r.id = $1 and r.share_id = $2
+         returning ${RECIPIENT_COLS}`,
+        [recipient.id, share.id],
+      );
+      return res.json({
+        recipient: recipientJson(share, { ...r.rows[0], comment_count: recipient.comment_count }, now()),
+      });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
   router.delete('/:id', async (req, res, next) => {
     try {
       const share = await loadOwned(req);
@@ -399,7 +630,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
       if (!share) return res.status(404).json({ error: 'share not found' });
       const r = await db.query<CommentRow>(
         `select c.id, c.share_id, c.section_id, c.paragraph_index, c.quote, c.body, c.reader_name,
-           c.created_at, c.resolved_at, s.title as share_title
+           c.recipient_id, c.created_at, c.resolved_at, s.title as share_title
          from share_comments c join shares s on s.id = c.share_id
          where c.share_id = $1 and s.owner_id = $2 order by c.created_at desc`,
         [share.id, req.user!.id],
@@ -419,7 +650,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
          from shares s
          where c.id = $1 and c.share_id = $2 and s.id = c.share_id and s.owner_id = $3
          returning c.id, c.share_id, c.section_id, c.paragraph_index, c.quote, c.body, c.reader_name,
-           c.created_at, c.resolved_at`,
+           c.recipient_id, c.created_at, c.resolved_at`,
         [req.params.cid, req.params.id, req.user!.id],
       );
       if (!r.rows[0]) return res.status(404).json({ error: 'comment not found' });
@@ -456,9 +687,20 @@ interface PublicShare {
   snapshot: Snapshot;
   expires_at: string | null;
   revoked_at: string | null;
+  open_link_closed_at: string | null;
   allow_comments: boolean;
   reader_name_required: boolean;
 }
+
+/** What a /read token resolves to: the share, plus the named link when
+ *  the token is one (null = the share's open link). */
+interface Resolved {
+  share: PublicShare;
+  recipient: RecipientRow | null;
+}
+
+/** last_opened_at is written at most once an hour per named link. */
+const OPEN_WRITE_EVERY_MS = 3_600_000;
 
 const READER_COOKIE = 'beuk_reader';
 
@@ -470,15 +712,64 @@ export function shareReaderRoutes(
   const limiter = createShareLimiter(opts.limits ?? DEFAULT_SHARE_LIMITS);
   const router = Router();
 
-  const find = async (token: string): Promise<PublicShare | null> => {
+  /** The share's open token first, then a named link's; either resolves
+   *  to the share, with the named link when it is one. */
+  const resolveToken = async (token: string): Promise<Resolved | null> => {
     if (!TOKEN_RE.test(token)) return null;
+    const hash = sha256(token);
     const r = await db.query<PublicShare>(
-      `select id, snapshot, expires_at, revoked_at, allow_comments, reader_name_required
+      `select id, snapshot, expires_at, revoked_at, open_link_closed_at, allow_comments, reader_name_required
        from shares where token_hash = $1`,
-      [sha256(token)],
+      [hash],
     );
-    return r.rows[0] ?? null;
+    if (r.rows[0]) return { share: r.rows[0], recipient: null };
+    const n = await db.query<
+      PublicShare & {
+        r_id: string;
+        r_name: string;
+        r_created_at: string;
+        r_expires_at: string | null;
+        r_revoked_at: string | null;
+        r_first_opened_at: string | null;
+        r_last_opened_at: string | null;
+      }
+    >(
+      `select s.id, s.snapshot, s.expires_at, s.revoked_at, s.open_link_closed_at, s.allow_comments,
+         s.reader_name_required, r.id as r_id, r.name as r_name, r.created_at as r_created_at,
+         r.expires_at as r_expires_at, r.revoked_at as r_revoked_at,
+         r.first_opened_at as r_first_opened_at, r.last_opened_at as r_last_opened_at
+       from share_recipients r join shares s on s.id = r.share_id
+       where r.token_hash = $1`,
+      [hash],
+    );
+    const row = n.rows[0];
+    if (!row) return null;
+    return {
+      share: {
+        id: row.id,
+        snapshot: row.snapshot,
+        expires_at: row.expires_at,
+        revoked_at: row.revoked_at,
+        open_link_closed_at: row.open_link_closed_at,
+        allow_comments: row.allow_comments,
+        reader_name_required: row.reader_name_required,
+      },
+      recipient: {
+        id: row.r_id,
+        share_id: row.id,
+        name: row.r_name,
+        created_at: row.r_created_at,
+        expires_at: row.r_expires_at,
+        revoked_at: row.r_revoked_at,
+        first_opened_at: row.r_first_opened_at,
+        last_opened_at: row.r_last_opened_at,
+      },
+    };
   };
+
+  /** The combined status of whatever the token opened. */
+  const statusOf = (t: Resolved, at: Date) =>
+    t.recipient ? recipientStatus(t.share, t.recipient, at) : openLinkStatus(t.share, at);
 
   const sendPage = (res: Response, code: number, render: (nonce: string) => string) => {
     const nonce = randomBytes(16).toString('base64');
@@ -487,10 +778,39 @@ export function shareReaderRoutes(
 
   router.get('/:token', async (req, res, next) => {
     try {
-      const share = await find(req.params.token);
-      if (!share) return sendPage(res, 404, (n) => renderNotFoundPage(n));
-      const st = status(share, now());
+      const t = await resolveToken(req.params.token);
+      if (!t) return sendPage(res, 404, (n) => renderNotFoundPage(n));
+      const { share, recipient } = t;
+      const at = now();
+      const st = statusOf(t, at);
+      // The same calm page as the open link: it never names the reader.
       if (st !== 'active') return sendPage(res, 410, (n) => renderGonePage(n, st));
+      const c = Number.parseInt(String(req.query.c ?? '0'), 10);
+      if (recipient) {
+        // A named open is not an anonymous reader: no cookie, no
+        // share_readers row; first open once, last open at most hourly.
+        await db.query(
+          `update share_recipients set
+             first_opened_at = coalesce(first_opened_at, $2::timestamptz),
+             last_opened_at = case
+               when last_opened_at is null or last_opened_at < $3::timestamptz then $2::timestamptz
+               else last_opened_at end
+           where id = $1`,
+          [recipient.id, at.toISOString(), new Date(at.getTime() - OPEN_WRITE_EVERY_MS).toISOString()],
+        );
+        const createdAt = iso(recipient.created_at)!;
+        return sendPage(res, 200, (nonce) =>
+          renderReaderPage({
+            nonce,
+            token: req.params.token,
+            snapshot: share.snapshot,
+            chapter: Number.isFinite(c) ? c : 0,
+            allowComments: share.allow_comments,
+            readerNameRequired: share.reader_name_required,
+            recipient: { name: recipient.name, createdAt },
+          }),
+        );
+      }
       // Reader count: one opaque per-browser cookie, stored only hashed.
       let visitor = readCookie(req, READER_COOKIE);
       if (!visitor || !/^[A-Za-z0-9_-]{16,64}$/.test(visitor)) {
@@ -507,7 +827,6 @@ export function shareReaderRoutes(
         `insert into share_readers (share_id, visitor_hash) values ($1, $2) on conflict do nothing`,
         [share.id, sha256(`${share.id}:${visitor}`)],
       );
-      const c = Number.parseInt(String(req.query.c ?? '0'), 10);
       return sendPage(res, 200, (nonce) =>
         renderReaderPage({
           nonce,
@@ -525,8 +844,14 @@ export function shareReaderRoutes(
 
   router.get('/:token/img/:imageId', async (req, res, next) => {
     try {
-      const share = await find(req.params.token);
-      if (!share || status(share, now()) !== 'active') return res.status(404).end();
+      const t = await resolveToken(req.params.token);
+      if (!t) return res.status(404).end();
+      const { share } = t;
+      if (statusOf(t, now()) !== 'active') {
+        // A closed named link: 410 and no picture. The open link keeps
+        // today's answer (404) for a closed copy.
+        return res.status(t.recipient ? 410 : 404).end();
+      }
       if (!/^[A-Za-z0-9_-]{1,100}$/.test(req.params.imageId)) return res.status(404).end();
       const r = await db.query<{ img: { mediaType: string; data: string } | null }>(
         'select images -> $2 as img from shares where id = $1',
@@ -549,13 +874,18 @@ export function shareReaderRoutes(
 
   router.get('/:token/comments', async (req, res, next) => {
     try {
-      const share = await find(req.params.token);
-      if (!share) return res.status(404).json({ error: 'reading copy not found' });
-      if (status(share, now()) !== 'active') return res.status(410).json({ error: 'this reading copy is closed', code: HTTP_CODES.readingCopyClosed });
+      const t = await resolveToken(req.params.token);
+      if (!t) return res.status(404).json({ error: 'reading copy not found' });
+      const { share, recipient } = t;
+      if (statusOf(t, now()) !== 'active') return res.status(410).json({ error: 'this reading copy is closed', code: HTTP_CODES.readingCopyClosed });
+      // A named link sees only its own comments; the open link only the
+      // ones left through the open link.
       const r = await db.query<CommentRow>(
         `select id, section_id, paragraph_index, quote, body, reader_name, created_at
-         from share_comments where share_id = $1 order by created_at asc limit 1000`,
-        [share.id],
+         from share_comments
+         where share_id = $1 and recipient_id is not distinct from $2::uuid
+         order by created_at asc limit 1000`,
+        [share.id, recipient ? recipient.id : null],
       );
       res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
       return res.json({
@@ -576,9 +906,10 @@ export function shareReaderRoutes(
 
   router.post('/:token/comments', async (req, res, next) => {
     try {
-      const share = await find(req.params.token);
-      if (!share) return res.status(404).json({ error: 'reading copy not found' });
-      if (status(share, now()) !== 'active') return res.status(410).json({ error: 'this reading copy is closed', code: HTTP_CODES.readingCopyClosed });
+      const t = await resolveToken(req.params.token);
+      if (!t) return res.status(404).json({ error: 'reading copy not found' });
+      const { share, recipient } = t;
+      if (statusOf(t, now()) !== 'active') return res.status(410).json({ error: 'this reading copy is closed', code: HTTP_CODES.readingCopyClosed });
       if (!share.allow_comments) return res.status(403).json({ error: 'comments are turned off for this copy' });
       const body = (req.body ?? {}) as Record<string, unknown>;
       // Honeypot: a hidden field people never fill. A bot that fills it
@@ -590,10 +921,11 @@ export function shareReaderRoutes(
       if (!text) return res.status(400).json({ error: 'please write a comment' });
       if (text.length > COMMENT_BODY_MAX)
         return res.status(400).json({ error: `comments can be up to ${COMMENT_BODY_MAX} characters` });
-      const name = typeof body.readerName === 'string' ? body.readerName.trim() : '';
-      if (name.length > READER_NAME_MAX)
+      // On a named link the name is always the link's; the body's is ignored.
+      const name = recipient ? recipient.name : typeof body.readerName === 'string' ? body.readerName.trim() : '';
+      if (!recipient && name.length > READER_NAME_MAX)
         return res.status(400).json({ error: `names can be up to ${READER_NAME_MAX} characters` });
-      if (share.reader_name_required && !name)
+      if (!recipient && share.reader_name_required && !name)
         return res.status(400).json({ error: 'please add your name so the writer knows who wrote this' });
       const sectionId = typeof body.sectionId === 'string' ? body.sectionId : '';
       const sections = Array.isArray(share.snapshot?.sections) ? share.snapshot.sections : [];
@@ -605,7 +937,7 @@ export function shareReaderRoutes(
           : null;
       const quote = typeof body.quote === 'string' ? body.quote.replace(/\s+/g, ' ').trim().slice(0, QUOTE_MAX) : '';
       const ip = clientIp(req);
-      const verdict = limiter.check(ip, share.id);
+      const verdict = limiter.check(ip, share.id, recipient ? `${share.id}:${recipient.id}` : share.id);
       if (verdict !== 'ok') {
         return res.status(429).json({
           error:
@@ -615,10 +947,19 @@ export function shareReaderRoutes(
         });
       }
       const r = await db.query<CommentRow>(
-        `insert into share_comments (share_id, section_id, paragraph_index, quote, body, reader_name, ip_hash)
-         values ($1, $2, $3, $4, $5, $6, $7)
+        `insert into share_comments (share_id, section_id, paragraph_index, quote, body, reader_name, ip_hash, recipient_id)
+         values ($1, $2, $3, $4, $5, $6, $7, $8)
          returning id, section_id, paragraph_index, quote, body, reader_name, created_at`,
-        [share.id, sectionId, paragraph, quote || null, text, name, sha256(`${share.id}:${ip}`)],
+        [
+          share.id,
+          sectionId,
+          paragraph,
+          quote || null,
+          text,
+          name,
+          sha256(`${share.id}:${ip}`),
+          recipient ? recipient.id : null,
+        ],
       );
       const c = r.rows[0];
       return res.status(201).json({

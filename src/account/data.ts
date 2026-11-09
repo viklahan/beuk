@@ -15,8 +15,8 @@ import { ZIP_LIMIT_BYTES, ZipWriter } from './zip.js';
  * Owned by an account (every table with a user_id/owner_id foreign key
  * to users): sessions, password_resets, email_confirmations,
  * manuscripts, series_covenants, user_themes, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
- * streak_days, streak_freezes, streak_state, shares (+ share_comments,
- * share_readers), school_progress, billing_subscriptions. billing_events keep their
+ * streak_days, streak_freezes, streak_state, shares (+ share_recipients,
+ * share_comments, share_readers), school_progress, billing_subscriptions. billing_events keep their
  * Stripe event id (the webhook dedupe ledger) with user_id set null.
  *
  * NOT linked to an account in the database, so not part of either:
@@ -320,7 +320,8 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
     `                        and exports/index.json with each one's format, preset,`,
     `                        size, SHA-256 and date.`,
     `shares/                 Your beta-reader links (${c.shares}): each link's settings, the`,
-    `                        frozen reading copy readers saw, and every comment readers`,
+    `                        frozen reading copy readers saw, each named reader link`,
+    `                        (the name and its dates), and every comment readers`,
     `                        left (${c.comments}). The link addresses themselves are not here:`,
     `                        the server only ever kept a scrambled form of them.`,
     `streak.json             Your writing streak: every day the server saw you writing,`,
@@ -493,24 +494,36 @@ export async function writeAccountExport(
   const shares = await db.query<{
     id: string; manuscript_id: string | null; title: string; snapshot: unknown; images: unknown;
     published_at: string; created_at: string; expires_at: string | null; revoked_at: string | null;
-    allow_comments: boolean; reader_name_required: boolean;
+    open_link_closed_at: string | null; allow_comments: boolean; reader_name_required: boolean;
   }>(
     `select id, manuscript_id, title, snapshot, images, published_at, created_at, expires_at, revoked_at,
-            allow_comments, reader_name_required
+            open_link_closed_at, allow_comments, reader_name_required
      from shares where owner_id = $1 order by created_at`,
     [userId],
   );
   for (const s of shares.rows) {
     const comments = await db.query<{
       id: string; section_id: string; paragraph_index: number | null; quote: string | null;
-      body: string; reader_name: string; created_at: string; resolved_at: string | null;
+      body: string; reader_name: string; recipient_id: string | null; created_at: string; resolved_at: string | null;
     }>(
-      `select c.id, c.section_id, c.paragraph_index, c.quote, c.body, c.reader_name, c.created_at, c.resolved_at
+      `select c.id, c.section_id, c.paragraph_index, c.quote, c.body, c.reader_name, c.recipient_id, c.created_at,
+              c.resolved_at
        from share_comments c join shares s on s.id = c.share_id
        where c.share_id = $1 and s.owner_id = $2 order by c.created_at`,
       [s.id, userId],
     );
     const readers = await db.query<{ n: number }>('select count(*)::int as n from share_readers where share_id = $1', [s.id]);
+    // Named reading links: the name and dates only. The token was never
+    // kept, and its hash is not the writer's data to carry around.
+    const recipients = await db.query<{
+      id: string; name: string; created_at: string; expires_at: string | null; revoked_at: string | null;
+      first_opened_at: string | null; last_opened_at: string | null;
+    }>(
+      `select r.id, r.name, r.created_at, r.expires_at, r.revoked_at, r.first_opened_at, r.last_opened_at
+       from share_recipients r join shares s on s.id = r.share_id
+       where r.share_id = $1 and s.owner_id = $2 order by r.created_at, r.id`,
+      [s.id, userId],
+    );
     await zip.add(
       `shares/${safeName(s.title, 'Untitled')} (${s.id.slice(0, 8)}).json`,
       JSON.stringify(
@@ -522,9 +535,19 @@ export async function writeAccountExport(
           publishedAt: iso(s.published_at),
           expiresAt: isoOrNull(s.expires_at),
           revokedAt: isoOrNull(s.revoked_at),
+          openLinkClosedAt: isoOrNull(s.open_link_closed_at),
           allowComments: s.allow_comments,
           readerNameRequired: s.reader_name_required,
           readerCount: Number(readers.rows[0]?.n ?? 0),
+          recipients: recipients.rows.map((r) => ({
+            id: r.id,
+            name: r.name,
+            createdAt: iso(r.created_at),
+            expiresAt: isoOrNull(r.expires_at),
+            revokedAt: isoOrNull(r.revoked_at),
+            firstOpenedAt: isoOrNull(r.first_opened_at),
+            lastOpenedAt: isoOrNull(r.last_opened_at),
+          })),
           comments: comments.rows.map((c) => ({
             id: c.id,
             sectionId: c.section_id,
@@ -532,6 +555,7 @@ export async function writeAccountExport(
             quote: c.quote,
             body: c.body,
             readerName: c.reader_name,
+            recipientId: c.recipient_id,
             createdAt: iso(c.created_at),
             resolvedAt: isoOrNull(c.resolved_at),
           })),
@@ -656,6 +680,7 @@ export async function deleteAccount(
     };
     await del('share_comments', 'delete from share_comments where share_id in (select id from shares where owner_id = $1)', [userId]);
     await del('share_readers', 'delete from share_readers where share_id in (select id from shares where owner_id = $1)', [userId]);
+    await del('share_recipients', 'delete from share_recipients where share_id in (select id from shares where owner_id = $1)', [userId]);
     await del('shares', 'delete from shares where owner_id = $1', [userId]);
     await del('jobs', 'delete from jobs where user_id = $1', [userId]);
     await del('exports', 'delete from exports where user_id = $1', [userId]);

@@ -216,6 +216,7 @@ async function gatedStatuses(c: Client, work: { mid: string; exportId: string; s
   out['POST /api/manuscripts'] = (await c.post('/api/manuscripts', { doc: DOC })).status;
   out['POST /api/shares'] = (await c.post('/api/shares', { manuscriptId: work.mid })).status;
   out['POST /api/shares/:id/republish'] = (await c.post(`/api/shares/${work.shareId}/republish`)).status;
+  out['POST /api/shares/:id/readers'] = (await c.post(`/api/shares/${work.shareId}/readers`, { name: 'Gate check' })).status;
   out['POST /api/jobs/epubcheck'] = (await c.post('/api/jobs/epubcheck', { exportId: work.exportId })).status;
   out['POST /api/jobs/pdfx'] = (await c.post('/api/jobs/pdfx', { exportId: work.exportId })).status;
   out['POST /api/epub'] = (await epubStatus(c, { book: DOC, platform: 'generic' }));
@@ -331,13 +332,14 @@ test('decideAccess: open while billing is off; subscription, grace, trial, pause
   assert.equal(decideAccess(true, gone, grace), 'grace');
 });
 
-test('the rules are data: seven features, eight gated POST routes, and the never-paused list does not overlap', () => {
+test('the rules are data: seven features, nine gated POST routes, and the never-paused list does not overlap', () => {
   assert.deepEqual(
     ACCESS_RULES.map((r) => `${r.method} ${r.path}`),
     [
       'POST /api/manuscripts',
       'POST /api/shares',
       'POST /api/shares/:id/republish',
+      'POST /api/shares/:id/readers',
       'POST /api/jobs/epubcheck',
       'POST /api/jobs/pdfx',
       'POST /api/epub',
