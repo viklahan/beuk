@@ -1272,6 +1272,10 @@ const closureCrypto = {
 export const shelf: { asked: number; refused: string[] } = { asked: 0, refused: [] };
 /** Wave 7a: the seams light up — 1.0's own storeMakePrintJob and its three neighbours, in the shelf's module
  *  (src/cloud/cloud.ts sets these once it has loaded; before that, and in tests without it, the stand-ins answer). */
+/** Final fix I1 (BEUK:authorship): the book "Export a backup" fingerprints — the open book's export, set by the
+ *  BookProvider — which 1.0's authorshipStampDesk (the Word downloads' stamp) fingerprints too. Null: no book open. */
+export const authorshipEnv: { deskBook: () => Record<string, unknown> | null } = { deskBook: () => null };
+
 export const shelfEnv: {
   makePrintJob: ((o?: unknown) => Promise<unknown>) | null;
   upload: ((...a: unknown[]) => Promise<unknown>) | null;
@@ -1489,6 +1493,9 @@ export function loadClosure(): Promise<Closure> {
         renderShelfList: () => shelfEnv.renderShelfList?.(),
         shelfGetBook: (id: string, hydrate: boolean) => Promise.resolve(shelfEnv.getBook ? shelfEnv.getBook(id, hydrate) : null),
         cloudLoadShelf: () => shelfEnv.loadShelf?.() ?? null,
+        // final fix I1 (BEUK:authorship): the Word stamp fingerprints the book 2.0's backup fingerprints (the open book's
+        // export: src/book/BookProvider.tsx); no book open, no stamp
+        authorshipDeskBook: () => authorshipEnv.deskBook(),
       });
 
       share = c.share;

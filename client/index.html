@@ -71175,9 +71175,14 @@
       function authorshipStampDesk(kind) {
         if (!cloud.user) return;
         let book = null;
-        try { book = serializeBook(); } catch (e) { return; }
+        try { book = authorshipDeskBook(); } catch (e) { return; }
+        if (!book || typeof book !== "object") return;
         backupFingerprint(book).then((sha) => authorshipStamp(book, sha, kind)).catch(() => null);
       }
+      /* The book a Word stamp fingerprints: the very book "Export a backup" fingerprints, so the Word file's stamp and the
+         next plain backup carry one sha256 while nothing was edited between. 1.0's is serializeBook (localExportBackup's);
+         2.0 supplies its own backup's (the open book's exportBook) */
+      function authorshipDeskBook() { return serializeBook(); }
       /* When Beuk first recorded this fingerprint for this writer (the oldest stamp's createdAt), or null */
       async function authorshipCheck(sha256) {
         if (!cloud.user || !BACKUP_SHA_RE.test(String(sha256))) return null;

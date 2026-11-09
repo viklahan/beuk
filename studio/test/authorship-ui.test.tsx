@@ -461,7 +461,15 @@ describe('locked backups and the authorship record: the studio (task 3)', { time
     const body = JSON.parse(net.stamps()[0]!.body) as Rec;
     expect(body.kind).toBe('docx');
     expect(body.bookId).toBe((doc.meta as Rec).bookId);
-    expect(String(body.sha256)).toMatch(/^[0-9a-f]{64}$/);
+    // final fix I1: the Word file's stamp is the very fingerprint the next plain backup carries (nothing edited between)
+    await click($('btnCloseExport'));
+    await waitFor(() => expect(isOpen('modalExport')).toBe(false));
+    await openPop();
+    const text = await exportBackup();
+    await waitFor(() => expect(net.stamps().length).toBe(2), { timeout: 20_000 });
+    const a = (JSON.parse(text) as { authorship: Rec }).authorship;
+    expect(body.sha256).toBe(a.sha256);
+    expect(JSON.parse(net.stamps()[1]!.body).sha256).toBe(a.sha256);
   });
 
   it('box set: locked volume asks; cancel → that volume refused with the loader\'s message, others load', async () => {

@@ -3,7 +3,7 @@ import * as Y from 'yjs';
 import { BODY, BookImportError, META, observeSections, sectionList, sectionsCount, unwrapBackup, type TextWarning } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import { LANG_CODES } from '@book/upgrade.js';
-import { closureIfLoaded, loadClosure } from '../closure/index';
+import { authorshipEnv, closureIfLoaded, loadClosure } from '../closure/index';
 import { backupArrival, live } from '../history/history';
 import { deskIsUntouchedSample } from '../sample/sample';
 import { useConfirm } from '../shell/Dialog';
@@ -207,6 +207,15 @@ export function BookProvider({ children }: { children: ReactNode }) {
   }, [show, toast, t]);
 
   useEffect(() => () => void current.current?.close(), []);
+
+  // final fix I1 (BEUK:authorship): a Word download's stamp fingerprints the book exportBackup fingerprints (b.export())
+  useEffect(() => {
+    const deskBook = () => current.current?.export() ?? null;
+    authorshipEnv.deskBook = deskBook;
+    return () => {
+      if (authorshipEnv.deskBook === deskBook) authorshipEnv.deskBook = () => null;
+    };
+  }, []);
 
   // wave 5a, round 2: each device write's end (OpenBook.onWrite): a refused one is 1.0's not saved, by its name; a
   // completed one after that is saved again (the state object is kept when nothing changes: no re-render per keystroke)
