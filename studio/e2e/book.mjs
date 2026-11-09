@@ -7965,8 +7965,11 @@ async function wave7bDay22(srv) {
      pdfLoadLib) finds "Shared with Sam" in page 1's text, and on EVERY page, rendered to a canvas, finds the stamp's
      ink in the cells with no text (the stamp is an SVG image: its words are not text in the PDF). */
 const NL_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const nlToday = () => {
-  const d = new Date();
+/** The stamp's date for a link: the recipient's createdAt as the server gives it (GET /api/shares/:id/readers), in
+ *  UTC, `d Mon yyyy` — never the wall clock, never the page under test. */
+const nlStampDate = (iso) => {
+  const d = new Date(iso);
+  if (!iso || Number.isNaN(d.getTime())) return `<no createdAt: ${iso}>`;
   return `${d.getUTCDate()} ${NL_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
 /** The reader page as a reader meets it: the line, its <bdi>, the stamp layer and its background, the comments list. */
@@ -8058,15 +8061,31 @@ const nlLinks = (p, sid) => p.evaluate((id) => Object.fromEntries([...document.q
   { rid: r.getAttribute('data-recipient-id'), url: r.querySelector('[data-beta-reader-copy]')?.getAttribute('data-beta-reader-copy') || null, st: r.querySelector('.beta-st')?.className },
 ])), sid);
 
-/** A reader's page watched as watch() does, except the 410 a closed link answers (the page under test). */
+/** A reader's page watched as watch() does (the browser's own favicon.ico request aside). The one console error it
+ *  accepts is the 410 of a navigation the test expects to be closed: nlGone(page, url) marks that url first. */
+const nlExpect410 = new WeakMap();
 function nlWatchReader(page) {
+  nlExpect410.set(page, new Set());
   page.on('crash', () => csp.errors.push(`${page.url()}: the page CRASHED`));
   page.on('pageerror', (e) => csp.errors.push(`${page.url()}: ${e}`));
   page.on('console', (m) => {
+    if (m.type() !== 'error') return;
     const at = (m.location() && m.location().url) || '';
-    if (m.type() === 'error' && !/\/favicon\.ico$/.test(at) && !/Failed to load resource: the server responded with a status of 410/.test(m.text())) csp.errors.push(`${page.url()}: ${m.text()} (${at})`);
+    if (/\/favicon\.ico$/.test(at)) return;
+    if (/Failed to load resource: the server responded with a status of 410/.test(m.text()) && nlExpect410.get(page).has(at)) return;
+    csp.errors.push(`${page.url()}: ${m.text()} (${at})`);
   });
   return page;
+}
+/** Go to a link the test expects to be closed (410): only this navigation's 410 is accepted. */
+async function nlGone(page, url) {
+  nlExpect410.get(page).add(url);
+  try {
+    return await page.goto(url);
+  } finally {
+    await page.waitForTimeout(100);
+    nlExpect410.get(page).delete(url);
+  }
 }
 async function namedLinksParity(srv) {
   const origin = srv.origin;
@@ -8143,11 +8162,14 @@ async function namedLinksParity(srv) {
         `namedlinks ${who}: beuk.betaTokens.v1 still holds only the open link's token (shareId → token; ${Object.keys(store.open).length} entry)`);
       const elsewhere = await p.evaluate((tks) => Object.keys(localStorage).filter((k) => k !== 'beuk.betaReaderTokens.v1' && tks.some((t) => String(localStorage.getItem(k)).includes(t))), [tok(L.Priya?.url), tok(L.Sam?.url)]);
       check(elsewhere.length === 0, `namedlinks ${who}: the named tokens are in no other localStorage key (${JSON.stringify(elsewhere)})`);
+      // each reader's createdAt, from the server (the writer's own session), for the stamp's expected date
+      const listed = (await (await p.context().request.get(origin + '/api/shares/' + encodeURIComponent(id) + '/readers')).json()).readers || [];
+      for (const x of [L.Priya, L.Sam]) x.createdAt = listed.find((y) => y.id === x?.rid)?.createdAt ?? null;
+      check(!!L.Priya?.createdAt && !!L.Sam?.createdAt, `namedlinks ${who}: the server gives each reader's createdAt (${L.Priya?.createdAt}, ${L.Sam?.createdAt})`);
       links[who] = { priya: L.Priya, sam: L.Sam, open: origin + '/read/' + openTok };
     }
 
     // the readers: each app's links in a browser of their own
-    const today = nlToday();
     const rc = {};
     for (const [, , who] of sides) {
       const c = await newContext({ serviceWorkers: 'block' });
@@ -8160,7 +8182,7 @@ async function namedLinksParity(srv) {
         const resp = await rp.goto(L[k].url);
         const r = await rp.evaluate(NL_READ);
         seen[k] = r;
-        check(resp.status() === 200 && r.line === `Shared with ${name} · ${today}` && r.bdi === name && r.stamp && /^url\("data:image\/svg\+xml/.test(r.stampBg || ''),
+        check(resp.status() === 200 && r.line === `Shared with ${name} · ${nlStampDate(L[k].createdAt)}` && r.bdi === name && r.stamp && /^url\("data:image\/svg\+xml/.test(r.stampBg || ''),
           `namedlinks ${who}: ${name}'s link opens with her/his own name on the page: "${r.line}" (the name in <bdi>: "${r.bdi}"), the stamp layer there (${r.stampBg}…) [${resp.status()}]`);
         await harvestCsp(rp);
       }
@@ -8210,12 +8232,12 @@ async function namedLinksParity(srv) {
     for (const [, , who] of sides) {
       const { rp } = rc[who];
       const L = links[who];
-      const gone = await rp.goto(L.priya.url);
+      const gone = await nlGone(rp, L.priya.url);
       const g = await rp.evaluate(NL_READ);
       check(gone.status() === 410 && /This reading copy is closed/.test(g.h1) && !g.body.includes('Priya') && !g.stamp, `namedlinks ${who}: Priya's closed link gives the 410 page, which never names her (${gone.status()}: "${g.h1}")`);
       const sam = await rp.goto(L.sam.url);
       const s = await rp.evaluate(NL_READ);
-      check(sam.status() === 200 && s.line === `Shared with Sam · ${today}`, `namedlinks ${who}: Sam keeps reading (${sam.status()}: "${s.line}")`);
+      check(sam.status() === 200 && s.line === `Shared with Sam · ${nlStampDate(L.sam.createdAt)}`, `namedlinks ${who}: Sam keeps reading (${sam.status()}: "${s.line}")`);
       const open = await rp.goto(L.open);
       check(open.status() === 200, `namedlinks ${who}: the open link keeps working too (${open.status()})`);
     }
@@ -8241,18 +8263,18 @@ async function namedLinksParity(srv) {
     for (const [, , who] of sides) {
       const { rp } = rc[who];
       const L = links[who];
-      const open = await rp.goto(L.open);
+      const open = await nlGone(rp, L.open);
       const o = await rp.evaluate(NL_READ);
       check(open.status() === 410 && /This reading copy is closed/.test(o.h1), `namedlinks ${who}: the closed open link gives the 410 page (${open.status()})`);
       const sam = await rp.goto(L.sam.url);
       const s = await rp.evaluate(NL_READ);
-      check(sam.status() === 200 && s.line === `Shared with Sam · ${today}` && s.stamp, `namedlinks ${who}: Sam is unaffected (${sam.status()}: "${s.line}")`);
-      const pr = await rp.goto(L.priya.url);
+      check(sam.status() === 200 && s.line === `Shared with Sam · ${nlStampDate(L.sam.createdAt)}` && s.stamp, `namedlinks ${who}: Sam is unaffected (${sam.status()}: "${s.line}")`);
+      const pr = await nlGone(rp, L.priya.url);
       check(pr.status() === 410, `namedlinks ${who}: Priya's link stays closed (${pr.status()})`);
       await harvestCsp(rp);
     }
     // the watermark on Sam's page (2.0's link), while it is open
-    if ((process.env.NL_PARTS || 'watermark').split(',').includes('watermark')) await namedLinksWatermark(srv, links['2.0'].sam.url, one);
+    if ((process.env.NL_PARTS || 'watermark').split(',').includes('watermark')) await namedLinksWatermark(srv, links['2.0'].sam.url, `Shared with Sam · ${nlStampDate(links['2.0'].sam.createdAt)}`, one);
 
     // Revoke (the copy as a whole, 1.0's confirm unchanged): every named link closes with it
     m = marks();
@@ -8267,7 +8289,7 @@ async function namedLinksParity(srv) {
     same(m, 'Revoke', 1);
     for (const [, , who] of sides) {
       const { rp } = rc[who];
-      const sam = await rp.goto(links[who].sam.url);
+      const sam = await nlGone(rp, links[who].sam.url);
       const s = await rp.evaluate(NL_READ);
       check(sam.status() === 410 && /This reading copy is closed/.test(s.h1) && !s.body.includes('Sam'), `namedlinks ${who}: after Revoke, Sam's named link gives the 410 page too (${sam.status()})`);
     }
@@ -8283,9 +8305,7 @@ async function namedLinksParity(srv) {
 }
 
 /** The watermark on Sam's page, in Chromium (see above). `one`: a 1.0 page on this origin, for its pdf.js. */
-async function namedLinksWatermark(srv, samUrl, one) {
-  const today = nlToday();
-  const want = `Shared with Sam · ${today}`;
+async function namedLinksWatermark(srv, samUrl, want, one) {
   // JavaScript off
   {
     const c = await newContext({ serviceWorkers: 'block', javaScriptEnabled: false });
@@ -8360,7 +8380,7 @@ async function namedLinksWatermark(srv, samUrl, one) {
       note(`namedlinks watermark (print): per page, cells clear of text / with the stamp's light ink / light-ink pixels: ${pages.map((x, i) => `p${i + 1} ${x.free}/${x.inked}/${x.ink}`).join(', ')}`);
       const bad = pages.map((x, i) => [i + 1, x]).filter(([, x]) => !(x.free > 0 && x.inked >= 8));
       check(pages.length >= 2 && bad.length === 0, `namedlinks watermark (print): on every page (${pages.length}), drawn by pdf.js, the stamp's ink is in the cells with no text (≥ 8 cells of 16 px)${bad.length ? ' — missing on page(s) ' + bad.map(([i, x]) => `${i} (${x.inked} of ${x.free})`).join(', ') : ''}`);
-      check(!pages.slice(1).some((x) => x.text.includes('Shared with')), 'namedlinks watermark (print): the stamp is an image, not text (no "Shared with" in the text after page 1) — the canvas check above is what proves it on every page');
+      check(!pages.slice(1).some((x) => x.text.includes(want)), `namedlinks watermark (print): the stamp is an image, not text (no "${want}" in the text after page 1) — the canvas check above is what proves it on every page`);
       await harvestCsp(p);
     } finally {
       await c.close();
