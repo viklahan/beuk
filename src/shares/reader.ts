@@ -99,6 +99,97 @@ html.rd-imm .rd-book{font-size:1.15rem}
 html.rd-imm .rd-pager{padding-bottom:max(1.5rem,env(safe-area-inset-bottom))}
 `;
 
+/* Named reading links: the watermark. Emitted only when the page has a
+ * recipient, so the open page is byte-equal to what it was.
+ *
+ * The reader page has no dark theme (warmth.css and READER_CSS set the
+ * paper colours unconditionally, with no prefers-color-scheme rule), so a
+ * dark-mode browser still shows paper. The ink is the page's own --ink
+ * with a faint light halo, so the stamp also shows if a browser force-darkens
+ * the page (Chrome's auto dark mode, Samsung Internet). */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** `Shared with <name> \u00B7 <d Mon yyyy>`: the link's created_at in UTC. */
+export function stampText(name: string, createdAtIso: string): string {
+  const d = new Date(createdAtIso);
+  if (Number.isNaN(d.getTime())) throw new Error('stampText: createdAt is not a date');
+  return `Shared with ${name} \u00B7 ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+/** Bidi format characters: ALM, LRM, RLM, LRE…RLO, LRI…PDI. */
+const BIDI_CONTROLS = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
+
+/** The name as it goes into the SVG stamp: its own bidi controls dropped
+ *  (only there; the HTML line keeps the name exact inside <bdi>) and the
+ *  rest between FSI and PDI, so an RLO can't reorder "Shared with" or the
+ *  date and an RTL name can't pull the date's digits into its run. */
+export function stampSvgName(name: string): string {
+  return `\u2068${name.replace(BIDI_CONTROLS, '')}\u2069`;
+}
+
+/** A generous width estimate, in em, for one character of the stamp
+ *  (Georgia-ish). Over-estimating only adds space; under-estimating would
+ *  clip the text at the tile's edge. */
+function stampEm(ch: string): number {
+  if (/[\p{Cf}\p{Mn}]/u.test(ch)) return 0;
+  if (/[\p{Extended_Pictographic}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(ch)) return 1.05;
+  if (/[MW@%]/.test(ch)) return 1;
+  if (/[\p{Lu}\p{Nd}]/u.test(ch)) return 0.75;
+  if (ch === ' ') return 0.35;
+  return 0.58;
+}
+const emOf = (s: string) => [...s].reduce((n, ch) => n + stampEm(ch), 0);
+const COS30 = Math.cos(Math.PI / 6);
+const SIN30 = 0.5;
+
+/** The stamp tile: an SVG with the text rotated −30°, XML-escaped, then
+ *  encodeURIComponent-encoded, so it is safe inside CSS url("…") (no `"`,
+ *  `\`, `<` or newline can survive). One line at 15px when it fits a 360px
+ *  phone; otherwise "Shared with" / the name / "· date" on three lines, the
+ *  font shrinking to no less than 10px. The tile is at least 360×200 and
+ *  grows to hold the whole text, so a long name is never clipped. The SVG's
+ *  character content is always exactly `text`. */
+export function stampDataUri(text: string): string {
+  const fit = 320; // the widest a rotated stamp should be, to show whole on a phone
+  const pre = 'Shared with ';
+  const sep = text.lastIndexOf(` ${String.fromCharCode(0xb7)} `);
+  let lines = [text];
+  let font = 15;
+  if (emOf(text) * font * COS30 > fit && text.startsWith(pre) && sep >= pre.length) {
+    lines = [pre, text.slice(pre.length, sep + 1), text.slice(sep + 1)];
+    const widest = Math.max(...lines.map(emOf));
+    font = Math.max(10, Math.min(15, Math.floor(fit / (widest * COS30))));
+  }
+  const lh = Math.round(font * 1.35);
+  const bw = Math.max(...lines.map(emOf)) * font; // the text block, unrotated
+  const bh = lines.length * lh;
+  const w = Math.max(360, Math.ceil(bw * COS30 + bh * SIN30 + 30));
+  const h = Math.max(200, Math.ceil(bw * SIN30 + bh * COS30 + 30));
+  const cx = w / 2;
+  const cy = h / 2;
+  const top = cy - ((lines.length - 1) * lh) / 2;
+  const body =
+    lines.length === 1
+      ? esc(text)
+      : lines.map((l, i) => `<tspan x="${cx}" y="${top + i * lh}">${esc(l)}</tspan>`).join('');
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" direction="ltr" ` +
+    `transform="rotate(-30 ${cx} ${cy})" font-family="Georgia,'Times New Roman',serif" font-size="${font}" ` +
+    `fill="#22333a" fill-opacity="0.11" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.5">` +
+    `${body}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function namedCss(svgText: string): string {
+  return `.rd-stamp{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:url("${stampDataUri(svgText)}");background-repeat:repeat;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rd-head,.rd-page,.rd-pager,.rd-box,.site-foot{position:relative;z-index:1}
+html.rd-imm .rd-kicker.rd-named{display:block}
+.rd-kicker.rd-named{overflow-wrap:anywhere}
+@media print{.rd-stamp{position:fixed;inset:0;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact}.rd-kicker.rd-named{display:block}}
+`;
+}
+
 /* The comment helper. It reads the share's path from the page, never
  * writes HTML from data (textContent only), and talks only to this
  * share's own comments endpoint. */
@@ -192,6 +283,8 @@ function shell(opts: {
   lang: string;
   body: string;
   script?: boolean;
+  /** Extra CSS after READER_CSS (named pages only). */
+  extraCss?: string;
 }): string {
   return `<!doctype html>
 <html lang="${esc(opts.lang)}">
@@ -202,7 +295,7 @@ function shell(opts: {
     <meta name="referrer" content="no-referrer" />
     <title>${esc(opts.title)}</title>
     <link rel="stylesheet" href="/help/warmth.css" />
-    <style nonce="${opts.nonce}">${READER_CSS}</style>
+    <style nonce="${opts.nonce}">${READER_CSS}${opts.extraCss ?? ''}</style>
   </head>
   <body>
 ${opts.body}
@@ -245,12 +338,16 @@ export function renderReaderPage(input: ReaderPageInput): string {
   const next =
     n < sections.length - 1 ? `<a href="${base}?c=${n + 1}" rel="next">${esc(sections[n + 1].label)} →</a>` : '<span></span>';
   const nameReq = input.readerNameRequired ? ' required' : '';
+  const who = input.recipient;
+  // A named link: the name is fixed (the server forces reader_name anyway),
+  // prefilled and read-only; readonly, not disabled, so the form still sends it.
+  const nameFixed = who ? ` readonly value="${esc(who.name)}"` : '';
   const form = input.allowComments
     ? `<form class="rd-form" id="rdForm" autocomplete="on">
         <p class="rd-hint">Select a passage to comment on it, or write about the chapter as a whole.</p>
         <p class="quote" id="rdQuote" hidden></p>
-        <label for="rdName">Your name${input.readerNameRequired ? '' : ' (optional)'}</label>
-        <input id="rdName" name="readerName" maxlength="60"${nameReq} />
+        <label for="rdName">Your name${input.readerNameRequired || who ? '' : ' (optional)'}</label>
+        <input id="rdName" name="readerName" maxlength="60"${nameReq}${nameFixed} />
         <label for="rdBody">Your comment</label>
         <textarea id="rdBody" name="body" rows="4" maxlength="2000" required></textarea>
         <div class="rd-hp" aria-hidden="true"><label for="rdWebsite">Leave this empty</label><input id="rdWebsite" name="website" tabindex="-1" autocomplete="off" /></div>
@@ -258,10 +355,14 @@ export function renderReaderPage(input: ReaderPageInput): string {
         <p class="rd-msg" id="rdMsg" role="status"></p>
       </form>`
     : '<p class="rd-hint">The writer has turned comments off for this copy.</p>';
-  const body = `
+  const kicker = who
+    ? `<p class="rd-kicker rd-named">${stampText(`<bdi>${esc(who.name)}</bdi>`, who.createdAt)}</p>`
+    : '<p class="rd-kicker">A reading copy, shared with you</p>';
+  const stamp = who ? '\n    <div class="rd-stamp" aria-hidden="true"></div>' : '';
+  const body = `${stamp}
     <header class="rd-head">
       <button type="button" class="rd-full" id="rdFull" hidden aria-pressed="false" aria-keyshortcuts="F" data-enter="Full screen" data-exit="Exit full screen" data-fill="Just the text" data-fill-exit="Show the whole page">Full screen</button>
-      <p class="rd-kicker">A reading copy, shared with you</p>
+      ${kicker}
       <h1 class="rd-book">${esc(snapshot.title)}</h1>
       ${snapshot.subtitle ? `<p class="rd-by"><em>${esc(snapshot.subtitle)}</em></p>` : ''}
       ${snapshot.author ? `<p class="rd-by">by ${esc(snapshot.author)}</p>` : ''}
@@ -278,7 +379,14 @@ ${html}
       <div id="rdList"><p class="rd-hint">Comments appear here when scripts are allowed.</p></div>
       ${form}
     </section>`;
-  return shell({ nonce, title: `${snapshot.title} — a reading copy`, lang: snapshot.language, body, script: true });
+  return shell({
+    nonce,
+    title: `${snapshot.title} — a reading copy`,
+    lang: snapshot.language,
+    body,
+    script: true,
+    extraCss: who ? namedCss(stampText(stampSvgName(who.name), who.createdAt)) : undefined,
+  });
 }
 
 /** The calm page for a link that has been revoked or has expired. */
