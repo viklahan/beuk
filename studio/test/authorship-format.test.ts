@@ -106,6 +106,17 @@ describe('locked envelope', () => {
     const env = await api.backupLock(text, 'correct horse ☃');
     expect(await api.backupUnlock(JSON.parse(env), 'correct horse ☃')).toBe(text);
   });
+  it('the password is NFC-normalized: locked with "café", unlocked with "café"', async () => {
+    const { text } = await api.backupPayload(book(), null);
+    const decomposed = 'café', composed = 'café';
+    expect(decomposed).not.toBe(composed);
+    expect(await api.backupUnlock(JSON.parse(await api.backupLock(text, decomposed)), composed)).toBe(text);
+    expect(await api.backupUnlock(JSON.parse(await api.backupLock(text, composed)), decomposed)).toBe(text);
+  });
+  it('backupLock refuses undefined, null and "" with code "bad"', async () => {
+    const { text } = await api.backupPayload(book(), null);
+    for (const pw of [undefined, null, '']) expect(await code(api.backupLock(text, pw as never)), String(pw)).toBe('bad');
+  });
   it('keys exactly format,version,kdf,cipher,data; kdf.iterations 600000; salt 16 bytes, iv 12; two locks differ', async () => {
     const { text } = await api.backupPayload(book(), null);
     const s1 = await api.backupLock(text, 'pw');

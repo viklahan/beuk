@@ -71053,7 +71053,7 @@
         return { salt, iv, data };
       }
       async function backupKey(password, salt, usage) {
-        const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(password)), "PBKDF2", false, ["deriveKey"]);
+        const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(password).normalize("NFC")), "PBKDF2", false, ["deriveKey"]);
         return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: BACKUP_LOCK_ITERATIONS }, base, { name: "AES-GCM", length: 256 }, false, [usage]);
       }
       async function backupFingerprint(book) {
@@ -71070,6 +71070,7 @@
         return { text: JSON.stringify(payload), sha256 };
       }
       async function backupLock(plainText, password) {
+        if (typeof password !== "string" || !password.normalize("NFC")) throw backupLockError("bad"); /* never a file locked with "undefined" or nothing */
         const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
         const key = await backupKey(password, salt, "encrypt");
         const data = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(String(plainText))));
