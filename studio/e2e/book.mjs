@@ -9497,6 +9497,254 @@ async function lockcopyChecks(staticOrigin) {
 }
 
 
+/* ---- locked backups and the authorship record (plan 2026-11-09, task 4): authorshipChecks (E2E_ONLY=authorship) ----
+   The real server (serve.mjs { api: true }: src/app.ts on PGlite, billing in test mode against a fake Stripe on
+   127.0.0.1), 2.0 (/next) signed in, its book brought to the shelf. Every expected date and fingerprint comes from the
+   server's answers or the downloaded file, never the wall clock; the pages run in UTC and the dates are formatted here
+   in the studio's format ("en", short month), in UTC.
+   - A locked backup (password AU_PW) from the save popover: the file is the envelope (its keys exactly, nothing about
+     the book outside the ciphertext, the title absent from the bytes); decrypted here (node:crypto, PBKDF2-SHA-256
+     600 000 → AES-256-GCM) it is a plain backup whose fingerprint is its book's. No request carries the password.
+   - That file opened on an empty desk: the wrong password says backup.pwWrong (the field emptied, the desk still
+     empty); the right one opens it, and the desk's title and sections are the file's.
+   - A plain backup, signed in: recorded is the server's stamp; opened again, the toast says "Untouched since" (the
+     file's savedAt) and "On Beuk's record since" (GET /api/authorship/check's oldest createdAt).
+   - The same file with one chapter word changed (authorship kept): the "changed" confirm, before any other; No leaves
+     the desk exactly as it was.
+   - A named reader (Priya) added through the existing reading-copy UI; the Authorship record lists every stamp the
+     server holds for the book (kind, date, 12-hex fingerprint; the plain backup's among them) and Priya under
+     "Shared with" (her added date from GET /api/shares/:id/readers).
+   - Day 22 (an account past its trial): the save popover's lock box is hidden, and a plain export still downloads, its
+     authorship block recorded null (the stamp is refused). */
+const AU_PW = 'tide and lantern';
+const AU_EN = {
+  pwWrong: "That password doesn't open this backup",
+  changedTitle: 'This backup was changed',
+  changedBody: 'This backup was changed after it was saved. Open it anyway?',
+  replaceTitle: 'Open this backup?',
+};
+const auDate = (iso) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(iso));
+const auSha = (book) => createHash('sha256').update(Buffer.from(JSON.stringify(book), 'utf8')).digest('hex');
+/** The envelope opened here, independently of the studio (node:crypto). */
+async function auUnlock(env, pw) {
+  const { pbkdf2Sync, createDecipheriv } = await import('node:crypto');
+  const salt = Buffer.from(env.kdf.salt, 'base64'), iv = Buffer.from(env.cipher.iv, 'base64'), data = Buffer.from(env.data, 'base64');
+  const key = pbkdf2Sync(Buffer.from(pw.normalize('NFC'), 'utf8'), salt, env.kdf.iterations, 32, 'sha256');
+  const d = createDecipheriv('aes-256-gcm', key, iv);
+  d.setAuthTag(data.subarray(data.length - 16));
+  return { salt, iv, text: Buffer.concat([d.update(data.subarray(0, data.length - 16)), d.final()]).toString('utf8') };
+}
+async function auPop(page) {
+  await page.click('#localPillBtn');
+  await page.waitForSelector('#localPop:not([hidden])', { timeout: 10_000 });
+}
+/** The first toast whose words match `re`. */
+async function auToast(page, re, timeout = 30_000) {
+  const h = await page.waitForFunction((src) => [...document.querySelectorAll('#toasts .toast span')].map((x) => x.textContent).find((s) => new RegExp(src).test(s)) || null, re.source, { timeout });
+  return h.jsonValue();
+}
+/** The desk's book, as a plain export downloads it (less History). */
+const auDesk = async (page) => noHistory((await exportBackup(page)).json.book);
+async function authorshipMain(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block', timezoneId: 'UTC' });
+  const reqs = lcRecord(ctx);
+  const ctx2 = await newContext({ serviceWorkers: 'block', timezoneId: 'UTC' });
+  const reqs2 = lcRecord(ctx2);
+  try {
+    const page = await w7bNextLinked(ctx, origin, f.file, 'au');
+    const api = (p) => ctx.request.get(origin + p).then((r) => r.json());
+    const title = f.book.meta.title;
+
+    // 1. the locked backup
+    await auPop(page);
+    await page.check('#lockBackupOn');
+    await page.waitForSelector('#lockBackupFields:not([hidden])');
+    await page.fill('#lockBackupPw', AU_PW);
+    await page.fill('#lockBackupPw2', AU_PW);
+    const locked = await lcDownload(page, () => page.click('#btnLocalBackup'), 60_000);
+    const lockedPath = path.join(OUT, 'au-locked.beuk-backup.json');
+    writeFileSync(lockedPath, locked.bytes);
+    const raw = locked.bytes.toString('utf8');
+    const env = JSON.parse(raw);
+    const keys = JSON.stringify(Object.keys(env)) + JSON.stringify(Object.keys(env.kdf || {})) + JSON.stringify(Object.keys(env.cipher || {}));
+    check(env.format === 'beuk-backup-locked' && env.version === 1 && keys === '["format","version","kdf","cipher","data"]["name","hash","iterations","salt"]["name","iv"]' && env.kdf.name === 'PBKDF2' && env.kdf.hash === 'SHA-256' && env.kdf.iterations === 600000 && env.cipher.name === 'AES-GCM',
+      `authorship: the locked backup is the envelope, its keys exactly (${keys}; format "${env.format}", ${env.kdf?.iterations} iterations)`);
+    check(/^[a-z0-9-]+-\d{4}-\d{2}-\d{2}\.beuk-backup\.json$/.test(locked.name), `authorship: the locked backup keeps the backup's filename (${locked.name})`);
+    const outside = [title, 'Lantern', 'Mara', 'ferry', f.book.meta.bookId, f.book.meta.author].filter((s) => s && raw.includes(s));
+    check(outside.length === 0, `authorship: nothing about the book is outside the ciphertext — the title "${title}", the author, the bookId and chapter words are not in the file's ${locked.bytes.length} bytes${outside.length ? ' (found: ' + JSON.stringify(outside) + ')' : ''}`);
+    let inner = null;
+    try {
+      const u = await auUnlock(env, AU_PW);
+      inner = JSON.parse(u.text);
+      check(u.salt.length === 16 && u.iv.length === 12, `authorship: the salt is 16 bytes and the IV 12 (${u.salt.length}, ${u.iv.length})`);
+    } catch (e) {
+      check(false, `authorship: the locked backup decrypts here with the password (${e.message})`);
+    }
+    if (inner) {
+      check(inner.format === 'beuk-backup' && inner.version === 1 && inner.book?.meta?.title === title && inner.authorship?.sha256 === auSha(inner.book) && typeof inner.authorship?.recorded === 'string',
+        `authorship: decrypted here, it is the plain backup ("${inner.book?.meta?.title}"), its authorship.sha256 the SHA-256 of its book (${inner.authorship?.sha256?.slice(0, 12)}…), recorded ${inner.authorship?.recorded}`);
+    }
+    const leaks1 = await lcLeaks(reqs, AU_PW);
+    check(leaks1.length === 0, `authorship: no request carries the backup password (${reqs.length} requests${leaks1.length ? ' — ' + leaks1.slice(0, 3).join('; ') : ''})`);
+
+    // 2. opened on an empty desk: the wrong password, then the right one
+    const p2 = await openNext(ctx2, origin);
+    await p2.waitForSelector('#btnOpenBackup', { timeout: 15_000 });
+    await p2.setInputFiles('#btnOpenBackup + input', lockedPath);
+    await p2.waitForSelector('#modalBackupPw.open', { timeout: 30_000 });
+    await p2.fill('#backupPw', 'tide and lanterns');
+    await p2.click('#btnBackupPwOpen');
+    await p2.waitForSelector('#backupPwErr:not([hidden])', { timeout: 60_000 });
+    const wrong = { err: await p2.$eval('#backupPwErr', (x) => x.textContent), field: await p2.$eval('#backupPw', (x) => x.value), open: await p2.$eval('#modalBackupPw', (x) => x.classList.contains('open')), empty: !!(await p2.$('#btnOpenBackup')) };
+    check(wrong.err === AU_EN.pwWrong && wrong.field === '' && wrong.open && wrong.empty, `authorship: a wrong password says "${wrong.err}", empties the field (${JSON.stringify(wrong.field)}), keeps the dialog open (${wrong.open}) and the desk empty (${wrong.empty})`);
+    await p2.fill('#backupPw', AU_PW);
+    await p2.click('#btnBackupPwOpen');
+    await p2.waitForSelector('#btnOpenBackup', { state: 'detached', timeout: 60_000 });
+    const d2 = await auDesk(p2);
+    check(d2.meta?.title === title && !!inner && JSON.stringify(d2.sections) === JSON.stringify(inner.book.sections) && !(await p2.$('#modalBackupPw')),
+      `authorship: the right password opens it — the desk's title is "${d2.meta?.title}" and its ${d2.sections?.length} sections are the file's; the dialog is gone`);
+    const leaks2 = await lcLeaks(reqs2, AU_PW);
+    check(leaks2.length === 0, `authorship: opening it sends no request carrying the password (${reqs2.length} requests${leaks2.length ? ' — ' + leaks2.slice(0, 3).join('; ') : ''})`);
+    await harvestCsp(p2);
+
+    // 3. a plain backup, signed in, opened again
+    // the lock box keeps its tick when the popover closes (only the passwords are emptied, as BEUK:lockcopy's): untick it
+    await page.bringToFront();
+    await auPop(page);
+    const kept = await page.$eval('#lockBackupOn', (x) => x.checked);
+    const emptied = await page.$$eval('#lockBackupPw, #lockBackupPw2', (xs) => xs.every((x) => x.value === ''));
+    check(emptied, 'authorship: after the locked export the popover kept no password (both fields empty; the tick kept: ' + kept + ')');
+    await page.uncheck('#lockBackupOn');
+    await page.click('#localPillBtn');
+    await page.waitForSelector('#localPop', { state: 'hidden', timeout: 10_000 });
+    const plain = await exportBackup(page);
+    const plainPath = path.join(OUT, 'au-plain.beuk-backup.json');
+    writeFileSync(plainPath, plain.text);
+    const a = plain.json.authorship || {};
+    const sha = auSha(plain.json.book);
+    check(Object.keys(plain.json).join() === 'format,version,exportedAt,book,authorship' && a.sha256 === sha && a.savedAt === plain.json.exportedAt && a.author === String(plain.json.book.meta.author || '') && typeof a.recorded === 'string',
+      `authorship: the plain backup carries its authorship block — sha256 is its book's (${sha.slice(0, 12)}…), savedAt ${a.savedAt}, author "${a.author}", recorded ${a.recorded}`);
+    const rec = await api('/api/authorship/check?sha256=' + sha);
+    const first = rec.recorded?.[0]?.createdAt;
+    check(Array.isArray(rec.recorded) && rec.recorded.some((x) => x.createdAt === a.recorded && x.kind === 'backup'), `authorship: the server holds the stamp the file says (check: ${JSON.stringify(rec.recorded)})`);
+    await page.setInputFiles('#localBackupInput', plainPath);
+    await page.waitForSelector('#modalConfirm', { timeout: 30_000 });
+    const t3 = await page.$eval('#confirmTitle', (x) => x.textContent);
+    await page.click('#modalConfirm #btnConfirmYes');
+    const wantToast = `Backup opened — “${title}” Untouched since ${auDate(a.savedAt)}. On Beuk's record since ${first ? auDate(first) : '?'}.`;
+    // (the fixture's own "Backup opened" toast, from the first open, may still stand: wait for this open's words)
+    const got3 = await auToast(page, /Untouched since/).catch(async () => 'none of ' + JSON.stringify(await page.$$eval('#toasts .toast span', (xs) => xs.map((x) => x.textContent))));
+    check(t3 === AU_EN.replaceTitle && got3 === wantToast, `authorship: opened again (after "${t3}"), the toast reads "${got3}"${got3 === wantToast ? '' : ' — want "' + wantToast + '"'}`);
+
+    // 4. one chapter word changed by hand, the authorship block kept
+    const before = await auDesk(page);
+    // (the desk's fingerprint after this open is a new one: the export's book is not the file's byte for byte — said, not gated)
+    note(`authorship: after opening the plain backup, the desk's book differs from the file's in: ${JSON.stringify(w7aDiffKeys(plain.json.book, before))} (History left out of the desk side); its fingerprint ${auSha((await exportBackup(page)).json.book).slice(0, 12)}… vs the file's ${sha.slice(0, 12)}…`);
+    const ed = JSON.parse(plain.text);
+    const ch = ed.book.sections.find((s) => s.type === 'chapter' && /\bharbour\b/.test(s.content || ''));
+    ch.content = ch.content.replace(/\bharbour\b/, 'harbor');
+    const edPath = path.join(OUT, 'au-changed.beuk-backup.json');
+    writeFileSync(edPath, JSON.stringify(ed));
+    await page.setInputFiles('#localBackupInput', edPath);
+    await page.waitForSelector('#modalConfirm', { timeout: 30_000 });
+    const c4 = await page.evaluate(() => [document.getElementById('confirmTitle').textContent, document.getElementById('confirmBody').textContent]);
+    await page.click('#modalConfirm #btnConfirmNo');
+    await page.waitForSelector('#modalConfirm', { state: 'detached', timeout: 10_000 });
+    await page.waitForTimeout(1500);
+    const again = !!(await page.$('#modalConfirm'));
+    check(c4[0] === AU_EN.changedTitle && c4[1] === AU_EN.changedBody && !again, `authorship: a backup changed after it was saved asks first: "${c4[0]}" / "${c4[1]}"; after No, no other dialog follows (${again})`);
+    const after = await auDesk(page);
+    const sec = after.sections.find((s) => s.id === ch.id);
+    check(JSON.stringify(after) === JSON.stringify(before) && /\bharbour\b/.test(sec?.content || '') && !/\bharbor\b/.test(sec?.content || ''), `authorship: No leaves the desk exactly as it was (the book JSON-identical, "${ch.title}" still says "harbour")`);
+
+    // 5. a named reader through the reading-copy UI, then the record
+    await w5aOpenModal(page);
+    await page.waitForFunction(() => !!document.getElementById('btnBetaCreate') && /No reading links/.test(document.getElementById('betaSec').textContent), null, { timeout: 30_000 });
+    await page.click('#btnBetaCreate');
+    await page.waitForSelector('#betaNewUrl', { timeout: 30_000 });
+    await page.waitForFunction(() => document.querySelectorAll('#betaList .beta-row[data-share-id]').length === 1, null, { timeout: 30_000 });
+    const sid = await page.$eval('#betaList .beta-row[data-share-id]', (x) => x.getAttribute('data-share-id'));
+    await page.click(`#betaReaders-${sid} > summary`);
+    await page.waitForFunction((id) => { const d = document.getElementById('betaReaders-' + id); return d && d.open && !d.querySelector('.shelf-empty'); }, sid, { timeout: 30_000 });
+    await page.fill(`#betaReaderName-${sid}`, 'Priya');
+    await page.selectOption(`#betaReaderExpiry-${sid}`, '0');
+    await page.click(`[data-beta-reader-add="${sid}"]`);
+    await page.waitForFunction((i) => document.querySelectorAll('#betaReaders-' + i + ' .beta-row[data-recipient-id]').length === 1, sid, { timeout: 30_000 });
+    await page.click('#btnCloseExport');
+    const priya = ((await api('/api/shares/' + encodeURIComponent(sid) + '/readers')).readers || []).find((x) => x.name === 'Priya');
+    await auPop(page);
+    const recBtn = await page.$eval('#btnAuthorshipRecord', (x) => !x.hidden);
+    await page.click('#btnAuthorshipRecord');
+    await page.waitForSelector('#modalAuthorship.open', { timeout: 15_000 });
+    await page.waitForFunction(() => {
+      const s = document.getElementById('authStamps'), h = document.getElementById('authShared');
+      return !!s && !!h && !!s.querySelector('[data-stamp-id],[data-auth-empty],[role=alert]') && !!h.querySelector('[data-auth-share],[data-auth-empty],[role=alert]');
+    }, null, { timeout: 30_000 });
+    const shown = await page.evaluate(() => ({
+      title: document.getElementById('authTitle').textContent,
+      stamps: [...document.querySelectorAll('#authStamps [data-stamp-id]')].map((r) => ({ id: r.getAttribute('data-stamp-id'), kind: r.querySelector('.a-name').textContent, meta: r.querySelector('.a-meta').textContent })),
+      readers: [...document.querySelectorAll('#authShared [data-auth-reader]')].map((r) => ({ id: r.getAttribute('data-auth-reader'), name: r.querySelector('b')?.textContent, text: r.textContent })),
+      open: [...document.querySelectorAll('#authShared [data-auth-open]')].map((r) => r.textContent),
+      empty: [...document.querySelectorAll('#modalAuthorship [data-auth-empty]')].map((r) => r.getAttribute('data-auth-empty')),
+    }));
+    const held = (await api('/api/authorship/stamps?bookId=' + encodeURIComponent(plain.json.book.meta.bookId))).stamps || [];
+    const want = held.map((s) => ({ id: s.id, kind: s.kind === 'docx' ? 'Word file' : 'Backup', meta: auDate(s.createdAt) + ' · ' + s.sha256.slice(0, 12) }));
+    check(recBtn && shown.title === `Authorship record — “${title}”` && held.length >= 2 && JSON.stringify(shown.stamps) === JSON.stringify(want) && held.some((s) => s.sha256 === sha && s.kind === 'backup' && s.createdAt === a.recorded),
+      `authorship record: "${shown.title}" lists the server's ${held.length} stamps, newest first, each kind · date · 12-hex fingerprint, the plain backup's among them: ${JSON.stringify(shown.stamps.map((s) => s.kind + ' ' + s.meta))}${JSON.stringify(shown.stamps) === JSON.stringify(want) ? '' : ' — want ' + JSON.stringify(want.map((s) => s.kind + ' ' + s.meta))}`);
+    const wantReader = priya ? `Priya · Added ${nlStampDate(priya.createdAt)} · Not opened yet` : '?';
+    check(!!priya && shown.readers.length === 1 && shown.readers[0].id === priya.id && shown.readers[0].name === 'Priya' && shown.readers[0].text === wantReader && JSON.stringify(shown.open) === JSON.stringify(['Open link: 0 readers']) && !shown.empty.includes('shared'),
+      `authorship record: "Shared with" names Priya, added through the reading-copy UI: ${JSON.stringify(shown.readers.map((r) => r.text))} (want "${wantReader}"); the open link counted, not named: ${JSON.stringify(shown.open)}`);
+    await page.click('#btnAuthClose');
+    await page.waitForSelector('#modalAuthorship.open', { state: 'detached', timeout: 10_000 });
+    await harvestCsp(page);
+  } finally {
+    await ctx2.close();
+    await ctx.close();
+  }
+}
+async function authorshipDay22(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block', timezoneId: 'UTC' });
+  const reqs = lcRecord(ctx);
+  try {
+    const email = w7aEmail('au22');
+    await w7aSignUp(ctx, origin, email);
+    await srv.shelf.db.query("update users set trial_ends_at = now() - interval '1 day' where email = $1", [email]);
+    const page = await openNext(ctx, origin);
+    await openBackup(page, f.file);
+    await w7aWait(page, () => window.beukCloud?.cloud?.available && !!window.beukCloud.cloud.user, null, 30_000);
+    await page.waitForFunction(() => !!document.documentElement.getAttribute('data-plan-access'), null, { timeout: 30_000 });
+    await auPop(page);
+    const box = await page.evaluate(() => ({ hidden: document.getElementById('lockBackup').hidden, access: document.documentElement.getAttribute('data-plan-access'), record: !document.getElementById('btnAuthorshipRecord').hidden }));
+    check(box.hidden && box.access === 'paused', `authorship day 22: the save popover's lock box is hidden (hidden ${box.hidden}; plan access "${box.access}"; the record button shown ${box.record})`);
+    await page.click('#localPillBtn');
+    await page.waitForSelector('#localPop', { state: 'hidden', timeout: 10_000 });
+    const mark = reqs.length;
+    const b = await exportBackup(page);
+    const posts = reqs.slice(mark).filter((r) => r.method === 'POST' && new URL(r.url).pathname === '/api/authorship/stamps');
+    check(b.json.format === 'beuk-backup' && b.json.authorship?.recorded === null && b.json.authorship?.sha256 === auSha(b.json.book) && /\.beuk-backup\.json$/.test(b.name),
+      `authorship day 22: a plain export still downloads (${b.name}), its authorship block recorded null (sha256 ${b.json.authorship?.sha256?.slice(0, 12)}…; the stamp asked ${posts.length} time(s), refused)`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+async function authorshipChecks() {
+  const stripe = await w7aFakeStripe();
+  const srv = await startServer({ repo: REPO, api: true, apiConfig: { stripeWebhookSecret: 'whsec_test_placeholder', stripeSecretKey: 'sk_test_placeholder', stripePriceId: 'price_fixture', stripeApiBase: stripe.base } });
+  note(`authorship: the real server on ${srv.origin} (PGlite), billing in test mode against a fake Stripe on ${stripe.base}`);
+  try {
+    await authorshipMain(srv);
+    await authorshipDay22(srv);
+  } finally {
+    await srv.stop().catch(() => undefined);
+    await stripe.close();
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -9532,6 +9780,7 @@ try {
   if (run('wave7b')) await wave7bChecks();
   if (run('lockcopy')) await lockcopyChecks(srv.origin);
   if (run('namedlinks')) await namedLinksChecks();
+  if (run('authorship')) await authorshipChecks();
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
