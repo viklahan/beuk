@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { closureIfLoaded, cloudFacts, loadClosure } from '../closure/index';
 import { loadCloud } from '../cloud/cloud';
 import { useLocale } from '../i18n/LocaleProvider';
-import { StackEntry } from '../shell/Dialog';
+import { BodyModalStack } from '../shell/BodyModalStack';
 import { Icon } from '../shell/Icon';
 import { useBook, type LocalStatus } from './BookProvider';
 
@@ -257,41 +257,3 @@ export function LocalPill() {
     </>
   );
 }
-
-/** A `.modal-back` 1.0's code puts on <body> (and opens with its "open" class, or removes) on the dialog stack while it
- *  is open (as ExportModal's LockPdfStack does for #modalLockPdf); the stack's close is the dialog's own close button. */
-function BodyModalStack({ id, closeSel }: { id: string; closeSel: string }) {
-  const [back, setBack] = useState<HTMLElement | null>(null);
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    let watched: HTMLElement | null = null;
-    let mo: MutationObserver | null = null;
-    const sync = () => {
-      const el = document.getElementById(id);
-      if (el !== watched) {
-        mo?.disconnect();
-        mo = null;
-        watched = el;
-        setBack(el);
-        if (el) {
-          mo = new MutationObserver(() => setOpen(el.classList.contains('open')));
-          mo.observe(el, { attributes: true, attributeFilter: ['class'] });
-        }
-      }
-      setOpen(!!el && el.classList.contains('open'));
-    };
-    const body = new MutationObserver(sync);
-    body.observe(document.body, { childList: true });
-    sync();
-    return () => {
-      body.disconnect();
-      mo?.disconnect();
-    };
-  }, [id]);
-  if (!open || !back || !back.isConnected) return null;
-  if (!backKeys.has(back)) backKeys.set(back, ++backSeq);
-  // a new element (1.0 makes the password dialog afresh for each ask) is a new stack entry
-  return <StackEntry key={backKeys.get(back)} box={{ get current() { return back.querySelector<HTMLElement>('.modal'); } }} onClose={() => back.querySelector<HTMLElement>(closeSel)?.click()} />;
-}
-const backKeys = new WeakMap<HTMLElement, number>();
-let backSeq = 0;

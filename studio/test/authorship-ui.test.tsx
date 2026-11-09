@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import en from '../src/generated/packs/en.json';
-import meta from '../src/generated/strings-meta.json';
+import stringsMeta from '../src/generated/strings-meta.json';
 import { App } from '../src/App';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { importToDevice } from '../src/book/store';
@@ -17,6 +17,19 @@ import { cloudReset } from '../src/cloud/cloud';
 import { resetCloudProbe } from '../src/pictures/stock';
 import { exportBook } from '../../src/book/editor/index';
 import { fixtures } from './fixtures';
+import { parseBackup } from '../src/book/backup';
+
+/* Fix round 1: 2.0's export when the closure is not there (never loaded, or its chunk would not load) — the export
+   must still download. Off by default: the closure is the real one. */
+const gate = vi.hoisted(() => ({ off: false }));
+vi.mock('../src/closure/index', async (orig) => {
+  const m = (await orig()) as typeof import('../src/closure/index');
+  return {
+    ...m,
+    closureIfLoaded: () => (gate.off ? null : m.closureIfLoaded()),
+    loadClosure: () => (gate.off ? Promise.reject(new Error('the closure could not load')) : m.loadClosure()),
+  };
+});
 
 /* Locked backups and the authorship record (design 2026-11-09), task 3: the studio's half, run in 2.0 as 1.0's own code
    (BEUK:authorship, lifted). "Export a backup" carries the authorship block, is stamped when signed in (4 s at most,
@@ -26,7 +39,7 @@ import { fixtures } from './fixtures';
    record lists the stamps and the named readers. The password never leaves the device. */
 
 type Rec = Record<string, unknown>;
-const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralForms: meta.pluralForms as PluralForms }, 'en', k, p);
+const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralForms: stringsMeta.pluralForms as PluralForms }, 'en', k, p);
 createRequire(import.meta.url)('../../client/assets/vendor/jszip.min.js'); // its UMD sets the global JSZip
 let c: Closure;
 beforeAll(async () => {
@@ -45,6 +58,7 @@ beforeEach(() => {
   resetCloudProbe();
 });
 afterEach(async () => {
+  gate.off = false;
   vi.useRealTimers();
   cleanup();
   vi.restoreAllMocks();
@@ -484,10 +498,103 @@ describe('locked backups and the authorship record: the studio (task 3)', { time
     expect($('boxSetList').textContent).toContain(String((salt.meta as Rec).title));
   });
 
+  /* Fix round 1 (Global constraint 8): the export always downloads. */
+  it('export always downloads: crypto.subtle.digest throwing → today\'s payload, no toast (signed in too); the inline emergency backup too', async () => {
+    const net = stub({ '/api/authorship/stamps': () => json({ id: 's-9', createdAt: '2026-11-09T00:00:00.000Z' }, 201) });
+    const doc = LANTERN();
+    await studioWith(doc);
+    signIn();
+    const said = toasts();
+    const dg = vi.spyOn(globalThis.crypto.subtle, 'digest').mockRejectedValue(new Error('no digest here'));
+    await openPop();
+    const text = await exportBackup();
+    expect(parseBackup(text)).not.toBeNull();
+    const d = JSON.parse(text) as Rec;
+    expect(Object.keys(d)).toEqual(['format', 'version', 'exportedAt', 'book']);
+    expect(d.format).toBe('beuk-backup');
+    expect(toasts()).toEqual(said);
+    expect(net.stamps()).toEqual([]);
+    // the inline offer beside a failed device save is the same path (plain, never locked)
+    const dl = catchDownloads();
+    try {
+      await act(async () => void fireEvent.click($('btnLocalBackupInline')));
+      await waitFor(() => expect(dl.got.length).toBe(1), { timeout: 30_000 });
+      expect(parseBackup(await dl.got[0]!.blob.text())).not.toBeNull();
+    } finally {
+      dl.off();
+    }
+    expect(toasts()).toEqual(said);
+    dg.mockRestore();
+  });
+
+  it('export always downloads: the stamp failing after the fingerprint worked keeps the authorship block, recorded null', async () => {
+    stub({ '/api/authorship/stamps': () => { throw new Error('the network went away'); } });
+    await studioWith(LANTERN());
+    signIn();
+    await openPop();
+    const text = await exportBackup();
+    const r = (await c.api.backupRead(text)) as Rec;
+    expect(r.intact).toBe(true);
+    expect((r.authorship as Rec).recorded).toBeNull();
+  });
+
+  it('export always downloads (2.0): the closure not loaded and its chunk refusing → today\'s payload; a ticked lock is refused, never a plain file', async () => {
+    stub();
+    const doc = LANTERN();
+    await studioWith(doc);
+    await openPop();
+    const said = toasts();
+    gate.off = true;
+    const text = await exportBackup();
+    gate.off = false;
+    expect(parseBackup(text)).not.toBeNull();
+    expect(Object.keys(JSON.parse(text) as Rec)).toEqual(['format', 'version', 'exportedAt', 'book']);
+    expect(toasts()).toEqual(said);
+    // the lock ticked while the closure is away: refused with lock.failed, nothing downloads, the fields emptied
+    await openPop();
+    await click($('lockBackupOn'));
+    await type($('lockBackupPw'), 'never plain');
+    await type($('lockBackupPw2'), 'never plain');
+    const d = catchDownloads();
+    try {
+      gate.off = true;
+      await click($('btnLocalBackup'));
+      gate.off = false;
+      for (let i = 0; i < 100; i++) await tick();
+      expect(d.got.length).toBe(0);
+    } finally {
+      gate.off = false;
+      d.off();
+    }
+    expect(toasts().some((x) => x.startsWith(t('lock.failed', { error: '' })))).toBe(true);
+    for (const x of toasts()) expect(x).not.toContain('never plain');
+    expect([inp('lockBackupPw').value, inp('lockBackupPw2').value]).toEqual(['', '']);
+  });
+
+  it('a second locked backup opened while the first asks: the first ask ends (as Cancel), the second opens', async () => {
+    stub();
+    await studioWith(LANTERN());
+    const title0 = deskTitle();
+    const kit = KITCHENS();
+    const locked = await c.api.backupLock((await c.api.backupPayload(kit, null)).text, 'two asks');
+    const firstAsk = c.api.backupPasswordAsk(JSON.parse(locked) as object);
+    await waitFor(() => expect(isOpen('modalBackupPw')).toBe(true));
+    await openFile(fileOf(locked));
+    expect(await firstAsk).toBeNull(); // resolved, not left hanging
+    await waitFor(() => expect(isOpen('modalBackupPw')).toBe(true), { timeout: 20_000 });
+    expect(document.querySelectorAll('#modalBackupPw').length).toBe(1);
+    expect(deskTitle()).toBe(title0);
+    await type($('backupPw'), 'two asks');
+    await click($('btnBackupPwOpen'));
+    await answer(true, t('local.backupConfirmTitle'));
+    await waitFor(() => expect(deskTitle()).toBe((kit.meta as Rec).title), { timeout: 30_000 });
+  });
+
   it('record dialog: hidden signed out; lists stamps newest first with kind labels and 12-hex; shared-with lists named readers of the linked shelf book\'s shares; empty states', async () => {
     const doc = LANTERN();
     const id = String((doc.meta as Rec).bookId);
     let full = true;
+    let sharesDown = false;
     const net = stub({
       '/api/authorship/stamps': (u) =>
         json({
@@ -504,11 +611,17 @@ describe('locked backups and the authorship record: the studio (task 3)', { time
           shares:
             full && u.searchParams.get('manuscriptId') === 'shelf-m1'
               ? [
-                  { id: 'sh-a1', status: 'active', title: '<i>Lantern</i>', readerCount: 3, commentCount: 0, openCommentCount: 0, publishedAt: '2026-11-02T00:00:00.000Z' },
-                  { id: 'sh-a2', status: 'revoked', title: 'Older copy', readerCount: 1, commentCount: 0, openCommentCount: 0, publishedAt: '2026-10-02T00:00:00.000Z' },
+                  { id: 'sh-a1', manuscriptId: 'shelf-m1', status: 'active', title: '<i>Lantern</i>', readerCount: 3, commentCount: 0, openCommentCount: 0, publishedAt: '2026-11-02T00:00:00.000Z' },
+                  { id: 'sh-a2', manuscriptId: 'shelf-m1', status: 'revoked', title: 'Older copy', readerCount: 1, commentCount: 0, openCommentCount: 0, publishedAt: '2026-10-02T00:00:00.000Z' },
+                  // another book's copy in the answer: never this book's record
+                  { id: 'sh-zz', manuscriptId: 'shelf-other', status: 'active', title: 'Another book', readerCount: 9, commentCount: 0, openCommentCount: 0, publishedAt: '2026-11-02T00:00:00.000Z' },
                 ]
-              : [],
-        }),
+              : sharesDown
+                ? null
+                : [],
+        }, sharesDown ? 500 : 200),
+      '/api/shares/sh-zz/readers': () =>
+        json({ readers: [{ id: 'rd-zz', name: 'Zed', status: 'active', createdAt: '2026-11-02T10:00:00.000Z', firstOpenedAt: null, lastOpenedAt: null, commentCount: 0 }] }),
       '/api/shares/sh-a1/readers': () =>
         json({
           readers: [
@@ -545,10 +658,26 @@ describe('locked backups and the authorship record: the studio (task 3)', { time
     expect(reader('rd-3')).toContain('Cy · ');
     const opens = Array.from(modal.querySelectorAll('[data-auth-open]')).map((x) => x.textContent);
     expect(opens).toEqual([t('auth.openLink', { n: 3 }), t('auth.openLink', { n: 1 })]);
+    expect(opens).toEqual(['Open link: 3 readers', 'Open link: 1 reader']); // plural-aware, as beta.readers is
+    expect(modal.querySelector('[data-auth-share="sh-zz"]')).toBeNull();
+    expect(modal.querySelector('[data-auth-reader="rd-zz"]')).toBeNull();
+    expect(modal.textContent).not.toContain('Another book');
     expect(modal.querySelector('[data-auth-share="sh-a1"] .a-name')!.textContent).toBe('<i>Lantern</i>');
     expect(modal.querySelector('[data-auth-empty]')).toBeNull();
     await click($('btnAuthClose'));
     expect(isOpen('modalAuthorship')).toBe(false);
+    // another shelf book linked, and its shares fail to load: the last book's copies (still in the share list) never show
+    cloudFacts.linkedId = 'shelf-m2';
+    sharesDown = true;
+    full = false;
+    await openPop();
+    await click($('btnAuthorshipRecord'));
+    await waitFor(() => expect(modal.querySelector('[data-auth-empty="shared"]')?.textContent).toBe(t('auth.noShared')), { timeout: 20_000 });
+    expect(modal.querySelector('[data-auth-share]')).toBeNull();
+    await click($('btnAuthClose'));
+    cloudFacts.linkedId = 'shelf-m1';
+    sharesDown = false;
+    full = true;
     // empty states
     full = false;
     await openPop();

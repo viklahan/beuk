@@ -10,7 +10,7 @@ import { useConfirm } from '../shell/Dialog';
 import meta from '../generated/strings-meta.json';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useToast } from '../shell/Toasts';
-import { backupFilename, downloadText } from './backup';
+import { backupFilename, backupJson, downloadText } from './backup';
 import { readLegacyBook } from './legacy10';
 import { outlineRows, type OutlineRow } from './outlineRows';
 import { REGISTRY_KEY, bookMeta, importToDevice, openStoredBook, registryEpoch, startBook, type OpenBook } from './store';
@@ -113,6 +113,13 @@ const UNTITLED: readonly string[] = ['Untitled Book', ...((meta as { untitledBoo
 export function realTitle(v: unknown): string {
   const s = String(v || '').trim();
   return s && UNTITLED.includes(s) ? '' : s;
+}
+
+/** The popover's lock box is ticked, and the plan allows it (1.0's lockFieldsRead's own test, read from the page). */
+function lockTicked(): boolean {
+  if (typeof document === 'undefined') return false;
+  if (document.documentElement.getAttribute('data-plan-access') === 'paused') return false;
+  return !!(document.getElementById('lockBackupOn') as HTMLInputElement | null)?.checked;
 }
 
 export function BookProvider({ children }: { children: ReactNode }) {
@@ -358,6 +365,15 @@ export function BookProvider({ children }: { children: ReactNode }) {
       // BEUK:lockcopy — the lock box read once and emptied at once (1.0's lockFieldsTake, the scope "backup"); a refusal is
       // said in the box
       const c = closureIfLoaded();
+      if (!plainOnly && !c && lockTicked()) {
+        // fix round 1: the lock asked for and 1.0's lock not here (the closure never loaded) — refused, never a plain file
+        for (const id of ['lockBackupPw', 'lockBackupPw2']) {
+          const el = document.getElementById(id) as HTMLInputElement | null;
+          if (el) el.value = '';
+        }
+        toast(t('lock.failed', { error: 'the studio is still loading — try again in a moment' }), 'TriangleAlert');
+        return false;
+      }
       const lock = plainOnly || !c ? { off: true as const } : c.api.lockFieldsTake('backup');
       if (lock.error) return false;
       const doc = b.export();
@@ -368,7 +384,11 @@ export function BookProvider({ children }: { children: ReactNode }) {
         .then((cc) => cc.api.backupExportText(doc, password))
         .then(
           (text) => downloadText(text, name),
-          (e: unknown) => toast(closureIfLoaded()?.api.lockFailedText(e, password) ?? t('lock.failed', { error: 'unknown error' }), 'TriangleAlert'),
+          (e: unknown) => {
+            // Global constraint 8: unlocked, the export always downloads (today's payload, no toast); locked, it says why
+            if (!password) downloadText(backupJson(doc), name);
+            else toast(closureIfLoaded()?.api.lockFailedText(e, password) ?? t('lock.failed', { error: 'unknown error' }), 'TriangleAlert');
+          },
         );
       return true;
     },

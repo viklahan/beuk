@@ -9,6 +9,7 @@ import markup from '../generated/export-markup.json';
 import { useLocale } from '../i18n/LocaleProvider';
 import { drawIcons } from '../insights/insights';
 import { StackEntry } from '../shell/Dialog';
+import { BodyModalStack } from '../shell/BodyModalStack';
 import { useToast } from '../shell/Toasts';
 import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
@@ -289,41 +290,7 @@ export function ExportModal() {
  *  print-ready panel's "Download locked copy" link, the dialog's one opener. */
 export const LOCK_PDF_OPENER = '#printReadyNote [data-pr-locked]:not([hidden])';
 function LockPdfStack() {
-  const [back, setBack] = useState<HTMLElement | null>(null);
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    let watched: HTMLElement | null = null;
-    let mo: MutationObserver | null = null;
-    const sync = () => {
-      const el = document.getElementById('modalLockPdf');
-      if (el !== watched) {
-        mo?.disconnect();
-        mo = null;
-        watched = el;
-        setBack(el);
-        if (el) {
-          mo = new MutationObserver(() => setOpen(el.classList.contains('open')));
-          mo.observe(el, { attributes: true, attributeFilter: ['class'] });
-        }
-      }
-      setOpen(!!el && el.classList.contains('open'));
-    };
-    const body = new MutationObserver(sync);
-    body.observe(document.body, { childList: true });
-    sync();
-    return () => {
-      body.disconnect();
-      mo?.disconnect();
-    };
-  }, []);
-  if (!open || !back) return null;
-  return (
-    <StackEntry
-      box={{ get current() { return back.querySelector<HTMLElement>('.modal'); } }}
-      onClose={() => back.querySelector<HTMLElement>('#btnLockPdfClose')?.click()}
-      opener={() => document.querySelector<HTMLElement>(LOCK_PDF_OPENER)}
-    />
-  );
+  return <BodyModalStack id="modalLockPdf" closeSel="#btnLockPdfClose" opener={() => document.querySelector<HTMLElement>(LOCK_PDF_OPENER)} />;
 }
 
 /** Wave 7b (H1's archive): 1.0's four archive buttons, as 1.0's initCloud wires them — each builds its file with 1.0's
