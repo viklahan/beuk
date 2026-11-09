@@ -585,9 +585,20 @@ describe('locked backups and the authorship record: the studio (task 3)', { time
     await studioWith(doc);
     await openPop();
     const said = toasts();
-    gate.off = true;
-    const text = await exportBackup();
-    gate.off = false;
+    // the closure away for the click itself (exportBackup reaches closureIfLoaded and loadClosure synchronously in it);
+    // the re-render after it (M3: the buttons disabled, then enabled) runs with the closure the open desk already holds
+    const dl0 = catchDownloads();
+    let text: string;
+    try {
+      gate.off = true;
+      $('btnLocalBackup').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      gate.off = false;
+      await waitFor(() => expect(dl0.got.length).toBe(1), { timeout: 30_000 });
+      text = await dl0.got[0]!.blob.text();
+    } finally {
+      gate.off = false;
+      dl0.off();
+    }
     expect(parseBackup(text)).not.toBeNull();
     expect(Object.keys(JSON.parse(text) as Rec)).toEqual(['format', 'version', 'exportedAt', 'book']);
     expect(toasts()).toEqual(said);
