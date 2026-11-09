@@ -276,14 +276,22 @@ export const ORACLE_ROOTS = ['openFootnoteDialog', 'confirmFootnote', 'openLinkD
   'sceneBreakAtCursor', 'rewriteImageToken', 'updateImageToken', 'removeImageToken', 'openScenePicker', 'sceneSelectImage', 'confirmSceneImage',
   'detachSceneImage', 'removeSceneAtCursor', 'toggleSceneSuggest', 'sceneRenderSuggestResults', 'sceneStockLanded', 'selectLibImage',
   // wave 2c (fix round 1): the sidebar row's own handler, whose "eye" branch is 1.0's include toggle
-  'sectionAction'];
+  'sectionAction',
+  // final fix I3 (BEUK:authorship): 1.0's own save-popover glue — the backup buttons' wiring, the export, the open and
+  // the popover's toggle (studio/test/authorship-1-0.test.ts runs them on 1.0's markup)
+  'localBackupWire', 'localExportBackup', 'localOpenBackupFile', 'toggleLocalPop'];
 /** What the oracle's handlers take from 1.0's page, supplied by the test (createOracle(share, env)). */
 export const ORACLE_SUPPLIED = ['$', 'activeSection', 'editorViewSnapshot', 'editorViewRestore', 'icons',
   // wave 2b: what the picture handlers redraw afterwards (nothing a test reads), and 1.0's renderImgLib
   'withEditorView', 'updateStats', 'renderPreview', 'renderSectionImages', 'zenRenderSurface', 'updateSceneBar', 'refreshExportTree',
   'renderSceneLib', 'renderImgLib', 'refreshImagePickers', 'document',
   // wave 2c: sectionAction's other branches (the row menu, delete), never taken by the eye test
-  'chopOpenMenu', 'chopDelete'];
+  'chopOpenMenu', 'chopDelete',
+  // final fix I3: what 1.0's save-popover glue reaches outside it — the book and its download, the sample's hold, the
+  // toast and the calm confirm, the file reader, the arrival of a book on the desk (and what 1.0 does around it), the
+  // record dialog's opener, the sample's sweep after a backup opened (none here: 1.0 asks typeof first)
+  'serializeBook', 'downloadBlob', 'samplePicsHold', 'toast', 'cloudConfirm', 'FileReader', 'applyBookDoc', 'autoSnapshot',
+  'noteBookEdited', 'renderSampleButton', 'deskIsUntouchedSample', 'authorshipRecordOpen', 'sampleSweepPreRename'];
 /** 1.0's top-level lets the oracle's handlers assign (openScenePicker sets scenePending, selectLibImage imgSelId) and the
  *  main closure also holds (imglibRemove clears them): the oracle declares its OWN copy, so its handlers' writes stay its
  *  own (a shared name is read-only there). */

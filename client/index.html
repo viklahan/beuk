@@ -71507,9 +71507,10 @@
         if (document.readyState === "complete") later(); else window.addEventListener("load", later, { once: true });
       }
 
-      function localInit() {
-        const btn = $("localPillBtn");
-        if (btn) btn.addEventListener("click", (e) => { e.stopPropagation(); toggleLocalPop(); });
+      /* The save popover's backup buttons (localInit's): Export a backup closes the popover unless the lock refused, the
+         inline offer beside a failed device save writes the plain backup, Open a backup… picks a file. BEUK:authorship —
+         its own function so the studio tests run 1.0's own wiring (studio/test/authorship-1-0.test.ts) */
+      function localBackupWire() {
         const inline = $("btnLocalBackupInline");
         if (inline) inline.addEventListener("click", (e) => { e.stopPropagation(); localExportBackup(true); });
         const exp = $("btnLocalBackup"); if (exp) exp.addEventListener("click", () => { if (localExportBackup()) toggleLocalPop(false); });
@@ -71520,6 +71521,11 @@
           open.addEventListener("click", () => { toggleLocalPop(false); inp.value = ""; inp.click(); });
           inp.addEventListener("change", () => localOpenBackupFile(inp.files && inp.files[0]));
         }
+      }
+      function localInit() {
+        const btn = $("localPillBtn");
+        if (btn) btn.addEventListener("click", (e) => { e.stopPropagation(); toggleLocalPop(); });
+        localBackupWire();
         document.addEventListener("click", (e) => {
           const pop = $("localPop");
           if (pop && !pop.hidden && !e.target.closest("#localPop") && !e.target.closest("#localPillBtn")) toggleLocalPop(false);
