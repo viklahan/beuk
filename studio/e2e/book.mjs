@@ -463,7 +463,7 @@ async function noEditGate(origin) {
       const want = expected(f.book, out.json.book);
       const same = JSON.stringify(out.json.book) === JSON.stringify(want);
       check(same, `#1 ${f.name}: ${mounted} chapter editors mounted, ${opened} opened and closed, nothing typed — the export equals readBook's book`);
-      check(out.json.format === 'beuk-backup' && out.json.version === 1 && /\.beuk-backup\.json$/.test(out.name) && Object.keys(out.json).join() === 'format,version,exportedAt,book', `#1 ${f.name}: 1.0's backup wrapper (${out.name})`);
+      check(out.json.format === 'beuk-backup' && out.json.version === 1 && /\.beuk-backup\.json$/.test(out.name) && Object.keys(out.json).join() === 'format,version,exportedAt,book,authorship' && /^[0-9a-f]{64}$/.test(out.json.authorship && out.json.authorship.sha256) && out.json.authorship.sha256 === createHash('sha256').update(JSON.stringify(out.json.book), 'utf8').digest('hex') && out.json.authorship.savedAt === out.json.exportedAt, `#1 ${f.name}: 1.0's backup wrapper with its authorship block (${out.name})`);
       cov.push({ name: f.name, total, raw });
       await harvestCsp(page);
     } finally {
@@ -552,7 +552,7 @@ async function editAndPersist(origin) {
       if (has(ea) && has(eb)) break;
     }
     const show = (e) => JSON.stringify([sectionsOf(e.json.book)[a.i].content.slice(0, 24), sectionsOf(e.json.book)[b.i].content.slice(0, 24)]);
-    check(has(ea) && has(eb) && ea.text.slice(ea.text.indexOf('"book"')) === eb.text.slice(eb.text.indexOf('"book"')), `#3 two tabs: each sees both tabs' edits, and both export the same book (A ${show(ea)}, B ${show(eb)})`);
+    check(has(ea) && has(eb) && JSON.stringify(ea.json.book) === JSON.stringify(eb.json.book) && ea.json.authorship.sha256 === eb.json.authorship.sha256, `#3 two tabs: each sees both tabs' edits, and both export the same book (A ${show(ea)}, B ${show(eb)})`);
     await page2.close();
     await page.reload();
     await page.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 });
@@ -9102,7 +9102,10 @@ async function lockcopyParity(srv) {
     // the requests: none during the two Word locks; the PDF path's are 1.0's (method and path)
     for (const [g, r, who] of [[g2, r2, '2.0'], [g1, r1, '1.0']]) {
       const during = [...r.slice(g.marks.docx, g.marks.docxEnd), ...r.slice(g.marks.ms, g.marks.msEnd)].filter((x) => new URL(x.url).origin === origin);
-      check(during.length === 0, `lockcopy ${who}: the Word and manuscript locks send no request (${during.length}${during.length ? ': ' + during.map((x) => x.method + ' ' + new URL(x.url).pathname).slice(0, 4).join(', ') : ''})`);
+      /* BEUK:authorship — a Word download now leaves one fingerprint-only stamp (kind docx) after the file; nothing else may go out */
+      const stampOnly = (x) => { if (x.method !== 'POST' || new URL(x.url).pathname !== '/api/authorship/stamps') return false; try { const j = JSON.parse(x.body ? x.body.toString('utf8') : ''); return Object.keys(j).sort().join() === 'bookId,kind,sha256,title' && j.kind === 'docx' && /^[0-9a-f]{64}$/.test(j.sha256); } catch { return false; } };
+      const other = during.filter((x) => !stampOnly(x));
+      check(other.length === 0 && during.length <= 2, `lockcopy ${who}: the Word and manuscript locks send nothing but their fingerprint stamps (${during.length - other.length} stamp(s)${other.length ? '; other: ' + other.map((x) => x.method + ' ' + new URL(x.url).pathname).slice(0, 4).join(', ') : ''})`);
     }
     const q2 = lcApi(r2, g2.marks.pr), q1 = lcApi(r1, g1.marks.pr);
     check(JSON.stringify(q2) === JSON.stringify(q1) && q2.filter((x) => /\/download$/.test(x)).length === 2, `lockcopy parity pdf: the print-ready path's requests are 1.0's (method and path): ${JSON.stringify(q2)}${JSON.stringify(q2) === JSON.stringify(q1) ? '' : ' — 1.0: ' + JSON.stringify(q1)}`);
