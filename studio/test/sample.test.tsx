@@ -21,6 +21,7 @@ import {
   deskIsUntouchedSample, sampleLoaded, sampleRecord, sampleShippedWords, sampleSigOf, SAMPLE_MAP, SAMPLE_PIC_DIR, setSampleRecord,
 } from '../src/sample/sample';
 import { BOOKS, fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 1b, task 4: the sample book and New book (inventory I8).
    Review focus #4 — the sample book is a replace: Load goes through 1.0's
@@ -269,7 +270,7 @@ async function exported(): Promise<Rec> {
   });
   const b = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
   const cl = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
   a.mockRestore();
   b.mockRestore();

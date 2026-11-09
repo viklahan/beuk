@@ -6,6 +6,7 @@ import { App } from '../src/App';
 import { importToDevice } from '../src/book/store';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Task 3 through the studio: review focus #1 in the interface. Opening a
    backup over the open book asks first with 1.0's confirm (keys
@@ -42,7 +43,7 @@ async function exported(): Promise<Rec> {
   });
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   expect(blob).not.toBeNull();
   const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
   vi.restoreAllMocks();

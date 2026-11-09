@@ -14,6 +14,7 @@ import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { buildSample, preRenameArrival, resetSamplePictures, sampleLoaded, staleSweep, sweepFor } from '../src/sample/sample';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 1c, task 4b (wave 1b deferred it): 1.0's arrival sweep of old sample
    copies, sampleSweepPreRename / sampleSweepStaleCover, and its self-check
@@ -185,7 +186,7 @@ describe('sample.legacy-salt-meridian', () => {
     vi.spyOn(URL, 'createObjectURL').mockImplementation((b) => ((blob = b as Blob), 'blob:x'));
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    fireEvent.click(document.getElementById('btnLocalBackup')!);
+    await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
     expect(JSON.stringify((JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec }).book)).toBe(before);
     expect(sampleLoaded(null)).toBe(false);
   });

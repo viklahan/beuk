@@ -15,6 +15,7 @@ import { styleReset } from '../src/style/session';
 import { exportReset, exportRun } from '../src/export/state';
 import { readBook } from '../../src/book/read';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 5a, task 2 (inventory F1, F7, F8): 1.0's export modal in the studio — its markup, wired by 1.0's own initExport,
    opened from the top bar's Export (1.0's #btnExport), every handler run in the export session. Review
@@ -94,7 +95,7 @@ async function downloaded(fn: () => Promise<void> | void): Promise<{ blob: Blob;
   return got;
 }
 async function backup(): Promise<Rec> {
-  const d = await downloaded(() => click($('btnLocalBackup')));
+  const d = await downloaded(() => backupClicked(() => click($('btnLocalBackup'))));
   return (JSON.parse(await d[0]!.blob.text()) as { book: Rec }).book;
 }
 const want = (doc: Rec) => JSON.parse(JSON.stringify(readBook(doc).book)) as Rec;

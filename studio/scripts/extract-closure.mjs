@@ -251,6 +251,12 @@ export const EXTRA_ROOTS = [
   // the plain backup with its authorship block, the locked envelope (PBKDF2 → AES-GCM over WebCrypto) and the backup
   // reader; the export and "Open a backup…" reach them in task 3
   'backupFingerprint', 'backupPayload', 'backupLock', 'backupUnlock', 'backupRead',
+  // task 3: what 2.0's own backup export and "Open a backup…" (src/book/BookProvider.tsx) and its popover's lock box
+  // (src/book/LocalPill.tsx) call — the backup's text (stamped, locked), the reader that asks a locked backup's password
+  // (the dialog, 1.0's own), the "opened" toast's untouched / on-record words, and the lock box's read, wire and clear
+  // (BEUK:lockcopy's machinery, the scope "backup"); Add a Book's loader and the Word downloads reach the rest
+  'backupExportText', 'backupReadAsking', 'backupPasswordAsk', 'backupOpenedNote', 'authorshipStamp', 'authorshipCheck', 'authorshipStampDesk',
+  'lockFieldsTake', 'lockFieldsWire', 'lockFieldsSay', 'lockFailedText',
 ];
 
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
@@ -494,6 +500,9 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   // Copy/Close each reader's link, Close the open link; the readers' tokens kept on this device (beuk.betaReaderTokens.v1)
   'BETA_READER_TOKENS_KEY', 'BETA_READERS_MAX', 'betaReaderTokens', 'betaRememberReaderToken', 'betaNamed', 'betaRenderReaders', 'betaLoadReaders',
   'betaAddReader', 'betaCloseReader', 'betaCloseOpen', 'betaStampDate',
+  // locked backups and the authorship record (task 3, BEUK:authorship): the save popover's Authorship record — the open
+  // book's stamps and, from the beta list and readers above, the named readers of the linked shelf book's reading copies
+  'authorshipRecordOpen', 'authorshipRecordClose',
   // wave 7b (H5): the platform's install area and update bar (1.0's pwa record, isStandalone, renderInstallArea,
   // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /next/), its listeners
   // 1.0's initPlatform lines (src/cloud/platform.ts)

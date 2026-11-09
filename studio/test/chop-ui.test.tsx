@@ -10,6 +10,7 @@ import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { toBook } from '../src/editor/bridge';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 1b, task 3 in the studio: the row menu (1.0's chopOpenMenu,
    chopMenuPick, chopPlaceMenu keys), the refusal toast, the Undo toast
@@ -66,7 +67,7 @@ async function exported(): Promise<Rec> {
   });
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
   vi.restoreAllMocks();
   const b = out.book;

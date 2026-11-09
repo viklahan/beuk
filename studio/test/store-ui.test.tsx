@@ -18,6 +18,7 @@ import { fixtures } from './fixtures';
 import { hostileExportBook } from './export-fixture';
 import { hazards } from './hazards';
 import { installCanvas } from './print-fixture';
+import { backupClicked } from './backup-wait';
 
 /* Wave 5d, task 2 (inventory F10): 1.0's store-ready check in the studio — its entry in the export modal (where 1.0 puts
    it: the export modal's "Store-ready?" box, #btnStoreReady), its modal (#modalStore, 1.0's markup verbatim, wired by
@@ -116,7 +117,7 @@ async function downloaded(fn: () => Promise<void> | void): Promise<{ blob: Blob;
   return got;
 }
 async function backup(): Promise<Rec> {
-  const d = await downloaded(() => click($('btnLocalBackup')));
+  const d = await downloaded(() => backupClicked(() => click($('btnLocalBackup'))));
   return (JSON.parse(await d[0]!.blob.text()) as { book: Rec }).book;
 }
 const want = (doc: Rec) => JSON.parse(JSON.stringify(readBook(doc).book)) as Rec;

@@ -16,6 +16,7 @@ import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { addRead, nbState, placeKey, writeNotebook, writeNotes } from '../src/notebook/notebook';
 import { buildSample } from '../src/sample/sample';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 1c, task 3: the Notebook and its research files (inventory C7).
    1.0 self-checks re-expressed: notebook.notes, notebook.research (the
@@ -197,7 +198,7 @@ async function exported(): Promise<Rec> {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined),
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined),
   ];
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   sp.forEach((s) => s.mockRestore());
   return (JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec }).book;
 }

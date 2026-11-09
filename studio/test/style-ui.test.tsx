@@ -14,6 +14,7 @@ import { styleReset, styleRun } from '../src/style/session';
 import { readBook } from '../../src/book/read';
 import { fixtures } from './fixtures';
 import { PNG_1PX, SVG_TEXT, styledBook, ttfData } from './style-fixture';
+import { backupClicked } from './backup-wait';
 
 /* Wave 4a, tasks 2 and 3 (inventory D1, D2): the Style tab in the studio — 1.0's markup, drawn by 1.0's renderers and
    wired by 1.0's initStudio, each handler writing back only what it changed. 1.0's self-checks re-expressed here
@@ -79,7 +80,7 @@ async function exported(): Promise<Rec> {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined),
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined),
   ];
-  fireEvent.click($('btnLocalBackup'));
+  await backupClicked(() => fireEvent.click($('btnLocalBackup')));
   sp.forEach((s) => s.mockRestore());
   return (JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec }).book;
 }

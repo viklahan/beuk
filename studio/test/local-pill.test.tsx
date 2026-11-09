@@ -24,6 +24,7 @@ import { styleReset } from '../src/style/session';
 import { exportReset } from '../src/export/state';
 import { readBook } from '../../src/book/read';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 5a, round 2 (V overruled ruling 1): 1.0's layout — ONE Export button, #btnExport, which opens 1.0's export
    modal as 1.0's does (client/index.html #btnExport, initExport); the backup lives where 1.0 keeps it, the "Saving on
@@ -142,7 +143,7 @@ describe("the backup, in 1.0's local pill", { timeout: 60_000 }, () => {
     act(() => desk.ydoc!.getMap('meta').delete('zzProbe'));
     expect($('btnLocalBackup').textContent).toBe(t('local.backup'));
     expect($('btnLocalOpenBackup').textContent).toBe(t('local.openBackup'));
-    const d = await downloaded(() => click($('btnLocalBackup')));
+    const d = await downloaded(() => backupClicked(() => click($('btnLocalBackup'))));
     expect(d.length).toBe(1);
     expect(d[0]!.name).toMatch(/\.beuk-backup\.json$/);
     const out = (JSON.parse(await d[0]!.blob.text()) as { book: Rec }).book;

@@ -77,7 +77,9 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // wave 7a: the sign-in and shelf dialogs, the account box and the shelf's toasts (1.0's data-lucide names)
   'CloudUpload', 'KeyRound', 'LogOut', 'Archive',
   // wave 7b: the reader comments (its button, Jump to paragraph), revoked links, bulk import's file picker
-  'MessageSquareQuote', 'CornerDownRight', 'Link2Off', 'Files'];
+  'MessageSquareQuote', 'CornerDownRight', 'Link2Off', 'Files',
+  // locked backups and the authorship record (design 2026-11-09): the record's button and dialog, the backup's password dialog
+  'Stamp', 'Lock'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);

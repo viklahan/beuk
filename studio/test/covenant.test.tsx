@@ -18,6 +18,7 @@ import { desk } from '../src/environment/page';
 import { covReset, covRun, covUi } from '../src/covenant/covenant';
 import { covImportFile } from '../src/covenant/CovenantDialog';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 3b, task 1 (inventory C6): the Covenant's data and its room.
    1.0's self-checks re-expressed here: bible.model.compat, bible.mentions.match, bible.change.anchor, bible.change.now,
@@ -347,7 +348,7 @@ async function exported(): Promise<Rec> {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined),
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined),
   ];
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   sp.forEach((s) => s.mockRestore());
   return (JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec }).book;
 }

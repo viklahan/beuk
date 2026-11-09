@@ -16,6 +16,7 @@ import { allowedStockUrl } from '../src/pictures/stock';
 import { readBook } from '../../src/book/read';
 import { fixtures } from './fixtures';
 import { PNG_1PX } from './style-fixture';
+import { backupClicked } from './backup-wait';
 
 /* Wave 4c, tasks 2 and 3 (inventory D3, D4): the cover maker in the studio — 1.0's markup, wired by 1.0's own
    initCoverMaker, opened from Project Settings' "Make a Cover", every handler run in the Style session. jsdom has no
@@ -105,7 +106,7 @@ async function exported(): Promise<Rec> {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined),
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined),
   ];
-  fireEvent.click($('btnLocalBackup'));
+  await backupClicked(() => fireEvent.click($('btnLocalBackup')));
   sp.forEach((s) => s.mockRestore());
   return (JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec }).book;
 }

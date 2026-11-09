@@ -13,6 +13,7 @@ import { cloudHeartbeat, cloudLoadStreak, goalsRun, setStreakFetch } from '../sr
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 3a, task 1: goals, the streak, the writing log, the Road so far and just-write (inventory C2), run as 1.0's
    own code (the browser closure). 1.0's self-checks re-expressed here: goals.targets, habit.calendar,
@@ -263,7 +264,7 @@ async function exported(): Promise<Rec> {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined),
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined),
   ];
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   await waitFor(() => expect(blob).not.toBeNull());
   sp.forEach((s) => s.mockRestore());
   const j = JSON.parse(await blob!.text()) as Rec;

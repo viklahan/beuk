@@ -11,6 +11,7 @@ import { editorText } from '../src/editor/insert';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { backupClicked } from './backup-wait';
 
 /* Wave 2c, task 2: the back-matter starters (inventory B4).
    Review focus #2 — the [[blanks]] text equals 1.0's (starterText, run on
@@ -75,7 +76,7 @@ async function exported(): Promise<Rec> {
   });
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
   vi.restoreAllMocks();
   return out.book;

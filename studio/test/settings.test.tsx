@@ -11,6 +11,7 @@ import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { resetServerFacts } from '../src/settings/SettingsDialog';
 import { formFromMeta, metaFromForm, settingsChange, supportEmailFrom } from '../src/settings/settings';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Task 4: Project Settings and Rights. Re-expresses 1.0's rights.settings.form
    and settings.title.placeholder-not-stored, and review focus #5: edits go
@@ -146,7 +147,7 @@ describe('Project Settings in the studio', () => {
       });
       vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
       vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-      fireEvent.click($('btnLocalBackup'));
+      await backupClicked(() => fireEvent.click($('btnLocalBackup')));
       const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
       vi.restoreAllMocks();
       return out.book;
@@ -184,7 +185,7 @@ describe('Project Settings in the studio', () => {
       });
       vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
       vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-      fireEvent.click($('btnLocalBackup'));
+      await backupClicked(() => fireEvent.click($('btnLocalBackup')));
       const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
       vi.restoreAllMocks();
       return out.book;

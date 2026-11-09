@@ -17,6 +17,7 @@ import { readBook } from '../../src/book/read';
 import { fixtures } from './fixtures';
 import { installCanvas } from './print-fixture';
 import { PNG_1PX } from './style-fixture';
+import { backupClicked } from './backup-wait';
 
 /* Wave 5b, task 3 (inventory F2, F9): 1.0's Print Interior View (#modalPrintView: 1.0's initPrintView, its spreads
    paginated by buildPrintViewModel from the very section HTML the print document carries) and the print preflight
@@ -92,7 +93,7 @@ async function backup(): Promise<Rec> {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined),
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => void (last && got.push(last))),
   ];
-  await click($('btnLocalBackup'));
+  await backupClicked(() => click($('btnLocalBackup')));
   sp.forEach((s) => s.mockRestore());
   return (JSON.parse(await got[0]!.text()) as { book: Rec }).book;
 }

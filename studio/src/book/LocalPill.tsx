@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { closureIfLoaded, cloudFacts, loadClosure } from '../closure/index';
+import { loadCloud } from '../cloud/cloud';
 import { useLocale } from '../i18n/LocaleProvider';
+import { StackEntry } from '../shell/Dialog';
 import { Icon } from '../shell/Icon';
 import { useBook, type LocalStatus } from './BookProvider';
 
@@ -10,7 +13,11 @@ import { useBook, type LocalStatus } from './BookProvider';
    store knows (BookProvider's LocalStatus; "Last saved {time}" is the store's last completed write, OpenBook.savedAt).
    1.0's "saving" (its pause before a save) has no 2.0 counterpart: y-indexeddb writes each change at once. Export a backup is the book's backup download (bk.exportBackup); Open a backup… is the
    desk's own flow (bk.openBackupFile: it asks before replacing a book). The popover closes as 1.0's does: its
-   buttons, a click outside it, Escape. */
+   buttons, a click outside it, Escape.
+   Locked backups and the authorship record (design 2026-11-09, task 3): 1.0's #lockBackup fieldset above the actions,
+   run by 1.0's own lock machinery (BEUK:lockcopy lockFieldsWire / lockFieldsRender / lockFieldsClear, the scope
+   "backup": day 22 hides it, a closed popover keeps no password, a refusal keeps the popover open with its message), and
+   1.0's #btnAuthorshipRecord, signed in only, opening 1.0's record dialog (the shelf's module: authorshipRecordOpen). */
 
 type T = (k: string, p?: Record<string, unknown>) => string;
 const failedOf = (s: LocalStatus) => s.status === 'blocked' || s.status === 'quota' || s.status === 'error';
@@ -84,6 +91,28 @@ export function LocalPill() {
   const failed = failedOf(s);
   const evictable = s.status === 'saved' && (s.persisted === false || s.persisted === 'unsupported');
 
+  // BEUK:lockcopy — 1.0's own wiring of the lock box (the box shows its fields when ticked; typing clears its message)
+  useEffect(() => {
+    let alive = true;
+    void loadClosure().then((c) => {
+      if (alive) c.api.lockFieldsWire('backup');
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  // opened: the plan's day 22 hides the box (1.0's lockFieldsRender); closed: nothing typed stays behind
+  useEffect(() => {
+    const c = closureIfLoaded();
+    if (!c) return;
+    if (open) c.api.lockFieldsRender();
+    else {
+      c.api.lockFieldsClear('backup');
+      c.api.lockFieldsSay('backup', '');
+    }
+  }, [open]);
+  const signedIn = !!cloudFacts.user;
+
   useEffect(() => {
     if (!open) return;
     const onClick = (e: MouseEvent) => {
@@ -102,6 +131,11 @@ export function LocalPill() {
   }, [open]);
 
   return (
+    <>
+      {/* BEUK:authorship — 1.0's two dialogs (on <body>, made by 1.0's code) take their place on the dialog stack while
+          open: Tab stays inside, and above the export modal (Add a Book's locked volume) Escape closes only the top one */}
+      <BodyModalStack id="modalBackupPw" closeSel="#btnBackupPwCancel" />
+      <BodyModalStack id="modalAuthorship" closeSel="#btnAuthClose" />
     <div className={'local-wrap' + (failed ? ' is-failed' : '')}>
       <span className="local-pill" id="localPill" data-state={s.status} data-evictable={evictable ? '' : undefined} role="status" aria-live="polite" title={txt.full + ' — ' + detail}>
         <button
@@ -135,7 +169,7 @@ export function LocalPill() {
           hidden={!failed}
           onClick={(e) => {
             e.stopPropagation();
-            bk.exportBackup();
+            bk.exportBackup(true);
           }}
         >
           {t('local.backup')}
@@ -144,14 +178,35 @@ export function LocalPill() {
       <div className="local-pop" id="localPop" role="dialog" aria-labelledby="localPopTitle" hidden={!open}>
         <h3 id="localPopTitle">{txt.full}</h3>
         <p id="localPopDetail">{detail}</p>
+        {/* BEUK:authorship — the backup's optional lock (1.0's fieldset); the password never leaves the device */}
+        <fieldset className="lock-fs" id="lockBackup" style={{ border: 0, padding: 0, margin: '10px 0 0', minWidth: 0 }}>
+          <label className="acx-check">
+            <input type="checkbox" id="lockBackupOn" name="lockcopy-backup-on" /> <span>{t('lock.toggle')}</span>
+          </label>
+          <div id="lockBackupFields" hidden>
+            <div>
+              <label className="field-lab" htmlFor="lockBackupPw">
+                {t('lock.pw')}
+              </label>
+              <input className="txt-input" id="lockBackupPw" name="lockcopy-backup-pw" type="password" autoComplete="new-password" />
+            </div>
+            <div>
+              <label className="field-lab" htmlFor="lockBackupPw2">
+                {t('lock.pw2')}
+              </label>
+              <input className="txt-input" id="lockBackupPw2" name="lockcopy-backup-pw2" type="password" autoComplete="new-password" />
+            </div>
+            <p className="acx-note">{t('backup.lockNote')}</p>
+            <p className="acx-note acx-warn" id="lockBackupErr" role="alert" hidden />
+          </div>
+        </fieldset>
         <div className="local-pop-actions">
           <button
             className="tb-btn primary"
             id="btnLocalBackup"
             type="button"
             onClick={() => {
-              bk.exportBackup();
-              setOpen(false);
+              if (bk.exportBackup()) setOpen(false);
             }}
           >
             <Icon name="Download" />
@@ -172,6 +227,19 @@ export function LocalPill() {
             <Icon name="FolderOpen" />
             <span>{t('local.openBackup')}</span>
           </button>
+          <button
+            className="tb-btn"
+            id="btnAuthorshipRecord"
+            type="button"
+            hidden={!signedIn}
+            onClick={() => {
+              setOpen(false);
+              void loadCloud().then((cm) => cm.api.authorshipRecordOpen());
+            }}
+          >
+            <Icon name="Stamp" />
+            <span>{t('auth.record')}</span>
+          </button>
         </div>
         <input
           type="file"
@@ -186,5 +254,44 @@ export function LocalPill() {
         />
       </div>
     </div>
+    </>
   );
 }
+
+/** A `.modal-back` 1.0's code puts on <body> (and opens with its "open" class, or removes) on the dialog stack while it
+ *  is open (as ExportModal's LockPdfStack does for #modalLockPdf); the stack's close is the dialog's own close button. */
+function BodyModalStack({ id, closeSel }: { id: string; closeSel: string }) {
+  const [back, setBack] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    let watched: HTMLElement | null = null;
+    let mo: MutationObserver | null = null;
+    const sync = () => {
+      const el = document.getElementById(id);
+      if (el !== watched) {
+        mo?.disconnect();
+        mo = null;
+        watched = el;
+        setBack(el);
+        if (el) {
+          mo = new MutationObserver(() => setOpen(el.classList.contains('open')));
+          mo.observe(el, { attributes: true, attributeFilter: ['class'] });
+        }
+      }
+      setOpen(!!el && el.classList.contains('open'));
+    };
+    const body = new MutationObserver(sync);
+    body.observe(document.body, { childList: true });
+    sync();
+    return () => {
+      body.disconnect();
+      mo?.disconnect();
+    };
+  }, [id]);
+  if (!open || !back || !back.isConnected) return null;
+  if (!backKeys.has(back)) backKeys.set(back, ++backSeq);
+  // a new element (1.0 makes the password dialog afresh for each ask) is a new stack entry
+  return <StackEntry key={backKeys.get(back)} box={{ get current() { return back.querySelector<HTMLElement>('.modal'); } }} onClose={() => back.querySelector<HTMLElement>(closeSel)?.click()} />;
+}
+const backKeys = new WeakMap<HTMLElement, number>();
+let backSeq = 0;

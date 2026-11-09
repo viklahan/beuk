@@ -13,6 +13,7 @@ import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { IMG_AUTO_REFUSED, IMG_PLACED, IMG_PLACED_FULL, TOKEN_REMOVED } from '../src/pictures/scene';
 import { PICTURE_ADDED, PICTURE_TYPE_REFUSED, bytesToBase64 } from '../src/pictures/pictures';
 import { resetCloudProbe } from '../src/pictures/stock';
+import { backupClicked } from './backup-wait';
 
 /* Wave 2b in the studio, through the whole app: Insert Image (1.0's
    editor.toolbar.image-line), the section card, the chapter-art rows, the
@@ -104,7 +105,7 @@ async function exported(): Promise<Rec> {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined),
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined),
   ];
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   sp.forEach((s) => s.mockRestore());
   return (JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec }).book;
 }

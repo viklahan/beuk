@@ -760,7 +760,7 @@ export type ClosureApi = {
   storeRecheck: () => Promise<void>;
   // locked review copy (task 4): 1.0's lock (BEUK:lockcopy), as 2.0 calls it — the stack's close empties the fields; the
   // e2e locks in the page with the two encryptors
-  lockFieldsClear: (scope: 'docx' | 'ms' | 'pdf') => void;
+  lockFieldsClear: (scope: 'docx' | 'ms' | 'pdf' | 'backup') => void;
   lockPdfBytes: (bytes: Uint8Array, password: string) => Promise<Uint8Array>;
   lockDocxBytes: (bytes: Uint8Array, password: string) => Promise<Uint8Array>;
   lockSha512Js: (msg: Uint8Array) => Uint8Array;
@@ -775,6 +775,23 @@ export type ClosureApi = {
     | { locked: true; envelope: Record<string, unknown> }
     | { locked: false; book: Record<string, unknown>; authorship: Record<string, unknown> | null; intact: boolean | null }
   >;
+  // task 3: the export, "Open a backup…", the password dialog, the toast's words, the stamps, the lock box's machinery
+  backupExportText: (book: object, password: string) => Promise<string>;
+  backupReadAsking: (text: string) => Promise<
+    | null
+    | { cancelled: true }
+    | { locked: false; book: Record<string, unknown>; authorship: Record<string, unknown> | null; intact: boolean | null }
+  >;
+  backupPasswordAsk: (envelope: object) => Promise<string | null>;
+  backupOpenedNote: (read: unknown) => Promise<string>;
+  authorshipStamp: (book: object, sha256: string, kind: 'backup' | 'docx') => Promise<string | null>;
+  authorshipCheck: (sha256: string) => Promise<string | null>;
+  authorshipStampDesk: (kind: 'docx') => void;
+  lockFieldsTake: (scope: 'docx' | 'ms' | 'pdf' | 'backup') => { password?: string; off?: true; error?: string };
+  lockFieldsWire: (scope: 'docx' | 'ms' | 'pdf' | 'backup') => void;
+  lockFieldsSay: (scope: 'docx' | 'ms' | 'pdf' | 'backup', key: string) => void;
+  lockFieldsRender: () => void;
+  lockFailedText: (err: unknown, password?: string) => string;
   buildStoreReportHtml: (a?: StoreAudit) => string;
   downloadStoreReport: () => void;
   printPlacements: () => (Record<string, unknown> & { dpi: number })[];

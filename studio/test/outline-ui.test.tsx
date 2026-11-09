@@ -8,6 +8,7 @@ import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { loadPack } from '../src/i18n/strings';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 2c, task 3 in the studio: the outline board (1.0's olRender
    markup and keys, initOutline's events).
@@ -71,7 +72,7 @@ async function exported(): Promise<Rec> {
   });
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
   vi.restoreAllMocks();
   const b = out.book;

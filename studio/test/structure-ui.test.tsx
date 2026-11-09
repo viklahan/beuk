@@ -6,6 +6,7 @@ import { App } from '../src/App';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 2c, task 1 in the studio: the row's move and eye buttons, Add
    Chapter / Add Part, the matter library, the section type select and the
@@ -61,7 +62,7 @@ async function exported(): Promise<Rec> {
   });
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-  fireEvent.click(document.getElementById('btnLocalBackup')!);
+  await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
   const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
   vi.restoreAllMocks();
   const b = out.book;

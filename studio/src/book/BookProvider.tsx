@@ -3,14 +3,14 @@ import * as Y from 'yjs';
 import { BODY, BookImportError, META, observeSections, sectionList, sectionsCount, unwrapBackup, type TextWarning } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import { LANG_CODES } from '@book/upgrade.js';
-import { loadClosure } from '../closure/index';
+import { closureIfLoaded, loadClosure } from '../closure/index';
 import { backupArrival, live } from '../history/history';
 import { deskIsUntouchedSample } from '../sample/sample';
 import { useConfirm } from '../shell/Dialog';
 import meta from '../generated/strings-meta.json';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useToast } from '../shell/Toasts';
-import { backupFilename, backupJson, downloadText, parseBackup } from './backup';
+import { backupFilename, downloadText } from './backup';
 import { readLegacyBook } from './legacy10';
 import { outlineRows, type OutlineRow } from './outlineRows';
 import { REGISTRY_KEY, bookMeta, importToDevice, openStoredBook, registryEpoch, startBook, type OpenBook } from './store';
@@ -87,7 +87,10 @@ export type BookApi = {
   /** True once for a book that reached the desk from outside this studio — this device's book restored at start-up, or
    *  a backup opened — which is where 1.0 runs its sweep of old sample copies (sampleSweepPreRename). Asking takes it. */
   takeOutsideArrival: (ydoc: Y.Doc) => boolean;
-  exportBackup: () => void;
+  /** 1.0's localExportBackup (BEUK:authorship): the backup with its authorship block, stamped when signed in, locked when
+   *  the popover's lock box is on. False when the lock refused (its message is in the box; nothing downloads). `plainOnly`:
+   *  the inline offer beside a failed device save, outside the popover, writes the plain backup. */
+  exportBackup: (plainOnly?: boolean) => boolean;
   /** Wave 5a, round 2: what the device store knows, as 1.0's local pill shows it (src/book/LocalPill.tsx). */
   local: LocalStatus;
 };
@@ -251,11 +254,20 @@ export function BookProvider({ children }: { children: ReactNode }) {
       } catch {
         /* unreadable: treated as not a backup */
       }
-      const parsed = parseBackup(text);
-      if (!parsed) {
+      // BEUK:authorship — 1.0's reader: a locked backup asks its password first (Cancel: nothing happens); one changed
+      // after it was saved asks before it opens (No: the desk stays as it is); then the replace confirm below
+      const c0 = await loadClosure();
+      const backup = await c0.api.backupReadAsking(text);
+      if (backup && 'cancelled' in backup) return;
+      if (!backup) {
         toast(t('local.backupBad'), 'HardDrive');
         return;
       }
+      if (backup.intact === false) {
+        const ok = await confirm({ title: t('backup.changedTitle'), body: t('backup.changedBody'), yes: t('backup.changedYes'), no: t('confirm.keep') });
+        if (ok !== true) return;
+      }
+      const parsed = backup.book;
       const raw = unwrapBackup(parsed) as Record<string, unknown>;
       const read = readBook(raw);
       if (read.status !== 'ok') {
@@ -286,16 +298,21 @@ export function BookProvider({ children }: { children: ReactNode }) {
         toast(t('local.blocked'), 'HardDrive');
         return;
       }
+      let opened: string;
       try {
         const b = await replace(doc);
         outside.current.add(b.ydoc);
         // 1.0's localApplyBackup clears sampleState.loaded: the new generation starts without the sample record
         // 1.0's localApplyBackup: state.meta.title || "Untitled Book"
-        toast(t('local.backupOpened', { title: String(bookMeta(b.ydoc).title || '') || t('misc.untitledBook') }), 'HardDrive');
+        opened = t('local.backupOpened', { title: String(bookMeta(b.ydoc).title || '') || t('misc.untitledBook') });
       } catch (e) {
         // anything but a refused book: this device would not store it (storage blocked or full)
         toast(t(e instanceof BookImportError ? 'local.backupBad' : 'local.blocked'), 'HardDrive');
+        return;
       }
+      // BEUK:authorship — "Untouched since …" and "On Beuk's record since …", asked once the book is on the desk
+      const note = backup.authorship ? await c0.api.backupOpenedNote(backup).catch(() => '') : '';
+      toast(opened + note, 'HardDrive');
     },
     [replace, confirm, toast, t],
   );
@@ -334,13 +351,29 @@ export function BookProvider({ children }: { children: ReactNode }) {
 
   const takeOutsideArrival = useCallback((ydoc: Y.Doc) => outside.current.delete(ydoc), []);
 
-  const exportBackup = useCallback(() => {
-    const b = current.current;
-    if (!b) return;
-    const doc = b.export();
-    const m = (doc.meta ?? {}) as { title?: unknown };
-    downloadText(backupJson(doc), backupFilename(m.title));
-  }, []);
+  const exportBackup = useCallback(
+    (plainOnly = false) => {
+      const b = current.current;
+      if (!b) return true;
+      // BEUK:lockcopy — the lock box read once and emptied at once (1.0's lockFieldsTake, the scope "backup"); a refusal is
+      // said in the box
+      const c = closureIfLoaded();
+      const lock = plainOnly || !c ? { off: true as const } : c.api.lockFieldsTake('backup');
+      if (lock.error) return false;
+      const doc = b.export();
+      const m = (doc.meta ?? {}) as { title?: unknown };
+      const name = backupFilename(m.title);
+      const password = lock.password || '';
+      void (c ? Promise.resolve(c) : loadClosure())
+        .then((cc) => cc.api.backupExportText(doc, password))
+        .then(
+          (text) => downloadText(text, name),
+          (e: unknown) => toast(closureIfLoaded()?.api.lockFailedText(e, password) ?? t('lock.failed', { error: 'unknown error' }), 'TriangleAlert'),
+        );
+      return true;
+    },
+    [toast, t],
+  );
 
   const value = useMemo<BookApi>(() => {
     const m = book ? bookMeta(book.ydoc) : {};

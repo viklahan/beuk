@@ -2847,9 +2847,20 @@
           <div class="local-pop" id="localPop" role="dialog" aria-labelledby="localPopTitle" hidden>
             <h3 id="localPopTitle"></h3>
             <p id="localPopDetail"></p>
+            <!-- BEUK:authorship — the backup's optional lock (BEUK:lockcopy's fieldset); the password never leaves the device -->
+            <fieldset class="lock-fs" id="lockBackup" style="border:0;padding:0;margin:10px 0 0;min-width:0;">
+              <label class="acx-check"><input type="checkbox" id="lockBackupOn" name="lockcopy-backup-on" /> <span data-i18n="lock.toggle">Lock with a password</span></label>
+              <div id="lockBackupFields" hidden>
+                <div><label class="field-lab" for="lockBackupPw" data-i18n="lock.pw">Password</label><input class="txt-input" id="lockBackupPw" name="lockcopy-backup-pw" type="password" autocomplete="new-password" /></div>
+                <div><label class="field-lab" for="lockBackupPw2" data-i18n="lock.pw2">Type it again</label><input class="txt-input" id="lockBackupPw2" name="lockcopy-backup-pw2" type="password" autocomplete="new-password" /></div>
+                <p class="acx-note" data-i18n="backup.lockNote">Beuk can't open this backup without the password. Keep it somewhere safe.</p>
+                <p class="acx-note acx-warn" id="lockBackupErr" role="alert" hidden></p>
+              </div>
+            </fieldset>
             <div class="local-pop-actions">
               <button class="tb-btn primary" id="btnLocalBackup" type="button"><i data-lucide="download"></i><span data-i18n="local.backup">Export a backup</span></button>
               <button class="tb-btn" id="btnLocalOpenBackup" type="button"><i data-lucide="folder-open"></i><span data-i18n="local.openBackup">Open a backup…</span></button>
+              <button class="tb-btn" id="btnAuthorshipRecord" type="button" hidden><i data-lucide="stamp"></i><span data-i18n="auth.record">Authorship record</span></button>
             </div>
             <input type="file" id="localBackupInput" accept=".json,application/json" style="display:none;" />
           </div>
@@ -47852,9 +47863,10 @@
         const name = file.name;
         const lower = name.toLowerCase();
         if (lower.endsWith(".json")) {
-          const book = localParseBackup(await file.text());
-          if (!book) throw new Error("this is not a Beuk backup file");
-          return bookDocToVolume(book, name);
+          /* BEUK:authorship — a locked backup asks for its password; Cancel refuses this file as one that can't be read */
+          const read = await backupReadAsking(await file.text());
+          if (!read || read.cancelled) throw new Error("this is not a Beuk backup file");
+          return bookDocToVolume(read.book, name);
         }
         /* BEUK:onereader — a manuscript volume is read exactly as the Import button reads it */
         if (bulkIsManuscript(name)) {
@@ -48225,6 +48237,7 @@
             downloadBlob(blob, slug(state.meta.title) + ".docx");
             toast("Word document downloaded — headings, scene breaks and endnotes included", "file-type-2");
           }
+          authorshipStampDesk("docx"); /* BEUK:authorship — fire and forget, after the download */
         } catch (err) {
           if (locking) toast(lockFailedText(err, lock.password), "alert-triangle");
           else toast("DOCX export failed: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
@@ -48513,6 +48526,7 @@
             downloadBlob(blob, msFilename());
             toast(t("ms.done", { sections: fmtNum(plan.body.length), words: fmtNum(plan.rounded) }), "file-type-2");
           }
+          authorshipStampDesk("docx"); /* BEUK:authorship — fire and forget, after the download */
         } catch (err) {
           if (locking) toast(lockFailedText(err, lock.password), "alert-triangle");
           else toast(t("ms.fail", { msg: err && err.message ? err.message : "unknown error" }), "alert-triangle");
@@ -52290,7 +52304,7 @@
          Day 22 (the plan's access "paused") hides every lock control; the unlocked downloads never change. The plan's
          access is kept on the page itself (data-plan-access on <html>), where every part of the studio that draws a
          lock control reads the same fact (2.0 runs the plan line, the export and the print panel in separate modules). */
-      const LOCK_SCOPES = { docx: "lockDocx", ms: "lockMs", pdf: "lockPdf" };
+      const LOCK_SCOPES = { docx: "lockDocx", ms: "lockMs", pdf: "lockPdf", backup: "lockBackup" /* BEUK:authorship — the backup's lock, in the save popover */ };
       function lockEls(scope) {
         const id = LOCK_SCOPES[scope];
         return { box: $(id), on: $(id + "On"), fields: $(id + "Fields"), pw: $(id + "Pw"), pw2: $(id + "Pw2"), err: $(id + "Err") };
@@ -52324,7 +52338,7 @@
       /** Shows or hides every lock control by the plan; a hidden control keeps nothing typed. */
       function lockFieldsRender() {
         const ok = lockCopyAllowed();
-        for (const scope of ["docx", "ms"]) {
+        for (const scope of ["docx", "ms", "backup"]) { /* BEUK:authorship — the backup's lock hides on day 22 too */
           const e = lockEls(scope);
           if (!e.box) continue;
           e.box.hidden = !ok;
@@ -52487,6 +52501,20 @@
       Object.assign(UI_STRINGS.ru, { "lock.toggle": "Защитить паролем", "lock.pw": "Пароль", "lock.pw2": "Введите ещё раз", "lock.note": "Читателю понадобится этот пароль, чтобы открыть файл. Отправьте его отдельно — сообщением или по телефону, а не в том же письме.", "lock.mismatch": "Пароли не совпадают.", "lock.empty": "Введите пароль или отключите защиту.", "lock.pdf": "Скачать защищённую копию", "lock.working": "Защищаем…", "lock.failed": "Не удалось защитить копию: {error}", "lock.done": "Защищённая копия скачана." });
       Object.assign(UI_STRINGS.tr, { "lock.toggle": "Parolayla kilitle", "lock.pw": "Parola", "lock.pw2": "Yeniden yazın", "lock.note": "Okuyucunuz dosyayı açmak için bu parolaya ihtiyaç duyar. Parolayı aynı e-postada değil, ayrıca mesajla ya da telefonla iletin.", "lock.mismatch": "İki parola eşleşmiyor.", "lock.empty": "Bir parola yazın ya da kilidi kapatın.", "lock.pdf": "Kilitli kopyayı indir", "lock.working": "Kilitleniyor…", "lock.failed": "Kopya kilitlenemedi: {error}", "lock.done": "Kilitli kopya indirildi." });
       Object.assign(UI_STRINGS["zh-Hans"], { "lock.toggle": "用密码锁定", "lock.pw": "密码", "lock.pw2": "再输入一次", "lock.note": "读者需要这个密码才能打开文件。请另行告知，比如发短信或打电话，不要写在同一封邮件里。", "lock.mismatch": "两次输入的密码不一致。", "lock.empty": "请输入密码，或关闭锁定。", "lock.pdf": "下载锁定的副本", "lock.working": "正在锁定…", "lock.failed": "无法锁定副本：{error}", "lock.done": "已下载锁定的副本。" });
+      /* BEUK:authorship — locked backups and the authorship record (task 3). The 12 translations are drafts for V's sign-off. */
+      Object.assign(UI_STRINGS.en, { "backup.pwCancel": "Cancel", "backup.lockNote": "Beuk can't open this backup without the password. Keep it somewhere safe.", "backup.pwTitle": "Open a locked backup", "backup.pwOpen": "Open", "backup.pwWrong": "That password doesn't open this backup", "backup.untouched": "Untouched since {date}.", "backup.onRecord": "On Beuk's record since {date}.", "backup.changedTitle": "This backup was changed", "backup.changedBody": "This backup was changed after it was saved. Open it anyway?", "backup.changedYes": "Open it anyway", "auth.record": "Authorship record", "auth.title": "Authorship record — “{title}”", "auth.stamps": "Stamps", "auth.kindBackup": "Backup", "auth.kindDocx": "Word file", "auth.shared": "Shared with", "auth.openLink": "Open link: {n} readers", "auth.noStamps": "Nothing stamped yet. Export a backup to put this book on record.", "auth.noShared": "Not shared with named readers yet.", "auth.firstOpened": "first opened {date}" });
+      Object.assign(UI_STRINGS.ar, { "backup.pwCancel": "إلغاء", "backup.lockNote": "لا يستطيع Beuk فتح هذه النسخة الاحتياطية بدون كلمة المرور. احتفظ بها في مكان آمن.", "backup.pwTitle": "فتح نسخة احتياطية مقفلة", "backup.pwOpen": "فتح", "backup.pwWrong": "كلمة المرور هذه لا تفتح هذه النسخة الاحتياطية", "backup.untouched": "لم تُمسّ منذ {date}.", "backup.onRecord": "في سجل Beuk منذ {date}.", "backup.changedTitle": "تم تغيير هذه النسخة الاحتياطية", "backup.changedBody": "تم تغيير هذه النسخة الاحتياطية بعد حفظها. هل تريد فتحها على أي حال؟", "backup.changedYes": "افتحها على أي حال", "auth.record": "سجل التأليف", "auth.title": "سجل التأليف — «{title}»", "auth.stamps": "الأختام", "auth.kindBackup": "نسخة احتياطية", "auth.kindDocx": "ملف Word", "auth.shared": "تمت المشاركة مع", "auth.openLink": "الرابط المفتوح: {n} من القرّاء", "auth.noStamps": "لا شيء مختوم بعد. صدّر نسخة احتياطية لتسجيل هذا الكتاب.", "auth.noShared": "لم تتم المشاركة مع قرّاء مسمَّين بعد.", "auth.firstOpened": "فُتح أول مرة في {date}" });
+      Object.assign(UI_STRINGS.de, { "backup.pwCancel": "Abbrechen", "backup.lockNote": "Beuk kann diese Sicherung ohne das Passwort nicht öffnen. Bewahren Sie es sicher auf.", "backup.pwTitle": "Gesperrte Sicherung öffnen", "backup.pwOpen": "Öffnen", "backup.pwWrong": "Dieses Passwort öffnet diese Sicherung nicht", "backup.untouched": "Unverändert seit {date}.", "backup.onRecord": "Seit {date} in Beuks Verzeichnis.", "backup.changedTitle": "Diese Sicherung wurde geändert", "backup.changedBody": "Diese Sicherung wurde nach dem Speichern geändert. Trotzdem öffnen?", "backup.changedYes": "Trotzdem öffnen", "auth.record": "Urheberschaftsnachweis", "auth.title": "Urheberschaftsnachweis — „{title}“", "auth.stamps": "Stempel", "auth.kindBackup": "Sicherung", "auth.kindDocx": "Word-Datei", "auth.shared": "Geteilt mit", "auth.openLink": "Offener Link: {n} Leser", "auth.noStamps": "Noch nichts gestempelt. Exportieren Sie eine Sicherung, um dieses Buch festzuhalten.", "auth.noShared": "Noch nicht mit namentlichen Lesern geteilt.", "auth.firstOpened": "zuerst geöffnet am {date}" });
+      Object.assign(UI_STRINGS.es, { "backup.pwCancel": "Cancelar", "backup.lockNote": "Beuk no puede abrir esta copia de seguridad sin la contraseña. Guárdala en un lugar seguro.", "backup.pwTitle": "Abrir una copia de seguridad bloqueada", "backup.pwOpen": "Abrir", "backup.pwWrong": "Esa contraseña no abre esta copia de seguridad", "backup.untouched": "Sin cambios desde el {date}.", "backup.onRecord": "En el registro de Beuk desde el {date}.", "backup.changedTitle": "Esta copia de seguridad se modificó", "backup.changedBody": "Esta copia de seguridad se modificó después de guardarse. ¿Abrirla de todos modos?", "backup.changedYes": "Abrirla de todos modos", "auth.record": "Registro de autoría", "auth.title": "Registro de autoría — «{title}»", "auth.stamps": "Sellos", "auth.kindBackup": "Copia de seguridad", "auth.kindDocx": "Archivo de Word", "auth.shared": "Compartido con", "auth.openLink": "Enlace abierto: {n} lectores", "auth.noStamps": "Aún no hay nada sellado. Exporta una copia de seguridad para dejar constancia de este libro.", "auth.noShared": "Aún no se ha compartido con lectores con nombre.", "auth.firstOpened": "abierto por primera vez el {date}" });
+      Object.assign(UI_STRINGS.fr, { "backup.pwCancel": "Annuler", "backup.lockNote": "Beuk ne peut pas ouvrir cette sauvegarde sans le mot de passe. Gardez-le en lieu sûr.", "backup.pwTitle": "Ouvrir une sauvegarde verrouillée", "backup.pwOpen": "Ouvrir", "backup.pwWrong": "Ce mot de passe n'ouvre pas cette sauvegarde", "backup.untouched": "Intacte depuis le {date}.", "backup.onRecord": "Dans le registre de Beuk depuis le {date}.", "backup.changedTitle": "Cette sauvegarde a été modifiée", "backup.changedBody": "Cette sauvegarde a été modifiée après son enregistrement. L'ouvrir quand même ?", "backup.changedYes": "L'ouvrir quand même", "auth.record": "Registre d'auteur", "auth.title": "Registre d'auteur — « {title} »", "auth.stamps": "Tampons", "auth.kindBackup": "Sauvegarde", "auth.kindDocx": "Fichier Word", "auth.shared": "Partagé avec", "auth.openLink": "Lien ouvert : {n} lecteurs", "auth.noStamps": "Rien n'est encore tamponné. Exportez une sauvegarde pour inscrire ce livre au registre.", "auth.noShared": "Pas encore partagé avec des lecteurs nommés.", "auth.firstOpened": "ouvert pour la première fois le {date}" });
+      Object.assign(UI_STRINGS.it, { "backup.pwCancel": "Annulla", "backup.lockNote": "Beuk non può aprire questo backup senza la password. Conservala in un posto sicuro.", "backup.pwTitle": "Apri un backup protetto", "backup.pwOpen": "Apri", "backup.pwWrong": "Questa password non apre questo backup", "backup.untouched": "Intatto dal {date}.", "backup.onRecord": "Nel registro di Beuk dal {date}.", "backup.changedTitle": "Questo backup è stato modificato", "backup.changedBody": "Questo backup è stato modificato dopo il salvataggio. Aprirlo comunque?", "backup.changedYes": "Aprilo comunque", "auth.record": "Registro d'autore", "auth.title": "Registro d'autore — «{title}»", "auth.stamps": "Timbri", "auth.kindBackup": "Backup", "auth.kindDocx": "File Word", "auth.shared": "Condiviso con", "auth.openLink": "Link aperto: {n} lettori", "auth.noStamps": "Ancora nessun timbro. Esporta un backup per mettere a registro questo libro.", "auth.noShared": "Non ancora condiviso con lettori nominativi.", "auth.firstOpened": "aperto la prima volta il {date}" });
+      Object.assign(UI_STRINGS.ja, { "backup.pwCancel": "キャンセル", "backup.lockNote": "パスワードがないと、Beuk はこのバックアップを開けません。安全な場所に保管してください。", "backup.pwTitle": "保護されたバックアップを開く", "backup.pwOpen": "開く", "backup.pwWrong": "このパスワードではこのバックアップを開けません", "backup.untouched": "{date} から変更されていません。", "backup.onRecord": "{date} から Beuk の記録にあります。", "backup.changedTitle": "このバックアップは変更されています", "backup.changedBody": "このバックアップは保存後に変更されています。それでも開きますか？", "backup.changedYes": "それでも開く", "auth.record": "著作の記録", "auth.title": "著作の記録 —「{title}」", "auth.stamps": "スタンプ", "auth.kindBackup": "バックアップ", "auth.kindDocx": "Word ファイル", "auth.shared": "共有先", "auth.openLink": "公開リンク：読者 {n} 人", "auth.noStamps": "まだスタンプはありません。バックアップを書き出すと、この本が記録されます。", "auth.noShared": "まだ名前付きの読者とは共有していません。", "auth.firstOpened": "{date} に初めて開封" });
+      Object.assign(UI_STRINGS.nl, { "backup.pwCancel": "Annuleren", "backup.lockNote": "Beuk kan deze back-up niet openen zonder het wachtwoord. Bewaar het op een veilige plek.", "backup.pwTitle": "Een vergrendelde back-up openen", "backup.pwOpen": "Openen", "backup.pwWrong": "Dat wachtwoord opent deze back-up niet", "backup.untouched": "Onveranderd sinds {date}.", "backup.onRecord": "Sinds {date} in het register van Beuk.", "backup.changedTitle": "Deze back-up is gewijzigd", "backup.changedBody": "Deze back-up is gewijzigd nadat hij werd opgeslagen. Toch openen?", "backup.changedYes": "Toch openen", "auth.record": "Auteursregister", "auth.title": "Auteursregister — ‘{title}’", "auth.stamps": "Stempels", "auth.kindBackup": "Back-up", "auth.kindDocx": "Word-bestand", "auth.shared": "Gedeeld met", "auth.openLink": "Open link: {n} lezers", "auth.noStamps": "Nog niets gestempeld. Exporteer een back-up om dit boek te registreren.", "auth.noShared": "Nog niet gedeeld met lezers op naam.", "auth.firstOpened": "voor het eerst geopend op {date}" });
+      Object.assign(UI_STRINGS.pl, { "backup.pwCancel": "Anuluj", "backup.lockNote": "Beuk nie otworzy tej kopii zapasowej bez hasła. Przechowuj je w bezpiecznym miejscu.", "backup.pwTitle": "Otwórz zabezpieczoną kopię zapasową", "backup.pwOpen": "Otwórz", "backup.pwWrong": "To hasło nie otwiera tej kopii zapasowej", "backup.untouched": "Nienaruszona od {date}.", "backup.onRecord": "W rejestrze Beuk od {date}.", "backup.changedTitle": "Ta kopia zapasowa została zmieniona", "backup.changedBody": "Ta kopia zapasowa została zmieniona po zapisaniu. Otworzyć mimo to?", "backup.changedYes": "Otwórz mimo to", "auth.record": "Rejestr autorstwa", "auth.title": "Rejestr autorstwa — „{title}”", "auth.stamps": "Pieczęcie", "auth.kindBackup": "Kopia zapasowa", "auth.kindDocx": "Plik Word", "auth.shared": "Udostępniono", "auth.openLink": "Otwarty link: czytelnicy: {n}", "auth.noStamps": "Nic jeszcze nie opieczętowano. Wyeksportuj kopię zapasową, aby zarejestrować tę książkę.", "auth.noShared": "Jeszcze nie udostępniono czytelnikom z imienia.", "auth.firstOpened": "pierwsze otwarcie {date}" });
+      Object.assign(UI_STRINGS.pt, { "backup.pwCancel": "Cancelar", "backup.lockNote": "O Beuk não consegue abrir esta cópia de segurança sem a palavra-passe. Guarde-a num lugar seguro.", "backup.pwTitle": "Abrir uma cópia de segurança bloqueada", "backup.pwOpen": "Abrir", "backup.pwWrong": "Essa palavra-passe não abre esta cópia de segurança", "backup.untouched": "Intacta desde {date}.", "backup.onRecord": "No registo do Beuk desde {date}.", "backup.changedTitle": "Esta cópia de segurança foi alterada", "backup.changedBody": "Esta cópia de segurança foi alterada depois de guardada. Abrir mesmo assim?", "backup.changedYes": "Abrir mesmo assim", "auth.record": "Registo de autoria", "auth.title": "Registo de autoria — «{title}»", "auth.stamps": "Carimbos", "auth.kindBackup": "Cópia de segurança", "auth.kindDocx": "Ficheiro Word", "auth.shared": "Partilhado com", "auth.openLink": "Ligação aberta: {n} leitores", "auth.noStamps": "Ainda nada carimbado. Exporte uma cópia de segurança para registar este livro.", "auth.noShared": "Ainda não partilhado com leitores identificados.", "auth.firstOpened": "aberto pela primeira vez a {date}" });
+      Object.assign(UI_STRINGS.ru, { "backup.pwCancel": "Отмена", "backup.lockNote": "Beuk не сможет открыть эту резервную копию без пароля. Храните его в надёжном месте.", "backup.pwTitle": "Открыть защищённую резервную копию", "backup.pwOpen": "Открыть", "backup.pwWrong": "Этот пароль не открывает эту резервную копию", "backup.untouched": "Без изменений с {date}.", "backup.onRecord": "В реестре Beuk с {date}.", "backup.changedTitle": "Эта резервная копия была изменена", "backup.changedBody": "Эта резервная копия была изменена после сохранения. Всё равно открыть?", "backup.changedYes": "Всё равно открыть", "auth.record": "Реестр авторства", "auth.title": "Реестр авторства — «{title}»", "auth.stamps": "Отметки", "auth.kindBackup": "Резервная копия", "auth.kindDocx": "Файл Word", "auth.shared": "Кому открыт доступ", "auth.openLink": "Открытая ссылка: читателей — {n}", "auth.noStamps": "Отметок пока нет. Экспортируйте резервную копию, чтобы внести эту книгу в реестр.", "auth.noShared": "Пока не открыт доступ читателям по имени.", "auth.firstOpened": "впервые открыто {date}" });
+      Object.assign(UI_STRINGS.tr, { "backup.pwCancel": "İptal", "backup.lockNote": "Beuk bu yedeği parola olmadan açamaz. Parolayı güvenli bir yerde saklayın.", "backup.pwTitle": "Kilitli bir yedeği aç", "backup.pwOpen": "Aç", "backup.pwWrong": "Bu parola bu yedeği açmıyor", "backup.untouched": "{date} tarihinden beri değişmedi.", "backup.onRecord": "{date} tarihinden beri Beuk kaydında.", "backup.changedTitle": "Bu yedek değiştirilmiş", "backup.changedBody": "Bu yedek kaydedildikten sonra değiştirilmiş. Yine de açılsın mı?", "backup.changedYes": "Yine de aç", "auth.record": "Yazarlık kaydı", "auth.title": "Yazarlık kaydı — “{title}”", "auth.stamps": "Damgalar", "auth.kindBackup": "Yedek", "auth.kindDocx": "Word dosyası", "auth.shared": "Paylaşılanlar", "auth.openLink": "Açık bağlantı: {n} okuyucu", "auth.noStamps": "Henüz damgalanmış bir şey yok. Bu kitabı kayda geçirmek için bir yedek dışa aktarın.", "auth.noShared": "Henüz adı belirli okuyucularla paylaşılmadı.", "auth.firstOpened": "ilk açılış {date}" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "backup.pwCancel": "取消", "backup.lockNote": "没有密码，Beuk 无法打开这个备份。请把密码保存在安全的地方。", "backup.pwTitle": "打开锁定的备份", "backup.pwOpen": "打开", "backup.pwWrong": "这个密码打不开这个备份", "backup.untouched": "自 {date} 起未经改动。", "backup.onRecord": "自 {date} 起记录在 Beuk。", "backup.changedTitle": "这个备份已被改动", "backup.changedBody": "这个备份在保存后被改动过。仍要打开吗？", "backup.changedYes": "仍然打开", "auth.record": "作者记录", "auth.title": "作者记录 —“{title}”", "auth.stamps": "印记", "auth.kindBackup": "备份", "auth.kindDocx": "Word 文件", "auth.shared": "已分享给", "auth.openLink": "公开链接：{n} 位读者", "auth.noStamps": "还没有任何印记。导出一个备份，就能把这本书记录在案。", "auth.noShared": "还没有分享给具名读者。", "auth.firstOpened": "{date} 首次打开" });
       /* BEUK:lockcopy — fix wave: the PDF dialog has no lock to turn off, so its empty-password message is its own (drafts for V's sign-off) */
       Object.assign(UI_STRINGS.en, { "lock.pdfEmpty": "Type a password for the locked copy." });
       Object.assign(UI_STRINGS.ar, { "lock.pdfEmpty": "اكتب كلمة مرور للنسخة المقفلة." });
@@ -71012,10 +71040,19 @@
         const title = String(state.meta.title || "").trim();
         return ((title && slug(title)) || "book") + "-" + stamp + ".beuk-backup.json";
       }
-      function localExportBackup() {
-        if (samplePicsHold(() => localExportBackup())) return; /* BEUK:slim — never without the sample's pictures */
-        const payload = { format: "beuk-backup", version: 1, exportedAt: new Date().toISOString(), book: serializeBook() };
-        downloadBlob(new Blob([JSON.stringify(payload)], { type: "application/json" }), localBackupFilename());
+      /* BEUK:authorship — the backup carries its authorship block, is stamped when signed in (never waiting more than
+         4 s, never failing over it) and is locked when the popover's lock is on. False when the lock refused (its message
+         is in the popover, which stays open; nothing downloads). `plainOnly`: the inline offer beside a failed device save
+         (outside the popover, where no lock is shown) always writes the plain backup. */
+      function localExportBackup(plainOnly) {
+        if (samplePicsHold(() => localExportBackup(plainOnly))) return true; /* BEUK:slim — never without the sample's pictures */
+        const lock = plainOnly ? { off: true } : lockFieldsTake("backup"); /* BEUK:lockcopy — read once, emptied at once */
+        if (lock.error) return false;
+        const book = serializeBook(), name = localBackupFilename();
+        backupExportText(book, lock.password || "").then(
+          (text) => downloadBlob(new Blob([text], { type: "application/json" }), name),
+          (e) => toast(lockFailedText(e, lock.password), "alert-triangle"));
+        return true;
       }
       function localParseBackup(text) {
         try {
@@ -71103,8 +71140,205 @@
           return { locked: false, book: d.book, authorship: a, intact: a ? (await backupFingerprint(d.book)) === a.sha256 : null };
         } catch (e) { return null; }
       }
+      /* ---- the studio's half (task 3): the stamp calls, the export, the untouched check, the password dialog and the
+         record. The stamp and the check are same-origin requests of their own, never apiFetch (a refusal, the paused 402,
+         a slow or absent server says nothing to the writer); each waits at most 4 s. Nothing here logs, stores or sends
+         a password. */
+      const AUTHORSHIP_WAIT_MS = 4000;
+      /* The JSON of a same-origin request answered `want` within 4 s, else null (any other status, a network error, a
+         body that is not JSON, the wait) */
+      async function authorshipFetch(path, init, want) {
+        const ctl = typeof AbortController === "function" ? new AbortController() : null;
+        let timer = null;
+        const late = new Promise((resolve) => { timer = setTimeout(() => { if (ctl) ctl.abort(); resolve(null); }, AUTHORSHIP_WAIT_MS); });
+        const answer = Promise.resolve().then(() => fetch(path, Object.assign({ credentials: "same-origin" }, init, ctl ? { signal: ctl.signal } : {})))
+          .then((r) => (r && r.status === want ? r.json() : null)).catch(() => null);
+        try { return await Promise.race([answer, late]); }
+        finally { clearTimeout(timer); }
+      }
+      /* A stamp for `book` (its bookId and title), its fingerprint `sha256` and `kind` ("backup" | "docx"): the server's
+         createdAt, or null — signed out, a book without an id, a refusal (400, 429, the paused 402), no answer */
+      async function authorshipStamp(book, sha256, kind) {
+        if (!cloud.user) return null;
+        const m = book && book.meta && typeof book.meta === "object" ? book.meta : {};
+        const bookId = typeof m.bookId === "string" ? m.bookId : "";
+        if (!bookId || !BACKUP_SHA_RE.test(String(sha256))) return null;
+        const title = Array.from(String(m.title || "").trim()).slice(0, 300).join("");
+        const j = await authorshipFetch("/api/authorship/stamps", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookId, title, sha256, kind }) }, 201);
+        return j && typeof j.createdAt === "string" ? j.createdAt : null;
+      }
+      /* The desk's fingerprint stamped after a Word download (the Word file, the manuscript): fire and forget. The book is
+         read now, before anything else can change it */
+      function authorshipStampDesk(kind) {
+        if (!cloud.user) return;
+        let book = null;
+        try { book = serializeBook(); } catch (e) { return; }
+        backupFingerprint(book).then((sha) => authorshipStamp(book, sha, kind)).catch(() => null);
+      }
+      /* When Beuk first recorded this fingerprint for this writer (the oldest stamp's createdAt), or null */
+      async function authorshipCheck(sha256) {
+        if (!cloud.user || !BACKUP_SHA_RE.test(String(sha256))) return null;
+        const j = await authorshipFetch("/api/authorship/check?sha256=" + encodeURIComponent(sha256), { method: "GET" }, 200);
+        const first = j && Array.isArray(j.recorded) ? j.recorded[0] : null;
+        return first && typeof first.createdAt === "string" ? first.createdAt : null;
+      }
+      /* The backup file's text for `book`: stamped when signed in (recorded: the server's date, else null), locked with
+         `password` when one is given */
+      async function backupExportText(book, password) {
+        const recorded = await authorshipStamp(book, await backupFingerprint(book), "backup");
+        const plain = await backupPayload(book, recorded);
+        return password ? backupLock(plain.text, password) : plain.text;
+      }
+      /* A date the server or a backup gave, in the beta rows' short date; "" when it is not one */
+      function authorshipDate(v) {
+        const d = new Date(v);
+        return typeof v === "string" && v && !isNaN(d.getTime()) ? betaFmtDate(v) : "";
+      }
+      /* What the "opened" toast adds for a backup read by backupRead: "Untouched since …" when its fingerprint matches,
+         and, signed in, "On Beuk's record since …" when Beuk holds that fingerprint. Nothing for an older backup (no
+         claim either way), nor for a changed one (its recorded fingerprint is no longer this text's) */
+      async function backupOpenedNote(read) {
+        const a = read && read.authorship;
+        if (!a || read.intact !== true) return "";
+        let s = "";
+        const saved = authorshipDate(a.savedAt);
+        if (saved) s += " " + t("backup.untouched", { date: saved });
+        const rec = authorshipDate(await authorshipCheck(a.sha256));
+        if (rec) s += " " + t("backup.onRecord", { date: rec });
+        return s;
+      }
+      /* The password dialog for a locked backup: the plain backup text once a password opens it, null on Cancel. A wrong
+         password says so in the dialog, which stays open for another try; the field is emptied after every attempt */
+      function backupPasswordAsk(envelope) {
+        const old = $("modalBackupPw");
+        if (old) old.remove();
+        const m = document.createElement("div");
+        m.className = "modal-back"; m.id = "modalBackupPw"; m.style.zIndex = "80";
+        m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="backupPwH" style="max-width:440px;">' +
+          '<h2 id="backupPwH"><i data-lucide="lock"></i><span data-i18n="backup.pwTitle">' + esc(t("backup.pwTitle")) + "</span></h2>" +
+          '<div><label class="field-lab" for="backupPw" data-i18n="lock.pw">' + esc(t("lock.pw")) + '</label><input class="txt-input" id="backupPw" name="lockcopy-backup-open-pw" type="password" autocomplete="off" /></div>' +
+          '<p class="acx-note acx-warn" id="backupPwErr" role="alert" hidden></p>' +
+          '<div class="modal-actions"><button class="tb-btn" id="btnBackupPwCancel" type="button" data-i18n="backup.pwCancel">' + esc(t("backup.pwCancel")) + "</button>" +
+          '<button class="tb-btn primary" id="btnBackupPwOpen" type="button" data-i18n="backup.pwOpen">' + esc(t("backup.pwOpen")) + "</button></div></div>";
+        document.body.appendChild(m);
+        icons();
+        return new Promise((resolve) => {
+          const field = $("backupPw"), err = $("backupPwErr"), go = $("btnBackupPwOpen");
+          let done = false;
+          const finish = (v) => {
+            if (done) return;
+            done = true;
+            field.value = "";
+            m.classList.remove("open");
+            m.remove();
+            resolve(v);
+          };
+          const say = () => { err.textContent = t("backup.pwWrong"); err.hidden = false; };
+          const open = async () => {
+            if (done || go.disabled) return;
+            const pw = field.value;
+            field.value = ""; /* read once, emptied at once */
+            if (!pw) { say(); return; }
+            go.disabled = true;
+            try { finish(await backupUnlock(envelope, pw)); }
+            catch (e) {
+              if (done) return;
+              say();
+              try { field.focus({ preventScroll: true }); } catch (x) {}
+            } finally { go.disabled = false; }
+          };
+          $("btnBackupPwCancel").addEventListener("click", () => finish(null));
+          go.addEventListener("click", open);
+          m.addEventListener("click", (e) => { if (e.target === m) finish(null); });
+          m.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); finish(null); }
+            else if (e.key === "Enter" && e.target === field) { e.preventDefault(); open(); }
+          });
+          field.addEventListener("input", () => { err.hidden = true; err.textContent = ""; });
+          m.classList.add("open");
+          try { field.focus({ preventScroll: true }); } catch (e) {}
+        });
+      }
+      /* The plain backup a file holds: backupRead's answer, a locked one opened through the password dialog first.
+         { cancelled: true } when the writer cancels it; null for anything that is not a backup */
+      async function backupReadAsking(text) {
+        const r = await backupRead(text);
+        if (!r || !r.locked) return r;
+        const plain = await backupPasswordAsk(r.envelope);
+        if (plain === null) return { cancelled: true };
+        const inner = await backupRead(plain);
+        return inner && !inner.locked ? inner : null;
+      }
+      /* The authorship record of the open book (signed in): its stamps (GET /api/authorship/stamps), newest first, and
+         where it went — the named readers of the linked shelf book's reading copies (the beta list and readers, as the
+         share section loads them), each open link counted, not named. Read-only; every string from the server is text */
+      function authorshipDialog() {
+        let m = $("modalAuthorship");
+        if (m) return m;
+        m = document.createElement("div");
+        m.className = "modal-back"; m.id = "modalAuthorship"; m.style.zIndex = "70";
+        m.innerHTML = '<div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="authH">' +
+          '<h2 id="authH"><i data-lucide="stamp"></i><span id="authTitle"></span></h2>' +
+          '<h3 class="field-lab" id="authStampsH"></h3><div class="beta-list" id="authStamps"></div>' +
+          '<h3 class="field-lab" id="authSharedH" style="margin-top:14px"></h3><div class="beta-list" id="authShared"></div>' +
+          '<div class="modal-actions"><button class="tb-btn" id="btnAuthClose" type="button"></button></div></div>';
+        document.body.appendChild(m);
+        $("btnAuthClose").addEventListener("click", authorshipRecordClose);
+        m.addEventListener("click", (e) => { if (e.target === m) authorshipRecordClose(); });
+        m.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); authorshipRecordClose(); } });
+        return m;
+      }
+      function authorshipRecordClose() {
+        const m = $("modalAuthorship");
+        if (m) m.classList.remove("open");
+      }
+      function authorshipKindLabel(kind) { return t(kind === "docx" ? "auth.kindDocx" : "auth.kindBackup"); }
+      async function authorshipRecordOpen() {
+        if (!cloud.user) return;
+        betaInjectStyles();
+        const m = authorshipDialog();
+        $("authTitle").textContent = t("auth.title", { title: String(state.meta.title || "").trim() || t("misc.untitledBook") });
+        $("authStampsH").textContent = t("auth.stamps");
+        $("authSharedH").textContent = t("auth.shared");
+        $("btnAuthClose").textContent = t("exp.close");
+        const stampsBox = $("authStamps"), sharedBox = $("authShared");
+        stampsBox.innerHTML = sharedBox.innerHTML = '<p class="shelf-empty">' + esc(t("beta.loading")) + "</p>";
+        m.classList.add("open");
+        icons();
+        try { $("btnAuthClose").focus({ preventScroll: true }); } catch (e) {}
+        const bookId = typeof state.meta.bookId === "string" ? state.meta.bookId : "";
+        const both = await Promise.all([
+          bookId ? apiFetch("/api/authorship/stamps?bookId=" + encodeURIComponent(bookId), {}) : Promise.resolve({ stamps: [] }),
+          betaLoadShares()
+        ]);
+        const st = both[0];
+        /* the closed copies' readers too: the record says where the story went, whatever the link's state now */
+        await Promise.all(beta.shares.filter((s) => s.status !== "active").map((s) => betaLoadReaders(s.id)));
+        if (st && Array.isArray(st.stamps)) {
+          const rows = st.stamps.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+          stampsBox.innerHTML = rows.length ? rows.map((s) =>
+            '<div class="arc-row" data-stamp-id="' + esc(s.id) + '"><div class="a-main"><div class="a-name">' + esc(authorshipKindLabel(s.kind)) + "</div>" +
+            '<div class="a-meta">' + esc(authorshipDate(s.createdAt)) + ' · <code class="auth-fp">' + esc(String(s.sha256 || "").slice(0, 12)) + "</code></div></div></div>").join("")
+            : '<p class="shelf-empty" data-auth-empty="stamps">' + esc(t("auth.noStamps")) + "</p>";
+        } else stampsBox.innerHTML = '<p class="cr-wait" role="alert">' + esc(t("beta.failed", { error: (st && st.__error) || "the server could not be reached" })) + "</p>";
+        const shares = beta.shares.slice();
+        const named = shares.reduce((n, s) => n + betaNamed(s.id).list.length, 0);
+        let h = "";
+        if (beta.error) h += '<p class="cr-wait" role="alert">' + esc(t("beta.failed", { error: beta.error })) + "</p>";
+        h += shares.map((s) => {
+          const readers = betaNamed(s.id).list;
+          return '<div class="arc-row beta-row" data-auth-share="' + esc(s.id) + '"><div class="a-main"><div class="a-name">' + esc(s.title) + "</div>" +
+            '<div class="a-meta" data-auth-open>' + esc(t("auth.openLink", { n: s.readerCount || 0 })) + "</div>" +
+            readers.map((x) => '<div class="a-meta" data-auth-reader="' + esc(x.id) + '"><b>' + esc(x.name) + "</b> · " +
+              esc(t("beta.added", { date: betaStampDate(x.createdAt) })) + " · " +
+              esc(x.firstOpenedAt ? t("auth.firstOpened", { date: authorshipDate(x.firstOpenedAt) }) : t("beta.notOpened")) + "</div>").join("") +
+            "</div></div>";
+        }).join("");
+        if (!named) h += '<p class="shelf-empty" data-auth-empty="shared">' + esc(t("auth.noShared")) + "</p>";
+        sharedBox.innerHTML = h;
+      }
       /* ==== /BEUK:authorship ==== */
-      function localApplyBackup(book) {
+      function localApplyBackup(book, read) {
         const snap = autoSnapshot("backup");
         const arrivingMeta = book.meta && typeof book.meta === "object" ? { bookId: book.meta.bookId, legacyBookIds: book.meta.legacyBookIds } : null; /* BEUK:bookid */
         applyBookDoc(JSON.parse(JSON.stringify(book)));
@@ -71118,23 +71352,31 @@
         /* BEUK:metaleak — a backup that names no id is not known to be the linked book (it no longer borrows the desk's id), so it too goes to the shelf as its own book rather than over the linked one. */
         if (cloud.linkedId && !bookIdsMatch(arrivingMeta || {}, localPrevBookMeta)) { cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; }
         noteBookEdited();
-        toast(t("local.backupOpened", { title: state.meta.title || t("misc.untitledBook") }), "hard-drive");
+        const opened = t("local.backupOpened", { title: state.meta.title || t("misc.untitledBook") });
+        /* BEUK:authorship — "Untouched since …", and "On Beuk's record since …" (asked after the book is on the desk) */
+        if (read && read.authorship) backupOpenedNote(read).then((note) => toast(opened + note, "hard-drive"), () => toast(opened, "hard-drive"));
+        else toast(opened, "hard-drive");
         if (typeof sampleSweepPreRename === "function") sampleSweepPreRename(); /* BEUK:sidebar */
       }
       let localPrevBookMeta = null; /* BEUK:bookid — the desk book's ids (own + legacy) when a backup was opened */
+      /* BEUK:authorship — a locked backup asks for its password first (Cancel: nothing happens); a backup changed after it
+         was saved asks before it opens (No: the desk stays as it is); then today's replace confirm. */
       function localOpenBackupFile(file) {
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = () => {
-          const book = localParseBackup(String(reader.result || ""));
-          if (!book) { toast(t("local.backupBad"), "alert-triangle"); return; }
+        reader.onload = async () => {
+          const read = await backupReadAsking(String(reader.result || ""));
+          if (read && read.cancelled) return;
+          if (!read) { toast(t("local.backupBad"), "alert-triangle"); return; }
+          if (read.intact === false && !(await cloudConfirm({ title: t("backup.changedTitle"), body: t("backup.changedBody"), yes: t("backup.changedYes"), no: t("confirm.keep") }))) return;
+          const book = read.book;
           localPrevBookMeta = { bookId: state.meta.bookId, legacyBookIds: state.meta.legacyBookIds };
-          if (isEmptyDesk() || deskIsUntouchedSample()) { localApplyBackup(book); return; }
+          if (isEmptyDesk() || deskIsUntouchedSample()) { localApplyBackup(book, read); return; }
           cloudConfirm({
             title: t("local.backupConfirmTitle"),
             body: t("local.backupConfirmBody", { title: state.meta.title || t("misc.untitledBook") }),
             yes: t("local.backupConfirmYes"), no: t("confirm.keep")
-          }).then((ok) => { if (ok) localApplyBackup(book); });
+          }).then((ok) => { if (ok) localApplyBackup(book, read); });
         };
         reader.onerror = () => toast(t("local.backupBad"), "alert-triangle");
         reader.readAsText(file);
@@ -71202,13 +71444,15 @@
       function renderLocalPop() {
         const d = $("localPopDetail"); if (d) d.textContent = localDetailText();
         const h = $("localPopTitle"); if (h) h.textContent = localStatusText().full;
+        const rec = $("btnAuthorshipRecord"); if (rec) rec.hidden = !cloud.user; /* BEUK:authorship — signed in only */
       }
       function toggleLocalPop(open) {
         const pop = $("localPop"); if (!pop) return;
         const want = open === undefined ? pop.hidden : open;
         pop.hidden = !want;
         $("localPillBtn").setAttribute("aria-expanded", want ? "true" : "false");
-        if (want) { renderLocalPop(); icons(); }
+        if (want) { lockFieldsRender(); renderLocalPop(); icons(); }
+        else { lockFieldsClear("backup"); lockFieldsSay("backup", ""); } /* BEUK:lockcopy — a closed popover keeps no password */
       }
       function localOnLangChange() { renderLocalPill(); }
       /* Offline fonts: hand the worker the self-hosted font stylesheet
@@ -71240,8 +71484,10 @@
         const btn = $("localPillBtn");
         if (btn) btn.addEventListener("click", (e) => { e.stopPropagation(); toggleLocalPop(); });
         const inline = $("btnLocalBackupInline");
-        if (inline) inline.addEventListener("click", (e) => { e.stopPropagation(); localExportBackup(); });
-        const exp = $("btnLocalBackup"); if (exp) exp.addEventListener("click", () => { localExportBackup(); toggleLocalPop(false); });
+        if (inline) inline.addEventListener("click", (e) => { e.stopPropagation(); localExportBackup(true); });
+        const exp = $("btnLocalBackup"); if (exp) exp.addEventListener("click", () => { if (localExportBackup()) toggleLocalPop(false); });
+        lockFieldsWire("backup"); /* BEUK:authorship */
+        const rec = $("btnAuthorshipRecord"); if (rec) rec.addEventListener("click", () => { toggleLocalPop(false); authorshipRecordOpen(); });
         const open = $("btnLocalOpenBackup"), inp = $("localBackupInput");
         if (open && inp) {
           open.addEventListener("click", () => { toggleLocalPop(false); inp.value = ""; inp.click(); });

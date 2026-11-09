@@ -16,6 +16,7 @@ import { loadPack } from '../src/i18n/strings';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { buildSample } from '../src/sample/sample';
 import { fixtures } from './fixtures';
+import { backupClicked } from './backup-wait';
 
 /* Wave 1c, task 2: Story Insights (C4) and Names on stage (C5).
    1.0 self-checks re-expressed: insights.frequency, insights.rhythm-cadence,
@@ -413,7 +414,7 @@ describe('Story Insights in the studio', () => {
     vi.spyOn(URL, 'createObjectURL').mockImplementation((b) => ((blob = b as Blob), 'blob:x'));
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
-    fireEvent.click(document.getElementById('btnLocalBackup')!);
+    await backupClicked(() => fireEvent.click(document.getElementById('btnLocalBackup')!));
     const out = JSON.parse(await (blob as unknown as Blob).text()) as { book: Rec };
     expect(JSON.stringify(out.book)).toBe(before);
   });

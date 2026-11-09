@@ -15,6 +15,7 @@ import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { ZEN_MEDIA } from '../vite.config';
 import { envRun } from '../src/environment/page';
+import { backupClicked } from './backup-wait';
 
 /* Wave 3a, tasks 2 and 3: Zen (A11), Read Aloud (A10) and dictation with the language bar (A9), run as 1.0's own code
    in the studio (jsdom), the speech APIs stubbed (1.0's own seams: window.speechSynthesis / SpeechSynthesisUtterance,
@@ -89,7 +90,7 @@ async function exported(): Promise<Rec> {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined),
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined),
   ];
-  fireEvent.click($('btnLocalBackup'));
+  await backupClicked(() => fireEvent.click($('btnLocalBackup')));
   await waitFor(() => expect(blob).not.toBeNull());
   sp.forEach((s) => s.mockRestore());
   return (JSON.parse(await blob!.text()) as Rec).book as Rec;
