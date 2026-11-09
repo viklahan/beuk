@@ -3,7 +3,7 @@ import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
-import { closureShare, cloudFacts, fmtDateIntl, loadClosure, resetCloudFacts, setClosureLang, setClosureT, type Closure, type State } from '../src/closure/index';
+import { closureShare, cloudFacts, fmtDateIntl, loadClosure, resetCloudFacts, setClosureLang, setClosureT, structEnv, styleEnv, type Closure, type State } from '../src/closure/index';
 import { createOracle } from '../src/generated/closure-oracle.js';
 import { arriveForExport } from '../src/export/state';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
@@ -14,7 +14,7 @@ import { fixtures } from './fixtures';
    into the test oracle (studio/scripts/extract-closure.mjs ORACLE_ROOTS, src/generated/closure-oracle.js); everything
    they reach of 1.0 is the main closure's own (the lock box, the backup's text, the reader, the password dialog, the
    opened note), and what they reach outside 1.0's code is handed in here: the book (serializeBook), its download, the
-   toast, the calm confirm and the arrival on the desk (applyBookDoc). Running 1.0's whole page in jsdom is not done:
+   calm confirm and the arrival on the desk (applyBookDoc); the toast is the main closure's (structEnv.toast, caught). Running 1.0's whole page in jsdom is not done:
    the root has no jsdom (only studio/ installs it), and 1.0's boot (service worker, IndexedDB restore, fonts, the
    73 000-line script) is far past what these six behaviours need. */
 
@@ -72,9 +72,7 @@ function open1(deskDoc: Rec): Page {
     serializeBook: () => structuredClone({ meta: state.meta, sections: state.sections }),
     downloadBlob: (blob: Blob, name: string) => void p.downloads.push({ blob, name }),
     samplePicsHold: () => false,
-    toast: (msg: string) => void p.toasts.push(msg),
     cloudConfirm: (o: Rec) => (p.confirms.push(o), Promise.resolve(p.answers.shift() ?? false)),
-    FileReader: globalThis.FileReader,
     applyBookDoc: (doc: Rec) => {
       p.applied.push(doc);
       state.meta = doc.meta as State['meta'];
@@ -82,11 +80,14 @@ function open1(deskDoc: Rec): Page {
       return true;
     },
     autoSnapshot: () => null,
-    noteBookEdited: () => undefined,
     renderSampleButton: () => undefined,
     deskIsUntouchedSample: () => false,
     authorshipRecordOpen: () => undefined,
   });
+  structEnv.toast = (msg: string) => void p.toasts.push(msg); // the main closure's toast (the oracle's handlers share it)
+  // the main closure's FileReader runs its callbacks in the Style tab's session (2.0's); on 1.0's page they run as they
+  // are — as here, where no Style session exists
+  styleEnv.run = (fn) => fn();
   p.o.localBackupWire!();
   return p;
 }
@@ -104,7 +105,11 @@ function pick(text: string) {
 }
 
 beforeEach(() => resetCloudFacts()); // signed out: no stamp, no check
+const toast0 = structEnv.toast;
+const styleRun0 = styleEnv.run;
 afterEach(() => {
+  structEnv.toast = toast0;
+  styleEnv.run = styleRun0;
   document.getElementById('modalBackupPw')?.remove();
   document.body.innerHTML = '';
   document.documentElement.removeAttribute('data-plan-access');

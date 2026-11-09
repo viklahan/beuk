@@ -288,10 +288,11 @@ export const ORACLE_SUPPLIED = ['$', 'activeSection', 'editorViewSnapshot', 'edi
   // wave 2c: sectionAction's other branches (the row menu, delete), never taken by the eye test
   'chopOpenMenu', 'chopDelete',
   // final fix I3: what 1.0's save-popover glue reaches outside it — the book and its download, the sample's hold, the
-  // toast and the calm confirm, the file reader, the arrival of a book on the desk (and what 1.0 does around it), the
-  // record dialog's opener, the sample's sweep after a backup opened (none here: 1.0 asks typeof first)
-  'serializeBook', 'downloadBlob', 'samplePicsHold', 'toast', 'cloudConfirm', 'FileReader', 'applyBookDoc', 'autoSnapshot',
-  'noteBookEdited', 'renderSampleButton', 'deskIsUntouchedSample', 'authorshipRecordOpen', 'sampleSweepPreRename'];
+  // calm confirm, the arrival of a book on the desk (and what 1.0 does around it), the record dialog's opener, the
+  // sample's sweep after a backup opened (none here: 1.0 asks typeof first). Not toast, noteBookEdited or FileReader:
+  // the other handlers here use them too, and take them from the main closure (the tests set structEnv.toast)
+  'serializeBook', 'downloadBlob', 'samplePicsHold', 'cloudConfirm', 'applyBookDoc', 'autoSnapshot',
+  'renderSampleButton', 'deskIsUntouchedSample', 'authorshipRecordOpen', 'sampleSweepPreRename'];
 /** 1.0's top-level lets the oracle's handlers assign (openScenePicker sets scenePending, selectLibImage imgSelId) and the
  *  main closure also holds (imglibRemove clears them): the oracle declares its OWN copy, so its handlers' writes stay its
  *  own (a shared name is read-only there). */
