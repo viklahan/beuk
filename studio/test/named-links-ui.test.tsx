@@ -12,7 +12,7 @@ import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { styleReset } from '../src/style/session';
 import { exportReset } from '../src/export/state';
-import { cloudReset } from '../src/cloud/cloud';
+import { cloudIfLoaded, cloudReset } from '../src/cloud/cloud';
 import { resetCloudProbe } from '../src/pictures/stock';
 import { exportBook } from '../../src/book/editor/index';
 import { fixtures } from './fixtures';
@@ -136,6 +136,12 @@ async function addReader(sid: string, name: string, days?: string) {
   if (days) await choose(`betaReaderExpiry-${sid}`, days);
   await click($('betaSec').querySelector(`[data-beta-reader-add="${sid}"]`));
 }
+/** 1.0's calm confirm (2.0's useConfirm, the one Revoke uses): answered yes or no. */
+async function answer(yes: boolean) {
+  await waitFor(() => expect(isOpen('modalConfirm')).toBe(true));
+  await click($(yes ? 'btnConfirmYes' : 'btnConfirmNo'));
+  await waitFor(() => expect(isOpen('modalConfirm')).toBe(false));
+}
 const readerTokens = () => JSON.parse(localStorage.getItem('beuk.betaReaderTokens.v1') || '{}') as Record<string, string>;
 const alertIn = (sid: string) => $(`betaReaders-${sid}`).querySelector('[role="alert"]');
 /** Close the export modal and open it again: the list comes from the server afresh. */
@@ -218,7 +224,21 @@ describe('named reading links in the share section (1.0, BEUK:named-links)', () 
     await waitFor(() => expect(readerRows(shareId).length).toBe(1), { timeout: 20_000 });
     const rid = readerRow(shareId, 'Priya').getAttribute('data-recipient-id')!;
     const n = net.requests.length;
+    // it asks first, as Revoke does; Keep leaves everything as it was and asks nothing of the server
     await click($('betaSec').querySelector(`[data-beta-reader-close="${shareId}:${rid}"]`));
+    await waitFor(() => expect(isOpen('modalConfirm')).toBe(true));
+    expect($('confirmTitle').textContent).toBe(t('beta.closeForTitle', { name: 'Priya' }));
+    expect($('confirmBody').textContent).toBe(t('beta.closeForBody', { name: 'Priya' }));
+    expect($('btnConfirmYes').textContent).toBe("Close Priya's link");
+    expect($('btnConfirmNo').textContent).toBe(t('confirm.keep'));
+    await answer(false);
+    await new Promise((r) => setTimeout(r, 300));
+    expect(net.requests.slice(n).filter((r) => r.method !== 'GET')).toEqual([]);
+    expect(readerRow(shareId, 'Priya').querySelector('.beta-st')!.textContent).toBe(t('beta.stActive'));
+    expect(readerRow(shareId, 'Priya').querySelector('[data-beta-reader-copy]')).not.toBe(null);
+    // asked again and confirmed: the one POST
+    await click($('betaSec').querySelector(`[data-beta-reader-close="${shareId}:${rid}"]`));
+    await answer(true);
     await waitFor(() => expect(readerRow(shareId, 'Priya').querySelector('.beta-st')!.textContent).toBe(t('beta.stRevoked')), { timeout: 20_000 });
     expect(net.requests.slice(n).filter((r) => r.method === 'POST').map((r) => r.path)).toEqual([`/api/shares/${shareId}/readers/${rid}/revoke`]);
     expect(readerRow(shareId, 'Priya').querySelector('[data-beta-reader-copy]')).toBe(null);
@@ -258,9 +278,23 @@ describe('named reading links in the share section (1.0, BEUK:named-links)', () 
     await waitFor(() => expect(shareRow(shareId).querySelector(`[data-beta-close-open="${shareId}"]`)).not.toBe(null), { timeout: 20_000 });
     const n = net.requests.length;
     await click(shareRow(shareId).querySelector(`[data-beta-close-open="${shareId}"]`));
+    await waitFor(() => expect(isOpen('modalConfirm')).toBe(true));
+    expect($('confirmTitle').textContent).toBe(t('beta.closeOpenTitle'));
+    expect($('confirmBody').textContent).toBe(t('beta.closeOpenBody'));
+    expect($('btnConfirmYes').textContent).toBe(t('beta.closeOpen'));
+    await answer(false);
+    await new Promise((r) => setTimeout(r, 300));
+    expect(net.requests.slice(n).filter((r) => r.method !== 'GET')).toEqual([]);
+    expect(shareRow(shareId).textContent).not.toContain(t('beta.openClosed'));
+    expect($('betaNewLink')).not.toBe(null);
+    expect(shareBtns(shareId).querySelector('[data-beta-copy]')).not.toBe(null);
+    await click(shareRow(shareId).querySelector(`[data-beta-close-open="${shareId}"]`));
+    await answer(true);
     await waitFor(() => expect(shareRow(shareId).textContent).toContain(t('beta.openClosed')), { timeout: 20_000 });
     expect(net.requests.slice(n).filter((r) => r.method === 'POST').map((r) => r.path)).toEqual([`/api/shares/${shareId}/close-open`]);
-    expect(shareBtns(shareId).querySelector('[data-beta-copy]')).toBe(null);
+    // nowhere in the section: not the row's Copy, nor the new-link box's (the link just made is the closed one)
+    expect($('betaSec').querySelector('[data-beta-copy]')).toBe(null);
+    expect($('betaNewLink')).toBe(null);
     expect(shareRow(shareId).querySelector('[data-beta-close-open]')).toBe(null);
     expect(shareRow(shareId).textContent).not.toContain(t('beta.linkElsewhere'));
     // the reader's link still copies; the open token is closed on the server
@@ -272,7 +306,29 @@ describe('named reading links in the share section (1.0, BEUK:named-links)', () 
     // after a reload it still says so
     await reopen();
     await waitFor(() => expect(shareRow(shareId)?.textContent).toContain(t('beta.openClosed')), { timeout: 20_000 });
-    expect(shareBtns(shareId).querySelector('[data-beta-copy]')).toBe(null);
+    expect($('betaSec').querySelector('[data-beta-copy]')).toBe(null);
+  }, 90_000);
+
+  it("a readers list that fails to load says so (no Loading… beside it), and a later load clears it", async () => {
+    const { shareId } = await ready();
+    const real = globalThis.fetch;
+    let fail = true;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const u = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (fail && /\/api\/shares\/[^/]+\/readers$/.test(u) && (!init || !init.method || init.method === 'GET'))
+        return new Response(JSON.stringify({ error: 'the readers list broke' }), { status: 500, headers: { 'content-type': 'application/json' } });
+      return real(input, init);
+    }) as typeof fetch;
+    // this copy's readers never loaded yet (1.0's state as a fresh page holds it)
+    delete (cloudIfLoaded()!.api.beta as { named: Record<string, unknown> }).named[shareId];
+    await reopen();
+    await openReaders(shareId);
+    await waitFor(() => expect(alertIn(shareId)?.textContent).toBe(t('beta.failed', { error: 'the readers list broke' })), { timeout: 20_000 });
+    expect($(`betaReaders-${shareId}`).textContent).not.toContain(t('beta.loading'));
+    fail = false;
+    await reopen();
+    await waitFor(() => expect(alertIn(shareId)).toBe(null), { timeout: 20_000 });
+    globalThis.fetch = real;
   }, 90_000);
 
   it('a hostile name renders as text in the row', async () => {
@@ -321,6 +377,7 @@ describe('named reading links in the share section (1.0, BEUK:named-links)', () 
       // closing still works on day 22
       const rid = readerRow(shareId, 'Priya').getAttribute('data-recipient-id')!;
       await click($('betaSec').querySelector(`[data-beta-reader-close="${shareId}:${rid}"]`));
+      await answer(true);
       await waitFor(() => expect(readerRow(shareId, 'Priya').querySelector('.beta-st')!.textContent).toBe(t('beta.stRevoked')), { timeout: 20_000 });
     }, 120_000);
   });
