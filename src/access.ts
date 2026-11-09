@@ -24,14 +24,18 @@ import { entitlementsFor, loadEntitlements, type EntitlementsLoad, type Entitlem
  * Open after day 21 unpaid: writing, typesetting, preview, the backup
  * file, Word (.docx), Markdown, books already on the shelf (they keep
  * saving: on some browsers the device copy can be cleared, and the shelf
- * copy is then the only one), archive downloads, existing beta links, and
- * Download all my data.
+ * copy is then the only one), archive downloads, existing beta links,
+ * Download all my data, and the authorship record (seeing your stamps,
+ * GET /api/authorship/stamps, and checking a backup against them,
+ * GET /api/authorship/check).
  *
  * Locked after day 21 unpaid (PAUSABLE_FEATURES): the store-ready EPUB,
  * the print PDF, the cover wrap, adding new books to the shelf, new beta
  * links (and refreshing an existing link's copy), server EPUBCheck checks,
- * the server-made print-ready PDF (the pdfx job, export.print), and saving
- * new files to the archive. export.epub is the server-built store-ready
+ * the server-made print-ready PDF (the pdfx job, export.print), saving
+ * new files to the archive, and new authorship stamps (POST
+ * /api/authorship/stamps, authorship.stamp: the export itself still
+ * happens, only the stamp is skipped). export.epub is the server-built store-ready
  * EPUB (POST /api/epub, Step 3 part 3); export.wrap is the server-built
  * cover wrap (POST /api/wrap, part 4).
  */
@@ -77,6 +81,7 @@ export const PAUSABLE_FEATURES = {
   'export.epub': 'store-ready EPUB files',
   'export.print': 'print-ready PDFs',
   'export.wrap': 'cover wraps',
+  'authorship.stamp': 'new authorship stamps',
 } as const;
 export type PausableFeature = keyof typeof PAUSABLE_FEATURES;
 
@@ -91,6 +96,7 @@ export const ACCESS_RULES: ReadonlyArray<{ method: 'POST'; path: string; feature
   { method: 'POST', path: '/api/epub', feature: 'export.epub' },
   { method: 'POST', path: '/api/wrap', feature: 'export.wrap' },
   { method: 'POST', path: '/api/exports', feature: 'archive.upload' },
+  { method: 'POST', path: '/api/authorship/stamps', feature: 'authorship.stamp' },
 ];
 
 /** Never paused, whatever the plan (tested route by route). */
@@ -118,6 +124,8 @@ export const NEVER_PAUSED: ReadonlyArray<{ method: string; path: string; why: st
   { method: 'POST', path: '/read/:token/comments', why: 'readers keep commenting on an existing link' },
   { method: 'GET', path: '/api/account/export', why: 'Download all my data' },
   { method: 'POST', path: '/api/account/delete', why: 'delete the account' },
+  { method: 'GET', path: '/api/authorship/stamps', why: 'see your authorship record' },
+  { method: 'GET', path: '/api/authorship/check', why: 'check a backup against your record' },
 ];
 
 const DAY_MS = 86_400_000;

@@ -3288,6 +3288,27 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The manuscript export, Mammoth.js and the Word import all run in the studio; the server never sees the file.',
   },
+  /* ---- The authorship record (migration 024) ---- */
+  {
+    id: 'authorship.schema.table-present',
+    title: 'Authorship record: the authorship_stamps table exists and holds fingerprints only (no column for book text)',
+    kind: 'server',
+    run: async ({ db }) => {
+      const r = await db.query<{ column_name: string }>(
+        `select column_name from information_schema.columns
+         where table_schema = 'public' and table_name = 'authorship_stamps' order by column_name`,
+      );
+      const cols = r.rows.map((x) => x.column_name);
+      assert(cols.length > 0, 'the authorship_stamps table is missing (migration 024 not applied?)');
+      const expected = ['book_id', 'created_at', 'id', 'kind', 'sha256', 'title', 'user_id'];
+      assert(cols.join(',') === expected.join(','), `authorship_stamps columns are ${cols.join(', ')}, expected ${expected.join(', ')}`);
+      const bad = await db.query<{ n: string | number }>(
+        `select count(*) as n from authorship_stamps where sha256 !~ '^[0-9a-f]{64}$'`,
+      );
+      assert(Number(bad.rows[0].n) === 0, `${bad.rows[0].n} authorship stamp(s) hold a fingerprint that is not 64 lowercase hex`);
+      return `authorship_stamps present (${expected.join(', ')}); every stored fingerprint is 64 lowercase hex`;
+    },
+  },
   /* ---- Beta-reader share links ---- */
   {
     id: 'shares.schema.tables-present',

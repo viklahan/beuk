@@ -16,7 +16,7 @@ import { ZIP_LIMIT_BYTES, ZipWriter } from './zip.js';
  * to users): sessions, password_resets, email_confirmations,
  * manuscripts, series_covenants, user_themes, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
  * streak_days, streak_freezes, streak_state, shares (+ share_recipients,
- * share_comments, share_readers), school_progress, billing_subscriptions. billing_events keep their
+ * share_comments, share_readers), school_progress, authorship_stamps, billing_subscriptions. billing_events keep their
  * Stripe event id (the webhook dedupe ledger) with user_id set null.
  *
  * NOT linked to an account in the database, so not part of either:
@@ -43,6 +43,7 @@ export const ACCOUNT_DELETED_TABLES = [
   'streak_state',
   'school_progress',
   'shares',
+  'authorship_stamps',
   'billing_subscriptions',
 ] as const;
 /** Rows kept with user_id set null, and why. */
@@ -329,6 +330,10 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
     `                        freeze balance.`,
     `jobs.json               Server checks you ran (EPUBCheck, PDF/X) and their results.`,
     `school.json             The Beuk School lessons you marked done, and when.`,
+    `authorship.json         Your authorship record (${c.authorship_stamps ?? 0}): for each backup or Word`,
+    `                        file that left the studio while you were signed in, the book's id`,
+    `                        and title, the kind of file, when, and its SHA-256 fingerprint.`,
+    `                        Never the book's text.`,
     '',
     'What is not inside',
     '------------------',
@@ -362,7 +367,7 @@ export async function writeAccountExport(
   zip: ZipWriter,
   account: Record<string, unknown>,
 ): Promise<{ counts: Record<string, number>; missingFiles: number }> {
-  const counts: Record<string, number> = { manuscripts: 0, unopenable: 0, series_covenants: 0, user_themes: 0, exports: 0, shares: 0, comments: 0 };
+  const counts: Record<string, number> = { manuscripts: 0, unopenable: 0, series_covenants: 0, user_themes: 0, exports: 0, shares: 0, comments: 0, authorship_stamps: 0 };
 
   // Manuscripts, one at a time (a book can be large).
   const ids = await db.query<{ id: string }>('select id from manuscripts where user_id = $1 order by created_at', [userId]);
@@ -633,6 +638,31 @@ export async function writeAccountExport(
     { compress: true },
   );
 
+  // The authorship record (migration 024): fingerprints only, never book text.
+  const stamps = await db.query<{ id: string; book_id: string; title: string; sha256: string; kind: string; created_at: string }>(
+    'select id, book_id, title, sha256, kind, created_at from authorship_stamps where user_id = $1 order by created_at, id',
+    [userId],
+  );
+  await zip.add(
+    'authorship.json',
+    JSON.stringify(
+      {
+        stamps: stamps.rows.map((s) => ({
+          id: s.id,
+          bookId: s.book_id,
+          title: s.title,
+          sha256: s.sha256,
+          kind: s.kind,
+          createdAt: iso(s.created_at),
+        })),
+      },
+      null,
+      2,
+    ),
+    { compress: true },
+  );
+  counts.authorship_stamps = stamps.rows.length;
+
   await zip.add('account.json', JSON.stringify({ ...account, books, counts }, null, 2), { compress: true });
   return { counts, missingFiles };
 }
@@ -693,6 +723,7 @@ export async function deleteAccount(
     await del('streak_freezes', 'delete from streak_freezes where user_id = $1', [userId]);
     await del('streak_state', 'delete from streak_state where user_id = $1', [userId]);
     await del('school_progress', 'delete from school_progress where user_id = $1', [userId]);
+    await del('authorship_stamps', 'delete from authorship_stamps where user_id = $1', [userId]);
     await del('password_resets', 'delete from password_resets where user_id = $1', [userId]);
     await del('email_confirmations', 'delete from email_confirmations where user_id = $1', [userId]);
     const subs = await tx.query<{ stripe_subscription_id: string }>(

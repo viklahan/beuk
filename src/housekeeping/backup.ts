@@ -26,7 +26,8 @@ import { scrubText } from './scrub.js';
  *  jobs after exports (source/artifact export ids), shares after
  *  manuscripts, share_recipients after shares, share_comments after
  *  share_recipients (recipient_id), share_readers after shares;
- *  user_theme_pictures after user_themes and pictures.
+ *  user_theme_pictures after user_themes and pictures; authorship_stamps
+ *  (migration 024) only references users, so it follows users.
  *  billing_subscriptions / billing_events (migration 012) only reference
  *  users. They are backed up, not excluded: billing_subscriptions holds
  *  the grace clock (status_since) and the user attribution that access
@@ -38,6 +39,7 @@ import { scrubText } from './scrub.js';
  *  the event body (src/billing-sync.ts). */
 export const BACKUP_TABLES = [
   'users',
+  'authorship_stamps',
   'manuscripts',
   'series_covenants',
   'user_themes',

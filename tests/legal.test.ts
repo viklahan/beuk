@@ -91,6 +91,9 @@ test('legal: /privacy and /terms serve 200 HTML that covers every inventory cate
       "doesn't use the <code>beuk_reader</code> count", // named opens are not in the reader-count cookie (as rendered)
       'shown on every page of your copy',
       'updated at most once an hour',
+      // the authorship record (2026-11-09): what a stamp holds, and the locked backup's password
+      'fingerprint',
+      'never leaves your device',
       'Help search',
       'first 200 characters',
       'Founders',

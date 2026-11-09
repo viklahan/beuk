@@ -54,6 +54,12 @@ When you share a reading copy, the server stores a frozen copy of the book for i
 
 **Anyone who has the open link can read the book and every comment left through it, including the names readers gave. A named link shows only its own comments.** The writer chooses who gets each link, can close any link at any time, and can delete comments. Reading pages load no outside fonts or scripts.
 
+## Your authorship record
+
+When you're signed in and export a backup or download a Word file, Beuk keeps a small stamp: a dated note of exactly which version of the book left the studio, and when. A stamp holds a fingerprint of the book (a SHA-256, a short code worked out from the text), the book's title, the kind of file and the time. It never holds the book's text, and the text can't be worked back out of the fingerprint. Beuk shows your stamps only to you. They go with your account when you delete it, and they're in Download all my data.
+
+If you lock a backup with a password, the locking happens in your browser. The password never leaves your device: it isn't sent to Beuk or stored anywhere, and Beuk can't open the file without it.
+
 ## The help pages and the Founders' Shelf
 
 - **Help search** keeps the first 200 characters of what was searched, the number of results and which result was opened, so the guides can get better. It stores no account, no IP address, nothing about who searched.

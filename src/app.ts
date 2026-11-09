@@ -28,6 +28,7 @@ import { pictureRoutes } from './routes/pictures.js';
 import { publicConfigRoutes, statusRoutes } from './routes/public.js';
 import { resetPageRoutes } from './routes/reset-page.js';
 import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
+import { authorshipRoutes } from './routes/authorship.js';
 import { stockRoutes } from './routes/stock.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
@@ -214,6 +215,8 @@ export function buildApp({
 
   // Beta-reader share links: owner surface (signed in).
   app.use('/api/shares', shareOwnerRoutes(db, now));
+  // The authorship record: fingerprint-only stamps (signed in, owner-only).
+  app.use('/api/authorship', authorshipRoutes(db, now));
 
   app.use('/api/account', portal.api);
 
