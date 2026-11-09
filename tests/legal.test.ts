@@ -84,7 +84,11 @@ test('legal: /privacy and /terms serve 200 HTML that covers every inventory cate
       'Password resets',
       'beuk_reader', // reader-count cookie
       'hash of their IP address', // comment ip_hash
-      'Anyone who has the link can read the book and every comment',
+      // named reading links (2026-11-08): the open link's reach, a named link's name stamp and opened dates
+      'Anyone who has the open link can read the book and every comment left through it',
+      'A named link shows only its own comments',
+      'shown on every page of your copy',
+      'updated at most once an hour',
       'Help search',
       'first 200 characters',
       'Founders',

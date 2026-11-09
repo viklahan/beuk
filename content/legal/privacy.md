@@ -48,8 +48,11 @@ When you share a reading copy, the server stores a frozen copy of the book for i
 - **Their name**, if they give one. The writer can require it.
 - **A one-way hash of their IP address combined with the link**, kept with each comment only to deal with abuse. It isn't shown to anyone. Because IP addresses are few enough to try one by one, this is abuse control, not anonymity.
 - **A cookie** called `beuk_reader`, a random value that lasts a year and only works on reading pages. Beuk uses it to count how many different browsers opened a copy. It's stored hashed.
+- **A named link, if the writer made one for you.** The writer types your name when they make it, and it's shown on every page of your copy, together with the date the link was made. That way the writer can tell whose copy a page came from if it's ever passed on. Comments sent from a named link carry that name.
+- **When a named link was first and last opened.** Beuk records the date and time the link was first opened, and when it was last opened (updated at most once an hour). The writer who shared it can see these. Beuk records nothing else about your reading, such as pages, time spent or your IP address. Opening a named link doesn't use the `beuk_reader` count.
+- **On a named link you see only your own comments,** not other readers' names or comments.
 
-**Anyone who has the link can read the book and every comment on it, including the names readers gave.** The writer chooses who gets the link, can close it at any time, and can delete comments. Reading pages load no outside fonts or scripts.
+**Anyone who has the open link can read the book and every comment left through it, including the names readers gave. A named link shows only its own comments.** The writer chooses who gets each link, can close any link at any time, and can delete comments. Reading pages load no outside fonts or scripts.
 
 ## The help pages and the Founders' Shelf
 
