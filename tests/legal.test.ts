@@ -94,6 +94,11 @@ test('legal: /privacy and /terms serve 200 HTML that covers every inventory cate
       // the authorship record (2026-11-09): what a stamp holds, and the locked backup's password
       'fingerprint',
       'never leaves your device',
+      // final fix M5: a stamp's every field named, the fingerprint is of the book, and stamps in the backups and retention lists
+      "the book's internal id",
+      'worked out from the book',
+      'authorship stamps, share copies and comments',
+      'Account, books, exports, authorship stamps,',
       'Help search',
       'first 200 characters',
       'Founders',

@@ -56,7 +56,7 @@ When you share a reading copy, the server stores a frozen copy of the book for i
 
 ## Your authorship record
 
-When you're signed in and export a backup or download a Word file, Beuk keeps a small stamp: a dated note of exactly which version of the book left the studio, and when. A stamp holds a fingerprint of the book (a SHA-256, a short code worked out from the text), the book's title, the kind of file and the time. It never holds the book's text, and the text can't be worked back out of the fingerprint. Beuk shows your stamps only to you. They go with your account when you delete it, and they're in Download all my data.
+When you're signed in and export a backup or download a Word file, Beuk keeps a small stamp: a dated note of exactly which version of the book left the studio, and when. A stamp holds a fingerprint of the book (a SHA-256, a short code worked out from the book), the book's title, the book's internal id, the kind of file and the time. It never holds the book's text, and the text can't be worked back out of the fingerprint. Beuk shows your stamps only to you. They go with your account when you delete it, and they're in Download all my data.
 
 If you lock a backup with a password, the locking happens in your browser. The password never leaves your device: it isn't sent to Beuk or stored anywhere, and Beuk can't open the file without it.
 
@@ -80,7 +80,7 @@ The server makes a backup of its data every {{backuphours}} hours, so a broken d
 [[if noschedule]]
 The operator makes backups of the server's data by hand, so a broken disk doesn't lose your books.
 [[end]]
-A backup includes accounts (with password hashes), books, exports, share copies and comments, and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
+A backup includes accounts (with password hashes), books, exports, authorship stamps, share copies and comments, and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
 [[if offsite]]
 An encrypted copy of each backup also goes to a private storage bucket with Backblaze B2. It's encrypted before it leaves the server, and only the operator holds the key. Copies are kept on a rolling schedule: one a day for {{keepdaily}} days, one a week for {{keepweekly}} weeks, and one a month for {{keepmonthly}} months. So a deleted item can survive in these copies for up to about {{keepmonthly}} months.
 [[end]]
@@ -111,7 +111,7 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 
 ## How long things are kept
 
-- **Account, books, exports, streak, checks, reading copies and comments:** until you delete them, or until the account is deleted.
+- **Account, books, exports, authorship stamps, streak, checks, reading copies and comments:** until you delete them, or until the account is deleted.
 - **Sign-in sessions:** up to {{sessiondays}} days. Expired ones are cleared automatically.
 - **Password-reset links:** expire after 60 minutes, and are cleared the next time anyone asks for a reset.
 - **Server error logs:** rotated by size (at most 3 × 10 MB per container), with no time limit.
