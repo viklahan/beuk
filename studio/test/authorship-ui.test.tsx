@@ -418,7 +418,7 @@ describe('locked backups and the authorship record: the studio (task 3)', { time
     answerCheck();
     const want =
       t('local.backupOpened', { title: (kit.meta as Rec).title }) +
-      ' ' + t('backup.untouched', { date: fmtDateIntl(new Date(a.savedAt)) }) +
+      '. ' + t('backup.untouched', { date: fmtDateIntl(new Date(a.savedAt)) }) + // final fix M1: joined with ". "
       ' ' + t('backup.onRecord', { date: fmtDateIntl(new Date(first)) });
     await waitFor(() => expect(toasts()).toContain(want), { timeout: 30_000 });
     const checks = net.calls.filter((x) => x.url.startsWith('/api/authorship/check'));

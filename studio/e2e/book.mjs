@@ -9633,7 +9633,7 @@ async function authorshipMain(srv) {
     await page.waitForSelector('#modalConfirm', { timeout: 30_000 });
     const t3 = await page.$eval('#confirmTitle', (x) => x.textContent);
     await page.click('#modalConfirm #btnConfirmYes');
-    const wantToast = `Backup opened — “${title}” Untouched since ${auDate(a.savedAt)}. On Beuk's record since ${first ? auDate(first) : '?'}.`;
+    const wantToast = `Backup opened — “${title}”. Untouched since ${auDate(a.savedAt)}. On Beuk's record since ${first ? auDate(first) : '?'}.`;
     // (the fixture's own "Backup opened" toast, from the first open, may still stand: wait for this open's words)
     const got3 = await auToast(page, /Untouched since/).catch(async () => 'none of ' + JSON.stringify(await page.$$eval('#toasts .toast span', (xs) => xs.map((x) => x.textContent))));
     check(t3 === AU_EN.replaceTitle && got3 === wantToast, `authorship: opened again (after "${t3}"), the toast reads "${got3}"${got3 === wantToast ? '' : ' — want "' + wantToast + '"'}`);

@@ -71216,17 +71216,18 @@
         return typeof v === "string" && v && !isNaN(d.getTime()) ? betaFmtDate(v) : "";
       }
       /* What the "opened" toast adds for a backup read by backupRead: "Untouched since …" when its fingerprint matches,
-         and, signed in, "On Beuk's record since …" when Beuk holds that fingerprint. Nothing for an older backup (no
-         claim either way), nor for a changed one (its recorded fingerprint is no longer this text's) */
+         and, signed in, "On Beuk's record since …" when Beuk holds that fingerprint — joined to the toast with ". ", so
+         it reads `Backup opened — “X”. Untouched since …`. Nothing for an older backup (no claim either way), nor for a
+         changed one (its recorded fingerprint is no longer this text's) */
       async function backupOpenedNote(read) {
         const a = read && read.authorship;
         if (!a || read.intact !== true) return "";
-        let s = "";
+        const parts = [];
         const saved = authorshipDate(a.savedAt);
-        if (saved) s += " " + t("backup.untouched", { date: saved });
+        if (saved) parts.push(t("backup.untouched", { date: saved }));
         const rec = authorshipDate(await authorshipCheck(a.sha256));
-        if (rec) s += " " + t("backup.onRecord", { date: rec });
-        return s;
+        if (rec) parts.push(t("backup.onRecord", { date: rec }));
+        return parts.length ? ". " + parts.join(" ") : "";
       }
       /* The password dialog for a locked backup: the plain backup text once a password opens it, null on Cancel. A wrong
          password says so in the dialog, which stays open for another try; the field is emptied after every attempt */

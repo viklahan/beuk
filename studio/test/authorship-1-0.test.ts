@@ -3,7 +3,7 @@ import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
-import { closureShare, loadClosure, resetCloudFacts, setClosureLang, setClosureT, type Closure, type State } from '../src/closure/index';
+import { closureShare, fmtDateIntl, loadClosure, resetCloudFacts, setClosureLang, setClosureT, type Closure, type State } from '../src/closure/index';
 import { createOracle } from '../src/generated/closure-oracle.js';
 import { arriveForExport } from '../src/export/state';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
@@ -186,6 +186,20 @@ describe("1.0's save-popover glue (BEUK:authorship, final fix I3)", { timeout: 1
     expect(page.confirms.length).toBe(1); // No: not on to the replace confirm
     expect(page.applied).toEqual([]);
     expect(JSON.stringify(page.state.sections)).toBe(before);
+  });
+
+  it('Open an untouched backup (final fix M1): the parts joined with ". " — Backup opened — “X”. Untouched since …', async () => {
+    page = open1(LANTERN());
+    const kit = KITCHENS();
+    const plain = (await c.api.backupPayload(kit, null)).text;
+    const savedAt = (JSON.parse(plain) as { authorship: { savedAt: string } }).authorship.savedAt;
+    page.answers.push(true);
+    pick(plain);
+    await until(() => page.toasts.length > 0, 'the toast');
+    expect(page.toasts).toEqual([
+      t('local.backupOpened', { title: (kit.meta as Rec).title }) + '. ' + t('backup.untouched', { date: fmtDateIntl(new Date(savedAt)) }),
+    ]);
+    expect(page.toasts[0]).toBe('Backup opened — “' + String((kit.meta as Rec).title) + '”. Untouched since ' + fmtDateIntl(new Date(savedAt)) + '.');
   });
 
   it("Open an old backup (no authorship block): today's toast, exactly", async () => {
