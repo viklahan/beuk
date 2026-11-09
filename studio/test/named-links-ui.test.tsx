@@ -345,6 +345,75 @@ describe('named reading links in the share section (1.0, BEUK:named-links)', () 
     expect((globalThis as Rec).__pwn).toBe(undefined);
   }, 90_000);
 
+  it("row says when the reader was added, in the stamp's own UTC words (the same string as the reader page)", async () => {
+    const { shareId } = await ready();
+    await addReader(shareId, 'Priya');
+    await waitFor(() => expect(readerRows(shareId).length).toBe(1), { timeout: 20_000 });
+    const rid = readerRow(shareId, 'Priya').getAttribute('data-recipient-id')!;
+    const listed = (await (await net.fetch(`/api/shares/${shareId}/readers`)).json()) as { readers: Rec[] };
+    const d = new Date(String(listed.readers.find((x) => x.id === rid)!.createdAt));
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const date = `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+    expect(t('beta.added', { date })).toBe('Added ' + date);
+    expect(readerRow(shareId, 'Priya').querySelector('.a-meta')!.textContent).toContain(t('beta.added', { date }));
+    // the reader's page stamps the very same date
+    const page = await (await net.fetch('/read/' + readerTokens()[`${shareId}:${rid}`])).text();
+    const m = /Shared with <bdi>Priya<\/bdi> \u00B7 ([^<]+)</.exec(page);
+    expect(m && m[1]).toBe(date);
+  }, 90_000);
+
+  it("Revoke's confirm says it closes every named reader's link — only when the copy has one", async () => {
+    const { shareId } = await ready();
+    const title = shareRow(shareId).querySelector('.a-name')!.firstChild!.textContent!;
+    await click(shareBtns(shareId).querySelector(`[data-beta-revoke="${shareId}"]`));
+    await waitFor(() => expect(isOpen('modalConfirm')).toBe(true));
+    expect($('confirmTitle').textContent).toBe(t('beta.revokeTitle'));
+    expect($('confirmBody').textContent).toBe(t('beta.revokeBody', { title }));
+    await answer(false);
+    await addReader(shareId, 'Priya');
+    await waitFor(() => expect(readerRows(shareId).length).toBe(1), { timeout: 20_000 });
+    await addReader(shareId, 'Sam');
+    await waitFor(() => expect(readerRows(shareId).length).toBe(2), { timeout: 20_000 });
+    // a closed named link is not counted
+    const sam = readerRow(shareId, 'Sam').getAttribute('data-recipient-id')!;
+    await click($('betaSec').querySelector(`[data-beta-reader-close="${shareId}:${sam}"]`));
+    await answer(true);
+    await waitFor(() => expect(readerRow(shareId, 'Sam').querySelector('.beta-st')!.textContent).toBe(t('beta.stRevoked')), { timeout: 20_000 });
+    await addReader(shareId, 'Ana');
+    await waitFor(() => expect(readerRows(shareId).length).toBe(3), { timeout: 20_000 });
+    await click(shareBtns(shareId).querySelector(`[data-beta-revoke="${shareId}"]`));
+    await waitFor(() => expect(isOpen('modalConfirm')).toBe(true));
+    expect(t('beta.revokeNamed', { n: 2 })).toBe("This also closes every named reader's link (2).");
+    expect($('confirmBody').textContent).toBe(t('beta.revokeBody', { title }) + ' ' + t('beta.revokeNamed', { n: 2 }));
+    await answer(false);
+  }, 120_000);
+
+  it('reader comments: a named link\'s comment is marked, an open-link comment with the same name is not', async () => {
+    const { shareId } = await ready();
+    await addReader(shareId, 'Priya');
+    await waitFor(() => expect(readerRows(shareId).length).toBe(1), { timeout: 20_000 });
+    const rid = readerRow(shareId, 'Priya').getAttribute('data-recipient-id')!;
+    const named = readerTokens()[`${shareId}:${rid}`]!;
+    const open = (JSON.parse(localStorage.getItem('beuk.betaTokens.v1')!) as Record<string, string>)[shareId]!;
+    const book = exportBook(desk.ydoc!) as Rec;
+    const sec = (book.sections as Rec[]).find((s) => s.type === 'chapter')!;
+    const leave = (token: string, body: Rec) => net.fetch('/read/' + token + '/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    expect((await leave(named, { sectionId: sec.id, paragraph: 0, body: 'From the named link.' })).status).toBe(201);
+    expect((await leave(open, { readerName: 'Priya', sectionId: sec.id, paragraph: 1, body: 'From the open link.' })).status).toBe(201);
+    await click($('btnCloseExport'));
+    await act(async () => void cloudIfLoaded()!.api.betaOpenComments());
+    await waitFor(() => expect($('betaCBody').querySelectorAll('.bc-item').length).toBe(2), { timeout: 20_000 });
+    const meta = (body: string) => {
+      const item = Array.from($('betaCBody').querySelectorAll('.bc-item')).find((x) => x.querySelector('.bc-body')!.textContent === body)!;
+      const metas = item.querySelectorAll('.bc-meta');
+      return metas[metas.length - 1]!.textContent!;
+    };
+    expect(t('beta.cNamed')).toBe('named link');
+    expect(meta('From the named link.').startsWith('Priya · ' + t('beta.cNamed') + ' · ')).toBe(true);
+    expect(meta('From the open link.').startsWith('Priya · ')).toBe(true);
+    expect(meta('From the open link.')).not.toContain(t('beta.cNamed'));
+  }, 90_000);
+
   describe('day 22 unpaid', () => {
     let stripe: Awaited<ReturnType<typeof fakeStripe>>;
     let on: Shelf;

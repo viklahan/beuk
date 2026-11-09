@@ -7,6 +7,7 @@ import type { Db } from '../src/db.js';
 import { readZip } from '../src/housekeeping/packages.js';
 import { pausedBody } from '../src/access.js';
 import { shareReaderRoutes } from '../src/routes/shares.js';
+import { SELF_CHECK_CASES, type CheckContext } from '../src/housekeeping/registry.js';
 
 /*
  * Named reading links (plan 2026-11-08, Task 1): one link per beta
@@ -315,7 +316,11 @@ test('close-open: the open token 410s, named links keep reading, share JSON has 
   assert.match(open.html, /This reading copy is closed/);
   assert.equal((await readComments(token)).status, 410);
   assert.equal((await postComment(token, { sectionId: 'sec-one', body: 'x', readerName: 'Anon' })).status, 410);
-  assert.notEqual((await fetch(`${server.base}/read/${token}/img/img-chart`)).status, 200);
+  // the open link keeps today's answer for a closed copy: 404, and no picture
+  const img = await fetch(`${server.base}/read/${token}/img/img-chart`);
+  assert.equal(img.status, 404);
+  assert.equal(Buffer.from(await img.arrayBuffer()).length, 0, 'no image bytes');
+  assert.notEqual(img.headers.get('content-type'), 'image/png');
 
   assert.equal((await getHtml(server.base, `/read/${named.token}`)).status, 200);
   assert.equal((await postComment(named.token, { sectionId: 'sec-one', body: 'Still here.' })).status, 201);
@@ -620,4 +625,23 @@ test('account: export lists share_recipients (no token_hash); delete removes the
   assert.equal((del.body.removed as Record<string, number>).share_recipients, 3);
   assert.equal((await db.query('select 1 from share_recipients where share_id = $1', [share.id])).rows.length, 0);
   assert.equal((await getHtml(server.base, `/read/${other.token}`)).status, 404);
+});
+
+test('a revoked share takes no new reader: POST /api/shares/:id/readers answers 409, nothing stored', async () => {
+  const { share } = await newShare(alice);
+  assert.equal((await alice.post(`/api/shares/${share.id}/revoke`)).status, 200);
+  const r = await alice.post(`/api/shares/${share.id}/readers`, { name: 'Late Comer' });
+  assert.equal(r.status, 409);
+  assert.equal(typeof r.body.error, 'string');
+  assert.equal(r.body.token, undefined);
+  const n = await db.query<{ n: number }>('select count(*)::int as n from share_recipients where share_id = $1', [share.id]);
+  assert.equal(n.rows[0].n, 0);
+});
+
+test('self-check "Share links tables exist" counts share_recipients too', async () => {
+  const c = SELF_CHECK_CASES.find((x) => x.id === 'shares.schema.tables-present')!;
+  assert.ok(c && c.kind === 'server' && c.run);
+  assert.match(c.title, /share_recipients/);
+  const detail = await c.run!({ db } as CheckContext);
+  assert.match(String(detail), /share_recipients/);
 });

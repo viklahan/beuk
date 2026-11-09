@@ -3291,15 +3291,15 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   /* ---- Beta-reader share links ---- */
   {
     id: 'shares.schema.tables-present',
-    title: 'Share links: shares, share_comments and share_readers tables exist',
+    title: 'Share links: shares, share_comments, share_readers and share_recipients tables exist',
     kind: 'server',
     run: async ({ db }) => {
       const r = await db.query<{ n: string | number }>(
         `select count(*) as n from information_schema.tables
-         where table_name in ('shares', 'share_comments', 'share_readers')`,
+         where table_name in ('shares', 'share_comments', 'share_readers', 'share_recipients')`,
       );
-      assert(Number(r.rows[0].n) === 3, `expected 3 share tables, found ${r.rows[0].n}`);
-      return 'shares, share_comments and share_readers present';
+      assert(Number(r.rows[0].n) === 4, `expected 4 share tables, found ${r.rows[0].n}`);
+      return 'shares, share_comments, share_readers and share_recipients present';
     },
   },
   {

@@ -87,6 +87,8 @@ test('legal: /privacy and /terms serve 200 HTML that covers every inventory cate
       // named reading links (2026-11-08): the open link's reach, a named link's name stamp and opened dates
       'Anyone who has the open link can read the book and every comment left through it',
       'A named link shows only its own comments',
+      'On a named link you see only your own comments', // privacy bullet: a named reader sees no one else's
+      "doesn't use the <code>beuk_reader</code> count", // named opens are not in the reader-count cookie (as rendered)
       'shown on every page of your copy',
       'updated at most once an hour',
       'Help search',

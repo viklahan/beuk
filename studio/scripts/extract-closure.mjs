@@ -489,7 +489,7 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   // named reading links (premium 2, BEUK:named-links): a Readers disclosure per open copy — add a reader (name, expiry),
   // Copy/Close each reader's link, Close the open link; the readers' tokens kept on this device (beuk.betaReaderTokens.v1)
   'BETA_READER_TOKENS_KEY', 'BETA_READERS_MAX', 'betaReaderTokens', 'betaRememberReaderToken', 'betaNamed', 'betaRenderReaders', 'betaLoadReaders',
-  'betaAddReader', 'betaCloseReader', 'betaCloseOpen',
+  'betaAddReader', 'betaCloseReader', 'betaCloseOpen', 'betaStampDate',
   // wave 7b (H5): the platform's install area and update bar (1.0's pwa record, isStandalone, renderInstallArea,
   // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /next/), its listeners
   // 1.0's initPlatform lines (src/cloud/platform.ts)
