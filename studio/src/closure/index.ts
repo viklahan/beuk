@@ -765,6 +765,16 @@ export type ClosureApi = {
   lockDocxBytes: (bytes: Uint8Array, password: string) => Promise<Uint8Array>;
   lockSha512Js: (msg: Uint8Array) => Uint8Array;
   lockSha512Spin: (h0: Uint8Array, rounds: number) => Uint8Array;
+  // locked backups and the authorship record (task 2): 1.0's BEUK:authorship
+  backupFingerprint: (book: object) => Promise<string>;
+  backupPayload: (book: object, recorded: string | null) => Promise<{ text: string; sha256: string }>;
+  backupLock: (plainText: string, password: string) => Promise<string>;
+  backupUnlock: (envelope: object, password: string) => Promise<string>;
+  backupRead: (text: string) => Promise<
+    | null
+    | { locked: true; envelope: Record<string, unknown> }
+    | { locked: false; book: Record<string, unknown>; authorship: Record<string, unknown> | null; intact: boolean | null }
+  >;
   buildStoreReportHtml: (a?: StoreAudit) => string;
   downloadStoreReport: () => void;
   printPlacements: () => (Record<string, unknown> & { dpi: number })[];
@@ -1228,6 +1238,11 @@ const closureCrypto = {
         exportEnv.resume(sub.importKey(format, key, alg, extractable, usages)),
       encrypt: (alg: AlgorithmIdentifier | AesCbcParams, key: CryptoKey, data: BufferSource) => exportEnv.resume(sub.encrypt(alg, key, data)),
       sign: (alg: AlgorithmIdentifier, key: CryptoKey, data: BufferSource) => exportEnv.resume(sub.sign(alg, key, data)),
+      // locked backups (design 2026-11-09): 1.0's BEUK:authorship derives the AES-GCM key from the password (PBKDF2) and
+      // decrypts a locked backup
+      deriveKey: (alg: Pbkdf2Params, base: CryptoKey, derived: AesKeyGenParams, extractable: boolean, usages: KeyUsage[]) =>
+        exportEnv.resume(sub.deriveKey(alg, base, derived, extractable, usages)),
+      decrypt: (alg: AesGcmParams, key: CryptoKey, data: BufferSource) => exportEnv.resume(sub.decrypt(alg, key, data)),
     };
   },
 };

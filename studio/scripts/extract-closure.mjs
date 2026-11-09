@@ -247,6 +247,10 @@ export const EXTRA_ROOTS = [
   'lockFieldsRead', 'lockFieldsClear', 'lockCopyAllowed', 'lockFieldsRender', 'lockPlanNote', 'lockPdfOpen', 'lockedPdfDownload',
   // task 4, fixes 1-2: the access note at boot and after an in-tab sign-in (the shelf's module lifts its own copies)
   'lockAccessNote', 'lockAccessRefresh',
+  // locked backups and the authorship record (design 2026-11-09), task 2: 1.0's BEUK:authorship — the book's fingerprint,
+  // the plain backup with its authorship block, the locked envelope (PBKDF2 → AES-GCM over WebCrypto) and the backup
+  // reader; the export and "Open a backup…" reach them in task 3
+  'backupFingerprint', 'backupPayload', 'backupLock', 'backupUnlock', 'backupRead',
 ];
 
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK

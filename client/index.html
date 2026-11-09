@@ -71024,6 +71024,85 @@
         } catch (e) {}
         return null;
       }
+      /* ==== BEUK:authorship ==== */
+      /* Locked backups and the authorship record (design 2026-11-09). The book's fingerprint (SHA-256 over the UTF-8
+         of JSON.stringify(book), lowercase hex), the plain backup with its authorship block (still what
+         localParseBackup reads), the locked envelope (PBKDF2-SHA-256, 600000 iterations, 16-byte salt → AES-GCM 256,
+         12-byte IV; nothing about the book outside the ciphertext) and the reader of a backup file. The password is
+         used here and nowhere else: never logged, stored or sent. */
+      const BACKUP_LOCK_ITERATIONS = 600000;
+      const BACKUP_SHA_RE = /^[0-9a-f]{64}$/;
+      function backupB64Bytes(s) { /* strict: a whole number of padded quanta, the standard alphabet, else null */
+        if (typeof s !== "string" || s.length % 4 !== 0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(s)) return null;
+        try {
+          const bin = atob(s), out = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+          return out;
+        } catch (e) { return null; }
+      }
+      function backupLockError(code) { const e = new Error(code === "wrong" ? "backup password" : "backup envelope"); e.code = code; return e; }
+      /* The envelope's parts when it is structurally one (format, version, names, iterations, sizes), else null */
+      function backupEnvelopeParts(env) {
+        if (!env || typeof env !== "object" || Array.isArray(env)) return null;
+        if (env.format !== "beuk-backup-locked" || env.version !== 1) return null;
+        const k = env.kdf, c = env.cipher;
+        if (!k || typeof k !== "object" || k.name !== "PBKDF2" || k.hash !== "SHA-256" || k.iterations !== BACKUP_LOCK_ITERATIONS) return null;
+        if (!c || typeof c !== "object" || c.name !== "AES-GCM") return null;
+        const salt = backupB64Bytes(k.salt), iv = backupB64Bytes(c.iv), data = backupB64Bytes(env.data);
+        if (!salt || salt.length !== 16 || !iv || iv.length !== 12 || !data || data.length < 16) return null;
+        return { salt, iv, data };
+      }
+      async function backupKey(password, salt, usage) {
+        const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(password)), "PBKDF2", false, ["deriveKey"]);
+        return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: BACKUP_LOCK_ITERATIONS }, base, { name: "AES-GCM", length: 256 }, false, [usage]);
+      }
+      async function backupFingerprint(book) {
+        const d = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(book))));
+        let hex = "";
+        for (let i = 0; i < d.length; i++) hex += (d[i] < 16 ? "0" : "") + d[i].toString(16);
+        return hex;
+      }
+      async function backupPayload(book, recorded) {
+        const sha256 = await backupFingerprint(book);
+        const exportedAt = new Date().toISOString();
+        const payload = { format: "beuk-backup", version: 1, exportedAt, book,
+          authorship: { author: String((book && book.meta && book.meta.author) || ""), savedAt: exportedAt, sha256, recorded: typeof recorded === "string" ? recorded : null } };
+        return { text: JSON.stringify(payload), sha256 };
+      }
+      async function backupLock(plainText, password) {
+        const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+        const key = await backupKey(password, salt, "encrypt");
+        const data = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(String(plainText))));
+        return JSON.stringify({ format: "beuk-backup-locked", version: 1,
+          kdf: { name: "PBKDF2", hash: "SHA-256", iterations: BACKUP_LOCK_ITERATIONS, salt: bufToBase64(salt) },
+          cipher: { name: "AES-GCM", iv: bufToBase64(iv) }, data: bufToBase64(data) });
+      }
+      /* The plain text, or an Error whose code is "bad" (not an envelope) or "wrong" (the password, or a tampered byte:
+         the GCM tag can't tell them apart) */
+      async function backupUnlock(envelope, password) {
+        const p = backupEnvelopeParts(envelope);
+        if (!p) throw backupLockError("bad");
+        let plain;
+        try {
+          const key = await backupKey(password, p.salt, "decrypt");
+          plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: p.iv }, key, p.data);
+        } catch (e) { throw backupLockError("wrong"); }
+        return new TextDecoder().decode(plain);
+      }
+      /* What a backup file holds: null for anything else (never a throw); a locked one's envelope; a plain one's book,
+         its authorship block (null without a valid sha256) and whether the book is untouched (null: no claim) */
+      async function backupRead(text) {
+        try {
+          if (typeof text !== "string") return null;
+          const d = JSON.parse(text);
+          if (!d || typeof d !== "object" || Array.isArray(d)) return null;
+          if (d.format === "beuk-backup-locked") return backupEnvelopeParts(d) ? { locked: true, envelope: d } : null;
+          if (d.format !== "beuk-backup" || !d.book || typeof d.book !== "object" || !Array.isArray(d.book.sections)) return null;
+          const a = d.authorship && typeof d.authorship === "object" && !Array.isArray(d.authorship) && typeof d.authorship.sha256 === "string" && BACKUP_SHA_RE.test(d.authorship.sha256) ? d.authorship : null;
+          return { locked: false, book: d.book, authorship: a, intact: a ? (await backupFingerprint(d.book)) === a.sha256 : null };
+        } catch (e) { return null; }
+      }
+      /* ==== /BEUK:authorship ==== */
       function localApplyBackup(book) {
         const snap = autoSnapshot("backup");
         const arrivingMeta = book.meta && typeof book.meta === "object" ? { bookId: book.meta.bookId, legacyBookIds: book.meta.legacyBookIds } : null; /* BEUK:bookid */
