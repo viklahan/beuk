@@ -71332,8 +71332,10 @@
         if (m) m.classList.remove("open");
       }
       function authorshipKindLabel(kind) { return t(kind === "docx" ? "auth.kindDocx" : "auth.kindBackup"); }
+      let authorshipRecordSeq = 0; /* final fix M4: each opening's number; an answer for an older opening is not drawn */
       async function authorshipRecordOpen() {
         if (!cloud.user) return;
+        const seq = ++authorshipRecordSeq;
         betaInjectStyles();
         const m = authorshipDialog();
         $("authTitle").textContent = t("auth.title", { title: String(state.meta.title || "").trim() || t("misc.untitledBook") });
@@ -71353,6 +71355,7 @@
         const st = both[0];
         /* the closed copies' readers too: the record says where the story went, whatever the link's state now */
         await Promise.all(beta.shares.filter((s) => s && s.manuscriptId === cloud.linkedId && s.status !== "active").map((s) => betaLoadReaders(s.id)));
+        if (seq !== authorshipRecordSeq) return; /* opened again meanwhile: that opening draws the record */
         if (st && Array.isArray(st.stamps)) {
           const rows = st.stamps.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
           stampsBox.innerHTML = rows.length ? rows.map((s) =>

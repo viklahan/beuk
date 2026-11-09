@@ -663,6 +663,34 @@ describe('locked backups and the authorship record: the studio (task 3)', { time
     await waitFor(() => expect(deskTitle()).toBe((kit.meta as Rec).title), { timeout: 30_000 });
   });
 
+  it('final fix M4: the record dialog ignores a stale GET /stamps answer (opened again before the first came back)', async () => {
+    const held: (() => void)[] = [];
+    const stamp = (id: string, at: string) => ({ id, kind: 'backup', title: 'T', sha256: id[3]!.repeat(64), createdAt: at });
+    let n = 0;
+    stub({
+      '/api/authorship/stamps': () => {
+        n++;
+        if (n === 1) return new Promise<Response>((res) => held.push(() => res(json({ stamps: [stamp('st-a-stale', '2026-11-01T09:00:00.000Z')] }))));
+        return json({ stamps: [stamp('st-b-fresh', '2026-11-05T09:00:00.000Z')] });
+      },
+      '/api/shares': () => json({ shares: [] }),
+    });
+    await studioWith(LANTERN());
+    signIn('shelf-m1');
+    await openPop();
+    await click($('btnAuthorshipRecord'));
+    await waitFor(() => expect(isOpen('modalAuthorship')).toBe(true), { timeout: 20_000 });
+    await waitFor(() => expect(held.length).toBe(1), { timeout: 20_000 });
+    await click($('btnAuthClose'));
+    await openPop();
+    await click($('btnAuthorshipRecord'));
+    const ids = () => Array.from($('authStamps').querySelectorAll('[data-stamp-id]')).map((r) => r.getAttribute('data-stamp-id'));
+    await waitFor(() => expect(ids()).toEqual(['st-b-fresh']), { timeout: 20_000 });
+    await act(async () => held[0]!());
+    for (let i = 0; i < 100; i++) await tick();
+    expect(ids()).toEqual(['st-b-fresh']);
+  });
+
   it('record dialog: hidden signed out; lists stamps newest first with kind labels and 12-hex; shared-with lists named readers of the linked shelf book\'s shares; empty states', async () => {
     const doc = LANTERN();
     const id = String((doc.meta as Rec).bookId);
