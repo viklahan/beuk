@@ -3,14 +3,14 @@ import * as Y from 'yjs';
 import { BODY, BookImportError, META, observeSections, sectionList, sectionsCount, unwrapBackup, type TextWarning } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import { LANG_CODES } from '@book/upgrade.js';
-import { authorshipEnv, closureIfLoaded, loadClosure } from '../closure/index';
+import { authorshipEnv, closureIfLoaded, loadClosure, type Closure } from '../closure/index';
 import { backupArrival, live } from '../history/history';
 import { deskIsUntouchedSample } from '../sample/sample';
 import { useConfirm } from '../shell/Dialog';
 import meta from '../generated/strings-meta.json';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useToast } from '../shell/Toasts';
-import { backupFilename, backupJson, downloadText } from './backup';
+import { backupFilename, backupJson, downloadText, parseBackup } from './backup';
 import { readLegacyBook } from './legacy10';
 import { outlineRows, type OutlineRow } from './outlineRows';
 import { REGISTRY_KEY, bookMeta, importToDevice, openStoredBook, registryEpoch, startBook, type OpenBook } from './store';
@@ -262,7 +262,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
     [show, failed],
   );
 
-  const openBackupFile = useCallback(
+  const openBackupRun = useCallback(
     async (file: File) => {
       let text = '';
       try {
@@ -272,8 +272,26 @@ export function BookProvider({ children }: { children: ReactNode }) {
       }
       // BEUK:authorship — 1.0's reader: a locked backup asks its password first (Cancel: nothing happens); one changed
       // after it was saved asks before it opens (No: the desk stays as it is); then the replace confirm below
-      const c0 = await loadClosure();
-      const backup = await c0.api.backupReadAsking(text);
+      // final fix I2: never a silent failure. The closure refusing to load, a plain backup (old or new) is read by
+      // parseBackup and opens with today's wording, claiming nothing either way; a locked one can't be read here
+      // (local.backupBad, the desk unchanged)
+      let c0: Closure | null = null;
+      try {
+        c0 = await loadClosure();
+      } catch {
+        c0 = null;
+      }
+      let backup: Awaited<ReturnType<Closure['api']['backupReadAsking']>>;
+      if (c0) {
+        try {
+          backup = await c0.api.backupReadAsking(text);
+        } catch {
+          backup = null;
+        }
+      } else {
+        const plainBook = parseBackup(text);
+        backup = plainBook ? { locked: false, book: plainBook, authorship: null, intact: null } : null;
+      }
       if (backup && 'cancelled' in backup) return;
       if (!backup) {
         toast(t('local.backupBad'), 'HardDrive');
@@ -327,10 +345,15 @@ export function BookProvider({ children }: { children: ReactNode }) {
         return;
       }
       // BEUK:authorship — "Untouched since …" and "On Beuk's record since …", asked once the book is on the desk
-      const note = backup.authorship ? await c0.api.backupOpenedNote(backup).catch(() => '') : '';
+      const note = backup.authorship && c0 ? await c0.api.backupOpenedNote(backup).catch(() => '') : '';
       toast(opened + note, 'HardDrive');
     },
     [replace, confirm, toast, t],
+  );
+  // final fix I2: whatever goes wrong while a backup opens is said (local.backupBad), never an unhandled rejection
+  const openBackupFile = useCallback(
+    (file: File) => openBackupRun(file).catch(() => toast(t('local.backupBad'), 'HardDrive')),
+    [openBackupRun, toast, t],
   );
 
   const isLive = useCallback((ydoc: Y.Doc | null) => {

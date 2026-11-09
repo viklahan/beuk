@@ -21,13 +21,14 @@ import { parseBackup } from '../src/book/backup';
 
 /* Fix round 1: 2.0's export when the closure is not there (never loaded, or its chunk would not load) — the export
    must still download. Off by default: the closure is the real one. */
-const gate = vi.hoisted(() => ({ off: false }));
+const gate = vi.hoisted(() => ({ off: false, loadOff: false }));
 vi.mock('../src/closure/index', async (orig) => {
   const m = (await orig()) as typeof import('../src/closure/index');
   return {
     ...m,
     closureIfLoaded: () => (gate.off ? null : m.closureIfLoaded()),
-    loadClosure: () => (gate.off ? Promise.reject(new Error('the closure could not load')) : m.loadClosure()),
+    // final fix I2: loadOff — only loadClosure refuses (the open book's own redraws keep the closure they hold)
+    loadClosure: () => (gate.off || gate.loadOff ? Promise.reject(new Error('the closure could not load')) : m.loadClosure()),
   };
 });
 
@@ -59,6 +60,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
   gate.off = false;
+  gate.loadOff = false;
   vi.useRealTimers();
   cleanup();
   vi.restoreAllMocks();
@@ -577,6 +579,38 @@ describe('locked backups and the authorship record: the studio (task 3)', { time
     expect(toasts().some((x) => x.startsWith(t('lock.failed', { error: '' })))).toBe(true);
     for (const x of toasts()) expect(x).not.toContain('never plain');
     expect([inp('lockBackupPw').value, inp('lockBackupPw2').value]).toEqual(['', '']);
+  });
+
+  /* Final fix I2: opening a backup never fails silently when 1.0's closure will not load. */
+  it('open with the closure refusing to load: a plain backup opens on an empty desk with today\'s toast (no claim); a locked one says local.backupBad, desk unchanged', async () => {
+    const net = stub();
+    render(
+      <LocaleProvider initial="en">
+        <App />
+      </LocaleProvider>,
+    );
+    await waitFor(() => expect(document.getElementById('btnOpenBackup')).not.toBeNull(), { timeout: 20_000 });
+    const kit = KITCHENS();
+    const plain = (await c.api.backupPayload(kit, null)).text; // a new backup, its authorship block intact
+    const locked = await c.api.backupLock(plain, 'no closure');
+    gate.loadOff = true;
+    const input = document.querySelector('#btnOpenBackup + input') as HTMLInputElement;
+    await act(async () => void fireEvent.change(input, { target: { files: [fileOf(plain)] } }));
+    await waitFor(() => expect(desk.ydoc && deskTitle()).toBe((kit.meta as Rec).title), { timeout: 30_000 });
+    const opened = t('local.backupOpened', { title: (kit.meta as Rec).title });
+    await waitFor(() => expect(toasts()).toContain(opened), { timeout: 20_000 });
+    for (let i = 0; i < 50; i++) await tick();
+    expect(toasts().filter((x) => x.startsWith(opened))).toEqual([opened]); // today's wording: no claim either way
+    expect(net.calls.filter((x) => x.url.startsWith('/api/authorship'))).toEqual([]);
+    // a locked one, the closure still away: refused with local.backupBad, no password asked, the desk as it was
+    const before = deskBook().sections;
+    const said = toasts().length;
+    await openFile(fileOf(locked));
+    await waitFor(() => expect(toasts().slice(said)).toContain(t('local.backupBad')), { timeout: 20_000 });
+    expect(document.getElementById('modalBackupPw')).toBeNull();
+    expect(isOpen('modalConfirm')).toBe(false);
+    expect(deskTitle()).toBe((kit.meta as Rec).title);
+    expect(deskBook().sections).toEqual(before);
   });
 
   it('a second locked backup opened while the first asks: the first ask ends (as Cancel), the second opens', async () => {
