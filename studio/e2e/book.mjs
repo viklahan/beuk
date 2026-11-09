@@ -9641,7 +9641,7 @@ async function authorshipMain(srv) {
     // 4. one chapter word changed by hand, the authorship block kept
     const before = await auDesk(page);
     // (the desk's fingerprint after this open is a new one: the export's book is not the file's byte for byte — said, not gated)
-    note(`authorship: after opening the plain backup, the desk's book differs from the file's in: ${JSON.stringify(w7aDiffKeys(plain.json.book, before))} (History left out of the desk side); its fingerprint ${auSha((await exportBackup(page)).json.book).slice(0, 12)}… vs the file's ${sha.slice(0, 12)}…`);
+    note(`authorship: after opening the plain backup, the desk's book differs from the file's in: ${JSON.stringify(w7aDiffKeys(plain.json.book, before))} (History left out of the desk side)`);
     const ed = JSON.parse(plain.text);
     const ch = ed.book.sections.find((s) => s.type === 'chapter' && /\bharbour\b/.test(s.content || ''));
     ch.content = ch.content.replace(/\bharbour\b/, 'harbor');
@@ -9657,7 +9657,7 @@ async function authorshipMain(srv) {
     check(c4[0] === AU_EN.changedTitle && c4[1] === AU_EN.changedBody && !again, `authorship: a backup changed after it was saved asks first: "${c4[0]}" / "${c4[1]}"; after No, no other dialog follows (${again})`);
     const after = await auDesk(page);
     const sec = after.sections.find((s) => s.id === ch.id);
-    check(JSON.stringify(after) === JSON.stringify(before) && /\bharbour\b/.test(sec?.content || '') && !/\bharbor\b/.test(sec?.content || ''), `authorship: No leaves the desk exactly as it was (the book JSON-identical, "${ch.title}" still says "harbour")`);
+    check(JSON.stringify(after) === JSON.stringify(before) && /\bharbour\b/.test(sec?.content || '') && !/\bharbor\b/.test(sec?.content || ''), `authorship: No leaves the desk unchanged except History (the book, History left out, JSON-identical; "${ch.title}" still says "harbour")`);
 
     // 5. a named reader through the reading-copy UI, then the record
     await w5aOpenModal(page);
@@ -9700,8 +9700,12 @@ async function authorshipMain(srv) {
     await page.waitForSelector('#modalAuthorship.open', { state: 'detached', timeout: 10_000 });
     await harvestCsp(page);
   } finally {
-    await ctx2.close();
-    await ctx.close();
+    // one close throwing never skips the other
+    try {
+      await ctx2.close();
+    } finally {
+      await ctx.close();
+    }
   }
 }
 async function authorshipDay22(srv) {
@@ -9725,8 +9729,12 @@ async function authorshipDay22(srv) {
     const mark = reqs.length;
     const b = await exportBackup(page);
     const posts = reqs.slice(mark).filter((r) => r.method === 'POST' && new URL(r.url).pathname === '/api/authorship/stamps');
-    check(b.json.format === 'beuk-backup' && b.json.authorship?.recorded === null && b.json.authorship?.sha256 === auSha(b.json.book) && /\.beuk-backup\.json$/.test(b.name),
-      `authorship day 22: a plain export still downloads (${b.name}), its authorship block recorded null (sha256 ${b.json.authorship?.sha256?.slice(0, 12)}…; the stamp asked ${posts.length} time(s), refused)`);
+    // final fix T4-I1: the stamp was asked exactly once and refused — the server holds no stamp of this book for this user
+    const bookId = String(b.json.book?.meta?.bookId || '');
+    const listed = await ctx.request.get(origin + '/api/authorship/stamps?bookId=' + encodeURIComponent(bookId));
+    const held = listed.status() === 200 ? (await listed.json()).stamps : null;
+    check(b.json.format === 'beuk-backup' && b.json.authorship?.recorded === null && b.json.authorship?.sha256 === auSha(b.json.book) && /\.beuk-backup\.json$/.test(b.name) && posts.length === 1 && !!bookId && Array.isArray(held) && held.length === 0,
+      `authorship day 22: a plain export still downloads (${b.name}), its authorship block recorded null (sha256 ${b.json.authorship?.sha256?.slice(0, 12)}…); the stamp asked ${posts.length} time(s) (want 1) and refused: GET /api/authorship/stamps?bookId= answers ${listed.status()} with ${held ? held.length : '?'} stamp(s) (want 0)`);
     await harvestCsp(page);
   } finally {
     await ctx.close();
