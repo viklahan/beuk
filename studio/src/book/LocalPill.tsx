@@ -167,6 +167,7 @@ export function LocalPill() {
           id="btnLocalBackupInline"
           type="button"
           hidden={!failed}
+          disabled={bk.backupBusy}
           onClick={(e) => {
             e.stopPropagation();
             bk.exportBackup(true);
@@ -205,6 +206,7 @@ export function LocalPill() {
             className="tb-btn primary"
             id="btnLocalBackup"
             type="button"
+            disabled={bk.backupBusy}
             onClick={() => {
               if (bk.exportBackup()) setOpen(false);
             }}

@@ -295,6 +295,37 @@ describe('locked backups and the authorship record: the studio (task 3)', { time
     expect([inp('lockBackupPw').value, inp('lockBackupPw2').value, inp('lockBackupOn').checked]).toEqual(['', '', true]);
   });
 
+  it('final fix M3: Export a backup and the inline offer are disabled until the download has happened — a double click makes one file and one stamp', async () => {
+    let answerStamp: () => void = () => undefined;
+    const net = stub({
+      '/api/authorship/stamps': () => new Promise<Response>((res) => (answerStamp = () => res(json({ id: 's-m3', createdAt: '2026-11-09T00:00:00.000Z' }, 201)))),
+    });
+    await studioWith(LANTERN());
+    signIn();
+    await openPop();
+    const d = catchDownloads();
+    try {
+      await click($('btnLocalBackup'));
+      expect(($('btnLocalBackup') as HTMLButtonElement).disabled).toBe(true);
+      expect(($('btnLocalBackupInline') as HTMLButtonElement).disabled).toBe(true);
+      await openPop();
+      await click($('btnLocalBackup')); // the double click
+      await act(async () => void fireEvent.click($('btnLocalBackupInline')));
+      await waitFor(() => expect(net.stamps().length).toBe(1), { timeout: 20_000 });
+      for (let i = 0; i < 50; i++) await tick();
+      expect(d.got.length).toBe(0);
+      await act(async () => answerStamp());
+      await waitFor(() => expect(d.got.length).toBe(1), { timeout: 30_000 });
+      for (let i = 0; i < 100; i++) await tick();
+      expect(d.got.length).toBe(1);
+      expect(net.stamps().length).toBe(1);
+      await waitFor(() => expect(($('btnLocalBackup') as HTMLButtonElement).disabled).toBe(false));
+      expect(($('btnLocalBackupInline') as HTMLButtonElement).disabled).toBe(false);
+    } finally {
+      d.off();
+    }
+  });
+
   it('lock mismatch → #lockBackupErr shows lock.mismatch, nothing downloads', async () => {
     stub();
     await studioWith(LANTERN());

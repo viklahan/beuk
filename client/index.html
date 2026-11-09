@@ -71044,15 +71044,27 @@
          4 s, never failing over it) and is locked when the popover's lock is on. False when the lock refused (its message
          is in the popover, which stays open; nothing downloads). `plainOnly`: the inline offer beside a failed device save
          (outside the popover, where no lock is shown) always writes the plain backup. */
+      /* BEUK:authorship (final fix M3) — one export at a time: Export a backup and the inline offer stay disabled from
+         the moment an export starts until its file has downloaded (or the lock said why it could not), so a double click
+         makes one file and one stamp */
+      let localBackupBusy = false;
+      function localBackupBusySet(on) {
+        localBackupBusy = on;
+        for (const id of ["btnLocalBackup", "btnLocalBackupInline"]) { const b = $(id); if (b) b.disabled = on; }
+      }
       function localExportBackup(plainOnly, taken) {
+        if (localBackupBusy) return false; /* the export under way is the one file; the lock box is left as it is */
         /* BEUK:lockcopy — read once, emptied at once; taken before the sample's hold, so the deferred call keeps it */
         const lock = taken || (plainOnly ? { off: true } : lockFieldsTake("backup"));
         if (lock.error) return false;
         if (samplePicsHold(() => localExportBackup(plainOnly, lock))) return true; /* BEUK:slim — never without the sample's pictures */
-        const book = serializeBook(), name = localBackupFilename();
-        const save = (text) => downloadBlob(new Blob([text], { type: "application/json" }), name);
+        localBackupBusySet(true);
+        let book, name;
+        try { book = serializeBook(); name = localBackupFilename(); }
+        catch (e) { localBackupBusySet(false); throw e; }
+        const save = (text) => { localBackupBusySet(false); downloadBlob(new Blob([text], { type: "application/json" }), name); };
         backupExportText(book, lock.password || "").then(save, (e) => {
-          if (lock.password) toast(lockFailedText(e, lock.password), "alert-triangle");
+          if (lock.password) { localBackupBusySet(false); toast(lockFailedText(e, lock.password), "alert-triangle"); }
           else save(backupPlainText(book)); /* never reached (unlocked never rejects); the export always downloads */
         });
         return true;

@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
-import { closureShare, fmtDateIntl, loadClosure, resetCloudFacts, setClosureLang, setClosureT, type Closure, type State } from '../src/closure/index';
+import { closureShare, cloudFacts, fmtDateIntl, loadClosure, resetCloudFacts, setClosureLang, setClosureT, type Closure, type State } from '../src/closure/index';
 import { createOracle } from '../src/generated/closure-oracle.js';
 import { arriveForExport } from '../src/export/state';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
@@ -126,6 +126,48 @@ describe("1.0's save-popover glue (BEUK:authorship, final fix I3)", { timeout: 1
     expect(r.intact).toBe(true);
     expect(((r.book as Rec).meta as Rec).title).toBe((LANTERN().meta as Rec).title);
     expect([inp('lockBackupPw').value, inp('lockBackupPw2').value]).toEqual(['', '']);
+  });
+
+  it('final fix M3: Export a backup and the inline offer are disabled until the download has happened — a double click makes one file and one stamp', async () => {
+    const posts: string[] = [];
+    let answer: () => void = () => undefined;
+    const real = globalThis.fetch;
+    const spy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (new URL(href, 'http://studio.test').pathname !== '/api/authorship/stamps') return real(input, init);
+      posts.push(String(init?.body ?? ''));
+      // held until the test answers: the download waits on the stamp
+      return new Promise<Response>((res) => (answer = () => res(new Response(JSON.stringify({ id: 's-1', createdAt: '2026-11-09T00:00:00.000Z' }), { status: 201, headers: { 'content-type': 'application/json' } }))));
+    });
+    try {
+      cloudFacts.user = { id: 'u-writer', email: 'writer@example.test' };
+      page = open1(LANTERN());
+      page.o.toggleLocalPop!(true);
+      click('btnLocalBackup');
+      expect((document.getElementById('btnLocalBackup') as HTMLButtonElement).disabled).toBe(true);
+      expect((document.getElementById('btnLocalBackupInline') as HTMLButtonElement).disabled).toBe(true);
+      page.o.toggleLocalPop!(true);
+      click('btnLocalBackup'); // the double click
+      $('btnLocalBackupInline').hidden = false;
+      click('btnLocalBackupInline');
+      await until(() => posts.length === 1, 'the stamp');
+      for (let i = 0; i < 50; i++) await tick();
+      expect(page.downloads.length).toBe(0); // still waiting on the stamp
+      answer();
+      await until(() => page.downloads.length === 1, 'the download');
+      for (let i = 0; i < 100; i++) await tick();
+      expect(page.downloads.length).toBe(1);
+      expect(posts.length).toBe(1);
+      expect((document.getElementById('btnLocalBackup') as HTMLButtonElement).disabled).toBe(false);
+      expect((document.getElementById('btnLocalBackupInline') as HTMLButtonElement).disabled).toBe(false);
+      // and again, once the first has downloaded: a second file
+      click('btnLocalBackupInline');
+      await until(() => posts.length === 2, 'the second stamp');
+      answer();
+      await until(() => page.downloads.length === 2, 'the second download');
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('lock mismatch: refused with lock.mismatch, the popover stays open, nothing downloads', async () => {

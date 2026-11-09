@@ -91,6 +91,9 @@ export type BookApi = {
    *  the popover's lock box is on. False when the lock refused (its message is in the box; nothing downloads). `plainOnly`:
    *  the inline offer beside a failed device save, outside the popover, writes the plain backup. */
   exportBackup: (plainOnly?: boolean) => boolean;
+  /** Final fix M3: an export is under way (from its start until its file has downloaded, or the lock said why it could
+   *  not): Export a backup and the inline offer are disabled, so a double click makes one file and one stamp. */
+  backupBusy: boolean;
   /** Wave 5a, round 2: what the device store knows, as 1.0's local pill shows it (src/book/LocalPill.tsx). */
   local: LocalStatus;
 };
@@ -135,6 +138,13 @@ export function BookProvider({ children }: { children: ReactNode }) {
   const started = useRef(false);
   const current = useRef<OpenBook | null>(null);
   const outside = useRef(new WeakSet<Y.Doc>());
+  // final fix M3: one export at a time (the ref for a second click before React re-renders, the state for `disabled`)
+  const backupBusyRef = useRef(false);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const busySet = useCallback((on: boolean) => {
+    backupBusyRef.current = on;
+    setBackupBusy(on);
+  }, []);
 
   const reopen = useRef<(stale: OpenBook) => void>(() => undefined);
 
@@ -394,6 +404,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
     (plainOnly = false) => {
       const b = current.current;
       if (!b) return true;
+      if (backupBusyRef.current) return false; // the export under way is the one file; the lock box is left as it is
       // BEUK:lockcopy — the lock box read once and emptied at once (1.0's lockFieldsTake, the scope "backup"); a refusal is
       // said in the box
       const c = closureIfLoaded();
@@ -408,23 +419,34 @@ export function BookProvider({ children }: { children: ReactNode }) {
       }
       const lock = plainOnly || !c ? { off: true as const } : c.api.lockFieldsTake('backup');
       if (lock.error) return false;
-      const doc = b.export();
+      busySet(true);
+      let doc: Record<string, unknown>;
+      try {
+        doc = b.export();
+      } catch (e) {
+        busySet(false);
+        throw e;
+      }
       const m = (doc.meta ?? {}) as { title?: unknown };
       const name = backupFilename(m.title);
       const password = lock.password || '';
+      const save = (text: string) => {
+        busySet(false);
+        downloadText(text, name);
+      };
       void (c ? Promise.resolve(c) : loadClosure())
         .then((cc) => cc.api.backupExportText(doc, password))
-        .then(
-          (text) => downloadText(text, name),
-          (e: unknown) => {
-            // Global constraint 8: unlocked, the export always downloads (today's payload, no toast); locked, it says why
-            if (!password) downloadText(backupJson(doc), name);
-            else toast(closureIfLoaded()?.api.lockFailedText(e, password) ?? t('lock.failed', { error: 'unknown error' }), 'TriangleAlert');
-          },
-        );
+        .then(save, (e: unknown) => {
+          // Global constraint 8: unlocked, the export always downloads (today's payload, no toast); locked, it says why
+          if (!password) save(backupJson(doc));
+          else {
+            busySet(false);
+            toast(closureIfLoaded()?.api.lockFailedText(e, password) ?? t('lock.failed', { error: 'unknown error' }), 'TriangleAlert');
+          }
+        });
       return true;
     },
-    [toast, t],
+    [toast, t, busySet],
   );
 
   const value = useMemo<BookApi>(() => {
@@ -452,11 +474,12 @@ export function BookProvider({ children }: { children: ReactNode }) {
       isLive,
       takeOutsideArrival,
       exportBackup,
+      backupBusy,
       local,
     };
     // rev: the book's meta or sections changed
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, book, rev, active, t, openBackupFile, replaceBook, replaceWith, isLive, takeOutsideArrival, exportBackup, local]);
+  }, [phase, book, rev, active, t, openBackupFile, replaceBook, replaceWith, isLive, takeOutsideArrival, exportBackup, backupBusy, local]);
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 }
