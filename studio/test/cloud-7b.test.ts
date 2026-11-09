@@ -369,7 +369,8 @@ describe('beta readers: share links and comments (H7)', () => {
     expect(rows.length).toBe(1);
     expect(rows[0]!.querySelector('.beta-st')!.textContent).toBe(t('beta.stActive'));
     expect(rows[0]!.querySelector('[data-beta-copy]')).not.toBe(null);
-    expect(paths(/^\/api\/shares/)).toEqual(['POST /api/shares', 'GET /api/shares?manuscriptId=<id>']);
+    // named reading links (BEUK:named-links): the list then asks for each open copy's readers
+    expect(paths(/^\/api\/shares/)).toEqual(['POST /api/shares', 'GET /api/shares?manuscriptId=<id>', 'GET /api/shares/<id>/readers']);
     // the token is nowhere else this device keeps (the book, the shelf link store)
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)!;
