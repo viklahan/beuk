@@ -7947,6 +7947,439 @@ async function wave7bDay22(srv) {
   }
 }
 
+/* ---- named reading links (plan 2026-11-08, task 4): namedLinksChecks (E2E_ONLY=namedlinks) ----
+   The real server (serve.mjs { api: true }: src/app.ts on PGlite, billing in test mode against a fake Stripe on
+   127.0.0.1), as constraint 93 drives it: 1.0 (/studio) and 2.0 (/next) beside each other, each its own account, the
+   same book. NL_PARTS picks the parts.
+   - Parity: a reading copy made, the Readers disclosure opened, Priya (never ends) and Sam (30 days) added, Priya's link
+     closed, then "Close the open link" — each close after the calm confirm. At every step the /api/shares writes
+     (method, path, body; ids and tokens masked) and the rows are 1.0's; the confirm dialogs read as 1.0's.
+   - Readers, in a browser of their own (one per app's links): each named link opens with its own name in the line
+     (the name in <bdi>) and the stamp layer; Sam's page shows none of Priya's comments (nor Priya's his; the open link
+     neither); closed, Priya's link gives the 410 page (which never names her) while Sam keeps reading; the open link
+     closed gives a 410 and Sam is untouched; Revoke (last) closes Sam's too. Tokens: named ones only under
+     beuk.betaReaderTokens.v1.
+   - The watermark on Sam's page (2.0's link), in Chromium: with JavaScript off the line and the stamp layer are there;
+     at 360 px the line is visible and the page has no horizontal scroll; with colorScheme dark the stamp layer's
+     background is not none; printed (page.pdf, A4, a long chapter, ≥ 2 pages), pdf.js (the vendored 6.4.299, 1.0's
+     pdfLoadLib) finds "Shared with Sam" in page 1's text, and on EVERY page, rendered to a canvas, finds the stamp's
+     ink in the cells with no text (the stamp is an SVG image: its words are not text in the PDF). */
+const NL_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const nlToday = () => {
+  const d = new Date();
+  return `${d.getUTCDate()} ${NL_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+};
+/** The reader page as a reader meets it: the line, its <bdi>, the stamp layer and its background, the comments list. */
+const NL_READ = () => {
+  const k = document.querySelector('.rd-kicker.rd-named');
+  const st = document.querySelector('.rd-stamp');
+  return {
+    title: document.title,
+    h1: document.querySelector('h1')?.textContent || '',
+    line: k ? k.textContent : null,
+    bdi: k?.querySelector('bdi')?.textContent ?? null,
+    stamp: !!st,
+    stampBg: st ? getComputedStyle(st).backgroundImage.slice(0, 40) : null,
+    stampPe: st ? getComputedStyle(st).pointerEvents : null,
+    stampPos: st ? getComputedStyle(st).position : null,
+    list: document.getElementById('rdList')?.textContent || '',
+    section: document.getElementById('rdRoot')?.getAttribute('data-section') || '',
+    body: document.body.textContent,
+  };
+};
+/** pdf.js (1.0's pdfLoadLib) over a PDF: every page's text, and the page drawn to a canvas (scale 1.5), split into
+ *  16 px cells: the cells clear of every text item, and of those the "stamp cells" (see below). */
+const NL_PDF = async ([b64]) => {
+  /* global pdfLoadLib */
+  const lib = await pdfLoadLib();
+  const data = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const task = lib.getDocument({ data, verbosity: 0, useWasm: false, isOffscreenCanvasSupported: false });
+  const d = await task.promise;
+  const pages = [];
+  for (let i = 1; i <= d.numPages; i++) {
+    const pg = await d.getPage(i);
+    const tc = await pg.getTextContent();
+    const vp = pg.getViewport({ scale: 1.5 });
+    const c = document.createElement('canvas');
+    c.width = Math.ceil(vp.width);
+    c.height = Math.ceil(vp.height);
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: g, canvas: c, viewport: vp }).promise;
+    // every text item's box (ascent 1.0 em above the baseline, 0.35 em below), widened by 3 px: the text mask
+    const W = c.width, H = c.height;
+    const mask = new Uint8Array(W * H);
+    for (const x of tc.items) {
+      if (!x.str || !x.str.trim()) continue;
+      const m = lib.Util.transform(vp.transform, x.transform);
+      const fh = Math.hypot(m[2], m[3]);
+      const w = Math.max(x.width * vp.scale, fh * 0.5);
+      const x0 = Math.max(0, Math.floor(m[4] - 3)), x1 = Math.min(W, Math.ceil(m[4] + w + 3));
+      const y0 = Math.max(0, Math.floor(m[5] - fh * 1.0 - 3)), y1 = Math.min(H, Math.ceil(m[5] + fh * 0.35 + 3));
+      for (let y = y0; y < y1; y++) mask.fill(1, y * W + x0, y * W + x1);
+    }
+    const px = g.getImageData(0, 0, W, H).data;
+    // 16 px cells wholly clear of the text mask; a "stamp cell" holds ≥ 4 pixels of the stamp's light, cool ink (every
+    // channel 200..249 and blue ≥ green ≥ red, blue > red: #22333a at 11 % on white is ~231,233,233) and no darker
+    // pixel (text and drawn rules are darker). Measured: with the stamp's background-image removed, every page of the
+    // print has 0 such cells (the page's own light ink, its borders and fields, is warm: blue < red); with it, 17–165.
+    const CELL = 16;
+    let free = 0, inked = 0, ink = 0;
+    for (let y0 = 0; y0 + CELL <= H; y0 += CELL) for (let x0 = 0; x0 + CELL <= W; x0 += CELL) {
+      let clear = true;
+      for (let y = y0; y < y0 + CELL && clear; y++) for (let x = x0; x < x0 + CELL; x++) if (mask[y * W + x]) { clear = false; break; }
+      if (!clear) continue;
+      free++;
+      let n = 0, dark = 0;
+      for (let y = y0; y < y0 + CELL; y++) for (let x = x0; x < x0 + CELL; x++) {
+        const o = (y * W + x) * 4;
+        const lo = Math.min(px[o], px[o + 1], px[o + 2]), hi = Math.max(px[o], px[o + 1], px[o + 2]);
+        if (lo < 200) dark++;
+        else if (hi <= 249 && px[o + 2] >= px[o + 1] && px[o + 1] >= px[o] && px[o + 2] > px[o]) n++;
+      }
+      ink += n;
+      if (n >= 4 && dark === 0) inked++;
+    }
+    pages.push({ text: tc.items.map((x) => x.str).join(' '), free, inked, ink, size: [W, H] });
+  }
+  await task.destroy();
+  return pages;
+};
+/** The rows of one share's Readers disclosure, and its summary. */
+const nlReaderRows = (p, sid) => p.evaluate((id) => {
+  const dt = document.getElementById('betaReaders-' + id);
+  if (!dt) return null;
+  return { open: dt.open, summary: dt.querySelector('summary')?.textContent, rows: [...dt.querySelectorAll('.beta-row')].map((r) => r.textContent) };
+}, sid);
+/** Each named row: name → its recipient id and the link its Copy button holds. */
+const nlLinks = (p, sid) => p.evaluate((id) => Object.fromEntries([...document.querySelectorAll('#betaReaders-' + id + ' .beta-row[data-recipient-id]')].map((r) => [
+  r.querySelector('.a-name').childNodes[0].textContent,
+  { rid: r.getAttribute('data-recipient-id'), url: r.querySelector('[data-beta-reader-copy]')?.getAttribute('data-beta-reader-copy') || null, st: r.querySelector('.beta-st')?.className },
+])), sid);
+
+/** A reader's page watched as watch() does, except the 410 a closed link answers (the page under test). */
+function nlWatchReader(page) {
+  page.on('crash', () => csp.errors.push(`${page.url()}: the page CRASHED`));
+  page.on('pageerror', (e) => csp.errors.push(`${page.url()}: ${e}`));
+  page.on('console', (m) => {
+    const at = (m.location() && m.location().url) || '';
+    if (m.type() === 'error' && !/\/favicon\.ico$/.test(at) && !/Failed to load resource: the server responded with a status of 410/.test(m.text())) csp.errors.push(`${page.url()}: ${m.text()} (${at})`);
+  });
+  return page;
+}
+async function namedLinksParity(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const ctx1 = await newContext({ serviceWorkers: 'block' });
+  const readers = [];
+  try {
+    const page = await w7bNextLinked(ctx, origin, f.file, 'nl2');
+    const book = (await exportBackup(page)).json.book;
+    await w7aSignUp(ctx1, origin, w7aEmail('nl1'));
+    const one = await w7bOneLinked(ctx1, origin, book);
+    const w2 = w7aWrites(page), w1 = w7aWrites(one);
+    const sides = [[page, w2, '2.0'], [one, w1, '1.0']];
+    const marks = () => [w2.length, w1.length];
+    /** The /api/shares writes of both apps since `m`, compared. */
+    const same = (m, what, want = null) => {
+      const q2 = w7bReq(w2.slice(m[0]), /^\/api\/shares/), q1 = w7bReq(w1.slice(m[1]), /^\/api\/shares/);
+      const ok = JSON.stringify(q2) === JSON.stringify(q1) && (want === null || q2.length === want);
+      check(ok, `namedlinks parity: ${what} sends 1.0's requests: ${JSON.stringify(q2)}${JSON.stringify(q2) === JSON.stringify(q1) ? '' : ' — 1.0: ' + JSON.stringify(q1)}`);
+    };
+    const confirmOf = (p) => p.evaluate(() => [document.getElementById('confirmTitle').textContent, document.getElementById('confirmBody').textContent, document.getElementById('btnConfirmYes').textContent, document.getElementById('btnConfirmNo').textContent]);
+
+    // a reading copy, made as constraint 93 makes it
+    let m = marks();
+    await w5aOpenModal(page);
+    await one.evaluate(() => document.getElementById('btnExport').click());
+    for (const [p] of sides) {
+      await p.waitForFunction(() => !!document.getElementById('btnBetaCreate') && /No reading links/.test(document.getElementById('betaSec').textContent), null, { timeout: 30_000 });
+      await p.click('#btnBetaCreate');
+      await p.waitForSelector('#betaNewUrl', { timeout: 30_000 });
+      await p.waitForFunction(() => document.querySelectorAll('#betaList .beta-row[data-share-id]').length === 1, null, { timeout: 30_000 });
+    }
+    same(m, 'the reading copy made', 1);
+    const sid = {};
+    for (const [p, , who] of sides) sid[who] = await p.$eval('#betaList .beta-row[data-share-id]', (x) => x.getAttribute('data-share-id'));
+    // the Readers disclosure, opened
+    for (const [p, , who] of sides) {
+      await p.click(`#betaReaders-${sid[who]} > summary`);
+      await p.waitForFunction((id) => { const d = document.getElementById('betaReaders-' + id); return d && d.open && !d.querySelector('.shelf-empty'); }, sid[who], { timeout: 30_000 });
+    }
+    {
+      const a = await nlReaderRows(page, sid['2.0']), b = await nlReaderRows(one, sid['1.0']);
+      check(JSON.stringify(a) === JSON.stringify(b) && a.open && a.rows.length === 0, `namedlinks parity: the Readers disclosure opens as 1.0's, empty: ${JSON.stringify(a)}${JSON.stringify(a) === JSON.stringify(b) ? '' : ' — 1.0: ' + JSON.stringify(b)}`);
+    }
+    // Priya (never ends), then Sam (30 days)
+    m = marks();
+    for (const [name, days, n] of [['Priya', '0', 1], ['Sam', '30', 2]]) {
+      for (const [p, , who] of sides) {
+        const id = sid[who];
+        await p.fill(`#betaReaderName-${id}`, name);
+        await p.selectOption(`#betaReaderExpiry-${id}`, days);
+        await p.click(`[data-beta-reader-add="${id}"]`);
+        await p.waitForFunction(([i, k]) => document.querySelectorAll('#betaReaders-' + i + ' .beta-row[data-recipient-id]').length === k && !document.querySelector('[data-beta-reader-add="' + i + '"]').disabled, [id, n], { timeout: 30_000 });
+      }
+    }
+    same(m, 'adding Priya and Sam', 2);
+    const q2add = w7bReq(w2.slice(m[0]), /^\/api\/shares/);
+    check(q2add[0] === 'POST /api/shares/<id>/readers {"name":"Priya"}' && q2add[1] === 'POST /api/shares/<id>/readers {"name":"Sam","expiresInDays":30}', `namedlinks: the two adds are POST /api/shares/<id>/readers with the name (and Sam's 30 days): ${JSON.stringify(q2add)}`);
+    {
+      const a = await nlReaderRows(page, sid['2.0']), b = await nlReaderRows(one, sid['1.0']);
+      check(JSON.stringify(a) === JSON.stringify(b) && a.rows.length === 2, `namedlinks parity: the two readers' rows read as 1.0's: ${JSON.stringify(a)}${JSON.stringify(a) === JSON.stringify(b) ? '' : ' — 1.0: ' + JSON.stringify(b)}`);
+    }
+    const links = {};
+    for (const [p, , who] of sides) {
+      const L = await nlLinks(p, sid[who]);
+      const store = await p.evaluate(() => ({ named: JSON.parse(localStorage.getItem('beuk.betaReaderTokens.v1') || '{}'), open: JSON.parse(localStorage.getItem('beuk.betaTokens.v1') || '{}') }));
+      const id = sid[who];
+      const tok = (u) => (u || '').split('/read/')[1];
+      const openTok = store.open[id];
+      check(!!L.Priya?.url && !!L.Sam?.url && store.named[id + ':' + L.Priya.rid] === tok(L.Priya.url) && store.named[id + ':' + L.Sam.rid] === tok(L.Sam.url) && Object.keys(store.named).length === 2,
+        `namedlinks ${who}: each reader's Copy holds this site's /read/<token>, and the tokens are kept under beuk.betaReaderTokens.v1 as "<shareId>:<recipientId>" (${Object.keys(store.named).length} kept)`);
+      check(Object.keys(store.open).length === 1 && !!openTok && openTok !== tok(L.Priya?.url) && openTok !== tok(L.Sam?.url) && L.Priya.url.startsWith(origin + '/read/'),
+        `namedlinks ${who}: beuk.betaTokens.v1 still holds only the open link's token (shareId → token; ${Object.keys(store.open).length} entry)`);
+      const elsewhere = await p.evaluate((tks) => Object.keys(localStorage).filter((k) => k !== 'beuk.betaReaderTokens.v1' && tks.some((t) => String(localStorage.getItem(k)).includes(t))), [tok(L.Priya?.url), tok(L.Sam?.url)]);
+      check(elsewhere.length === 0, `namedlinks ${who}: the named tokens are in no other localStorage key (${JSON.stringify(elsewhere)})`);
+      links[who] = { priya: L.Priya, sam: L.Sam, open: origin + '/read/' + openTok };
+    }
+
+    // the readers: each app's links in a browser of their own
+    const today = nlToday();
+    const rc = {};
+    for (const [, , who] of sides) {
+      const c = await newContext({ serviceWorkers: 'block' });
+      readers.push(c);
+      const rp = nlWatchReader(await c.newPage());
+      rc[who] = { c, rp };
+      const L = links[who];
+      const seen = {};
+      for (const [k, name] of [['priya', 'Priya'], ['sam', 'Sam']]) {
+        const resp = await rp.goto(L[k].url);
+        const r = await rp.evaluate(NL_READ);
+        seen[k] = r;
+        check(resp.status() === 200 && r.line === `Shared with ${name} · ${today}` && r.bdi === name && r.stamp && /^url\("data:image\/svg\+xml/.test(r.stampBg || ''),
+          `namedlinks ${who}: ${name}'s link opens with her/his own name on the page: "${r.line}" (the name in <bdi>: "${r.bdi}"), the stamp layer there (${r.stampBg}…) [${resp.status()}]`);
+        await harvestCsp(rp);
+      }
+      check(!seen.sam.body.includes('Priya') && !seen.priya.body.includes('Sam'), `namedlinks ${who}: neither reader's page names the other`);
+      const open = await rp.goto(L.open);
+      const ro = await rp.evaluate(NL_READ);
+      check(open.status() === 200 && ro.line === null && !ro.stamp, `namedlinks ${who}: the open link's page has no name line and no stamp (${open.status()})`);
+      // comments: Priya's and Sam's, each through their own link; the open link one of its own
+      const sec = seen.priya.section;
+      const bodies = { priya: `Priya's note ${who}`, sam: `Sam's note ${who}`, open: `An open-link note ${who}` };
+      for (const [k, u] of [['priya', L.priya.url], ['sam', L.sam.url], ['open', L.open]]) {
+        const st = (await c.request.post(u + '/comments', { data: { readerName: k === 'open' ? 'Anon' : 'ignored', sectionId: sec, paragraph: 0, quote: '', body: bodies[k] } })).status();
+        check(st === 201, `namedlinks ${who}: a comment through the ${k} link is taken (${st})`);
+      }
+      const lists = {};
+      for (const [k, u] of [['priya', L.priya.url], ['sam', L.sam.url], ['open', L.open]]) {
+        await rp.goto(u);
+        await rp.waitForFunction(() => !/Comments appear here when scripts are allowed/.test(document.getElementById('rdList')?.textContent || ''), null, { timeout: 30_000 });
+        await rp.waitForFunction(() => !/Loading/i.test(document.getElementById('rdList')?.textContent || '') && (document.getElementById('rdList')?.textContent || '').length > 0, null, { timeout: 30_000 });
+        lists[k] = await rp.$eval('#rdList', (x) => x.textContent);
+        await harvestCsp(rp);
+      }
+      check(lists.sam.includes(bodies.sam) && !lists.sam.includes(bodies.priya) && !lists.sam.includes(bodies.open), `namedlinks ${who}: Sam's page shows his comment and none of Priya's (nor the open link's): "${lists.sam.slice(0, 120)}"`);
+      check(lists.priya.includes(bodies.priya) && !lists.priya.includes(bodies.sam) && !lists.priya.includes(bodies.open), `namedlinks ${who}: Priya's page shows only hers: "${lists.priya.slice(0, 120)}"`);
+      check(lists.open.includes(bodies.open) && !lists.open.includes(bodies.priya) && !lists.open.includes(bodies.sam), `namedlinks ${who}: the open link's page shows only the open link's: "${lists.open.slice(0, 120)}"`);
+    }
+
+    // close Priya, after the calm confirm
+    m = marks();
+    const conf = {};
+    for (const [p, , who] of sides) {
+      await p.click(`[data-beta-reader-close="${sid[who]}:${links[who].priya.rid}"]`);
+      await p.waitForSelector('#modalConfirm.open #btnConfirmYes', { timeout: 10_000 });
+      conf[who] = await confirmOf(p);
+      const before = (who === '2.0' ? w2 : w1).length;
+      await p.waitForTimeout(300);
+      check((who === '2.0' ? w2 : w1).length === before, `namedlinks ${who}: "Close Priya's link" sends nothing until it is confirmed`);
+      await p.click('#modalConfirm.open #btnConfirmYes');
+      await p.waitForFunction(([i, rid]) => !!document.querySelector('#betaReaders-' + i + ' .beta-row[data-recipient-id="' + rid + '"] .beta-st.revoked'), [sid[who], links[who].priya.rid], { timeout: 30_000 });
+    }
+    check(JSON.stringify(conf['2.0']) === JSON.stringify(conf['1.0']) && /Priya/.test(conf['2.0'][0]), `namedlinks parity: closing Priya asks first, in 1.0's words: ${JSON.stringify(conf['2.0'])}${JSON.stringify(conf['2.0']) === JSON.stringify(conf['1.0']) ? '' : ' — 1.0: ' + JSON.stringify(conf['1.0'])}`);
+    same(m, "closing Priya's link", 1);
+    {
+      const a = await nlReaderRows(page, sid['2.0']), b = await nlReaderRows(one, sid['1.0']);
+      check(JSON.stringify(a) === JSON.stringify(b), `namedlinks parity: after closing Priya the rows read as 1.0's: ${JSON.stringify(a.rows)}${JSON.stringify(a) === JSON.stringify(b) ? '' : ' — 1.0: ' + JSON.stringify(b.rows)}`);
+    }
+    for (const [, , who] of sides) {
+      const { rp } = rc[who];
+      const L = links[who];
+      const gone = await rp.goto(L.priya.url);
+      const g = await rp.evaluate(NL_READ);
+      check(gone.status() === 410 && /This reading copy is closed/.test(g.h1) && !g.body.includes('Priya') && !g.stamp, `namedlinks ${who}: Priya's closed link gives the 410 page, which never names her (${gone.status()}: "${g.h1}")`);
+      const sam = await rp.goto(L.sam.url);
+      const s = await rp.evaluate(NL_READ);
+      check(sam.status() === 200 && s.line === `Shared with Sam · ${today}`, `namedlinks ${who}: Sam keeps reading (${sam.status()}: "${s.line}")`);
+      const open = await rp.goto(L.open);
+      check(open.status() === 200, `namedlinks ${who}: the open link keeps working too (${open.status()})`);
+    }
+
+    // "Close the open link", after the calm confirm
+    m = marks();
+    for (const [p, , who] of sides) {
+      await p.click(`[data-beta-close-open="${sid[who]}"]`);
+      await p.waitForSelector('#modalConfirm.open #btnConfirmYes', { timeout: 10_000 });
+      conf[who] = await confirmOf(p);
+      await p.click('#modalConfirm.open #btnConfirmYes');
+      await p.waitForFunction((i) => !document.querySelector('[data-beta-close-open="' + i + '"]'), sid[who], { timeout: 30_000 });
+    }
+    check(JSON.stringify(conf['2.0']) === JSON.stringify(conf['1.0']), `namedlinks parity: "Close the open link" asks first, in 1.0's words: ${JSON.stringify(conf['2.0'])}${JSON.stringify(conf['2.0']) === JSON.stringify(conf['1.0']) ? '' : ' — 1.0: ' + JSON.stringify(conf['1.0'])}`);
+    same(m, '"Close the open link"', 1);
+    {
+      const rowsOf = (p) => p.$$eval('#betaList .beta-row[data-share-id]', (rs) => rs.map((r) => r.textContent));
+      const a = await rowsOf(page), b = await rowsOf(one);
+      check(JSON.stringify(a) === JSON.stringify(b), `namedlinks parity: after closing the open link the copy's row reads as 1.0's: ${JSON.stringify(a)}${JSON.stringify(a) === JSON.stringify(b) ? '' : ' — 1.0: ' + JSON.stringify(b)}`);
+      const ids = (p) => p.$$eval('#betaList [data-beta-copy]', (bs) => bs.length);
+      check((await ids(page)) === 0 && (await ids(one)) === 0, "namedlinks: the closed open link's Copy is gone in both apps");
+    }
+    for (const [, , who] of sides) {
+      const { rp } = rc[who];
+      const L = links[who];
+      const open = await rp.goto(L.open);
+      const o = await rp.evaluate(NL_READ);
+      check(open.status() === 410 && /This reading copy is closed/.test(o.h1), `namedlinks ${who}: the closed open link gives the 410 page (${open.status()})`);
+      const sam = await rp.goto(L.sam.url);
+      const s = await rp.evaluate(NL_READ);
+      check(sam.status() === 200 && s.line === `Shared with Sam · ${today}` && s.stamp, `namedlinks ${who}: Sam is unaffected (${sam.status()}: "${s.line}")`);
+      const pr = await rp.goto(L.priya.url);
+      check(pr.status() === 410, `namedlinks ${who}: Priya's link stays closed (${pr.status()})`);
+      await harvestCsp(rp);
+    }
+    // the watermark on Sam's page (2.0's link), while it is open
+    if ((process.env.NL_PARTS || 'watermark').split(',').includes('watermark')) await namedLinksWatermark(srv, links['2.0'].sam.url, one);
+
+    // Revoke (the copy as a whole, 1.0's confirm unchanged): every named link closes with it
+    m = marks();
+    for (const [p, , who] of sides) {
+      await p.click(`#betaList [data-beta-revoke="${sid[who]}"]`);
+      await p.waitForSelector('#modalConfirm.open #btnConfirmYes', { timeout: 10_000 });
+      conf[who] = await confirmOf(p);
+      await p.click('#modalConfirm.open #btnConfirmYes');
+      await p.waitForSelector('#betaList .beta-st.revoked', { timeout: 30_000 });
+    }
+    check(JSON.stringify(conf['2.0']) === JSON.stringify(conf['1.0']), `namedlinks parity: Revoke asks in 1.0's words: ${JSON.stringify(conf['2.0'])}${JSON.stringify(conf['2.0']) === JSON.stringify(conf['1.0']) ? '' : ' — 1.0: ' + JSON.stringify(conf['1.0'])}`);
+    same(m, 'Revoke', 1);
+    for (const [, , who] of sides) {
+      const { rp } = rc[who];
+      const sam = await rp.goto(links[who].sam.url);
+      const s = await rp.evaluate(NL_READ);
+      check(sam.status() === 410 && /This reading copy is closed/.test(s.h1) && !s.body.includes('Sam'), `namedlinks ${who}: after Revoke, Sam's named link gives the 410 page too (${sam.status()})`);
+    }
+    same([0, 0], 'the whole run', 6);
+    await harvestCsp(page);
+    await harvestCsp(one);
+
+  } finally {
+    for (const c of readers) await c.close();
+    await ctx1.close();
+    await ctx.close();
+  }
+}
+
+/** The watermark on Sam's page, in Chromium (see above). `one`: a 1.0 page on this origin, for its pdf.js. */
+async function namedLinksWatermark(srv, samUrl, one) {
+  const today = nlToday();
+  const want = `Shared with Sam · ${today}`;
+  // JavaScript off
+  {
+    const c = await newContext({ serviceWorkers: 'block', javaScriptEnabled: false });
+    try {
+      const p = await c.newPage();
+      const resp = await p.goto(samUrl);
+      const r = await p.evaluate(NL_READ);
+      check(resp.status() === 200 && /Comments appear here when scripts are allowed/.test(r.list), `namedlinks watermark (JS off): the page's own script did not run — its comments list still says so ("${r.list.slice(0, 60)}")`);
+      check(r.line === want && r.bdi === 'Sam', `namedlinks watermark (JS off): the line is there: "${r.line}"`);
+      check(r.stamp && /^url\("data:image\/svg\+xml/.test(r.stampBg || '') && r.stampPe === 'none' && r.stampPos === 'fixed', `namedlinks watermark (JS off): the stamp layer is there — fixed, pointer-events ${r.stampPe}, its background ${r.stampBg}…`);
+    } finally {
+      await c.close();
+    }
+  }
+  // 360 px
+  {
+    const c = await newContext({ serviceWorkers: 'block', viewport: { width: 360, height: 740 } });
+    try {
+      const p = await watch(await c.newPage());
+      await p.goto(samUrl);
+      const r = await p.evaluate(() => {
+        const k = document.querySelector('.rd-kicker.rd-named');
+        const b = k.getBoundingClientRect();
+        const cs = getComputedStyle(k);
+        return { box: [b.left, b.top, b.width, b.height].map((x) => Math.round(x * 10) / 10), display: cs.display, visibility: cs.visibility, opacity: cs.opacity, sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, bsw: document.body.scrollWidth, text: k.textContent };
+      });
+      const vis = await p.locator('.rd-kicker.rd-named').isVisible();
+      check(vis && r.box[2] > 0 && r.box[3] > 0 && r.box[0] >= 0 && r.box[0] + r.box[2] <= 360 && r.display !== 'none' && r.visibility === 'visible' && Number(r.opacity) > 0 && r.text === want,
+        `namedlinks watermark (360 px): the line is visible, inside the viewport (box ${JSON.stringify(r.box)}, ${r.display}, opacity ${r.opacity})`);
+      check(r.sw <= r.cw && r.bsw <= r.cw, `namedlinks watermark (360 px): no horizontal scroll (scrollWidth ${r.sw} / body ${r.bsw}, clientWidth ${r.cw})`);
+      writeFileSync(path.join(OUT, 'nl-sam-360.png'), await p.screenshot());
+      await harvestCsp(p);
+    } finally {
+      await c.close();
+    }
+  }
+  // dark
+  {
+    const c = await newContext({ serviceWorkers: 'block', colorScheme: 'dark' });
+    try {
+      const p = await watch(await c.newPage());
+      await p.goto(samUrl);
+      const dark = await p.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches);
+      const r = await p.evaluate(NL_READ);
+      check(dark && r.stamp && r.stampBg && r.stampBg !== 'none' && /^url\("data:image\/svg\+xml/.test(r.stampBg), `namedlinks watermark (colorScheme dark, prefers-color-scheme: dark ${dark}): the stamp layer's background is not none (${r.stampBg}…)`);
+      writeFileSync(path.join(OUT, 'nl-sam-dark.png'), await p.screenshot());
+      await harvestCsp(p);
+    } finally {
+      await c.close();
+    }
+  }
+  // print: the longest chapter, through pdf.js
+  {
+    const c = await newContext({ serviceWorkers: 'block' });
+    try {
+      let best = { i: 0, len: -1 };
+      const n = ((await (await c.request.get(samUrl)).text()).match(/<details class="rd-nav"><summary>Chapters \((\d+)\)/) || [])[1];
+      for (let i = 0; i < Number(n || 1); i++) {
+        const html = await (await c.request.get(samUrl + '?c=' + i)).text();
+        const main = (html.split('id="rdRoot"')[1] || '').split('</main>')[0].replace(/<[^>]+>/g, '');
+        if (main.length > best.len) best = { i, len: main.length };
+      }
+      const p = await watch(await c.newPage());
+      await p.goto(samUrl + '?c=' + best.i);
+      await p.evaluate(() => document.fonts.ready);
+      const pdf = await p.pdf({ format: 'A4' });
+      writeFileSync(path.join(OUT, 'nl-sam-print.pdf'), pdf);
+      note(`namedlinks watermark (print): chapter ${best.i} of ${n} (${best.len} characters of text), printed A4 by Chromium ${browser.version()} (page.pdf, background graphics off, as a reader's Print would be); pdf.js 6.4.299 in the 1.0 page`);
+      const pages = await one.evaluate(NL_PDF, [pdf.toString('base64')]);
+      check(pages.length >= 2, `namedlinks watermark (print): the chapter prints to ${pages.length} pages (≥ 2)`);
+      check(pages[0] && pages[0].text.includes('Shared with Sam') && pages[0].text.includes(want), `namedlinks watermark (print): pdf.js finds "${want}" in page 1's text`);
+      note(`namedlinks watermark (print): per page, cells clear of text / with the stamp's light ink / light-ink pixels: ${pages.map((x, i) => `p${i + 1} ${x.free}/${x.inked}/${x.ink}`).join(', ')}`);
+      const bad = pages.map((x, i) => [i + 1, x]).filter(([, x]) => !(x.free > 0 && x.inked >= 8));
+      check(pages.length >= 2 && bad.length === 0, `namedlinks watermark (print): on every page (${pages.length}), drawn by pdf.js, the stamp's ink is in the cells with no text (≥ 8 cells of 16 px)${bad.length ? ' — missing on page(s) ' + bad.map(([i, x]) => `${i} (${x.inked} of ${x.free})`).join(', ') : ''}`);
+      check(!pages.slice(1).some((x) => x.text.includes('Shared with')), 'namedlinks watermark (print): the stamp is an image, not text (no "Shared with" in the text after page 1) — the canvas check above is what proves it on every page');
+      await harvestCsp(p);
+    } finally {
+      await c.close();
+    }
+  }
+}
+
+async function namedLinksChecks() {
+  const stripe = await w7aFakeStripe();
+  const srv = await startServer({ repo: REPO, api: true, apiConfig: { stripeWebhookSecret: 'whsec_test_placeholder', stripeSecretKey: 'sk_test_placeholder', stripePriceId: 'price_fixture', stripeApiBase: stripe.base } });
+  note(`namedlinks: the real server on ${srv.origin} (PGlite), billing in test mode against a fake Stripe on ${stripe.base}`);
+  try {
+    await namedLinksParity(srv);
+  } finally {
+    await srv.stop().catch(() => undefined);
+    await stripe.close();
+  }
+}
+
 /* 94: the archive beside 1.0 — the list, a file saved there, the EPUBCheck request. */
 async function wave7bArchive(srv) {
   const origin = srv.origin;
@@ -9078,6 +9511,7 @@ try {
   if (run('wave7a')) await wave7aChecks();
   if (run('wave7b')) await wave7bChecks();
   if (run('lockcopy')) await lockcopyChecks(srv.origin);
+  if (run('namedlinks')) await namedLinksChecks();
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
