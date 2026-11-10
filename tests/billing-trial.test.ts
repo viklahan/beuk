@@ -227,6 +227,8 @@ async function gatedStatuses(c: Client, work: { mid: string; exportId: string; s
   out['POST /api/authorship/stamps'] = (
     await c.post('/api/authorship/stamps', { bookId: 'gate-check', title: 'Gate check', sha256: 'a'.repeat(64), kind: 'backup' })
   ).status;
+  out['POST /api/account/two-step/start'] = (await c.post('/api/account/two-step/start', { currentPassword: PASSWORD })).status;
+  out['POST /api/account/two-step/enable'] = (await c.post('/api/account/two-step/enable', { code: '000000' })).status;
   return out;
 }
 
@@ -335,7 +337,7 @@ test('decideAccess: open while billing is off; subscription, grace, trial, pause
   assert.equal(decideAccess(true, gone, grace), 'grace');
 });
 
-test('the rules are data: eight features, ten gated POST routes, and the never-paused list does not overlap', () => {
+test('the rules are data: nine features, twelve gated POST routes, and the never-paused list does not overlap', () => {
   assert.deepEqual(
     ACCESS_RULES.map((r) => `${r.method} ${r.path}`),
     [
@@ -349,10 +351,12 @@ test('the rules are data: eight features, ten gated POST routes, and the never-p
       'POST /api/wrap',
       'POST /api/exports',
       'POST /api/authorship/stamps',
+      'POST /api/account/two-step/start',
+      'POST /api/account/two-step/enable',
     ],
   );
   assert.deepEqual(Object.keys(PAUSABLE_FEATURES).sort(), [
-    'archive.upload', 'authorship.stamp', 'export.epub', 'export.print', 'export.wrap', 'jobs.run', 'shares.create', 'shelf.add',
+    'archive.upload', 'authorship.stamp', 'export.epub', 'export.print', 'export.wrap', 'jobs.run', 'shares.create', 'shelf.add', 'twoStep.setup',
   ]);
   // The three store-ready export features each have their route: export.print (the pdfx job,
   // Step 3 part 2), export.epub (POST /api/epub, part 3) and export.wrap (POST /api/wrap, part 4).
@@ -366,6 +370,10 @@ test('the rules are data: eight features, ten gated POST routes, and the never-p
   // The authorship record: new stamps pause, looking up the record never does.
   assert.ok(NEVER_PAUSED.some((r) => r.method === 'GET' && r.path === '/api/authorship/stamps'), 'the authorship record is never paused');
   assert.ok(NEVER_PAUSED.some((r) => r.method === 'GET' && r.path === '/api/authorship/check'), 'checking a backup is never paused');
+  // Two-step: turning it on pauses; signing in with it, turning it off and new codes never do.
+  for (const p of ['/api/auth/login', '/api/auth/login/code', '/api/account/two-step/disable', '/api/account/two-step/recovery-codes']) {
+    assert.ok(NEVER_PAUSED.some((r) => r.method === 'POST' && r.path === p), `${p} is never paused`);
+  }
 });
 
 /* ---------------- settings unset ---------------- */
@@ -440,7 +448,7 @@ test('gating matrix: trial active, subscribed, past_due inside grace → open; e
     // Download all my data is open in every state, paused included.
     assert.equal((await w.c.download('/api/account/export')).status, 200, `${k.name}: Download all my data`);
   }
-  assert.equal(Object.keys(PAUSABLE_FEATURES).length, 8, 'paused locks all eight');
+  assert.equal(Object.keys(PAUSABLE_FEATURES).length, 9, 'paused locks all nine');
 });
 
 test('billing off: /api/auth/me reports an open state, no trial days and nothing locked', async () => {

@@ -27,7 +27,10 @@ import { scrubText } from './scrub.js';
  *  manuscripts, share_recipients after shares, share_comments after
  *  share_recipients (recipient_id), share_readers after shares;
  *  user_theme_pictures after user_themes and pictures; authorship_stamps
- *  (migration 024) only references users, so it follows users.
+ *  (migration 024) only references users, so it follows users, as do
+ *  the two-step tables of migration 025 (user_two_step,
+ *  two_step_recovery_codes, sign_in_challenges; the last holds only
+ *  hashes of 5-minute tokens and is simpler backed up than excluded).
  *  billing_subscriptions / billing_events (migration 012) only reference
  *  users. They are backed up, not excluded: billing_subscriptions holds
  *  the grace clock (status_since) and the user attribution that access
@@ -40,6 +43,9 @@ import { scrubText } from './scrub.js';
 export const BACKUP_TABLES = [
   'users',
   'authorship_stamps',
+  'user_two_step',
+  'two_step_recovery_codes',
+  'sign_in_challenges',
   'manuscripts',
   'series_covenants',
   'user_themes',

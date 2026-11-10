@@ -29,6 +29,7 @@ import { publicConfigRoutes, statusRoutes } from './routes/public.js';
 import { resetPageRoutes } from './routes/reset-page.js';
 import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
 import { authorshipRoutes } from './routes/authorship.js';
+import { twoStepRoutes } from './routes/two-step.js';
 import { stockRoutes } from './routes/stock.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
@@ -135,7 +136,7 @@ export function buildApp({
   // Accounts portal (/account + /api/account): the sign-up hook sends the
   // email confirmation after the register response.
   const portal = accountPortalRoutes({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now, limits: portalLimits });
-  app.use('/api/auth', authRoutes(db, config, { afterRegister: signupConfirmationHook({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now }) }, { billing: billingProvider, now: now ?? (() => new Date()) }));
+  app.use('/api/auth', authRoutes(db, config, { afterRegister: signupConfirmationHook({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now }) }, { billing: billingProvider, now: now ?? (() => new Date()) }, { now }));
   // P0 #5: forgot/reset password, change password, sign out everywhere.
   app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits));
   app.use('/api/manuscripts', manuscriptRoutes(db, config, accountTasks));
@@ -218,6 +219,8 @@ export function buildApp({
   // The authorship record: fingerprint-only stamps (signed in, owner-only).
   app.use('/api/authorship', authorshipRoutes(db, now));
 
+  // Two-step sign-in: turning it on and off (signed in; start + enable pause on day 22).
+  app.use('/api/account/two-step', twoStepRoutes({ db, now }));
   app.use('/api/account', portal.api);
 
   // Beuk School: free courses at /school; progress for signed-in writers only.

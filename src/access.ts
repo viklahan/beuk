@@ -35,7 +35,10 @@ import { entitlementsFor, loadEntitlements, type EntitlementsLoad, type Entitlem
  * the server-made print-ready PDF (the pdfx job, export.print), saving
  * new files to the archive, and new authorship stamps (POST
  * /api/authorship/stamps, authorship.stamp: the export itself still
- * happens, only the stamp is skipped). export.epub is the server-built store-ready
+ * happens, only the stamp is skipped), and turning on two-step sign-in
+ * (twoStep.setup: start + enable; two-step already on stays on, and
+ * signing in with it, turning it off and new recovery codes are never
+ * paused). export.epub is the server-built store-ready
  * EPUB (POST /api/epub, Step 3 part 3); export.wrap is the server-built
  * cover wrap (POST /api/wrap, part 4).
  */
@@ -82,6 +85,7 @@ export const PAUSABLE_FEATURES = {
   'export.print': 'print-ready PDFs',
   'export.wrap': 'cover wraps',
   'authorship.stamp': 'new authorship stamps',
+  'twoStep.setup': 'turning on two-step sign-in',
 } as const;
 export type PausableFeature = keyof typeof PAUSABLE_FEATURES;
 
@@ -97,6 +101,8 @@ export const ACCESS_RULES: ReadonlyArray<{ method: 'POST'; path: string; feature
   { method: 'POST', path: '/api/wrap', feature: 'export.wrap' },
   { method: 'POST', path: '/api/exports', feature: 'archive.upload' },
   { method: 'POST', path: '/api/authorship/stamps', feature: 'authorship.stamp' },
+  { method: 'POST', path: '/api/account/two-step/start', feature: 'twoStep.setup' },
+  { method: 'POST', path: '/api/account/two-step/enable', feature: 'twoStep.setup' },
 ];
 
 /** Never paused, whatever the plan (tested route by route). */
@@ -126,6 +132,10 @@ export const NEVER_PAUSED: ReadonlyArray<{ method: string; path: string; why: st
   { method: 'POST', path: '/api/account/delete', why: 'delete the account' },
   { method: 'GET', path: '/api/authorship/stamps', why: 'see your authorship record' },
   { method: 'GET', path: '/api/authorship/check', why: 'check a backup against your record' },
+  { method: 'POST', path: '/api/auth/login', why: 'sign in' },
+  { method: 'POST', path: '/api/auth/login/code', why: 'sign in with two-step already on' },
+  { method: 'POST', path: '/api/account/two-step/disable', why: 'turn two-step sign-in off' },
+  { method: 'POST', path: '/api/account/two-step/recovery-codes', why: 'get new recovery codes' },
 ];
 
 const DAY_MS = 86_400_000;

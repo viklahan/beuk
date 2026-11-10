@@ -1,17 +1,21 @@
-import { Router } from 'express';
+import { randomBytes } from 'node:crypto';
+import { Router, type Request, type Response } from 'express';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { checkPassword, dummyPasswordHash, hashPassword, verifyAgainstDummy } from '../password.js';
 import { rateLimit, TokenBucketLimiter } from '../ratelimit.js';
+import { SlidingWindowLimiter } from '../rate-limit.js';
 import {
   clearSessionCookie,
   createSession,
   destroySession,
   requireAuth,
   setSessionCookie,
+  tokenHash,
 } from '../auth.js';
 import { initStreakState } from '../streak.js';
 import { accessSummary, accountAccess, type AccessDeps } from '../access.js';
+import { twoStepOn, twoStepStatus, verifySecondFactor } from '../twostep/store.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,7 +32,35 @@ export interface AuthHooks {
   /** Accounts portal: runs after a successful sign-up (sends the email
    *  confirmation after the response); its fields join the 201 body. */
   afterRegister?: (user: { id: string; email: string }) => Record<string, unknown> | void;
+  /** Account hardening: runs after every successful sign-in (the plain
+   *  password login and the /login/code step), once the session exists
+   *  and the response is sent. `sessionToken` is the new session's raw
+   *  token (only its hash is stored). */
+  onSignedIn?: (user: { id: string; email: string }, req: Request, sessionToken: string) => void;
+  /** Account hardening: a recovery code was spent at /login/code; `left` is how many stay unused. */
+  onRecoveryUsed?: (user: { id: string; email: string }, left: number) => void;
 }
+
+/** The sign-in code step: a challenge lives 5 minutes and allows 5 codes. */
+export const CHALLENGE_TTL_MS = 5 * 60_000;
+export const CHALLENGE_MAX_ATTEMPTS = 5;
+
+/** Per-account sign-in limit: failures (wrong password, wrong code) per
+ *  lowercase address, whether or not the address has an account. */
+export interface SignInLimits {
+  perAccount: { max: number; windowMs: number };
+}
+export const DEFAULT_SIGN_IN_LIMITS: SignInLimits = {
+  perAccount: { max: 10, windowMs: 15 * 60_000 },
+};
+
+export interface AuthOptions {
+  /** Injectable clock (challenge expiry, TOTP steps, the per-account window). */
+  now?: () => Date;
+  signInLimits?: SignInLimits;
+}
+
+const TOO_MANY_SIGN_INS = 'too many sign-in attempts — please wait and try again';
 
 /** BEUK:login — the refusal log line (stdout, JSON, one line). */
 export function logLoginRefusal(fields: {
@@ -38,8 +70,33 @@ export function logLoginRefusal(fields: {
   console.log(JSON.stringify({ event: 'auth.login.refused', at: new Date().toISOString(), ...fields }));
 }
 
-export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}, access?: Pick<AccessDeps, 'billing' | 'now'>): Router {
+export function authRoutes(
+  db: Db,
+  config: Config,
+  hooks: AuthHooks = {},
+  access?: Pick<AccessDeps, 'billing' | 'now'>,
+  options: AuthOptions = {},
+): Router {
   const router = Router();
+  const now = options.now ?? access?.now ?? (() => new Date());
+  const limits = options.signInLimits ?? DEFAULT_SIGN_IN_LIMITS;
+  // Per ADDRESS, against password-guessing from many IPs. Only failures
+  // are recorded; the 429 is the same whether the account exists or not.
+  const perAccount = new SlidingWindowLimiter(limits.perAccount.max, limits.perAccount.windowMs, () => now().getTime());
+  const accountLimited = (res: Response, key: string): boolean => {
+    if (!perAccount.wouldLimit(key)) return false;
+    const retryAfterSeconds = perAccount.retryAfterSeconds(key);
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    res.status(429).json({ error: TOO_MANY_SIGN_INS, retryAfterSeconds });
+    return true;
+  };
+  /** The session, its cookie and the sign-in hook: one path for both ways in. */
+  const signIn = async (req: Request, res: Response, user: { id: string; email: string }) => {
+    const session = await createSession(db, user.id, config.sessionTtlDays);
+    setSessionCookie(res, session.token, session.expiresAt, config.cookieSecure);
+    res.json({ user: { id: user.id, email: user.email } });
+    hooks.onSignedIn?.({ id: user.id, email: user.email }, req, session.token);
+  };
   // Warm the dummy hash so the first unknown-email login isn't the one
   // request that also pays for computing it.
   void dummyPasswordHash();
@@ -94,6 +151,7 @@ export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}, access
     try {
       const email = String(req.body?.email ?? '').trim().toLowerCase();
       const password = String(req.body?.password ?? '');
+      if (accountLimited(res, email)) return undefined;
       const found = await db.query<UserRow>(
         'select id, email, password_hash from users where email = $1',
         [email],
@@ -114,11 +172,74 @@ export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}, access
         // the user id only when the account exists). The response stays
         // the same for every reason (no oracle on which emails exist).
         logLoginRefusal({ reason: refusal ?? 'no_account', userId: user?.id ?? null });
+        perAccount.hit(email);
         return res.status(401).json({ error: 'invalid email or password' });
       }
-      const session = await createSession(db, user.id, config.sessionTtlDays);
-      setSessionCookie(res, session.token, session.expiresAt, config.cookieSecure);
-      return res.json({ user: { id: user.id, email: user.email } });
+      if (await twoStepOn(db, user.id)) {
+        // The right password, and two-step is on: no session yet, only a
+        // short-lived challenge for POST /login/code.
+        const at = now();
+        await db.query('delete from sign_in_challenges where expires_at < $1', [new Date(at.getTime() - 86_400_000)]);
+        const challenge = randomBytes(32).toString('base64url');
+        await db.query(
+          'insert into sign_in_challenges (user_id, token_hash, expires_at, created_at) values ($1, $2, $3, $4)',
+          [user.id, tokenHash(challenge), new Date(at.getTime() + CHALLENGE_TTL_MS), at],
+        );
+        return res.json({ twoStep: true, challenge });
+      }
+      await signIn(req, res, user);
+      return undefined;
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  // The code step: an authenticator code or a recovery code for a live
+  // challenge. A wrong code is 401 (and counts for the account); an
+  // unknown, expired, used or 5-times-wrong challenge is 410.
+  router.post('/login/code', loginLimit, async (req, res, next) => {
+    try {
+      const gone = () => res.status(410).json({ error: 'sign in again' });
+      const challenge = String(req.body?.challenge ?? '');
+      const code = String(req.body?.code ?? '');
+      if (!challenge || challenge.length > 200) return gone();
+      const at = now();
+      const found = (
+        await db.query<{ id: string; user_id: string; email: string; expires_at: string | Date; attempts: number }>(
+          `select c.id, c.user_id, u.email, c.expires_at, c.attempts
+           from sign_in_challenges c join users u on u.id = c.user_id
+           where c.token_hash = $1`,
+          [tokenHash(challenge)],
+        )
+      ).rows[0];
+      if (!found) return gone();
+      if (new Date(found.expires_at).getTime() <= at.getTime() || found.attempts >= CHALLENGE_MAX_ATTEMPTS) {
+        await db.query('delete from sign_in_challenges where id = $1', [found.id]);
+        return gone();
+      }
+      const key = found.email.toLowerCase();
+      if (accountLimited(res, key)) return undefined;
+      // Claim one of the challenge's attempts before the code is checked.
+      const claimed = await db.query(
+        `update sign_in_challenges set attempts = attempts + 1
+         where id = $1 and attempts < $2 and expires_at > $3 returning id`,
+        [found.id, CHALLENGE_MAX_ATTEMPTS, at],
+      );
+      if (!claimed.rows.length) return gone();
+      const kind = await verifySecondFactor(db, found.user_id, code, at.getTime());
+      if (!kind) {
+        perAccount.hit(key);
+        return res.status(401).json({ error: "that code didn't work" });
+      }
+      // Single use: only the request that deletes the challenge signs in.
+      const used = await db.query('delete from sign_in_challenges where id = $1 returning id', [found.id]);
+      if (!used.rows.length) return gone();
+      const user = { id: found.user_id, email: found.email };
+      await signIn(req, res, user);
+      if (kind === 'recovery' && hooks.onRecoveryUsed) {
+        hooks.onRecoveryUsed(user, (await twoStepStatus(db, user.id)).recoveryLeft);
+      }
+      return undefined;
     } catch (err) {
       return next(err);
     }

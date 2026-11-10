@@ -16,7 +16,8 @@ import { ZIP_LIMIT_BYTES, ZipWriter } from './zip.js';
  * to users): sessions, password_resets, email_confirmations,
  * manuscripts, series_covenants, user_themes, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
  * streak_days, streak_freezes, streak_state, shares (+ share_recipients,
- * share_comments, share_readers), school_progress, authorship_stamps, billing_subscriptions. billing_events keep their
+ * share_comments, share_readers), school_progress, authorship_stamps, user_two_step,
+ * two_step_recovery_codes, sign_in_challenges, billing_subscriptions. billing_events keep their
  * Stripe event id (the webhook dedupe ledger) with user_id set null.
  *
  * NOT linked to an account in the database, so not part of either:
@@ -44,6 +45,9 @@ export const ACCOUNT_DELETED_TABLES = [
   'school_progress',
   'shares',
   'authorship_stamps',
+  'user_two_step',
+  'two_step_recovery_codes',
+  'sign_in_challenges',
   'billing_subscriptions',
 ] as const;
 /** Rows kept with user_id set null, and why. */
@@ -724,6 +728,9 @@ export async function deleteAccount(
     await del('streak_state', 'delete from streak_state where user_id = $1', [userId]);
     await del('school_progress', 'delete from school_progress where user_id = $1', [userId]);
     await del('authorship_stamps', 'delete from authorship_stamps where user_id = $1', [userId]);
+    await del('sign_in_challenges', 'delete from sign_in_challenges where user_id = $1', [userId]);
+    await del('two_step_recovery_codes', 'delete from two_step_recovery_codes where user_id = $1', [userId]);
+    await del('user_two_step', 'delete from user_two_step where user_id = $1', [userId]);
     await del('password_resets', 'delete from password_resets where user_id = $1', [userId]);
     await del('email_confirmations', 'delete from email_confirmations where user_id = $1', [userId]);
     const subs = await tx.query<{ stripe_subscription_id: string }>(

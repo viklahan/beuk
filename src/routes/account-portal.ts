@@ -38,6 +38,7 @@ import {
 } from '../account/page.js';
 import { ZipWriter } from '../account/zip.js';
 import { sendSignupEmail } from '../email/welcome.js';
+import { twoStepStatus } from '../twostep/store.js';
 
 /**
  * Accounts — "your typesetting portal".
@@ -50,7 +51,8 @@ import { sendSignupEmail } from '../email/welcome.js';
  *   GET  /account/account.css|js  the page's stylesheet and form script
  *
  * API (signed in unless noted), mounted at /api/account:
- *   GET  /summary                 {email, emailConfirmed, pendingEmail, emailDelivery, plan}
+ *   GET  /summary                 {email, emailConfirmed, pendingEmail, emailDelivery, plan,
+ *                                  twoStep:{on, since, recoveryLeft}}
  *   POST /confirm/resend          a new sign-up confirmation link
  *   POST /email {currentPassword, newEmail}
  *                                 link to the NEW address + notice to the
@@ -259,6 +261,7 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
         emailDelivery: mailOn() ? 'email' : 'not-configured',
         accountPage: '/account',
         plan: await studioPlan(req.user!.id),
+        twoStep: await twoStepStatus(db, req.user!.id),
       });
     } catch (err) {
       return next(err);
