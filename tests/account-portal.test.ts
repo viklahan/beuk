@@ -872,9 +872,17 @@ test('/account, two-step off: a Two-step sign-in block with the start button, th
     const card = securityCard((await page(c, s.base, '/account')).text);
     assert.match(card, /<h3[^>]*>Two-step sign-in<\/h3>/);
     assert.match(card, /data-twostep="off"/);
-    assert.match(card, /<button[^>]*data-action="twostep-start"[^>]*>Turn on two-step sign-in<\/button>/);
+    assert.match(card, /<button[^>]*data-action="twostep-begin"[^>]*>Turn on two-step sign-in<\/button>/);
     // The steps the script walks through: password, then QR + key + code, then the codes.
     assert.match(card, /data-form="twostep-start"/);
+    // One name, one meaning: the begin button and the password form are told apart.
+    assert.ok(!card.includes('data-action="twostep-start"'));
+    // The labelled blocks are groups, so the label reaches assistive tech.
+    assert.match(card, /id="two-step" role="group" aria-labelledby="twostep-h"/);
+    assert.match(card, /id="devices" role="group" aria-labelledby="devices-h"/);
+    // A pasted "123 456" is not cut short; the script strips the space.
+    const enable = /<form[^>]*data-form="twostep-enable"[\s\S]*?<\/form>/.exec(card)?.[0] ?? '';
+    assert.ok(enable && !/maxlength/.test(enable), 'no maxlength on the enable code');
     assert.match(card, /data-twostep-qr/);
     assert.match(card, /data-twostep-key/);
     assert.match(card, /data-form="twostep-enable"/);
@@ -918,7 +926,7 @@ test('/account, two-step on: since when, codes left, turn off + new codes forms,
     assert.match(card, /10 recovery codes left/);
     assert.match(card, /data-form="twostep-off"/);
     assert.match(card, /data-form="twostep-codes"/);
-    assert.ok(!card.includes('data-action="twostep-start"'), 'no start button while on');
+    assert.ok(!card.includes('data-action="twostep-begin"'), 'no start button while on');
     assert.match(
       card,
       /Lost your phone and your recovery codes\? Write to support at <a href="mailto:shelf@example\.com" data-support-email>shelf@example\.com<\/a>\./,
@@ -976,7 +984,7 @@ test('/account on day 22 unpaid: the pause note in place of the start button; tw
       card,
       /<p class="note-line" data-twostep-paused>Your free trial has ended, so turning on two-step sign-in is paused until you choose a plan\./,
     );
-    assert.ok(!card.includes('data-action="twostep-start"'), 'no start button on day 22');
+    assert.ok(!card.includes('data-action="twostep-begin"'), 'no start button on day 22');
     assert.ok(!card.includes('data-form="twostep-enable"'), 'no setup steps on day 22');
     assert.match(card, /data-sessions/, 'the sessions list is never paused');
 
@@ -1022,4 +1030,56 @@ test('account.js: the two-step flow and the sessions list keep their promises (s
   assert.match(js, /\.innerHTML\s*=\s*svg;/);
   assert.match(js, /function safeQrSvg\(/);
   assert.ok(!/insertAdjacentHTML|outerHTML\s*=|document\.write/.test(js));
+  // The back/forward cache can't bring the key or the codes back.
+  assert.match(js, /addEventListener\("pagehide", clearSecrets\)/);
+  // Focus follows the flow: the codes step's first control, and "Turn on" after Cancel.
+  assert.match(js, /part\("\[data-recovery-copy\]"\);\s*if \(first\) first\.focus\(\);/);
+  assert.match(js, /part\('\[data-action="twostep-begin"\]'\);\s*if \(btn\) btn\.focus\(\);/);
+  // One name, one meaning: the begin action is not the password form's handler name.
+  assert.match(js, /"twostep-begin": function \(\)/);
+  assert.equal((js.match(/"twostep-start":/g) ?? []).length, 1);
+});
+
+/** account.js's own safeQrSvg, lifted out of the file and run here. */
+function clientSafeQrSvg(): (s: unknown) => string | null {
+  const js = read('client', 'account', 'account.js');
+  const at = js.indexOf('function safeQrSvg(');
+  assert.ok(at >= 0, 'safeQrSvg is in account.js');
+  const end = js.indexOf('\n  }\n', at);
+  assert.ok(end > at, 'safeQrSvg ends');
+  return new Function(`${js.slice(at, end + 4)}; return safeQrSvg;`)() as (s: unknown) => string | null;
+}
+
+test('account.js safeQrSvg: the exact qrcode 1.5.4 shape passes; handlers, other elements and other attributes are refused', async () => {
+  const safe = clientSafeQrSvg();
+  const QRCode = (await import('qrcode')).default;
+  for (const email of ['a@b.c', 'a.long.address+tag@example.co.uk']) {
+    const uri = `otpauth://totp/Beuk:${encodeURIComponent(email)}?secret=${'A'.repeat(32)}&issuer=Beuk&algorithm=SHA1&digits=6&period=30`;
+    const svg = await QRCode.toString(uri, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+    assert.equal(safe(svg), svg.trim(), 'the real QR passes unchanged');
+  }
+  const good = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h29v29H0z"/><path stroke="#000000" d="M1 1.5h7"/></svg>';
+  assert.equal(safe(good), good);
+  for (const bad of [
+    '<svg/onload=alert(1)>',
+    '<svg><path/onclick=x></svg>',
+    good.replace('<path fill', '<path onclick="x" fill'),
+    good.replace('shape-rendering="crispEdges"', 'shape-rendering="crispEdges" onload="x"'),
+    good.replace('</svg>', '<script>x</script></svg>'),
+    good.replace('</svg>', '<style>*{}</style></svg>'),
+    good.replace('</svg>', '<animate attributeName="href" to="javascript:x"/></svg>'),
+    good.replace('</svg>', '<set attributeName="onmouseover" to="x"/></svg>'),
+    good.replace('</svg>', '<foreignObject><img src=x onerror=x></foreignObject></svg>'),
+    good.replace('d="M1 1.5h7"', 'd="M1 1.5h7" style="x"'),
+    good.replace('d="M1 1.5h7"', 'd="M1 1.5h7"/><a href="javascript:x"><path d="M0 0"'),
+    good.replace('#000000', 'url(javascript:x)'),
+    good.replace('d="M1 1.5h7"', 'd="M1 1.5h7&quot; onload=&quot;x"'),
+    `${good}<img src=x onerror=x>`,
+    '<?xml version="1.0"?>' + good,
+    '',
+    null,
+    42,
+  ]) {
+    assert.equal(safe(bad), null, `refused: ${String(bad).slice(0, 60)}`);
+  }
 });

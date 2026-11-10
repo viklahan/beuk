@@ -64,16 +64,17 @@
 
   function groupsOf4(s) { return String(s).replace(/\s+/g, "").replace(/(.{4})(?=.)/g, "$1 "); }
 
-  /* The QR code is inserted as markup only when it is plainly the
-     server's inline SVG: it starts with <svg and carries no script, no
-     event handler, no link and no embedded document. Otherwise the key
-     text alone is shown. */
+  /* The QR code is inserted as markup only when it is exactly the shape
+     qrcode 1.5.4 writes (src/routes/two-step.ts): one <svg> with xmlns,
+     viewBox and shape-rendering, holding <path> elements with only fill
+     or stroke (a #rrggbb colour) and d (path commands and numbers).
+     Anything else, a single extra attribute or element included, is
+     refused, and the key text alone is shown. */
   function safeQrSvg(s) {
     if (typeof s !== "string") return null;
     var t = s.trim();
-    if (t.slice(0, 4).toLowerCase() !== "<svg") return null;
-    if (/<script|<foreignobject|<iframe|<object|<embed|<use\b|<image\b|javascript:|href\s*=|\son[a-z]+\s*=/i.test(t)) return null;
-    return t;
+    var shape = /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 \d{1,3} \d{1,3}" shape-rendering="crispEdges">(?:<path (?:fill|stroke)="#[0-9a-f]{6}" d="[MHVZmhvz0-9 .\-]*"\/>){1,4}<\/svg>$/;
+    return shape.test(t) ? t : null;
   }
 
   function clearSetup() {
@@ -90,6 +91,27 @@
     if (begin) begin.hidden = false;
   }
 
+  /* Back to the start: the setup cleared, focus on "Turn on" again. */
+  function backToBegin() {
+    clearSetup();
+    var btn = part('[data-action="twostep-begin"]');
+    if (btn) btn.focus();
+  }
+
+  /* Everything secret on screen gone: the key, the QR and any codes. */
+  function clearSecrets() {
+    if (!twostep) return;
+    clearSetup();
+    shownCodes = null;
+    var list = part("[data-recovery-list]");
+    if (list) list.textContent = "";
+    var step = part("[data-twostep-codes]");
+    if (step) step.hidden = true;
+  }
+
+  /* The code as typed or pasted ("123 456" included), spaces out. */
+  function codeField(form) { return field(form, "code").replace(/\s+/g, ""); }
+
   function showCodes(codes) {
     var list = part("[data-recovery-list]");
     var step = part("[data-twostep-codes]");
@@ -104,7 +126,9 @@
     var begin = part("[data-twostep-begin]");
     if (begin) begin.hidden = true;
     step.hidden = false;
-    step.scrollIntoView({ block: "nearest" });
+    // Focus the first control of the step (the focused submit button is now hidden).
+    var first = part("[data-recovery-copy]");
+    if (first) first.focus();
     return true;
   }
 
@@ -125,8 +149,11 @@
 
   if (twostep) {
     twostep.querySelectorAll("[data-twostep-cancel]").forEach(function (b) {
-      b.addEventListener("click", function () { say("", false); clearSetup(); });
+      b.addEventListener("click", function () { say("", false); backToBegin(); });
     });
+    /* Leaving the page: nothing secret is left for the back/forward
+       cache to bring back. */
+    window.addEventListener("pagehide", clearSecrets);
     var copyBtn = part("[data-recovery-copy]");
     if (copyBtn) copyBtn.addEventListener("click", function () {
       if (!shownCodes) return;
@@ -185,7 +212,7 @@
       });
     },
     "twostep-enable": function (form) {
-      var code = field(form, "code").replace(/\s+/g, "");
+      var code = codeField(form);
       if (!/^\d{6}$/.test(code)) { say("Type the 6 digits the app shows for Beuk.", true); return; }
       busy(form, true);
       post("/api/account/two-step/enable", { code: code }).then(function (r) {
@@ -193,7 +220,7 @@
         var c = common(r);
         if (c) { say(c, true); return; }
         if (r.status === 400) { say("That code didn't work. Check that the time on your phone is right, and type the newest code.", true); return; }
-        if (r.status === 409) { clearSetup(); say("This setup is no longer current, perhaps because of another tab. Start again.", true); return; }
+        if (r.status === 409) { backToBegin(); say("This setup is no longer current, perhaps because of another tab. Start again.", true); return; }
         if (r.status !== 200) { say(r.data.error || UNREACHABLE, true); return; }
         clearSetup();
         showCodes(r.data.recoveryCodes);
@@ -202,7 +229,7 @@
     },
     "twostep-off": function (form) {
       busy(form, true);
-      post("/api/account/two-step/disable", { currentPassword: field(form, "currentPassword"), code: field(form, "code") }).then(function (r) {
+      post("/api/account/two-step/disable", { currentPassword: field(form, "currentPassword"), code: codeField(form) }).then(function (r) {
         busy(form, false);
         var refused = secondFactorRefusal(r);
         if (refused) { say(refused, true); return; }
@@ -215,7 +242,7 @@
     },
     "twostep-codes": function (form) {
       busy(form, true);
-      post("/api/account/two-step/recovery-codes", { currentPassword: field(form, "currentPassword"), code: field(form, "code") }).then(function (r) {
+      post("/api/account/two-step/recovery-codes", { currentPassword: field(form, "currentPassword"), code: codeField(form) }).then(function (r) {
         busy(form, false);
         var refused = secondFactorRefusal(r);
         if (refused) { say(refused, true); return; }
@@ -309,7 +336,7 @@
     /* Plan: "Choose a plan" opens Stripe Checkout, "Manage billing" the
        Stripe Customer Portal. The server decides everything; this only
        follows the URL it answers with, or says why there is none. */
-    "twostep-start": function () {
+    "twostep-begin": function () {
       var begin = part("[data-twostep-begin]");
       var form = part('form[data-form="twostep-start"]');
       if (!form) return;

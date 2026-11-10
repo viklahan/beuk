@@ -215,7 +215,7 @@ function twoStepSection(config: Config, plan: AccountPlan, t: TwoStepStatus): st
     const lost = config.supportEmail
       ? `Lost your phone and your recovery codes? Write to support at <a href="mailto:${esc(config.supportEmail)}" data-support-email>${esc(config.supportEmail)}</a>. Support can turn two-step sign-in off once they have checked it’s you.`
       : 'Lost your phone and your recovery codes? Ask the person who runs this server: they can turn two-step sign-in off once they have checked it’s you.';
-    return `<div class="portal-sub twostep" id="two-step" aria-labelledby="twostep-h" data-twostep="on">
+    return `<div class="portal-sub twostep" id="two-step" role="group" aria-labelledby="twostep-h" data-twostep="on">
           ${head}
           <p class="ok-line">On since ${esc(humanDate(t.since ?? ''))}. ${plural(t.recoveryLeft, 'recovery code', 'recovery codes')} left.</p>
           <p>Signing in asks for your password and a 6-digit code from your authenticator app.</p>
@@ -241,16 +241,16 @@ function twoStepSection(config: Config, plan: AccountPlan, t: TwoStepStatus): st
   }
   const intro = '<p>Two-step sign-in asks for a 6-digit code from an authenticator app on your phone each time you sign in, as well as your password. Devices already signed in stay signed in.</p>';
   if (plan.access === 'paused') {
-    return `<div class="portal-sub twostep" id="two-step" aria-labelledby="twostep-h" data-twostep="paused" data-plan-access="paused">
+    return `<div class="portal-sub twostep" id="two-step" role="group" aria-labelledby="twostep-h" data-twostep="paused" data-plan-access="paused">
           ${head}
           ${intro}
           <p class="note-line" data-twostep-paused>Your free trial has ended, so ${esc(PAUSABLE_FEATURES['twoStep.setup'])} is paused until you choose a plan. Everything else in this card still works.</p>
         </div>`;
   }
-  return `<div class="portal-sub twostep" id="two-step" aria-labelledby="twostep-h" data-twostep="off">
+  return `<div class="portal-sub twostep" id="two-step" role="group" aria-labelledby="twostep-h" data-twostep="off">
           ${head}
           ${intro}
-          <p data-twostep-begin><button class="portal-button" type="button" data-action="twostep-start">Turn on two-step sign-in</button></p>
+          <p data-twostep-begin><button class="portal-button" type="button" data-action="twostep-begin">Turn on two-step sign-in</button></p>
           <form class="portal-form twostep-step" data-form="twostep-start" novalidate hidden>
             <label>Current password <input name="currentPassword" type="password" autocomplete="current-password" required /></label>
             <p class="portal-actions"><button type="submit">Continue</button> <button class="linkish" type="button" data-twostep-cancel>Cancel</button></p>
@@ -260,7 +260,7 @@ function twoStepSection(config: Config, plan: AccountPlan, t: TwoStepStatus): st
             <div class="twostep-qr" data-twostep-qr></div>
             <p>Key: <code class="twostep-key" data-twostep-key></code></p>
             <form class="portal-form" data-form="twostep-enable" novalidate>
-              <label>The 6-digit code from the app <input name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" spellcheck="false" required /></label>
+              <label>The 6-digit code from the app <input name="code" type="text" inputmode="numeric" autocomplete="one-time-code" spellcheck="false" required /></label>
               <p class="portal-actions"><button type="submit">Turn on</button> <button class="linkish" type="button" data-twostep-cancel>Cancel</button></p>
             </form>
           </div>
@@ -270,7 +270,7 @@ function twoStepSection(config: Config, plan: AccountPlan, t: TwoStepStatus): st
 
 /** "Where you're signed in": account.js fills the list from
  *  /api/account/sessions, with a Sign out on every row but this one. */
-const SESSIONS_SECTION = `<div class="portal-sub" id="devices" aria-labelledby="devices-h">
+const SESSIONS_SECTION = `<div class="portal-sub" id="devices" role="group" aria-labelledby="devices-h">
           <h3 id="devices-h">Where you’re signed in</h3>
           <ul class="portal-list sessions" data-sessions aria-live="polite"></ul>
           <noscript><p class="muted">This list needs JavaScript in your browser.</p></noscript>
