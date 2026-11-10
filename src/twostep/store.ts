@@ -40,7 +40,8 @@ export interface VerifyOptions {
  * last_step) or a recovery code in any shape (case, spaces and dashes
  * ignored). Returns which kind matched, or null. Only an account whose
  * two-step is on is checked, unless opts.pending (then only a pending
- * setup, and only TOTP).
+ * setup, and only TOTP). Runs in its own transaction: never call it
+ * inside another db.tx (use verifySecondFactorIn there).
  */
 export async function verifySecondFactor(
   db: Db,
@@ -49,48 +50,62 @@ export async function verifySecondFactor(
   nowMs: number,
   opts: VerifyOptions = {},
 ): Promise<'totp' | 'recovery' | null> {
+  return (await db.tx((tx) => verifySecondFactorIn(tx, userId, code, nowMs, opts)))?.kind ?? null;
+}
+
+/**
+ * The same check inside a transaction the caller already holds. Also
+ * returns the base32 secret the code was checked against, so a caller
+ * that acts on the row afterwards (enable) can insist it is unchanged.
+ */
+export async function verifySecondFactorIn(
+  tx: Db,
+  userId: string,
+  code: string,
+  nowMs: number,
+  opts: VerifyOptions = {},
+): Promise<{ kind: 'totp' | 'recovery'; secret: string } | null> {
   const input = String(code ?? '').trim();
   if (!input || input.length > 64) return null;
   const digits = input.replace(/\s/g, '');
-  return db.tx(async (tx) => {
-    const row = (
-      await tx.query<{ secret: string; last_step: string | number; enabled_at: string | Date | null }>(
-        'select secret, last_step, enabled_at from user_two_step where user_id = $1 for update',
-        [userId],
-      )
-    ).rows[0];
-    if (!row) return null;
-    const isOn = row.enabled_at !== null;
-    if (opts.pending ? isOn : !isOn) return null;
+  const row = (
+    await tx.query<{ secret: string; last_step: string | number; enabled_at: string | Date | null }>(
+      'select secret, last_step, enabled_at from user_two_step where user_id = $1 for update',
+      [userId],
+    )
+  ).rows[0];
+  if (!row) return null;
+  const isOn = row.enabled_at !== null;
+  if (opts.pending ? isOn : !isOn) return null;
 
-    if (SIX_DIGITS.test(digits)) {
-      const secret = base32Decode(row.secret);
-      const last = Number(row.last_step);
-      const current = totpStep(nowMs);
-      let matched: number | null = null;
-      for (const offset of TOTP_WINDOW) {
-        const step = current + offset;
-        if (step <= last) continue;
-        if (codesEqual(totpCode(secret, step), digits)) matched = step;
-      }
-      if (matched === null) return null;
-      // Conditional: a racing request that already moved last_step to (or
-      // past) this step wins, and this one is refused.
-      const moved = await tx.query(
-        'update user_two_step set last_step = $2 where user_id = $1 and last_step < $2 returning user_id',
-        [userId, matched],
-      );
-      return moved.rows.length ? 'totp' : null;
+  if (SIX_DIGITS.test(digits)) {
+    const secret = base32Decode(row.secret);
+    const last = Number(row.last_step);
+    const current = totpStep(nowMs);
+    let matched: number | null = null;
+    for (const offset of TOTP_WINDOW) {
+      const step = current + offset;
+      if (step <= last) continue;
+      if (codesEqual(totpCode(secret, step), digits)) matched = step;
     }
-
-    if (opts.pending) return null;
-    const spent = await tx.query(
-      `update two_step_recovery_codes set used_at = $3
-       where user_id = $1 and code_hash = $2 and used_at is null returning id`,
-      [userId, recoveryHash(input), new Date(nowMs)],
+    if (matched === null) return null;
+    // Conditional: a racing request that already moved last_step to (or
+    // past) this step wins, and this one is refused; so does a secret
+    // replaced since it was read.
+    const moved = await tx.query(
+      'update user_two_step set last_step = $2 where user_id = $1 and last_step < $2 and secret = $3 returning user_id',
+      [userId, matched, row.secret],
     );
-    return spent.rows.length ? 'recovery' : null;
-  });
+    return moved.rows.length ? { kind: 'totp', secret: row.secret } : null;
+  }
+
+  if (opts.pending) return null;
+  const spent = await tx.query(
+    `update two_step_recovery_codes set used_at = $3
+     where user_id = $1 and code_hash = $2 and used_at is null returning id`,
+    [userId, recoveryHash(input), new Date(nowMs)],
+  );
+  return spent.rows.length ? { kind: 'recovery', secret: row.secret } : null;
 }
 
 /** Whether two-step is on, since when, and how many recovery codes are unused. */

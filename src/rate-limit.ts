@@ -32,6 +32,30 @@ export class SlidingWindowLimiter {
     return (this.hits.get(key) ?? []).filter((x) => t - x < this.windowMs).length >= this.max;
   }
 
+  /**
+   * Check-and-record in one synchronous step: null (nothing recorded)
+   * when the key is already at its limit, else the recorded hit's time.
+   * Concurrent callers can't all slip past a check that only records
+   * later; hand the time to release() to give the hit back.
+   */
+  reserve(key: string): number | null {
+    const t = this.now();
+    const recent = (this.hits.get(key) ?? []).filter((x) => t - x < this.windowMs);
+    if (recent.length >= this.max) return null;
+    recent.push(t);
+    this.hits.set(key, recent);
+    return t;
+  }
+
+  /** Give back one hit recorded by reserve() (an attempt that turned out not to count). */
+  release(key: string, at: number): void {
+    const times = this.hits.get(key);
+    if (!times) return;
+    const i = times.lastIndexOf(at);
+    if (i >= 0) times.splice(i, 1);
+    if (!times.length) this.hits.delete(key);
+  }
+
   /** Seconds until the oldest hit in the window ages out. */
   retryAfterSeconds(key: string): number {
     const times = this.hits.get(key) ?? [];

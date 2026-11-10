@@ -80,22 +80,38 @@ export function authRoutes(
   const router = Router();
   const now = options.now ?? access?.now ?? (() => new Date());
   const limits = options.signInLimits ?? DEFAULT_SIGN_IN_LIMITS;
-  // Per ADDRESS, against password-guessing from many IPs. Only failures
-  // are recorded; the 429 is the same whether the account exists or not.
+  // Per ADDRESS, against password-guessing from many IPs. Every attempt
+  // reserves its place BEFORE any work (check and record in one
+  // synchronous step, so a parallel burst can't all slip past), and only
+  // a failure (wrong password, wrong code) keeps it: anything else gives
+  // it back. The 429 is the same whether the account exists or not.
   const perAccount = new SlidingWindowLimiter(limits.perAccount.max, limits.perAccount.windowMs, () => now().getTime());
-  const accountLimited = (res: Response, key: string): boolean => {
-    if (!perAccount.wouldLimit(key)) return false;
+  /** The reservation's time, or null after answering 429. */
+  const reserveAttempt = (res: Response, key: string): number | null => {
+    const at = perAccount.reserve(key);
+    if (at !== null) return at;
     const retryAfterSeconds = perAccount.retryAfterSeconds(key);
     res.setHeader('Retry-After', String(retryAfterSeconds));
     res.status(429).json({ error: TOO_MANY_SIGN_INS, retryAfterSeconds });
-    return true;
+    return null;
+  };
+  /** A hook runs after the response: a throw or a rejection is logged, never surfaced. */
+  const runHook = (name: string, fn: () => unknown | Promise<unknown>): void => {
+    const fail = (err: unknown) =>
+      console.error(JSON.stringify({ event: 'auth.hook_failed', hook: name, at: new Date().toISOString(), error: err instanceof Error ? err.message : String(err) }));
+    try {
+      const out = fn();
+      if (out && typeof (out as Promise<unknown>).then === 'function') (out as Promise<unknown>).then(undefined, fail);
+    } catch (err) {
+      fail(err);
+    }
   };
   /** The session, its cookie and the sign-in hook: one path for both ways in. */
   const signIn = async (req: Request, res: Response, user: { id: string; email: string }) => {
     const session = await createSession(db, user.id, config.sessionTtlDays);
     setSessionCookie(res, session.token, session.expiresAt, config.cookieSecure);
     res.json({ user: { id: user.id, email: user.email } });
-    hooks.onSignedIn?.({ id: user.id, email: user.email }, req, session.token);
+    if (hooks.onSignedIn) runHook('onSignedIn', () => hooks.onSignedIn!({ id: user.id, email: user.email }, req, session.token));
   };
   // Warm the dummy hash so the first unknown-email login isn't the one
   // request that also pays for computing it.
@@ -148,10 +164,12 @@ export function authRoutes(
   });
 
   router.post('/login', loginLimit, async (req, res, next) => {
+    const email = String(req.body?.email ?? '').trim().toLowerCase();
+    const reserved = reserveAttempt(res, email);
+    if (reserved === null) return undefined;
+    let failed = false;
     try {
-      const email = String(req.body?.email ?? '').trim().toLowerCase();
       const password = String(req.body?.password ?? '');
-      if (accountLimited(res, email)) return undefined;
       const found = await db.query<UserRow>(
         'select id, email, password_hash from users where email = $1',
         [email],
@@ -172,7 +190,7 @@ export function authRoutes(
         // the user id only when the account exists). The response stays
         // the same for every reason (no oracle on which emails exist).
         logLoginRefusal({ reason: refusal ?? 'no_account', userId: user?.id ?? null });
-        perAccount.hit(email);
+        failed = true;
         return res.status(401).json({ error: 'invalid email or password' });
       }
       if (await twoStepOn(db, user.id)) {
@@ -191,6 +209,8 @@ export function authRoutes(
       return undefined;
     } catch (err) {
       return next(err);
+    } finally {
+      if (!failed) perAccount.release(email, reserved);
     }
   });
 
@@ -198,6 +218,8 @@ export function authRoutes(
   // challenge. A wrong code is 401 (and counts for the account); an
   // unknown, expired, used or 5-times-wrong challenge is 410.
   router.post('/login/code', loginLimit, async (req, res, next) => {
+    let reservation: { key: string; at: number } | null = null;
+    let failed = false;
     try {
       const gone = () => res.status(410).json({ error: 'sign in again' });
       const challenge = String(req.body?.challenge ?? '');
@@ -218,30 +240,46 @@ export function authRoutes(
         return gone();
       }
       const key = found.email.toLowerCase();
-      if (accountLimited(res, key)) return undefined;
-      // Claim one of the challenge's attempts before the code is checked.
-      const claimed = await db.query(
-        `update sign_in_challenges set attempts = attempts + 1
-         where id = $1 and attempts < $2 and expires_at > $3 returning id`,
-        [found.id, CHALLENGE_MAX_ATTEMPTS, at],
-      );
-      if (!claimed.rows.length) return gone();
+      const reservedAt = reserveAttempt(res, key);
+      if (reservedAt === null) return undefined;
+      reservation = { key, at: reservedAt };
+      // Claim the challenge itself, atomically, BEFORE the code is spent:
+      // one conditional delete, so a racing second request finds nothing
+      // and gets 410 with its code untouched. A wrong code puts the
+      // challenge back with one more attempt counted (until the fifth).
+      const claimed = (
+        await db.query<{ token_hash: string; expires_at: string | Date; attempts: number; created_at: string | Date }>(
+          `delete from sign_in_challenges
+           where id = $1 and attempts < $2 and expires_at > $3
+           returning token_hash, expires_at, attempts, created_at`,
+          [found.id, CHALLENGE_MAX_ATTEMPTS, at],
+        )
+      ).rows[0];
+      if (!claimed) return gone();
       const kind = await verifySecondFactor(db, found.user_id, code, at.getTime());
       if (!kind) {
-        perAccount.hit(key);
+        failed = true;
+        const attempts = Number(claimed.attempts) + 1;
+        if (attempts < CHALLENGE_MAX_ATTEMPTS) {
+          await db.query(
+            `insert into sign_in_challenges (id, user_id, token_hash, expires_at, attempts, created_at)
+             values ($1, $2, $3, $4, $5, $6)`,
+            [found.id, found.user_id, claimed.token_hash, claimed.expires_at, attempts, claimed.created_at],
+          );
+        }
         return res.status(401).json({ error: "that code didn't work" });
       }
-      // Single use: only the request that deletes the challenge signs in.
-      const used = await db.query('delete from sign_in_challenges where id = $1 returning id', [found.id]);
-      if (!used.rows.length) return gone();
       const user = { id: found.user_id, email: found.email };
       await signIn(req, res, user);
       if (kind === 'recovery' && hooks.onRecoveryUsed) {
-        hooks.onRecoveryUsed(user, (await twoStepStatus(db, user.id)).recoveryLeft);
+        const onRecoveryUsed = hooks.onRecoveryUsed;
+        runHook('onRecoveryUsed', async () => onRecoveryUsed(user, (await twoStepStatus(db, user.id)).recoveryLeft));
       }
       return undefined;
     } catch (err) {
       return next(err);
+    } finally {
+      if (reservation && !failed) perAccount.release(reservation.key, reservation.at);
     }
   });
 

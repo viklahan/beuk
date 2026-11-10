@@ -4,7 +4,7 @@ import { requireAuth } from '../auth.js';
 import type { Db } from '../db.js';
 import { verifyPassword } from '../password.js';
 import { SlidingWindowLimiter } from '../rate-limit.js';
-import { clearTwoStep, replaceRecoveryCodes, twoStepOn, verifySecondFactor } from '../twostep/store.js';
+import { clearTwoStep, replaceRecoveryCodes, twoStepOn, verifySecondFactor, verifySecondFactorIn } from '../twostep/store.js';
 import { newTotpSecret, otpauthUri } from '../twostep/totp.js';
 
 /**
@@ -103,18 +103,22 @@ export function twoStepRoutes(deps: TwoStepDeps): Router {
       if (!row) return res.status(409).json({ error: 'start turning on two-step sign-in first' });
       if (row.enabled_at !== null) return res.status(409).json({ error: 'two-step sign-in is already on' });
       const at = now();
-      const kind = await verifySecondFactor(db, user.id, String(req.body?.code ?? ''), at.getTime(), { pending: true });
-      if (!kind) return res.status(400).json({ error: WRONG_CODE });
-      const codes = await db.tx(async (tx) => {
+      // One transaction: check the code against the pending secret and
+      // switch on exactly that secret. A /start from another tab that
+      // replaced it in between makes the switch match nothing.
+      const outcome = await db.tx(async (tx) => {
+        const checked = await verifySecondFactorIn(tx, user.id, String(req.body?.code ?? ''), at.getTime(), { pending: true });
+        if (!checked) return { wrong: true as const };
         const turned = await tx.query(
-          'update user_two_step set enabled_at = $2 where user_id = $1 and enabled_at is null returning user_id',
-          [user.id, at],
+          'update user_two_step set enabled_at = $2 where user_id = $1 and enabled_at is null and secret = $3 returning user_id',
+          [user.id, at, checked.secret],
         );
-        if (!turned.rows.length) return null;
-        return replaceRecoveryCodes(tx, user.id);
+        if (!turned.rows.length) return { conflict: true as const };
+        return { codes: await replaceRecoveryCodes(tx, user.id) };
       });
-      if (!codes) return res.status(409).json({ error: 'two-step sign-in is already on' });
-      return res.json({ recoveryCodes: codes });
+      if ('wrong' in outcome) return res.status(400).json({ error: WRONG_CODE });
+      if ('conflict' in outcome) return res.status(409).json({ error: 'two-step sign-in changed in another tab — start again' });
+      return res.json({ recoveryCodes: outcome.codes });
     } catch (err) {
       return next(err);
     }

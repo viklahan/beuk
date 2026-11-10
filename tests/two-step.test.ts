@@ -41,9 +41,9 @@ interface Srv {
 let open: Srv; // billing off: everything open
 let paid: Srv; // billing on (test keys, no network needed for the gate)
 
-async function start(overrides: Parameters<typeof testConfig>[0] = {}): Promise<Srv> {
+async function start(overrides: Parameters<typeof testConfig>[0] = {}, useDb: Db = db): Promise<Srv> {
   const config = testConfig(overrides);
-  const app = buildApp({ db, config, now });
+  const app = buildApp({ db: useDb, config, now });
   const server: Server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
   });
@@ -264,6 +264,15 @@ test('clock skew: a code from step −1 is accepted, from step −2 refused', as
   const ch = await challengeFor(open.base, w.email);
   assert.equal((await new Client(open.base).post('/api/auth/login/code', { challenge: ch, code: codeAt(secret, -2) })).status, 401);
   assert.equal((await new Client(open.base).post('/api/auth/login/code', { challenge: ch, code: codeAt(secret, -1) })).status, 200);
+});
+
+test('clock skew: a code from step +1 is accepted, from step +2 refused', async () => {
+  const w = await writer();
+  const { secret } = await turnOn(w.c);
+  tick();
+  const ch = await challengeFor(open.base, w.email);
+  assert.equal((await new Client(open.base).post('/api/auth/login/code', { challenge: ch, code: codeAt(secret, 2) })).status, 401);
+  assert.equal((await new Client(open.base).post('/api/auth/login/code', { challenge: ch, code: codeAt(secret, 1) })).status, 200);
 });
 
 test('two tabs racing one code: one success, one 401', async () => {
@@ -515,6 +524,157 @@ test('authRoutes hooks: onSignedIn on both sign-in paths, onRecoveryUsed with th
     assert.equal(signedIn.length, 2);
     assert.equal(signedIn[1].email, g.email);
     assert.deepEqual(recovery, [{ email: g.email, left: 9 }]);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
+/* ---------------- review round 1 ---------------- */
+
+/** A Db whose next transaction, once committed, runs `then` before the
+ *  caller continues: a deterministic stand-in for a second tab acting
+ *  between two steps of a route. */
+function hookedDb(inner: Db): Db & { afterNextTx: (then: () => Promise<void>) => void } {
+  let pending: (() => Promise<void>) | null = null;
+  return {
+    query: (text, params) => inner.query(text, params),
+    tx: async (fn) => {
+      const result = await inner.tx(fn);
+      const then = pending;
+      pending = null;
+      if (then) await then();
+      return result;
+    },
+    afterNextTx: (then) => {
+      pending = then;
+    },
+  };
+}
+
+test('per-account limit under a concurrent burst: at most 10 attempts get past it, known or unknown address', async () => {
+  const w = await writer();
+  const unknown = `burst-nobody-${++seq}@example.com`;
+  const bodies: string[] = [];
+  for (const email of [w.email, unknown]) {
+    const rs = await Promise.all(
+      Array.from({ length: 40 }, (_, i) => rawPost(open.base, '/api/auth/login', { email, password: `wrong ${i} wrong` })),
+    );
+    const notLimited = rs.filter((r) => r.status !== 429);
+    assert.ok(notLimited.length <= 10, `${email}: ${notLimited.length} attempts got past the limit`);
+    assert.ok(notLimited.every((r) => r.status === 401));
+    const limited = rs.find((r) => r.status === 429)!;
+    const b = JSON.parse(limited.text) as Record<string, unknown>;
+    bodies.push(`${b.error}|${Object.keys(b).sort().join(',')}`);
+  }
+  assert.equal(bodies[0], bodies[1], 'the 429 is the same for an unknown address');
+});
+
+test('per-account limit: a success gives its attempt back (9 failures + a sign-in leave one more try)', async () => {
+  const w = await writer();
+  for (let i = 0; i < 9; i++) assert.equal((await rawPost(open.base, '/api/auth/login', { email: w.email, password: `nope ${i} nope` })).status, 401);
+  assert.equal((await rawPost(open.base, '/api/auth/login', { email: w.email, password: PASSWORD })).status, 200);
+  assert.equal((await rawPost(open.base, '/api/auth/login', { email: w.email, password: 'nope again' })).status, 401, '10th failure');
+  assert.equal((await rawPost(open.base, '/api/auth/login', { email: w.email, password: PASSWORD })).status, 429);
+});
+
+test('per-account limit: /reset still works while the limit is on', async () => {
+  const w = await writer();
+  for (let i = 0; i < 10; i++) await rawPost(open.base, '/api/auth/login', { email: w.email, password: `nope ${i} nope` });
+  assert.equal((await rawPost(open.base, '/api/auth/login', { email: w.email, password: PASSWORD })).status, 429);
+  const token = `reset-token-${seq}-${'x'.repeat(30)}`;
+  const { tokenHash } = await import('../src/auth.js');
+  await db.query(`insert into password_resets (user_id, token_hash, expires_at) values ($1, $2, now() + interval '1 hour')`, [w.id, tokenHash(token)]);
+  const r = await new Client(open.base).post('/api/auth/reset', { token, password: 'a brand new password' });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.ok, true);
+});
+
+test('the challenge is claimed before the code is spent: a racing second code gets 410 and is not burned', async () => {
+  const hooked = hookedDb(db);
+  const srv = await start({}, hooked);
+  try {
+    const w = await writer(srv.base);
+    const { recoveryCodes } = await turnOn(w.c);
+    const ch = await challengeFor(srv.base, w.email);
+    let second: { status: number } | null = null;
+    // Right after the first request spends its code, a second tab sends another code on the same challenge.
+    hooked.afterNextTx(async () => {
+      second = await new Client(srv.base).post('/api/auth/login/code', { challenge: ch, code: recoveryCodes[1] });
+    });
+    const first = await new Client(srv.base).post('/api/auth/login/code', { challenge: ch, code: recoveryCodes[0] });
+    assert.ok(second, 'the second tab ran');
+    assert.deepEqual([first.status, (second as { status: number }).status].sort(), [200, 410]);
+    assert.equal((await twoStepStatus(db, w.id)).recoveryLeft, 9, 'only one recovery code was spent');
+  } finally {
+    await srv.close();
+  }
+});
+
+test('enable confirms the secret it enables: a /start between the check and the switch never turns on an unconfirmed secret', async () => {
+  const hooked = hookedDb(db);
+  const srv = await start({}, hooked);
+  try {
+    const w = await writer(srv.base);
+    const s = await w.c.post('/api/account/two-step/start', { currentPassword: PASSWORD });
+    const confirmed = s.body.secret as string;
+    tick();
+    // A second tab's /start swapping the pending secret right after the code check.
+    hooked.afterNextTx(async () => {
+      await db.query('update user_two_step set secret = $2 where user_id = $1 and enabled_at is null', [w.id, 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP']);
+    });
+    const e = await w.c.post('/api/account/two-step/enable', { code: codeAt(confirmed) });
+    const row = (await db.query<{ secret: string; enabled_at: Date | null }>('select secret, enabled_at from user_two_step where user_id = $1', [w.id])).rows[0];
+    if (row.enabled_at !== null) assert.equal(row.secret, confirmed, 'two-step is on only with the secret whose code was checked');
+    if (e.status === 200) assert.notEqual(row.enabled_at, null);
+  } finally {
+    await srv.close();
+  }
+});
+
+test('a throwing hook never breaks the sign-in: 200 with the cookie on both paths', async () => {
+  const app = express();
+  app.use(express.json());
+  app.use(
+    '/api/auth',
+    authRoutes(
+      db,
+      testConfig(),
+      {
+        onSignedIn: () => {
+          throw new Error('hook boom (test)');
+        },
+        onRecoveryUsed: () => {
+          throw new Error('hook boom (test)');
+        },
+      },
+      undefined,
+      { now },
+    ),
+  );
+  let lateError: unknown = null;
+  app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    lateError = err;
+    if (!res.headersSent) res.status(500).json({ error: 'internal error' });
+  });
+  const server: Server = await new Promise((resolve) => {
+    const s = app.listen(0, () => resolve(s));
+  });
+  const address = server.address();
+  if (!address || typeof address === 'string') throw new Error('no address');
+  const base = `http://127.0.0.1:${address.port}`;
+  try {
+    const plain = await writer();
+    const r = await rawPost(base, '/api/auth/login', { email: plain.email, password: PASSWORD });
+    assert.equal(r.status, 200);
+    assert.match(r.setCookie ?? '', /beuk_session=/);
+    const g = await writer();
+    const { recoveryCodes } = await turnOn(g.c);
+    const ch = await challengeFor(base, g.email);
+    const c = await rawPost(base, '/api/auth/login/code', { challenge: ch, code: recoveryCodes[0] });
+    assert.equal(c.status, 200);
+    assert.match(c.setCookie ?? '', /beuk_session=/);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.equal(lateError, null, 'no hook error reaches the error handler');
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
