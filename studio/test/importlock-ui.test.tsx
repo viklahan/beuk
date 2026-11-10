@@ -558,6 +558,142 @@ describe('the one password dialog (passwordAsk)', { timeout: 60_000 }, () => {
   });
 });
 
+/** The Agile fixture behind a valid verifier, its EncryptedPackage changed in one byte past the size: the right password
+ *  passes the verifier and the dataIntegrity HMAC then fails — officeUnlock's "damaged". Written by 1.0's lockCfb. */
+function damagedLock(): Uint8Array {
+  const s = c.api.cfbStreams(fx('agile-sha512.docx'));
+  const pkg = s.get('EncryptedPackage')!.slice();
+  pkg[8 + 100] ^= 0xff;
+  const NOSTREAM = 0xffffffff;
+  return c.api.lockCfb([
+    { name: 'Root Entry', type: 5, color: 1, left: NOSTREAM, right: NOSTREAM, child: 1, data: new Uint8Array(0) },
+    { name: 'EncryptionInfo', type: 2, color: 1, left: NOSTREAM, right: 2, child: NOSTREAM, data: s.get('EncryptionInfo')! },
+    { name: 'EncryptedPackage', type: 2, color: 0, left: NOSTREAM, right: NOSTREAM, child: NOSTREAM, data: pkg },
+  ]);
+}
+
+describe('Task 2 review fixes', { timeout: 180_000 }, () => {
+  it('finding 1: every pdf.js loading task that failed (no password, a wrong one) is destroyed', async () => {
+    type Task = { destroy: () => Promise<void>; promise: Promise<unknown> };
+    const real = g.pdfjsLib as Rec & { getDocument: (p: Rec) => Task };
+    const tasks: { failed: boolean; destroyed: boolean; withPassword: boolean }[] = [];
+    g.pdfjsLib = {
+      ...real,
+      getDocument: (p: Rec) => {
+        const task = real.getDocument(p);
+        const rec = { failed: false, destroyed: false, withPassword: typeof p.password === 'string' };
+        tasks.push(rec);
+        const destroy = task.destroy.bind(task);
+        task.destroy = () => ((rec.destroyed = true), destroy());
+        task.promise.catch(() => (rec.failed = true));
+        return task;
+      },
+    };
+    try {
+      await studioWith(LANTERN());
+      await choose(pdf('aes-256.pdf'));
+      await asked();
+      await typeAndOpen('not it');
+      await waitFor(() => expect($('passwordAskErr').hidden).toBe(false), { timeout: 30_000 });
+      await typeAndOpen(PW);
+      await replaceYes();
+    } finally {
+      g.pdfjsLib = real;
+    }
+    expect(tasks.map((x) => [x.withPassword, x.failed])).toEqual([[false, true], [true, true], [true, false]]);
+    expect(tasks.filter((x) => x.failed).map((x) => x.destroyed)).toEqual([true, true]);
+  });
+
+  it("finding 2: Escape with the focus outside the dialog cancels the ask (1.0's page Escape never hides it unsettled)", async () => {
+    // 1.0's page handler (initCloud's document keydown: the top .modal-back loses "open"), in the shape it has there
+    let pageHid = 0;
+    const page = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const open = document.querySelectorAll('.modal-back.open');
+      if (!open.length) return;
+      open[open.length - 1]!.classList.remove('open');
+      pageHid++;
+    };
+    document.addEventListener('keydown', page);
+    try {
+      const entries = [docx('agile-sha512.docx'), fileOf('# After\n\nThe batch goes on after the locked one.\n', 'after.md')].map((file) => ({ file, path: file.name }));
+      const prepared = new Promise<Rec>((res) => bulk().bulkPrepareEntries(entries, null, res));
+      await asked();
+      inp('passwordAskField').blur();
+      expect($('modalPasswordAsk').contains(document.activeElement)).toBe(false);
+      fireEvent.keyDown(document.body, { key: 'Escape' });
+      const got = (await Promise.race([prepared, tick(5000).then(() => ({ items: [{ name: 'stalled' }] }))])) as Rec;
+      const items = got.items as Rec[];
+      expect(items.map((x) => [x.name, x.error ?? null])).toEqual([['agile-sha512.docx', 'locked'], ['after.md', null]]);
+      expect(document.getElementById('modalPasswordAsk')).toBeNull();
+      expect(pageHid).toBe(0); // the ask took that Escape: the page's handler never saw it
+    } finally {
+      document.removeEventListener('keydown', page);
+      document.getElementById('modalPasswordAsk')?.remove();
+    }
+  });
+
+  it('finding 4: the lead describes the dialog (aria-describedby); the backup ask, with no lead, has none', async () => {
+    const p = c.api.passwordAsk({ title: 'T', lead: 'Lead words', wrong: 'W', tryOpen: async () => 1 });
+    const box = $('modalPasswordAsk').querySelector('.modal')!;
+    expect(box.getAttribute('aria-describedby')).toBe('passwordAskLead');
+    expect($('passwordAskLead').textContent).toBe('Lead words');
+    await click($('btnPasswordAskCancel'));
+    expect(await p).toBeNull();
+    const env = await c.api.backupLock('{"format":"x"}', 'right pw');
+    const q = c.api.backupPasswordAsk(JSON.parse(env));
+    await waitFor(() => expect(isOpen('modalBackupPw')).toBe(true));
+    expect($('modalBackupPw').querySelector('.modal')!.hasAttribute('aria-describedby')).toBe(false);
+    await click($('btnBackupPwCancel'));
+    expect(await q).toBeNull();
+  });
+
+  it('finding 6a: a damaged locked .docx says importLock.damaged once and closes the dialog; the desk is left alone', async () => {
+    await studioWith(LANTERN());
+    const before = JSON.stringify(live());
+    await choose(fileOf(damagedLock(), 'damaged.docx', DOCX_TYPE));
+    await asked();
+    await typeAndOpen(PW);
+    await waitFor(() => expect(seen.toasts).toContain(t('importLock.damaged')), { timeout: 30_000 });
+    for (let i = 0; i < 10; i++) await act(() => tick(20));
+    expect(document.getElementById('modalPasswordAsk')).toBeNull();
+    expect(seen.toasts).toEqual([t('importLock.damaged')]);
+    expect(seen.dialogs).toBe(1);
+    expect(isOpen('modalConfirm')).toBe(false);
+    expect(JSON.stringify(live())).toBe(before);
+  });
+
+  it('finding 6b: in Bulk, a damaged or an older-lock file is "unreadable", never "locked"', async () => {
+    const entries = [fileOf(damagedLock(), 'damaged.docx', DOCX_TYPE), fileOf(olderLock(), 'standard.docx', DOCX_TYPE)].map((file) => ({ file, path: file.name }));
+    const prepared = new Promise<Rec>((res) => bulk().bulkPrepareEntries(entries, null, res));
+    await asked(); // the damaged one asks (its verifier is sound); the older lock never does
+    await typeAndOpen(PW);
+    const items = (await prepared).items as Rec[];
+    expect(items.map((x) => [x.name, x.error])).toEqual([['damaged.docx', 'unreadable'], ['standard.docx', 'unreadable']]);
+    expect(seen.dialogs).toBe(1);
+    document.body.insertAdjacentHTML('beforeend', '<div id="bulkSummary" style="display:none"></div>');
+    bulk().renderBulkSummary({ added: [], skipped: [], failed: items.map((x) => ({ name: x.name, reason: x.error })), vault: false, total: 2 });
+    expect($('bulkSummary').textContent).toContain('damaged.docx — ' + t('bulk.reasonUnreadable'));
+    expect($('bulkSummary').textContent).not.toContain(t('bulk.locked'));
+  });
+
+  it('finding 6c: Escape on the password dialog above the export modal closes only the dialog', async () => {
+    await studioWith(LANTERN());
+    await click($('btnExport'));
+    await waitFor(() => expect(document.querySelectorAll('#platformGrid [data-platform]').length).toBe(11));
+    const input = inp('boxSetFileInput');
+    Object.defineProperty(input, 'files', { value: [docx('agile-sha512.docx')], configurable: true });
+    await act(async () => void fireEvent.change(input));
+    await asked();
+    await waitFor(() => expect(document.activeElement).toBe($('passwordAskField')));
+    await act(async () => void fireEvent.keyDown(document.activeElement!, { key: 'Escape' }));
+    await waitFor(() => expect(document.getElementById('modalPasswordAsk')).toBeNull());
+    await waitFor(() => expect(seen.toasts).toContain('Could not add agile-sha512.docx: ' + t('bulk.locked')), { timeout: 20_000 });
+    for (let i = 0; i < 10; i++) await act(() => tick(20));
+    expect(isOpen('modalExport')).toBe(true);
+  });
+});
+
 describe("the dialog's words in every interface language (task 2)", () => {
   it('the six keys stand in all 13 packs, each one its own', async () => {
     const keys = ['importLock.title', 'importLock.lead', 'importLock.wrong', 'importLock.old', 'importLock.damaged', 'bulk.locked'];

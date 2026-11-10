@@ -41628,7 +41628,15 @@
       async function pdfExtract(lib, data, opts) {
         opts = opts || {};
         const task = lib.getDocument({ data, verbosity: 0, useWasm: false, /* the served policy has no 'wasm-unsafe-eval': pdf.js decodes on its JavaScript paths, never trying WebAssembly */ fontExtraProperties: true, disableFontFace: true, useSystemFonts: false, stopAtErrors: false, isOffscreenCanvasSupported: typeof OffscreenCanvas !== "undefined", password: typeof opts.password === "string" ? opts.password : undefined /* BEUK:importlock — a locked PDF's password, when the writer gave one */ });
-        const doc = await task.promise;
+        let doc;
+        try { doc = await task.promise; }
+        catch (e) {
+          /* BEUK:importlock — a load that failed (a locked PDF's first try, a wrong password) is torn down at once: pdf.js's
+             worker side would otherwise hold the bytes and the password it was given, waiting for another password */
+          data = null; opts = null;
+          try { Promise.resolve(task.destroy()).catch(() => {}); } catch (x) {}
+          throw e;
+        }
         const out = { numPages: doc.numPages, title: "", author: "", pages: [], textChars: 0, links: 0, imgErrors: 0, badGlyphs: 0, rtlChars: 0 };
         try {
           const meta = await pdfWait(doc.getMetadata().catch(() => null), 4000);
@@ -71833,7 +71841,8 @@
          error closes it, and the ask rejects with that error (a damaged file says so once, never loops). The password is
          read from the field once and the field emptied at once; it is handed to tryOpen and kept nowhere. While tryOpen
          runs, Open is disabled (and aria-busy); Cancel stays usable and ends the ask at once, the late answer dropped.
-         `titleKey`, when given, is the title's i18n key (data-i18n: it follows a language change, as the backup's did).
+         `lead`, when given, also describes the dialog (aria-describedby). Escape while it is the top dialog, wherever the
+         focus is, is its Cancel. `titleKey`, when given, is the title's i18n key (data-i18n: it follows a language change, as the backup's did).
          `lead` is a paragraph under the title (none when empty). `ids` names the dialog's elements: the backup keeps
          premium 3's (BACKUP_PW_IDS), so its look, words and ids are as they were */
       const PASSWORD_ASK_IDS = { modal: "modalPasswordAsk", head: "passwordAskH", lead: "passwordAskLead", field: "passwordAskField", err: "passwordAskErr", open: "btnPasswordAskOpen", cancel: "btnPasswordAskCancel", name: "importlock-open-pw" };
@@ -71846,7 +71855,7 @@
         if (old) old.remove();
         const m = document.createElement("div");
         m.className = "modal-back"; m.id = id.modal; m.style.zIndex = "80";
-        m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="' + id.head + '" style="max-width:440px;">' +
+        m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="' + id.head + '"' + (o.lead ? ' aria-describedby="' + id.lead + '"' : "") + ' style="max-width:440px;">' +
           '<h2 id="' + id.head + '"><i data-lucide="lock"></i><span' + (o.titleKey ? ' data-i18n="' + esc(o.titleKey) + '"' : "") + ">" + esc(o.title || "") + "</span></h2>" +
           (o.lead ? '<p class="m-sub" id="' + id.lead + '">' + esc(o.lead) + "</p>" : "") +
           '<div><label class="field-lab" for="' + id.field + '" data-i18n="lock.pw">' + esc(t("lock.pw")) + '</label><input class="txt-input" id="' + id.field + '" name="' + id.name + '" type="password" autocomplete="off" /></div>' +
@@ -71861,6 +71870,7 @@
           const finish = (ok, v) => {
             if (done) return;
             done = true;
+            document.removeEventListener("keydown", onPageEscape, true);
             if (passwordAskEnd === cancel) passwordAskEnd = null;
             field.value = "";
             m.classList.remove("open");
@@ -71869,6 +71879,17 @@
           };
           const cancel = () => finish(true, null);
           passwordAskEnd = cancel;
+          /* Escape anywhere while this dialog is the top one is its Cancel: with the focus outside it (1.0 has no Tab
+             trap), the page's own Escape would only hide it and leave the ask unsettled (a Bulk import stalled). Taken
+             in the capture phase and stopped, so nothing under it closes on the same key */
+          function onPageEscape(e) {
+            if (e.key !== "Escape" || done) return;
+            const open = document.querySelectorAll(".modal-back.open");
+            if (open[open.length - 1] !== m) return;
+            e.preventDefault(); e.stopPropagation();
+            cancel();
+          }
+          document.addEventListener("keydown", onPageEscape, true);
           const say = () => { err.textContent = o.wrong || ""; err.hidden = false; };
           const open = async () => {
             if (done || go.disabled) return;
