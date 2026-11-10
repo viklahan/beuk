@@ -39164,14 +39164,37 @@
          book throws, its message written for the writer. */
       const importRefusal = (msg) => Object.assign(new Error(msg), { userMessage: msg });
       const IMPORT_DOCX_BROKEN = "That file could not be read as a Word document (.docx) — it may be damaged, or another kind of file renamed to .docx.";
+      /* ==== BEUK:importlock ==== task 2: the reader asks a locked file's password (design 2026-11-10, goal 3). Every
+         way in reads here, so the Import button, Bulk import, a box set's Add a Book and a zip of one manuscript all
+         ask. importLockAsk(name, tryOpen, refuse) → what tryOpen opens; Cancel throws .code "cancelled" (the callers
+         show nothing for it, or "locked"), and any other failure throws refuse(error), the writer's words. */
+      async function importLockAsk(name, tryOpen, refuse) {
+        let opened;
+        try { opened = await passwordAsk({ title: t("importLock.title"), lead: t("importLock.lead", { name }), wrong: t("importLock.wrong"), tryOpen }); }
+        catch (e) { throw refuse(e); }
+        if (opened === null) throw Object.assign(new Error("The password was not given."), { code: "cancelled" });
+        return opened;
+      }
+      /* pdf.js's PasswordException: code 1 (NEED_PASSWORD) asks, code 2 (INCORRECT_PASSWORD) is a wrong password */
+      const importLockPdfCode = (lib, which, fallback) => (lib && lib.PasswordResponses && lib.PasswordResponses[which]) || fallback;
+      const importLockPdfNeeds = (lib, e) => !!e && e.name === "PasswordException" && e.code === importLockPdfCode(lib, "NEED_PASSWORD", 1);
+      const importLockPdfWrong = (lib, e) => !!e && e.name === "PasswordException" && e.code === importLockPdfCode(lib, "INCORRECT_PASSWORD", 2);
+      /* ==== /BEUK:importlock ==== */
       async function readImportFile(file) {
         const name = file.name, lower = name.toLowerCase();
         if (lower.endsWith(".pdf")) { /* BEUK:pdfimport */
           let lib;
           try { lib = await pdfLoadLib(); } catch (e) { throw importRefusal(t("pdf.loadFailed")); }
-          let ext;
-          try { ext = await pdfExtract(lib, new Uint8Array(await file.arrayBuffer()), { image: pdfImageToData }); }
-          catch (e) { throw importRefusal(e && e.name === "PasswordException" ? t("pdf.password") : t("pdf.broken")); }
+          let ext, bytes;
+          try { bytes = new Uint8Array(await file.arrayBuffer()); } catch (e) { throw importRefusal(t("pdf.broken")); }
+          /* BEUK:importlock — the original bytes are kept: pdf.js hands the buffer it is given over to its worker, so
+             each attempt reads a fresh copy */
+          try { ext = await pdfExtract(lib, bytes.slice(), { image: pdfImageToData }); }
+          catch (e) {
+            if (!importLockPdfNeeds(lib, e)) throw importRefusal(e && e.name === "PasswordException" ? t("pdf.password") : t("pdf.broken"));
+            ext = await importLockAsk(name, (password) => pdfExtract(lib, bytes.slice(), { image: pdfImageToData, password })
+              .catch((err) => { throw importLockPdfWrong(lib, err) ? importLockError("wrong-password") : err; }), () => importRefusal(t("pdf.broken")));
+          }
           if (pdfIsScanned(ext)) throw importRefusal(t("pdf.scanned", { n: ext.numPages }));
           return () => importPdfExtracted(name, ext);
         }
@@ -39189,9 +39212,19 @@
         }
         if (lower.endsWith(".docx")) {
           if (!window.mammoth) throw importRefusal("Mammoth.js is still loading — try again in a moment");
-          let docxDet, identity, scan, result;
+          let docxDet, identity, scan, result, buf;
+          try { buf = await file.arrayBuffer(); } catch (e) { throw importRefusal(IMPORT_DOCX_BROKEN); }
+          /* BEUK:importlock — a locked Word file is a compound file, not a zip: it asks for its password (an Agile
+             lock), or says plainly that its kind of lock can't be opened; the plain package then goes down today's path */
+          const lock = officeLockKind(new Uint8Array(buf));
+          if (lock === "unsupported") throw importRefusal(t("importLock.old"));
+          if (lock === "agile") {
+            const sealed = new Uint8Array(buf);
+            const plain = await importLockAsk(name, (password) => officeUnlock(sealed, password),
+              (e) => importRefusal(t(e && e.code === "unsupported" ? "importLock.old" : "importLock.damaged")));
+            buf = plain.buffer.slice(plain.byteOffset, plain.byteOffset + plain.byteLength);
+          }
           try {
-            const buf = await file.arrayBuffer();
             /* The file declares its own language in w:lang — a strong
                signal read before conversion; the prose itself is the
                fallback witness. */
@@ -39322,6 +39355,7 @@
           run();
         } catch (err) {
           irAbort();
+          if (err && err.code === "cancelled") return; /* BEUK:importlock — a locked file's Cancel: the desk is left alone, and nothing is said */
           toast(err && err.userMessage ? err.userMessage : "Could not import that file: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
         }
       }
@@ -41593,7 +41627,7 @@
       }
       async function pdfExtract(lib, data, opts) {
         opts = opts || {};
-        const task = lib.getDocument({ data, verbosity: 0, useWasm: false, /* the served policy has no 'wasm-unsafe-eval': pdf.js decodes on its JavaScript paths, never trying WebAssembly */ fontExtraProperties: true, disableFontFace: true, useSystemFonts: false, stopAtErrors: false, isOffscreenCanvasSupported: typeof OffscreenCanvas !== "undefined" });
+        const task = lib.getDocument({ data, verbosity: 0, useWasm: false, /* the served policy has no 'wasm-unsafe-eval': pdf.js decodes on its JavaScript paths, never trying WebAssembly */ fontExtraProperties: true, disableFontFace: true, useSystemFonts: false, stopAtErrors: false, isOffscreenCanvasSupported: typeof OffscreenCanvas !== "undefined", password: typeof opts.password === "string" ? opts.password : undefined /* BEUK:importlock — a locked PDF's password, when the writer gave one */ });
         const doc = await task.promise;
         const out = { numPages: doc.numPages, title: "", author: "", pages: [], textChars: 0, links: 0, imgErrors: 0, badGlyphs: 0, rtlChars: 0 };
         try {
@@ -42682,12 +42716,13 @@
         const imgPages = ext.pages.filter((p) => p.images.some((im) => (im.x1 - im.x0) * (im.y1 - im.y0) >= p.w * p.h * 0.5)).length;
         return ext.textChars < Math.max(20, ext.numPages * 25) && (imgPages >= ext.numPages * 0.5 || ext.textChars === 0);
       }
-      async function importPdfData(name, data) {
+      async function importPdfData(name, data, opts) {
         let lib;
         try { lib = await pdfLoadLib(); }
         catch (e) { return { ok: false, why: "load", message: t("pdf.loadFailed") }; }
         let ext;
-        try { ext = await pdfExtract(lib, data, { image: pdfImageToData }); }
+        /* BEUK:importlock — opts.password opens a locked PDF; without it a locked one is still refused (pdf.password) */
+        try { ext = await pdfExtract(lib, data, { image: pdfImageToData, password: opts && opts.password }); }
         catch (e) {
           const n = e && e.name;
           if (n === "PasswordException") return { ok: false, why: "password", message: t("pdf.password") };
@@ -47887,7 +47922,10 @@
         /* BEUK:onereader — a manuscript volume is read exactly as the Import button reads it */
         if (bulkIsManuscript(name)) {
           let doc;
-          try { doc = await manuscriptFileToBookDoc(file); } catch (e) { throw new Error((e && e.userMessage) || (e && e.message) || "unreadable"); }
+          try { doc = await manuscriptFileToBookDoc(file); } catch (e) {
+            if (e && e.code === "cancelled") throw new Error(t("bulk.locked")); /* BEUK:importlock — a locked volume's Cancel: not added, and said why */
+            throw new Error((e && e.userMessage) || (e && e.message) || "unreadable");
+          }
           const vol = bookDocToVolume(doc, name);
           if (!String(vol.meta.author || "").trim()) vol.meta.author = state.meta.author || "";
           /* A Markdown volume's frontmatter may name its language; that choice stands. */
@@ -52964,6 +53002,21 @@
       Object.assign(UI_STRINGS.ru, { "backup.pwCancel": "Отмена", "backup.lockNote": "Beuk не сможет открыть эту резервную копию без пароля. Храните его в надёжном месте.", "backup.pwTitle": "Открыть защищённую резервную копию", "backup.pwOpen": "Открыть", "backup.pwWrong": "Этот пароль не открывает эту резервную копию", "backup.untouched": "Без изменений с {date}.", "backup.onRecord": "В журнале Beuk с {date}.", "backup.changedTitle": "Эта резервная копия была изменена", "backup.changedBody": "Эта резервная копия была изменена после сохранения. Всё равно открыть?", "backup.changedYes": "Всё равно открыть", "auth.record": "Журнал авторства", "auth.title": "Журнал авторства — «{title}»", "auth.stamps": "Отметки", "auth.kindBackup": "Резервная копия", "auth.kindDocx": "Файл Word", "auth.shared": "Кому открыт доступ", "auth.openLink": "Открытая ссылка: читателей — {n}", "auth.openLinkPlural": "Открытая ссылка: читателей — {n}", "auth.noStamps": "Отметок пока нет. Экспортируйте резервную копию, чтобы добавить эту книгу в журнал.", "auth.noShared": "Пока не открыт доступ читателям по имени.", "auth.firstOpened": "впервые открыто {date}" });
       Object.assign(UI_STRINGS.tr, { "backup.pwCancel": "İptal", "backup.lockNote": "Beuk bu yedeği parola olmadan açamaz. Parolayı güvenli bir yerde saklayın.", "backup.pwTitle": "Kilitli bir yedeği aç", "backup.pwOpen": "Aç", "backup.pwWrong": "Bu parola bu yedeği açmıyor", "backup.untouched": "{date} tarihinden beri değişmedi.", "backup.onRecord": "{date} tarihinden beri Beuk günlüğünde.", "backup.changedTitle": "Bu yedek değiştirilmiş", "backup.changedBody": "Bu yedek kaydedildikten sonra değiştirilmiş. Yine de açılsın mı?", "backup.changedYes": "Yine de aç", "auth.record": "Yazarlık günlüğü", "auth.title": "Yazarlık günlüğü — “{title}”", "auth.stamps": "Damgalar", "auth.kindBackup": "Yedek", "auth.kindDocx": "Word dosyası", "auth.shared": "Paylaşılanlar", "auth.openLink": "Açık bağlantı: {n} okuyucu", "auth.openLinkPlural": "Açık bağlantı: {n} okuyucu", "auth.noStamps": "Henüz damgalanmış bir şey yok. Bu kitabı günlüğe eklemek için bir yedek dışa aktarın.", "auth.noShared": "Henüz adı belirli okuyucularla paylaşılmadı.", "auth.firstOpened": "ilk açılış {date}" });
       Object.assign(UI_STRINGS["zh-Hans"], { "backup.pwCancel": "取消", "backup.lockNote": "没有密码，Beuk 无法打开这个备份。请把密码保存在安全的地方。", "backup.pwTitle": "打开锁定的备份", "backup.pwOpen": "打开", "backup.pwWrong": "这个密码打不开这个备份", "backup.untouched": "自 {date} 起未经改动。", "backup.onRecord": "自 {date} 起记录在 Beuk。", "backup.changedTitle": "这个备份已被改动", "backup.changedBody": "这个备份在保存后被改动过。仍要打开吗？", "backup.changedYes": "仍然打开", "auth.record": "作者记录", "auth.title": "作者记录 —“{title}”", "auth.stamps": "印记", "auth.kindBackup": "备份", "auth.kindDocx": "Word 文件", "auth.shared": "已分享给", "auth.openLink": "公开链接：{n} 位读者", "auth.openLinkPlural": "公开链接：{n} 位读者", "auth.noStamps": "还没有任何印记。导出一个备份，这本书就会出现在记录里。", "auth.noShared": "还没有分享给具名读者。", "auth.firstOpened": "{date} 首次打开" });
+      /* BEUK:importlock — task 2's words (English: V, 2026-11-10; the other twelve are drafts on V's sign-off list).
+         The dialog's label and buttons are lock.pw, backup.pwOpen and backup.pwCancel: the same words */
+      Object.assign(UI_STRINGS.en, { "importLock.title": "Open a locked file", "importLock.lead": "{name} is locked. Type its password to import it.", "importLock.wrong": "That password doesn't open this file", "importLock.old": "This Word file uses an older kind of lock Beuk can't open. Remove the password in Word, then import it again.", "importLock.damaged": "This locked file could not be read — it may be damaged.", "bulk.locked": "Left out — it's locked and no password was given" });
+      Object.assign(UI_STRINGS.ar, { "importLock.title": "فتح ملف مقفل", "importLock.lead": "الملف {name} مقفل. اكتب كلمة المرور الخاصة به لاستيراده.", "importLock.wrong": "كلمة المرور هذه لا تفتح هذا الملف", "importLock.old": "يستخدم ملف Word هذا نوعًا أقدم من القفل لا يستطيع Beuk فتحه. أزل كلمة المرور في Word، ثم استورده مجددًا.", "importLock.damaged": "تعذّرت قراءة هذا الملف المقفل — ربما يكون تالفًا.", "bulk.locked": "تم استبعاده — إنه مقفل ولم تُعطَ كلمة مرور" });
+      Object.assign(UI_STRINGS.de, { "importLock.title": "Gesperrte Datei öffnen", "importLock.lead": "{name} ist gesperrt. Geben Sie das Passwort ein, um die Datei zu importieren.", "importLock.wrong": "Dieses Passwort öffnet diese Datei nicht", "importLock.old": "Diese Word-Datei verwendet eine ältere Art der Sperre, die Beuk nicht öffnen kann. Entfernen Sie das Passwort in Word und importieren Sie die Datei erneut.", "importLock.damaged": "Diese gesperrte Datei konnte nicht gelesen werden — sie ist möglicherweise beschädigt.", "bulk.locked": "Ausgelassen — die Datei ist gesperrt, und es wurde kein Passwort eingegeben" });
+      Object.assign(UI_STRINGS.es, { "importLock.title": "Abrir un archivo bloqueado", "importLock.lead": "{name} está bloqueado. Escribe su contraseña para importarlo.", "importLock.wrong": "Esa contraseña no abre este archivo", "importLock.old": "Este archivo de Word usa un tipo de bloqueo antiguo que Beuk no puede abrir. Quita la contraseña en Word y vuelve a importarlo.", "importLock.damaged": "No se pudo leer este archivo bloqueado — puede que esté dañado.", "bulk.locked": "Omitido — está bloqueado y no se dio ninguna contraseña" });
+      Object.assign(UI_STRINGS.fr, { "importLock.title": "Ouvrir un fichier verrouillé", "importLock.lead": "{name} est verrouillé. Saisissez son mot de passe pour l'importer.", "importLock.wrong": "Ce mot de passe n'ouvre pas ce fichier", "importLock.old": "Ce fichier Word utilise un ancien type de verrou que Beuk ne sait pas ouvrir. Retirez le mot de passe dans Word, puis importez-le à nouveau.", "importLock.damaged": "Ce fichier verrouillé n'a pas pu être lu — il est peut-être endommagé.", "bulk.locked": "Laissé de côté — il est verrouillé et aucun mot de passe n'a été donné" });
+      Object.assign(UI_STRINGS.it, { "importLock.title": "Apri un file protetto", "importLock.lead": "{name} è protetto. Scrivi la sua password per importarlo.", "importLock.wrong": "Questa password non apre questo file", "importLock.old": "Questo file Word usa un tipo di protezione più vecchio che Beuk non può aprire. Rimuovi la password in Word, poi importalo di nuovo.", "importLock.damaged": "Non è stato possibile leggere questo file protetto — potrebbe essere danneggiato.", "bulk.locked": "Escluso — è protetto e non è stata data nessuna password" });
+      Object.assign(UI_STRINGS.ja, { "importLock.title": "保護されたファイルを開く", "importLock.lead": "{name} は保護されています。読み込むには、パスワードを入力してください。", "importLock.wrong": "このパスワードではこのファイルを開けません", "importLock.old": "この Word ファイルは、Beuk では開けない古い形式の保護を使っています。Word でパスワードを外してから、もう一度読み込んでください。", "importLock.damaged": "この保護されたファイルを読み取れませんでした。破損している可能性があります。", "bulk.locked": "除外しました — 保護されていて、パスワードが入力されませんでした" });
+      Object.assign(UI_STRINGS.nl, { "importLock.title": "Een vergrendeld bestand openen", "importLock.lead": "{name} is vergrendeld. Typ het wachtwoord om het te importeren.", "importLock.wrong": "Dat wachtwoord opent dit bestand niet", "importLock.old": "Dit Word-bestand gebruikt een ouder soort vergrendeling die Beuk niet kan openen. Verwijder het wachtwoord in Word en importeer het daarna opnieuw.", "importLock.damaged": "Dit vergrendelde bestand kon niet worden gelezen — het is mogelijk beschadigd.", "bulk.locked": "Weggelaten — het is vergrendeld en er is geen wachtwoord opgegeven" });
+      Object.assign(UI_STRINGS.pl, { "importLock.title": "Otwórz zabezpieczony plik", "importLock.lead": "Plik {name} jest zabezpieczony. Wpisz jego hasło, aby go zaimportować.", "importLock.wrong": "To hasło nie otwiera tego pliku", "importLock.old": "Ten plik Word używa starszego rodzaju zabezpieczenia, którego Beuk nie potrafi otworzyć. Usuń hasło w programie Word, a potem zaimportuj plik ponownie.", "importLock.damaged": "Nie udało się odczytać tego zabezpieczonego pliku — może być uszkodzony.", "bulk.locked": "Pominięto — plik jest zabezpieczony, a nie podano hasła" });
+      Object.assign(UI_STRINGS.pt, { "importLock.title": "Abrir um ficheiro bloqueado", "importLock.lead": "{name} está bloqueado. Escreva a palavra-passe para o importar.", "importLock.wrong": "Essa palavra-passe não abre este ficheiro", "importLock.old": "Este ficheiro Word usa um tipo de bloqueio mais antigo que o Beuk não consegue abrir. Retire a palavra-passe no Word e importe-o de novo.", "importLock.damaged": "Não foi possível ler este ficheiro bloqueado — pode estar danificado.", "bulk.locked": "Deixado de fora — está bloqueado e não foi indicada nenhuma palavra-passe" });
+      Object.assign(UI_STRINGS.ru, { "importLock.title": "Открыть защищённый файл", "importLock.lead": "Файл {name} защищён паролем. Введите пароль, чтобы импортировать его.", "importLock.wrong": "Этот пароль не открывает этот файл", "importLock.old": "В этом файле Word используется устаревший тип защиты, который Beuk не может открыть. Снимите пароль в Word и импортируйте файл снова.", "importLock.damaged": "Не удалось прочитать этот защищённый файл — возможно, он повреждён.", "bulk.locked": "Пропущен — файл защищён, а пароль не был введён" });
+      Object.assign(UI_STRINGS.tr, { "importLock.title": "Kilitli bir dosyayı aç", "importLock.lead": "{name} kilitli. İçe aktarmak için parolasını yazın.", "importLock.wrong": "Bu parola bu dosyayı açmıyor", "importLock.old": "Bu Word dosyası, Beuk'un açamadığı eski bir kilit türü kullanıyor. Parolayı Word'de kaldırın, sonra dosyayı yeniden içe aktarın.", "importLock.damaged": "Bu kilitli dosya okunamadı — hasarlı olabilir.", "bulk.locked": "Dışarıda bırakıldı — kilitli ve parola girilmedi" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "importLock.title": "打开锁定的文件", "importLock.lead": "{name} 已锁定。请输入它的密码来导入。", "importLock.wrong": "这个密码打不开这个文件", "importLock.old": "这个 Word 文件使用了 Beuk 无法打开的旧式锁定。请在 Word 中去掉密码，然后重新导入。", "importLock.damaged": "无法读取这个锁定的文件——它可能已损坏。", "bulk.locked": "已略过——文件已锁定，且没有提供密码" });
       /* BEUK:lockcopy — fix wave: the PDF dialog has no lock to turn off, so its empty-password message is its own (drafts for V's sign-off) */
       Object.assign(UI_STRINGS.en, { "lock.pdfEmpty": "Type a password for the locked copy." });
       Object.assign(UI_STRINGS.ar, { "lock.pdfEmpty": "اكتب كلمة مرور للنسخة المقفلة." });
@@ -55323,7 +55376,7 @@
           if (!bulkIsManuscript(name)) { items.push({ name, path: entry.path, error: "unsupported" }); step(); return; }
           /* BEUK:onereader — read as the Import button reads it; a text file keeps its words for an Obsidian vault's links */
           readImportFile(file).then((run) => { items.push({ name, path: entry.path, run, text: run.raw }); step(); })
-            .catch(() => { items.push({ name, path: entry.path, error: "unreadable" }); step(); });
+            .catch((e) => { items.push({ name, path: entry.path, error: e && e.code === "cancelled" ? "locked" : "unreadable" }); step(); }); /* BEUK:importlock — Cancel leaves this one file out, as "locked" */
         };
         step();
       }
@@ -55360,7 +55413,7 @@
       }
       function renderBulkSummary(summary) {
         const box = $("bulkSummary"); if (!box) return;
-        const reasonText = (r) => t("bulk.reason" + r.charAt(0).toUpperCase() + r.slice(1));
+        const reasonText = (r) => r === "locked" ? t("bulk.locked") : t("bulk.reason" + r.charAt(0).toUpperCase() + r.slice(1)); /* BEUK:importlock */
         let h = "<h4>" + esc(t("bulk.summaryTitle")) + "</h4>";
         if (summary.vault) h += "<p>" + esc(t("bulk.vaultNote")) + "</p>";
         if (summary.added.length) {
@@ -71773,62 +71826,86 @@
         if (rec) parts.push(t("backup.onRecord", { date: rec }));
         return parts.length ? ". " + parts.join(" ") : "";
       }
-      /* The password dialog for a locked backup: the plain backup text once a password opens it, null on Cancel. A wrong
-         password says so in the dialog, which stays open for another try; the field is emptied after every attempt */
-      let backupAskEnd = null; /* the open ask's Cancel: a second ask ends the first, never leaves it hanging */
-      function backupPasswordAsk(envelope) {
-        if (backupAskEnd) backupAskEnd();
-        const old = $("modalBackupPw");
+      /* ==== BEUK:importlock ==== task 2: one password dialog (design 2026-11-10, goal 4). premium 3's backup dialog,
+         made general: passwordAsk({ title, lead, wrong, tryOpen }, ids?) → Promise<the opened result | null>. null is
+         Cancel (the button, Escape, a click outside, or a second ask). tryOpen(password) resolves to what the password
+         opens, or throws: .code "wrong-password" says `wrong` in the dialog, which stays open for another try; any other
+         error closes it, and the ask rejects with that error (a damaged file says so once, never loops). The password is
+         read from the field once and the field emptied at once; it is handed to tryOpen and kept nowhere. While tryOpen
+         runs, Open is disabled (and aria-busy); Cancel stays usable and ends the ask at once, the late answer dropped.
+         `lead` is a paragraph under the title (none when empty). `ids` names the dialog's elements: the backup keeps
+         premium 3's (BACKUP_PW_IDS), so its look, words and ids are as they were */
+      const PASSWORD_ASK_IDS = { modal: "modalPasswordAsk", head: "passwordAskH", lead: "passwordAskLead", field: "passwordAskField", err: "passwordAskErr", open: "btnPasswordAskOpen", cancel: "btnPasswordAskCancel", name: "importlock-open-pw" };
+      const BACKUP_PW_IDS = { modal: "modalBackupPw", head: "backupPwH", lead: "backupPwLead", field: "backupPw", err: "backupPwErr", open: "btnBackupPwOpen", cancel: "btnBackupPwCancel", name: "lockcopy-backup-open-pw" };
+      let passwordAskEnd = null; /* the open ask's Cancel: a second ask ends the first, never leaves it hanging */
+      function passwordAsk(o, ids) {
+        const id = Object.assign({}, PASSWORD_ASK_IDS, ids || {});
+        if (passwordAskEnd) passwordAskEnd();
+        const old = $(id.modal);
         if (old) old.remove();
         const m = document.createElement("div");
-        m.className = "modal-back"; m.id = "modalBackupPw"; m.style.zIndex = "80";
-        m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="backupPwH" style="max-width:440px;">' +
-          '<h2 id="backupPwH"><i data-lucide="lock"></i><span data-i18n="backup.pwTitle">' + esc(t("backup.pwTitle")) + "</span></h2>" +
-          '<div><label class="field-lab" for="backupPw" data-i18n="lock.pw">' + esc(t("lock.pw")) + '</label><input class="txt-input" id="backupPw" name="lockcopy-backup-open-pw" type="password" autocomplete="off" /></div>' +
-          '<p class="acx-note acx-warn" id="backupPwErr" role="alert" hidden></p>' +
-          '<div class="modal-actions"><button class="tb-btn" id="btnBackupPwCancel" type="button" data-i18n="backup.pwCancel">' + esc(t("backup.pwCancel")) + "</button>" +
-          '<button class="tb-btn primary" id="btnBackupPwOpen" type="button" data-i18n="backup.pwOpen">' + esc(t("backup.pwOpen")) + "</button></div></div>";
+        m.className = "modal-back"; m.id = id.modal; m.style.zIndex = "80";
+        m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="' + id.head + '" style="max-width:440px;">' +
+          '<h2 id="' + id.head + '"><i data-lucide="lock"></i><span>' + esc(o.title || "") + "</span></h2>" +
+          (o.lead ? '<p class="m-sub" id="' + id.lead + '">' + esc(o.lead) + "</p>" : "") +
+          '<div><label class="field-lab" for="' + id.field + '" data-i18n="lock.pw">' + esc(t("lock.pw")) + '</label><input class="txt-input" id="' + id.field + '" name="' + id.name + '" type="password" autocomplete="off" /></div>' +
+          '<p class="acx-note acx-warn" id="' + id.err + '" role="alert" hidden></p>' +
+          '<div class="modal-actions"><button class="tb-btn" id="' + id.cancel + '" type="button" data-i18n="backup.pwCancel">' + esc(t("backup.pwCancel")) + "</button>" +
+          '<button class="tb-btn primary" id="' + id.open + '" type="button" data-i18n="backup.pwOpen">' + esc(t("backup.pwOpen")) + "</button></div></div>";
         document.body.appendChild(m);
         icons();
-        return new Promise((resolve) => {
-          const field = $("backupPw"), err = $("backupPwErr"), go = $("btnBackupPwOpen");
+        return new Promise((resolve, reject) => {
+          const field = $(id.field), err = $(id.err), go = $(id.open);
           let done = false;
-          const finish = (v) => {
+          const finish = (ok, v) => {
             if (done) return;
             done = true;
-            if (backupAskEnd === cancel) backupAskEnd = null;
+            if (passwordAskEnd === cancel) passwordAskEnd = null;
             field.value = "";
             m.classList.remove("open");
             m.remove();
-            resolve(v);
+            if (ok) resolve(v); else reject(v);
           };
-          const cancel = () => finish(null);
-          backupAskEnd = cancel;
-          const say = () => { err.textContent = t("backup.pwWrong"); err.hidden = false; };
+          const cancel = () => finish(true, null);
+          passwordAskEnd = cancel;
+          const say = () => { err.textContent = o.wrong || ""; err.hidden = false; };
           const open = async () => {
             if (done || go.disabled) return;
             const pw = field.value;
             field.value = ""; /* read once, emptied at once */
             if (!pw) { say(); return; }
-            go.disabled = true;
-            try { finish(await backupUnlock(envelope, pw)); }
+            go.disabled = true; go.setAttribute("aria-busy", "true");
+            try { const v = await o.tryOpen(pw); finish(true, v); }
             catch (e) {
-              if (done) return;
-              say();
-              try { field.focus({ preventScroll: true }); } catch (x) {}
-            } finally { go.disabled = false; }
+              if (done) return; /* cancelled while it was checked: the late answer is dropped */
+              if (e && e.code === "wrong-password") {
+                say();
+                try { field.focus({ preventScroll: true }); } catch (x) {}
+              } else finish(false, e);
+            } finally { go.disabled = false; go.removeAttribute("aria-busy"); }
           };
-          $("btnBackupPwCancel").addEventListener("click", () => finish(null));
+          $(id.cancel).addEventListener("click", cancel);
           go.addEventListener("click", open);
-          m.addEventListener("click", (e) => { if (e.target === m) finish(null); });
+          m.addEventListener("click", (e) => { if (e.target === m) cancel(); });
           m.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); finish(null); }
+            if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancel(); }
             else if (e.key === "Enter" && e.target === field) { e.preventDefault(); open(); }
           });
           field.addEventListener("input", () => { err.hidden = true; err.textContent = ""; });
           m.classList.add("open");
           try { field.focus({ preventScroll: true }); } catch (e) {}
         });
+      }
+      /* ==== /BEUK:importlock ==== */
+      /* The password dialog for a locked backup: the plain backup text once a password opens it, null on Cancel. A wrong
+         password says so in the dialog, which stays open for another try; the field is emptied after every attempt.
+         BEUK:importlock — premium 3's dialog is now passwordAsk, with the backup's own title, words and ids; any failure
+         to open the envelope reads as a wrong password, as it always did */
+      function backupPasswordAsk(envelope) {
+        return passwordAsk({
+          title: t("backup.pwTitle"), lead: "", wrong: t("backup.pwWrong"),
+          tryOpen: (pw) => backupUnlock(envelope, pw).catch(() => { throw importLockError("wrong-password"); })
+        }, BACKUP_PW_IDS);
       }
       /* The plain backup a file holds: backupRead's answer, a locked one opened through the password dialog first.
          { cancelled: true } when the writer cancels it; null for anything that is not a backup */

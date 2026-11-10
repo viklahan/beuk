@@ -136,6 +136,8 @@ export function LocalPill() {
           open: Tab stays inside, and above the export modal (Add a Book's locked volume) Escape closes only the top one */}
       <BodyModalStack id="modalBackupPw" closeSel="#btnBackupPwCancel" />
       <BodyModalStack id="modalAuthorship" closeSel="#btnAuthClose" />
+      {/* BEUK:importlock — the same dialog asking a locked file's password (the Import button, Bulk import, Add a Book) */}
+      <BodyModalStack id="modalPasswordAsk" closeSel="#btnPasswordAskCancel" />
     <div className={'local-wrap' + (failed ? ' is-failed' : '')}>
       <span className="local-pill" id="localPill" data-state={s.status} data-evictable={evictable ? '' : undefined} role="status" aria-live="polite" title={txt.full + ' — ' + detail}>
         <button

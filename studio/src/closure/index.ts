@@ -773,6 +773,12 @@ export type ClosureApi = {
   officeLockKind: (bytes: Uint8Array) => null | 'agile' | 'unsupported';
   officeUnlock: (bytes: Uint8Array, password: string) => Promise<Uint8Array>;
   importLockSha1Spin: (h0: Uint8Array, rounds: number) => Uint8Array;
+  // task 2: the one password dialog — null on Cancel; a thrown .code "wrong-password" keeps it open, any other error
+  // closes it and rejects; `ids` names its elements (the backup keeps premium 3's)
+  passwordAsk: <T>(
+    o: { title: string; lead: string; wrong: string; tryOpen: (password: string) => Promise<T> },
+    ids?: Partial<Record<'modal' | 'head' | 'lead' | 'field' | 'err' | 'open' | 'cancel' | 'name', string>>,
+  ) => Promise<T | null>;
   // locked backups and the authorship record (task 2): 1.0's BEUK:authorship
   backupFingerprint: (book: object) => Promise<string>;
   backupPayload: (book: object, recorded: string | null) => Promise<{ text: string; sha256: string }>;
