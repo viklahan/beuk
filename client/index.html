@@ -39185,14 +39185,16 @@
         if (lower.endsWith(".pdf")) { /* BEUK:pdfimport */
           let lib;
           try { lib = await pdfLoadLib(); } catch (e) { throw importRefusal(t("pdf.loadFailed")); }
-          let ext, bytes;
-          try { bytes = new Uint8Array(await file.arrayBuffer()); } catch (e) { throw importRefusal(t("pdf.broken")); }
-          /* BEUK:importlock — the original bytes are kept: pdf.js hands the buffer it is given over to its worker, so
-             each attempt reads a fresh copy */
-          try { ext = await pdfExtract(lib, bytes.slice(), { image: pdfImageToData }); }
+          let ext;
+          /* BEUK:importlock — pdf.js hands the buffer it is given over to its worker, so each attempt (the first one
+             too) reads the File afresh: one copy of the bytes at a time, never a kept master copy beside it */
+          const fresh = async () => new Uint8Array(await file.arrayBuffer());
+          let first;
+          try { first = await fresh(); } catch (e) { throw importRefusal(t("pdf.broken")); }
+          try { const data = first; first = null; ext = await pdfExtract(lib, data, { image: pdfImageToData }); }
           catch (e) {
             if (!importLockPdfNeeds(lib, e)) throw importRefusal(e && e.name === "PasswordException" ? t("pdf.password") : t("pdf.broken"));
-            ext = await importLockAsk(name, (password) => pdfExtract(lib, bytes.slice(), { image: pdfImageToData, password })
+            ext = await importLockAsk(name, async (password) => pdfExtract(lib, await fresh(), { image: pdfImageToData, password })
               .catch((err) => { throw importLockPdfWrong(lib, err) ? importLockError("wrong-password") : err; }), () => importRefusal(t("pdf.broken")));
           }
           if (pdfIsScanned(ext)) throw importRefusal(t("pdf.scanned", { n: ext.numPages }));
@@ -39217,11 +39219,11 @@
           /* BEUK:importlock — a locked Word file is a compound file, not a zip: it asks for its password (an Agile
              lock), or says plainly that its kind of lock can't be opened; the plain package then goes down today's path */
           const lock = officeLockKind(new Uint8Array(buf));
-          if (lock === "unsupported") throw importRefusal(t("importLock.old"));
+          if (lock === "unsupported") throw Object.assign(importRefusal(t("importLock.old")), { code: "unsupported" }); /* .code: Bulk import's row says why */
           if (lock === "agile") {
             const sealed = new Uint8Array(buf);
             const plain = await importLockAsk(name, (password) => officeUnlock(sealed, password),
-              (e) => importRefusal(t(e && e.code === "unsupported" ? "importLock.old" : "importLock.damaged")));
+              (e) => Object.assign(importRefusal(t(e && e.code === "unsupported" ? "importLock.old" : "importLock.damaged")), { code: e && e.code === "unsupported" ? "unsupported" : "damaged" }));
             buf = plain.buffer.slice(plain.byteOffset, plain.byteOffset + plain.byteLength);
           }
           try {
@@ -55384,7 +55386,7 @@
           if (!bulkIsManuscript(name)) { items.push({ name, path: entry.path, error: "unsupported" }); step(); return; }
           /* BEUK:onereader — read as the Import button reads it; a text file keeps its words for an Obsidian vault's links */
           readImportFile(file).then((run) => { items.push({ name, path: entry.path, run, text: run.raw }); step(); })
-            .catch((e) => { items.push({ name, path: entry.path, error: e && e.code === "cancelled" ? "locked" : "unreadable" }); step(); }); /* BEUK:importlock — Cancel leaves this one file out, as "locked" */
+            .catch((e) => { items.push({ name, path: entry.path, error: ({ cancelled: "locked", unsupported: "lockOld", damaged: "lockDamaged" })[e && e.code] || "unreadable" }); step(); }); /* BEUK:importlock — Cancel leaves this one file out, as "locked"; an older lock or a damaged one says so */
         };
         step();
       }
@@ -55421,7 +55423,8 @@
       }
       function renderBulkSummary(summary) {
         const box = $("bulkSummary"); if (!box) return;
-        const reasonText = (r) => r === "locked" ? t("bulk.locked") : t("bulk.reason" + r.charAt(0).toUpperCase() + r.slice(1)); /* BEUK:importlock */
+        const lockWords = { locked: "bulk.locked", lockOld: "importLock.old", lockDamaged: "importLock.damaged" }; /* BEUK:importlock — a locked file's row says why, in the dialog's own words */
+        const reasonText = (r) => t(lockWords[r] || "bulk.reason" + r.charAt(0).toUpperCase() + r.slice(1));
         let h = "<h4>" + esc(t("bulk.summaryTitle")) + "</h4>";
         if (summary.vault) h += "<p>" + esc(t("bulk.vaultNote")) + "</p>";
         if (summary.added.length) {

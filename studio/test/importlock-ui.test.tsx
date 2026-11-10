@@ -663,17 +663,19 @@ describe('Task 2 review fixes', { timeout: 180_000 }, () => {
     expect(JSON.stringify(live())).toBe(before);
   });
 
-  it('finding 6b: in Bulk, a damaged or an older-lock file is "unreadable", never "locked"', async () => {
+  it('finding 6b (final review 1): in Bulk, a damaged or an older-lock file says why — importLock.damaged / importLock.old, never "unreadable" or "locked"', async () => {
     const entries = [fileOf(damagedLock(), 'damaged.docx', DOCX_TYPE), fileOf(olderLock(), 'standard.docx', DOCX_TYPE)].map((file) => ({ file, path: file.name }));
     const prepared = new Promise<Rec>((res) => bulk().bulkPrepareEntries(entries, null, res));
     await asked(); // the damaged one asks (its verifier is sound); the older lock never does
     await typeAndOpen(PW);
     const items = (await prepared).items as Rec[];
-    expect(items.map((x) => [x.name, x.error])).toEqual([['damaged.docx', 'unreadable'], ['standard.docx', 'unreadable']]);
+    expect(items.map((x) => [x.name, x.error])).toEqual([['damaged.docx', 'lockDamaged'], ['standard.docx', 'lockOld']]);
     expect(seen.dialogs).toBe(1);
     document.body.insertAdjacentHTML('beforeend', '<div id="bulkSummary" style="display:none"></div>');
     bulk().renderBulkSummary({ added: [], skipped: [], failed: items.map((x) => ({ name: x.name, reason: x.error })), vault: false, total: 2 });
-    expect($('bulkSummary').textContent).toContain('damaged.docx — ' + t('bulk.reasonUnreadable'));
+    const rows = Array.from($('bulkSummary').querySelectorAll('li')).map((li) => li.textContent);
+    expect(rows).toEqual(['damaged.docx — ' + t('importLock.damaged'), 'standard.docx — ' + t('importLock.old')]);
+    expect($('bulkSummary').textContent).not.toContain(t('bulk.reasonUnreadable'));
     expect($('bulkSummary').textContent).not.toContain(t('bulk.locked'));
   });
 
@@ -691,6 +693,109 @@ describe('Task 2 review fixes', { timeout: 180_000 }, () => {
     await waitFor(() => expect(seen.toasts).toContain('Could not add agile-sha512.docx: ' + t('bulk.locked')), { timeout: 20_000 });
     for (let i = 0; i < 10; i++) await act(() => tick(20));
     expect(isOpen('modalExport')).toBe(true);
+  });
+});
+
+describe('final review fixes', { timeout: 180_000 }, () => {
+  /** `f`, its every read recorded: the buffer each arrayBuffer() handed back */
+  const counted = (f: File) => {
+    const reads: ArrayBuffer[] = [];
+    const real = f.arrayBuffer.bind(f);
+    Object.defineProperty(f, 'arrayBuffer', { configurable: true, value: async () => { const b = await real(); reads.push(b); return b; } });
+    return reads;
+  };
+  /** pdf.js with each getDocument's `data` buffer recorded as it was given (pdf.js may hand it to its worker after) */
+  async function withGetDocumentSeen(run: (given: ArrayBufferLike[]) => Promise<void>) {
+    const real = g.pdfjsLib as Rec & { getDocument: (p: Rec) => unknown };
+    const given: ArrayBufferLike[] = [];
+    g.pdfjsLib = { ...real, getDocument: (p: Rec) => (given.push((p.data as Uint8Array).buffer), real.getDocument(p)) };
+    try { await run(given); } finally { g.pdfjsLib = real; }
+  }
+
+  it('finding 2: an unlocked PDF is read once and that one buffer goes to pdf.js — no second copy', async () => {
+    await withGetDocumentSeen(async (given) => {
+      await studioWith(LANTERN());
+      const f = pdf('plain.pdf');
+      const reads = counted(f);
+      await choose(f);
+      await replaceYes();
+      expect(seen.dialogs).toBe(0);
+      expect(JSON.stringify(live())).toContain('The Harbour');
+      expect(reads.length).toBe(1);
+      expect(given.length).toBe(1);
+      expect(given[0] === reads[0]).toBe(true);
+    });
+  });
+
+  it('finding 2: a locked PDF re-reads the File for each attempt (first, wrong, right); each read goes to pdf.js as it is', async () => {
+    await withGetDocumentSeen(async (given) => {
+      await studioWith(LANTERN());
+      const f = pdf('aes-256.pdf');
+      const reads = counted(f);
+      await choose(f);
+      await asked();
+      await typeAndOpen('not it');
+      await waitFor(() => expect($('passwordAskErr').textContent).toBe(t('importLock.wrong')), { timeout: 30_000 });
+      await typeAndOpen(PW);
+      await replaceYes();
+      expect(JSON.stringify(live())).toContain('The Harbour');
+      expect(reads.length).toBe(3);
+      expect(given.length).toBe(3);
+      expect(given.map((b, i) => b === reads[i])).toEqual([true, true, true]);
+    });
+  });
+
+  it('finding 3: day 22 (data-plan-access=paused) — a locked file still asks and imports', async () => {
+    try {
+      await studioWith(LANTERN());
+      document.documentElement.setAttribute('data-plan-access', 'paused');
+      expect(((c.api as unknown as Rec).lockCopyAllowed as () => boolean)()).toBe(false); // the lock family's own gate reads it as paused
+      await choose(docx('agile-sha512.docx'));
+      await asked();
+      await typeAndOpen(PW);
+      await replaceYes();
+      expect(document.getElementById('modalPasswordAsk')).toBeNull();
+      onlyImported('agile-sha512.docx');
+      expect(seen.dialogs).toBe(1);
+    } finally {
+      document.documentElement.removeAttribute('data-plan-access');
+    }
+  });
+
+  it("finding 4: Beuk's own locked PDF (lockPdfBytes, R6) over plain.pdf comes back: a wrong password keeps the dialog, the right one brings the text", async () => {
+    const pw = 'beuk own lock';
+    const locked = await c.api.lockPdfBytes(fx('plain.pdf'), pw);
+    const deskBook = LANTERN();
+    await studioWith(deskBook);
+    await choose(fileOf(locked, 'review-copy.pdf', 'application/pdf'));
+    await asked();
+    await typeAndOpen('not it');
+    await waitFor(() => expect($('passwordAskErr').textContent).toBe(t('importLock.wrong')), { timeout: 30_000 });
+    expect(isOpen('modalPasswordAsk')).toBe(true);
+    await typeAndOpen(pw);
+    await replaceYes();
+    expect(document.getElementById('modalPasswordAsk')).toBeNull();
+    expect(seen.dialogs).toBe(1);
+    // the text: the same sections 1.0 makes of the plain PDF. (Only the sections: plain.pdf's /Info is a dictionary
+    // written inline in its trailer, and lockPdfBytes carries an /Info across only when it is an indirect reference, so
+    // the locked copy has no Title / Author for the import to read — premium 1's writer, reported, not this import's.)
+    const want = await oracleBook(deskBook, pdf('plain.pdf', 'review-copy.pdf'));
+    const got = maskVarying(live()) as Rec;
+    expect(got.sections).toEqual((maskVarying(want) as Rec).sections);
+    expect(JSON.stringify(got.sections)).toContain('The Harbour');
+  });
+
+  it('finding 5: importPdfData(name, data, {password}) — right opens, wrong is refused, none is refused with pdf.password', async () => {
+    const o = await createImportOracle(t, { mammoth: g.mammoth, pdfLoadLib: async () => g.pdfjsLib });
+    o.api.applyBookDoc(structuredClone(LANTERN()) as never);
+    const importData = o.api.importPdfData as unknown as (name: string, data: Uint8Array, opts?: Rec) => Promise<Rec>;
+    const none = await importData('aes-256.pdf', fx('aes-256.pdf'));
+    expect([none.ok, none.why, none.message]).toEqual([false, 'password', t('pdf.password')]);
+    const wrong = await importData('aes-256.pdf', fx('aes-256.pdf'), { password: 'not it' });
+    expect([wrong.ok, wrong.why]).toEqual([false, 'password']);
+    const right = await importData('aes-256.pdf', fx('aes-256.pdf'), { password: PW });
+    expect(right.ok).toBe(true);
+    expect(JSON.stringify(o.api.serializeBook())).toContain('The Harbour');
   });
 });
 
