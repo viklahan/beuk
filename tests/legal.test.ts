@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { loadConfig, type Config } from '../src/config.js';
@@ -322,4 +322,50 @@ test('legal: Caddy proxies the pages to the app, and the workers leave them to t
     assert.match(env, new RegExp(`^${k}=$`, 'm'), `.env.example ${k}`);
     assert.match(read('docker-compose.yml'), new RegExp(`${k}: \\$\\{${k}:-\\}`), `compose ${k}`);
   }
+});
+
+/* Every email the code can send is named on the privacy page: each
+ * `email-kind:` marker in src/ maps to words privacy.md must contain
+ * (a new kind fails here until the page and this table say it). */
+const EMAIL_KIND_NEEDLES: Record<string, string> = {
+  welcome: 'a welcome email with a link to confirm your address',
+  'signup-confirm': 'that confirmation link again',
+  'email-change-confirm': 'a link to confirm the new address, sent to it',
+  'email-change-notice': 'a notice to your old address',
+  'password-reset': 'the password-reset link',
+  'trial-ending': 'one reminder shortly before your free trial ends',
+  'security-new-sign-in': 'signed in to from a device label none of your other sign-ins has',
+  'security-two-step-on': 'when two-step sign-in is turned on or off',
+  'security-two-step-off': 'when two-step sign-in is turned on or off',
+  'security-recovery-used': 'when a recovery code is used',
+  'security-recovery-new': 'when new recovery codes are made',
+  'housekeeping-test': 'a test email an admin asks for',
+  'backup-alert': 'backup alerts to the operator',
+  'self-check-probe': 'a self-check message that is never delivered',
+};
+
+function srcKinds(): Set<string> {
+  const kinds = new Set<string>();
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const p = path.join(dir, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (name.endsWith('.ts')) for (const m of readFileSync(p, 'utf8').matchAll(/email-kind: ([a-z-]+)/g)) kinds.add(m[1]);
+    }
+  };
+  walk(path.join(root, 'src'));
+  return kinds;
+}
+
+test('legal: privacy.md names every kind of email the code can send', () => {
+  const md = read('content', 'legal', 'privacy.md');
+  const kinds = srcKinds();
+  assert.ok(kinds.size >= 13, `found ${[...kinds].join(', ')}`);
+  for (const k of kinds) {
+    const needle = EMAIL_KIND_NEEDLES[k];
+    assert.ok(needle, `email kind ${k} has no entry in EMAIL_KIND_NEEDLES: add it to privacy.md and here`);
+    assert.ok(md.includes(needle), `privacy.md should mention ${k}: "${needle}"`);
+  }
+  assert.ok(kinds.has('trial-ending'), 'the trial-ending email carries its marker');
+  assert.ok(kinds.has('email-change-notice'));
 });

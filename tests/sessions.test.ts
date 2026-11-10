@@ -295,6 +295,30 @@ test('emails: a second sign-in with the same label sends none; a new label sends
   assert.deepEqual((await securityMailSince(mark, w.email)).map((g) => g.kind), ['security-new-sign-in']);
 });
 
+test('emails: every security email says when, in the same words as the new-sign-in email', async () => {
+  const sec = await import('../src/email/security.js');
+  const at = new Date('2026-11-09T07:05:00Z');
+  const when = '9 November 2026, 07:05 UTC';
+  assert.equal(sec.whenWords(at), when);
+  const all = [
+    sec.newSignInEmail(server.config, 'Chrome on Android', at),
+    sec.twoStepOnEmail(server.config, at),
+    sec.twoStepOffEmail(server.config, at),
+    sec.recoveryUsedEmail(server.config, 9, at),
+    sec.recoveryNewEmail(server.config, at),
+  ];
+  for (const m of all) {
+    assert.ok(m.text.includes(when), `${m.subject}: ${m.text}`);
+    assert.ok(m.html.includes(when), `${m.subject} (html)`);
+  }
+  // Through the routes, on the server clock.
+  const w = await writer(UA.winChrome);
+  const mark = mailer.sent.length;
+  await turnOn(w.c);
+  const got = await securityMailSince(mark, w.email);
+  assert.ok(got[0].m.text.includes(sec.whenWords(now())), got[0].m.text);
+});
+
 test('emails: sign-up itself sends no new-sign-in email (the welcome covers it)', async () => {
   const mark = mailer.sent.length;
   const w = await writer(UA.macSafari);

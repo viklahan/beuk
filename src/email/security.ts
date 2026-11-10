@@ -11,7 +11,8 @@ import type { BackgroundTasks } from '../routes/account.js';
  * two-step turned off, a recovery code used (with how many are left),
  * and new recovery codes made.
  *
- * Every one is sent through BackgroundTasks after the response: a
+ * Each says what happened and when (whenWords, the server clock in
+ * UTC). Every one is sent through BackgroundTasks after the response: a
  * failure is logged there and never reaches the writer. Each says "If
  * this wasn't you, change your password and sign out everywhere" and
  * links to /account. Nothing is sent while email isn't configured
@@ -52,23 +53,23 @@ export function newSignInEmail(config: Config, label: string, at: Date): Rendere
   );
 }
 
-export function twoStepOnEmail(config: Config): RenderedEmail {
+export function twoStepOnEmail(config: Config, at: Date): RenderedEmail {
   return body(
     config,
     'Two-step sign-in is on for your Beuk account',
     [
-      'Two-step sign-in was just turned on for your Beuk account. From now on, signing in asks for a code from your authenticator app after your password.',
+      `Two-step sign-in was turned on for your Beuk account on ${whenWords(at)}. From now on, signing in asks for a code from your authenticator app after your password.`,
       'Keep your recovery codes somewhere safe: each one signs you in once if you lose your phone.',
     ],
     'two-step sign-in was turned on for your Beuk account',
   );
 }
 
-export function twoStepOffEmail(config: Config): RenderedEmail {
+export function twoStepOffEmail(config: Config, at: Date): RenderedEmail {
   return body(
     config,
     'Two-step sign-in is off for your Beuk account',
-    ['Two-step sign-in was just turned off for your Beuk account. Signing in now needs only your password.'],
+    [`Two-step sign-in was turned off for your Beuk account on ${whenWords(at)}. Signing in now needs only your password.`],
     'two-step sign-in was turned off for your Beuk account',
   );
 }
@@ -79,20 +80,20 @@ export function recoveryLeftWords(left: number): string {
   return `${left} recovery codes are left.`;
 }
 
-export function recoveryUsedEmail(config: Config, left: number): RenderedEmail {
+export function recoveryUsedEmail(config: Config, left: number, at: Date): RenderedEmail {
   return body(
     config,
     'A recovery code was used on your Beuk account',
-    ['A recovery code was just used on your Beuk account. Each code works once.', recoveryLeftWords(left)],
+    [`A recovery code was used on your Beuk account on ${whenWords(at)}. Each code works once.`, recoveryLeftWords(left)],
     'a recovery code was used on your Beuk account',
   );
 }
 
-export function recoveryNewEmail(config: Config): RenderedEmail {
+export function recoveryNewEmail(config: Config, at: Date): RenderedEmail {
   return body(
     config,
     'New recovery codes for your Beuk account',
-    ['New recovery codes were just made for your Beuk account. The old ones no longer work.'],
+    [`New recovery codes were made for your Beuk account on ${whenWords(at)}. The old ones no longer work.`],
     'new recovery codes were made for your Beuk account',
   );
 }
@@ -148,33 +149,37 @@ export function securityEmails(deps: SecurityEmailDeps): SecurityEmails {
     },
     twoStepOn(user) {
       if (!on()) return;
+      const at = now();
       tasks.run(async () => {
         // email-kind: security-two-step-on
-        const result = await mailer.send({ to: user.email, ...twoStepOnEmail(config) });
+        const result = await mailer.send({ to: user.email, ...twoStepOnEmail(config, at) });
         warn('security-two-step-on', result);
       });
     },
     twoStepOff(user) {
       if (!on()) return;
+      const at = now();
       tasks.run(async () => {
         // email-kind: security-two-step-off
-        const result = await mailer.send({ to: user.email, ...twoStepOffEmail(config) });
+        const result = await mailer.send({ to: user.email, ...twoStepOffEmail(config, at) });
         warn('security-two-step-off', result);
       });
     },
     recoveryUsed(user, left) {
       if (!on()) return;
+      const at = now();
       tasks.run(async () => {
         // email-kind: security-recovery-used
-        const result = await mailer.send({ to: user.email, ...recoveryUsedEmail(config, left) });
+        const result = await mailer.send({ to: user.email, ...recoveryUsedEmail(config, left, at) });
         warn('security-recovery-used', result);
       });
     },
     recoveryNew(user) {
       if (!on()) return;
+      const at = now();
       tasks.run(async () => {
         // email-kind: security-recovery-new
-        const result = await mailer.send({ to: user.email, ...recoveryNewEmail(config) });
+        const result = await mailer.send({ to: user.email, ...recoveryNewEmail(config, at) });
         warn('security-recovery-new', result);
       });
     },

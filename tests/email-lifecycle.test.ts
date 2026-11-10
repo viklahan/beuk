@@ -398,10 +398,11 @@ test('docs/email-setup.md lists every email the code can send, and nothing the c
     const src = readFileSync(file, 'utf8');
     const lines = src.split('\n');
     lines.forEach((line, i) => {
-      // A mail send is `<something>.send({` that is not an Express response.
-      const m = /(\w+)\.send\(\s*\{?\s*$|(\w+)\.send\(\s*\{/.exec(line);
+      // A mail send is `<something>.send({` that is not an Express response,
+      // or any `mailer.send(` (a message built elsewhere, as the trial email's).
+      const m = /(\w+)\.send\(\s*\{?\s*$|(\w+)\.send\(\s*\{|\bmailer\.(send)\(/.exec(line);
       if (!m) return;
-      const recv = m[1] ?? m[2];
+      const recv = m[1] ?? m[2] ?? 'mailer';
       if (recv === 'res') return;
       const before = lines.slice(Math.max(0, i - 3), i).join('\n');
       const kind = /email-kind: ([a-z-]+)/.exec(before);

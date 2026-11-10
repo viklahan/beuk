@@ -122,6 +122,7 @@ export class TrialReminders {
           [u.id, now],
         );
         if (!claim.rows.length) continue;
+        // email-kind: trial-ending
         const result = await this.deps.mailer.send(trialEndingMessage(config, u.email, access.trial.endsAt));
         if (result.delivered) {
           sent++;

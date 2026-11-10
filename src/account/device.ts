@@ -34,7 +34,15 @@ function osOf(ua: string): DeviceOs {
   return 'another system';
 }
 
-/** "{Browser} on {OS}" for a User-Agent header value. */
+/**
+ * "{Browser} on {OS}" for a User-Agent header value.
+ *
+ * An iPad in desktop mode (Safari's default on iPadOS 13 and later) sends
+ * a Mac User-Agent, so it is labelled "Safari on macOS". That is the
+ * honest answer from what the browser says about itself: don't "fix" it
+ * by guessing (touch support isn't in the header, and guessing would
+ * mislabel real Macs).
+ */
 export function deviceLabel(userAgent: string): string {
   const ua = typeof userAgent === 'string' ? userAgent : '';
   return `${browserOf(ua)} on ${osOf(ua)}`;
