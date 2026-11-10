@@ -18,11 +18,7 @@ export class SlidingWindowLimiter {
     const recent = (this.hits.get(key) ?? []).filter((x) => t - x < this.windowMs);
     recent.push(t);
     this.hits.set(key, recent);
-    if (this.hits.size > 5000) {
-      for (const [k, times] of this.hits) {
-        if (!times.some((x) => t - x < this.windowMs)) this.hits.delete(k);
-      }
-    }
+    this.prune(t);
     return recent.length > this.max;
   }
 
@@ -44,7 +40,16 @@ export class SlidingWindowLimiter {
     if (recent.length >= this.max) return null;
     recent.push(t);
     this.hits.set(key, recent);
+    this.prune(t);
     return t;
+  }
+
+  /** Past 5000 tracked keys, drop every key with no hit left in the window. */
+  private prune(t: number): void {
+    if (this.hits.size <= 5000) return;
+    for (const [k, times] of this.hits) {
+      if (!times.some((x) => t - x < this.windowMs)) this.hits.delete(k);
+    }
   }
 
   /** Give back one hit recorded by reserve() (an attempt that turned out not to count). */
