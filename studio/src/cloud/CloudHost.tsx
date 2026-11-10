@@ -91,7 +91,8 @@ function wire(cm: CloudClosure, off: (() => void)[]): void {
   // initCloud, again
   // review I5: the other tabs hear of a sign-in or sign-out made here
   on('btnAuthSubmit', 'click', () => void Promise.resolve(a.cloudAuthSubmit()).finally(authAnnounce), off);
-  for (const id of ['authEmail', 'authPassword'])
+  // account hardening (task 4, BEUK:twostep): Enter in the code step's field, as 1.0's initCloud line
+  for (const id of ['authEmail', 'authPassword', 'authCode'])
     on(id, 'keydown', (e) => {
       if ((e as KeyboardEvent).key === 'Enter') void Promise.resolve(a.cloudAuthSubmit()).finally(authAnnounce);
     }, off);

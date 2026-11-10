@@ -10,6 +10,9 @@
                           mail captured and never sent, billing off unless the caller passes Stripe test settings
                           pointed at a fake on 127.0.0.1. The earlier waves keep the 404. (Wave 7b: in that mode
                           /read/* too, the beta readers' page and its comment API, as Caddy proxies /read*.)
+                          (Account hardening, task 4: and /account*, the account page, its confirm pages, account.js
+                          and account.css, as Caddy proxies /account*. The Caddyfile's headers are its "?" defaults
+                          there: whatever the app sets itself wins.)
 
    - anything else      → client/<path>, else 404
    Every response carries the Content-Security-Policy (and the other
@@ -107,6 +110,9 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
       for (const k of Object.keys(headers)) res.removeHeader(k);
       return shelf.app(req, res);
     }
+    // account hardening (task 4): the account page is the app's (Caddy's handle /account*); the default headers stay
+    // set, and the app's own setHeader replaces any it sends (the Caddyfile's "header ?Name" semantics)
+    if ((p === '/account' || p.startsWith('/account/')) && shelf) return shelf.app(req, res);
     if (p.startsWith('/api/')) {
       res.statusCode = 404;
       res.setHeader('Content-Type', 'application/json');

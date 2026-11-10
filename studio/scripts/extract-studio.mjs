@@ -695,7 +695,9 @@ export function extractCloudMarkup(html) {
   const account = one(/<button class="tb-btn" id="btnAccount"[^>]*>.*?<\/button>/, 'the account button (#btnAccount)');
   const netPill = one(/<span class="net-pill" id="netPill"[^>]*>.*?<\/span><\/span>/, 'the offline pill (#netPill)');
   const syncRow = one(/<div class="sync-row" id="syncRow"[^>]*>.*?<\/div>/, 'the shelf line (#syncRow)');
-  for (const id of ['authTitle', 'authSub', 'authEmail', 'authPassword', 'authForgotRow', 'authForgot', 'authNote', 'authError', 'authToggle', 'btnCloseAuth', 'btnAuthSubmit', 'authSubmitLabel'])
+  for (const id of ['authTitle', 'authSub', 'authEmail', 'authPassword', 'authForgotRow', 'authForgot', 'authNote', 'authError', 'authToggle', 'btnCloseAuth', 'btnAuthSubmit', 'authSubmitLabel',
+    // account hardening (task 4, BEUK:twostep): the code step's field
+    'authCodeWrap', 'authCode'])
     if (!auth.includes('id="' + id + '"')) fail(`the sign-in dialog no longer has #${id}`);
   for (const id of ['shelfEmail', 'shelfSyncLine', 'portalLink', 'portalConfirm', 'btnPortalResend', 'portalPending', 'portalNote', 'planLine', 'planText', 'btnPlanUpgrade', 'btnPlanManage', 'shelfBring', 'btnBringBook', 'shelfList', 'acctBox', 'acctCurrent', 'acctNew', 'btnAcctChange', 'acctMsg', 'btnAcctEverywhere', 'btnSignOut', 'btnCloseShelf'])
     if (!shelf.includes('id="' + id + '"')) fail(`the shelf dialog no longer has #${id}`);

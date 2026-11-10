@@ -497,6 +497,8 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   'acctChangePassword', 'acctSignOutEverywhere', 'portalTakeFreshSignIn', 'portalNote', 'portalRender', 'portalRefresh', 'portalResend', 'billingDate',
   // locked review copy (task 4, fix 1): the access /api/auth/me reports at boot, mirrored for the day-22 hide
   'lockAccessNote',
+  // account hardening (task 4, BEUK:twostep): the sign-in's code step
+  'twoStepForget', 'twoStepAuthModeHook', 'twoStepFocus', 'twoStepCodeReady', 'twoStepAnswer',
   'billingPlanRender', 'billingGo', 'billingNotePaused', 'planReconciliation', 'cloudReconnectFlush', 'raiseConflict', 'resolveConflict',
   'localReconcileOnSignIn', 'localLinkSnapshot', 'storeMakePrintJob', 'storeUpload', 'storeCreateJob', 'storeRefreshJobs', 'net', 'setConnectivity',
   'onReconnect', 'renderNetPill', 'bookDocsSame', 'bookIdsMatch', 'picIsRef', 'PIC_REF',
@@ -551,7 +553,9 @@ export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', '
 /** 1.0's top-level lets of the cloud module the studio reads or sets. */
 export const CLOUD_VARS = ['uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloudRetryTimer', 'cloudSaveInFlight', 'cloudSaveFollowUp', 'authMode', 'portalFreshSignIn', 'billingPausedSaid',
   // wave 7b (I9): the error report's build stamp (the worker's BEUK_SHELL_READY) and its count (tests: a fresh page)
-  'beukErrBuild', 'beukErrCount'];
+  'beukErrBuild', 'beukErrCount',
+  // account hardening (task 4, BEUK:twostep): the code step's challenge (tests: forgotten on close)
+  'twoStepChallenge'];
 
 /** Lifted declarations that may read the supplied FileReader (the Style tab's two uploads). */
 export const FILEREADER_READERS = ['handleFlourishFile', 'handleFontFile',

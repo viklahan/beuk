@@ -4283,6 +4283,9 @@
         <div style="display:grid; grid-template-columns:1fr; gap:14px;">
           <div><label class="field-lab" for="authEmail" data-i18n="auth.email">Email</label><input class="txt-input" id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" /></div>
           <div><label class="field-lab" for="authPassword" data-i18n="auth.password">Password</label><input class="txt-input" id="authPassword" type="password" autocomplete="current-password" placeholder="At least 8 characters" data-i18n-ph="auth.passwordPh" /></div>
+          <!-- ==== BEUK:twostep ==== the sign-in's code step: an authenticator code or a recovery code (letters too) -->
+          <div id="authCodeWrap" style="display:none;"><label class="field-lab" for="authCode" data-i18n="auth.codeLabel">Code</label><input class="txt-input" id="authCode" type="text" autocomplete="one-time-code" inputmode="text" autocapitalize="characters" spellcheck="false" maxlength="24" /></div>
+          <!-- ==== /BEUK:twostep ==== -->
         </div>
         <!-- ==== BEUK:auth ==== -->
         <div class="auth-forgot-row" id="authForgotRow"><button class="linkish" id="authForgot" type="button" data-i18n="acct.forgotLink">Forgot password?</button></div>
@@ -4774,6 +4777,7 @@
         "auth.notNow": "Not now", "auth.signIn": "Sign in", "auth.createAccount": "Create account",
         "auth.toggleCreate": "New here? Create your shelf", "auth.toggleSignIn": "Already have a shelf? Sign in",
         "auth.oneMoment": "One moment…", "auth.welcomeNew": "Your shelf is ready — welcome", "auth.welcomeBackToast": "Welcome back to your shelf",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "Two-step sign-in", "auth.codeSub": "Type the 6-digit code from your authenticator app, or one of your recovery codes.", "auth.codeLabel": "Code", "auth.codeVerify": "Verify", "auth.codeWrong": "That code didn't work. Check your app and try again.", "auth.codeExpired": "That took a little long. Sign in again.",
         "shelf.title": "Your shelf", "shelf.signOut": "Sign out", "shelf.back": "Back to writing",
         "shelf.bringText": "The book open in the studio lives only on this device for now. Bring it to your shelf and it will follow you to any device you sign in on.",
         "shelf.bringBtn": "Bring it to my shelf",
@@ -5531,6 +5535,7 @@
         "auth.notNow": "Ahora no", "auth.signIn": "Iniciar sesión", "auth.createAccount": "Crear cuenta",
         "auth.toggleCreate": "¿Nuevo aquí? Crea tu estantería", "auth.toggleSignIn": "¿Ya tienes estantería? Inicia sesión",
         "auth.oneMoment": "Un momento…", "auth.welcomeNew": "Tu estantería está lista — bienvenido", "auth.welcomeBackToast": "Bienvenido de nuevo a tu estantería",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "Inicio de sesión en dos pasos", "auth.codeSub": "Escribe el código de 6 dígitos de tu app de autenticación, o uno de tus códigos de recuperación.", "auth.codeLabel": "Código", "auth.codeVerify": "Verificar", "auth.codeWrong": "Ese código no ha funcionado. Revisa tu app y vuelve a intentarlo.", "auth.codeExpired": "Ha tardado un poco. Vuelve a iniciar sesión.",
         "shelf.title": "Tu estantería", "shelf.signOut": "Cerrar sesión", "shelf.back": "Volver a escribir",
         "shelf.bringText": "El libro abierto en el estudio vive solo en este dispositivo por ahora. Llévalo a tu estantería y te seguirá a cualquier dispositivo donde inicies sesión.",
         "shelf.bringBtn": "Llevarlo a mi estantería",
@@ -5751,6 +5756,7 @@
         "auth.notNow": "Pas maintenant", "auth.signIn": "Se connecter", "auth.createAccount": "Créer un compte",
         "auth.toggleCreate": "Nouveau ici ? Créez votre étagère", "auth.toggleSignIn": "Déjà une étagère ? Connectez-vous",
         "auth.oneMoment": "Un instant…", "auth.welcomeNew": "Votre étagère est prête — bienvenue", "auth.welcomeBackToast": "Bon retour sur votre étagère",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "Connexion en deux étapes", "auth.codeSub": "Saisissez le code à 6 chiffres de votre application d’authentification, ou l’un de vos codes de récupération.", "auth.codeLabel": "Code", "auth.codeVerify": "Vérifier", "auth.codeWrong": "Ce code n’a pas fonctionné. Vérifiez votre application et réessayez.", "auth.codeExpired": "Cela a pris un peu de temps. Reconnectez-vous.",
         "shelf.title": "Votre étagère", "shelf.signOut": "Se déconnecter", "shelf.back": "Retour à l'écriture",
         "shelf.bringText": "Le livre ouvert dans le studio ne vit que sur cet appareil pour l'instant. Apportez-le à votre étagère et il vous suivra sur tout appareil où vous vous connectez.",
         "shelf.bringBtn": "L'apporter à mon étagère",
@@ -5971,6 +5977,7 @@
         "auth.notNow": "Nicht jetzt", "auth.signIn": "Anmelden", "auth.createAccount": "Konto erstellen",
         "auth.toggleCreate": "Neu hier? Erstellen Sie Ihr Regal", "auth.toggleSignIn": "Haben Sie schon ein Regal? Melden Sie sich an",
         "auth.oneMoment": "Einen Moment…", "auth.welcomeNew": "Ihr Regal ist bereit — willkommen", "auth.welcomeBackToast": "Willkommen zurück in Ihrem Regal",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "Anmeldung in zwei Schritten", "auth.codeSub": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein oder einen Ihrer Wiederherstellungscodes.", "auth.codeLabel": "Code", "auth.codeVerify": "Bestätigen", "auth.codeWrong": "Dieser Code hat nicht funktioniert. Prüfen Sie Ihre App und versuchen Sie es erneut.", "auth.codeExpired": "Das hat etwas zu lange gedauert. Melden Sie sich erneut an.",
         "shelf.title": "Ihr Regal", "shelf.signOut": "Abmelden", "shelf.back": "Zurück zum Schreiben",
         "shelf.bringText": "Das im Studio geöffnete Buch lebt vorerst nur auf diesem Gerät. Bringen Sie es in Ihr Regal, und es folgt Ihnen auf jedes Gerät, auf dem Sie sich anmelden.",
         "shelf.bringBtn": "In mein Regal bringen",
@@ -6191,6 +6198,7 @@
         "auth.notNow": "Non ora", "auth.signIn": "Accedi", "auth.createAccount": "Crea account",
         "auth.toggleCreate": "Nuovo qui? Crea la tua libreria", "auth.toggleSignIn": "Hai già una libreria? Accedi",
         "auth.oneMoment": "Un attimo…", "auth.welcomeNew": "La tua libreria è pronta — benvenuto", "auth.welcomeBackToast": "Bentornato nella tua libreria",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "Accesso in due passaggi", "auth.codeSub": "Inserisci il codice a 6 cifre della tua app di autenticazione, oppure uno dei tuoi codici di recupero.", "auth.codeLabel": "Codice", "auth.codeVerify": "Verifica", "auth.codeWrong": "Quel codice non ha funzionato. Controlla l’app e riprova.", "auth.codeExpired": "Ci è voluto un po’ troppo. Accedi di nuovo.",
         "shelf.title": "La tua libreria", "shelf.signOut": "Esci", "shelf.back": "Torna a scrivere",
         "shelf.bringText": "Il libro aperto nello studio vive solo su questo dispositivo per ora. Portalo nella tua libreria e ti seguirà su qualsiasi dispositivo da cui accedi.",
         "shelf.bringBtn": "Portalo nella mia libreria",
@@ -6411,6 +6419,7 @@
         "auth.notNow": "Agora não", "auth.signIn": "Entrar", "auth.createAccount": "Criar conta",
         "auth.toggleCreate": "Novo aqui? Crie a sua estante", "auth.toggleSignIn": "Já tem uma estante? Entre",
         "auth.oneMoment": "Um momento…", "auth.welcomeNew": "A sua estante está pronta — bem-vindo", "auth.welcomeBackToast": "Bem-vindo de volta à sua estante",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "Início de sessão em dois passos", "auth.codeSub": "Introduza o código de 6 dígitos da sua aplicação de autenticação, ou um dos seus códigos de recuperação.", "auth.codeLabel": "Código", "auth.codeVerify": "Verificar", "auth.codeWrong": "Esse código não funcionou. Verifique a aplicação e tente novamente.", "auth.codeExpired": "Demorou um pouco. Inicie sessão novamente.",
         "shelf.title": "A sua estante", "shelf.signOut": "Sair", "shelf.back": "Voltar a escrever",
         "shelf.bringText": "O livro aberto no estúdio vive só neste dispositivo por agora. Leve-o para a sua estante e ele segui-lo-á para qualquer dispositivo onde entrar.",
         "shelf.bringBtn": "Levá-lo para a minha estante",
@@ -6631,6 +6640,7 @@
         "auth.notNow": "Niet nu", "auth.signIn": "Inloggen", "auth.createAccount": "Account aanmaken",
         "auth.toggleCreate": "Nieuw hier? Maak uw boekenplank", "auth.toggleSignIn": "Heeft u al een plank? Log in",
         "auth.oneMoment": "Een ogenblik…", "auth.welcomeNew": "Uw boekenplank is klaar — welkom", "auth.welcomeBackToast": "Welkom terug op uw boekenplank",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "Inloggen in twee stappen", "auth.codeSub": "Typ de 6-cijferige code uit uw authenticator-app, of een van uw herstelcodes.", "auth.codeLabel": "Code", "auth.codeVerify": "Verifiëren", "auth.codeWrong": "Die code werkte niet. Controleer uw app en probeer het opnieuw.", "auth.codeExpired": "Dat duurde wat lang. Log opnieuw in.",
         "shelf.title": "Uw boekenplank", "shelf.signOut": "Uitloggen", "shelf.back": "Terug naar schrijven",
         "shelf.bringText": "Het in de studio geopende boek leeft voorlopig alleen op dit apparaat. Breng het naar uw boekenplank en het volgt u naar elk apparaat waarop u inlogt.",
         "shelf.bringBtn": "Naar mijn boekenplank brengen",
@@ -6851,6 +6861,7 @@
         "auth.notNow": "Nie teraz", "auth.signIn": "Zaloguj się", "auth.createAccount": "Utwórz konto",
         "auth.toggleCreate": "Nowy tutaj? Utwórz swoją półkę", "auth.toggleSignIn": "Masz już półkę? Zaloguj się",
         "auth.oneMoment": "Chwileczkę…", "auth.welcomeNew": "Twoja półka jest gotowa — witaj", "auth.welcomeBackToast": "Witaj ponownie na swojej półce",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "Logowanie dwuetapowe", "auth.codeSub": "Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej albo jeden z kodów odzyskiwania.", "auth.codeLabel": "Kod", "auth.codeVerify": "Zweryfikuj", "auth.codeWrong": "Ten kod nie zadziałał. Sprawdź aplikację i spróbuj ponownie.", "auth.codeExpired": "To trwało trochę za długo. Zaloguj się ponownie.",
         "shelf.title": "Twoja półka", "shelf.signOut": "Wyloguj się", "shelf.back": "Wróć do pisania",
         "shelf.bringText": "Książka otwarta w studiu żyje na razie tylko na tym urządzeniu. Przynieś ją na swoją półkę, a będzie za tobą podążać na każde urządzenie, na którym się zalogujesz.",
         "shelf.bringBtn": "Przynieś na moją półkę",
@@ -7071,6 +7082,7 @@
         "auth.notNow": "Не сейчас", "auth.signIn": "Войти", "auth.createAccount": "Создать аккаунт",
         "auth.toggleCreate": "Впервые здесь? Создайте свою полку", "auth.toggleSignIn": "Полка уже есть? Войдите",
         "auth.oneMoment": "Минутку…", "auth.welcomeNew": "Ваша полка готова — добро пожаловать", "auth.welcomeBackToast": "С возвращением на вашу полку",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "Двухэтапный вход", "auth.codeSub": "Введите 6-значный код из приложения-аутентификатора или один из кодов восстановления.", "auth.codeLabel": "Код", "auth.codeVerify": "Подтвердить", "auth.codeWrong": "Этот код не подошёл. Проверьте приложение и попробуйте ещё раз.", "auth.codeExpired": "Это заняло слишком много времени. Войдите снова.",
         "shelf.title": "Ваша полка", "shelf.signOut": "Выйти", "shelf.back": "Вернуться к письму",
         "shelf.bringText": "Книга, открытая в студии, пока живёт только на этом устройстве. Принесите её на свою полку, и она будет следовать за вами на каждое устройство, где вы входите.",
         "shelf.bringBtn": "Принести на мою полку",
@@ -7291,6 +7303,7 @@
         "auth.notNow": "Şimdi değil", "auth.signIn": "Giriş yap", "auth.createAccount": "Hesap oluştur",
         "auth.toggleCreate": "Burada yeni misiniz? Rafınızı oluşturun", "auth.toggleSignIn": "Zaten bir rafınız var mı? Giriş yapın",
         "auth.oneMoment": "Bir saniye…", "auth.welcomeNew": "Rafınız hazır — hoş geldiniz", "auth.welcomeBackToast": "Rafınıza tekrar hoş geldiniz",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "İki adımlı giriş", "auth.codeSub": "Kimlik doğrulama uygulamanızdaki 6 haneli kodu ya da kurtarma kodlarınızdan birini yazın.", "auth.codeLabel": "Kod", "auth.codeVerify": "Doğrula", "auth.codeWrong": "Bu kod işe yaramadı. Uygulamanızı kontrol edip yeniden deneyin.", "auth.codeExpired": "Bu biraz uzun sürdü. Yeniden giriş yapın.",
         "shelf.title": "Rafınız", "shelf.signOut": "Çıkış yap", "shelf.back": "Yazmaya dön",
         "shelf.bringText": "Stüdyoda açık olan kitap şimdilik yalnızca bu cihazda yaşıyor. Onu rafınıza getirin, giriş yaptığınız her cihazda sizi izlesin.",
         "shelf.bringBtn": "Rafıma getir",
@@ -7511,6 +7524,7 @@
         "auth.notNow": "ليس الآن", "auth.signIn": "تسجيل الدخول", "auth.createAccount": "إنشاء حساب",
         "auth.toggleCreate": "جديد هنا؟ أنشئ رفّك", "auth.toggleSignIn": "لديك رفّ بالفعل؟ سجّل الدخول",
         "auth.oneMoment": "لحظة واحدة…", "auth.welcomeNew": "رفّك جاهز — أهلًا بك", "auth.welcomeBackToast": "مرحبًا بعودتك إلى رفّك",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "تسجيل الدخول بخطوتين", "auth.codeSub": "اكتب الرمز المكوّن من 6 أرقام من تطبيق المصادقة، أو أحد رموز الاسترداد.", "auth.codeLabel": "الرمز", "auth.codeVerify": "تحقّق", "auth.codeWrong": "لم ينجح هذا الرمز. تحقّق من التطبيق وحاول مرة أخرى.", "auth.codeExpired": "استغرق ذلك وقتًا أطول قليلًا. سجّل الدخول مرة أخرى.",
         "shelf.title": "رفّك", "shelf.signOut": "تسجيل الخروج", "shelf.back": "العودة إلى الكتابة",
         "shelf.bringText": "الكتاب المفتوح في الاستوديو يعيش على هذا الجهاز فقط في الوقت الحالي. اجلبه إلى رفّك وسيتبعك إلى أي جهاز تسجّل الدخول عليه.",
         "shelf.bringBtn": "جلبه إلى رفّي",
@@ -7731,6 +7745,7 @@
         "auth.notNow": "今はしない", "auth.signIn": "サインイン", "auth.createAccount": "アカウントを作成",
         "auth.toggleCreate": "初めてですか？本棚を作りましょう", "auth.toggleSignIn": "本棚はもうありますか？サインイン",
         "auth.oneMoment": "少々お待ちを…", "auth.welcomeNew": "本棚の準備ができました — ようこそ", "auth.welcomeBackToast": "本棚へおかえりなさい",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "2段階認証", "auth.codeSub": "認証アプリの6桁のコード、または復旧コードのいずれかを入力してください。", "auth.codeLabel": "コード", "auth.codeVerify": "確認", "auth.codeWrong": "そのコードは使えませんでした。アプリを確認して、もう一度お試しください。", "auth.codeExpired": "少し時間がかかりすぎました。もう一度サインインしてください。",
         "shelf.title": "あなたの本棚", "shelf.signOut": "サインアウト", "shelf.back": "執筆に戻る",
         "shelf.bringText": "スタジオで開いている本は、今のところこのデバイスの中だけにあります。本棚に持ってくれば、サインインするどのデバイスにも付いてきます。",
         "shelf.bringBtn": "私の本棚に持ってくる",
@@ -7951,6 +7966,7 @@
         "auth.notNow": "暂不", "auth.signIn": "登录", "auth.createAccount": "创建账户",
         "auth.toggleCreate": "第一次来？创建你的书架", "auth.toggleSignIn": "已有书架？登录",
         "auth.oneMoment": "请稍等…", "auth.welcomeNew": "你的书架已就绪 — 欢迎", "auth.welcomeBackToast": "欢迎回到你的书架",
+        /* BEUK:twostep — the sign-in code step (draft; V signs off) */ "auth.codeTitle": "两步登录", "auth.codeSub": "输入身份验证器应用中的 6 位验证码，或你的一个恢复码。", "auth.codeLabel": "验证码", "auth.codeVerify": "验证", "auth.codeWrong": "该验证码无效。请检查你的应用后重试。", "auth.codeExpired": "时间有点久了。请重新登录。",
         "shelf.title": "你的书架", "shelf.signOut": "退出登录", "shelf.back": "回到写作",
         "shelf.bringText": "在工作室中打开的书目前只存在于这台设备上。把它带到你的书架，它就会跟随你到你登录的任何设备。",
         "shelf.bringBtn": "带到我的书架",
@@ -53680,6 +53696,7 @@
         $("authPassword").setAttribute("autocomplete", reg ? "new-password" : "current-password");
         $("authError").style.display = "none";
         if (typeof acctAuthModeHook === "function") acctAuthModeHook(mode); /* BEUK:auth */
+        if (typeof twoStepAuthModeHook === "function") twoStepAuthModeHook(mode); /* BEUK:twostep */
       }
       function openAuth() {
         setAuthMode("login");
@@ -53689,6 +53706,7 @@
       }
       function closeAuth() {
         $("modalAuth").classList.remove("open");
+        if (typeof twoStepForget === "function") twoStepForget(); /* BEUK:twostep — a closed dialog keeps no challenge */
         focusEditor();
       }
       /* BEUK:login — what the sign-in dialog says, by what the server
@@ -53709,12 +53727,19 @@
         const password = $("authPassword").value;
         const err = $("authError");
         const btn = $("btnAuthSubmit");
+        /* BEUK:twostep — the code step posts its challenge and the code typed; a {user} answer signs in below,
+           exactly as a password sign-in does */
+        const codeStep = authMode === "code";
+        const sentChallenge = codeStep ? twoStepChallenge : null;
+        const typedCode = codeStep ? $("authCode").value.trim() : "";
+        if (codeStep && !twoStepCodeReady(sentChallenge, typedCode)) return;
         err.style.display = "none";
         btn.disabled = true; $("authSubmitLabel").textContent = t("auth.oneMoment");
-        const r = await apiFetch(authMode === "register" ? "/api/auth/register" : "/api/auth/login", {
-          method: "POST", auth: false, body: JSON.stringify({ email, password })
+        const r = await apiFetch(codeStep ? "/api/auth/login/code" : authMode === "register" ? "/api/auth/register" : "/api/auth/login", {
+          method: "POST", auth: false, body: JSON.stringify(codeStep ? { challenge: sentChallenge, code: typedCode } : { email, password })
         });
         btn.disabled = false; setAuthMode(authMode);
+        if (twoStepAnswer(r, codeStep, sentChallenge)) return; /* BEUK:twostep */
         if (r && r.user) {
           $("authPassword").value = ""; /* BEUK:auth (V, 2026-11-04) — the password does not stay in the closed dialog */
           cloud.user = r.user;
@@ -53731,6 +53756,76 @@
           err.style.display = "block"; /* BEUK:auth — "" fell back to the CSS display:none, hiding every sign-in error */
         }
       }
+      /* ==== BEUK:twostep ==== the sign-in's code step (account hardening)
+         With two-step on, the right password answers {twoStep, challenge}
+         and no session: the dialog takes its fourth mode ("code"), the
+         email and password hidden (the password emptied), one field for
+         a 6-digit authenticator code or a recovery code. The challenge
+         lives only in this variable, never in the page. A wrong code
+         (401) keeps the step; a dead challenge (410) goes back to the
+         password step. Closing the dialog, or leaving the step any other
+         way, forgets the challenge and the code (Review focus 5). */
+      let twoStepChallenge = null;
+      function twoStepForget() {
+        twoStepChallenge = null;
+        const c = $("authCode"); if (c) c.value = "";
+      }
+      function twoStepAuthModeHook(mode) {
+        const code = mode === "code";
+        const wrap = $("authCodeWrap"); if (!wrap) return;
+        wrap.style.display = code ? "" : "none";
+        const emailWrap = $("authEmail") && $("authEmail").closest("div");
+        if (emailWrap) emailWrap.style.display = code ? "none" : "";
+        const pwWrap = $("authPassword") && $("authPassword").closest("div");
+        if (code && pwWrap) pwWrap.style.display = "none";
+        if (!code) { twoStepForget(); return; }
+        $("authTitle").textContent = t("auth.codeTitle");
+        $("authSub").textContent = t("auth.codeSub");
+        $("authSubmitLabel").textContent = t("auth.codeVerify");
+        $("authToggle").textContent = t("acct.backToSignIn");
+      }
+      function twoStepFocus(id, select) {
+        setTimeout(() => { const e = $(id); if (e) { try { e.focus(); if (select) e.select(); } catch (x) {} } }, 30);
+      }
+      /* Before a code is sent: an empty field sends nothing (a wrong
+         guess would count against the account), and a step without its
+         challenge goes back to the password. */
+      function twoStepCodeReady(challenge, code) {
+        if (!challenge) { setAuthMode("login"); twoStepFocus("authPassword"); return false; }
+        if (!code) { twoStepFocus("authCode"); return false; }
+        return true;
+      }
+      /* What the server answered, for the code step: true when it is
+         handled here, false when cloudAuthSubmit goes on (a {user} signs
+         in; out of reach or too many is the dialog's usual words). */
+      function twoStepAnswer(r, codeStep, sentChallenge) {
+        const err = $("authError");
+        if (!codeStep) {
+          if (!(r && r.twoStep && typeof r.challenge === "string" && r.challenge)) return false;
+          // closed (or moved on) while the password was checked: the challenge is dropped
+          if (authMode !== "login" || !$("modalAuth").classList.contains("open")) return true;
+          $("authPassword").value = "";
+          setAuthMode("code");
+          twoStepChallenge = r.challenge;
+          twoStepFocus("authCode");
+          return true;
+        }
+        if (r && r.user) { setAuthMode("login"); return false; }
+        if (authMode !== "code" || twoStepChallenge !== sentChallenge) return true; // closed or reset meanwhile
+        if (r && r.__status === 410) {
+          setAuthMode("login");
+          err.textContent = t("auth.codeExpired"); err.style.display = "block";
+          twoStepFocus("authPassword");
+          return true;
+        }
+        if (r && r.__status === 401) {
+          err.textContent = t("auth.codeWrong"); err.style.display = "block";
+          twoStepFocus("authCode", true);
+          return true;
+        }
+        return false;
+      }
+      /* ==== /BEUK:twostep ==== */
       async function cloudSignOut() {
         await apiFetch("/api/auth/logout", { method: "POST", body: "{}" });
         cloud.user = null; cloud.serverStreak = null;
@@ -54123,6 +54218,7 @@
         if (typeof portalInit === "function") portalInit(); /* BEUK:portal */
         $("btnAuthSubmit").addEventListener("click", cloudAuthSubmit);
         [$("authEmail"), $("authPassword")].forEach((inp) => inp.addEventListener("keydown", (e) => { if (e.key === "Enter") cloudAuthSubmit(); }));
+        { const c = $("authCode"); if (c) c.addEventListener("keydown", (e) => { if (e.key === "Enter") cloudAuthSubmit(); }); } /* BEUK:twostep */
         $("btnCloseShelf").addEventListener("click", () => { $("modalShelf").classList.remove("open"); focusEditor(); });
         $("modalShelf").addEventListener("click", (e) => { if (e.target === $("modalShelf")) { $("modalShelf").classList.remove("open"); focusEditor(); } });
         $("btnSignOut").addEventListener("click", cloudSignOut);
@@ -54148,6 +54244,7 @@
           top.classList.remove("open");
           if (top.id === "modalExport") lockFieldsClear("docx"); /* BEUK:lockcopy */
           if (top.id === "modalManuscript") lockFieldsClear("ms"); /* BEUK:lockcopy */
+          if (top.id === "modalAuth" && typeof twoStepForget === "function") twoStepForget(); /* BEUK:twostep */
           if (top.id === "modalAuth" || top.id === "modalShelf") focusEditor();
           if (top.id === "modalBible" && typeof olOnStructure === "function") olOnStructure(); /* BEUK:outline — the Grid follows the Covenant */
         });

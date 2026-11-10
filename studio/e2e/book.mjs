@@ -9756,6 +9756,343 @@ async function authorshipChecks() {
   }
 }
 
+/* ---- account hardening (plan 2026-11-09, task 4): twostepChecks (E2E_ONLY=twostep) ----
+   The real server (serve.mjs { api: true }: src/app.ts on PGlite, mail captured; billing off, so everything is open),
+   which in this mode serves /account too, as Caddy's handle /account* does. Every 6-digit code is computed HERE from the
+   key the page shows (RFC 6238: HMAC-SHA1, 6 digits, 30 s, node:crypto), for the step of the server's own clock
+   (srv.shelf.clock), which this check moves 30 s forward before every code so no step is ever used twice (the server
+   refuses a replayed step). The pages run in UTC.
+   - /account, two-step off: "Turn on two-step sign-in" (data-action="twostep-begin") opens the password step, focus on
+     the password; Continue shows the QR code as an inline <svg> and the key as text in groups of 4, focus on the code;
+     Cancel clears the key and the QR, focus back on the button; a pagehide clears them too; the code from the key turns
+     it on: 10 recovery codes (XXXXX-XXXXX, shown once), focus on Copy, the key and the QR gone; "I've saved them"
+     reloads to "On since … 10 recovery codes left."
+   - "Get new recovery codes" (password + code): 10 new codes, none of the old, focus on Copy; a pagehide then clears
+     them (the list emptied, the step hidden).
+   - 2.0 (/next) in a second context (an Edge user agent): the sign-in dialog, email and password → the code step (the
+     code field, email and password hidden, its title, focus on the code); a wrong code keeps the step and says so;
+     closed during the code step (Not now, and Escape) and opened again it starts at email and password, and Sign in
+     posts /api/auth/login, never /login/code (Review focus 5); the right code signs in (the shelf's user, the toast).
+   - "Where you're signed in" on /account: two rows (this device and "Edge on Windows"), the labels the server holds;
+     "This device" has no Sign out; Sign out on the other row removes it, and that context's /api/auth/me answers 401.
+   - A recovery code typed in lower case with a space signs 2.0 in (a third context); the account page then counts 9.
+   - 1.0 (/studio, a fourth context): the same code step; Escape forgets the challenge at once; Enter signs in.
+   - "Turn off two-step sign-in" (password + code) reloads to off; a password sign-in then answers {user} at once. */
+const TS_EN = {
+  codeTitle: 'Two-step sign-in',
+  codeWrong: "That code didn't work. Check your app and try again.",
+  welcomeBack: 'Welcome back to your shelf',
+};
+const TS_EDGE = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0';
+const tsB32 = (s) => {
+  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = 0, v = 0;
+  const out = [];
+  for (const ch of String(s).replace(/[\s=]/g, '').toUpperCase()) {
+    const i = A.indexOf(ch);
+    if (i < 0) throw new Error('not base32: ' + ch);
+    v = (v << 5) | i;
+    bits += 5;
+    if (bits >= 8) {
+      out.push((v >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(out);
+};
+/** RFC 6238 / RFC 4226: the 6-digit code of `step` for the base32 key `b32`. */
+async function tsCode(b32, step) {
+  const { createHmac } = await import('node:crypto');
+  const c = Buffer.alloc(8);
+  c.writeBigUInt64BE(BigInt(step));
+  const mac = createHmac('sha1', tsB32(b32)).update(c).digest();
+  const o = mac[mac.length - 1] & 0x0f;
+  const bin = ((mac[o] & 0x7f) << 24) | (mac[o + 1] << 16) | (mac[o + 2] << 8) | mac[o + 3];
+  return String(bin % 1_000_000).padStart(6, '0');
+}
+/** The server's clock moved to the next 30 s step; that step's code. */
+async function tsNextCode(srv, b32) {
+  srv.shelf.clock.now = new Date((srv.shelf.clock.now || new Date()).getTime() + 30_000);
+  return tsCode(b32, Math.floor(srv.shelf.clock.now.getTime() / 30_000));
+}
+/** What has the focus in the page: its tag, and the attributes that name it here. */
+const tsFocus = (page) => page.evaluate(() => {
+  const e = document.activeElement;
+  if (!e || e === document.body) return 'body';
+  const a = ['id', 'name', 'data-action', 'data-recovery-copy'].filter((n) => e.hasAttribute(n)).map((n) => n + '=' + e.getAttribute(n));
+  return e.tagName.toLowerCase() + (a.length ? '[' + a.join(',') + ']' : '') + (e.closest('form') ? ' in ' + e.closest('form').getAttribute('data-form') : '');
+});
+const tsScan = (page) => page.evaluate(() => {
+  const ts = document.querySelector('[data-twostep]');
+  const qr = ts.querySelector('[data-twostep-qr]'), key = ts.querySelector('[data-twostep-key]');
+  const vis = (sel) => { const x = ts.querySelector(sel); return !!x && !x.hidden && !x.closest('[hidden]'); };
+  return {
+    state: ts.getAttribute('data-twostep'),
+    key: key ? key.textContent : null,
+    qrSvg: !!qr?.querySelector(':scope > svg'),
+    qrHidden: !!qr?.hidden,
+    qrHtml: qr ? qr.innerHTML.length : -1,
+    begin: vis('[data-twostep-begin]'),
+    start: vis('form[data-form="twostep-start"]'),
+    scan: vis('[data-twostep-scan]'),
+    codes: vis('[data-twostep-codes]'),
+    list: [...ts.querySelectorAll('[data-recovery-list] li')].map((li) => li.textContent),
+    msg: document.querySelector('[data-msg]')?.hidden ? '' : document.querySelector('[data-msg]')?.textContent || '',
+  };
+});
+async function tsBegin(page) {
+  await page.click('[data-action="twostep-begin"]');
+  await page.waitForSelector('form[data-form="twostep-start"]:not([hidden])', { timeout: 10_000 });
+  await page.waitForTimeout(50);
+  return tsFocus(page);
+}
+async function tsContinue(page, pw = W7A_PW) {
+  await page.fill('form[data-form="twostep-start"] input[name="currentPassword"]', pw);
+  await page.click('form[data-form="twostep-start"] button[type=submit]');
+  await page.waitForSelector('[data-twostep-scan]:not([hidden])', { timeout: 15_000 });
+  await page.waitForTimeout(50);
+  return { focus: await tsFocus(page), scan: await tsScan(page) };
+}
+const TS_GROUPS = /^[A-Z2-7]{4}( [A-Z2-7]{4})* ?[A-Z2-7]{0,4}$/;
+const TS_RECOVERY = /^[ABCDEFGHJKMNPQRSTVWXYZ2-9]{5}-[ABCDEFGHJKMNPQRSTVWXYZ2-9]{5}$/;
+/** 2.0's sign-in dialog, where it stands. */
+const tsDialog = (page) => page.evaluate(() => {
+  const vis = (id) => { const e = document.getElementById(id); return !!e && e.offsetParent !== null && getComputedStyle(e).visibility !== 'hidden'; };
+  const err = document.getElementById('authError');
+  return {
+    open: document.getElementById('modalAuth').classList.contains('open'),
+    title: document.getElementById('authTitle').textContent,
+    code: vis('authCode'),
+    email: vis('authEmail'),
+    password: vis('authPassword'),
+    codeValue: document.getElementById('authCode')?.value ?? null,
+    passwordValue: document.getElementById('authPassword').value,
+    error: err && getComputedStyle(err).display !== 'none' ? err.textContent : '',
+    focus: document.activeElement?.id || document.activeElement?.tagName,
+  };
+});
+async function tsOpenSignIn(page) {
+  await page.click('#btnAccount');
+  await page.waitForSelector('#modalAuth.open', { timeout: 15_000 });
+  await page.waitForTimeout(100);
+}
+async function tsPassword(page, email) {
+  await page.fill('#authEmail', email);
+  await page.fill('#authPassword', W7A_PW);
+  await page.click('#btnAuthSubmit');
+}
+async function twostepChecks() {
+  const srv = await startServer({ repo: REPO, api: true });
+  note(`twostep: the real server on ${srv.origin} (PGlite); /account is the app's`);
+  srv.shelf.clock.now = new Date();
+  const ctxA = await newContext({ serviceWorkers: 'block', timezoneId: 'UTC' });
+  const ctxB = await newContext({ serviceWorkers: 'block', timezoneId: 'UTC', userAgent: TS_EDGE });
+  const ctxC = await newContext({ serviceWorkers: 'block', timezoneId: 'UTC' });
+  try {
+    const email = w7aEmail('ts');
+    check((await w7aSignUp(ctxA, srv.origin, email)) === 201, `twostep: signed up ${email}`);
+    const acct = await watch(await ctxA.newPage());
+    const res = await acct.goto(srv.origin + '/account');
+    await acct.waitForSelector('[data-twostep="off"]', { timeout: 15_000 });
+    check(res.headers()['content-security-policy'] === srv.headers['Content-Security-Policy'], "twostep: /account is served with the Caddyfile's Content-Security-Policy");
+
+    // 1. begin → password → the QR and the key; Cancel clears them
+    let f = await tsBegin(acct);
+    check(/^input\[name=currentPassword\] in twostep-start$/.test(f), `twostep /account: "Turn on two-step sign-in" opens the password step, focus on the password (${f})`);
+    let c = await tsContinue(acct);
+    const key1 = c.scan.key;
+    check(c.scan.qrSvg && !c.scan.qrHidden && TS_GROUPS.test(key1) && key1.replace(/ /g, '').length === 32 && !c.scan.start && !c.scan.begin,
+      `twostep /account: Continue shows the QR code as an inline <svg> (${c.scan.qrSvg}) and the key in groups of 4 ("${key1}", ${key1.replace(/ /g, '').length} characters), the password step gone`);
+    check(/^input\[name=code\] in twostep-enable$/.test(c.focus), `twostep /account: focus on the 6-digit code (${c.focus})`);
+    await acct.click('[data-twostep-scan] [data-twostep-cancel]');
+    await acct.waitForTimeout(100);
+    let s = await tsScan(acct);
+    f = await tsFocus(acct);
+    check(s.key === '' && s.qrHtml === 0 && s.qrHidden && !s.scan && s.begin && /data-action=twostep-begin/.test(f),
+      `twostep /account: Cancel clears the key ("${s.key}") and the QR (${s.qrHtml} characters, hidden ${s.qrHidden}), the button back, focus on it (${f})`);
+
+    // 2. again, and a pagehide clears the key and the QR
+    await tsBegin(acct);
+    c = await tsContinue(acct);
+    const key2 = c.scan.key;
+    check(TS_GROUPS.test(key2) && key2 !== key1 && c.scan.qrSvg, `twostep /account: started again, a new key ("${key2}")`);
+    await acct.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })));
+    s = await tsScan(acct);
+    check(s.key === '' && s.qrHtml === 0 && !s.scan && !(await acct.evaluate(() => !!document.querySelector('[data-twostep-qr] svg'))),
+      `twostep /account: a pagehide clears the key ("${s.key}") and the QR (${s.qrHtml} characters; the scan step shown ${s.scan})`);
+
+    // 3. the code from the key turns it on: 10 recovery codes, shown once
+    await tsBegin(acct);
+    c = await tsContinue(acct);
+    const secret = c.scan.key.replace(/ /g, '');
+    await acct.fill('form[data-form="twostep-enable"] input[name="code"]', await tsNextCode(srv, secret));
+    await acct.click('form[data-form="twostep-enable"] button[type=submit]');
+    await acct.waitForSelector('[data-twostep-codes]:not([hidden])', { timeout: 15_000 });
+    await acct.waitForTimeout(50);
+    s = await tsScan(acct);
+    f = await tsFocus(acct);
+    const codes1 = s.list;
+    check(codes1.length === 10 && codes1.every((x) => TS_RECOVERY.test(x)) && new Set(codes1).size === 10,
+      `twostep /account: the right code turns it on — 10 recovery codes, each XXXXX-XXXXX (${JSON.stringify(codes1.slice(0, 2))}…)`);
+    check(/data-recovery-copy/.test(f) && s.key === '' && s.qrHtml === 0 && !s.scan, `twostep /account: focus on Copy (${f}); the key and the QR are gone ("${s.key}", ${s.qrHtml})`);
+    const sum1 = await ctxA.request.get(srv.origin + '/api/account/summary').then((r) => r.json());
+    check(sum1.twoStep?.on === true && sum1.twoStep?.recoveryLeft === 10, `twostep: the server says on, 10 left (${JSON.stringify(sum1.twoStep)})`);
+    await Promise.all([acct.waitForNavigation({ timeout: 15_000 }), acct.click('[data-recovery-done]')]);
+    await acct.waitForSelector('[data-twostep="on"]', { timeout: 15_000 });
+    const onLine = await acct.$eval('[data-twostep="on"] .ok-line', (x) => x.textContent);
+    const shownAgain = await acct.evaluate((list) => list.some((x) => document.body.textContent.includes(x)), codes1);
+    check(/^On since \d{1,2} [A-Z][a-z]{2} \d{4}\. 10 recovery codes left\.$/.test(onLine) && !shownAgain, `twostep /account: "I've saved them" reloads to "${onLine}"; no code is on the page again (${shownAgain})`);
+
+    // 4. new recovery codes; a pagehide clears them
+    await acct.click('[data-twostep-codes-more] > summary');
+    await acct.fill('form[data-form="twostep-codes"] input[name="currentPassword"]', W7A_PW);
+    await acct.fill('form[data-form="twostep-codes"] input[name="code"]', await tsNextCode(srv, secret));
+    await acct.click('form[data-form="twostep-codes"] button[type=submit]');
+    await acct.waitForSelector('[data-twostep-codes]:not([hidden])', { timeout: 15_000 });
+    await acct.waitForTimeout(50);
+    s = await tsScan(acct);
+    f = await tsFocus(acct);
+    const codes2 = s.list;
+    check(codes2.length === 10 && codes2.every((x) => TS_RECOVERY.test(x)) && !codes2.some((x) => codes1.includes(x)) && /data-recovery-copy/.test(f),
+      `twostep /account: "Get new recovery codes" shows 10 new ones, none of the old (focus ${f}; "${s.msg}")`);
+    await acct.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })));
+    s = await tsScan(acct);
+    const left = await acct.evaluate((list) => list.filter((x) => document.body.textContent.includes(x)).length, codes2);
+    check(s.list.length === 0 && !s.codes && left === 0, `twostep /account: a pagehide clears the codes (${s.list.length} listed, the step shown ${s.codes}, ${left} still in the page)`);
+    const oldCode = await ctxC.request.post(srv.origin + '/api/auth/login', { data: { email, password: W7A_PW } }).then((r) => r.json());
+    const oldTry = await ctxC.request.post(srv.origin + '/api/auth/login/code', { data: { challenge: oldCode.challenge, code: codes1[0] } });
+    check(oldTry.status() === 401, `twostep: an old recovery code no longer works (${oldTry.status()})`);
+
+    // 5. 2.0's sign-in, in a second context: the code step
+    const next = await openNext(ctxB, srv.origin);
+    const sent = [];
+    next.on('request', (r) => { const u = new URL(r.url()); if (u.pathname.startsWith('/api/auth/')) sent.push(r.method() + ' ' + u.pathname); });
+    await w7aWait(next, () => window.beukCloud?.cloud?.available === true, null, 30_000);
+    await tsOpenSignIn(next);
+    await tsPassword(next, email);
+    await next.waitForFunction(() => { const e = document.getElementById('authCode'); return !!e && e.offsetParent !== null; }, null, { timeout: 15_000 });
+    await next.waitForTimeout(100);
+    let d = await tsDialog(next);
+    check(d.open && d.code && !d.email && !d.password && d.title === TS_EN.codeTitle && d.passwordValue === '' && d.focus === 'authCode',
+      `twostep 2.0: the right password opens the code step — "${d.title}", the code field shown, email and password hidden (${d.email}, ${d.password}), the password emptied, focus on the code (${d.focus})`);
+    // a code that is no step's in the server's window (the step before, this one, the next two)
+    const at = Math.floor(srv.shelf.clock.now.getTime() / 30_000);
+    const near = await Promise.all([-1, 0, 1, 2].map((k) => tsCode(secret, at + k)));
+    const wrongCode = ['000000', '111111', '222222'].find((x) => !near.includes(x));
+    await next.fill('#authCode', wrongCode);
+    await next.click('#btnAuthSubmit');
+    await next.waitForFunction(() => getComputedStyle(document.getElementById('authError')).display !== 'none', null, { timeout: 15_000 });
+    d = await tsDialog(next);
+    check(d.open && d.code && d.error === TS_EN.codeWrong && !(await next.evaluate(() => !!window.beukCloud.cloud.user)),
+      `twostep 2.0: a wrong code keeps the step and says "${d.error}"`);
+    // closed during the code step (Not now), opened again: email and password, and Sign in asks for the password again
+    await next.click('#btnCloseAuth');
+    await next.waitForSelector('#modalAuth.open', { state: 'detached', timeout: 10_000 }).catch(() => undefined);
+    await tsOpenSignIn(next);
+    d = await tsDialog(next);
+    check(!d.code && d.email && d.password && d.codeValue === '' && d.title !== TS_EN.codeTitle && d.error === '',
+      `twostep 2.0 (Review focus 5): closed with Not now and opened again, it starts at email and password ("${d.title}"; the code field hidden and empty; no error)`);
+    sent.length = 0;
+    await tsPassword(next, email);
+    await next.waitForFunction(() => { const e = document.getElementById('authCode'); return !!e && e.offsetParent !== null; }, null, { timeout: 15_000 });
+    check(JSON.stringify(sent) === JSON.stringify(['POST /api/auth/login']), `twostep 2.0: Sign in then posts the password again, never a stale challenge (${JSON.stringify(sent)})`);
+    // and Escape
+    await next.keyboard.press('Escape');
+    await next.waitForFunction(() => !document.getElementById('modalAuth').classList.contains('open'), null, { timeout: 10_000 });
+    await tsOpenSignIn(next);
+    d = await tsDialog(next);
+    check(!d.code && d.email && d.password && d.codeValue === '', `twostep 2.0 (Review focus 5): closed with Escape and opened again, it starts at email and password ("${d.title}")`);
+    sent.length = 0;
+    await tsPassword(next, email);
+    await next.waitForFunction(() => { const e = document.getElementById('authCode'); return !!e && e.offsetParent !== null; }, null, { timeout: 15_000 });
+    await next.fill('#authCode', await tsNextCode(srv, secret));
+    await next.press('#authCode', 'Enter');
+    await w7aWait(next, () => !!window.beukCloud?.cloud?.user, null, 30_000);
+    const toast = await next.waitForFunction((w) => [...document.querySelectorAll('#toasts .toast span')].some((x) => x.textContent === w), TS_EN.welcomeBack, { timeout: 15_000 }).then(() => true, () => false);
+    const who = await next.evaluate(() => window.beukCloud.cloud.user?.email);
+    d = await tsDialog(next);
+    const posts = sent.filter((x) => x.startsWith('POST '));
+    check(who === email && !d.open && toast && JSON.stringify(posts) === JSON.stringify(['POST /api/auth/login', 'POST /api/auth/login/code']),
+      `twostep 2.0: the right code (Enter in the field) signs in as ${who} — the dialog closed (${!d.open}), "${TS_EN.welcomeBack}" (${toast}); posted ${JSON.stringify(posts)} (all auth requests: ${JSON.stringify(sent)})`);
+    await harvestCsp(next);
+
+    // 6. where you're signed in: two rows, this device without Sign out; the other signed out from here
+    await acct.reload();
+    await acct.waitForFunction(() => document.querySelectorAll('[data-sessions] li').length >= 2 && !document.querySelector('[data-sessions] li.muted'), null, { timeout: 15_000 });
+    const held = (await ctxA.request.get(srv.origin + '/api/account/sessions').then((r) => r.json())).sessions || [];
+    const rowsShown = await acct.$$eval('[data-sessions] li', (lis) => lis.map((li) => ({ title: li.querySelector('.item-title')?.textContent, meta: li.querySelector('.item-meta')?.textContent, here: !!li.querySelector('.this-device'), signOut: !!li.querySelector('button') })));
+    const want = held.map((x) => ({ title: x.label + (x.current ? ' This device' : ''), here: !!x.current, signOut: !x.current }));
+    check(rowsShown.length === 2 && held.length === 2 && JSON.stringify(rowsShown.map(({ title, here, signOut }) => ({ title, here, signOut }))) === JSON.stringify(want) && held.some((x) => !x.current && x.label === 'Edge on Windows'),
+      `twostep /account: "Where you're signed in" lists the server's 2 sessions — ${JSON.stringify(rowsShown.map((r) => r.title + ' | ' + r.meta + (r.signOut ? ' [Sign out]' : '')))}; "This device" has no Sign out`);
+    const meB = await ctxB.request.get(srv.origin + '/api/auth/me');
+    await acct.click('[data-sessions] li button');
+    await acct.waitForFunction(() => document.querySelectorAll('[data-sessions] li').length === 1, null, { timeout: 15_000 });
+    const msg = await acct.$eval('[data-msg]', (x) => x.textContent);
+    const meB2 = await ctxB.request.get(srv.origin + '/api/auth/me');
+    const meA = await ctxA.request.get(srv.origin + '/api/auth/me');
+    check(meB.status() === 200 && meB2.status() === 401 && meA.status() === 200 && msg === 'That device is signed out.',
+      `twostep /account: Sign out on the other row says "${msg}" and signs that context out (its /api/auth/me ${meB.status()} → ${meB2.status()}); this device stays signed in (${meA.status()})`);
+
+    // 7. a recovery code, any shape, signs 2.0 in (a third context)
+    const nextC = await openNext(ctxC, srv.origin);
+    await w7aWait(nextC, () => window.beukCloud?.cloud?.available === true, null, 30_000);
+    await tsOpenSignIn(nextC);
+    await tsPassword(nextC, email);
+    await nextC.waitForFunction(() => { const e = document.getElementById('authCode'); return !!e && e.offsetParent !== null; }, null, { timeout: 15_000 });
+    const typed = codes2[4].toLowerCase().replace('-', ' ');
+    await nextC.fill('#authCode', typed);
+    await nextC.click('#btnAuthSubmit');
+    await w7aWait(nextC, () => !!window.beukCloud?.cloud?.user, null, 30_000);
+    await acct.reload();
+    await acct.waitForSelector('[data-twostep="on"]', { timeout: 15_000 });
+    const onLine2 = await acct.$eval('[data-twostep="on"] .ok-line', (x) => x.textContent);
+    check(/ 9 recovery codes left\.$/.test(onLine2), `twostep 2.0: the recovery code "${typed}" signs in; the account page then says "${onLine2}"`);
+    await harvestCsp(nextC);
+
+    // 7b. 1.0 (/studio), its own page (a fourth context): the same code step, Escape forgets it, Enter signs in
+    const ctxD = await newContext({ serviceWorkers: 'block', timezoneId: 'UTC' });
+    try {
+      const one = await openOne(ctxD, srv.origin);
+      await w7aWait(one, () => typeof cloud !== 'undefined' && cloud.available === true, null, 30_000);
+      await tsOpenSignIn(one);
+      await tsPassword(one, email);
+      await one.waitForFunction(() => { const e = document.getElementById('authCode'); return !!e && e.offsetParent !== null; }, null, { timeout: 15_000 });
+      await one.waitForTimeout(100);
+      let d1 = await tsDialog(one);
+      check(d1.code && !d1.email && !d1.password && d1.title === TS_EN.codeTitle && d1.focus === 'authCode', `twostep 1.0: the right password opens the code step ("${d1.title}", focus ${d1.focus})`);
+      await one.keyboard.press('Escape');
+      await one.waitForFunction(() => !document.getElementById('modalAuth').classList.contains('open'), null, { timeout: 10_000 });
+      const forgot = await one.evaluate(() => twoStepChallenge === null && document.getElementById('authCode').value === '');
+      await tsOpenSignIn(one);
+      d1 = await tsDialog(one);
+      check(forgot && !d1.code && d1.email && d1.password, `twostep 1.0 (Review focus 5): Escape forgets the challenge at once (${forgot}); opened again it starts at email and password ("${d1.title}")`);
+      await tsPassword(one, email);
+      await one.waitForFunction(() => { const e = document.getElementById('authCode'); return !!e && e.offsetParent !== null; }, null, { timeout: 15_000 });
+      await one.fill('#authCode', await tsNextCode(srv, secret));
+      await one.press('#authCode', 'Enter');
+      await w7aWait(one, () => !!cloud.user, null, 30_000);
+      const who1 = await one.evaluate(() => [cloud.user.email, document.getElementById('modalAuth').classList.contains('open'), twoStepChallenge]);
+      check(who1[0] === email && !who1[1] && who1[2] === null, `twostep 1.0: the right code (Enter) signs in as ${who1[0]}, the dialog closed (${!who1[1]}), the challenge forgotten (${who1[2]})`);
+      await harvestCsp(one);
+    } finally {
+      await ctxD.close().catch(() => undefined);
+    }
+
+    // 8. turning it off
+    await acct.click('details:has(form[data-form="twostep-off"]) > summary');
+    await acct.fill('form[data-form="twostep-off"] input[name="currentPassword"]', W7A_PW);
+    await acct.fill('form[data-form="twostep-off"] input[name="code"]', await tsNextCode(srv, secret));
+    await Promise.all([acct.waitForNavigation({ timeout: 15_000 }), acct.click('form[data-form="twostep-off"] button[type=submit]')]);
+    await acct.waitForSelector('[data-twostep="off"]', { timeout: 15_000 });
+    const plain = await ctxC.request.post(srv.origin + '/api/auth/login', { data: { email, password: W7A_PW } }).then((r) => r.json());
+    check(!!plain.user && !plain.twoStep, `twostep /account: "Turn off two-step sign-in" reloads to off; a password sign-in then answers {user} at once (${JSON.stringify(Object.keys(plain))})`);
+    await harvestCsp(acct);
+  } finally {
+    for (const ctx of [ctxC, ctxB, ctxA]) await ctx.close().catch(() => undefined);
+    await srv.stop().catch(() => undefined);
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -9792,6 +10129,7 @@ try {
   if (run('lockcopy')) await lockcopyChecks(srv.origin);
   if (run('namedlinks')) await namedLinksChecks();
   if (run('authorship')) await authorshipChecks();
+  if (run('twostep')) await twostepChecks();
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
