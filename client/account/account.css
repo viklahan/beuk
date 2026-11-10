@@ -108,6 +108,31 @@
 }
 .portal-msg.bad { border-left-color: #b91c1c; }
 
+/* Password and sign-in: where you're signed in, and two-step sign-in. */
+.portal-sub { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 0.2rem; }
+.portal-sub h3 { margin: 0.7em 0 0.4em; font-size: 1.1rem; }
+.this-device {
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: #2e6b45;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0 0.5rem;
+  white-space: nowrap;
+}
+.twostep-step { margin: 0.8rem 0; }
+.twostep-qr { width: 12rem; max-width: 100%; margin: 0.6rem 0; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 0.4rem; }
+.twostep-qr svg { display: block; width: 100%; height: auto; }
+.twostep-key,
+.recovery-codes {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+}
+.twostep-key { word-spacing: 0.3em; overflow-wrap: anywhere; }
+.recovery-codes { columns: 2 10rem; column-gap: 2rem; padding-left: 1.8rem; margin: 0.6rem 0; }
+.recovery-codes li { padding: 0.15rem 0; break-inside: avoid; }
+
 @media (max-width: 520px) {
   .portal-card { padding: 0.3rem 1rem 0.9rem; }
   .portal-list li { flex-direction: column; }

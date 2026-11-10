@@ -1,4 +1,6 @@
+import { PAUSABLE_FEATURES } from '../access.js';
 import type { Config } from '../config.js';
+import type { TwoStepStatus } from '../twostep/store.js';
 import { humanDate, humanDateTimeUtc } from '../help/render-util.js';
 import { escapeHtml as esc } from '../warmth/markdown.js';
 import { BRAND_FOOTNOTE, BRAND_SUBLINE, LEGAL_LINKS_HTML } from '../warmth/pages.js';
@@ -179,7 +181,100 @@ export interface PortalPageOpts {
   emailConfigured: boolean;
   /** /account?billing=success|cancelled, back from Stripe Checkout. */
   billingReturn?: 'success' | 'cancelled' | null;
+  /** Two-step sign-in for this account (twoStepStatus); off when absent. */
+  twoStep?: TwoStepStatus;
 }
+
+/** The recovery codes, shown once: after turning two-step on, and after
+ *  "Get new recovery codes". client/account/account.js fills the list. */
+const RECOVERY_CODES_STEP = `<div class="twostep-step" data-twostep-codes hidden>
+            <p><b>Your recovery codes.</b> Each one signs you in once, in place of the code from your phone. Keep them somewhere safe, away from this device. This is the only time they are shown.</p>
+            <ol class="recovery-codes" data-recovery-list></ol>
+            <p class="portal-actions">
+              <button class="portal-button quiet" type="button" data-recovery-copy>Copy</button>
+              <button class="portal-button quiet" type="button" data-recovery-download>Download as a text file</button>
+            </p>
+            <p><button class="portal-button" type="button" data-recovery-done>I’ve saved them</button></p>
+          </div>`;
+
+/** The second-factor fields the off and new-codes forms share. */
+const PASSWORD_AND_CODE = `<label>Current password <input name="currentPassword" type="password" autocomplete="current-password" required /></label>
+              <label>A code from your authenticator app, or a recovery code <input name="code" type="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required /></label>`;
+
+/**
+ * "Two-step sign-in" inside the Password and sign-in card. Off: the start
+ * button and the steps account.js walks through (password, then the QR
+ * code, the key and the 6-digit code, then the recovery codes). Day 22
+ * unpaid: the pause note instead (twoStep.setup, src/access.ts), the
+ * data-plan-access pattern of the Plan card. On: since when, the codes
+ * left, and turning it off / new codes, which are never paused.
+ */
+function twoStepSection(config: Config, plan: AccountPlan, t: TwoStepStatus): string {
+  const head = '<h3 id="twostep-h">Two-step sign-in</h3>';
+  if (t.on) {
+    const lost = config.supportEmail
+      ? `Lost your phone and your recovery codes? Write to support at <a href="mailto:${esc(config.supportEmail)}" data-support-email>${esc(config.supportEmail)}</a>. Support can turn two-step sign-in off once they have checked it’s you.`
+      : 'Lost your phone and your recovery codes? Ask the person who runs this server: they can turn two-step sign-in off once they have checked it’s you.';
+    return `<div class="portal-sub twostep" id="two-step" aria-labelledby="twostep-h" data-twostep="on">
+          ${head}
+          <p class="ok-line">On since ${esc(humanDate(t.since ?? ''))}. ${plural(t.recoveryLeft, 'recovery code', 'recovery codes')} left.</p>
+          <p>Signing in asks for your password and a 6-digit code from your authenticator app.</p>
+          <details class="portal-more" data-twostep-codes-more>
+            <summary>Get new recovery codes</summary>
+            <form class="portal-form" data-form="twostep-codes" novalidate>
+              ${PASSWORD_AND_CODE}
+              <button type="submit">Get new recovery codes</button>
+              <p class="muted small">The recovery codes you have now stop working.</p>
+            </form>
+          </details>
+          ${RECOVERY_CODES_STEP}
+          <details class="portal-more">
+            <summary>Turn off two-step sign-in</summary>
+            <form class="portal-form" data-form="twostep-off" novalidate>
+              ${PASSWORD_AND_CODE}
+              <button type="submit">Turn off two-step sign-in</button>
+              <p class="muted small">Signing in then asks for your password only. Your recovery codes stop working.</p>
+            </form>
+          </details>
+          <p class="muted small" data-twostep-lost>${lost}</p>
+        </div>`;
+  }
+  const intro = '<p>Two-step sign-in asks for a 6-digit code from an authenticator app on your phone each time you sign in, as well as your password. Devices already signed in stay signed in.</p>';
+  if (plan.access === 'paused') {
+    return `<div class="portal-sub twostep" id="two-step" aria-labelledby="twostep-h" data-twostep="paused" data-plan-access="paused">
+          ${head}
+          ${intro}
+          <p class="note-line" data-twostep-paused>Your free trial has ended, so ${esc(PAUSABLE_FEATURES['twoStep.setup'])} is paused until you choose a plan. Everything else in this card still works.</p>
+        </div>`;
+  }
+  return `<div class="portal-sub twostep" id="two-step" aria-labelledby="twostep-h" data-twostep="off">
+          ${head}
+          ${intro}
+          <p data-twostep-begin><button class="portal-button" type="button" data-action="twostep-start">Turn on two-step sign-in</button></p>
+          <form class="portal-form twostep-step" data-form="twostep-start" novalidate hidden>
+            <label>Current password <input name="currentPassword" type="password" autocomplete="current-password" required /></label>
+            <p class="portal-actions"><button type="submit">Continue</button> <button class="linkish" type="button" data-twostep-cancel>Cancel</button></p>
+          </form>
+          <div class="twostep-step" data-twostep-scan hidden>
+            <p>Scan this with your authenticator app, or type the key into it.</p>
+            <div class="twostep-qr" data-twostep-qr></div>
+            <p>Key: <code class="twostep-key" data-twostep-key></code></p>
+            <form class="portal-form" data-form="twostep-enable" novalidate>
+              <label>The 6-digit code from the app <input name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" spellcheck="false" required /></label>
+              <p class="portal-actions"><button type="submit">Turn on</button> <button class="linkish" type="button" data-twostep-cancel>Cancel</button></p>
+            </form>
+          </div>
+          ${RECOVERY_CODES_STEP}
+        </div>`;
+}
+
+/** "Where you're signed in": account.js fills the list from
+ *  /api/account/sessions, with a Sign out on every row but this one. */
+const SESSIONS_SECTION = `<div class="portal-sub" id="devices" aria-labelledby="devices-h">
+          <h3 id="devices-h">Where you’re signed in</h3>
+          <ul class="portal-list sessions" data-sessions aria-live="polite"></ul>
+          <noscript><p class="muted">This list needs JavaScript in your browser.</p></noscript>
+        </div>`;
 
 export function accountPage(config: Config, o: AccountOverview, plan: AccountPlan, opts: PortalPageOpts): string {
   const u = o.user;
@@ -297,6 +392,8 @@ ${o.archive
         </details>
         <p>Signed in somewhere you no longer use? Sign out every device, this one included. Your books stay on your shelf.</p>
         <p><button class="portal-button quiet" type="button" data-action="everywhere">Sign out everywhere</button></p>
+        ${SESSIONS_SECTION}
+        ${twoStepSection(config, plan, opts.twoStep ?? { on: false, since: null, recoveryLeft: 0 })}
       </section>
 
       <section class="portal-card" id="data" aria-labelledby="data-h">

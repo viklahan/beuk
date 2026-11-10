@@ -7,10 +7,12 @@ import { buildApp } from '../src/app.js';
 import { ACCOUNT_DELETED_TABLES, asStudioBackupBook } from '../src/account/data.js';
 import { keepExportFileIfRowSurvived } from '../src/exports-store.js';
 import { readZip } from '../src/housekeeping/packages.js';
+import type { Config } from '../src/config.js';
 import type { Db } from '../src/db.js';
 import type { MailMessage, Mailer, MailerStatus, MailResult } from '../src/mailer.js';
 import { DEFAULT_PORTAL_LIMITS, type PortalLimits } from '../src/routes/account-portal.js';
 import type { BackgroundTasks } from '../src/routes/account.js';
+import { base32Decode, totpCode, totpStep } from '../src/twostep/totp.js';
 import { Client, createTestDb, registerUser, testConfig } from './helpers.js';
 
 /* ------------------------------------------------------------------ */
@@ -49,8 +51,11 @@ interface PortalServer {
   close: () => Promise<void>;
 }
 
-async function start(db: Db, opts: { mailer?: Mailer; limits?: PortalLimits; supportEmail?: string | null } = {}): Promise<PortalServer> {
-  const config = testConfig(opts.supportEmail === undefined ? {} : { supportEmail: opts.supportEmail });
+async function start(
+  db: Db,
+  opts: { mailer?: Mailer; limits?: PortalLimits; supportEmail?: string | null; config?: Partial<Config> } = {},
+): Promise<PortalServer> {
+  const config = testConfig({ ...(opts.supportEmail === undefined ? {} : { supportEmail: opts.supportEmail }), ...opts.config });
   const app = buildApp({ db, config, mailer: opts.mailer, portalLimits: opts.limits ?? ROOMY });
   const server: Server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
@@ -839,4 +844,182 @@ test('an export file landing after its account was deleted does not outlive it',
   } finally {
     await s.close();
   }
+});
+
+/* ------------------------------------------------------------------ */
+/* Two-step sign-in and where you're signed in (account hardening)     */
+
+const PW = 'correct horse battery';
+/** The #security card alone, so a match can't come from another card. */
+const securityCard = (html: string) => html.slice(html.indexOf('id="security"'), html.indexOf('id="data"'));
+
+/** Turn two-step on through the API (start + enable on the real clock). */
+async function turnTwoStepOn(c: Client): Promise<{ secret: string; qrSvg: string; codes: string[] }> {
+  const s = await c.post('/api/account/two-step/start', { currentPassword: PW });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const secret = s.body.secret as string;
+  const e = await c.post('/api/account/two-step/enable', { code: totpCode(base32Decode(secret), totpStep(Date.now())) });
+  assert.equal(e.status, 200, JSON.stringify(e.body));
+  return { secret, qrSvg: s.body.qrSvg as string, codes: e.body.recoveryCodes as string[] };
+}
+
+test('/account, two-step off: a Two-step sign-in block with the start button, the flow steps, and the sessions list container', async () => {
+  const db = await createTestDb();
+  const s = await start(db);
+  try {
+    const c = new Client(s.base);
+    await registerUser(c, 'twooff@example.com');
+    const card = securityCard((await page(c, s.base, '/account')).text);
+    assert.match(card, /<h3[^>]*>Two-step sign-in<\/h3>/);
+    assert.match(card, /data-twostep="off"/);
+    assert.match(card, /<button[^>]*data-action="twostep-start"[^>]*>Turn on two-step sign-in<\/button>/);
+    // The steps the script walks through: password, then QR + key + code, then the codes.
+    assert.match(card, /data-form="twostep-start"/);
+    assert.match(card, /data-twostep-qr/);
+    assert.match(card, /data-twostep-key/);
+    assert.match(card, /data-form="twostep-enable"/);
+    assert.match(card, /autocomplete="one-time-code"/);
+    assert.match(card, /data-recovery-list/);
+    assert.match(card, /data-recovery-copy[^>]*>Copy</);
+    assert.match(card, /data-recovery-download[^>]*>Download as a text file</);
+    assert.match(card, /data-recovery-done[^>]*>I’ve saved them</);
+    // Off: nothing to turn off, no codes to replace, no pause note.
+    assert.ok(!card.includes('data-form="twostep-off"'));
+    assert.ok(!card.includes('data-form="twostep-codes"'));
+    assert.ok(!card.includes('data-twostep-paused'));
+    // Where you're signed in: a list the script fills.
+    assert.match(card, /Where you’re signed in/);
+    assert.match(card, /<ul class="portal-list sessions" data-sessions/);
+    assert.ok(!card.includes('!'), 'calm copy');
+    // start's QR is an inline <svg> with no script in it.
+    const { qrSvg } = await turnTwoStepOn(c);
+    assert.ok(qrSvg.startsWith('<svg'), qrSvg.slice(0, 40));
+    assert.ok(!/<script/i.test(qrSvg), 'no <script in the QR');
+    assert.ok(!/\son[a-z]+\s*=/i.test(qrSvg), 'no on…= attributes in the QR');
+  } finally {
+    await s.close();
+  }
+});
+
+test('/account, two-step on: since when, codes left, turn off + new codes forms, and the lost-both line with the support address', async () => {
+  const db = await createTestDb();
+  const s = await start(db);
+  try {
+    const c = new Client(s.base);
+    await registerUser(c, 'twoon@example.com');
+    await turnTwoStepOn(c);
+    const since = (await c.get('/api/account/summary')).body.twoStep as { since: string };
+    const day = new Date(since.since);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const human = `${day.getUTCDate()} ${months[day.getUTCMonth()]} ${day.getUTCFullYear()}`;
+    let card = securityCard((await page(c, s.base, '/account')).text);
+    assert.match(card, /data-twostep="on"/);
+    assert.ok(card.includes(`On since ${human}.`), `On since ${human}`);
+    assert.match(card, /10 recovery codes left/);
+    assert.match(card, /data-form="twostep-off"/);
+    assert.match(card, /data-form="twostep-codes"/);
+    assert.ok(!card.includes('data-action="twostep-start"'), 'no start button while on');
+    assert.match(
+      card,
+      /Lost your phone and your recovery codes\? Write to support at <a href="mailto:shelf@example\.com" data-support-email>shelf@example\.com<\/a>\./,
+    );
+    assert.match(card, /data-sessions/);
+    assert.ok(!card.includes('!'), 'calm copy');
+
+    // Nine codes spent: the count follows, in the singular at one.
+    const uid = (await db.query<{ id: string }>("select id from users where email = 'twoon@example.com'")).rows[0].id;
+    await db.query(
+      'update two_step_recovery_codes set used_at = now() where id in (select id from two_step_recovery_codes where user_id = $1 limit 9)',
+      [uid],
+    );
+    card = securityCard((await page(c, s.base, '/account')).text);
+    assert.match(card, /1 recovery code left/);
+  } finally {
+    await s.close();
+  }
+  // No support address set: no empty mailto, the person who runs the server instead.
+  const db2 = await createTestDb();
+  const s2 = await start(db2, { supportEmail: null });
+  try {
+    const c = new Client(s2.base);
+    await registerUser(c, 'twonomail@example.com');
+    await turnTwoStepOn(c);
+    const card = securityCard((await page(c, s2.base, '/account')).text);
+    assert.match(card, /Lost your phone and your recovery codes\? Ask the person who runs this server/);
+    assert.ok(!card.includes('mailto:'), 'no mailto without an address');
+  } finally {
+    await s2.close();
+  }
+});
+
+test('/account on day 22 unpaid: the pause note in place of the start button; two-step already on keeps its off and new-codes forms', async () => {
+  const db = await createTestDb();
+  const s = await start(db, {
+    config: {
+      stripeWebhookSecret: 'whsec_test_placeholder_not_a_real_key',
+      stripeSecretKey: 'sk_test_placeholder_not_a_real_key',
+      stripePriceId: 'price_fixture_one',
+      stripeApiBase: 'http://127.0.0.1:9',
+    },
+  });
+  try {
+    const DAY = 86_400_000;
+    const c = new Client(s.base);
+    await registerUser(c, 'twod22@example.com');
+    const id = (await db.query<{ id: string }>("select id from users where email = 'twod22@example.com'")).rows[0].id;
+    await db.query('update users set trial_ends_at = $2 where id = $1', [id, new Date(Date.now() - DAY)]);
+    let html = (await page(c, s.base, '/account')).text;
+    assert.match(html, /data-plan-access="paused"/);
+    let card = securityCard(html);
+    assert.match(card, /data-twostep="paused" data-plan-access="paused"/);
+    assert.match(
+      card,
+      /<p class="note-line" data-twostep-paused>Your free trial has ended, so turning on two-step sign-in is paused until you choose a plan\./,
+    );
+    assert.ok(!card.includes('data-action="twostep-start"'), 'no start button on day 22');
+    assert.ok(!card.includes('data-form="twostep-enable"'), 'no setup steps on day 22');
+    assert.match(card, /data-sessions/, 'the sessions list is never paused');
+
+    // Turned on during the trial, then day 22: stays on, and off / new codes are never paused.
+    const c2 = new Client(s.base);
+    await registerUser(c2, 'twod22on@example.com');
+    await turnTwoStepOn(c2);
+    const id2 = (await db.query<{ id: string }>("select id from users where email = 'twod22on@example.com'")).rows[0].id;
+    await db.query('update users set trial_ends_at = $2 where id = $1', [id2, new Date(Date.now() - DAY)]);
+    html = (await page(c2, s.base, '/account')).text;
+    assert.match(html, /data-plan-access="paused"/);
+    card = securityCard(html);
+    assert.match(card, /data-twostep="on"/);
+    assert.match(card, /data-form="twostep-off"/);
+    assert.match(card, /data-form="twostep-codes"/);
+    assert.ok(!card.includes('data-twostep-paused'), 'nothing paused once it is on');
+  } finally {
+    await s.close();
+  }
+});
+
+test('account.js: the two-step flow and the sessions list keep their promises (source checks; Task 4 drives it in a browser)', () => {
+  const js = read('client', 'account', 'account.js');
+  // The routes it talks to.
+  for (const p of [
+    '/api/account/two-step/start',
+    '/api/account/two-step/enable',
+    '/api/account/two-step/disable',
+    '/api/account/two-step/recovery-codes',
+    '/api/account/sessions',
+  ]) {
+    assert.ok(js.includes(`"${p}`), `account.js calls ${p}`);
+  }
+  // Copy and download as the brief says, and nothing kept anywhere.
+  assert.match(js, /navigator\.clipboard\.writeText\(/);
+  assert.match(js, /new Blob\(/);
+  assert.ok(js.includes('"beuk-recovery-codes.txt"'));
+  assert.ok(!/localStorage|sessionStorage|indexedDB|document\.cookie/.test(js), 'nothing is stored in the browser');
+  assert.ok(!/console\./.test(js), 'nothing is logged (the key above all)');
+  // Server strings go in as text; the one innerHTML is the checked QR.
+  const inner = js.match(/\.innerHTML\s*=/g) ?? [];
+  assert.equal(inner.length, 1, 'exactly one innerHTML assignment');
+  assert.match(js, /\.innerHTML\s*=\s*svg;/);
+  assert.match(js, /function safeQrSvg\(/);
+  assert.ok(!/insertAdjacentHTML|outerHTML\s*=|document\.write/.test(js));
 });

@@ -183,7 +183,8 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       if (!overview) return res.type('html').send(signedOutPage(config));
       const plan = await accountPlan({ db, config, billing, now }, { id: user.id, createdAt: overview.user.createdAt });
       const billingReturn = req.query.billing === 'success' || req.query.billing === 'cancelled' ? req.query.billing : null;
-      return res.type('html').send(accountPage(config, overview, plan, { emailConfigured: mailOn(), billingReturn }));
+      const twoStep = await twoStepStatus(db, user.id);
+      return res.type('html').send(accountPage(config, overview, plan, { emailConfigured: mailOn(), billingReturn, twoStep }));
     } catch (err) {
       return next(err);
     }
