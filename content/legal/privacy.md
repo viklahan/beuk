@@ -123,7 +123,7 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 
 - **Account, books, exports, authorship stamps, streak, checks, reading copies and comments:** until you delete them, or until the account is deleted.
 - **Sign-in sessions, with their device labels:** up to {{sessiondays}} days. Expired ones are cleared automatically.
-- **Two-step key and recovery codes:** until you turn two-step sign-in off, or until the account is deleted. A two-step setup you started but didn't finish keeps its key until you start again, until you finish turning two-step on, or until the account is deleted.
+- **Two-step key and recovery codes:** until you turn two-step sign-in off, or until the account is deleted. A two-step setup you started but didn't finish keeps its key until you start again (which replaces it), until you finish (it then becomes the key two-step uses), or until the account is deleted.
 - **Password-reset links:** expire after 60 minutes, and are cleared the next time anyone asks for a reset.
 - **Server error logs:** rotated by size (at most 3 × 10 MB per container), with no time limit.
 - **Help search records, Founders' Shelf entries and backups on the server:** no automatic limit yet.
