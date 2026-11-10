@@ -241,6 +241,11 @@ export const EXTRA_ROOTS = [
   'lockDocxBytes',
   // final review F4: the hand-written SHA-512's known-answer hooks (lockSha512Js is not called in production)
   'lockSha512Js', 'lockSha512Spin',
+  // opening locked files on import (design 2026-11-10), task 1: the fixtures' plain inputs and the tests' compound files —
+  // 1.0's import self-check PDF (pdfFixtureBytes, written byte by byte) and premium 1's compound-file writer (lockCfb)
+  'pdfFixtureBytes', 'lockCfb',
+  // the reader and the decryptor (BEUK:importlock): the compound-file reader, the lock sniffer and the Agile decryption
+  'cfbStreams', 'officeLockKind', 'officeUnlock',
   // task 3: the lock controls and the download points' halves (the Word file and the manuscript reach them through
   // downloadDocx / msDownload; the print-ready PDF's dialog and the plan's day-22 note are named here, so the whole
   // BEUK:lockcopy block stands in the main closure as 1.0's text — the print and shelf modules lift their own copies)

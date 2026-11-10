@@ -52312,6 +52312,365 @@
           if (h) h.fill(0);
         }
       }
+      /* ==== BEUK:importlock ==== Opening password-protected files on import (design 2026-11-10), task 1: a locked Word
+         file is a compound file (MS-CFB) holding EncryptionInfo and EncryptedPackage, not a zip.
+         cfbStreams(bytes) → Map: the root storage's streams by name, read by a reader written for hostile input
+         (version 3 and 4 sectors; FAT, DIFAT and mini FAT; every chain cycle-checked and length-checked; every size capped
+         by the file; the file at 400 MB). Any structural failure throws .code "damaged".
+         officeLockKind(bytes) → null | "agile" | "unsupported", and never throws: null unless the bytes are a readable
+         compound file with both streams (so a broken one keeps today's "damaged Word file" path), "agile" for an
+         EncryptionInfo version 4.4 whose parameters are supported, otherwise "unsupported".
+         officeUnlock(bytes, password) → Promise<Uint8Array>: the plain package. ECMA-376 Agile encryption (MS-OFFCRYPTO
+         §2.3.4.10–2.3.4.15) on WebCrypto, the decrypt side of BEUK:lockcopy's lockDocxBytes: the password key, the
+         verifier (an exact check, so a wrong password is told apart from a damaged file), the secret key, the
+         dataIntegrity HMAC over the whole EncryptedPackage stream, then the 4096-byte segments. It throws .code
+         "wrong-password", "damaged" or "unsupported", with fixed words: never the password, which is in no error, log
+         or store. Supported: SHA-1, SHA-256, SHA-384 or SHA-512; AES-128 or AES-256 in CBC mode; spinCount at most
+         1 000 000 (Word and msoffcrypto write 100 000; the cap keeps a hostile file from holding the tab). */
+      const IMPORTLOCK_MAX = 400 * 1024 * 1024; /* the zip limit */
+      const IMPORTLOCK_SPIN_MAX = 1000000;
+      const IMPORTLOCK_HASH = { SHA1: ["SHA-1", 20], SHA256: ["SHA-256", 32], SHA384: ["SHA-384", 48], SHA512: ["SHA-512", 64] };
+      const IMPORTLOCK_NS = "http://schemas.microsoft.com/office/2006/encryption";
+      const IMPORTLOCK_PNS = "http://schemas.microsoft.com/office/2006/keyEncryptor/password";
+      function importLockError(code, what) {
+        const e = new Error(code === "wrong-password" ? "That password does not open this file." : code === "unsupported" ? "This file's lock is not supported: " + what + "." : "This locked file is damaged: " + what + ".");
+        e.code = code;
+        return e;
+      }
+      const importLockDamaged = (what) => importLockError("damaged", what);
+      const importLockUnsupported = (what) => importLockError("unsupported", what);
+      function cfbStreams(bytes) {
+        const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        const bad = (what) => importLockDamaged("the compound file has " + what);
+        if (b.length > IMPORTLOCK_MAX) throw bad("more than 400 MB");
+        if (b.length < 512) throw bad("no whole header");
+        const magic = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+        for (let i = 0; i < 8; i++) if (b[i] !== magic[i]) throw bad("no compound-file signature");
+        try {
+          const dv = new DataView(b.buffer, b.byteOffset, b.length);
+          const u16 = (o) => dv.getUint16(o, true), u32 = (o) => dv.getUint32(o, true);
+          const END = 0xFFFFFFFE, NOSTREAM = 0xFFFFFFFF;
+          if (u16(28) !== 0xFFFE) throw bad("no little-endian mark");
+          const major = u16(26), shift = u16(30);
+          if (!((major === 3 && shift === 9) || (major === 4 && shift === 12))) throw bad("an unknown version or sector size");
+          if (u16(32) !== 6) throw bad("an unknown mini sector size");
+          if (u32(56) !== 4096) throw bad("an unknown mini stream cutoff");
+          const ss = 1 << shift, per = ss / 4;
+          /* sector i sits after the header, which takes one whole sector (512 bytes in version 3, 4096 in version 4) */
+          const nSec = b.length > ss ? Math.ceil((b.length - ss) / ss) : 0;
+          const sector = (i, whole) => {
+            if (i >= nSec) throw bad("a sector past the end of the file");
+            const s = b.subarray(ss + i * ss, Math.min(b.length, ss + (i + 1) * ss));
+            if (whole && s.length !== ss) throw bad("a sector cut short");
+            return s;
+          };
+          const words = (s) => new DataView(s.buffer, s.byteOffset, s.length);
+          /* a chain through `table` from `start`: at most `max` links, each below `limit`, none twice */
+          const chain = (table, start, limit, max, what) => {
+            const out = [], seen = new Set();
+            for (let s = start; s !== END && out.length < max; s = table[s]) {
+              if (s >= limit || s >= table.length || seen.has(s)) throw bad("a broken chain in " + what);
+              seen.add(s);
+              out.push(s);
+            }
+            return out;
+          };
+          /* the DIFAT: the FAT's own sectors, 109 in the header, then a chain of DIFAT sectors */
+          const nFat = u32(44), nDifat = u32(72);
+          if (nFat > nSec) throw bad("more FAT sectors than the file holds");
+          const fatSecs = [];
+          for (let i = 0; i < 109 && fatSecs.length < nFat; i++) fatSecs.push(u32(76 + i * 4));
+          const seenDifat = new Set();
+          for (let k = 0, d = u32(68); fatSecs.length < nFat; k++) {
+            if (k >= nDifat || d >= nSec || seenDifat.has(d)) throw bad("a broken DIFAT chain");
+            seenDifat.add(d);
+            const w = words(sector(d, true));
+            for (let j = 0; j < per - 1 && fatSecs.length < nFat; j++) fatSecs.push(w.getUint32(j * 4, true));
+            d = w.getUint32(ss - 4, true);
+          }
+          const fat = new Uint32Array(nFat * per);
+          const seenFat = new Set();
+          fatSecs.forEach((f, k) => {
+            if (f >= nSec || seenFat.has(f)) throw bad("a FAT sector past the end of the file");
+            seenFat.add(f);
+            const w = words(sector(f, true));
+            for (let j = 0; j < per; j++) fat[k * per + j] = w.getUint32(j * 4, true);
+          });
+          /* a stream in big sectors: its size must fit in its chain */
+          const readFat = (start, size, what) => {
+            const out = new Uint8Array(size);
+            if (!size) return out;
+            const n = Math.ceil(size / ss);
+            const secs = chain(fat, start, nSec, n, what);
+            if (secs.length < n) throw bad("a size past its chain in " + what);
+            secs.forEach((s, k) => {
+              const want = Math.min(ss, size - k * ss), part = sector(s, false);
+              if (part.length < want) throw bad("a sector cut short in " + what);
+              out.set(part.subarray(0, want), k * ss);
+            });
+            return out;
+          };
+          /* the directory: 128 bytes an entry */
+          const dirSecs = chain(fat, u32(48), nSec, nSec, "the directory");
+          if (!dirSecs.length) throw bad("no directory");
+          const dir = new Uint8Array(dirSecs.length * ss);
+          dirSecs.forEach((s, k) => dir.set(sector(s, true), k * ss));
+          const dd = words(dir), nEnt = dir.length / 128;
+          const entry = (i) => {
+            const o = i * 128, nl = dd.getUint16(o + 64, true);
+            if (nl > 64 || nl % 2) throw bad("a directory name past its field");
+            let name = "";
+            for (let j = 0; j < nl / 2 - 1; j++) name += String.fromCharCode(dd.getUint16(o + j * 2, true));
+            const lo = dd.getUint32(o + 120, true), hi = dd.getUint32(o + 124, true);
+            /* version 3 keeps only the low 32 bits of a size (its high half may hold anything) */
+            return { name: name, type: dir[o + 66], left: dd.getUint32(o + 68, true), right: dd.getUint32(o + 72, true), child: dd.getUint32(o + 76, true), start: dd.getUint32(o + 116, true), size: major === 3 ? lo : lo + hi * 0x100000000 };
+          };
+          const root = entry(0);
+          if (root.type !== 5) throw bad("no root entry");
+          if (root.size > b.length) throw bad("a mini stream larger than the file");
+          /* the mini stream (64-byte sectors, inside the root's own chain) and its FAT, read when a small stream needs them */
+          let mini = null;
+          const miniOf = () => {
+            if (mini) return mini;
+            const nMiniFat = u32(64);
+            const mfSecs = chain(fat, u32(60), nSec, nMiniFat, "the mini FAT");
+            if (mfSecs.length < nMiniFat) throw bad("a mini FAT shorter than its count");
+            const table = new Uint32Array(mfSecs.length * per);
+            mfSecs.forEach((s, k) => {
+              const w = words(sector(s, true));
+              for (let j = 0; j < per; j++) table[k * per + j] = w.getUint32(j * 4, true);
+            });
+            mini = { table: table, data: readFat(root.start, root.size, "the mini stream") };
+            return mini;
+          };
+          const readMini = (start, size, what) => {
+            const m = miniOf(), out = new Uint8Array(size), n = Math.ceil(size / 64);
+            const secs = chain(m.table, start, Math.ceil(m.data.length / 64), n, what);
+            if (secs.length < n) throw bad("a size past its chain in " + what);
+            secs.forEach((s, k) => {
+              const want = Math.min(64, size - k * 64), part = m.data.subarray(s * 64, s * 64 + want);
+              if (part.length < want) throw bad("a mini sector cut short in " + what);
+              out.set(part, k * 64);
+            });
+            return out;
+          };
+          /* the root storage's children: a tree over left, right (siblings) and child, walked with a visited set; the
+             streams of the storages under it are not read */
+          const out = new Map(), seen = new Set(), stack = [root.child];
+          while (stack.length) {
+            const id = stack.pop();
+            if (id === NOSTREAM) continue;
+            if (id === 0 || id >= nEnt || seen.has(id)) throw bad("a broken directory tree");
+            seen.add(id);
+            const e = entry(id);
+            if (e.type === 2) {
+              if (out.has(e.name)) throw bad("two streams of one name");
+              if (e.size > b.length) throw bad("a stream larger than the file");
+              out.set(e.name, !e.size ? new Uint8Array(0) : e.size < 4096 ? readMini(e.start, e.size, "a stream") : readFat(e.start, e.size, "a stream"));
+            } else if (e.type !== 1) throw bad("an unused entry in the directory tree");
+            stack.push(e.left, e.right);
+          }
+          return out;
+        } catch (e) {
+          if (e && e.code === "damaged") throw e;
+          throw bad("a structure that could not be read");
+        }
+      }
+      /* §2.3.4.10: EncryptionInfo, version 4.4 then the XML (DOMParser, application/xml: it never runs script), of which
+         only keyData, dataIntegrity and the password key encryptor's p:encryptedKey are read */
+      function importLockInfo(info) {
+        if (info.length < 8) throw importLockDamaged("EncryptionInfo is cut short");
+        const major = info[0] | (info[1] << 8), minor = info[2] | (info[3] << 8);
+        if (major !== 4 || minor !== 4) throw importLockUnsupported("EncryptionInfo version " + major + "." + minor);
+        let doc = null;
+        try {
+          doc = new DOMParser().parseFromString(new TextDecoder("utf-8").decode(info.subarray(8)).replace(/\0+$/, ""), "application/xml");
+        } catch (e) {
+          doc = null;
+        }
+        if (!doc || doc.getElementsByTagName("parsererror").length) throw importLockDamaged("EncryptionInfo is not XML");
+        const top = doc.documentElement;
+        if (!top || top.localName !== "encryption" || top.namespaceURI !== IMPORTLOCK_NS) throw importLockDamaged("EncryptionInfo has no encryption element");
+        const keyData = doc.getElementsByTagNameNS(IMPORTLOCK_NS, "keyData")[0];
+        if (!keyData) throw importLockDamaged("EncryptionInfo has no keyData");
+        let ek = null;
+        for (const kx of Array.from(doc.getElementsByTagNameNS(IMPORTLOCK_NS, "keyEncryptor"))) {
+          if (kx.getAttribute("uri") === IMPORTLOCK_PNS) { ek = kx.getElementsByTagNameNS(IMPORTLOCK_PNS, "encryptedKey")[0] || null; break; }
+        }
+        if (!ek) throw importLockUnsupported("no password key encryptor");
+        const num = (el, n) => {
+          const v = el.getAttribute(n);
+          if (!/^\d{1,10}$/.test(String(v))) throw importLockDamaged("EncryptionInfo's " + n + " is not a number");
+          return Number(v);
+        };
+        const b64 = (el, n) => {
+          let s;
+          try { s = atob(String(el.getAttribute(n) || "")); } catch (e) { throw importLockDamaged("EncryptionInfo's " + n + " is not base64"); }
+          const out = new Uint8Array(s.length);
+          for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+          return out;
+        };
+        /* the cipher parameters (CT_KeyData, CT_PasswordKeyEncryptor): what is not supported first, then what is wrong */
+        const params = (el) => {
+          const hash = Object.prototype.hasOwnProperty.call(IMPORTLOCK_HASH, el.getAttribute("hashAlgorithm")) ? IMPORTLOCK_HASH[el.getAttribute("hashAlgorithm")] : null;
+          if (!hash) throw importLockUnsupported("its hash");
+          if (el.getAttribute("cipherAlgorithm") !== "AES") throw importLockUnsupported("its cipher");
+          if (el.getAttribute("cipherChaining") !== "ChainingModeCBC") throw importLockUnsupported("its chaining");
+          const keyBits = num(el, "keyBits");
+          if (keyBits !== 128 && keyBits !== 256) throw importLockUnsupported("its key size");
+          if (num(el, "blockSize") !== 16) throw importLockDamaged("an AES block size other than 16");
+          const hashSize = num(el, "hashSize");
+          if (hashSize !== hash[1]) throw importLockDamaged("a hash size that is not its hash's");
+          const salt = b64(el, "saltValue");
+          if (!salt.length || num(el, "saltSize") !== salt.length) throw importLockDamaged("a salt that is not its size");
+          return { hash: hash[0], hashSize: hashSize, keyBytes: keyBits / 8, salt: salt };
+        };
+        const pk = params(ek);
+        const spin = num(ek, "spinCount");
+        if (spin > IMPORTLOCK_SPIN_MAX) throw importLockUnsupported("a spinCount over 1 000 000");
+        const kd = params(keyData);
+        const di = doc.getElementsByTagNameNS(IMPORTLOCK_NS, "dataIntegrity")[0];
+        if (!di) throw importLockDamaged("EncryptionInfo has no dataIntegrity");
+        /* each encrypted value whole AES blocks, and long enough for what it holds */
+        const sealed = (el, n, least) => {
+          const v = b64(el, n);
+          if (!v.length || v.length % 16 || v.length < least) throw importLockDamaged("EncryptionInfo's " + n + " is not its size");
+          return v;
+        };
+        pk.spin = spin;
+        pk.verifierInput = sealed(ek, "encryptedVerifierHashInput", pk.salt.length);
+        pk.verifierValue = sealed(ek, "encryptedVerifierHashValue", pk.hashSize);
+        pk.keyValue = sealed(ek, "encryptedKeyValue", kd.keyBytes);
+        kd.hmacKey = sealed(di, "encryptedHmacKey", kd.hashSize);
+        kd.hmacValue = sealed(di, "encryptedHmacValue", kd.hashSize);
+        return { pk: pk, kd: kd };
+      }
+      function officeLockKind(bytes) {
+        try {
+          const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+          if (b.length < 8 || b[0] !== 0xD0 || b[1] !== 0xCF || b[2] !== 0x11 || b[3] !== 0xE0 || b[4] !== 0xA1 || b[5] !== 0xB1 || b[6] !== 0x1A || b[7] !== 0xE1) return null;
+          const s = cfbStreams(b);
+          if (!s.has("EncryptionInfo") || !s.has("EncryptedPackage")) return null;
+          importLockInfo(s.get("EncryptionInfo"));
+          return "agile";
+        } catch (e) {
+          return e && e.code === "unsupported" ? "unsupported" : null;
+        }
+      }
+      /* cut to n bytes, or padded with 0x36 (§2.3.4.11, §2.3.4.12) */
+      function importLockFit(b, n) {
+        const out = new Uint8Array(n).fill(0x36);
+        out.set(b.subarray(0, n));
+        return out;
+      }
+      async function importLockDigest(hash, data) { return new Uint8Array(await crypto.subtle.digest(hash, data)); }
+      /* §2.3.4.11: H0 = H(salt ‖ password), then Hn = H(LE32(n − 1) ‖ Hn−1), spinCount times. SHA-512 in
+         lockSha512Spin; the others on WebCrypto, a frame given back every 10 000 rounds. */
+      async function importLockSpin(pk, pw) {
+        const h0 = await importLockDigest(pk.hash, lockCat([pk.salt, pw]));
+        if (pk.hash === "SHA-512") {
+          try { return lockSha512Spin(h0, pk.spin); } finally { h0.fill(0); }
+        }
+        let h = h0;
+        const buf = new Uint8Array(4 + h.length);
+        for (let i = 0; i < pk.spin; i++) {
+          buf[0] = i & 255; buf[1] = (i >>> 8) & 255; buf[2] = (i >>> 16) & 255; buf[3] = i >>> 24;
+          buf.set(h, 4);
+          h.fill(0);
+          h = await importLockDigest(pk.hash, buf);
+          if ((i + 1) % 10000 === 0) await lockYield();
+        }
+        buf.fill(0);
+        return h;
+      }
+      /* AES-CBC decryption without padding on WebCrypto, which always checks PKCS#7: one block is put after the data,
+         the first 16 bytes of E_k(IV = the last ciphertext block, 0x10 × 16), so the run ends in a whole padding block,
+         which WebCrypto takes off. `k` is an AES-CBC key for encrypt and decrypt. */
+      async function importLockCbc(k, iv, data) {
+        if (data.length % 16) throw importLockDamaged("a value that is not whole AES blocks");
+        if (!data.length) return new Uint8Array(0);
+        const tail = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", iv: data.slice(data.length - 16) }, k, new Uint8Array(16).fill(16))).subarray(0, 16);
+        const plain = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-CBC", iv: iv }, k, lockCat([data, tail])));
+        if (plain.length !== data.length) throw importLockDamaged("a value that did not decrypt whole");
+        return plain;
+      }
+      async function importLockAesKey(raw) { return crypto.subtle.importKey("raw", raw, { name: "AES-CBC" }, false, ["encrypt", "decrypt"]); }
+      /* equal bytes, compared in constant time over the length */
+      function importLockSame(a, b) {
+        if (a.length !== b.length) return false;
+        let d = 0;
+        for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+        return d === 0;
+      }
+      async function officeUnlock(bytes, password) {
+        const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        const pw = lockUtf16le(typeof password === "string" ? password : "");
+        const wipe = [pw];
+        try {
+          const s = cfbStreams(b);
+          const info = s.get("EncryptionInfo"), pkg = s.get("EncryptedPackage");
+          if (!info || !pkg) throw importLockDamaged("it holds no EncryptionInfo and EncryptedPackage");
+          const { pk, kd } = importLockInfo(info);
+          /* §2.3.4.15: the package's size, its first 8 bytes (LE64), must fit in what follows */
+          if (pkg.length < 8) throw importLockDamaged("EncryptedPackage is cut short");
+          const pv = new DataView(pkg.buffer, pkg.byteOffset, pkg.length);
+          const size = pv.getUint32(0, true) + pv.getUint32(4, true) * 0x100000000;
+          const sealedSize = Math.ceil(size / 16) * 16;
+          if (size > IMPORTLOCK_MAX || sealedSize > pkg.length - 8) throw importLockDamaged("a package size past its data");
+          if (typeof password !== "string") throw importLockError("wrong-password");
+          /* §2.3.4.13: the password key, the verifier, the secret key. Each key H(H_final ‖ block key), cut or padded to
+             keyBits / 8; the IV the password salt, cut or padded to the block size */
+          const h = await importLockSpin(pk, pw);
+          wipe.push(h);
+          const iv = importLockFit(pk.salt, 16);
+          const underPw = async (blk, data) => {
+            const d = await importLockDigest(pk.hash, lockCat([h, blk]));
+            const raw = importLockFit(d, pk.keyBytes);
+            d.fill(0);
+            try { return await importLockCbc(await importLockAesKey(raw), iv, data); } finally { raw.fill(0); }
+          };
+          const verifier = (await underPw(LOCK_DOCX_BLK.verifierInput, pk.verifierInput)).subarray(0, pk.salt.length);
+          const verifierHash = (await underPw(LOCK_DOCX_BLK.verifierValue, pk.verifierValue)).subarray(0, pk.hashSize);
+          wipe.push(verifier, verifierHash);
+          const want = await importLockDigest(pk.hash, verifier);
+          wipe.push(want);
+          if (!importLockSame(want, verifierHash)) throw importLockError("wrong-password");
+          const secret = (await underPw(LOCK_DOCX_BLK.keyValue, pk.keyValue)).slice(0, kd.keyBytes);
+          wipe.push(secret);
+          const sk = await importLockAesKey(secret);
+          /* §2.3.4.14: the HMAC key and value under the secret key, the IVs H(keyData salt ‖ block key) cut to the
+             block size; the HMAC over the whole EncryptedPackage stream */
+          const ivOf = async (blk) => importLockFit(await importLockDigest(kd.hash, lockCat([kd.salt, blk])), 16);
+          const hmacKey = (await importLockCbc(sk, await ivOf(LOCK_DOCX_BLK.hmacKey), kd.hmacKey)).slice(0, kd.hashSize);
+          const hmacValue = (await importLockCbc(sk, await ivOf(LOCK_DOCX_BLK.hmacValue), kd.hmacValue)).slice(0, kd.hashSize);
+          wipe.push(hmacKey, hmacValue);
+          const mk = await crypto.subtle.importKey("raw", hmacKey, { name: "HMAC", hash: kd.hash }, false, ["sign"]);
+          const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mk, pkg));
+          if (!importLockSame(mac, hmacValue)) throw importLockDamaged("its integrity check failed");
+          /* §2.3.4.15: each 4096-byte segment under the secret key, its IV H(keyData salt ‖ LE32(segment)) cut to the
+             block size; the plain package cut to its size */
+          const out = new Uint8Array(sealedSize);
+          const segment = async (n) => {
+            const at = 8 + n * 4096;
+            const data = pkg.subarray(at, Math.min(8 + sealedSize, at + 4096));
+            out.set(await importLockCbc(sk, await ivOf(lockU32s([n])), data), n * 4096);
+          };
+          const nSeg = Math.ceil(size / 4096);
+          for (let s0 = 0; s0 < nSeg; s0 += 64) {
+            const batch = [];
+            for (let n = s0; n < Math.min(nSeg, s0 + 64); n++) batch.push(segment(n));
+            await Promise.all(batch);
+          }
+          return size === sealedSize ? out : out.slice(0, size);
+        } catch (e) {
+          /* fixed words only: a coded error as it is, anything else (a DOMException, a RangeError) "damaged" */
+          if (e && (e.code === "wrong-password" || e.code === "damaged" || e.code === "unsupported")) throw e;
+          throw importLockDamaged("it could not be decrypted");
+        } finally {
+          for (const w of wipe) w.fill(0);
+        }
+      }
+      /* ==== /BEUK:importlock ==== */
       /* ---- the controls (task 3): one fieldset per download point — a box, and, shown when it is ticked, the password
          twice and the note. The Word file (#lockDocx) and the manuscript (#lockMs) have theirs beside their button; the
          print-ready PDF's opens in a small dialog of its own (#modalLockPdf) from a separate link ([data-pr-locked]), so
