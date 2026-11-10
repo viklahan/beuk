@@ -24,11 +24,12 @@ import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 type CfbDir = { name: string; type: number; color: number; left: number; right: number; child: number; data: Uint8Array };
 type Coded = Error & { code?: string };
 type Api = {
-  cfbStreams: (b: Uint8Array) => Map<string, Uint8Array>;
+  cfbStreams: (b: Uint8Array, names?: string[]) => Map<string, Uint8Array>;
   officeLockKind: (b: Uint8Array) => null | 'agile' | 'unsupported';
   officeUnlock: (b: Uint8Array, pw: string) => Promise<Uint8Array>;
   lockDocxBytes: (b: Uint8Array, pw: string) => Promise<Uint8Array>;
   lockCfb: (dirs: CfbDir[]) => Uint8Array;
+  importLockSha1Spin: (h0: Uint8Array, rounds: number) => Uint8Array;
 };
 let api: Api;
 const t = (k: string, p?: Record<string, unknown>) => translate({ packs: { en: en as Pack }, pluralForms: meta.pluralForms as PluralForms }, 'en', k, p);
@@ -203,7 +204,7 @@ describe('officeUnlock: ECMA-376 Agile decryption in the browser (design 2026-11
     expect(isZip(out)).toBe(true);
     expect(Object.keys((await JSZip.loadAsync(out)).files)).toContain('word/document.xml');
     expect(Buffer.from(out).equals(Buffer.from(plain))).toBe(true);
-    // the NFC/NFKC or a lone-surrogate variant is another password
+    // the NFD spelling (a + U+0308) is another password: the UTF-16LE is taken as typed, never normalized
     expect((await rejection(api.officeUnlock(fx('agile-unicode.docx'), 'pässwörd\u{1F600}'))).code).toBe('wrong-password');
   }, 30_000);
 
@@ -226,8 +227,12 @@ describe('officeUnlock: ECMA-376 Agile decryption in the browser (design 2026-11
     const r = oracle(locked, PW, ['--no-verify']);
     expect(r.code, r.err).toBe(0);
     expect(Buffer.from(r.plain!).equals(Buffer.from(plain)), 'msoffcrypto decrypts the fixture to the input').toBe(true);
+    const t0 = performance.now();
     const out = await api.officeUnlock(locked, PW);
+    const ms = performance.now() - t0;
     expect(Buffer.from(out).equals(Buffer.from(plain))).toBe(true);
+    // fix round 1: the SHA-1 spin runs in plain JS (importLockSha1Spin), not as 100 000 awaited digests (about 2-3 s)
+    expect(ms, 'one SHA-1 attempt, 100 000 rounds').toBeLessThan(1500);
     expect((await rejection(api.officeUnlock(locked, 'correct horsE'))).code).toBe('wrong-password');
   }, 60_000);
 
@@ -376,6 +381,12 @@ describe('hostile compound files: "damaged" within 1000 ms, never a hang or a ra
       dv(b).setUint32(fatAt(b, dir0), dir0, true);
       return b;
     }],
+    ['a mini FAT loop (EncryptionInfo, in the mini stream, chained to itself)', (b) => {
+      const s = dv(b).getUint32(entryAt(b, 1) + 116, true);
+      expect(dv(b).getUint32(entryAt(b, 1) + 120, true), 'EncryptionInfo is a mini stream').toBeLessThan(4096);
+      dv(b).setUint32(512 + dv(b).getUint32(60, true) * 512 + s * 4, s, true);
+      return b;
+    }],
     ['a sector size other than 512 or 4096', (b) => {
       dv(b).setUint16(30, 16, true);
       return b;
@@ -438,7 +449,172 @@ describe('hostile compound files: "damaged" within 1000 ms, never a hang or a ra
       }
       const e = await rejection(api.officeUnlock(f, PW));
       expect(e.code, what + ': ' + e.message).toBe('damaged');
+      // fix round 1 (finding 4): a compound file with both streams and a 4.4 EncryptionInfo is a locked file, damaged
+      // or not: "agile", so the ask runs and officeUnlock says "damaged" (never today's "another kind of file renamed")
+      expect(api.officeLockKind(f), what).toBe('agile');
     }
+  }, 30_000);
+
+  it('an EncryptionInfo over 64 KB: "damaged" before DOMParser sees it; officeLockKind still says "agile"', async () => {
+    const { info, pkg } = streamsOf(base);
+    const xml = xmlOf(info);
+    const ok = cfbOf(infoWith([4, 0, 4, 0, 0x40, 0, 0, 0], xml.replace('<keyData', '<!--' + 'x'.repeat(60 * 1024) + '--><keyData')), pkg);
+    expect(Buffer.from(await api.officeUnlock(ok, PW)).equals(Buffer.from(plain)), 'a 61 KB one still opens').toBe(true);
+    const f = cfbOf(infoWith([4, 0, 4, 0, 0x40, 0, 0, 0], xml.replace('<keyData', '<!--' + 'x'.repeat(70 * 1024) + '--><keyData')), pkg);
+    const { e, ms } = await timedRejection(() => api.officeUnlock(f, PW));
+    expect(e.code, e.message).toBe('damaged');
+    expect(ms).toBeLessThan(1000);
+    expect(api.officeLockKind(f)).toBe('agile');
+  }, 30_000);
+
+  it('many directory entries over one shared chain: bounded, never a copy per entry (review finding 1)', async () => {
+    const { info, pkg } = streamsOf(base);
+    const N = 200;
+    const dirs: CfbDir[] = [
+      { name: 'Root Entry', type: 5, color: 1, left: NOSTREAM, right: NOSTREAM, child: 1, data: new Uint8Array(0) },
+      { name: 'EncryptionInfo', type: 2, color: 1, left: NOSTREAM, right: 2, child: NOSTREAM, data: info },
+      { name: 'EncryptedPackage', type: 2, color: 1, left: NOSTREAM, right: 3, child: NOSTREAM, data: pkg },
+    ];
+    for (let i = 0; i < N; i++) dirs.push({ name: 's' + i, type: 2, color: 1, left: NOSTREAM, right: i + 1 < N ? 4 + i : NOSTREAM, child: NOSTREAM, data: new Uint8Array(0) });
+    const f = api.lockCfb(dirs);
+    // every extra entry is pointed at EncryptedPackage's own chain, with its size
+    const start = dv(f).getUint32(entryAt(f, 2) + 116, true), size = dv(f).getUint32(entryAt(f, 2) + 120, true);
+    expect(size).toBeGreaterThanOrEqual(4096);
+    for (let i = 0; i < N; i++) {
+      dv(f).setUint32(entryAt(f, 3 + i) + 116, start, true);
+      dv(f).setUint32(entryAt(f, 3 + i) + 120, size, true);
+    }
+    expect(size * (N + 1), 'reading them all would be far past the file').toBeGreaterThan(f.length * 50);
+    // reading every stream: past the file's own size in total, so "damaged"
+    let t0 = performance.now();
+    let err: Coded | null = null;
+    try {
+      api.cfbStreams(f);
+    } catch (x) {
+      err = x as Coded;
+    }
+    expect(err && err.code).toBe('damaged');
+    expect(performance.now() - t0).toBeLessThan(1000);
+    // the sniff and the unlock read only EncryptionInfo and EncryptedPackage
+    t0 = performance.now();
+    expect(api.officeLockKind(f)).toBe('agile');
+    expect(performance.now() - t0).toBeLessThan(1000);
+    expect([...api.cfbStreams(f, ['EncryptionInfo']).keys()]).toEqual(['EncryptionInfo']);
+    expect(Buffer.from(await api.officeUnlock(f, PW)).equals(Buffer.from(plain))).toBe(true);
+  }, 30_000);
+
+  it('the DIFAT chain: a loop, and a DIFAT sector past the end of the file (a 10 MB lock, past 109 FAT sectors)', async () => {
+    const ten = new Uint8Array(10 * 1024 * 1024);
+    ten.set(plain.subarray(0, 4), 0);
+    const locked = await api.lockDocxBytes(ten, PW);
+    expect(dv(locked).getUint32(72, true), 'DIFAT sectors').toBe(1);
+    const difat0 = dv(locked).getUint32(68, true);
+    const cases: [string, (b: Uint8Array) => void][] = [
+      ['a DIFAT loop', (b) => {
+        // two DIFAT sectors needed (more FAT sectors claimed), the first one's next pointing back at itself
+        dv(b).setUint32(44, 109 + 127 + 1, true);
+        dv(b).setUint32(72, 2, true);
+        dv(b).setUint32(512 + difat0 * 512 + 508, difat0, true);
+      }],
+      ['the first DIFAT sector past the end of the file', (b) => dv(b).setUint32(68, 0x00fffff0, true)],
+      ['a DIFAT next pointer past the end of the file', (b) => {
+        dv(b).setUint32(44, 109 + 127 + 1, true);
+        dv(b).setUint32(72, 2, true);
+        dv(b).setUint32(512 + difat0 * 512 + 508, 0x00fffff0, true);
+      }],
+    ];
+    for (const [what, breakIt] of cases) {
+      const bad = locked.slice();
+      breakIt(bad);
+      const { e, ms } = await timedRejection(() => api.officeUnlock(bad, PW));
+      expect(e.code, what + ': ' + e.message).toBe('damaged');
+      expect(ms, what).toBeLessThan(1000);
+      expect(api.officeLockKind(bad), what).toBe(null);
+    }
+  }, 60_000);
+});
+
+/* ---------------- version 4: a compound file with 4096-byte sectors, written here ---------------- */
+/** MS-CFB version 4 (§2.2): a 4096-byte header sector, then sector 0 the FAT, 1 the directory, 2 the mini FAT, then the
+ *  mini stream (every stream under 4096 bytes, in 64-byte mini sectors) and the large stream, each contiguous. The
+ *  directory is the root, `small` (id 1, black) and `big` (id 2, red, its right sibling). `sizeHigh` writes the high
+ *  half of the big stream's 64-bit size. */
+function cfbV4(small: { name: string; data: Uint8Array }, big: { name: string; data: Uint8Array }, sizeHigh = 0): Uint8Array {
+  const SS = 4096, FREE = 0xffffffff, END = 0xfffffffe;
+  const nMiniSec = Math.ceil(small.data.length / 64);
+  const nMini = Math.ceil((nMiniSec * 64) / SS), nBig = Math.ceil(big.data.length / SS);
+  const mini0 = 3, big0 = mini0 + nMini, total = big0 + nBig;
+  expect(total, 'one FAT sector').toBeLessThanOrEqual(SS / 4);
+  expect(nMiniSec, 'one mini FAT sector').toBeLessThanOrEqual(SS / 4);
+  const out = new Uint8Array(SS + total * SS);
+  const v = dv(out);
+  const at = (s: number) => SS + s * SS;
+  out.set([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1], 0);
+  v.setUint16(24, 0x3e, true);
+  v.setUint16(26, 4, true);
+  v.setUint16(28, 0xfffe, true);
+  v.setUint16(30, 12, true);
+  v.setUint16(32, 6, true);
+  v.setUint32(40, 1, true); // directory sectors (version 4 counts them)
+  v.setUint32(44, 1, true);
+  v.setUint32(48, 1, true);
+  v.setUint32(56, 4096, true);
+  v.setUint32(60, 2, true);
+  v.setUint32(64, 1, true);
+  v.setUint32(68, END, true);
+  v.setUint32(72, 0, true);
+  for (let i = 0; i < 109; i++) v.setUint32(76 + i * 4, i === 0 ? 0 : FREE, true);
+  const fat = new Array<number>(SS / 4).fill(FREE);
+  fat[0] = 0xfffffffd;
+  fat[1] = END;
+  fat[2] = END;
+  const chain = (s0: number, n: number) => { for (let i = 0; i < n; i++) fat[s0 + i] = i + 1 < n ? s0 + i + 1 : END; };
+  chain(mini0, nMini);
+  chain(big0, nBig);
+  fat.forEach((x, i) => v.setUint32(at(0) + i * 4, x, true));
+  for (let i = 0; i < SS / 4; i++) v.setUint32(at(2) + i * 4, i < nMiniSec ? (i + 1 < nMiniSec ? i + 1 : END) : FREE, true);
+  out.set(small.data, at(mini0));
+  out.set(big.data, at(big0));
+  for (let id = 0; id < SS / 128; id++) {
+    const o = at(1) + id * 128;
+    v.setUint32(o + 68, FREE, true);
+    v.setUint32(o + 72, FREE, true);
+    v.setUint32(o + 76, FREE, true);
+  }
+  const entry = (id: number, name: string, type: number, color: number, right: number, child: number, start: number, size: number, high: number) => {
+    const o = at(1) + id * 128;
+    for (let i = 0; i < name.length; i++) v.setUint16(o + i * 2, name.charCodeAt(i), true);
+    v.setUint16(o + 64, (name.length + 1) * 2, true);
+    out[o + 66] = type;
+    out[o + 67] = color;
+    v.setUint32(o + 72, right, true);
+    v.setUint32(o + 76, child, true);
+    v.setUint32(o + 116, start, true);
+    v.setUint32(o + 120, size, true);
+    v.setUint32(o + 124, high, true);
+  };
+  entry(0, 'Root Entry', 5, 1, FREE, 1, mini0, nMiniSec * 64, 0);
+  entry(1, small.name, 2, 1, 2, FREE, 0, small.data.length, 0);
+  entry(2, big.name, 2, 0, FREE, FREE, big0, big.data.length, sizeHigh);
+  return out;
+}
+
+describe('version 4 compound files (4096-byte sectors, 64-bit sizes)', () => {
+  it('cfbStreams reads a mini stream and a FAT stream from a version 4 file, and officeUnlock opens the fixture repacked as version 4', async () => {
+    const a = new Uint8Array(randomBytes(100)), z = new Uint8Array(randomBytes(5000));
+    const f = cfbV4({ name: 'Small', data: a }, { name: 'Big', data: z });
+    const s = api.cfbStreams(f);
+    expect(Buffer.from(s.get('Small')!).equals(Buffer.from(a))).toBe(true);
+    expect(Buffer.from(s.get('Big')!).equals(Buffer.from(z))).toBe(true);
+    const { info, pkg } = streamsOf(fx('agile-sha512.docx'));
+    expect(info.length).toBeLessThan(4096);
+    const v4 = cfbV4({ name: 'EncryptionInfo', data: info }, { name: 'EncryptedPackage', data: pkg });
+    expect(dv(v4).getUint16(26, true)).toBe(4);
+    expect(api.officeLockKind(v4)).toBe('agile');
+    expect(Buffer.from(await api.officeUnlock(v4, PW)).equals(Buffer.from(plain))).toBe(true);
+    // the size's high half counts in version 4: 2^32 + n is past the file
+    const huge = cfbV4({ name: 'EncryptionInfo', data: info }, { name: 'EncryptedPackage', data: pkg }, 1);
+    expect((await rejection(api.officeUnlock(huge, PW))).code).toBe('damaged');
   }, 30_000);
 });
 
@@ -458,6 +634,24 @@ describe('cfbStreams: the compound-file reader', () => {
     expect(dv(locked).getUint32(72, true), 'DIFAT sectors').toBeGreaterThan(0);
     expect(api.cfbStreams(locked).get('EncryptedPackage')!.length).toBe(8 + ten.length);
   }, 60_000);
+
+  it('importLockSha1Spin matches WebCrypto SHA-1, round by round (H_n = SHA-1(LE32(n - 1) ‖ H_n-1))', async () => {
+    const h0 = new Uint8Array(await crypto.subtle.digest('SHA-1', new Uint8Array(randomBytes(40))));
+    let h = h0.slice();
+    const want = new Map<number, Uint8Array>([[0, h0.slice()]]);
+    for (let i = 0; i < 1000; i++) {
+      const buf = new Uint8Array(24);
+      dv(buf).setUint32(0, i, true);
+      buf.set(h, 4);
+      h = new Uint8Array(await crypto.subtle.digest('SHA-1', buf));
+      if ([0, 1, 2, 999].includes(i)) want.set(i + 1, h);
+    }
+    for (const [n, w] of want) {
+      const got = api.importLockSha1Spin(h0, n);
+      expect(Buffer.from(got).toString('hex'), n + ' rounds').toBe(Buffer.from(w).toString('hex'));
+    }
+    expect(Buffer.from(h0).toString('hex'), 'h0 is not changed').toBe(Buffer.from(want.get(0)!).toString('hex'));
+  });
 
   it('refuses a file over 400 MB without reading it', () => {
     const fake = new Uint8Array(16);

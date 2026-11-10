@@ -246,6 +246,8 @@ export const EXTRA_ROOTS = [
   'pdfFixtureBytes', 'lockCfb',
   // the reader and the decryptor (BEUK:importlock): the compound-file reader, the lock sniffer and the Agile decryption
   'cfbStreams', 'officeLockKind', 'officeUnlock',
+  // review fix round 1: the plain-JS SHA-1 spin's known-answer hook (the test checks it against WebCrypto)
+  'importLockSha1Spin',
   // task 3: the lock controls and the download points' halves (the Word file and the manuscript reach them through
   // downloadDocx / msDownload; the print-ready PDF's dialog and the plan's day-22 note are named here, so the whole
   // BEUK:lockcopy block stands in the main closure as 1.0's text — the print and shelf modules lift their own copies)

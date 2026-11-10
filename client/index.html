@@ -52314,12 +52314,17 @@
       }
       /* ==== BEUK:importlock ==== Opening password-protected files on import (design 2026-11-10), task 1: a locked Word
          file is a compound file (MS-CFB) holding EncryptionInfo and EncryptedPackage, not a zip.
-         cfbStreams(bytes) → Map: the root storage's streams by name, read by a reader written for hostile input
-         (version 3 and 4 sectors; FAT, DIFAT and mini FAT; every chain cycle-checked and length-checked; every size capped
-         by the file; the file at 400 MB). Any structural failure throws .code "damaged".
-         officeLockKind(bytes) → null | "agile" | "unsupported", and never throws: null unless the bytes are a readable
-         compound file with both streams (so a broken one keeps today's "damaged Word file" path), "agile" for an
-         EncryptionInfo version 4.4 whose parameters are supported, otherwise "unsupported".
+         cfbOpen(bytes) → { names, has, size, read(name, max) }: the root storage's directory, read by a reader written
+         for hostile input (version 3 and 4 sectors; FAT, DIFAT and mini FAT; every chain cycle-checked and
+         length-checked; every size capped by the file; the file at 400 MB). A stream is read only when asked for, and
+         all the bytes read together stay within the file's own size (streams may not multiply one chain).
+         cfbStreams(bytes, names?) → Map: those streams (every root stream without `names`). Any structural failure
+         throws .code "damaged".
+         officeLockKind(bytes) → null | "agile" | "unsupported", and never throws, reading EncryptionInfo alone: null
+         unless the bytes are a compound file whose directory reads and holds both streams (so a broken one keeps today's
+         "damaged Word file" path); "unsupported" for an EncryptionInfo version other than 4.4 or parameters not
+         supported; otherwise "agile", a damaged EncryptionInfo included (it is a locked file: officeUnlock says
+         "damaged").
          officeUnlock(bytes, password) → Promise<Uint8Array>: the plain package. ECMA-376 Agile encryption (MS-OFFCRYPTO
          §2.3.4.10–2.3.4.15) on WebCrypto, the decrypt side of BEUK:lockcopy's lockDocxBytes: the password key, the
          verifier (an exact check, so a wrong password is told apart from a damaged file), the secret key, the
@@ -52329,6 +52334,7 @@
          1 000 000 (Word and msoffcrypto write 100 000; the cap keeps a hostile file from holding the tab). */
       const IMPORTLOCK_MAX = 400 * 1024 * 1024; /* the zip limit */
       const IMPORTLOCK_SPIN_MAX = 1000000;
+      const IMPORTLOCK_INFO_MAX = 64 * 1024; /* real ones are 1–2 KB: a bigger one never reaches DOMParser */
       const IMPORTLOCK_HASH = { SHA1: ["SHA-1", 20], SHA256: ["SHA-256", 32], SHA384: ["SHA-384", 48], SHA512: ["SHA-512", 64] };
       const IMPORTLOCK_NS = "http://schemas.microsoft.com/office/2006/encryption";
       const IMPORTLOCK_PNS = "http://schemas.microsoft.com/office/2006/keyEncryptor/password";
@@ -52339,7 +52345,7 @@
       }
       const importLockDamaged = (what) => importLockError("damaged", what);
       const importLockUnsupported = (what) => importLockError("unsupported", what);
-      function cfbStreams(bytes) {
+      function cfbOpen(bytes) {
         const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
         const bad = (what) => importLockDamaged("the compound file has " + what);
         if (b.length > IMPORTLOCK_MAX) throw bad("more than 400 MB");
@@ -52456,7 +52462,7 @@
           };
           /* the root storage's children: a tree over left, right (siblings) and child, walked with a visited set; the
              streams of the storages under it are not read */
-          const out = new Map(), seen = new Set(), stack = [root.child];
+          const found = new Map(), seen = new Set(), stack = [root.child];
           while (stack.length) {
             const id = stack.pop();
             if (id === NOSTREAM) continue;
@@ -52464,22 +52470,44 @@
             seen.add(id);
             const e = entry(id);
             if (e.type === 2) {
-              if (out.has(e.name)) throw bad("two streams of one name");
+              if (found.has(e.name)) throw bad("two streams of one name");
               if (e.size > b.length) throw bad("a stream larger than the file");
-              out.set(e.name, !e.size ? new Uint8Array(0) : e.size < 4096 ? readMini(e.start, e.size, "a stream") : readFat(e.start, e.size, "a stream"));
+              found.set(e.name, e);
             } else if (e.type !== 1) throw bad("an unused entry in the directory tree");
             stack.push(e.left, e.right);
           }
-          return out;
+          /* a stream is read when asked for; every byte read counts against the file's own size, so entries sharing one
+             chain cannot multiply it */
+          let spent = 0;
+          const read = (name, max) => {
+            const e = found.get(name);
+            if (!e) return undefined;
+            if (max !== undefined && e.size > max) throw bad("a " + name + " larger than it can be");
+            if (spent + e.size > b.length) throw bad("more stream bytes than the file holds");
+            spent += e.size;
+            try {
+              return !e.size ? new Uint8Array(0) : e.size < 4096 ? readMini(e.start, e.size, name) : readFat(e.start, e.size, name);
+            } catch (x) {
+              if (x && x.code === "damaged") throw x;
+              throw bad("a stream that could not be read");
+            }
+          };
+          return { names: Array.from(found.keys()), has: (name) => found.has(name), size: (name) => (found.has(name) ? found.get(name).size : 0), read: read };
         } catch (e) {
           if (e && e.code === "damaged") throw e;
           throw bad("a structure that could not be read");
         }
       }
+      function cfbStreams(bytes, names) {
+        const c = cfbOpen(bytes), out = new Map();
+        for (const name of names || c.names) if (c.has(name)) out.set(name, c.read(name));
+        return out;
+      }
       /* §2.3.4.10: EncryptionInfo, version 4.4 then the XML (DOMParser, application/xml: it never runs script), of which
          only keyData, dataIntegrity and the password key encryptor's p:encryptedKey are read */
       function importLockInfo(info) {
         if (info.length < 8) throw importLockDamaged("EncryptionInfo is cut short");
+        if (info.length > IMPORTLOCK_INFO_MAX) throw importLockDamaged("EncryptionInfo is larger than 64 KB");
         const major = info[0] | (info[1] << 8), minor = info[2] | (info[3] << 8);
         if (major !== 4 || minor !== 4) throw importLockUnsupported("EncryptionInfo version " + major + "." + minor);
         let doc = null;
@@ -52546,15 +52574,20 @@
         return { pk: pk, kd: kd };
       }
       function officeLockKind(bytes) {
+        let c;
         try {
           const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
           if (b.length < 8 || b[0] !== 0xD0 || b[1] !== 0xCF || b[2] !== 0x11 || b[3] !== 0xE0 || b[4] !== 0xA1 || b[5] !== 0xB1 || b[6] !== 0x1A || b[7] !== 0xE1) return null;
-          const s = cfbStreams(b);
-          if (!s.has("EncryptionInfo") || !s.has("EncryptedPackage")) return null;
-          importLockInfo(s.get("EncryptionInfo"));
+          c = cfbOpen(b);
+        } catch (e) {
+          return null;
+        }
+        if (!c.has("EncryptionInfo") || !c.has("EncryptedPackage")) return null;
+        try {
+          importLockInfo(c.read("EncryptionInfo", IMPORTLOCK_INFO_MAX));
           return "agile";
         } catch (e) {
-          return e && e.code === "unsupported" ? "unsupported" : null;
+          return e && e.code === "unsupported" ? "unsupported" : "agile";
         }
       }
       /* cut to n bytes, or padded with 0x36 (§2.3.4.11, §2.3.4.12) */
@@ -52564,12 +52597,45 @@
         return out;
       }
       async function importLockDigest(hash, data) { return new Uint8Array(await crypto.subtle.digest(hash, data)); }
+      /* SHA-1 (FIPS 180-4 §6.1) in plain JS, for the spin loop only, as lockSha512Spin is for SHA-512: 100 000 awaited
+         WebCrypto digests take 2–3 s an attempt (review, 2026-11-10), and Office 2010 writes SHA-1. Each round hashes one
+         24-byte message, LE32(i) ‖ H: a single block built straight from H's five words. */
+      function importLockSha1Spin(h0, rounds) {
+        const w = new Int32Array(80), hw = new Int32Array(5);
+        for (let j = 0; j < 5; j++) hw[j] = (h0[j * 4] << 24) | (h0[j * 4 + 1] << 16) | (h0[j * 4 + 2] << 8) | h0[j * 4 + 3];
+        for (let i = 0; i < rounds; i++) {
+          /* the block, as big-endian words: LE32(i), the 20 bytes of H, 0x80, zeros, the length in bits (192) */
+          w[0] = ((i & 255) << 24) | (((i >>> 8) & 255) << 16) | (((i >>> 16) & 255) << 8) | (i >>> 24);
+          for (let j = 0; j < 5; j++) w[1 + j] = hw[j];
+          w[6] = 0x80000000 | 0;
+          for (let j = 7; j < 15; j++) w[j] = 0;
+          w[15] = 192;
+          for (let j = 16; j < 80; j++) { const x = w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16]; w[j] = (x << 1) | (x >>> 31); }
+          let a = 0x67452301 | 0, b = 0xEFCDAB89 | 0, c = 0x98BADCFE | 0, d = 0x10325476 | 0, e = 0xC3D2E1F0 | 0;
+          for (let j = 0; j < 80; j++) {
+            const f = j < 20 ? ((b & c) | (~b & d)) + 0x5A827999 : j < 40 ? (b ^ c ^ d) + 0x6ED9EBA1 : j < 60 ? ((b & c) | (b & d) | (c & d)) + 0x8F1BBCDC : (b ^ c ^ d) + 0xCA62C1D6;
+            const t = (((a << 5) | (a >>> 27)) + f + e + w[j]) | 0;
+            e = d; d = c; c = (b << 30) | (b >>> 2); b = a; a = t;
+          }
+          hw[0] = (0x67452301 + a) | 0; hw[1] = (0xEFCDAB89 + b) | 0; hw[2] = (0x98BADCFE + c) | 0; hw[3] = (0x10325476 + d) | 0; hw[4] = (0xC3D2E1F0 + e) | 0;
+        }
+        const out = new Uint8Array(20);
+        for (let j = 0; j < 5; j++) { out[j * 4] = hw[j] >>> 24; out[j * 4 + 1] = hw[j] >>> 16; out[j * 4 + 2] = hw[j] >>> 8; out[j * 4 + 3] = hw[j]; }
+        w.fill(0); hw.fill(0);
+        return out;
+      }
       /* §2.3.4.11: H0 = H(salt ‖ password), then Hn = H(LE32(n − 1) ‖ Hn−1), spinCount times. SHA-512 in
-         lockSha512Spin; the others on WebCrypto, a frame given back every 10 000 rounds. */
+         lockSha512Spin, SHA-1 in importLockSha1Spin; SHA-256 and SHA-384 (rare) on WebCrypto, a frame given back every
+         10 000 rounds. */
       async function importLockSpin(pk, pw) {
-        const h0 = await importLockDigest(pk.hash, lockCat([pk.salt, pw]));
+        const salted = lockCat([pk.salt, pw]);
+        let h0;
+        try { h0 = await importLockDigest(pk.hash, salted); } finally { salted.fill(0); }
         if (pk.hash === "SHA-512") {
           try { return lockSha512Spin(h0, pk.spin); } finally { h0.fill(0); }
+        }
+        if (pk.hash === "SHA-1") {
+          try { return importLockSha1Spin(h0, pk.spin); } finally { h0.fill(0); }
         }
         let h = h0;
         const buf = new Uint8Array(4 + h.length);
@@ -52607,10 +52673,11 @@
         const pw = lockUtf16le(typeof password === "string" ? password : "");
         const wipe = [pw];
         try {
-          const s = cfbStreams(b);
-          const info = s.get("EncryptionInfo"), pkg = s.get("EncryptedPackage");
-          if (!info || !pkg) throw importLockDamaged("it holds no EncryptionInfo and EncryptedPackage");
-          const { pk, kd } = importLockInfo(info);
+          const c = cfbOpen(b);
+          if (!c.has("EncryptionInfo") || !c.has("EncryptedPackage")) throw importLockDamaged("it holds no EncryptionInfo and EncryptedPackage");
+          /* EncryptionInfo first (at most 64 KB), so a lock that is not supported is refused before the package is read */
+          const { pk, kd } = importLockInfo(c.read("EncryptionInfo", IMPORTLOCK_INFO_MAX));
+          const pkg = c.read("EncryptedPackage");
           /* §2.3.4.15: the package's size, its first 8 bytes (LE64), must fit in what follows */
           if (pkg.length < 8) throw importLockDamaged("EncryptedPackage is cut short");
           const pv = new DataView(pkg.buffer, pkg.byteOffset, pkg.length);
@@ -52623,27 +52690,34 @@
           const h = await importLockSpin(pk, pw);
           wipe.push(h);
           const iv = importLockFit(pk.salt, 16);
+          /* each decrypted value is kept whole in `wipe` (a subarray of it is used), so the whole buffer is emptied */
           const underPw = async (blk, data) => {
-            const d = await importLockDigest(pk.hash, lockCat([h, blk]));
+            const withBlk = lockCat([h, blk]);
+            wipe.push(withBlk);
+            const d = await importLockDigest(pk.hash, withBlk);
             const raw = importLockFit(d, pk.keyBytes);
             d.fill(0);
-            try { return await importLockCbc(await importLockAesKey(raw), iv, data); } finally { raw.fill(0); }
+            try {
+              const plain = await importLockCbc(await importLockAesKey(raw), iv, data);
+              wipe.push(plain);
+              return plain;
+            } finally { raw.fill(0); }
           };
           const verifier = (await underPw(LOCK_DOCX_BLK.verifierInput, pk.verifierInput)).subarray(0, pk.salt.length);
           const verifierHash = (await underPw(LOCK_DOCX_BLK.verifierValue, pk.verifierValue)).subarray(0, pk.hashSize);
-          wipe.push(verifier, verifierHash);
           const want = await importLockDigest(pk.hash, verifier);
           wipe.push(want);
           if (!importLockSame(want, verifierHash)) throw importLockError("wrong-password");
-          const secret = (await underPw(LOCK_DOCX_BLK.keyValue, pk.keyValue)).slice(0, kd.keyBytes);
-          wipe.push(secret);
+          const secret = (await underPw(LOCK_DOCX_BLK.keyValue, pk.keyValue)).subarray(0, kd.keyBytes);
           const sk = await importLockAesKey(secret);
           /* §2.3.4.14: the HMAC key and value under the secret key, the IVs H(keyData salt ‖ block key) cut to the
              block size; the HMAC over the whole EncryptedPackage stream */
           const ivOf = async (blk) => importLockFit(await importLockDigest(kd.hash, lockCat([kd.salt, blk])), 16);
-          const hmacKey = (await importLockCbc(sk, await ivOf(LOCK_DOCX_BLK.hmacKey), kd.hmacKey)).slice(0, kd.hashSize);
-          const hmacValue = (await importLockCbc(sk, await ivOf(LOCK_DOCX_BLK.hmacValue), kd.hmacValue)).slice(0, kd.hashSize);
-          wipe.push(hmacKey, hmacValue);
+          const hmacKeyAll = await importLockCbc(sk, await ivOf(LOCK_DOCX_BLK.hmacKey), kd.hmacKey);
+          wipe.push(hmacKeyAll);
+          const hmacValueAll = await importLockCbc(sk, await ivOf(LOCK_DOCX_BLK.hmacValue), kd.hmacValue);
+          wipe.push(hmacValueAll);
+          const hmacKey = hmacKeyAll.subarray(0, kd.hashSize), hmacValue = hmacValueAll.subarray(0, kd.hashSize);
           const mk = await crypto.subtle.importKey("raw", hmacKey, { name: "HMAC", hash: kd.hash }, false, ["sign"]);
           const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mk, pkg));
           if (!importLockSame(mac, hmacValue)) throw importLockDamaged("its integrity check failed");

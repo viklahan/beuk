@@ -769,9 +769,10 @@ export type ClosureApi = {
   pdfFixtureBytes: (scan: boolean) => Uint8Array;
   lockCfb: (dirs: { name: string; type: number; color: number; left: number; right: number; child: number; data: Uint8Array }[]) => Uint8Array;
   // the reader and the decryptor (BEUK:importlock): each failure an Error with .code "damaged", "wrong-password" or "unsupported"
-  cfbStreams: (bytes: Uint8Array) => Map<string, Uint8Array>;
+  cfbStreams: (bytes: Uint8Array, names?: string[]) => Map<string, Uint8Array>;
   officeLockKind: (bytes: Uint8Array) => null | 'agile' | 'unsupported';
   officeUnlock: (bytes: Uint8Array, password: string) => Promise<Uint8Array>;
+  importLockSha1Spin: (h0: Uint8Array, rounds: number) => Uint8Array;
   // locked backups and the authorship record (task 2): 1.0's BEUK:authorship
   backupFingerprint: (book: object) => Promise<string>;
   backupPayload: (book: object, recorded: string | null) => Promise<{ text: string; sha256: string }>;
