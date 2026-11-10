@@ -598,6 +598,13 @@ test('delete my account: phrase + password required; everything the account owns
     // A second device's session.
     const device2 = new Client(s.base);
     await device2.post('/api/auth/login', { email: 'leaving@example.com', password: 'correct horse battery' });
+    // Two-step on (its row and 10 recovery codes), and a sign-in left waiting for its code.
+    await turnTwoStepOn(c);
+    const waiting = await new Client(s.base).post('/api/auth/login', { email: 'leaving@example.com', password: 'correct horse battery' });
+    assert.equal(waiting.body.twoStep, true, JSON.stringify(waiting.body));
+    assert.equal((await db.query('select 1 from user_two_step where user_id = $1', [uid])).rows.length, 1);
+    assert.equal((await db.query('select 1 from two_step_recovery_codes where user_id = $1', [uid])).rows.length, 10);
+    assert.equal((await db.query('select 1 from sign_in_challenges where user_id = $1', [uid])).rows.length, 1);
 
     // Someone who stays.
     const stay = new Client(s.base);
@@ -621,6 +628,9 @@ test('delete my account: phrase + password required; everything the account owns
     assert.equal(removed.exports, 1);
     assert.equal(removed.share_comments, 1);
     assert.equal(removed.sessions, 2);
+    assert.equal(removed.user_two_step, 1);
+    assert.equal(removed.two_step_recovery_codes, 10);
+    assert.equal(removed.sign_in_challenges, 1);
 
     // Every table that held this account's rows is empty of them.
     for (const table of ACCOUNT_DELETED_TABLES) {

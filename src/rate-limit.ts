@@ -61,6 +61,11 @@ export class SlidingWindowLimiter {
     if (!times.length) this.hits.delete(key);
   }
 
+  /** Forget every hit for `key` (the limit is lifted at once). */
+  clear(key: string): void {
+    this.hits.delete(key);
+  }
+
   /** Seconds until the oldest hit in the window ages out. */
   retryAfterSeconds(key: string): number {
     const times = this.hits.get(key) ?? [];

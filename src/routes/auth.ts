@@ -55,10 +55,22 @@ export const DEFAULT_SIGN_IN_LIMITS: SignInLimits = {
   perAccount: { max: 10, windowMs: 15 * 60_000 },
 };
 
+/** Lets another router lift one address's per-account sign-in limit:
+ *  a successful password reset does, so whoever controls the inbox is
+ *  never locked out. authRoutes fills in `clear`. */
+export interface SignInLimitHandle {
+  clear: (email: string) => void;
+}
+export function signInLimitHandle(): SignInLimitHandle {
+  return { clear: () => undefined };
+}
+
 export interface AuthOptions {
   /** Injectable clock (challenge expiry, TOTP steps, the per-account window). */
   now?: () => Date;
   signInLimits?: SignInLimits;
+  /** Wired by app.ts to accountRoutes (POST /reset clears the limit). */
+  signInLimit?: SignInLimitHandle;
 }
 
 const TOO_MANY_SIGN_INS = 'too many sign-in attempts — please wait and try again';
@@ -87,6 +99,7 @@ export function authRoutes(
   // a failure (wrong password, wrong code) keeps it: anything else gives
   // it back. The 429 is the same whether the account exists or not.
   const perAccount = new SlidingWindowLimiter(limits.perAccount.max, limits.perAccount.windowMs, () => now().getTime());
+  if (options.signInLimit) options.signInLimit.clear = (email) => perAccount.clear(email.trim().toLowerCase());
   /** The reservation's time, or null after answering 429. */
   const reserveAttempt = (res: Response, key: string): number | null => {
     const at = perAccount.reserve(key);
@@ -199,7 +212,7 @@ export function authRoutes(
         // The right password, and two-step is on: no session yet, only a
         // short-lived challenge for POST /login/code.
         const at = now();
-        await db.query('delete from sign_in_challenges where expires_at < $1', [new Date(at.getTime() - 86_400_000)]);
+        await db.query('delete from sign_in_challenges where expires_at <= $1', [at]);
         const challenge = randomBytes(32).toString('base64url');
         await db.query(
           'insert into sign_in_challenges (user_id, token_hash, expires_at, created_at) values ($1, $2, $3, $4)',

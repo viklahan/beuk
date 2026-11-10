@@ -10,7 +10,7 @@ import {
 } from './housekeeping/context.js';
 import { createMailer, type Mailer } from './mailer.js';
 import { accountRoutes, BackgroundTasks, type AccountLimits } from './routes/account.js';
-import { authRoutes } from './routes/auth.js';
+import { authRoutes, signInLimitHandle } from './routes/auth.js';
 import { accountPortalRoutes, signupConfirmationHook, type PortalLimits } from './routes/account-portal.js';
 import { nextStudioRoutes } from './routes/next-studio.js';
 import { billingRoutes } from './routes/billing.js';
@@ -140,6 +140,8 @@ export function buildApp({
   const portal = accountPortalRoutes({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now, limits: portalLimits });
   // Account hardening: the security emails, after the response (src/email/security.ts).
   const security = securityEmails({ db, config, mailer: mail, tasks: accountTasks, now });
+  // The per-account sign-in limit, shared so a password reset can lift it.
+  const signInLimit = signInLimitHandle();
   app.use(
     '/api/auth',
     authRoutes(
@@ -151,11 +153,11 @@ export function buildApp({
         onRecoveryUsed: (user, left) => security.recoveryUsed(user, left),
       },
       { billing: billingProvider, now: now ?? (() => new Date()) },
-      { now },
+      { now, signInLimit },
     ),
   );
   // P0 #5: forgot/reset password, change password, sign out everywhere.
-  app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits));
+  app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits, signInLimit));
   app.use('/api/manuscripts', manuscriptRoutes(db, config, accountTasks));
   app.use('/api/series-covenants', seriesCovenantRoutes(db));
   // My themes (migration 022): the writer's own themes, per account.

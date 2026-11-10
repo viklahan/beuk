@@ -53696,6 +53696,7 @@
         $("authPassword").setAttribute("autocomplete", reg ? "new-password" : "current-password");
         $("authError").style.display = "none";
         if (typeof acctAuthModeHook === "function") acctAuthModeHook(mode); /* BEUK:auth */
+        /* BEUK:twostep — must run after acctAuthModeHook: leaving the code step relies on it showing the password field again */
         if (typeof twoStepAuthModeHook === "function") twoStepAuthModeHook(mode); /* BEUK:twostep */
       }
       function openAuth() {
@@ -53732,6 +53733,7 @@
         const codeStep = authMode === "code";
         const sentChallenge = codeStep ? twoStepChallenge : null;
         const typedCode = codeStep ? $("authCode").value.trim() : "";
+        if (codeStep && btn.disabled) return; /* in flight: a double Enter or click sends the code once (final review M5) */
         if (codeStep && !twoStepCodeReady(sentChallenge, typedCode)) return;
         err.style.display = "none";
         btn.disabled = true; $("authSubmitLabel").textContent = t("auth.oneMoment");

@@ -577,7 +577,7 @@ test('per-account limit: a success gives its attempt back (9 failures + a sign-i
   assert.equal((await rawPost(open.base, '/api/auth/login', { email: w.email, password: PASSWORD })).status, 429);
 });
 
-test('per-account limit: /reset still works while the limit is on', async () => {
+test('per-account limit: /reset works while the limit is on, and clears it: the new password then signs in', async () => {
   const w = await writer();
   for (let i = 0; i < 10; i++) await rawPost(open.base, '/api/auth/login', { email: w.email, password: `nope ${i} nope` });
   assert.equal((await rawPost(open.base, '/api/auth/login', { email: w.email, password: PASSWORD })).status, 429);
@@ -587,6 +587,85 @@ test('per-account limit: /reset still works while the limit is on', async () => 
   const r = await new Client(open.base).post('/api/auth/reset', { token, password: 'a brand new password' });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(r.body.ok, true);
+  // Whoever controls the inbox is never locked out: the reset lifted the limit.
+  const back = await rawPost(open.base, '/api/auth/login', { email: w.email.toUpperCase(), password: 'a brand new password' });
+  assert.equal(back.status, 200, back.text);
+  assert.match(back.setCookie ?? '', /beuk_session=/);
+});
+
+test('per-account limit: a reset with a bad token clears nothing', async () => {
+  const w = await writer();
+  for (let i = 0; i < 10; i++) await rawPost(open.base, '/api/auth/login', { email: w.email, password: `nope ${i} nope` });
+  const r = await new Client(open.base).post('/api/auth/reset', { token: 'not-a-real-token-' + 'y'.repeat(30), password: 'a brand new password' });
+  assert.equal(r.status, 400);
+  assert.equal((await rawPost(open.base, '/api/auth/login', { email: w.email, password: PASSWORD })).status, 429);
+});
+
+/* ---------------- final review: challenges die with sessions ---------------- */
+
+test('housekeeping: purgeExpiredSessions also deletes expired sign-in challenges; live ones stay', async () => {
+  const w = await writer();
+  await db.query(
+    `insert into sign_in_challenges (user_id, token_hash, expires_at, created_at) values
+       ($1, $2, now() - interval '1 second', now() - interval '301 seconds'),
+       ($1, $3, now() + interval '4 minutes', now())`,
+    [w.id, `purge-old-${seq}`, `purge-live-${seq}`],
+  );
+  const { purgeExpiredSessions } = await import('../src/auth.js');
+  await purgeExpiredSessions(db);
+  const left = await db.query<{ token_hash: string }>('select token_hash from sign_in_challenges where user_id = $1', [w.id]);
+  assert.deepEqual(left.rows.map((r) => r.token_hash), [`purge-live-${seq}`]);
+});
+
+test('a two-step password sign-in sweeps every expired challenge (not only day-old ones)', async () => {
+  const other = await writer();
+  await db.query(
+    'insert into sign_in_challenges (user_id, token_hash, expires_at, created_at) values ($1, $2, $3, $4)',
+    [other.id, `sweep-old-${seq}`, new Date(clockMs - 1000), new Date(clockMs - 301_000)],
+  );
+  const g = await writer();
+  await turnOn(g.c);
+  await challengeFor(open.base, g.email);
+  assert.equal(await pendingChallenges(other.id), 0, 'an expired challenge is gone at the next sweep');
+});
+
+async function pendingChallenges(userId: string): Promise<number> {
+  return (await db.query('select 1 from sign_in_challenges where user_id = $1', [userId])).rows.length;
+}
+
+test('a password reset deletes the pending sign-in challenges: the old challenge gets 410', async () => {
+  const w = await writer();
+  const { recoveryCodes } = await turnOn(w.c);
+  const ch = await challengeFor(open.base, w.email);
+  assert.equal(await pendingChallenges(w.id), 1);
+  const token = `reset-ch-${seq}-${'x'.repeat(30)}`;
+  const { tokenHash } = await import('../src/auth.js');
+  await db.query(`insert into password_resets (user_id, token_hash, expires_at) values ($1, $2, now() + interval '1 hour')`, [w.id, tokenHash(token)]);
+  assert.equal((await new Client(open.base).post('/api/auth/reset', { token, password: 'a brand new password' })).status, 200);
+  assert.equal(await pendingChallenges(w.id), 0);
+  const late = await rawPost(open.base, '/api/auth/login/code', { challenge: ch, code: recoveryCodes[0] });
+  assert.equal(late.status, 410);
+});
+
+test('a password change deletes the pending sign-in challenges: the old challenge gets 410', async () => {
+  const w = await writer();
+  const { recoveryCodes } = await turnOn(w.c);
+  const ch = await challengeFor(open.base, w.email);
+  assert.equal(await pendingChallenges(w.id), 1);
+  const r = await w.c.post('/api/auth/password', { currentPassword: PASSWORD, newPassword: 'a brand new password' });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(await pendingChallenges(w.id), 0);
+  assert.equal((await rawPost(open.base, '/api/auth/login/code', { challenge: ch, code: recoveryCodes[0] })).status, 410);
+});
+
+test('"Sign out everywhere" deletes the pending sign-in challenges: the old challenge gets 410', async () => {
+  const w = await writer();
+  const { recoveryCodes } = await turnOn(w.c);
+  const ch = await challengeFor(open.base, w.email);
+  assert.equal(await pendingChallenges(w.id), 1);
+  assert.equal((await w.c.post('/api/auth/sessions/revoke-all', {})).status, 200);
+  assert.equal(await pendingChallenges(w.id), 0);
+  assert.equal((await rawPost(open.base, '/api/auth/login/code', { challenge: ch, code: recoveryCodes[0] })).status, 410);
 });
 
 test('the challenge is claimed before the code is spent: a racing second code gets 410 and is not burned', async () => {
@@ -610,22 +689,57 @@ test('the challenge is claimed before the code is spent: a racing second code ge
   }
 });
 
-test('enable confirms the secret it enables: a /start between the check and the switch never turns on an unconfirmed secret', async () => {
-  const hooked = hookedDb(db);
-  const srv = await start({}, hooked);
+/** A Db whose transactions run `then(tx)` right after the first query
+ *  matching `match` inside them (once): a deterministic stand-in for a
+ *  second tab changing the row in the middle of a route's transaction. */
+function midTxDb(inner: Db, match: RegExp, then: (tx: Db) => Promise<void>): Db {
+  let fired = false;
+  return {
+    query: (text, params) => inner.query(text, params),
+    tx: (fn) =>
+      inner.tx((tx) =>
+        fn({
+          query: async (text, params) => {
+            const result = await tx.query(text, params);
+            if (!fired && match.test(text)) {
+              fired = true;
+              await then(tx);
+            }
+            return result as never;
+          },
+          tx: tx.tx.bind(tx),
+        }),
+      ),
+  };
+}
+
+test('enable confirms the secret it enables: a secret swapped between the code check and the switch gives 409 and stays off', async () => {
+  const swapped = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+  let userId = '';
+  let swaps = 0;
+  // Right after the code check has spent its step (inside the enable
+  // transaction), the pending secret is replaced, as another tab's /start would.
+  const srv = await start(
+    {},
+    midTxDb(db, /set last_step/, async (tx) => {
+      const r = await tx.query('update user_two_step set secret = $2 where user_id = $1 and enabled_at is null returning user_id', [userId, swapped]);
+      swaps += r.rows.length;
+    }),
+  );
   try {
     const w = await writer(srv.base);
+    userId = w.id;
     const s = await w.c.post('/api/account/two-step/start', { currentPassword: PASSWORD });
     const confirmed = s.body.secret as string;
     tick();
-    // A second tab's /start swapping the pending secret right after the code check.
-    hooked.afterNextTx(async () => {
-      await db.query('update user_two_step set secret = $2 where user_id = $1 and enabled_at is null', [w.id, 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP']);
-    });
     const e = await w.c.post('/api/account/two-step/enable', { code: codeAt(confirmed) });
+    assert.equal(swaps, 1, 'the swap ran inside the enable transaction');
+    assert.equal(e.status, 409, JSON.stringify(e.body));
+    assert.equal(e.body.error, 'two-step sign-in changed in another tab — start again');
     const row = (await db.query<{ secret: string; enabled_at: Date | null }>('select secret, enabled_at from user_two_step where user_id = $1', [w.id])).rows[0];
-    if (row.enabled_at !== null) assert.equal(row.secret, confirmed, 'two-step is on only with the secret whose code was checked');
-    if (e.status === 200) assert.notEqual(row.enabled_at, null);
+    assert.equal(row.enabled_at, null, 'never turned on with a secret nobody confirmed');
+    assert.equal(row.secret, swapped);
+    assert.equal((await db.query('select 1 from two_step_recovery_codes where user_id = $1', [w.id])).rows.length, 0);
   } finally {
     await srv.close();
   }

@@ -6,6 +6,7 @@ import type { Mailer } from '../mailer.js';
 import { html, link as linkTo, para, renderEmail, type RenderedEmail } from '../email/layout.js';
 import { hashPassword, verifyPassword } from '../password.js';
 import { SlidingWindowLimiter } from '../rate-limit.js';
+import type { SignInLimitHandle } from './auth.js';
 import {
   clearSessionCookie,
   readCookie,
@@ -104,6 +105,8 @@ export function accountRoutes(
   mailer: Mailer,
   tasks: BackgroundTasks,
   limits: AccountLimits = DEFAULT_ACCOUNT_LIMITS,
+  /** The per-account sign-in limit (src/routes/auth.ts): a successful reset clears it. */
+  signInLimit?: SignInLimitHandle,
 ): Router {
   const router = Router();
   const forgotIp = new SlidingWindowLimiter(limits.forgotPerIp.max, limits.forgotPerIp.windowMs);
@@ -189,21 +192,28 @@ export function accountRoutes(
         );
         const row = consumed.rows[0];
         if (!row) return null;
-        await tx.query('update users set password_hash = $1 where id = $2', [passwordHash, row.user_id]);
+        const changed = await tx.query<{ email: string }>(
+          'update users set password_hash = $1 where id = $2 returning email',
+          [passwordHash, row.user_id],
+        );
         const revoked = await tx.query<{ id: string }>(
           'delete from sessions where user_id = $1 returning id',
           [row.user_id],
         );
+        // A pending sign-in code step proved the OLD password: it dies too.
+        await tx.query('delete from sign_in_challenges where user_id = $1', [row.user_id]);
         // Any other outstanding links for this account die with it.
         await tx.query(
           'update password_resets set used_at = now() where user_id = $1 and used_at is null',
           [row.user_id],
         );
-        return { sessionsRevoked: revoked.rows.length };
+        return { sessionsRevoked: revoked.rows.length, email: changed.rows[0]?.email ?? '' };
       });
       if (!outcome) {
         return res.status(400).json({ error: 'this reset link is invalid, already used, or expired — request a new one' });
       }
+      // Whoever controls the inbox is never locked out of signing in.
+      if (outcome.email) signInLimit?.clear(outcome.email);
       clearSessionCookie(res, config.cookieSecure);
       return res.json({ ok: true, sessionsRevoked: outcome.sessionsRevoked });
     } catch (err) {
@@ -236,6 +246,7 @@ export function accountRoutes(
           'delete from sessions where user_id = $1 and token_hash <> $2 returning id',
           [user.id, currentHash],
         );
+        await tx.query('delete from sign_in_challenges where user_id = $1', [user.id]);
         await tx.query(
           'update password_resets set used_at = now() where user_id = $1 and used_at is null',
           [user.id],
@@ -250,10 +261,12 @@ export function accountRoutes(
 
   router.post('/sessions/revoke-all', requireAuth(db), async (req, res, next) => {
     try {
-      const revoked = await db.query<{ id: string }>(
-        'delete from sessions where user_id = $1 returning id',
-        [req.user!.id],
-      );
+      const revoked = await db.tx(async (tx) => {
+        const gone = await tx.query<{ id: string }>('delete from sessions where user_id = $1 returning id', [req.user!.id]);
+        // A sign-in still waiting for its code is a way in too.
+        await tx.query('delete from sign_in_challenges where user_id = $1', [req.user!.id]);
+        return gone;
+      });
       clearSessionCookie(res, config.cookieSecure);
       return res.json({ ok: true, revoked: revoked.rows.length });
     } catch (err) {

@@ -64,7 +64,7 @@ If you lock a backup with a password, the locking happens in your browser. The p
 
 Each time you sign in, Beuk keeps a short device label with that sign-in, worked out from the name your browser gives itself, such as "Firefox on Windows". It has no version numbers and nothing finer than that. Beuk also keeps when you signed in and when that sign-in was last active (updated at most once every 10 minutes). It keeps no IP address. Your account page lists these sign-ins, so you can sign out a device you don't recognise.
 
-If you turn on two-step sign-in, Beuk stores the secret key your authenticator app shares with it. The key is stored as it is, because the server needs it to check your codes. Your 10 recovery codes are stored only as hashes, so the codes themselves can't be read back. While you sign in, the step between your password and your code uses a short-lived key that's also stored only as a hash and dies after 5 minutes.
+If you turn on two-step sign-in, Beuk stores the secret key your authenticator app shares with it. The key is stored as it is, because the server needs it to check your codes. Your 10 recovery codes are stored only as hashes, so the codes themselves can't be read back. While you sign in, the step between your password and your code uses a short-lived key that's also stored only as a hash. It's deleted as soon as your code is accepted, after 5 wrong codes, or when you reset or change your password or sign out everywhere. Otherwise it stops working after 5 minutes and is deleted within the hour after that.
 
 When the server can send email, Beuk sends you security emails: when your account is signed in to from a device label none of your other sign-ins has, when two-step sign-in is turned on or off, when a recovery code is used, and when new recovery codes are made. Each one says what happened and when, and nothing else. They're account emails, so they can't be turned off.
 
@@ -90,7 +90,7 @@ The server makes a backup of its data every {{backuphours}} hours, so a broken d
 [[if noschedule]]
 The operator makes backups of the server's data by hand, so a broken disk doesn't lose your books.
 [[end]]
-A backup includes accounts (with password hashes, two-step keys, hashed recovery codes and the hashes of sign-in steps still waiting for a code), books, exports, authorship stamps, share copies and comments, and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
+A backup includes accounts (with password hashes, two-step keys, hashed recovery codes and the hashes of recent sign-in steps not yet deleted), books, exports, authorship stamps, share copies and comments, and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
 [[if offsite]]
 An encrypted copy of each backup also goes to a private storage bucket with Backblaze B2. It's encrypted before it leaves the server, and only the operator holds the key. Copies are kept on a rolling schedule: one a day for {{keepdaily}} days, one a week for {{keepweekly}} weeks, and one a month for {{keepmonthly}} months. So a deleted item can survive in these copies for up to about {{keepmonthly}} months.
 [[end]]

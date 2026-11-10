@@ -191,6 +191,23 @@ describe('the code step (BEUK:twostep)', () => {
     expect((cloudFacts.user as Rec).email).toBe(a.email);
   }, 30_000);
 
+  it('final review M5: a double Enter (or click) in the code step sends the code once; the step stays on a wrong code', async () => {
+    const a = await twoStepAccount('double');
+    const b = await signInDialog();
+    await password(a.email);
+    const good = totpCode(a.secret, nextStep());
+    $('authCode').value = good === '000000' ? '111111' : '000000';
+    // two presses before the first answer arrives
+    await Promise.all([cm.api.cloudAuthSubmit(), cm.api.cloudAuthSubmit()]);
+    expect(b.requests.filter((r) => r.path === '/api/auth/login/code').length).toBe(1);
+    inCodeStep();
+    expect(document.getElementById('authError')!.textContent).toBe(t('auth.codeWrong'));
+    // the button is free again once the answer is in: the right code then signs in
+    await code(good);
+    expect(b.requests.filter((r) => r.path === '/api/auth/login/code').length).toBe(2);
+    expect((cloudFacts.user as Rec).email).toBe(a.email);
+  }, 30_000);
+
   it('an expired challenge (410): back to the password step, the address kept, "That took a little long"', async () => {
     const a = await twoStepAccount('late');
     await signInDialog();

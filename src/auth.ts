@@ -73,11 +73,16 @@ export async function destroySession(db: Db, req: Request): Promise<void> {
 
 /** Delete sessions past their expiry. requireAuth already refuses
  *  them; this only stops the table growing forever. Cheap: one indexed
- *  range delete (sessions_expires_at_idx). Returns rows removed. */
+ *  range delete (sessions_expires_at_idx). Also deletes expired two-step
+ *  sign-in challenges (sign_in_challenges_expires_at_idx), which
+ *  /login/code already refuses, so an abandoned one is gone by the next
+ *  run (index.ts: at boot, then every SESSION_PURGE_INTERVAL_MS, 1 hour
+ *  by default). Returns the sessions removed. */
 export async function purgeExpiredSessions(db: Db): Promise<number> {
   const result = await db.query<{ id: string }>(
     'delete from sessions where expires_at <= now() returning id',
   );
+  await db.query('delete from sign_in_challenges where expires_at <= now()');
   return result.rows.length;
 }
 
