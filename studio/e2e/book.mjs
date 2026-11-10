@@ -10093,6 +10093,105 @@ async function twostepChecks() {
   }
 }
 
+/* ---- opening password-protected files on import (design 2026-11-10, task 3): importlockChecks (E2E_ONLY=importlock) ----
+   The real server (serve.mjs { api: true }) with 2.0 (/next) signed in and a book on its desk, on Chromium under the
+   real CSP. The fixtures are third-party output (test/fixtures/locked/README.md); the text asserted is the text in their
+   plain inputs (plain.docx: "The Shop on the Narrow Street", "Elena's shop was the smallest on the narrow street";
+   plain.pdf: "The Harbour"), read before these checks were written.
+   - The Import button, agile-sha512.docx: the dialog names the file, a wrong password says so and empties the field,
+     the right one imports (the replace confirm answered Yes) and the book's text is on the desk.
+   - The Import button, aes-256.pdf (pdf.js, the vendored build under the CSP): the same, and the text is there.
+   - Bulk import (the shelf dialog): a plain .md, the locked docx, a second .md; Cancel on the dialog: two books land and
+     the summary says the locked file was left out as locked.
+   - The block raised no CSP violation and no uncaught page error. */
+const IL_DIR = path.join(STUDIO, 'test', 'fixtures', 'locked');
+const IL_PW = 'correct horse';
+async function ilImport(page, fixtureName) {
+  const ans = w6Answers('en');
+  await page.setInputFiles('#fileInput', path.join(IL_DIR, fixtureName));
+  await page.waitForSelector('#modalPasswordAsk.open', { timeout: 60_000 });
+  const lead = await page.$eval('#passwordAskLead', (x) => x.textContent);
+  await page.fill('#passwordAskField', 'not it');
+  await page.click('#btnPasswordAskOpen');
+  await page.waitForSelector('#passwordAskErr:not([hidden])', { timeout: 90_000 });
+  const wrong = await page.evaluate(() => ({ err: document.getElementById('passwordAskErr').textContent, field: document.getElementById('passwordAskField').value, open: document.getElementById('modalPasswordAsk').classList.contains('open') }));
+  await page.fill('#passwordAskField', IL_PW);
+  await page.click('#btnPasswordAskOpen');
+  await page.click(`button:text-is("${ans.yes}")`, { timeout: 90_000 });
+  await page.waitForSelector('#modalPasswordAsk', { state: 'detached', timeout: 60_000 });
+  return { lead, wrong };
+}
+async function importlockMain(srv) {
+  const origin = srv.origin;
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const v0 = csp.violations.length, e0 = csp.errors.length;
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await w7bNextLinked(ctx, origin, f.file, 'il');
+    const api = (p) => ctx.request.get(origin + p).then((r) => r.json());
+    // (the import report opens over the desk after an import: closed, as w6Two does, so the pill is reachable)
+    const bookText = async () => {
+      await page.evaluate(() => document.getElementById('modalImportReport')?.classList.remove('open'));
+      const b = (await exportBackup(page)).json.book;
+      return { all: JSON.stringify(b), desk: JSON.stringify({ title: b.meta?.title, sections: b.sections }) };
+    };
+
+    // 1. a locked docx through the Import button: wrong, then right
+    const d = await ilImport(page, 'agile-sha512.docx');
+    check(d.lead.includes('agile-sha512.docx'), `importlock docx: the dialog names the file ("${d.lead}")`);
+    check(d.wrong.err === "That password doesn't open this file" && d.wrong.field === '' && d.wrong.open, `importlock docx: a wrong password says "${d.wrong.err}", empties the field (${JSON.stringify(d.wrong.field)}) and keeps the dialog open (${d.wrong.open})`);
+    await page.waitForTimeout(1000);
+    const t1 = await bookText();
+    check(t1.desk.includes('smallest on the narrow street') && t1.desk.includes('The Shop on the Narrow Street') && t1.desk.includes('Bookbinder') && !t1.desk.includes('Lantern Coast'),
+      `importlock docx: the right password imports it — the desk holds "The Shop on the Narrow Street" and "Elena…smallest on the narrow street", not the Lantern Coast (${t1.desk.length} bytes of title and sections)`);
+    check(!t1.all.includes(IL_PW) && !(await page.evaluate(() => JSON.stringify(localStorage)).then((s) => s.includes(IL_PW))), 'importlock docx: the password is in neither the book nor localStorage');
+
+    // 2. aes-256.pdf with the right password
+    const p = await ilImport(page, 'aes-256.pdf');
+    check(p.lead.includes('aes-256.pdf') && p.wrong.err === "That password doesn't open this file" && p.wrong.field === '', `importlock pdf: the dialog names aes-256.pdf; a wrong password says "${p.wrong.err}" and empties the field`);
+    await page.waitForTimeout(1000);
+    const t2 = await bookText();
+    check(t2.desk.includes('The Harbour') && !t2.desk.includes('smallest on the narrow street'), `importlock pdf: the right password imports it — "The Harbour" is on the desk, the Word book gone (${t2.desk.length} bytes of title and sections)`);
+
+    // 3. bulk import: a plain .md, the locked docx, another .md; Cancel on the dialog
+    const before = (await api('/api/manuscripts')).manuscripts.length;
+    await page.click('#btnAccount');
+    await page.waitForSelector('#modalShelf.open');
+    await page.evaluate(() => { document.getElementById('bulkSummary').style.display = 'none'; });
+    await page.setInputFiles('#bulkFileInput', [
+      { name: 'first.md', mimeType: 'text/markdown', buffer: Buffer.from('# The First\n\nIt began with a lighthouse and a long walk home.\n') },
+      { name: 'agile-sha512.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: readFileSync(path.join(IL_DIR, 'agile-sha512.docx')) },
+      { name: 'second.md', mimeType: 'text/markdown', buffer: Buffer.from('# The Second\n\nThe tide came in twice that evening, and nobody minded.\n') },
+    ]);
+    await page.waitForSelector('#modalPasswordAsk.open', { timeout: 60_000 });
+    const lead3 = await page.$eval('#passwordAskLead', (x) => x.textContent);
+    await page.click('#btnPasswordAskCancel');
+    await page.waitForFunction(() => document.getElementById('bulkSummary').style.display === '', null, { timeout: 120_000 });
+    await page.waitForTimeout(500);
+    const sum = await page.$eval('#bulkSummary', (x) => x.textContent);
+    const after = (await api('/api/manuscripts')).manuscripts;
+    check(lead3.includes('agile-sha512.docx') && /Added 2 books?/.test(sum) && sum.includes("agile-sha512.docx — Left out — it's locked and no password was given") && after.length === before + 2,
+      `importlock bulk: Cancel on the dialog — two books land (shelf ${before} -> ${after.length}) and the summary reads "${sum.slice(0, 220)}"`);
+    check(!/unreadable|damaged/i.test(sum), 'importlock bulk: the locked file is not reported as unreadable or damaged');
+
+    await harvestCsp(page);
+    check(csp.violations.length === v0 && csp.errors.length === e0, `importlock: no CSP violation and no uncaught page error during the block (${csp.violations.length - v0} violations, ${csp.errors.length - e0} errors${csp.errors.length > e0 ? ': ' + csp.errors.slice(e0, e0 + 3).join(' | ') : ''})`);
+  } finally {
+    await ctx.close();
+  }
+}
+async function importlockChecks() {
+  const stripe = await w7aFakeStripe();
+  const srv = await startServer({ repo: REPO, api: true, apiConfig: { stripeWebhookSecret: 'whsec_test_placeholder', stripeSecretKey: 'sk_test_placeholder', stripePriceId: 'price_fixture', stripeApiBase: stripe.base } });
+  note(`importlock: the real server on ${srv.origin} (PGlite), billing in test mode against a fake Stripe on ${stripe.base}`);
+  try {
+    await importlockMain(srv);
+  } finally {
+    await srv.stop().catch(() => undefined);
+    await stripe.close();
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -10130,6 +10229,7 @@ try {
   if (run('namedlinks')) await namedLinksChecks();
   if (run('authorship')) await authorshipChecks();
   if (run('twostep')) await twostepChecks();
+  if (run('importlock')) await importlockChecks();
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
