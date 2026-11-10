@@ -220,6 +220,7 @@ describe('a locked Word file through the Import button (task 2)', { timeout: 180
     await asked();
     expect($('modalPasswordAsk').textContent).toContain('agile-sha512.docx');
     expect($('passwordAskH').textContent).toBe(t('importLock.title'));
+    expect($('passwordAskH').querySelector('span')!.hasAttribute('data-i18n')).toBe(false); // (its lead names the file: the words come in whole)
     expect($('passwordAskLead').textContent).toBe(t('importLock.lead', { name: 'agile-sha512.docx' }));
     expect($('btnPasswordAskOpen').textContent).toBe(t('backup.pwOpen'));
     expect($('btnPasswordAskCancel').textContent).toBe(t('backup.pwCancel'));
@@ -547,6 +548,7 @@ describe('the one password dialog (passwordAsk)', { timeout: 60_000 }, () => {
     const p = c.api.backupPasswordAsk(envelope ?? JSON.parse(env));
     await waitFor(() => expect(isOpen('modalBackupPw')).toBe(true));
     expect($('backupPwH').textContent).toBe(t('backup.pwTitle'));
+    expect($('backupPwH').querySelector('span')!.getAttribute('data-i18n')).toBe('backup.pwTitle'); // premium 3's title follows a language change
     expect(document.getElementById('backupPwLead')).toBeNull();
     expect($('modalBackupPw').querySelectorAll('p.m-sub').length).toBe(0);
     expect(inp('backupPw').name).toBe('lockcopy-backup-open-pw');

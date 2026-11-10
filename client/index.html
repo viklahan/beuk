@@ -52350,6 +52350,197 @@
           if (h) h.fill(0);
         }
       }
+      /* ---- the controls (task 3): one fieldset per download point — a box, and, shown when it is ticked, the password
+         twice and the note. The Word file (#lockDocx) and the manuscript (#lockMs) have theirs beside their button; the
+         print-ready PDF's opens in a small dialog of its own (#modalLockPdf) from a separate link ([data-pr-locked]), so
+         "Download print-ready PDF" keeps its one meaning. The fields are read once and emptied at once, whatever comes
+         next: the password lives only in the running download, never in the page, a store, a request or a message.
+         Day 22 (the plan's access "paused") hides every lock control; the unlocked downloads never change. The plan's
+         access is kept on the page itself (data-plan-access on <html>), where every part of the studio that draws a
+         lock control reads the same fact (2.0 runs the plan line, the export and the print panel in separate modules). */
+      const LOCK_SCOPES = { docx: "lockDocx", ms: "lockMs", pdf: "lockPdf", backup: "lockBackup" /* BEUK:authorship — the backup's lock, in the save popover */ };
+      function lockEls(scope) {
+        const id = LOCK_SCOPES[scope];
+        return { box: $(id), on: $(id + "On"), fields: $(id + "Fields"), pw: $(id + "Pw"), pw2: $(id + "Pw2"), err: $(id + "Err") };
+      }
+      /** The plan line's plan, as far as the lock needs it: billingPlanRender hands it every plan it draws. */
+      function lockPlanNote(p) {
+        const access = p && p.billingOn ? String(p.access || "") : "";
+        if (access) document.documentElement.setAttribute("data-plan-access", access);
+        else document.documentElement.removeAttribute("data-plan-access");
+        lockFieldsRender();
+      }
+      /** The access GET /api/auth/me reports at boot (`me.access.state`: the server's own word, mirrored, never judged here),
+       *  so day 22 hides the lock from the start; signed out (null) or no access in the answer (billing off): no plan known.
+       *  A plan drawn later (billingPlanRender → lockPlanNote) overrides it. */
+      function lockAccessNote(me) {
+        const access = me && me.user && me.access && typeof me.access.state === "string" ? me.access.state : "";
+        if (access) document.documentElement.setAttribute("data-plan-access", access);
+        else document.documentElement.removeAttribute("data-plan-access");
+        lockFieldsRender();
+      }
+      /** After a sign-in or sign-up in this tab (whose answer carries no access): GET /api/auth/me again, mirrored as at boot.
+       *  No answer, or a server error: nothing is changed (it says nothing about the plan). */
+      async function lockAccessRefresh() {
+        const me = await apiFetch("/api/auth/me", { auth: false });
+        if (me && me.user && cloud.user && me.user.id === cloud.user.id) lockAccessNote(me);
+      }
+      /** False only when the last plan drawn has access "paused" (day 22). No plan known (signed out, billing off): true. */
+      function lockCopyAllowed() {
+        return document.documentElement.getAttribute("data-plan-access") !== "paused";
+      }
+      /** Shows or hides every lock control by the plan; a hidden control keeps nothing typed. */
+      function lockFieldsRender() {
+        const ok = lockCopyAllowed();
+        for (const scope of ["docx", "ms", "backup"]) { /* BEUK:authorship — the backup's lock hides on day 22 too */
+          const e = lockEls(scope);
+          if (!e.box) continue;
+          e.box.hidden = !ok;
+          if (!ok) lockFieldsClear(scope);
+        }
+        document.querySelectorAll("[data-pr-locked]").forEach((a) => { a.hidden = !ok; });
+        if (!ok) lockPdfClose();
+      }
+      /** { password } when the lock is on and both fields agree; { off: true } when it is off (or not allowed);
+       *  { error } with the message's key otherwise. It reads and never empties: lockFieldsClear does. */
+      function lockFieldsRead(scope) {
+        const e = lockEls(scope);
+        if (!lockCopyAllowed() || !e.on || !e.on.checked || !e.pw || !e.pw2) return { off: true };
+        const pw = e.pw.value, pw2 = e.pw2.value;
+        /* the PDF's password is SASLprepped: one that maps to nothing would lock the file with an empty password */
+        if (scope === "pdf" && !lockSaslPrep(pw) && !lockSaslPrep(pw2)) return { error: "lock.pdfEmpty" };
+        if (!pw && !pw2) return { error: "lock.empty" };
+        if (pw !== pw2) return { error: "lock.mismatch" };
+        return { password: pw };
+      }
+      /** Both fields emptied; the box keeps its state. */
+      function lockFieldsClear(scope) {
+        const e = lockEls(scope);
+        if (e.pw) e.pw.value = "";
+        if (e.pw2) e.pw2.value = "";
+      }
+      /** The fieldset's one inline message (a key), or none. */
+      function lockFieldsSay(scope, key) {
+        const e = lockEls(scope);
+        if (!e.err) return;
+        e.err.textContent = key ? t(key) : "";
+        e.err.hidden = !key;
+      }
+      /** The fields, read once and emptied at once; a refusal said inline. */
+      function lockFieldsTake(scope) {
+        const got = lockFieldsRead(scope);
+        lockFieldsClear(scope);
+        lockFieldsSay(scope, got.error || "");
+        return got;
+      }
+      function lockFieldsWire(scope) {
+        const e = lockEls(scope);
+        if (!e.on || e.on.getAttribute("data-lock-wired")) return;
+        e.on.setAttribute("data-lock-wired", "1");
+        const sync = () => {
+          if (e.fields) e.fields.hidden = !e.on.checked;
+          if (!e.on.checked) { lockFieldsClear(scope); lockFieldsSay(scope, ""); }
+        };
+        e.on.addEventListener("change", sync);
+        for (const f of [e.pw, e.pw2]) if (f) f.addEventListener("input", () => lockFieldsSay(scope, ""));
+        sync();
+      }
+      /** A frame to paint the busy state before the lock's long synchronous spin (a hidden tab paints no frame: the
+       *  timer stands in). */
+      function lockYield() {
+        return new Promise((resolve) => {
+          let done = false;
+          const go = () => { if (!done) { done = true; resolve(); } };
+          if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => setTimeout(go, 0));
+          setTimeout(go, 50);
+        });
+      }
+      /** The lock's error as the writer reads it: its own fixed words, never the password. */
+      function lockFailedText(err, password) {
+        const msg = String((err && err.message) || err || "");
+        return t("lock.failed", { error: !msg || (password && msg.indexOf(password) >= 0) ? "unknown error" : msg });
+      }
+      /** The Word bytes of `blob`, locked, downloaded as `name`. */
+      async function lockDocxDownload(blob, password, name) {
+        await lockYield();
+        const out = await lockDocxBytes(new Uint8Array(await blob.arrayBuffer()), password);
+        downloadBlob(new Blob([out], { type: blob.type || "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }), name);
+        toast(t("lock.done"), "file-type-2");
+      }
+      /* ---- the print-ready PDF's locked copy: the same fieldset, in a small dialog on the dialog stack ---- */
+      function lockPdfDialog() {
+        let m = $("modalLockPdf");
+        if (m) return m;
+        m = document.createElement("div");
+        m.className = "modal-back"; m.id = "modalLockPdf"; m.style.zIndex = "79";
+        const field = (key, n) => '<div><label class="field-lab" for="lockPdfPw' + n + '" data-i18n="' + key + '">' + esc(t(key)) + '</label><input class="txt-input" id="lockPdfPw' + n +
+          '" name="lockcopy-pdf-pw' + n + '" type="password" autocomplete="new-password" /></div>';
+        m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="lockPdfH" style="max-width:440px;">' +
+          '<h2 id="lockPdfH"><i data-lucide="download"></i><span data-i18n="lock.pdf">' + esc(t("lock.pdf")) + "</span></h2>" +
+          '<fieldset class="lock-fs" id="lockPdf" style="border:0;padding:0;margin:10px 0 0;min-width:0;">' +
+          '<label class="acx-check"><input type="checkbox" id="lockPdfOn" name="lockcopy-pdf-on" checked disabled /> <span data-i18n="lock.toggle">' + esc(t("lock.toggle")) + "</span></label>" +
+          '<div id="lockPdfFields">' + field("lock.pw", "") + field("lock.pw2", "2") +
+          '<p class="acx-note" data-i18n="lock.note">' + esc(t("lock.note")) + "</p>" +
+          '<p class="acx-note acx-warn" id="lockPdfErr" role="alert" hidden></p></div></fieldset>' +
+          '<div class="modal-actions"><button class="tb-btn" id="btnLockPdfClose" type="button" data-i18n="exp.close">' + esc(t("exp.close")) + "</button>" +
+          '<button class="tb-btn primary" id="btnLockPdfGo" type="button" data-i18n="lock.pdf">' + esc(t("lock.pdf")) + "</button></div></div>";
+        document.body.appendChild(m);
+        const go = () => lockedPdfDownload(m.getAttribute("data-export") || "", m.getAttribute("data-base") || "");
+        $("btnLockPdfClose").addEventListener("click", lockPdfClose);
+        $("btnLockPdfGo").addEventListener("click", go);
+        m.addEventListener("click", (e) => { if (e.target === m) lockPdfClose(); });
+        /* Escape closes this dialog only (and empties it), never the export modal under it */
+        m.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); lockPdfClose(); }
+          else if (e.key === "Enter" && e.target && e.target.type === "password") { e.preventDefault(); go(); }
+        });
+        for (const n of ["", "2"]) $("lockPdfPw" + n).addEventListener("input", () => lockFieldsSay("pdf", ""));
+        icons();
+        return m;
+      }
+      function lockPdfOpen(exportId, baseName) {
+        if (!exportId || !lockCopyAllowed()) return;
+        const m = lockPdfDialog();
+        m.setAttribute("data-export", exportId);
+        m.setAttribute("data-base", baseName || "");
+        lockFieldsClear("pdf");
+        lockFieldsSay("pdf", "");
+        m.classList.add("open");
+        try { $("lockPdfPw").focus({ preventScroll: true }); } catch (e) {}
+      }
+      function lockPdfClose() {
+        const m = $("modalLockPdf");
+        if (!m) return;
+        m.classList.remove("open");
+        lockFieldsClear("pdf");
+        lockFieldsSay("pdf", "");
+      }
+      /** The stored print-ready PDF (GET /api/exports/<id>/download, this site's cookie), locked here, downloaded as
+       *  <base>-locked.pdf: the base is the stored file's own name when the server gives it, else `baseName`. */
+      async function lockedPdfDownload(exportId, baseName) {
+        const btn = $("btnLockPdfGo");
+        if (!btn || btn.disabled) return;
+        const lock = lockFieldsTake("pdf");
+        if (!lock.password) return;
+        btn.disabled = true; btn.textContent = t("lock.working");
+        try {
+          await lockYield();
+          const r = await fetch("/api/exports/" + encodeURIComponent(exportId) + "/download", { credentials: "same-origin" });
+          if (!r.ok) throw new Error("the server answered " + r.status);
+          const cd = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") || "");
+          const base = (cd ? cd[1].replace(/[\\/]/g, "_").replace(/\.pdf$/i, "") : "") || baseName || "beuk-export";
+          const out = await lockPdfBytes(new Uint8Array(await r.arrayBuffer()), lock.password);
+          downloadBlob(new Blob([out], { type: "application/pdf" }), base + "-locked.pdf");
+          toast(t("lock.done"), "download");
+          lockPdfClose();
+        } catch (e) {
+          toast(lockFailedText(e, lock.password), "alert-triangle");
+        } finally {
+          lockFieldsClear("pdf"); /* nothing typed during the run survives it */
+          btn.disabled = false; btn.textContent = t("lock.pdf");
+        }
+      }
+      /* ==== /BEUK:lockcopy ==== */
       /* ==== BEUK:importlock ==== Opening password-protected files on import (design 2026-11-10), task 1: a locked Word
          file is a compound file (MS-CFB) holding EncryptionInfo and EncryptedPackage, not a zip.
          cfbOpen(bytes) → { names, has, size, read(name, max) }: the root storage's directory, read by a reader written
@@ -52783,197 +52974,6 @@
         }
       }
       /* ==== /BEUK:importlock ==== */
-      /* ---- the controls (task 3): one fieldset per download point — a box, and, shown when it is ticked, the password
-         twice and the note. The Word file (#lockDocx) and the manuscript (#lockMs) have theirs beside their button; the
-         print-ready PDF's opens in a small dialog of its own (#modalLockPdf) from a separate link ([data-pr-locked]), so
-         "Download print-ready PDF" keeps its one meaning. The fields are read once and emptied at once, whatever comes
-         next: the password lives only in the running download, never in the page, a store, a request or a message.
-         Day 22 (the plan's access "paused") hides every lock control; the unlocked downloads never change. The plan's
-         access is kept on the page itself (data-plan-access on <html>), where every part of the studio that draws a
-         lock control reads the same fact (2.0 runs the plan line, the export and the print panel in separate modules). */
-      const LOCK_SCOPES = { docx: "lockDocx", ms: "lockMs", pdf: "lockPdf", backup: "lockBackup" /* BEUK:authorship — the backup's lock, in the save popover */ };
-      function lockEls(scope) {
-        const id = LOCK_SCOPES[scope];
-        return { box: $(id), on: $(id + "On"), fields: $(id + "Fields"), pw: $(id + "Pw"), pw2: $(id + "Pw2"), err: $(id + "Err") };
-      }
-      /** The plan line's plan, as far as the lock needs it: billingPlanRender hands it every plan it draws. */
-      function lockPlanNote(p) {
-        const access = p && p.billingOn ? String(p.access || "") : "";
-        if (access) document.documentElement.setAttribute("data-plan-access", access);
-        else document.documentElement.removeAttribute("data-plan-access");
-        lockFieldsRender();
-      }
-      /** The access GET /api/auth/me reports at boot (`me.access.state`: the server's own word, mirrored, never judged here),
-       *  so day 22 hides the lock from the start; signed out (null) or no access in the answer (billing off): no plan known.
-       *  A plan drawn later (billingPlanRender → lockPlanNote) overrides it. */
-      function lockAccessNote(me) {
-        const access = me && me.user && me.access && typeof me.access.state === "string" ? me.access.state : "";
-        if (access) document.documentElement.setAttribute("data-plan-access", access);
-        else document.documentElement.removeAttribute("data-plan-access");
-        lockFieldsRender();
-      }
-      /** After a sign-in or sign-up in this tab (whose answer carries no access): GET /api/auth/me again, mirrored as at boot.
-       *  No answer, or a server error: nothing is changed (it says nothing about the plan). */
-      async function lockAccessRefresh() {
-        const me = await apiFetch("/api/auth/me", { auth: false });
-        if (me && me.user && cloud.user && me.user.id === cloud.user.id) lockAccessNote(me);
-      }
-      /** False only when the last plan drawn has access "paused" (day 22). No plan known (signed out, billing off): true. */
-      function lockCopyAllowed() {
-        return document.documentElement.getAttribute("data-plan-access") !== "paused";
-      }
-      /** Shows or hides every lock control by the plan; a hidden control keeps nothing typed. */
-      function lockFieldsRender() {
-        const ok = lockCopyAllowed();
-        for (const scope of ["docx", "ms", "backup"]) { /* BEUK:authorship — the backup's lock hides on day 22 too */
-          const e = lockEls(scope);
-          if (!e.box) continue;
-          e.box.hidden = !ok;
-          if (!ok) lockFieldsClear(scope);
-        }
-        document.querySelectorAll("[data-pr-locked]").forEach((a) => { a.hidden = !ok; });
-        if (!ok) lockPdfClose();
-      }
-      /** { password } when the lock is on and both fields agree; { off: true } when it is off (or not allowed);
-       *  { error } with the message's key otherwise. It reads and never empties: lockFieldsClear does. */
-      function lockFieldsRead(scope) {
-        const e = lockEls(scope);
-        if (!lockCopyAllowed() || !e.on || !e.on.checked || !e.pw || !e.pw2) return { off: true };
-        const pw = e.pw.value, pw2 = e.pw2.value;
-        /* the PDF's password is SASLprepped: one that maps to nothing would lock the file with an empty password */
-        if (scope === "pdf" && !lockSaslPrep(pw) && !lockSaslPrep(pw2)) return { error: "lock.pdfEmpty" };
-        if (!pw && !pw2) return { error: "lock.empty" };
-        if (pw !== pw2) return { error: "lock.mismatch" };
-        return { password: pw };
-      }
-      /** Both fields emptied; the box keeps its state. */
-      function lockFieldsClear(scope) {
-        const e = lockEls(scope);
-        if (e.pw) e.pw.value = "";
-        if (e.pw2) e.pw2.value = "";
-      }
-      /** The fieldset's one inline message (a key), or none. */
-      function lockFieldsSay(scope, key) {
-        const e = lockEls(scope);
-        if (!e.err) return;
-        e.err.textContent = key ? t(key) : "";
-        e.err.hidden = !key;
-      }
-      /** The fields, read once and emptied at once; a refusal said inline. */
-      function lockFieldsTake(scope) {
-        const got = lockFieldsRead(scope);
-        lockFieldsClear(scope);
-        lockFieldsSay(scope, got.error || "");
-        return got;
-      }
-      function lockFieldsWire(scope) {
-        const e = lockEls(scope);
-        if (!e.on || e.on.getAttribute("data-lock-wired")) return;
-        e.on.setAttribute("data-lock-wired", "1");
-        const sync = () => {
-          if (e.fields) e.fields.hidden = !e.on.checked;
-          if (!e.on.checked) { lockFieldsClear(scope); lockFieldsSay(scope, ""); }
-        };
-        e.on.addEventListener("change", sync);
-        for (const f of [e.pw, e.pw2]) if (f) f.addEventListener("input", () => lockFieldsSay(scope, ""));
-        sync();
-      }
-      /** A frame to paint the busy state before the lock's long synchronous spin (a hidden tab paints no frame: the
-       *  timer stands in). */
-      function lockYield() {
-        return new Promise((resolve) => {
-          let done = false;
-          const go = () => { if (!done) { done = true; resolve(); } };
-          if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => setTimeout(go, 0));
-          setTimeout(go, 50);
-        });
-      }
-      /** The lock's error as the writer reads it: its own fixed words, never the password. */
-      function lockFailedText(err, password) {
-        const msg = String((err && err.message) || err || "");
-        return t("lock.failed", { error: !msg || (password && msg.indexOf(password) >= 0) ? "unknown error" : msg });
-      }
-      /** The Word bytes of `blob`, locked, downloaded as `name`. */
-      async function lockDocxDownload(blob, password, name) {
-        await lockYield();
-        const out = await lockDocxBytes(new Uint8Array(await blob.arrayBuffer()), password);
-        downloadBlob(new Blob([out], { type: blob.type || "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }), name);
-        toast(t("lock.done"), "file-type-2");
-      }
-      /* ---- the print-ready PDF's locked copy: the same fieldset, in a small dialog on the dialog stack ---- */
-      function lockPdfDialog() {
-        let m = $("modalLockPdf");
-        if (m) return m;
-        m = document.createElement("div");
-        m.className = "modal-back"; m.id = "modalLockPdf"; m.style.zIndex = "79";
-        const field = (key, n) => '<div><label class="field-lab" for="lockPdfPw' + n + '" data-i18n="' + key + '">' + esc(t(key)) + '</label><input class="txt-input" id="lockPdfPw' + n +
-          '" name="lockcopy-pdf-pw' + n + '" type="password" autocomplete="new-password" /></div>';
-        m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="lockPdfH" style="max-width:440px;">' +
-          '<h2 id="lockPdfH"><i data-lucide="download"></i><span data-i18n="lock.pdf">' + esc(t("lock.pdf")) + "</span></h2>" +
-          '<fieldset class="lock-fs" id="lockPdf" style="border:0;padding:0;margin:10px 0 0;min-width:0;">' +
-          '<label class="acx-check"><input type="checkbox" id="lockPdfOn" name="lockcopy-pdf-on" checked disabled /> <span data-i18n="lock.toggle">' + esc(t("lock.toggle")) + "</span></label>" +
-          '<div id="lockPdfFields">' + field("lock.pw", "") + field("lock.pw2", "2") +
-          '<p class="acx-note" data-i18n="lock.note">' + esc(t("lock.note")) + "</p>" +
-          '<p class="acx-note acx-warn" id="lockPdfErr" role="alert" hidden></p></div></fieldset>' +
-          '<div class="modal-actions"><button class="tb-btn" id="btnLockPdfClose" type="button" data-i18n="exp.close">' + esc(t("exp.close")) + "</button>" +
-          '<button class="tb-btn primary" id="btnLockPdfGo" type="button" data-i18n="lock.pdf">' + esc(t("lock.pdf")) + "</button></div></div>";
-        document.body.appendChild(m);
-        const go = () => lockedPdfDownload(m.getAttribute("data-export") || "", m.getAttribute("data-base") || "");
-        $("btnLockPdfClose").addEventListener("click", lockPdfClose);
-        $("btnLockPdfGo").addEventListener("click", go);
-        m.addEventListener("click", (e) => { if (e.target === m) lockPdfClose(); });
-        /* Escape closes this dialog only (and empties it), never the export modal under it */
-        m.addEventListener("keydown", (e) => {
-          if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); lockPdfClose(); }
-          else if (e.key === "Enter" && e.target && e.target.type === "password") { e.preventDefault(); go(); }
-        });
-        for (const n of ["", "2"]) $("lockPdfPw" + n).addEventListener("input", () => lockFieldsSay("pdf", ""));
-        icons();
-        return m;
-      }
-      function lockPdfOpen(exportId, baseName) {
-        if (!exportId || !lockCopyAllowed()) return;
-        const m = lockPdfDialog();
-        m.setAttribute("data-export", exportId);
-        m.setAttribute("data-base", baseName || "");
-        lockFieldsClear("pdf");
-        lockFieldsSay("pdf", "");
-        m.classList.add("open");
-        try { $("lockPdfPw").focus({ preventScroll: true }); } catch (e) {}
-      }
-      function lockPdfClose() {
-        const m = $("modalLockPdf");
-        if (!m) return;
-        m.classList.remove("open");
-        lockFieldsClear("pdf");
-        lockFieldsSay("pdf", "");
-      }
-      /** The stored print-ready PDF (GET /api/exports/<id>/download, this site's cookie), locked here, downloaded as
-       *  <base>-locked.pdf: the base is the stored file's own name when the server gives it, else `baseName`. */
-      async function lockedPdfDownload(exportId, baseName) {
-        const btn = $("btnLockPdfGo");
-        if (!btn || btn.disabled) return;
-        const lock = lockFieldsTake("pdf");
-        if (!lock.password) return;
-        btn.disabled = true; btn.textContent = t("lock.working");
-        try {
-          await lockYield();
-          const r = await fetch("/api/exports/" + encodeURIComponent(exportId) + "/download", { credentials: "same-origin" });
-          if (!r.ok) throw new Error("the server answered " + r.status);
-          const cd = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") || "");
-          const base = (cd ? cd[1].replace(/[\\/]/g, "_").replace(/\.pdf$/i, "") : "") || baseName || "beuk-export";
-          const out = await lockPdfBytes(new Uint8Array(await r.arrayBuffer()), lock.password);
-          downloadBlob(new Blob([out], { type: "application/pdf" }), base + "-locked.pdf");
-          toast(t("lock.done"), "download");
-          lockPdfClose();
-        } catch (e) {
-          toast(lockFailedText(e, lock.password), "alert-triangle");
-        } finally {
-          lockFieldsClear("pdf"); /* nothing typed during the run survives it */
-          btn.disabled = false; btn.textContent = t("lock.pdf");
-        }
-      }
-      /* ==== /BEUK:lockcopy ==== */
       /* BEUK:lockcopy — the locked review copy's words (task 3). The 12 translations are drafts for V's sign-off. */
       Object.assign(UI_STRINGS.en, { "lock.toggle": "Lock with a password", "lock.pw": "Password", "lock.pw2": "Type it again", "lock.note": "Your reader needs this password to open the file. Send it separately, by text or a call, not in the same email.", "lock.mismatch": "The two passwords don't match.", "lock.empty": "Type a password, or turn the lock off.", "lock.pdf": "Download locked copy", "lock.working": "Locking…", "lock.failed": "The copy could not be locked: {error}", "lock.done": "Locked copy downloaded." });
       Object.assign(UI_STRINGS.ar, { "lock.toggle": "القفل بكلمة مرور", "lock.pw": "كلمة المرور", "lock.pw2": "اكتبها مرة أخرى", "lock.note": "يحتاج قارئك إلى كلمة المرور هذه لفتح الملف. أرسلها على حدة، برسالة نصية أو مكالمة، لا في البريد الإلكتروني نفسه.", "lock.mismatch": "كلمتا المرور غير متطابقتين.", "lock.empty": "اكتب كلمة مرور، أو أوقف القفل.", "lock.pdf": "تنزيل نسخة مقفلة", "lock.working": "جارٍ القفل…", "lock.failed": "تعذّر قفل النسخة: {error}", "lock.done": "تم تنزيل النسخة المقفلة." });
@@ -71833,6 +71833,7 @@
          error closes it, and the ask rejects with that error (a damaged file says so once, never loops). The password is
          read from the field once and the field emptied at once; it is handed to tryOpen and kept nowhere. While tryOpen
          runs, Open is disabled (and aria-busy); Cancel stays usable and ends the ask at once, the late answer dropped.
+         `titleKey`, when given, is the title's i18n key (data-i18n: it follows a language change, as the backup's did).
          `lead` is a paragraph under the title (none when empty). `ids` names the dialog's elements: the backup keeps
          premium 3's (BACKUP_PW_IDS), so its look, words and ids are as they were */
       const PASSWORD_ASK_IDS = { modal: "modalPasswordAsk", head: "passwordAskH", lead: "passwordAskLead", field: "passwordAskField", err: "passwordAskErr", open: "btnPasswordAskOpen", cancel: "btnPasswordAskCancel", name: "importlock-open-pw" };
@@ -71846,7 +71847,7 @@
         const m = document.createElement("div");
         m.className = "modal-back"; m.id = id.modal; m.style.zIndex = "80";
         m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="' + id.head + '" style="max-width:440px;">' +
-          '<h2 id="' + id.head + '"><i data-lucide="lock"></i><span>' + esc(o.title || "") + "</span></h2>" +
+          '<h2 id="' + id.head + '"><i data-lucide="lock"></i><span' + (o.titleKey ? ' data-i18n="' + esc(o.titleKey) + '"' : "") + ">" + esc(o.title || "") + "</span></h2>" +
           (o.lead ? '<p class="m-sub" id="' + id.lead + '">' + esc(o.lead) + "</p>" : "") +
           '<div><label class="field-lab" for="' + id.field + '" data-i18n="lock.pw">' + esc(t("lock.pw")) + '</label><input class="txt-input" id="' + id.field + '" name="' + id.name + '" type="password" autocomplete="off" /></div>' +
           '<p class="acx-note acx-warn" id="' + id.err + '" role="alert" hidden></p>' +
@@ -71903,7 +71904,7 @@
          to open the envelope reads as a wrong password, as it always did */
       function backupPasswordAsk(envelope) {
         return passwordAsk({
-          title: t("backup.pwTitle"), lead: "", wrong: t("backup.pwWrong"),
+          title: t("backup.pwTitle"), titleKey: "backup.pwTitle", lead: "", wrong: t("backup.pwWrong"),
           tryOpen: (pw) => backupUnlock(envelope, pw).catch(() => { throw importLockError("wrong-password"); })
         }, BACKUP_PW_IDS);
       }

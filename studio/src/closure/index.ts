@@ -767,7 +767,7 @@ export type ClosureApi = {
   lockSha512Spin: (h0: Uint8Array, rounds: number) => Uint8Array;
   // opening locked files on import (task 1): the fixtures' plain PDF and the tests' compound-file writer
   pdfFixtureBytes: (scan: boolean) => Uint8Array;
-  lockCfb: (dirs: { name: string; type: number; color: number; left: number; right: number; child: number; data: Uint8Array }[]) => Uint8Array;
+  lockCfb: (dirs: { name: string; type: number; color: number; 'left': number; 'right': number; child: number; data: Uint8Array }[]) => Uint8Array; // (MS-CFB sibling ids, 1.0's own names: quoted, not layout)
   // the reader and the decryptor (BEUK:importlock): each failure an Error with .code "damaged", "wrong-password" or "unsupported"
   cfbStreams: (bytes: Uint8Array, names?: string[]) => Map<string, Uint8Array>;
   officeLockKind: (bytes: Uint8Array) => null | 'agile' | 'unsupported';
@@ -776,7 +776,7 @@ export type ClosureApi = {
   // task 2: the one password dialog — null on Cancel; a thrown .code "wrong-password" keeps it open, any other error
   // closes it and rejects; `ids` names its elements (the backup keeps premium 3's)
   passwordAsk: <T>(
-    o: { title: string; lead: string; wrong: string; tryOpen: (password: string) => Promise<T> },
+    o: { title: string; titleKey?: string; lead: string; wrong: string; tryOpen: (password: string) => Promise<T> },
     ids?: Partial<Record<'modal' | 'head' | 'lead' | 'field' | 'err' | 'open' | 'cancel' | 'name', string>>,
   ) => Promise<T | null>;
   // locked backups and the authorship record (task 2): 1.0's BEUK:authorship
