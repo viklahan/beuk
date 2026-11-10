@@ -16,6 +16,7 @@ import {
 import { initStreakState } from '../streak.js';
 import { accessSummary, accountAccess, type AccessDeps } from '../access.js';
 import { twoStepOn, twoStepStatus, verifySecondFactor } from '../twostep/store.js';
+import { deviceLabel } from '../account/device.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -108,7 +109,7 @@ export function authRoutes(
   };
   /** The session, its cookie and the sign-in hook: one path for both ways in. */
   const signIn = async (req: Request, res: Response, user: { id: string; email: string }) => {
-    const session = await createSession(db, user.id, config.sessionTtlDays);
+    const session = await createSession(db, user.id, config.sessionTtlDays, deviceLabel(req.get('user-agent') ?? ''));
     setSessionCookie(res, session.token, session.expiresAt, config.cookieSecure);
     res.json({ user: { id: user.id, email: user.email } });
     if (hooks.onSignedIn) runHook('onSignedIn', () => hooks.onSignedIn!({ id: user.id, email: user.email }, req, session.token));
@@ -154,7 +155,8 @@ export function authRoutes(
       }
       const user = created.rows[0];
       await initStreakState(db, user.id);
-      const session = await createSession(db, user.id, config.sessionTtlDays);
+      // Labelled like every session; sign-up sends the welcome, not a new-sign-in email.
+      const session = await createSession(db, user.id, config.sessionTtlDays, deviceLabel(req.get('user-agent') ?? ''));
       setSessionCookie(res, session.token, session.expiresAt, config.cookieSecure);
       const extra = hooks.afterRegister?.({ id: user.id, email: user.email }) ?? {};
       return res.status(201).json({ ...extra, user: { id: user.id, email: user.email } });
@@ -270,10 +272,13 @@ export function authRoutes(
         return res.status(401).json({ error: "that code didn't work" });
       }
       const user = { id: found.user_id, email: found.email };
+      // Counted before the response, so the hook (and its email) is
+      // queued in the same tick as the response is sent.
+      const recoveryLeft = kind === 'recovery' && hooks.onRecoveryUsed ? (await twoStepStatus(db, user.id)).recoveryLeft : 0;
       await signIn(req, res, user);
       if (kind === 'recovery' && hooks.onRecoveryUsed) {
         const onRecoveryUsed = hooks.onRecoveryUsed;
-        runHook('onRecoveryUsed', async () => onRecoveryUsed(user, (await twoStepStatus(db, user.id)).recoveryLeft));
+        runHook('onRecoveryUsed', () => onRecoveryUsed(user, recoveryLeft));
       }
       return undefined;
     } catch (err) {

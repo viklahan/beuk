@@ -31,20 +31,26 @@ export function readCookie(req: Request, name: string): string | null {
   return null;
 }
 
+/** A new session for the user. `label` is the coarse device label
+ *  (deviceLabel, src/account/device.ts); last_seen_at starts at creation,
+ *  on the database clock like created_at. No IP address is ever stored. */
 export async function createSession(
   db: Db,
   userId: string,
   ttlDays: number,
+  label: string | null = null,
 ): Promise<{ token: string; expiresAt: Date }> {
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + ttlDays * 86_400_000);
-  await db.query('insert into sessions (user_id, token_hash, expires_at) values ($1, $2, $3)', [
-    userId,
-    tokenHash(token),
-    expiresAt.toISOString(),
-  ]);
+  await db.query(
+    'insert into sessions (user_id, token_hash, expires_at, label, last_seen_at) values ($1, $2, $3, $4, now())',
+    [userId, tokenHash(token), expiresAt.toISOString(), label],
+  );
   return { token, expiresAt };
 }
+
+/** requireAuth refreshes sessions.last_seen_at at most this often per session. */
+export const LAST_SEEN_REFRESH_MINUTES = 10;
 
 export function setSessionCookie(res: Response, token: string, expiresAt: Date, secure: boolean): void {
   res.cookie(SESSION_COOKIE, token, {
@@ -84,18 +90,33 @@ export function requireAuth(db: Db) {
         res.status(401).json({ error: 'not signed in' });
         return;
       }
-      const result = await db.query<{ id: string; email: string }>(
-        `select u.id, u.email from sessions s
+      const result = await db.query<{ id: string; email: string; session_id: string; stale: boolean }>(
+        `select u.id, u.email, s.id as session_id,
+                (s.last_seen_at is null or s.last_seen_at < now() - make_interval(mins => $2)) as stale
+         from sessions s
          join users u on u.id = s.user_id
          where s.token_hash = $1 and s.expires_at > now()`,
-        [tokenHash(token)],
+        [tokenHash(token), LAST_SEEN_REFRESH_MINUTES],
       );
-      const user = result.rows[0];
-      if (!user) {
+      const row = result.rows[0];
+      if (!row) {
         res.status(401).json({ error: 'session expired or invalid' });
         return;
       }
-      req.user = user;
+      // "Last active": one write per session per 10 minutes at most. A
+      // failed write is logged and never refuses the request.
+      if (row.stale) {
+        try {
+          await db.query(
+            `update sessions set last_seen_at = now()
+             where id = $1 and (last_seen_at is null or last_seen_at < now() - make_interval(mins => $2))`,
+            [row.session_id, LAST_SEEN_REFRESH_MINUTES],
+          );
+        } catch (err) {
+          console.error(JSON.stringify({ event: 'auth.last_seen_failed', at: new Date().toISOString(), error: err instanceof Error ? err.message : String(err) }));
+        }
+      }
+      req.user = { id: row.id, email: row.email };
       next();
     } catch (err) {
       next(err);

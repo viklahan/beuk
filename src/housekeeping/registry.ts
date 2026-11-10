@@ -34,7 +34,7 @@ import { StripeBillingProvider } from '../billing.js';
 import { loadEntitlements } from '../entitlements.js';
 import { renderSnapshot } from '../shares/render.js';
 import { sanitizeHtml } from '../shares/sanitize.js';
-import { ACCOUNT_DELETED_TABLES, ACCOUNT_DETACHED_TABLES } from '../account/data.js';
+import { ACCOUNT_DELETED_TABLES, ACCOUNT_DETACHED_TABLES, securityExport } from '../account/data.js';
 import { CONFIRM_TOKEN_TTL_HOURS } from '../account/confirm.js';
 import { checkSchoolContent, loadSchoolContent } from '../school/content.js';
 import { readLessonMedia } from '../school/media.js';
@@ -3307,6 +3307,68 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       );
       assert(Number(bad.rows[0].n) === 0, `${bad.rows[0].n} authorship stamp(s) hold a fingerprint that is not 64 lowercase hex`);
       return `authorship_stamps present (${expected.join(', ')}); every stored fingerprint is 64 lowercase hex`;
+    },
+  },
+  /* ---- Account hardening (migration 025) ---- */
+  {
+    id: 'account.hardening.tables-and-export',
+    title: "Account hardening: user_two_step, two_step_recovery_codes and sign_in_challenges exist with their columns, codes and challenges are stored only as SHA-256 hashes, sessions keep a device label and no IP address, and security.json in Download all my data carries no secret, hash or token",
+    kind: 'server',
+    run: async ({ db }) => {
+      const columnsOf = async (table: string) =>
+        (
+          await db.query<{ column_name: string }>(
+            `select column_name from information_schema.columns
+             where table_schema = 'public' and table_name = $1 order by column_name`,
+            [table],
+          )
+        ).rows.map((x) => x.column_name);
+      const expected: Record<string, string[]> = {
+        user_two_step: ['created_at', 'enabled_at', 'last_step', 'secret', 'user_id'],
+        two_step_recovery_codes: ['code_hash', 'id', 'used_at', 'user_id'],
+        sign_in_challenges: ['attempts', 'created_at', 'expires_at', 'id', 'token_hash', 'user_id'],
+      };
+      for (const [table, want] of Object.entries(expected)) {
+        const got = await columnsOf(table);
+        assert(got.length > 0, `the ${table} table is missing (migration 025 not applied?)`);
+        assert(got.join(',') === want.join(','), `${table} columns are ${got.join(', ')}, expected ${want.join(', ')}`);
+      }
+      const sessionCols = await columnsOf('sessions');
+      for (const c of ['label', 'last_seen_at']) assert(sessionCols.includes(c), `sessions has no ${c} column`);
+      const ipLike = sessionCols.filter((c) => /(^|_)ip(_|$)|address|user_agent/.test(c));
+      assert(!ipLike.length, `sessions stores ${ipLike.join(', ')}: no IP address or raw User-Agent is ever kept`);
+      for (const [table, col] of [['two_step_recovery_codes', 'code_hash'], ['sign_in_challenges', 'token_hash']] as const) {
+        const bad = await db.query<{ n: string | number }>(`select count(*) as n from ${table} where ${col} !~ '^[0-9a-f]{64}$'`);
+        assert(Number(bad.rows[0].n) === 0, `${bad.rows[0].n} ${table} row(s) hold a ${col} that is not a SHA-256 hash`);
+      }
+      // security.json, for a few accounts with two-step on (or any account):
+      // exactly the allowed keys, and none of that account's keys inside.
+      const users = (
+        await db.query<{ id: string }>(
+          `(select user_id as id from user_two_step where enabled_at is not null order by created_at limit 3)
+           union (select id from users order by created_at limit 1)`,
+        )
+      ).rows;
+      for (const u of users) {
+        const out = await securityExport(db, u.id);
+        assert(Object.keys(out).sort().join(',') === 'sessions,twoStep', `security.json keys are ${Object.keys(out).join(', ')}`);
+        assert(Object.keys(out.twoStep).sort().join(',') === 'on,recoveryLeft,since', `security.json twoStep keys are ${Object.keys(out.twoStep).join(', ')}`);
+        for (const sess of out.sessions) {
+          assert(Object.keys(sess).sort().join(',') === 'createdAt,label,lastSeenAt', `a security.json session has ${Object.keys(sess).join(', ')}`);
+        }
+        const text = JSON.stringify(out);
+        const keys = (
+          await db.query<{ k: string }>(
+            `select secret as k from user_two_step where user_id = $1
+             union all select code_hash from two_step_recovery_codes where user_id = $1
+             union all select token_hash from sign_in_challenges where user_id = $1
+             union all select token_hash from sessions where user_id = $1`,
+            [u.id],
+          )
+        ).rows.map((r) => r.k);
+        assert(!keys.some((k) => k && text.includes(k)), 'security.json carries a two-step secret, a code hash or a token hash');
+      }
+      return `user_two_step, two_step_recovery_codes and sign_in_challenges present with their columns; hashes are 64 lowercase hex; sessions keep label and last_seen_at, no IP column; security.json checked for ${users.length} account(s): allowed keys only, no secret, hash or token`;
     },
   },
   /* ---- Beta-reader share links ---- */

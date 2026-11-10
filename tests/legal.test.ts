@@ -99,6 +99,13 @@ test('legal: /privacy and /terms serve 200 HTML that covers every inventory cate
       'worked out from the book',
       'authorship stamps, share copies and comments',
       'Account, books, exports, authorship stamps,',
+      // account hardening (2026-11-09): the device label, no IP address, two-step and the security emails
+      'device label',
+      'It keeps no IP address',
+      'two-step sign-in',
+      'recovery codes are stored only as hashes',
+      'security emails',
+      'security.json',
       'Help search',
       'first 200 characters',
       'Founders',

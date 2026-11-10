@@ -6,6 +6,7 @@ import { verifyPassword } from '../password.js';
 import { SlidingWindowLimiter } from '../rate-limit.js';
 import { clearTwoStep, replaceRecoveryCodes, twoStepOn, verifySecondFactor, verifySecondFactorIn } from '../twostep/store.js';
 import { newTotpSecret, otpauthUri } from '../twostep/totp.js';
+import type { SecurityEmails } from '../email/security.js';
 
 /**
  * Two-step sign-in, turning it on and off (account hardening, migration
@@ -24,6 +25,11 @@ import { newTotpSecret, otpauthUri } from '../twostep/totp.js';
  * 15 minutes. Turning two-step on does not sign other devices out.
  * The QR code is an inline <svg> string made here (no script, no data:
  * image, so no CSP change).
+ *
+ * Security emails (after the response, src/email/security.ts): on, off
+ * and new codes each send their own. A recovery code spent here sends
+ * security-recovery-used too while two-step stays on (new codes); on
+ * /disable the two-step-off email covers it.
  */
 
 export interface TwoStepLimits {
@@ -38,6 +44,8 @@ export interface TwoStepDeps {
   db: Db;
   now?: () => Date;
   limits?: TwoStepLimits;
+  /** The security emails; none are sent without it. */
+  security?: SecurityEmails;
 }
 
 const WRONG_CODE = "that code didn't work";
@@ -118,7 +126,9 @@ export function twoStepRoutes(deps: TwoStepDeps): Router {
       });
       if ('wrong' in outcome) return res.status(400).json({ error: WRONG_CODE });
       if ('conflict' in outcome) return res.status(409).json({ error: 'two-step sign-in changed in another tab — start again' });
-      return res.json({ recoveryCodes: outcome.codes });
+      res.json({ recoveryCodes: outcome.codes });
+      deps.security?.twoStepOn(user);
+      return undefined;
     } catch (err) {
       return next(err);
     }
@@ -133,7 +143,10 @@ export function twoStepRoutes(deps: TwoStepDeps): Router {
       const kind = await verifySecondFactor(db, user.id, String(req.body?.code ?? ''), now().getTime());
       if (!kind) return res.status(400).json({ error: WRONG_CODE });
       await clearTwoStep(db, user.id);
-      return res.json({ ok: true });
+      res.json({ ok: true });
+      // Whichever factor turned it off, the off email is the one notice.
+      deps.security?.twoStepOff(user);
+      return undefined;
     } catch (err) {
       return next(err);
     }
@@ -148,7 +161,12 @@ export function twoStepRoutes(deps: TwoStepDeps): Router {
       const kind = await verifySecondFactor(db, user.id, String(req.body?.code ?? ''), now().getTime());
       if (!kind) return res.status(400).json({ error: WRONG_CODE });
       const codes = await db.tx((tx) => replaceRecoveryCodes(tx, user.id));
-      return res.json({ recoveryCodes: codes });
+      res.json({ recoveryCodes: codes });
+      // Two-step is still on: a recovery code spent to get here is said
+      // too (the fresh set is what's left).
+      if (kind === 'recovery') deps.security?.recoveryUsed(user, codes.length);
+      deps.security?.recoveryNew(user);
+      return undefined;
     } catch (err) {
       return next(err);
     }

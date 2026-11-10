@@ -7,6 +7,7 @@ import { getStreak, type StreakState } from '../streak.js';
 import { hydrateDoc } from '../pictures.js';
 import { clientDir } from '../warmth/pages.js';
 import { ZIP_LIMIT_BYTES, ZipWriter } from './zip.js';
+import { twoStepStatus, type TwoStepStatus } from '../twostep/store.js';
 
 /**
  * What an account owns, read for the account page, written out for
@@ -338,14 +339,19 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
     `                        file that left the studio while you were signed in, the book's id`,
     `                        and title, the kind of file, when, and its SHA-256 fingerprint.`,
     `                        Never the book's text.`,
+    `security.json           Your sign-in security: whether two-step sign-in is on and since`,
+    `                        when, how many recovery codes are left, and each place you're`,
+    `                        signed in (${c.sessions ?? 0}): its device label, such as "Firefox on Windows",`,
+    `                        when it signed in and when it was last active.`,
     '',
     'What is not inside',
     '------------------',
     '',
     '- Your password. The server keeps only a one-way hash of it, which is of no use',
     '  to you and is left out.',
-    '- Sign-in sessions and reset or confirmation links: they are short-lived keys,',
-    '  not your data.',
+    '- The keys themselves: sign-in sessions, reset and confirmation links, the',
+    '  two-step key and the recovery codes. They are keys, not your data, and the',
+    '  server keeps most of them only as one-way hashes.',
     "- Anything kept only in your browser: a book you never brought to the shelf, the",
     "  studio's per-device writing log and settings. Export those from the studio on",
     '  that device.',
@@ -667,8 +673,37 @@ export async function writeAccountExport(
   );
   counts.authorship_stamps = stamps.rows.length;
 
+  // Sign-in security (migration 025): never the two-step secret, a hash or a token.
+  const security = await securityExport(db, userId);
+  await zip.add('security.json', JSON.stringify(security, null, 2), { compress: true });
+  counts.sessions = security.sessions.length;
+
   await zip.add('account.json', JSON.stringify({ ...account, books, counts }, null, 2), { compress: true });
   return { counts, missingFiles };
+}
+
+export interface SecurityExport {
+  twoStep: TwoStepStatus;
+  sessions: Array<{ label: string | null; createdAt: string; lastSeenAt: string | null }>;
+}
+
+/** security.json in Download all my data: whether two-step is on, since
+ *  when, how many recovery codes are left, and the live sessions with
+ *  their labels and dates. Built field by field from an allow-list, so
+ *  the secret, the code hashes and the session token hashes can't reach
+ *  it (the self-check account.hardening.tables-and-export proves it). A
+ *  label is null for a session from before migration 025. */
+export async function securityExport(db: Db, userId: string): Promise<SecurityExport> {
+  const status = await twoStepStatus(db, userId);
+  const rows = await db.query<{ label: string | null; created_at: string; last_seen_at: string | null }>(
+    `select label, created_at, last_seen_at from sessions
+     where user_id = $1 and expires_at > now() order by created_at, id`,
+    [userId],
+  );
+  return {
+    twoStep: { on: status.on, since: status.since, recoveryLeft: status.recoveryLeft },
+    sessions: rows.rows.map((r) => ({ label: r.label, createdAt: iso(r.created_at), lastSeenAt: isoOrNull(r.last_seen_at) })),
+  };
 }
 
 /** The picture hashes a theme's doc names (its assets'). */

@@ -28,13 +28,13 @@ Backup files (`.beuk-backup.json`) and exports (EPUB, Word, Markdown, HTML, prin
 ## With an account: what the server keeps
 
 - **Your account:** your email address and your password, stored only as an argon2id hash. That's a one-way scramble, so the password itself is never stored and can't be read back.
-- **A sign-in cookie** called `beuk_session`, so you stay signed in. It lasts {{sessiondays}} days. The server keeps only a hash of it, with no IP address and no device details. Signing out deletes it, and "Sign out everywhere" deletes them all.
+- **A sign-in cookie** called `beuk_session`, so you stay signed in. It lasts {{sessiondays}} days. The server keeps only a hash of it, with a short device label and when it was last active (see "Signing in safely" below), and no IP address. Signing out deletes it, and "Sign out everywhere" deletes them all.
 - **Your books on the shelf:** the whole book, with its pictures, settings and snapshot history, so it follows you to other devices.
 - **Your export archive:** exports you send to the archive, with their file name, format and size, plus the results of any checks you run on them (EPUBCheck, PDF/X). These checks run on Beuk's own server, and the print renderer has no internet access at all.
 - **Your writing streak:** the days you were active in the studio while signed in.
 - **Password resets:** when you ask for a reset, a single-use link valid for 60 minutes. The server keeps only a hash of it.
 [[if mail]]
-- **Email:** Beuk sends one kind of email, the password-reset link, through the mail provider the operator has set up. No newsletters and no marketing.
+- **Email:** Beuk sends account emails only, through the mail provider the operator has set up: the welcome and email-address confirmations, the password-reset link, and the security emails described under "Signing in safely". No newsletters and no marketing.
 [[end]]
 [[if billing]]
 - **Payments:** if you subscribe to a paid plan, the payment itself happens on Stripe's checkout page and your card details go to Stripe, never to Beuk. Beuk gives Stripe your account email and an account id, and keeps Stripe's customer and subscription ids and the subscription's status.
@@ -60,6 +60,16 @@ When you're signed in and export a backup or download a Word file, Beuk keeps a 
 
 If you lock a backup with a password, the locking happens in your browser. The password never leaves your device: it isn't sent to Beuk or stored anywhere, and Beuk can't open the file without it.
 
+## Signing in safely
+
+Each time you sign in, Beuk keeps a short device label with that sign-in, worked out from the name your browser gives itself, such as "Firefox on Windows". It has no version numbers and nothing finer than that. Beuk also keeps when you signed in and when that sign-in was last active (updated at most once every 10 minutes). It keeps no IP address. Your account page lists these sign-ins, so you can sign out a device you don't recognise.
+
+If you turn on two-step sign-in, Beuk stores the secret key your authenticator app shares with it. The key is stored as it is, because the server needs it to check your codes. Your 10 recovery codes are stored only as hashes, so the codes themselves can't be read back. While you sign in, the step between your password and your code uses a short-lived key that's also stored only as a hash and dies after 5 minutes.
+
+When the server can send email, Beuk sends you security emails: when your account is signed in to from a device label none of your other sign-ins has, when two-step sign-in is turned on or off, when a recovery code is used, and when new recovery codes are made. They say what happened and when, and nothing else. They're account emails, so they can't be turned off.
+
+All of this goes with your account when you delete it. Download all my data includes it as security.json: whether two-step sign-in is on and since when, how many recovery codes are left, and your sign-ins with their labels and dates. It never includes the secret key, the codes or any hash.
+
 ## The help pages and the Founders' Shelf
 
 - **Help search** keeps the first 200 characters of what was searched, the number of results and which result was opened, so the guides can get better. It stores no account, no IP address, nothing about who searched.
@@ -80,7 +90,7 @@ The server makes a backup of its data every {{backuphours}} hours, so a broken d
 [[if noschedule]]
 The operator makes backups of the server's data by hand, so a broken disk doesn't lose your books.
 [[end]]
-A backup includes accounts (with password hashes), books, exports, authorship stamps, share copies and comments, and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
+A backup includes accounts (with password hashes, two-step keys and hashed recovery codes), books, exports, authorship stamps, share copies and comments, and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
 [[if offsite]]
 An encrypted copy of each backup also goes to a private storage bucket with Backblaze B2. It's encrypted before it leaves the server, and only the operator holds the key. Copies are kept on a rolling schedule: one a day for {{keepdaily}} days, one a week for {{keepweekly}} weeks, and one a month for {{keepmonthly}} months. So a deleted item can survive in these copies for up to about {{keepmonthly}} months.
 [[end]]
@@ -112,7 +122,8 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 ## How long things are kept
 
 - **Account, books, exports, authorship stamps, streak, checks, reading copies and comments:** until you delete them, or until the account is deleted.
-- **Sign-in sessions:** up to {{sessiondays}} days. Expired ones are cleared automatically.
+- **Sign-in sessions, with their device labels:** up to {{sessiondays}} days. Expired ones are cleared automatically.
+- **Two-step key and recovery codes:** until you turn two-step sign-in off, or until the account is deleted.
 - **Password-reset links:** expire after 60 minutes, and are cleared the next time anyone asks for a reset.
 - **Server error logs:** rotated by size (at most 3 × 10 MB per container), with no time limit.
 - **Help search records, Founders' Shelf entries and backups on the server:** no automatic limit yet.

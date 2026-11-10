@@ -30,6 +30,8 @@ import { resetPageRoutes } from './routes/reset-page.js';
 import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
 import { authorshipRoutes } from './routes/authorship.js';
 import { twoStepRoutes } from './routes/two-step.js';
+import { sessionRoutes } from './routes/sessions.js';
+import { securityEmails } from './email/security.js';
 import { stockRoutes } from './routes/stock.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
@@ -136,7 +138,22 @@ export function buildApp({
   // Accounts portal (/account + /api/account): the sign-up hook sends the
   // email confirmation after the register response.
   const portal = accountPortalRoutes({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now, limits: portalLimits });
-  app.use('/api/auth', authRoutes(db, config, { afterRegister: signupConfirmationHook({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now }) }, { billing: billingProvider, now: now ?? (() => new Date()) }, { now }));
+  // Account hardening: the security emails, after the response (src/email/security.ts).
+  const security = securityEmails({ db, config, mailer: mail, tasks: accountTasks, now });
+  app.use(
+    '/api/auth',
+    authRoutes(
+      db,
+      config,
+      {
+        afterRegister: signupConfirmationHook({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now }),
+        onSignedIn: (user, _req, sessionToken) => security.signedIn(user, sessionToken),
+        onRecoveryUsed: (user, left) => security.recoveryUsed(user, left),
+      },
+      { billing: billingProvider, now: now ?? (() => new Date()) },
+      { now },
+    ),
+  );
   // P0 #5: forgot/reset password, change password, sign out everywhere.
   app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits));
   app.use('/api/manuscripts', manuscriptRoutes(db, config, accountTasks));
@@ -220,7 +237,9 @@ export function buildApp({
   app.use('/api/authorship', authorshipRoutes(db, now));
 
   // Two-step sign-in: turning it on and off (signed in; start + enable pause on day 22).
-  app.use('/api/account/two-step', twoStepRoutes({ db, now }));
+  app.use('/api/account/two-step', twoStepRoutes({ db, now, security }));
+  // Where you're signed in: the session list and signing one device out (never paused).
+  app.use('/api/account/sessions', sessionRoutes(db));
   app.use('/api/account', portal.api);
 
   // Beuk School: free courses at /school; progress for signed-in writers only.

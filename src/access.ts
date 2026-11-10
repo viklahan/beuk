@@ -136,6 +136,8 @@ export const NEVER_PAUSED: ReadonlyArray<{ method: string; path: string; why: st
   { method: 'POST', path: '/api/auth/login/code', why: 'sign in with two-step already on' },
   { method: 'POST', path: '/api/account/two-step/disable', why: 'turn two-step sign-in off' },
   { method: 'POST', path: '/api/account/two-step/recovery-codes', why: 'get new recovery codes' },
+  { method: 'GET', path: '/api/account/sessions', why: "see where you're signed in" },
+  { method: 'POST', path: '/api/account/sessions/:id/revoke', why: 'sign one device out' },
 ];
 
 const DAY_MS = 86_400_000;
