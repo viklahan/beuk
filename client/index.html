@@ -278,9 +278,11 @@
       .pane-fold { position: absolute; top: 8px; z-index: 6; width: 16px; height: 32px; padding: 0; /* level with the editor tab row, clear of its scrollbar */ display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; opacity: .75; }
       .pane-fold:hover, .pane-fold:focus-visible { opacity: 1; color: var(--ink); background: var(--panel-2); }
       .pane-fold svg { width: 13px; height: 13px; transition: transform .15s ease; }
-      #foldLeft { left: var(--pane-l); border-left: 0; border-radius: 0 7px 7px 0; }
-      #foldRight { right: var(--pane-r); border-right: 0; border-radius: 7px 0 0 7px; }
+      #foldLeft { inset-inline-start: var(--pane-l); border-inline-start: 0; border-start-end-radius: 7px; border-end-end-radius: 7px; } /* logical: under RTL the left column is on the right, and its tab goes with it */
+      #foldRight { inset-inline-end: var(--pane-r); border-inline-end: 0; border-start-start-radius: 7px; border-end-start-radius: 7px; }
       #panes.fold-left #foldLeft svg, #panes.fold-right #foldRight svg { transform: rotate(180deg); }
+      html[dir="rtl"] .pane-fold svg { transform: scaleX(-1); }
+      html[dir="rtl"] #panes.fold-left #foldLeft svg, html[dir="rtl"] #panes.fold-right #foldRight svg { transform: scaleX(-1) rotate(180deg); }
       body.zen .pane-fold { display: none; }
       @media (max-width: 1023px) { .pane-fold { display: none; } }
 
