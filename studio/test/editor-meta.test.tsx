@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import * as Y from 'yjs';
 import { exportBook, importBook, sectionAt } from '../../src/book/editor/index';
 import en from '../src/generated/packs/en.json';
@@ -383,7 +383,7 @@ describe("the block reaches 1.0's own render functions", () => {
 
 describe('1.0 bug (fixed in client/index.html): the drop cap and small-caps switches mark the book edited', () => {
   it('both bindSwitch handlers call noteBookEdited(), as every other chapter control does (the plate, the backdrop, the fields’ input)', () => {
-    const html = readFileSync(fileURLToPath(new URL('../../client/index.html', import.meta.url)), 'utf8');
+    const html = readFileSync(path.join(import.meta.dirname, '..', '..', 'client', 'index.html'), 'utf8');
     for (const id of SWITCHES) {
       const line = html.split('\n').find((l) => l.includes(`bindSwitch($("${id}")`));
       expect(line, id).toBeDefined();
