@@ -1,4 +1,6 @@
+import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { loadPack } from '../src/i18n/strings';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -119,7 +121,8 @@ describe('column folds (1.0 BEUK:panes)', () => {
     expect(state()).toEqual({ l: 'true', r: 'false', cls: 'fold-right' });
   });
 
-  it('under ar the document is rtl and the seam tabs are placed with logical sides, in the studio and in 1.0', () => {
+  it('under ar the document is rtl and the seam tabs are placed with logical sides, in the studio and in 1.0', async () => {
+    await loadPack('ar');
     mount('ar');
     expect(document.documentElement.getAttribute('dir')).toBe('rtl');
     const css = readFileSync(path.join(import.meta.dirname, '..', 'src', 'styles', 'shell.css'), 'utf8');
