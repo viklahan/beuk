@@ -12,7 +12,7 @@ import { flushNormalize, markActive, toggleBookMark } from './behaviour';
 import { createChapterEditor } from './createEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { tbLayoutInit } from './toolbarLayout';
-import { ArtRows } from '../pictures/ArtRows';
+import { EditorMeta } from './EditorMeta';
 import { SceneBar } from '../pictures/SceneBar';
 import { SectionImages } from '../pictures/SectionImages';
 import { StarterBar } from './StarterBar';
@@ -102,10 +102,10 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
   };
 
   const ydoc = fragment.doc;
-  // 1.0's centre column: #editorMeta (the chapter-art rows), #insertToolbar, #sceneBar, #starterBar, the page, #sectionImages
+  // 1.0's centre column: #editorMeta (the chapter heading block and its art rows), #insertToolbar, #sceneBar, #starterBar, the page, #sectionImages
   return (
     <>
-      {ydoc && sectionMap && <ArtRows ydoc={ydoc} section={sectionMap} />}
+      {ydoc && sectionMap && <EditorMeta ydoc={ydoc} section={sectionMap} />}
       <EditorToolbar ref={bar} editor={editor} marks={marks} onMark={press} sectionType={sectionType} sectionTexts={sectionTexts} ydoc={ydoc} />
       {ydoc && sectionMap && <SceneBar editor={editor} ydoc={ydoc} sectionId={sectionMap.get('id')} sectionType={sectionType} />}
       <LangBar />

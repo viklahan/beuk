@@ -35067,8 +35067,8 @@
         $("chSubtitle").addEventListener("input", (e) => { const s = activeSection(); s.subtitle = e.target.value; pvShowTitle(); renderPreview(); });
         /* BEUK:headfit — print-only words: nothing on screen changes but the print views */
         $("chRunHead").addEventListener("input", (e) => { const s = activeSection(); const v = e.target.value; if (v.trim()) s.runHead = v; else delete s.runHead; noteBookEdited(); });
-        bindSwitch($("tglDropCap"), () => activeSection().dropCap, (v) => { activeSection().dropCap = v; renderPreview(); });
-        bindSwitch($("tglSmallCaps"), () => activeSection().smallCaps, (v) => { activeSection().smallCaps = v; renderPreview(); });
+        bindSwitch($("tglDropCap"), () => activeSection().dropCap, (v) => { activeSection().dropCap = v; noteBookEdited(); renderPreview(); }); /* a switch is no "input": it marks the book edited itself, as the plate and backdrop do (a toggle alone was never saved) */
+        bindSwitch($("tglSmallCaps"), () => activeSection().smallCaps, (v) => { activeSection().smallCaps = v; noteBookEdited(); renderPreview(); });
         $("chPlate").addEventListener("change", (e) => {
           const s = activeSection(); if (!s) return;
           if (e.target.value === "__upload__") {
