@@ -24,7 +24,7 @@ function unauthorized(res: Response, config: Config, tokenWasPresented: boolean,
   res.status(401).json({ error: message });
 }
 
-function bearerToken(req: Request): string | null {
+export function bearerToken(req: Request): string | null {
   const header = req.headers.authorization;
   if (!header) return null;
   const match = /^Bearer\s+(\S+)$/i.exec(header);
@@ -80,6 +80,15 @@ export function sessionOrScopedBearer(db: Db, config: Config) {
           `Bearer realm="beuk", error="insufficient_scope", scope="${needed}"`,
         );
         res.status(403).json({ error: `this token is missing the ${needed} scope` });
+        return;
+      }
+      // Nothing irreversible from a connected app: deleting a book (or an
+      // archived export, or a job) has no undo, and an overwrite that
+      // skips the revision check (If-Match: *) can lose words the writer
+      // saved in the studio meanwhile. Those stay the writer's own act,
+      // in the studio. Any scope, every bearer.
+      if (req.method === 'DELETE' || (req.headers['if-match'] ?? '').trim() === '*') {
+        res.status(403).json({ error: 'a connected app cannot delete or blindly overwrite — do that in the Beuk studio' });
         return;
       }
       return next();

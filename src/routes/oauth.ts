@@ -1,6 +1,6 @@
 import express, { Router, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { readCookie, SESSION_COOKIE, tokenHash } from '../auth.js';
+import { readCookie, SESSION_COOKIE, sessionUser as sharedSessionUser } from '../auth.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { rateLimit, TokenBucketLimiter } from '../ratelimit.js';
@@ -78,13 +78,8 @@ export function oauthMetadataRoutes(config: Config): Router {
 async function sessionUser(db: Db, req: Request): Promise<{ id: string; email: string } | null> {
   const token = readCookie(req, SESSION_COOKIE);
   if (!token) return null;
-  const found = await db.query<{ id: string; email: string }>(
-    `select u.id, u.email from sessions s
-     join users u on u.id = s.user_id
-     where s.token_hash = $1 and s.expires_at > now()`,
-    [tokenHash(token)],
-  );
-  return found.rows[0] ?? null;
+  // The one session lookup (src/auth.ts), "last active" included.
+  return sharedSessionUser(db, token);
 }
 
 /** Like the /reset page: never cached, never indexed, no referrer out. */
@@ -197,6 +192,10 @@ export function oauthAuthorizeRoutes(db: Db, config: Config): Router {
       return res.status(200).type('html').send(
         consentPage({
           clientName: client.client_name,
+          // Where approval sends the writer (already exact-matched
+          // against the registration above): the one thing a look-alike
+          // app can't fake, since anyone may register any name.
+          redirectHost: new URL(q.redirect_uri!).host,
           email: user.email,
           scopes: scopes.split(' '),
           consentToken,

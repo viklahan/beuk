@@ -4,6 +4,7 @@ import { after, before, test } from 'node:test';
 import { Client, createTestDb, registerUser, startTestServer, type TestServer } from './helpers.js';
 import type { Db } from '../src/db.js';
 import { base32Decode, totpCode, totpStep } from '../src/twostep/totp.js';
+import { pausedBody } from '../src/access.js';
 
 let db: Db;
 let server: TestServer;
@@ -312,6 +313,47 @@ test('two-step on: the sign-in page takes the code step, and login + code reache
   assert.match(consent.text, /name="consent"/, 'signed in with the code: the consent screen, not the sign-in form');
 });
 
+test('day 22: a paused account is paused for its bearer tokens too (every paused route a bearer can reach)', async () => {
+  // Billing on (test placeholders, no network), the same database: a
+  // grant made on the open server is a live bearer here.
+  const paid = await startTestServer(db, undefined, {
+    stripeWebhookSecret: 'whsec_test_placeholder_not_a_real_key',
+    stripeSecretKey: 'sk_test_placeholder_not_a_real_key',
+    stripePriceId: 'price_fixture_one',
+    stripeApiBase: 'http://127.0.0.1:9',
+  });
+  try {
+    const email = `oauth-paused-${randomBytes(4).toString('hex')}@example.com`;
+    const { access } = await fullGrant(email, 'beuk:read beuk:write');
+    const userId = (await db.query<{ id: string }>('select id from users where email = $1', [email])).rows[0].id;
+    const bearerPost = (p: string, body: unknown) =>
+      fetch(`${paid.base}${p}`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    const newBook = { doc: { title: 'P', sections: { frontMatter: [], body: [], backMatter: [] } } };
+    // In the trial: the bearer adds a book (the gate lets it through).
+    assert.equal((await bearerPost('/api/manuscripts', newBook)).status, 201, 'trial: open');
+    // Day 22, no plan: every paused route the bearer routers serve answers 402.
+    await db.query(`update users set trial_ends_at = now() - interval '1 day' where id = $1`, [userId]);
+    for (const [p, feature, body] of [
+      ['/api/manuscripts', 'shelf.add', newBook],
+      ['/api/jobs/epubcheck', 'jobs.run', { exportId: '00000000-0000-4000-8000-000000000000' }],
+      ['/api/jobs/pdfx', 'export.print', { exportId: '00000000-0000-4000-8000-000000000000' }],
+    ] as const) {
+      const res = await bearerPost(p, body);
+      assert.equal(res.status, 402, `${p} paused for a bearer`);
+      assert.deepEqual(await res.json(), pausedBody(feature));
+    }
+    // Reading stays open (never paused).
+    const list = await fetch(`${paid.base}/api/manuscripts`, { headers: { authorization: `Bearer ${access}` } });
+    assert.equal(list.status, 200);
+  } finally {
+    await paid.close();
+  }
+});
+
 test('consent decision is CSRF-protected: forged, reused and cross-user tokens are refused', async () => {
   const clientId = await registerOAuthClient();
   const alice = new Browser(server.base);
@@ -570,6 +612,46 @@ test('a beuk:write bearer may write, exactly as consent granted', async () => {
   });
   assert.equal(created.status, 201);
   assert.equal((created.body.manuscript as { title: string }).title, 'Bearer-Written Book');
+});
+
+test('nothing irreversible from a bearer: no DELETE, no If-Match: * overwrite; a revisioned save still lands', async () => {
+  const grant = await fullGrant('oauth-no-delete@example.com', 'beuk:read beuk:write beuk:export');
+  const created = await bearerFetch('POST', '/api/manuscripts', grant.access, {
+    title: 'Keep Me',
+    doc: { title: 'Keep Me', sections: [] },
+  });
+  assert.equal(created.status, 201);
+  const book = created.body.manuscript as { id: string; revision: number };
+  const del = await bearerFetch('DELETE', `/api/manuscripts/${book.id}`, grant.access);
+  assert.equal(del.status, 403);
+  assert.match(String(del.body.error), /studio/);
+  assert.equal((await bearerFetch('GET', `/api/manuscripts/${book.id}`, grant.access)).status, 200, 'the book is still there');
+  const put = (ifMatch: string) =>
+    fetch(`${server.base}/api/manuscripts/${book.id}`, {
+      method: 'PUT',
+      headers: { authorization: `Bearer ${grant.access}`, 'content-type': 'application/json', 'if-match': ifMatch },
+      body: JSON.stringify({ title: 'Changed', doc: { title: 'Changed', sections: [] } }),
+    });
+  assert.equal((await put('*')).status, 403, 'a blind overwrite is refused');
+  assert.equal((await put(` * `)).status, 403, 'padded * too');
+  assert.equal((await put(`"${book.revision}"`)).status, 200, 'a save based on the current revision lands');
+});
+
+test('the consent screen names where approval sends you, since the app chose its own name', async () => {
+  const res = await new Client(server.base).post('/api/oauth/register', {
+    client_name: 'Claude',
+    redirect_uris: ['https://evil.example/cb'],
+  });
+  assert.equal(res.status, 201);
+  const browser = new Browser(server.base);
+  await browser.signIn(`oauth-lookalike-${randomBytes(4).toString('hex')}@example.com`);
+  const { challenge } = pkcePair();
+  const page = await browser.get(
+    authorizePath({ clientId: res.body.client_id as string, challenge, redirectUri: 'https://evil.example/cb' }),
+  );
+  assert.equal(page.status, 200);
+  assert.match(page.text, /sends you back to <strong>evil\.example<\/strong>/);
+  assert.match(page.text, /the one the app gave itself/);
 });
 
 test('beuk:read bearer reads jobs; an unknown job stays the same honest 404', async () => {

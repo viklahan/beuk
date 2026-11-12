@@ -4,6 +4,8 @@ import type { BillingProvider } from './billing.js';
 import type { Config } from './config.js';
 import type { Db } from './db.js';
 import { entitlementsFor, loadEntitlements, type EntitlementsLoad, type EntitlementState } from './entitlements.js';
+import { bearerToken } from './oauth/bearer.js';
+import { findAccessGrant } from './oauth/model.js';
 
 /**
  * Trial + one price (V, 2026-10-26, rules re-decided 2026-10-30): an account
@@ -262,22 +264,30 @@ export function pausedBody(feature: PausableFeature): Record<string, unknown> {
  * Express middleware factory: `gate(feature)` answers 402 when the
  * signed-in account's access is 'paused', and otherwise lets the request
  * through untouched. It never answers 401 itself: a request without a
- * valid session goes on to the router, whose requireAuth says so. While
- * billing is off it does no database work at all.
+ * valid credential goes on to the router, whose auth middleware says so.
+ * The account is found the way the routers find it — the session cookie
+ * first, then an OAuth bearer token — so a paused account is paused for
+ * the MCP connector too. While billing is off it does no database work.
  */
 export function accessGate(deps: AccessDeps) {
   return (feature: PausableFeature) =>
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         if (!billingSwitchedOn(deps.config, deps.billing)) return next();
+        let userId: string | undefined;
         const token = readCookie(req, SESSION_COOKIE);
-        if (!token) return next();
-        const found = await deps.db.query<{ id: string }>(
-          `select u.id from sessions s join users u on u.id = s.user_id
-           where s.token_hash = $1 and s.expires_at > now()`,
-          [tokenHash(token)],
-        );
-        const userId = found.rows[0]?.id;
+        if (token) {
+          const found = await deps.db.query<{ id: string }>(
+            `select u.id from sessions s join users u on u.id = s.user_id
+             where s.token_hash = $1 and s.expires_at > now()`,
+            [tokenHash(token)],
+          );
+          userId = found.rows[0]?.id;
+        }
+        if (!userId) {
+          const bearer = bearerToken(req);
+          if (bearer) userId = (await findAccessGrant(deps.db, bearer))?.userId;
+        }
         if (!userId) return next();
         const access = await accountAccess(deps, userId);
         if (access?.state === 'paused') {

@@ -140,6 +140,8 @@ document.getElementById('f').addEventListener('submit', async (e) => {
  *  to this user + request (oauth_tokens kind 'consent'). */
 export function consentPage(args: {
   clientName: string;
+  /** The registered redirect's host: where approval sends the writer. */
+  redirectHost: string;
   email: string;
   scopes: string[];
   consentToken: string;
@@ -151,6 +153,7 @@ export function consentPage(args: {
     'Connect to Beuk',
     `<h1>Connect ${esc(args.clientName)} to Beuk?</h1>
 <p>Signed in as <strong>${esc(args.email)}</strong>.</p>
+<p>Approving sends you back to <strong>${esc(args.redirectHost)}</strong>. The name above is the one the app gave itself — connect only if you started this from an app you trust at that address.</p>
 <p><strong>${esc(args.clientName)}</strong> will be able to:</p>
 <ul>${items}</ul>
 <form method="post" action="/authorize/decision">
