@@ -73,4 +73,23 @@
 .rs-video { display: block; max-width: 100%; max-height: 60vh; margin: 0 auto; }
 .rs-text { white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; margin: 0; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; }
 .rs-tab { margin-top: 8px; }
+/* BEUK:webword — a Word document or saved web page, read as words in the book's reading face (client/index.html CSS
+   1812-1827). As 1.0 has them, but for the shell's two rules: logical sides (1.0's padding-left / border-left are
+   padding-inline-start / border-inline-start), and 1.0's token fallbacks (var(--gold, #a87e2c), var(--panel-2,
+   transparent)) dropped, the tokens being declared (src/generated/tokens.css) */
+.rs-doc { max-height: 60vh; overflow: auto; padding: 4px 8px; }
+.rs-doc-note { margin: 0 0 8px; font-size: 12px; }
+.rs-doc-body { font-family: "EB Garamond", Georgia, serif; font-size: 16px; line-height: 1.55; color: var(--ink); overflow-wrap: anywhere; }
+.rs-doc-body h3, .rs-doc-body h4, .rs-doc-body h5, .rs-doc-body h6 { font-family: inherit; line-height: 1.25; margin: 1em 0 .4em; }
+.rs-doc-body h3 { font-size: 1.3em; } .rs-doc-body h4 { font-size: 1.15em; } .rs-doc-body h5, .rs-doc-body h6 { font-size: 1em; }
+.rs-doc-body p, .rs-doc-body ul, .rs-doc-body ol, .rs-doc-body blockquote, .rs-doc-body pre, .rs-doc-body table, .rs-doc-body figure, .rs-doc-body dl { margin: 0 0 .7em; }
+.rs-doc-body blockquote { padding-inline-start: 12px; border-inline-start: 3px solid var(--line-2); color: var(--ink-2); }
+.rs-doc-body pre { white-space: pre-wrap; font-size: 13px; }
+.rs-doc-body img { display: block; max-width: 100%; height: auto; margin: 6px 0; }
+.rs-doc-body table { border-collapse: collapse; display: block; max-width: 100%; overflow-x: auto; font-size: 14px; }
+.rs-doc-body th, .rs-doc-body td { border: 1px solid var(--line-2); padding: 4px 8px; vertical-align: top; }
+.rs-doc-body a { color: var(--accent); }
+.rs-doc-fidelity { margin: 0 0 10px; font-size: 12px; }
+.rs-doc-fidelity.is-partial { color: var(--ink-2); padding: 6px 10px; border-inline-start: 3px solid var(--gold); background: var(--panel-2); }
+.rs-doc-body .rs-gone { font-family: "Karla", system-ui, sans-serif; font-size: 12px; font-style: italic; color: var(--muted); }
 #modalNotebook.rs-drop .nb-modal { outline: 2px dashed var(--accent); outline-offset: -6px; }

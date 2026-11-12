@@ -166,6 +166,22 @@ export type ClosureApi = {
   rsHas: () => boolean;
   rsNamed: () => Set<string>;
   rsTotal: () => number;
+  // research reader (BEUK:webword): the two kinds, the worker job, the refusals, the title rule, the sanitizer and the
+  // fidelity line (1.0's own; rsDocFill is 2.0's, src/notebook/notebook.ts docView)
+  RS_WORD: string;
+  RS_WEB: string;
+  RS_DOC_MS: number;
+  rsDocW: { w: unknown; seq: number; wait: Map<number, (m: RsDocReply) => void>; cache: Map<string, RsDocView> };
+  rsDocJob: (op: string, data: string, ms?: number) => Promise<RsDocReply>;
+  rsDocStop: (reason: string) => void;
+  rsDocCheck: (type: string, data: string) => Promise<RsDocReply>;
+  rsRefusalKey: (name: unknown) => string;
+  rsCheckKey: (type: string, check: unknown) => string;
+  rsPlainTitle: (raw: unknown) => string;
+  rsSanitize: (html: unknown, opts?: { images?: Record<string, string>; base?: string }) => RsSanitized;
+  rsFidelity: (view: Record<string, unknown>) => { text: string; whole: boolean };
+  rsChars: (s: unknown) => number;
+  rsWords: (s: unknown) => number;
   bibleAllEntries: () => BibleEntry[];
   bibleScan: (text: string, m: unknown) => { hits: { s: number; e: number; id: string }[]; ambiguous: { s: number; e: number; ids: string[] }[] };
   bibleMatcherNow: () => unknown;
@@ -913,6 +929,26 @@ export type CastRow = { key: string; name: string; total: number; sections: numb
 export type CastData = { caseless: boolean; minCount: number; names: CastRow[]; cols: { id: string; label: string; col: string; words: number }[] };
 export type Note = { id: string; title: string; body: string; folder?: string; secs?: string[]; files?: string[]; url?: string; at?: string };
 export type ResearchFile = { id: string; name: string; mediaType: string; data: string; bytes: number; at?: string };
+/** What 1.0's worker (client/assets/rsdoc.js) answers a job: check-word / check-web, view-word / view-web. */
+export type RsDocReply = {
+  id?: number;
+  ok: boolean;
+  reason?: string;
+  title?: string;
+  kind?: string;
+  url?: string;
+  html?: string;
+  cut?: boolean;
+  images?: Record<string, string>;
+  messages?: number;
+  stats?: { chars: number; words: number; refs: number; headers: number; comments: number; deleted: number };
+};
+/** What 1.0's rsSanitize hands back: the rebuilt nodes (detached, never serialised) and what was left out. */
+export type RsSanitized = { node: HTMLElement; cut: boolean; empty: boolean; gone: Record<string, unknown> & { chars?: number }; srcChars: number; shownChars: number };
+/** A reader view as 1.0's rsDocFill keeps it in rsDocW.cache: an error key, or the view. */
+export type RsDocView =
+  | { error: string }
+  | { node: HTMLElement; cut: boolean; note: string; gone: RsSanitized['gone']; shownChars: number; expectChars: number; headers?: number; comments?: number; deleted?: number; fidelity: { text: string; whole: boolean } };
 export type DiffPart = { t: '=' | '-' | '+'; s: string };
 export type DiffRow = { id: string; name: string; before: number; after: number; delta: number; note: 'out' | null };
 export type SectionDiff = { added: DiffRow[]; removed: DiffRow[]; leftout: DiffRow[]; broughtin: DiffRow[]; changed: DiffRow[] };
@@ -1254,6 +1290,16 @@ function resumeBody(r: Response): Response {
   }
   return r;
 }
+/** Research reader (BEUK:webword): the Worker 1.0's rsDocJob makes. 1.0 asks for "assets/rsdoc.js" relative to its page
+ *  (/studio → /assets/rsdoc.js); from /next/ the same words would name /next/assets/rsdoc.js, which is not there. So it
+ *  is made from the site's root, where 1.0's own is (as the cloud module's pichash.js), and the worker's own
+ *  importScripts("vendor/…") then resolve to /assets/vendor/ as under /studio. The page's Worker is read when a worker is
+ *  made; where there is none, `new` throws and 1.0's rsDocJob answers { ok: false, reason: "no-worker" } as 1.0 does. */
+function pageWorker(this: unknown, url: string | URL, opts?: WorkerOptions): Worker {
+  const W = (globalThis as { Worker?: typeof Worker }).Worker;
+  if (typeof W !== 'function') throw new TypeError('no Worker');
+  return new W(url === 'assets/rsdoc.js' ? '/assets/rsdoc.js' : url, opts);
+}
 /** Review of 5c (Minor 2): the crypto 1.0's lifted code reads — the page's, with subtle.digest resuming in the session. */
 const closureCrypto = {
   getRandomValues: <T extends ArrayBufferView | null>(a: T): T => globalThis.crypto.getRandomValues(a as never) as T,
@@ -1510,6 +1556,8 @@ export function loadClosure(): Promise<Closure> {
         // final fix I1 (BEUK:authorship): the Word stamp fingerprints the book 2.0's backup fingerprints (the open book's
         // export: src/book/BookProvider.tsx); no book open, no stamp
         authorshipDeskBook: () => authorshipEnv.deskBook(),
+        // research reader (BEUK:webword): 1.0's rsdoc.js worker, from the site's root (pageWorker)
+        Worker: pageWorker,
       });
 
       share = c.share;
