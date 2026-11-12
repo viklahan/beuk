@@ -542,7 +542,7 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   // book's stamps and, from the beta list and readers above, the named readers of the linked shelf book's reading copies
   'authorshipRecordOpen', 'authorshipRecordClose',
   // wave 7b (H5): the platform's install area and update bar (1.0's pwa record, isStandalone, renderInstallArea,
-  // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /next/), its listeners
+  // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /studio/), its listeners
   // 1.0's initPlatform lines (src/cloud/platform.ts)
   'pwa', 'isStandalone', 'renderInstallArea', 'pwaOnLangChange', 'showUpdateBar', 'wireUpdateFlow',
   // wave 7b (I9): the opt-in error report (BEUK:errors, BEUK:errscrub) — off unless beuk.errors.v1 is "on"; the message
@@ -571,7 +571,7 @@ export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', '
   // the calm confirm (2.0's useConfirm, 1.0's cloudConfirm), and the print file storeMakePrintJob uploads (print's module,
   // in the export session)
   'cloudConfirm', 'buildPrintHtml', 'preparePrintPress', 'printFilename',
-  // the picture hash worker (1.0's page-relative assets/pichash.js, from /next/)
+  // the picture hash worker (1.0's page-relative assets/pichash.js, from /studio/)
   'Worker'];
 /** 1.0's top-level lets of the cloud module the studio reads or sets. */
 export const CLOUD_VARS = ['uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloudRetryTimer', 'cloudSaveInFlight', 'cloudSaveFollowUp', 'authMode', 'portalFreshSignIn', 'billingPausedSaid',

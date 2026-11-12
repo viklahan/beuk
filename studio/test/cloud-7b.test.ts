@@ -617,7 +617,7 @@ describe('error reports (I9): opt-in, 1.0\'s shape, nothing of the book', () => 
     }) as typeof fetch;
     return seen;
   }
-  const throwAt = (message: string) => window.dispatchEvent(new ErrorEvent('error', { error: Object.assign(new Error(message), { stack: 'Error: ' + message + '\n    at f (https://beuk.example/next/assets/index-abc.js:12:34)' }), message }));
+  const throwAt = (message: string) => window.dispatchEvent(new ErrorEvent('error', { error: Object.assign(new Error(message), { stack: 'Error: ' + message + '\n    at f (https://beuk.example/studio/assets/index-abc.js:12:34)' }), message }));
 
   it('off by default: an error the page raises sends nothing', async () => {
     desk(SALT());
@@ -660,7 +660,7 @@ describe('error reports (I9): opt-in, 1.0\'s shape, nothing of the book', () => 
     // the stack's frames as function (path:line:col)
     expect(seen[0]!.body.message).toBe('Error');
     expect(seen[1]!.body.message).toBe('Error');
-    for (const { body } of seen) expect(body.stack).toBe('at f (/next/assets/index-abc.js:12:34)');
+    for (const { body } of seen) expect(body.stack).toBe('at f (/studio/assets/index-abc.js:12:34)');
     // at most 1.0's five per page
     for (let i = 0; i < 8; i++) throwAt('another error ' + i);
     await tick(50);
@@ -711,12 +711,12 @@ describe('review I-2: an error that quotes the open book (decision 5)', () => {
     expect(leaked).toEqual([]);
     expect(seen.map((b) => (JSON.parse(b) as Rec).message)).toEqual(['Error', 'Error']);
     // a help code in the message, and a TypeError, keep what V allows: the name and the code
-    const stack = 'TypeError: Cannot read ' + title + ' (BEUK-E123)\n    at g (https://beuk.example/next/assets/a.js?v=2#h:1:2)\n    at https://beuk.example/next/b.js:3:4';
+    const stack = 'TypeError: Cannot read ' + title + ' (BEUK-E123)\n    at g (https://beuk.example/studio/assets/a.js?v=2#h:1:2)\n    at https://beuk.example/studio/b.js:3:4';
     window.dispatchEvent(new ErrorEvent('error', { error: Object.assign(new TypeError('x'), { stack }), message: 'Uncaught TypeError: Cannot read ' + title + ' (BEUK-E123)' }));
     await tick(50);
     const third = JSON.parse(seen[2]!) as Rec;
     expect(third.message).toBe('TypeError BEUK-E123');
-    expect(third.stack).toBe('at g (/next/assets/a.js:1:2)\nat /next/b.js:3:4');
+    expect(third.stack).toBe('at g (/studio/assets/a.js:1:2)\nat /studio/b.js:3:4');
     expect(seen[2]).not.toContain('Salt Road');
     off();
   }, 30_000);

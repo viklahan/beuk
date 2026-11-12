@@ -3,7 +3,7 @@
    lifted: 1.0's function reads the main script's own `cloud`, `portalDoorBook` and `portalSignInWork` lets, which have no
    lifted counterpart; it does only URL work and three calls into the shelf (openAuth, setAuthMode, cloudOpenBook, all
    lifted), so it is written here against those. The address is rewritten from location.pathname, so the doors work under
-   any base path (/next/ today, /studio/ after the cutover) with nothing hard-coded. */
+   any base path (/studio/ since the cutover; /next/ before it) with nothing hard-coded. */
 
 type Fn = (...a: unknown[]) => unknown;
 export type DoorApi = { openAuth: Fn; setAuthMode: Fn; cloudOpenBook: (id: string) => unknown };

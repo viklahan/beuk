@@ -18,13 +18,13 @@
    #2 Edit locality: typing in the Dumas book's third chapter changes that
       section's content only.
    #3 Persistence: the edit survives a reload online, and a reload with the
-      network off (service worker + y-indexeddb); two tabs of /next on the
+      network off (service worker + y-indexeddb); two tabs of /studio/ on the
       book each type in a different chapter, and both, and a reload, end
       with both edits.
-   #4 1.0 safety: a book saved by 1.0 (/studio) is imported by /next on the
+   #4 1.0 safety: a book saved by 1.0 (its page, /index.html here) is imported by /studio/ on the
       same origin; 1.0's database is byte-identical before and after, and
       1.0 then opens the same book. A device without 1.0 never gets a
-      "beuk-local" database from /next.
+      "beuk-local" database from /studio/.
    #5 Latency: keystroke-to-paint (event timestamp → the task after the
       next animation frame) over 300 keystrokes in the Dumas book's largest
       chapter; p50 and p95 printed (p95 over 16 ms is reported, with the
@@ -40,7 +40,7 @@ import { createRequire, register } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { startServer } from './serve.mjs';
+import { ONE, startServer } from './serve.mjs';
 import { covenantDumas } from './covenant-fixture.mjs';
 
 const STUDIO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -112,7 +112,7 @@ async function watch(page) {
   // (wave 7b: the error-report part throws its own probe in the page)
   page.on('pageerror', (e) => {
     if (w7bProbe.on && /wave7b-probe/.test(String(e))) return;
-    if (w7bProbe.one && /\/studio/.test(page.url())) w7bProbe.oneErrors.push(String(e));
+    if (w7bProbe.one && new URL(page.url()).pathname === ONE) w7bProbe.oneErrors.push(String(e));
     else csp.errors.push(`${page.url()}: ${e}`);
   });
   page.on('console', (m) => {
@@ -120,7 +120,7 @@ async function watch(page) {
     // account feature on day 22), 409 (a shelf conflict) — are the server's word, not page errors
     if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of (404|401|402|409)|net::ERR_INTERNET_DISCONNECTED/.test(m.text())) {
       // (wave 7b: what 1.0's own page logs with the hostile book on its desk is 1.0's, reported apart)
-      if (w7bProbe.one && /\/studio/.test(page.url())) w7bProbe.oneErrors.push(m.text());
+      if (w7bProbe.one && new URL(page.url()).pathname === ONE) w7bProbe.oneErrors.push(m.text());
       else csp.errors.push(`${page.url()}: ${m.text()}`);
     }
   });
@@ -163,7 +163,7 @@ function noHistory(b) {
 /* ---- the studio, driven ---- */
 async function openNext(ctx, origin) {
   const page = await watch(await ctx.newPage());
-  await page.goto(origin + '/next/');
+  await page.goto(origin + '/studio/');
   await page.waitForSelector('#topbar');
   return page;
 }
@@ -627,7 +627,7 @@ async function oneSafety(origin) {
       const page = await openNext(ctx, origin);
       await page.waitForSelector('#btnOpenBackup', { timeout: 15_000 });
       const names = await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name));
-      check(!names.includes('beuk-local'), `#4 a device without 1.0: /next leaves no "beuk-local" database (databases: ${JSON.stringify(names)})`);
+      check(!names.includes('beuk-local'), `#4 a device without 1.0: /studio/ leaves no "beuk-local" database (databases: ${JSON.stringify(names)})`);
       await harvestCsp(page);
     } finally {
       await ctx.close();
@@ -637,7 +637,7 @@ async function oneSafety(origin) {
   const ctx = await newContext({ serviceWorkers: 'block' });
   try {
     const one = await watch(await ctx.newPage());
-    await one.goto(origin + '/studio');
+    await one.goto(origin + ONE);
     await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
     await one.setInputFiles('#localBackupInput', f.file);
     await one.waitForFunction(async () => {
@@ -652,7 +652,7 @@ async function oneSafety(origin) {
     await harvestCsp(one);
     await one.close();
 
-    // two tabs of /next opened at once on this first visit: 1.0's book is imported once (Web Lock), never doubled
+    // two tabs of /studio/ opened at once on this first visit: 1.0's book is imported once (Web Lock), never doubled
     const [next, twin] = await Promise.all([openNext(ctx, origin), openNext(ctx, origin)]);
     await Promise.all([next, twin].map((p) => p.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 })));
     await next.waitForTimeout(500);
@@ -661,27 +661,27 @@ async function oneSafety(origin) {
     await twin.close();
     const title = await next.textContent('#projectTitleDisplay');
     const toast = await next.waitForSelector('#toasts .toast', { timeout: 5000 }).then((t) => t.textContent(), () => '');
-    check(title === 'Salt Road — Book One', `#4 /next opened 1.0's book on its own ("${title}"; toast "${toast}")`);
+    check(title === 'Salt Road — Book One', `#4 /studio/ opened 1.0's book on its own ("${title}"; toast "${toast}")`);
     for (const r of await rows(next)) if (r.editable) await choose(next, r.i);
     const exp = await exportBackup(next);
     const stored = JSON.parse(before.out.book.json).book;
-    check(JSON.stringify(exp.json.book) === JSON.stringify(expected(stored, exp.json.book)), '#4 the book /next imported from 1.0 exports exactly what readBook reads from 1.0\'s copy');
+    check(JSON.stringify(exp.json.book) === JSON.stringify(expected(stored, exp.json.book)), '#4 the book /studio/ imported from 1.0 exports exactly what readBook reads from 1.0\'s copy');
     const gens1 = await next.evaluate(async () => (await indexedDB.databases()).map((d) => d.name).filter((n) => n.startsWith('beuk-next-book-')));
     check(JSON.stringify(twinOut.json.book) === JSON.stringify(exp.json.book) && sectionsOf(twinOut.json.book).length === sectionsOf(stored).length && gens1.length === 1,
       `fix 1: two tabs opened together imported 1.0's book once (${sectionsOf(twinOut.json.book).length} sections, ${gens1.length} generation)`);
     const after = await next.evaluate(DUMP_10);
-    check(JSON.stringify(after) === JSON.stringify(before), `#4 1.0's database is identical after /next imported it (version ${before.version}, stores ${JSON.stringify(before.stores)}, keys ${JSON.stringify(Object.keys(before.out))})`);
+    check(JSON.stringify(after) === JSON.stringify(before), `#4 1.0's database is identical after /studio/ imported it (version ${before.version}, stores ${JSON.stringify(before.stores)}, keys ${JSON.stringify(Object.keys(before.out))})`);
     await harvestCsp(next);
     await next.close();
 
     const again = await watch(await ctx.newPage());
-    await again.goto(origin + '/studio');
+    await again.goto(origin + ONE);
     await again.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
     await again.waitForTimeout(1500);
     const title1 = await again.textContent('#projectTitleDisplay');
     const reopened = await again.evaluate(DUMP_10);
     const same = JSON.stringify(JSON.parse(reopened.out.book.json).book) === JSON.stringify(stored);
-    check(title1.trim() === 'Salt Road — Book One' && same, `#4 1.0 at /studio opens the same book with identical content afterwards ("${title1.trim()}")`);
+    check(title1.trim() === 'Salt Road — Book One' && same, `#4 1.0's page opens the same book with identical content afterwards ("${title1.trim()}")`);
     await harvestCsp(again);
   } finally {
     await ctx.close();
@@ -689,7 +689,7 @@ async function oneSafety(origin) {
 }
 
 
-/* ---- wave 1c task 5: 1.0's device save names its pictures (BEUK:localpics); /next fills them back in, read-only ---- */
+/* ---- wave 1c task 5: 1.0's device save names its pictures (BEUK:localpics); /studio/ fills them back in, read-only ---- */
 /** 1.0's localUnpack on a dumped beuk-local: every "beuk-pic:<sha>" data (beside a mediaType) given its "pic:<sha>" bytes. */
 function unpack10(v, out) {
   if (Array.isArray(v)) return v.map((x) => unpack10(x, out));
@@ -712,7 +712,7 @@ async function onePackedPics(origin) {
   const ctx = await newContext({ serviceWorkers: 'block' });
   try {
     const one = await watch(await ctx.newPage());
-    await one.goto(origin + '/studio');
+    await one.goto(origin + ONE);
     await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
     await one.setInputFiles('#localBackupInput', file);
     await one.waitForFunction(async () => {
@@ -732,7 +732,7 @@ async function onePackedPics(origin) {
     const exp = await exportBackup(next);
     const text = JSON.stringify(exp.json.book);
     check(packedJson.includes('beuk-pic:') && !text.includes('beuk-pic:') && JSON.stringify(exp.json.book) === JSON.stringify(expected(stored, exp.json.book)),
-      `wave 1c task 5: a record 1.0 saved packed (${Object.keys(before.out).filter((k) => k.startsWith('pic:')).length} picture stored once) is imported with its picture filled in: /next exports exactly readBook's reading of 1.0's unpacked book, no name left`);
+      `wave 1c task 5: a record 1.0 saved packed (${Object.keys(before.out).filter((k) => k.startsWith('pic:')).length} picture stored once) is imported with its picture filled in: /studio/ exports exactly readBook's reading of 1.0's unpacked book, no name left`);
     const after = await next.evaluate(DUMP_10);
     check(JSON.stringify(after) === JSON.stringify(before), `wave 1c task 5: 1.0's database is identical after the import (keys ${JSON.stringify(Object.keys(before.out))})`);
     await harvestCsp(next);
@@ -865,7 +865,7 @@ async function screenshots(origin) {
       await prep(c2);
       try {
         const one = await watch(await c1.newPage());
-        await one.goto(origin + '/studio');
+        await one.goto(origin + ONE);
         await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
         await one.setInputFiles('#localBackupInput', f.file);
         await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
@@ -966,7 +966,7 @@ async function historyChecks(origin) {
     const ctx = await newContext({ serviceWorkers: 'block' });
     try {
       const one = await watch(await ctx.newPage());
-      await one.goto(origin + '/studio');
+      await one.goto(origin + ONE);
       await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
       await one.setInputFiles('#localBackupInput', A.file);
       await one.waitForFunction((t) => document.getElementById('projectTitleDisplay')?.textContent.trim() === t, A.book.meta.title, { timeout: 30_000 });
@@ -977,7 +977,7 @@ async function historyChecks(origin) {
       const file10 = path.join(OUT, 'history-from-1.0.beuk-backup.json');
       writeFileSync(file10, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book: made10 }));
       const page = await openNext(ctx, origin);
-      // /next opens 1.0's (saved) book from this device on its own, or shows the empty desk
+      // /studio/ opens 1.0's (saved) book from this device on its own, or shows the empty desk
       await page.waitForSelector('#btnOpenBackup, .desk', { timeout: 60_000 });
       if (await page.$('#btnOpenBackup')) await openBackup(page, file10);
       else {
@@ -1190,7 +1190,7 @@ const insightsMarkup = (page) => page.evaluate(() => {
   return { html: [...b.childNodes].map(canon).join(''), w: document.getElementById('insBody').getAttribute('data-w') };
 });
 /* ---- wave 2a: the insert toolbar against 1.0's own page ----
-   The same text and the same selection (as text offsets) in 2.0's editor and in 1.0's textarea at /studio; the same
+   The same text and the same selection (as text offsets) in 2.0's editor and in 1.0's textarea (its page); the same
    button clicked in each (1.0's real click handler and dialogs); the texts must be equal. Then one Ctrl+Z in 2.0 gives
    the original text back. Also: the toolbar's layout at two widths (1.0's editor.toolbar.layout properties), and
    1.0's editor.scroll.steady on Dumas (a toolbar insert and Auto-Format leave the page's scroll where it was). */
@@ -1224,7 +1224,7 @@ async function wave2aChecks(origin) {
     await openBackup(page, file);
     const before = await exportBackup(page);
     const one = await watch(await ctx.newPage());
-    await one.goto(origin + '/studio');
+    await one.goto(origin + ONE);
     await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
     await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), book);
     const oneRun = (text, s, e, kind, fill, ok) => one.evaluate(({ text, s, e, kind, fill, ok }) => {
@@ -1407,7 +1407,7 @@ async function wave2bChecks(origin) {
     await openBackup(page, file);
     const before = await exportBackup(page);
     const one = await watch(await ctx.newPage());
-    await one.goto(origin + '/studio');
+    await one.goto(origin + ONE);
     await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
     await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), book);
     const probe = (fn, ...args) => page.evaluate(({ fn, args }) => document.getElementById('manuscript').beukText[fn](...args), { fn, args });
@@ -1702,7 +1702,7 @@ async function wave2cChecks(origin) {
       const page = await openNext(ctx, origin);
       await openBackup(page, f.file);
       const one = await watch(await ctx.newPage());
-      await one.goto(origin + '/studio');
+      await one.goto(origin + ONE);
       await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
       const start = (await exportBackup(page)).json.book;
       await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
@@ -1830,7 +1830,7 @@ async function insightsChecks(origin) {
     const ctx = await newContext({ serviceWorkers: 'block' });
     try {
       const one = await watch(await ctx.newPage());
-      await one.goto(origin + '/studio');
+      await one.goto(origin + ONE);
       await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
       const page = await openNext(ctx, origin);
       await page.waitForSelector('#btnOpenBackup, .desk', { timeout: 60_000 });
@@ -1979,7 +1979,7 @@ async function notebookChecks(origin) {
     check(JSON.stringify(again.json.book) === JSON.stringify(out.json.book), 'wave 1c #4: after a reload the book (notes and files) exports exactly the same');
     // 1.0 reads them: same notes, same files, and its own save writes them byte for byte
     const one = await watch(await ctx.newPage());
-    await one.goto(origin + '/studio');
+    await one.goto(origin + ONE);
     await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
     const seen = await one.evaluate((book) => {
       applyBookDoc(JSON.parse(JSON.stringify(book)));
@@ -2312,7 +2312,7 @@ async function wave3aChecks(origin) {
     const ctx = await newContext({ serviceWorkers: 'block' });
     try {
       const one = await watch(await ctx.newPage());
-      await one.goto(origin + '/studio');
+      await one.goto(origin + ONE);
       await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
       small = await one.evaluate(([en, es]) => {
         const b = buildEmptyBook();
@@ -2350,7 +2350,7 @@ async function wave3aChecks(origin) {
       // ---- Zen: 1.0's self-checks on 2.0's page; 1.0's own run of the same checks, same window, beside them ----
       const zen = await page.evaluate(ZEN_CHECKS, '#manuscript');
       const oneRef = await watch(await ctx.newPage());
-      await oneRef.goto(origin + '/studio');
+      await oneRef.goto(origin + ONE);
       await oneRef.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
       await oneRef.evaluate(([b, id]) => { applyBookDoc(JSON.parse(JSON.stringify(b))); selectSection(id); }, [start, firstCh.id]);
       const oneZen = await oneRef.evaluate((ids) => Object.fromEntries(ids.map((id) => {
@@ -2395,7 +2395,7 @@ async function wave3aChecks(origin) {
           window.beukZen.settle();
         });
         const one = await watch(await ctx.newPage());
-        await one.goto(origin + '/studio');
+        await one.goto(origin + ONE);
         await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
         const oneSees = await one.evaluate(() => [zenScenePref(), zenPaintPref()]);
         check(oneSees.join() === 'waves,mind', `wave3a: 1.0 on the same device reads 2.0's beuk.zenScene.v1 / beuk.zen.painting.v1 as ${oneSees.join(' / ')}`);
@@ -2466,7 +2466,7 @@ async function wave3aChecks(origin) {
       await openBackup(page, smallFile);
       const start = (await exportBackup(page)).json.book;
       const one = await watch(await ctx.newPage());
-      await one.goto(origin + '/studio');
+      await one.goto(origin + ONE);
       await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
       await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
       await page.bringToFront();
@@ -2556,7 +2556,7 @@ async function wave3aChecks(origin) {
       await page.click('#btnCloseGoals');
       await page.waitForSelector('#modalGoals', { state: 'detached', timeout: 10_000 });
       const one = await watch(await ctx.newPage());
-      await one.goto(origin + '/studio');
+      await one.goto(origin + ONE);
       await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
       await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
       await one.click('#btnGoals');
@@ -2603,7 +2603,7 @@ async function twoRanges(page) {
 }
 async function openOne(ctx, origin) {
   const one = await watch(await ctx.newPage());
-  await one.goto(origin + '/studio');
+  await one.goto(origin + ONE);
   await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
   return one;
 }
@@ -4698,7 +4698,7 @@ async function wave5aScreens(origin) {
       await prep(c2);
       try {
         const one = await watch(await c1.newPage());
-        await one.goto(origin + '/studio');
+        await one.goto(origin + ONE);
         await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
         await one.setInputFiles('#localBackupInput', f.file);
         await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
@@ -5171,7 +5171,7 @@ async function wave5bScreens(origin) {
       await prep(c2);
       try {
         const one = await watch(await c1.newPage());
-        await one.goto(origin + '/studio');
+        await one.goto(origin + ONE);
         await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
         await one.setInputFiles('#localBackupInput', f.file);
         await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
@@ -5619,7 +5619,7 @@ async function wave5cScreens(origin) {
       await prep(c2);
       try {
         const one = await watch(await c1.newPage());
-        await one.goto(origin + '/studio');
+        await one.goto(origin + ONE);
         await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
         await one.setInputFiles('#localBackupInput', f.file);
         await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
@@ -6069,7 +6069,7 @@ async function wave5dScreens(origin) {
       await prep(c2);
       try {
         const one = await watch(await c1.newPage());
-        await one.goto(origin + '/studio');
+        await one.goto(origin + ONE);
         await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
         await one.setInputFiles('#localBackupInput', f.file);
         await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
@@ -6132,8 +6132,8 @@ async function wave5dChecks(origin) {
 }
 
 /* ---- wave 6 (G1, G2; plan 2026-11-04, constraints 77-83): the import ----
-   Every corpus file imported into 1.0's /studio (1.0's own handleImportFile, its desk holding the same book) and into
-   2.0's /next (1.0's Import button: #fileInput, the confirm, the book replaced whole): the books equal (1.0's
+   Every corpus file imported into 1.0's page (1.0's own handleImportFile, its desk holding the same book) and into
+   2.0's /studio/ (1.0's Import button: #fileInput, the confirm, the book replaced whole): the books equal (1.0's
    serializeBook read as readBook reads it against 2.0's export), but for what 1.0 itself varies (maskVarying: the fresh
    ids and the times — shown varying in 1.0 itself); the refusals give 1.0's words; the confirm comes exactly when 1.0's
    does; the report's HTML equals 1.0's; each per-item undo, Undo the whole import and Dismiss give 1.0's book; a hostile
@@ -6149,7 +6149,7 @@ const W6_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.
 const w6File = (name, mimeType, data) => ({ name, mimeType, buffer: Buffer.from(data) });
 const w6B64 = (f) => ({ name: f.name, type: f.mimeType, b64: f.buffer.toString('base64') });
 
-/** 2.0's EPUB of a book (1.0's buildEpubBlob in the export session, the book opened in /next). */
+/** 2.0's EPUB of a book (1.0's buildEpubBlob in the export session, the book opened in /studio/). */
 async function w6EpubOf(origin, book, name) {
   const ctx = await newContext({ serviceWorkers: 'block' });
   try {
@@ -6175,7 +6175,7 @@ async function w6PdfOf(origin, book, name) {
     await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), expected(book)); // eslint-disable-line no-undef
     const html = await one.evaluate(() => buildPrintHtml()); // eslint-disable-line no-undef
     const pp = await ctx.newPage();
-    await pp.goto(origin + '/studio');
+    await pp.goto(origin + ONE);
     await pp.setContent(html, { waitUntil: 'load' });
     await pp.evaluate(() => document.fonts.ready);
     const pdf = await pp.pdf({ preferCSSPageSize: true, printBackground: true });
@@ -6765,7 +6765,7 @@ async function wave6Screens(origin) {
       await prep(c2);
       try {
         const one = await watch(await c1.newPage());
-        await one.goto(origin + '/studio');
+        await one.goto(origin + ONE);
         await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
         await one.setInputFiles('#localBackupInput', lan.file);
         await one.waitForFunction(() => /Lantern/.test(document.getElementById('projectTitleDisplay')?.textContent || ''), null, { timeout: 30_000 });
@@ -7204,7 +7204,7 @@ async function userThemesChecks(origin) {
 
 /* ---- wave 7a: sign-in, the shelf, conflicts, account (constraints 84-91) ----
    A server of its own for this step (serve.mjs { api: true }): the REAL app (src/app.ts) on PGlite, mail captured, never
-   sent; billing on against a fake Stripe on 127.0.0.1 for the day-22 states. 1.0 (/studio) and 2.0 (/next) run beside
+   sent; billing on against a fake Stripe on 127.0.0.1 for the day-22 states. 1.0 (its page, /index.html here) and 2.0 (/studio/) run beside
    each other on the same origin, as the same account. 1.0's own functions are called by name in its page (its classic
    script's globals), the way the earlier waves drive it. */
 const W7A_PW = 'correct horse battery';
@@ -7409,7 +7409,7 @@ async function wave7aConflict(srv) {
     const w1 = w7aWrites(t1);
     const t2 = await watch(await ctx.newPage());
     const w2 = w7aWrites(t2);
-    await t2.goto(origin + '/next/');
+    await t2.goto(origin + '/studio/');
     await w7aWait(t2, () => window.beukCloud?.cloud?.user && window.beukCloud.cloud.linkState === 'linked', null, 30_000);
     const leaders = [await t1.evaluate(() => window.beukCloud.leader()), await t2.evaluate(() => window.beukCloud.leader())];
     check(leaders.filter(Boolean).length === 1, `wave7a decision 3: one writer for the book on this device (leaders ${JSON.stringify(leaders)})`);
@@ -7698,7 +7698,7 @@ async function wave7aChecks() {
 
 /* ---- wave 7b: beta share, bulk import, the archive, offline and the update bar, error reports (constraints 92-99) ----
    The real server again (serve.mjs { api: true }: src/app.ts on PGlite, mail captured, billing in test mode against a
-   fake Stripe on 127.0.0.1). 1.0 (/studio) and 2.0 (/next) beside each other on one origin, each as its own account
+   fake Stripe on 127.0.0.1). 1.0 (its page, /index.html here) and 2.0 (/studio/) beside each other on one origin, each as its own account
    (separate shelves); 1.0's functions called by name in its page. W7B_PARTS picks the parts. */
 const w7bMaskIds = (s) => String(s).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<id>').replace(/\/read\/[A-Za-z0-9_-]{20,64}/g, '/read/<token>');
 /** The non-GET /api requests a page sends that match `re`, masked (method, path, body). */
@@ -7949,7 +7949,7 @@ async function wave7bDay22(srv) {
 
 /* ---- named reading links (plan 2026-11-08, task 4): namedLinksChecks (E2E_ONLY=namedlinks) ----
    The real server (serve.mjs { api: true }: src/app.ts on PGlite, billing in test mode against a fake Stripe on
-   127.0.0.1), as constraint 93 drives it: 1.0 (/studio) and 2.0 (/next) beside each other, each its own account, the
+   127.0.0.1), as constraint 93 drives it: 1.0 (its page, /index.html here) and 2.0 (/studio/) beside each other, each its own account, the
    same book. NL_PARTS picks the parts.
    - Parity: a reading copy made, the Readers disclosure opened, Priya (never ends) and Sam (30 days) added, Priya's link
      closed, then "Close the open link" — each close after the calm confirm. At every step the /api/shares writes
@@ -8496,13 +8496,13 @@ async function wave7bUpdate(srv) {
     });
     await a.waitForSelector('#updateBar', { state: 'attached', timeout: 30_000 });
     const scope = await a.evaluate(async () => (await navigator.serviceWorker.getRegistration()).scope);
-    check(scope === origin + '/next/', `wave7b decision 4: 2.0's worker is scoped to /next/ (${scope})`);
+    check(scope === origin + '/studio/', `wave7b decision 4: 2.0's worker is scoped to /studio/ (${scope})`);
     const cached = await a.evaluate(async () => {
       const out = [];
       for (const k of await caches.keys()) for (const r of await (await caches.open(k)).keys()) out.push(new URL(r.url).pathname);
       return out;
     });
-    check(cached.length > 0 && !cached.some((p) => p.startsWith('/api/') || p.startsWith('/studio')), `wave7b decision 4: the worker's caches hold no /api/ and nothing of 1.0's /studio (${cached.length} entries)`);
+    check(cached.length > 0 && !cached.some((p) => p.startsWith('/api/') || p === ONE || p === '/studio'), `wave7b decision 4: the worker's caches hold no /api/ and nothing of 1.0's page (${cached.length} entries)`);
     await a.evaluate(() => { window.__mark = 'a'; });
     // decision 4 (the gate of 0850ee1 saw page a navigate here): every navigation of a's main frame from now on is
     // recorded, with Chromium's own reason for it, and any one is a failure
@@ -8739,7 +8739,7 @@ async function wave7bOneXss(srv) {
     const one = await ctx.newPage();
     one.on('pageerror', (e) => errs.push(String(e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)));
     one.on('console', (m) => { if (m.type() === 'error' && !/status of 40[0-9]/.test(m.text())) errs.push('console: ' + m.text() + ' ' + JSON.stringify(m.location())); });
-    await one.goto(origin + '/studio');
+    await one.goto(origin + ONE);
     await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
     await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), hostile);
     await one.waitForTimeout(1500);
@@ -8806,7 +8806,7 @@ async function wave7bChecks() {
 
 /* ---- locked review copy (design 2026-11-06, task 4): lockcopyChecks (E2E_ONLY=lockcopy) ----
    The real server (serve.mjs { api: true }: src/app.ts on PGlite, billing in test mode against a fake Stripe on
-   127.0.0.1). 1.0 (/studio) and 2.0 (/next) side by side, each as its own account, the same book on each desk.
+   127.0.0.1). 1.0 (its page, /index.html here) and 2.0 (/studio/) side by side, each as its own account, the same book on each desk.
    - Parity: the three locked paths (the export dialog's Word file, the submission manuscript, the print-ready PDF's
      "Download locked copy") in both apps — the same controls, words, filenames and requests (method and path). Each
      locked file goes through its oracle: the DOCX through msoffcrypto-tool (e2e/oracles/docx-decrypt.py, its venv), the
@@ -9502,7 +9502,7 @@ async function lockcopyChecks(staticOrigin) {
 
 /* ---- locked backups and the authorship record (plan 2026-11-09, task 4): authorshipChecks (E2E_ONLY=authorship) ----
    The real server (serve.mjs { api: true }: src/app.ts on PGlite, billing in test mode against a fake Stripe on
-   127.0.0.1), 2.0 (/next) signed in, its book brought to the shelf. Every expected date and fingerprint comes from the
+   127.0.0.1), 2.0 (/studio/) signed in, its book brought to the shelf. Every expected date and fingerprint comes from the
    server's answers or the downloaded file, never the wall clock; the pages run in UTC and the dates are formatted here
    in the studio's format ("en", short month), in UTC.
    - A locked backup (password AU_PW) from the save popover: the file is the envelope (its keys exactly, nothing about
@@ -9769,14 +9769,14 @@ async function authorshipChecks() {
      reloads to "On since … 10 recovery codes left."
    - "Get new recovery codes" (password + code): 10 new codes, none of the old, focus on Copy; a pagehide then clears
      them (the list emptied, the step hidden).
-   - 2.0 (/next) in a second context (an Edge user agent): the sign-in dialog, email and password → the code step (the
+   - 2.0 (/studio/) in a second context (an Edge user agent): the sign-in dialog, email and password → the code step (the
      code field, email and password hidden, its title, focus on the code); a wrong code keeps the step and says so;
      closed during the code step (Not now, and Escape) and opened again it starts at email and password, and Sign in
      posts /api/auth/login, never /login/code (Review focus 5); the right code signs in (the shelf's user, the toast).
    - "Where you're signed in" on /account: two rows (this device and "Edge on Windows"), the labels the server holds;
      "This device" has no Sign out; Sign out on the other row removes it, and that context's /api/auth/me answers 401.
    - A recovery code typed in lower case with a space signs 2.0 in (a third context); the account page then counts 9.
-   - 1.0 (/studio, a fourth context): the same code step; Escape forgets the challenge at once; Enter signs in.
+   - 1.0 (its page, a fourth context): the same code step; Escape forgets the challenge at once; Enter signs in.
    - "Turn off two-step sign-in" (password + code) reloads to off; a password sign-in then answers {user} at once. */
 const TS_EN = {
   codeTitle: 'Two-step sign-in',
@@ -10049,7 +10049,7 @@ async function twostepChecks() {
     check(/ 9 recovery codes left\.$/.test(onLine2), `twostep 2.0: the recovery code "${typed}" signs in; the account page then says "${onLine2}"`);
     await harvestCsp(nextC);
 
-    // 7b. 1.0 (/studio), its own page (a fourth context): the same code step, Escape forgets it, Enter signs in
+    // 7b. 1.0 (its page, /index.html here), its own page (a fourth context): the same code step, Escape forgets it, Enter signs in
     const ctxD = await newContext({ serviceWorkers: 'block', timezoneId: 'UTC' });
     try {
       const one = await openOne(ctxD, srv.origin);
@@ -10094,7 +10094,7 @@ async function twostepChecks() {
 }
 
 /* ---- opening password-protected files on import (design 2026-11-10, task 3): importlockChecks (E2E_ONLY=importlock) ----
-   The real server (serve.mjs { api: true }) with 2.0 (/next) signed in and a book on its desk, on Chromium under the
+   The real server (serve.mjs { api: true }) with 2.0 (/studio/) signed in and a book on its desk, on Chromium under the
    real CSP. The fixtures are third-party output (test/fixtures/locked/README.md); the text asserted is the text in their
    plain inputs (plain.docx: "The Shop on the Narrow Street", "Elena's shop was the smallest on the narrow street";
    plain.pdf: "The Harbour"), read before these checks were written.

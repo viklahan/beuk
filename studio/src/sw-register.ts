@@ -1,4 +1,4 @@
-/* The /next/ service worker (public/sw.js): production builds only, and
+/* The /studio/ service worker (public/sw.js, at the build's base): production builds only, and
    only where the browser offers it (a secure context). Failure is quiet —
    the studio works online without it. Wave 7b (H5): the registration is
    handed to 1.0's update flow (src/cloud/platform.ts: wireUpdateFlow, the

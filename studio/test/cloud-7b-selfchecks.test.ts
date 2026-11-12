@@ -26,7 +26,7 @@ export const SKIP: Record<string, string> = {
   'offline.reconciliation':
     "it drives 1.0's page whole (its state.history on the desk, window.fetch swapped, the conflict modal's markup and 1.0's resolveConflict's re-seat on 1.0's own state): 2.0's History is the Y.Doc's; re-expressed by cloud-7b (offline: queued, one save on reconnect, no conflict), cloud-ui's three conflict choices and the e2e (wave7b offline, wave7a conflict)",
   'pwa.installable':
-    "it checks 1.0's manifest and 1.0's own worker (sw.js, its BEUK_CACHE and precache list): 2.0's worker is its own (public/sw.js, scope /next/), held by the e2e (wave7b update: scope, caches, the update flow)",
+    "it checks 1.0's manifest and 1.0's own worker (sw.js, its BEUK_CACHE and precache list): 2.0's worker is its own (public/sw.js, scope /studio/), held by the e2e (wave7b update: scope, caches, the update flow)",
   'help.validator.beuk-codes': 'run verbatim by wave 5a (test/export-selfchecks.test.ts)',
 };
 

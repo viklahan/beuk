@@ -1,10 +1,14 @@
 /* A tiny static server for the e2e script: the repo's client/ tree the way
    production serves it, with the real security headers.
-   - /studio            → client/index.html (1.0, as Caddy rewrites it)
-   - /next              → 308 /next/
-   - /next/<file>       → client/next/<file> (the 2.0 build)
-   - /next/<route>      → client/next/index.html (the app's own routes),
+   - /studio            → 308 /studio/ (the query kept), as the app answers it (src/routes/studio.ts)
+   - /studio/<file>     → client/next/<file> (the 2.0 build; the directory keeps its name)
+   - /studio/<route>    → client/next/index.html (the app's own routes),
                           or state.navStatus when set (a 502 during a deploy)
+   - /next, /next/<x>   → 308 /studio/<x> (the old address, the query kept)
+   - ONE (/index.html)  → client/index.html, 1.0's page, for the runs that put a 1.0 book on the device first or
+                          set 1.0 and 2.0 side by side. It is the static mount's file (the "anything else" rule
+                          below); 1.0's code is path-independent. /studio itself is never 1.0 here (the
+                          STUDIO_CLASSIC rollback is tests/studio.test.ts's).
    - /api/*             → 404 JSON (no shelf in these runs), or, opt-in (wave 7a, constraint 84: startServer({ api: true })),
                           the REAL app (src/app.ts) on an embedded Postgres (PGlite, as tests/helpers.ts runs it), its
                           mail captured and never sent, billing off unless the caller passes Stripe test settings
@@ -22,6 +26,11 @@ import { createServer } from 'node:http';
 import { readFileSync, statSync, createReadStream } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+
+/** Where these runs open Beuk 1.0's page (client/index.html): see the header. */
+export const ONE = '/index.html';
+/** The studio (2.0): the build's base, vite.config.ts STUDIO_BASE. */
+export const STUDIO = '/studio/';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -73,7 +82,7 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
   const client = path.join(repo, 'client');
   const next = path.join(client, 'next');
   const headers = caddyHeaders(readFileSync(path.join(repo, 'Caddyfile'), 'utf8'));
-  /* navStatus: when set (e.g. 502), every /next/ page route answers it —
+  /* navStatus: when set (e.g. 502), every /studio/ page route answers it —
      the app container down behind Caddy during a deploy. */
   const state = { requests: [], navStatus: 0 };
   const server = createServer((req, res) => {
@@ -118,19 +127,20 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
       res.setHeader('Content-Type', 'application/json');
       return res.end('{"error":"not found"}');
     }
-    if (p === '/studio') return send(path.join(client, 'index.html')) || notFound();
-    if (p === '/next') {
+    const redirect = (to) => {
       res.statusCode = 308;
-      res.setHeader('Location', '/next/' + url.search);
+      res.setHeader('Location', to + url.search);
       return res.end();
-    }
-    if (p.startsWith('/next/')) {
+    };
+    if (p === '/studio') return redirect('/studio/');
+    if (p === '/next' || p.startsWith('/next/')) return redirect('/studio/' + p.slice(p === '/next' ? 5 : 6));
+    if (p.startsWith('/studio/')) {
       if (state.navStatus && !/\.[a-z0-9]+$/i.test(p)) {
         res.statusCode = state.navStatus;
         res.setHeader('Content-Type', 'text/plain');
         return res.end('Bad Gateway');
       }
-      const rel = p.slice('/next'.length);
+      const rel = p.slice('/studio'.length);
       const f = inside(next, rel);
       if (f && send(f)) return;
       if (/\.[a-z0-9]+$/i.test(p)) return notFound();

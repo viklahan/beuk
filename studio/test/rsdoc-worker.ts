@@ -5,12 +5,12 @@ import vm from 'node:vm';
 
 /* 1.0's research reader worker (client/assets/rsdoc.js, BEUK:webword) run as it is, with its own vendored JSZip and
    mammoth, in a context of its own: jsdom has no Worker. The URL the studio hands `new Worker(...)` is resolved the
-   way a browser resolves it on a page under /next/, and then must name a file of 1.0's /assets/ — so a page-relative
-   "assets/rsdoc.js" (which would be /next/assets/rsdoc.js there) fails here as it would fail on the site. The worker's
+   way a browser resolves it on a page under /studio/, and then must name a file of 1.0's /assets/ — so a page-relative
+   "assets/rsdoc.js" (which would be /studio/assets/rsdoc.js there) fails here as it would fail on the site. The worker's
    own importScripts("vendor/…") resolve against the worker's URL, as in a browser. */
 
 const ASSETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/assets');
-const PAGE = 'https://beuk.invalid/next/';
+const PAGE = 'https://beuk.invalid/studio/';
 
 type Msg = { data: unknown };
 export type RsWorkerOpts = { hang?: boolean };

@@ -14,14 +14,14 @@ afterEach(() => at('/'));
 
 describe('the entry doors', () => {
   it('?signup signed out opens the dialog in register mode', () => {
-    at('/next/?signup');
+    at('/studio/?signup');
     const a = mk();
     studioDoor(a, out, null, vi.fn());
     expect(a.openAuth).toHaveBeenCalledTimes(1);
     expect(a.setAuthMode).toHaveBeenCalledWith('register');
   });
   it('?signin signed out opens it in login mode (no mode switch)', () => {
-    at('/next/?signin');
+    at('/studio/?signin');
     const a = mk();
     studioDoor(a, out, null, vi.fn());
     expect(a.openAuth).toHaveBeenCalledTimes(1);
@@ -29,7 +29,7 @@ describe('the entry doors', () => {
   });
   it('either one signed in clicks the account button, as 1.0 does', () => {
     for (const w of ['?signin', '?signup']) {
-      at('/next/' + w);
+      at('/studio/' + w);
       const a = mk(), click = vi.fn();
       studioDoor(a, inn, null, click);
       expect(click).toHaveBeenCalledTimes(1);
@@ -37,7 +37,7 @@ describe('the entry doors', () => {
     }
   });
   it('?book=<uuid> signed out opens sign-in only', async () => {
-    at('/next/?book=' + ID);
+    at('/studio/?book=' + ID);
     const a = mk();
     studioDoor(a, out, null, vi.fn());
     await flush();
@@ -45,7 +45,7 @@ describe('the entry doors', () => {
     expect(a.cloudOpenBook).not.toHaveBeenCalled();
   });
   it('?book=<uuid> signed in opens it after the sign-in work settles, even if that work failed', async () => {
-    at('/next/?book=' + ID);
+    at('/studio/?book=' + ID);
     const a = mk();
     let done!: (v?: unknown) => void;
     studioDoor(a, inn, new Promise((_, rej) => (done = rej)), vi.fn());
@@ -58,20 +58,20 @@ describe('the entry doors', () => {
   });
   it('a malformed ?book= is ignored: nothing opens signed in; signed out still opens sign-in (1.0); the word goes', async () => {
     for (const bad of ['', 'nope', ID + 'x', '../x']) {
-      at('/next/?book=' + encodeURIComponent(bad));
+      at('/studio/?book=' + encodeURIComponent(bad));
       const a = mk();
       studioDoor(a, inn, null, vi.fn());
       await flush();
       expect(a.cloudOpenBook).not.toHaveBeenCalled();
       expect(location.search).toBe('');
     }
-    at('/next/?book=nope');
+    at('/studio/?book=nope');
     const a = mk();
     studioDoor(a, out, null, vi.fn());
     expect(a.openAuth).toHaveBeenCalledTimes(1);
   });
   it('the door word leaves the address, other query and hash and state stay, under any base', () => {
-    for (const base of ['/next/', '/studio/', '/']) {
+    for (const base of ['/studio/', '/next/', '/']) {
       at(base + '?a=1&signup&book=' + ID + '&b=2&signin#h');
       studioDoor(mk(), out, null, vi.fn());
       expect(location.pathname).toBe(base);
@@ -81,14 +81,14 @@ describe('the entry doors', () => {
     }
   });
   it('offline (no shelf): nothing opens, the word still goes', () => {
-    at('/next/?signup');
+    at('/studio/?signup');
     const a = mk();
     studioDoor(a, { available: false, user: null }, null, vi.fn());
     expect(a.openAuth).not.toHaveBeenCalled();
     expect(location.search).toBe('');
   });
   it('no door word: nothing happens and the address is untouched', () => {
-    at('/next/?x=1');
+    at('/studio/?x=1');
     const a = mk();
     studioDoor(a, out, null, vi.fn());
     expect(a.openAuth).not.toHaveBeenCalled();

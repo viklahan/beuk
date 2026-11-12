@@ -1,14 +1,14 @@
-/* Beuk 2.0 studio — service worker, scope /next/ (hand-written, no plugin).
+/* Beuk 2.0 studio — service worker, scope /studio/ (hand-written, no plugin).
    The precache list comes from the build: sw-precache.js beside this file
    (written by vite.config.ts from Vite's build manifest) sets
    self.BEUK_NEXT = { cache, shell, assets, optional }. Its cache name
    carries a hash of the build, so every build gets a fresh cache and the
    old one is deleted on activate.
 
-   Fetch rules, in order (only GETs from pages under /next/ reach here):
+   Fetch rules, in order (only GETs from pages under /studio/ reach here):
    - /api/ and anything cross-origin: untouched (straight to the network;
      a cached manuscript is a stale manuscript, as in 1.0's sw.js).
-   - Navigations under /next/: network first, the precached shell when
+   - Navigations under /studio/: network first, the precached shell when
      the network fails or answers a server error (5xx: the app down
      during a deploy) — so the studio opens offline and through a deploy.
    - The build's own (hashed) files: cache first.
@@ -26,14 +26,18 @@
    reload (src/shell/LangMenu.tsx). BEUK_PING is answered with the cache
    name (BEUK_SHELL_READY), which 1.0's error report names as the build.
 
-   1.0's own worker (/sw.js, scope /) never sees /next/ pages once this
-   one is installed (the longest matching scope wins), and since shell
-   v20 it passes /next through and keeps beuk-next-* caches anyway. */
+   1.0's old root worker (/sw.js, scope /) never sees /studio/ pages once
+   this one is installed (the longest matching scope wins); since the
+   switch (shell v23) it retires itself, deleting only 1.0's own caches and
+   keeping every beuk-next-* one. The cache names keep their beuk-next-
+   prefix from the /next days: renaming them would throw away warm caches. */
 importScripts('./sw-precache.js');
 
 const NEXT = self.BEUK_NEXT;
 const CACHE = NEXT.cache;
 const PREFIX = 'beuk-next-';
+/* The worker's own folder (/studio/): its scope, so a navigation outside it is never this worker's. */
+const SCOPE_PATH = new URL('./', self.location.href).pathname;
 
 /* The build must be whole: one missing file fails it (on install, the
    old worker keeps serving). Fonts are optional, one by one. */
@@ -82,7 +86,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return;
 
   if (req.mode === 'navigate') {
-    if (!url.pathname.startsWith('/next/')) return;
+    if (!url.pathname.startsWith(SCOPE_PATH)) return;
     event.respondWith(
       fetch(req).then(
         (res) => {

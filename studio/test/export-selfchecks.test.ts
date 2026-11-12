@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as Y from 'yjs';
 import { importBook } from '../../src/book/editor/index';
 import en from '../src/generated/packs/en.json';
@@ -466,15 +466,19 @@ describe("1.0's export self-checks (feature export, 9; 3 here)", () => {
 });
 
 describe('the page-relative font addresses 1.0 asks for (wave 5a)', () => {
-  it("coverFetch sends /next/assets/fonts/… to 1.0's /assets/fonts/…; other same-origin addresses unchanged", async () => {
+  it("coverFetch sends /studio/assets/fonts/… (2.0's page, the build's base) to 1.0's /assets/fonts/…; other same-origin addresses unchanged", async () => {
     const seen: string[] = [];
     const fetch0 = globalThis.fetch;
     globalThis.fetch = (async (u: RequestInfo | URL) => (seen.push(String(u)), new Response('x'))) as typeof fetch;
     try {
-      await coverFetch(location.origin + '/next/assets/fonts/amiri/OFL.txt');
+      // the build's base (vite.config.ts STUDIO_BASE); Vitest itself runs at '/'
+      vi.stubEnv('BASE_URL', '/studio/');
+      await coverFetch(location.origin + '/studio/assets/fonts/amiri/OFL.txt');
       await coverFetch('/api/stock/search?q=x');
-      expect(seen).toEqual([location.origin + '/assets/fonts/amiri/OFL.txt', '/api/stock/search?q=x']);
+      await coverFetch(location.origin + '/next/assets/fonts/amiri/OFL.txt');
+      expect(seen).toEqual([location.origin + '/assets/fonts/amiri/OFL.txt', '/api/stock/search?q=x', location.origin + '/next/assets/fonts/amiri/OFL.txt']);
     } finally {
+      vi.unstubAllEnvs();
       globalThis.fetch = fetch0;
     }
   });

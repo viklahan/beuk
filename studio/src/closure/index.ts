@@ -1297,7 +1297,7 @@ function resumeBody(r: Response): Response {
   return r;
 }
 /** Research reader (BEUK:webword): the Worker 1.0's rsDocJob makes. 1.0 asks for "assets/rsdoc.js" relative to its page
- *  (/studio → /assets/rsdoc.js); from /next/ the same words would name /next/assets/rsdoc.js, which is not there. So it
+ *  (/studio → /assets/rsdoc.js); from 2.0's /studio/ the same words would name /studio/assets/rsdoc.js, which is not there. So it
  *  is made from the site's root, where 1.0's own is (as the cloud module's pichash.js), and the worker's own
  *  importScripts("vendor/…") then resolve to /assets/vendor/ as under /studio. The page's Worker is read when a worker is
  *  made; where there is none, `new` throws and 1.0's rsDocJob answers { ok: false, reason: "no-worker" } as 1.0 does. */

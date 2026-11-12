@@ -15,7 +15,7 @@ import { readLegacyBook } from './legacy10';
 import { outlineRows, type OutlineRow } from './outlineRows';
 import { REGISTRY_KEY, bookMeta, importToDevice, openStoredBook, registryEpoch, startBook, type OpenBook } from './store';
 
-/* useBook(): the book open in /next, its outline, and what the writer can
+/* useBook(): the book open in the studio (/studio/), its outline, and what the writer can
    do with it (open a backup, export one). One open book in step 4; the
    store keeps the list of books on this device for later.
 
