@@ -17,6 +17,11 @@ declare module 'express-serve-static-core' {
  *  only sent when a credential WAS presented and failed (RFC 6750 §3.1:
  *  a request with no authentication gets no error code). */
 function unauthorized(res: Response, config: Config, tokenWasPresented: boolean, message: string): void {
+  // OAuth off: there is no metadata to point at (the documents are 404).
+  if (!config.oauthEnabled) {
+    res.status(401).json({ error: message });
+    return;
+  }
   const parts = [`Bearer realm="beuk"`];
   if (tokenWasPresented) parts.push('error="invalid_token"');
   parts.push(`resource_metadata="${config.appBaseUrl}/.well-known/oauth-protected-resource"`);
@@ -37,7 +42,7 @@ export function bearerToken(req: Request): string | null {
 export function requireBearer(db: Db, config: Config, needed?: OAuthScope) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const token = bearerToken(req);
+      const token = config.oauthEnabled ? bearerToken(req) : null;
       if (!token) return unauthorized(res, config, false, 'not signed in');
       const grant = await findAccessGrant(db, token);
       if (!grant) return unauthorized(res, config, true, 'token expired, revoked or invalid');
@@ -115,7 +120,8 @@ export function requireSessionOrBearer(db: Db, config: Config) {
         // (the MCP server never holds cookies; a browser with a stale
         // cookie and no bearer gets requireAuth's exact answer below).
       }
-      const token = bearerToken(req);
+      // OAuth off (OAUTH_ENABLED): a bearer token is never looked up.
+      const token = config.oauthEnabled ? bearerToken(req) : null;
       if (token) {
         const grant = await findAccessGrant(db, token);
         if (grant) {

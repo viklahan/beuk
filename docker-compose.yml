@@ -73,6 +73,8 @@ services:
       BILLING_AUTOMATIC_TAX: ${BILLING_AUTOMATIC_TAX:-false}
       BILLING_CANCEL_PRORATE: ${BILLING_CANCEL_PRORATE:-false}
       TRIAL_REMINDER_DAYS: ${TRIAL_REMINDER_DAYS:-3}
+      # OAuth server for the MCP connector: off until it ships (.env.example).
+      OAUTH_ENABLED: ${OAUTH_ENABLED:-false}
       # A path INSIDE the container; mount the file read-only there
       # (README, Billing). Unset = nothing granted, nothing gated.
       ENTITLEMENTS_FILE: ${ENTITLEMENTS_FILE:-}

@@ -240,6 +240,13 @@ export interface Config {
    *  server offers it; smtps://…:465 for implicit TLS). MAIL_FROM is
    *  the From address. Both null until set — while either is missing
    *  NO email is sent and none is ever reported as sent (see mailer.ts). */
+  /** OAUTH_ENABLED (default false): the OAuth 2.1 server for the MCP
+   *  connector — /api/oauth/*, /authorize, the /.well-known/ discovery
+   *  documents, and bearer tokens on the API. Off until the connector
+   *  ships (V, 2026-11-12: Beuk is a full product before any app gets
+   *  access): open registration must not sit on the public site unused.
+   *  Off = those doors are 404 and no bearer token is honoured. */
+  oauthEnabled: boolean;
   smtpUrl: string | null;
   mailFrom: string | null;
   /** When mail is not configured, write the would-be message (with its
@@ -429,6 +436,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     authRateRefillMs: Number(env.AUTH_RATE_REFILL_MS ?? 60_000),
     shutdownGraceMs: Number(env.SHUTDOWN_GRACE_MS ?? 20_000),
     sessionPurgeIntervalMs: Number(env.SESSION_PURGE_INTERVAL_MS ?? 3_600_000),
+    oauthEnabled: (env.OAUTH_ENABLED ?? '').toLowerCase() === 'true',
     smtpUrl: env.SMTP_URL || null,
     mailFrom: env.MAIL_FROM || null,
     mailLogLinks: env.MAIL_LOG_LINKS

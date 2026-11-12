@@ -7,6 +7,7 @@ import { base32Decode, totpCode, totpStep } from '../src/twostep/totp.js';
 import { pausedBody } from '../src/access.js';
 import type { MailMessage, Mailer, MailerStatus, MailResult } from '../src/mailer.js';
 import { purgeIdleOAuthClients } from '../src/oauth/model.js';
+import { loadConfig } from '../src/config.js';
 
 /** A configured mailer that records instead of sending. */
 class RecordingMailer implements Mailer {
@@ -775,4 +776,33 @@ test('registrations never connected are forgotten after a day; used ones are kep
   assert.ok(!ids.has(abandoned), 'the abandoned registration is gone');
   assert.ok(ids.has(fresh), 'a registration under a day old stays');
   assert.ok(ids.has(used), 'a client that ever got tokens stays (the app keeps its id and may come back)');
+});
+
+test('OAUTH_ENABLED off (the default until the MCP connector ships): every OAuth door is shut and no bearer is honoured', async () => {
+  assert.equal(loadConfig({}).oauthEnabled, false, 'off unless asked for');
+  assert.equal(loadConfig({ OAUTH_ENABLED: 'true' }).oauthEnabled, true);
+
+  // A grant issued while it was on, then the switch is turned off.
+  const grant = await fullGrant(`oauth-off-${randomBytes(4).toString('hex')}@example.com`);
+  const off = await startTestServer(db, undefined, { oauthEnabled: false });
+  try {
+    const get = (p: string) => fetch(`${off.base}${p}`, { redirect: 'manual' });
+    assert.equal((await get('/.well-known/oauth-authorization-server')).status, 404);
+    assert.equal((await get('/.well-known/oauth-protected-resource')).status, 404);
+    assert.equal((await get('/authorize?client_id=x')).status, 404);
+    const post = (p: string, body: unknown) =>
+      fetch(`${off.base}${p}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    assert.equal((await post('/api/oauth/register', { client_name: 'x', redirect_uris: [CALLBACK] })).status, 404);
+    assert.equal((await post('/api/oauth/token', { grant_type: 'refresh_token', refresh_token: grant.refresh })).status, 404);
+
+    const bearer = { authorization: `Bearer ${grant.access}` };
+    const me = await fetch(`${off.base}/api/auth/me`, { headers: bearer });
+    assert.equal(me.status, 401);
+    assert.equal(me.headers.get('www-authenticate'), null, 'no pointer to discovery documents that are not there');
+    assert.equal((await fetch(`${off.base}/api/manuscripts`, { headers: bearer })).status, 401);
+  } finally {
+    await off.close();
+  }
+  // The switch is per process: the same grant still works where it is on.
+  assert.equal(await meWithBearer(grant.access), 200);
 });

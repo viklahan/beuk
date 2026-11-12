@@ -285,7 +285,7 @@ export function accessGate(deps: AccessDeps) {
           userId = found.rows[0]?.id;
         }
         if (!userId) {
-          const bearer = bearerToken(req);
+          const bearer = deps.config.oauthEnabled ? bearerToken(req) : null;
           if (bearer) userId = (await findAccessGrant(deps.db, bearer))?.userId;
         }
         if (!userId) return next();

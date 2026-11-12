@@ -251,7 +251,9 @@ export function buildApp({
 
   // OAuth 2.1 for the remote MCP server (Phase 1): token exchange +
   // RFC 7591 dynamic client registration under /api/oauth.
-  app.use('/api/oauth', oauthApiRoutes(db, config));
+  // Only while OAUTH_ENABLED is on (src/config.ts): off, /api/oauth/*
+  // falls through to the /api 404 below.
+  if (config.oauthEnabled) app.use('/api/oauth', oauthApiRoutes(db, config));
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
 
@@ -260,8 +262,10 @@ export function buildApp({
   // discovery documents at /.well-known/ (which MUST live at the origin
   // root). Caddy forwards /authorize* and /.well-known/oauth-* here —
   // see the Caddyfile.
-  app.use(oauthAuthorizeRoutes(db, config, security));
-  app.use(oauthMetadataRoutes(config));
+  if (config.oauthEnabled) {
+    app.use(oauthAuthorizeRoutes(db, config, security));
+    app.use(oauthMetadataRoutes(config));
+  }
 
   // Beta-reader share links: the public read-only reader (no account).
   // Caddy proxies /read* to the app (see the Caddyfile).

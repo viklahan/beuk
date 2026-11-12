@@ -185,6 +185,9 @@ export function testConfig(overrides?: Partial<Config>): Config {
     sessionPurgeIntervalMs: 3_600_000,
     // Account basics: no SMTP by default (the unconfigured path is the
     // honest default) and no console logging of reset links in tests.
+    // On in tests so the OAuth suite exercises it; production's default
+    // is off (tests/oauth.test.ts pins both).
+    oauthEnabled: true,
     smtpUrl: null,
     mailFrom: null,
     mailLogLinks: false,
