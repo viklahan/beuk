@@ -379,6 +379,22 @@ describe('Dictation (A9)', () => {
     expect(editorText(ed).text).toBe(text0);
   }, 60_000);
 
+  it('dictation never writes into an editor that is not editable (a generated page hides it: 1.0 checks area.disabled)', async () => {
+    const recs = stubRecognition();
+    await studioWith(bookOf(['Hello there.']));
+    const ed = activeEditor()!.editor;
+    const text0 = editorText(ed).text;
+    act(() => {
+      ed.commands.focus('end');
+    });
+    act(() => $('btnDictate').click());
+    act(() => $('dictPopBegin').click());
+    expect(recs).toHaveLength(1);
+    act(() => ed.setEditable(false)); // what GenEditor does to the text editor on a generated page
+    act(() => recs[0]!.onresult!(results([['stray words', true]])));
+    expect(editorText(ed).text).toBe(text0);
+  }, 60_000);
+
   it('dictation.insert: two phrases in ONE recogniser session are two Undo steps (one per committed phrase, plan constraint 23)', async () => {
     const recs = stubRecognition();
     c.api.dict.seen = true;

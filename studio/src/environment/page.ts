@@ -117,7 +117,11 @@ function areaStandIn(): Record<string, unknown> | null {
   };
   return {
     nodeType: 0,
-    disabled: false,
+    // 1.0's #editorArea is disabled on a generated page, and dictOnResult (and its other callers) refuse a disabled
+    // area: the stand-in says so whenever the editor is not editable (GenEditor sets it so), never a constant false
+    get disabled() {
+      return !ed.isEditable;
+    },
     scrollTop: 0,
     scrollLeft: 0,
     get value() {
