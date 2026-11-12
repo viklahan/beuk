@@ -256,6 +256,11 @@ export interface Config {
    *  server offers it; smtps://…:465 for implicit TLS). MAIL_FROM is
    *  the From address. Both null until set — while either is missing
    *  NO email is sent and none is ever reported as sent (see mailer.ts). */
+  /** STUDIO_CLASSIC=true: the emergency rollback (spec D3). The app then
+   *  serves 1.0's client/index.html at /studio (as Caddy did before the
+   *  switch) and /studio/ redirects back to /studio. Default false: the
+   *  studio is 2.0 at /studio/ (src/routes/studio.ts). */
+  studioClassic: boolean;
   smtpUrl: string | null;
   mailFrom: string | null;
   /** When mail is not configured, write the would-be message (with its
@@ -448,6 +453,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     authRateRefillMs: Number(env.AUTH_RATE_REFILL_MS ?? 60_000),
     shutdownGraceMs: Number(env.SHUTDOWN_GRACE_MS ?? 20_000),
     sessionPurgeIntervalMs: Number(env.SESSION_PURGE_INTERVAL_MS ?? 3_600_000),
+    studioClassic: (env.STUDIO_CLASSIC ?? '').toLowerCase() === 'true',
     smtpUrl: env.SMTP_URL || null,
     mailFrom: env.MAIL_FROM || null,
     mailLogLinks: env.MAIL_LOG_LINKS

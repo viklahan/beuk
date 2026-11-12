@@ -149,8 +149,8 @@ test('Caddy serves each page at its exact path, and a trailing slash redirects t
   assert.ok(caddy.indexOf('handle /compare/dabble {') < caddy.indexOf('try_files {path} /index.html'));
 });
 
-test('both service workers leave /features and /compare to the network', () => {
-  for (const p of [['client', 'sw.js'], ['client', 'assets', 'sw.js']]) {
+test("1.0's worker copy leaves /features and /compare to the network (the root copy answers nothing at all: tests/sw-retire.test.ts)", () => {
+  for (const p of [['client', 'assets', 'sw.js']]) {
     const sw = read(...p);
     const re = /if \(url\.origin === self\.location\.origin && \/(\^\\\/\([^)]+\)\(\\\/\|\$\))\/\.test\(url\.pathname\)\) return;/.exec(sw);
     assert.ok(re, p.join('/'));

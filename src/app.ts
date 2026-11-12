@@ -12,7 +12,7 @@ import { createMailer, type Mailer } from './mailer.js';
 import { accountRoutes, BackgroundTasks, type AccountLimits } from './routes/account.js';
 import { authRoutes, signInLimitHandle } from './routes/auth.js';
 import { accountPortalRoutes, signupConfirmationHook, type PortalLimits } from './routes/account-portal.js';
-import { nextStudioRoutes } from './routes/next-studio.js';
+import { studioRoutes } from './routes/studio.js';
 import { billingRoutes } from './routes/billing.js';
 import { cspReportRoutes, type CspReportOptions } from './routes/csp-report.js';
 import { exportRoutes } from './routes/exports.js';
@@ -290,8 +290,9 @@ export function buildApp({
   app.use(invite.pages);
   // Accounts portal pages: /account, /account/confirm, /account/deleted.
   app.use(portal.pages);
-  // Beuk 2.0 studio (React) at /next, from the image's build (Caddy proxies /next* here).
-  app.use(nextStudioRoutes());
+  // The studio: Beuk 2.0 (React) at /studio/, from the image's build; /next redirects there. STUDIO_CLASSIC=true
+  // serves 1.0's index.html at /studio instead (the rollback). Caddy proxies /studio, /studio/* and /next* here.
+  app.use(studioRoutes({ classic: config.studioClassic }));
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     // body-parser marks an over-limit body; say so instead of a bare 500

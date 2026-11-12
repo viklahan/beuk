@@ -772,7 +772,8 @@ const read = (...p: string[]) => readFileSync(path.join(root, ...p), 'utf8');
 test('wiring: Caddy sends /account* to the app; both workers leave it to the network; robots keeps it out of search', async () => {
   const caddy = read('Caddyfile');
   assert.ok(caddy.includes('handle /account* {\n\t\treverse_proxy app:3000\n\t}'));
-  for (const p of [['client', 'sw.js'], ['client', 'assets', 'sw.js']]) {
+  // 1.0's worker copy; the root copy answers nothing at all (tests/sw-retire.test.ts)
+  for (const p of [['client', 'assets', 'sw.js']]) {
     // Other server pages share the group (status, features, …): account must be one of them.
     assert.match(read(...p), /\|sitemap\\\.xml(\|[a-z-]+)*\|account(\|[a-z-]+)*\)\(\\\/\|\$\)/, p.join('/'));
   }

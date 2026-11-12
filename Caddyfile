@@ -277,32 +277,34 @@
 	handle /status* {
 		reverse_proxy app:3000
 	}
-	# Beuk 2.0 studio (React), at /next while the port runs; unlinked, and
-	# 1.0 stays at /studio. Its build (studio/ → client/next/) is made in
-	# the image, not committed, so this static ./client mount never has
-	# it: the app serves it (src/routes/next-studio.ts), with the same
-	# headers as everything else here (the CSP above included).
-	# Exactly /next and /next/… (a bare /next* would also take /nextbook…).
+	# The studio: Beuk 2.0 (React) at /studio/. Its build (studio/ →
+	# client/next/) is made in the image, not committed, so this static
+	# ./client mount never has it: the app serves it (src/routes/studio.ts),
+	# with the same headers as everything else here (the CSP above
+	# included). The app also answers /studio with a 308 to /studio/ (the
+	# query kept: ?signin, ?signup, ?book=…), and with STUDIO_CLASSIC=true
+	# (the emergency rollback) it serves 1.0's index.html at /studio instead.
+	# Exactly /studio and /studio/… (a bare /studio* would also take /studiofoo).
+	@studio path /studio /studio/*
+	handle @studio {
+		reverse_proxy app:3000
+	}
+	# The old 2.0 address (testers' bookmarks): the app redirects /next and
+	# /next/… to the same path under /studio/. Exactly /next and /next/…
+	# (a bare /next* would also take /nextbook…).
 	@next path /next /next/*
 	handle @next {
 		reverse_proxy app:3000
 	}
 	# The landing page is the site's front door; the studio lives at /studio
-	# (and still at /index.html, which its offline shell caches). Every other
-	# path keeps falling back to the studio, so old links still open it.
+	# (above). Every other unknown path still falls back to the catch-all
+	# at the end, which answers with this mount's index.html: 1.0's file.
 	@landing path /
 	handle @landing {
 		header Cache-Control "no-cache"
 		header X-Beuk-Page "landing"
 		root * /srv/client
 		rewrite * /site/index.html
-		file_server
-	}
-	redir /studio/ /studio 308
-	handle /studio {
-		header Cache-Control "no-cache"
-		root * /srv/client
-		rewrite * /index.html
 		file_server
 	}
 

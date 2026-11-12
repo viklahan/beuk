@@ -7,7 +7,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-# Beuk 2.0 studio (React, served at /next by the app): studio/ has its own
+# Beuk 2.0 studio (React, served at /studio/ by the app): studio/ has its own
 # package.json and lockfile. Its build extracts the interface strings and
 # the theme tokens from client/index.html (studio/scripts/extract-studio.mjs,
 # with src/book/studio/closure.ts's parser selection) and imports the
@@ -70,7 +70,9 @@ COPY docs ./docs
 # them; they are NOT served from Caddy's static ./client mount, which
 # only the caddy container sees.
 COPY client ./client
-# The 2.0 studio's build (studio stage above), served at /next.
+# The 2.0 studio's build (studio stage above), served at /studio/ (the
+# directory keeps its name client/next/; src/routes/studio.ts). 1.0's
+# client/index.html (COPY client above) is what STUDIO_CLASSIC=true serves.
 COPY --from=studio /app/client/next ./client/next
 COPY CHANGELOG.md ./CHANGELOG.md
 # H1/H2 Help: the guides (Markdown), the error dictionary and the home

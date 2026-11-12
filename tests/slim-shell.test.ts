@@ -59,10 +59,10 @@ test('slim: the page lists exactly the manifest (same order, same values)', asyn
   assert.deepEqual(JSON.parse(cover[1]), m.cover);
 });
 
-test('slim: both service workers precache exactly the manifest files, at shell cache v18', async () => {
+test("slim: 1.0's worker copy precaches exactly the manifest files (the root copy retires itself: tests/sw-retire.test.ts)", async () => {
   const m = await manifest();
   const files = [...m.images, m.cover].map((p) => p.file).sort();
-  for (const [rel, prefix] of [['sw.js', './assets/sample/'], [path.join('assets', 'sw.js'), './sample/']] as const) {
+  for (const [rel, prefix] of [[path.join('assets', 'sw.js'), './sample/']] as const) {
     const sw = await readFile(path.join(client, rel), 'utf8');
     assert.match(sw, /const BEUK_CACHE = "beuk-shell-v22";/, rel);
     const block = /const BEUK_SAMPLE = \[([\s\S]*?)\];/.exec(sw);

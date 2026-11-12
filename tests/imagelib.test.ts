@@ -52,7 +52,8 @@ test('imagelib: the snapshot kind is whitelisted, the sample line is untouched, 
   assert.match(html, /autoSnapshot\("imgremove"\)/);
   // The sample's own pictures are never offered for removal while the sample is the book on the desk.
   assert.match(html, /const imglibIsSample = \(im\) => !!im && typeof im\.id === "string" && im\.id\.indexOf\("sample-img-"\) === 0 &&\s*\(sampleState\.loaded \|\| isSampleBookId\(state\.meta\.bookId\)\);/);
-  const sw = await readFile(path.join(here, '..', 'client', 'sw.js'), 'utf8');
+  // 1.0's worker rules live on in its fallback copy; the root copy retires itself (tests/sw-retire.test.ts).
+  const sw = await readFile(path.join(here, '..', 'client', 'assets', 'sw.js'), 'utf8');
   assert.match(sw, /beuk-shell-v22/);
   assert.match(sw, /beuk-sound-v2/);
 });

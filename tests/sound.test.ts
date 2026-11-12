@@ -100,8 +100,9 @@ test('sound files: the studio plays exactly the scenes that ship, from same-orig
   }
 });
 
-test('sound files: both service-worker twins runtime-cache the recordings, never precache them, and share one cache name', async () => {
-  for (const p of ['sw.js', path.join('assets', 'sw.js')]) {
+test("sound files: 1.0's worker copy runtime-caches the recordings, never precaches them", async () => {
+  // the root copy (client/sw.js) retires itself and deletes beuk-sound-* with 1.0's shell (tests/sw-retire.test.ts)
+  for (const p of [path.join('assets', 'sw.js')]) {
     const sw = await readFile(path.join(here, '..', 'client', p), 'utf8');
     assert.match(sw, /const BEUK_CACHE = "beuk-shell-v22";/, `${p}: shell cache at v22`);
     /* v2: rain and wind were replaced under the same names (round 6); the cache is

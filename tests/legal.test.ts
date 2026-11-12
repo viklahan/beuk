@@ -313,7 +313,8 @@ test('legal: Caddy proxies the pages to the app, and the workers leave them to t
   assert.ok(legal > 0 && caddy.indexOf('handle /terms* {') > 0, 'handle blocks');
   assert.ok(legal < caddy.indexOf('# === STATIC CLIENT ==='), 'before the static fallback');
   assert.match(caddy.slice(legal, legal + 60), /reverse_proxy app:3000/);
-  for (const sw of [read('client', 'sw.js'), read('client', 'assets', 'sw.js')]) {
+  // the root worker (client/sw.js) retires itself and answers nothing (tests/sw-retire.test.ts); 1.0's fallback copy:
+  for (const sw of [read('client', 'assets', 'sw.js')]) {
     assert.match(sw, /\(help\|support\|thanks\|changelog\|roadmap\|privacy\|terms[|)]/);
     assert.match(sw, /const BEUK_CACHE = "beuk-shell-v22"/);
   }

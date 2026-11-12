@@ -16,7 +16,7 @@ test('robots.txt keeps the studio, the API, reading copies and reset out of sear
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type') ?? '', /^text\/plain/);
     const body = await res.text();
-    for (const p of ['/api/', '/read/', '/reset', '/studio', '/index.html', '/help/search']) assert.ok(body.includes(`Disallow: ${p}\n`), p);
+    for (const p of ['/api/', '/read/', '/reset', '/studio', '/next', '/index.html', '/help/search']) assert.ok(body.includes(`Disallow: ${p}\n`), p);
     assert.match(body, /^Sitemap: https:\/\/beuk\.studio\/sitemap\.xml$/m);
   } finally {
     await server.close();
@@ -109,14 +109,17 @@ test('fonts-site.css: Karla, Literata and IBM Plex Mono only, every file on disk
 test('Caddy: / is the landing page (marked for the worker), /studio is the studio, robots and sitemap go to the app', () => {
   const caddy = read('Caddyfile');
   assert.match(caddy, /@landing path \/\n\thandle @landing \{\n\t\theader Cache-Control "no-cache"\n\t\theader X-Beuk-Page "landing"\n\t\troot \* \/srv\/client\n\t\trewrite \* \/site\/index\.html\n\t\tfile_server\n\t\}/);
-  assert.match(caddy, /redir \/studio\/ \/studio 308\n\thandle \/studio \{\n\t\theader Cache-Control "no-cache"\n\t\troot \* \/srv\/client\n\t\trewrite \* \/index\.html\n\t\tfile_server\n\t\}/);
+  // The studio is 2.0, served by the app (tests/studio.test.ts holds the rules): /studio and /studio/* go there.
+  assert.ok(caddy.includes('\t@studio path /studio /studio/*\n\thandle @studio {\n\t\treverse_proxy app:3000\n\t}'));
+  assert.ok(!caddy.includes('handle /studio {'), 'no static /studio');
   for (const p of ['/robots.txt', '/sitemap.xml']) assert.ok(caddy.includes(`handle ${p} {\n\t\treverse_proxy app:3000\n\t}`), p);
-  // The studio fallback for every other path stays, so old links still open it.
+  // The fallback for every other path stays (the static mount's index.html).
   assert.match(caddy, /try_files \{path\} \/index\.html/);
 });
 
-test('both service workers: the landing page is never cached as the studio; /studio refreshes the shell', () => {
-  for (const p of [['client', 'sw.js'], ['client', 'assets', 'sw.js']]) {
+test("1.0's assets copy of its worker: the landing page is never cached as the studio; /studio refreshes the shell", () => {
+  // client/sw.js (the root copy) retires itself now (tests/sw-retire.test.ts); its fallback copy keeps 1.0's rules.
+  for (const p of [['client', 'assets', 'sw.js']]) {
     const sw = read(...p);
     assert.match(sw, /url\.pathname === shellDir \+ "studio"/, p.join('/'));
     assert.match(sw, /res\.headers\.get\("X-Beuk-Page"\) !== "landing"/, p.join('/'));
