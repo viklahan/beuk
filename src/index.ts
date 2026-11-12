@@ -2,7 +2,7 @@ import { applyUpstreamKeepAlive } from './http-server.js';
 import type { Server } from 'node:http';
 import { buildApp } from './app.js';
 import { purgeExpiredSessions } from './auth.js';
-import { purgeExpiredOAuthTokens } from './oauth/model.js';
+import { purgeExpiredOAuthTokens, purgeIdleOAuthClients } from './oauth/model.js';
 import { createShutdown } from './shutdown.js';
 import { loadConfig } from './config.js';
 import { checkHelpContent, getHelpContent } from './help/content.js';
@@ -84,9 +84,13 @@ await jobsRunner?.recover().catch((err) => console.error('job recovery failed', 
 // indexed delete; requireAuth already refuses expired ones).
 const purge = () =>
   Promise.all([purgeExpiredSessions(db), purgeExpiredOAuthTokens(db)])
-    .then(([sessions, oauth]) => {
+    // Clients after tokens: a registration whose last token just
+    // expired is judged with that token gone.
+    .then(async ([sessions, oauth]) => [sessions, oauth, await purgeIdleOAuthClients(db)] as const)
+    .then(([sessions, oauth, clients]) => {
       if (sessions) console.log(`sessions: purged ${sessions} expired`);
       if (oauth) console.log(`oauth: purged ${oauth} expired tokens`);
+      if (clients) console.log(`oauth: forgot ${clients} never-connected client registrations`);
     })
     .catch((err) => console.error('session purge failed', err));
 await purge();

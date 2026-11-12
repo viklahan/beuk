@@ -5,13 +5,33 @@ import { Client, createTestDb, registerUser, startTestServer, type TestServer } 
 import type { Db } from '../src/db.js';
 import { base32Decode, totpCode, totpStep } from '../src/twostep/totp.js';
 import { pausedBody } from '../src/access.js';
+import type { MailMessage, Mailer, MailerStatus, MailResult } from '../src/mailer.js';
+import { purgeIdleOAuthClients } from '../src/oauth/model.js';
+
+/** A configured mailer that records instead of sending. */
+class RecordingMailer implements Mailer {
+  sent: MailMessage[] = [];
+  status(): MailerStatus {
+    return { configured: true, transport: 'smtp', from: 'Beuk <hello@example.com>', detail: 'recording mailer (test)' };
+  }
+  async send(message: MailMessage): Promise<MailResult> {
+    this.sent.push(message);
+    return { delivered: true, messageId: `<test-${this.sent.length}@example.com>` };
+  }
+  async verify() {
+    return { ok: true, detail: 'recording mailer (test)' };
+  }
+}
+
+const CONNECTED_SUBJECT = 'An app was connected to your Beuk account';
 
 let db: Db;
 let server: TestServer;
+const mailer = new RecordingMailer();
 
 before(async () => {
   db = await createTestDb();
-  server = await startTestServer(db);
+  server = await startTestServer(db, undefined, {}, undefined, { mailer });
 });
 
 after(async () => {
@@ -249,23 +269,37 @@ test('authorize refuses an unknown client and an unregistered redirect_uri WITHO
   assert.equal(wrongUri.location, null);
 });
 
-test('authorize rejects PKCE plain (and missing challenge) with a redirect error', async () => {
-  const clientId = await registerOAuthClient();
+test('a refused authorize request is an error page, never a redirect (open registration must not make Beuk an open redirector)', async () => {
+  // Anyone may register any https return address, so bouncing a
+  // malformed request to it would let a beuk.studio link forward a
+  // writer anywhere. The errors show here instead.
+  const evil = 'https://evil.example/cb';
+  const res = await new Client(server.base).post('/api/oauth/register', {
+    client_name: 'Claude',
+    redirect_uris: [evil],
+  });
+  const clientId = res.body.client_id as string;
   const browser = new Browser(server.base);
   const { challenge } = pkcePair();
 
-  const plain = await browser.get(authorizePath({ clientId, challenge, method: 'plain', state: 's1' }));
-  assert.equal(plain.status, 302);
-  const plainUrl = new URL(plain.location!);
-  assert.equal(plainUrl.searchParams.get('error'), 'invalid_request');
-  assert.equal(plainUrl.searchParams.get('state'), 's1');
+  const plain = await browser.get(authorizePath({ clientId, challenge, method: 'plain', state: 's1', redirectUri: evil }));
+  assert.equal(plain.status, 400);
+  assert.equal(plain.location, null);
+  assert.match(plain.text, /plain is refused/);
+  assert.doesNotMatch(plain.text, /evil\.example/);
 
-  const missing = await browser.get(authorizePath({ clientId, challenge: '' }));
-  assert.equal(missing.status, 302);
+  const missing = await browser.get(authorizePath({ clientId, challenge: '', redirectUri: evil }));
+  assert.equal(missing.status, 400);
+  assert.equal(missing.location, null);
 
-  const badScope = await browser.get(authorizePath({ clientId, challenge, scope: 'beuk:admin' }));
-  assert.equal(badScope.status, 302);
-  assert.equal(new URL(badScope.location!).searchParams.get('error'), 'invalid_scope');
+  const badScope = await browser.get(authorizePath({ clientId, challenge, scope: 'beuk:admin', redirectUri: evil }));
+  assert.equal(badScope.status, 400);
+  assert.equal(badScope.location, null);
+  assert.match(badScope.text, /supported scopes/);
+
+  const badType = await browser.get(authorizePath({ clientId, challenge, responseType: 'token', redirectUri: evil }));
+  assert.equal(badType.status, 400);
+  assert.equal(badType.location, null);
 });
 
 test('authorize shows the sign-in page when no session exists', async () => {
@@ -458,8 +492,13 @@ test('refresh grant rotates; reuse of the rotated token revokes the whole grant'
   const newAccess = rotated.body.access_token as string;
   assert.equal(await meWithBearer(newAccess), 200);
 
-  // Spending the OLD refresh token again = theft signal: refused, and
-  // the freshly rotated tokens die with it.
+  // Past the retry window: spending the OLD refresh token again = theft
+  // signal. Refused, and the freshly rotated tokens die with it.
+  await db.query(
+    `update oauth_tokens set revoked_at = now() - interval '5 minutes'
+     where client_id = $1 and kind = 'refresh' and revoked_at is not null`,
+    [grant.clientId],
+  );
   const reuse = await tokenRequest({
     grant_type: 'refresh_token',
     refresh_token: grant.refresh,
@@ -468,6 +507,35 @@ test('refresh grant rotates; reuse of the rotated token revokes the whole grant'
   assert.equal(reuse.status, 400);
   assert.equal(reuse.body.error, 'invalid_grant');
   assert.equal(await meWithBearer(newAccess), 401);
+});
+
+test('a refresh retried within 30 seconds is refused but does not cut the connection', async () => {
+  // A lost response, or two of the app's own workers racing: the second
+  // spend of a token rotated seconds ago is a retry, not a thief.
+  const grant = await fullGrant('oauth-refresh-retry@example.com');
+  const rotated = await tokenRequest({
+    grant_type: 'refresh_token',
+    refresh_token: grant.refresh,
+    client_id: grant.clientId,
+  });
+  assert.equal(rotated.status, 200);
+
+  const retry = await tokenRequest({
+    grant_type: 'refresh_token',
+    refresh_token: grant.refresh,
+    client_id: grant.clientId,
+  });
+  assert.equal(retry.status, 400);
+  assert.equal(retry.body.error, 'invalid_grant');
+  assert.equal(retry.body.access_token, undefined);
+  // The winner's tokens still work, refresh included.
+  assert.equal(await meWithBearer(rotated.body.access_token as string), 200);
+  const next = await tokenRequest({
+    grant_type: 'refresh_token',
+    refresh_token: rotated.body.refresh_token as string,
+    client_id: grant.clientId,
+  });
+  assert.equal(next.status, 200);
 });
 
 test('a refresh may narrow scopes, never widen them', async () => {
@@ -662,4 +730,49 @@ test('beuk:read bearer reads jobs; an unknown job stays the same honest 404', as
   const missing = await bearerFetch('GET', '/api/jobs/00000000-0000-4000-8000-00000000dead', grant.access);
   assert.equal(missing.status, 404);
   assert.deepEqual(missing.body, { error: 'job not found' });
+});
+
+test('approving a connection emails the writer: the app, where it sends you, what it may do; denying sends nothing', async () => {
+  const email = `oauth-connected-${randomBytes(4).toString('hex')}@example.com`;
+  await fullGrant(email, 'beuk:read beuk:write');
+  await server.settle();
+  const mails = mailer.sent.filter((m) => m.to === email && m.subject === CONNECTED_SUBJECT);
+  assert.equal(mails.length, 1, 'one email per approval');
+  const text = mails[0].text;
+  assert.match(text, /"Claude"/);
+  assert.match(text, /claude\.ai/);
+  assert.match(text, /Read your books, exports and account basics/);
+  assert.match(text, /Create and change your books/);
+  assert.doesNotMatch(text, /Build and download exports/);
+  assert.match(text, /If this wasn't you, change your password and sign out everywhere\./);
+
+  const denier = `oauth-connected-deny-${randomBytes(4).toString('hex')}@example.com`;
+  const clientId = await registerOAuthClient();
+  const browser = new Browser(server.base);
+  await browser.signIn(denier);
+  const { challenge } = pkcePair();
+  const screen = await browser.get(authorizePath({ clientId, challenge }));
+  await browser.postForm('/authorize/decision', { consent: consentTokenFrom(screen.text), decision: 'deny' });
+  await server.settle();
+  assert.equal(mailer.sent.filter((m) => m.to === denier && m.subject === CONNECTED_SUBJECT).length, 0);
+});
+
+test('registrations never connected are forgotten after a day; used ones are kept', async () => {
+  const reg = async () =>
+    (await new Client(server.base).post('/api/oauth/register', { client_name: 'idle', redirect_uris: [CALLBACK] })).body
+      .client_id as string;
+  const abandoned = await reg();
+  const fresh = await reg();
+  const used = (await fullGrant(`oauth-purge-${randomBytes(4).toString('hex')}@example.com`)).clientId;
+  // Two days on, the used client's tokens long gone.
+  await db.query(`update oauth_clients set created_at = now() - interval '2 days' where id = any($1::uuid[])`, [[abandoned, used]]);
+  await db.query('delete from oauth_tokens where client_id = $1', [used]);
+
+  const removed = await purgeIdleOAuthClients(db);
+  assert.ok(removed >= 1);
+  const left = await db.query<{ id: string }>('select id from oauth_clients where id = any($1::uuid[])', [[abandoned, fresh, used]]);
+  const ids = new Set(left.rows.map((r) => r.id));
+  assert.ok(!ids.has(abandoned), 'the abandoned registration is gone');
+  assert.ok(ids.has(fresh), 'a registration under a day old stays');
+  assert.ok(ids.has(used), 'a client that ever got tokens stays (the app keeps its id and may come back)');
 });

@@ -260,7 +260,7 @@ export function buildApp({
   // discovery documents at /.well-known/ (which MUST live at the origin
   // root). Caddy forwards /authorize* and /.well-known/oauth-* here —
   // see the Caddyfile.
-  app.use(oauthAuthorizeRoutes(db, config));
+  app.use(oauthAuthorizeRoutes(db, config, security));
   app.use(oauthMetadataRoutes(config));
 
   // Beta-reader share links: the public read-only reader (no account).

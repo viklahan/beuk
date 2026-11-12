@@ -4,12 +4,13 @@ import type { Mailer } from '../mailer.js';
 import { tokenHash } from '../auth.js';
 import { accountUrl, html, link as linkTo, para, renderEmail, type RenderedEmail } from './layout.js';
 import type { BackgroundTasks } from '../routes/account.js';
+import { SCOPE_COPY } from '../oauth/pages.js';
 
 /**
  * The security emails (account hardening): a new sign-in from a device
  * label no other live session of the account has, two-step turned on,
  * two-step turned off, a recovery code used (with how many are left),
- * and new recovery codes made.
+ * new recovery codes made, and an app (Claude, say) connected.
  *
  * Each says what happened and when (whenWords, the server clock in
  * UTC). Every one is sent through BackgroundTasks after the response: a
@@ -98,6 +99,35 @@ export function recoveryNewEmail(config: Config, at: Date): RenderedEmail {
   );
 }
 
+export interface ConnectedApp {
+  /** The name the app registered itself with — anyone may pick any name. */
+  clientName: string;
+  /** Where approval sent the writer: the part a look-alike can't fake. */
+  redirectHost: string;
+  scopes: string[];
+}
+
+/** The app chose its own name: one line, quoted, cut short, so it can't
+ *  pose as a paragraph of this email. */
+function appNameWords(name: string): string {
+  const one = name.replace(/\s+/g, ' ').trim();
+  return one.length > 80 ? `${one.slice(0, 79)}…` : one || 'An app';
+}
+
+export function appConnectedEmail(config: Config, app: ConnectedApp, at: Date): RenderedEmail {
+  const may = app.scopes.map((s) => SCOPE_COPY[s] ?? s).join('; ');
+  return body(
+    config,
+    'An app was connected to your Beuk account',
+    [
+      `An app calling itself "${appNameWords(app.clientName)}" was connected to your Beuk account on ${whenWords(at)}. It sends you back to ${app.redirectHost}.`,
+      `What it may do: ${may}.`,
+      "If that was you, there's nothing to do. Signing out everywhere disconnects every app.",
+    ],
+    'an app was connected to your Beuk account',
+  );
+}
+
 export interface SecurityEmailDeps {
   db: Db;
   config: Config;
@@ -115,6 +145,8 @@ export interface SecurityEmails {
   twoStepOff(user: User): void;
   recoveryUsed(user: User, left: number): void;
   recoveryNew(user: User): void;
+  /** After the writer approves a connection on the consent screen. */
+  appConnected(user: User, app: ConnectedApp): void;
 }
 
 export function securityEmails(deps: SecurityEmailDeps): SecurityEmails {
@@ -181,6 +213,15 @@ export function securityEmails(deps: SecurityEmailDeps): SecurityEmails {
         // email-kind: security-recovery-new
         const result = await mailer.send({ to: user.email, ...recoveryNewEmail(config, at) });
         warn('security-recovery-new', result);
+      });
+    },
+    appConnected(user, app) {
+      if (!on()) return;
+      const at = now();
+      tasks.run(async () => {
+        // email-kind: security-app-connected
+        const result = await mailer.send({ to: user.email, ...appConnectedEmail(config, app, at) });
+        warn('security-app-connected', result);
       });
     },
   };

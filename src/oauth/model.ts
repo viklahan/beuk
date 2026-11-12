@@ -120,15 +120,22 @@ export async function consumeOAuthToken(
 export async function findRefreshToken(
   db: Db,
   token: string,
-): Promise<(OAuthTokenRow & { revoked: boolean; expired: boolean }) | null> {
-  const found = await db.query<OAuthTokenRow & { revoked: boolean; expired: boolean }>(
+): Promise<(OAuthTokenRow & { revoked: boolean; expired: boolean; just_rotated: boolean }) | null> {
+  const found = await db.query<OAuthTokenRow & { revoked: boolean; expired: boolean; just_rotated: boolean }>(
     `select id, kind, user_id, client_id, scopes, redirect_uri, code_challenge, state,
-            (revoked_at is not null) as revoked, (expires_at <= now()) as expired
+            (revoked_at is not null) as revoked, (expires_at <= now()) as expired,
+            (revoked_at > now() - make_interval(secs => $2)) as just_rotated
      from oauth_tokens where token_hash = $1 and kind = 'refresh'`,
-    [tokenHash(token)],
+    [tokenHash(token), REFRESH_RETRY_GRACE_S],
   );
   return found.rows[0] ?? null;
 }
+
+/** Seconds after a rotation in which spending the old refresh token
+ *  again is treated as a retry (a lost response, or two of the app's own
+ *  workers racing): refused, but the connection is NOT cut. After that,
+ *  reuse is the theft signal and revokes the client's whole grant. */
+export const REFRESH_RETRY_GRACE_S = 30;
 
 export interface AccessGrant {
   userId: string;
@@ -208,4 +215,26 @@ export function resolveScopes(requested: string | undefined | null): string | nu
 
 export function scopeGranted(grantedScopes: string, needed: OAuthScope): boolean {
   return grantedScopes.split(' ').includes(needed);
+}
+
+
+/** A client just got tokens: it is in use and must never be purged as
+ *  an abandoned registration (migration 027). */
+export async function markClientUsed(db: Db, clientId: string): Promise<void> {
+  await db.query('update oauth_clients set last_used_at = now() where id = $1', [clientId]);
+}
+
+/** Open registration writes rows (review M4): a registration over a day
+ *  old that never got a token and holds no consent or code in flight is
+ *  deleted. Clients that were ever used are kept (see migration 027).
+ *  Returns rows removed. */
+export async function purgeIdleOAuthClients(db: Db): Promise<number> {
+  const removed = await db.query<{ id: string }>(
+    `delete from oauth_clients c
+     where c.last_used_at is null
+       and c.created_at < now() - interval '1 day'
+       and not exists (select 1 from oauth_tokens t where t.client_id = c.id)
+     returning id`,
+  );
+  return removed.rows.length;
 }

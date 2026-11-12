@@ -339,6 +339,7 @@ const EMAIL_KIND_NEEDLES: Record<string, string> = {
   'security-two-step-off': 'when two-step sign-in is turned on or off',
   'security-recovery-used': 'when a recovery code is used',
   'security-recovery-new': 'when new recovery codes are made',
+  'security-app-connected': 'when an app is connected to your account',
   'housekeeping-test': 'a test email an admin asks for',
   'backup-alert': 'backup alerts to the operator',
   'self-check-probe': 'a self-check message that is never delivered',

@@ -12,6 +12,7 @@ import {
   findClient,
   findRefreshToken,
   issueOAuthToken,
+  markClientUsed,
   OAUTH_SCOPES,
   pkceChallengeMatches,
   REFRESH_TTL_MS,
@@ -20,6 +21,7 @@ import {
   revokeClientGrant,
 } from '../oauth/model.js';
 import { consentPage, errorPage, returnPage, signInPage } from '../oauth/pages.js';
+import type { SecurityEmails } from '../email/security.js';
 
 /** OAuth endpoints are called cross-origin by browser-based clients
  *  (MCP Inspector runs in a browser); they carry no cookies and answer
@@ -109,7 +111,10 @@ const decisionBody = z.object({
   decision: z.enum(['approve', 'deny']),
 });
 
-export function oauthAuthorizeRoutes(db: Db, config: Config): Router {
+/** `security` (optional): the writer is emailed on every approved
+ *  connection (src/email/security.ts appConnected) — a connection
+ *  approved from a stolen session must not go unnoticed (review I1). */
+export function oauthAuthorizeRoutes(db: Db, config: Config, security?: SecurityEmails): Router {
   const router = Router();
   const form = express.urlencoded({ extended: false, limit: '16kb' });
 
@@ -139,36 +144,37 @@ export function oauthAuthorizeRoutes(db: Db, config: Config): Router {
           .send(errorPage('the return address does not match what this client registered'));
       }
 
-      // From here the client is authenticated by its redirect_uri, so
-      // errors go BACK to it (error + state), per RFC 6749 §4.1.2.1.
-      const redirectError = (error: string, description: string) => {
-        const url = new URL(q.redirect_uri!);
-        url.searchParams.set('error', error);
-        url.searchParams.set('error_description', description);
-        if (q.state) url.searchParams.set('state', q.state);
-        return res.redirect(302, url.toString());
-      };
+      // RFC 6749 §4.1.2.1 would send these errors back to the client's
+      // redirect_uri. Registration is open, though — anyone can register
+      // any https address — so an automatic bounce would make a
+      // beuk.studio link forward a writer anywhere (an open redirector;
+      // RFC 9700 §4.11.2 says redirect only to a trusted address). The
+      // request is refused HERE instead. Real clients (Claude, MCP
+      // Inspector) never send these malformed requests. The one redirect
+      // left is after the writer's own click on the consent screen.
+      const refuse = (_error: string, description: string) =>
+        res.status(400).type('html').send(errorPage(description));
 
       if (q.response_type !== 'code') {
-        return redirectError('unsupported_response_type', 'only response_type=code is supported');
+        return refuse('unsupported_response_type', 'only response_type=code is supported');
       }
       // OAuth 2.1: PKCE is mandatory and only S256 is accepted — 'plain'
       // is explicitly refused (the work order's hard requirement).
       if (q.code_challenge_method !== 'S256') {
-        return redirectError('invalid_request', 'PKCE with code_challenge_method=S256 is required (plain is refused)');
+        return refuse('invalid_request', 'PKCE with code_challenge_method=S256 is required (plain is refused)');
       }
       if (!q.code_challenge || !BASE64URL_43_128.test(q.code_challenge)) {
-        return redirectError('invalid_request', 'code_challenge must be the base64url SHA-256 of the verifier');
+        return refuse('invalid_request', 'code_challenge must be the base64url SHA-256 of the verifier');
       }
       const scopes = resolveScopes(q.scope);
       if (scopes === null) {
-        return redirectError('invalid_scope', `supported scopes: ${OAUTH_SCOPES.join(' ')}`);
+        return refuse('invalid_scope', `supported scopes: ${OAUTH_SCOPES.join(' ')}`);
       }
       // RFC 8707 resource indicator: accepted when it parses as a URL.
       // The AS and the resource are the same single origin here, so the
       // token is not audience-split further in Phase 1.
       if (q.resource !== undefined && !z.url().safeParse(q.resource).success) {
-        return redirectError('invalid_target', 'resource must be an absolute URL');
+        return refuse('invalid_target', 'resource must be an absolute URL');
       }
 
       const user = await sessionUser(db, req);
@@ -240,6 +246,14 @@ export function oauthAuthorizeRoutes(db: Db, config: Config): Router {
         codeChallenge: consent.code_challenge,
       });
       url.searchParams.set('code', code);
+      if (security) {
+        const client = await findClient(db, consent.client_id);
+        security.appConnected(user, {
+          clientName: client?.client_name ?? 'An app',
+          redirectHost: url.host,
+          scopes: consent.scopes.split(' '),
+        });
+      }
       return res.status(200).type('html').send(returnPage(url.toString()));
     } catch (err) {
       return next(err);
@@ -372,6 +386,7 @@ export function oauthApiRoutes(db: Db, config: Config): Router {
           scopes,
           ttlMs: REFRESH_TTL_MS,
         });
+        await markClientUsed(db, client.id);
         return res.json({
           access_token: accessToken,
           token_type: 'Bearer',
@@ -406,9 +421,18 @@ export function oauthApiRoutes(db: Db, config: Config): Router {
         return res.status(400).json({ error: 'invalid_grant', error_description: 'refresh token is invalid or expired' });
       }
       if (seen.revoked) {
-        // Reuse of a rotated refresh token = the grant may be stolen
-        // (OAuth 2.1 §4.3.1): everything this user issued to this
-        // client is revoked, and the caller is told plainly.
+        // Spent again within REFRESH_RETRY_GRACE_S of its rotation: a
+        // retry (lost response, racing workers of the same app), not a
+        // thief — refused, the newer tokens left alone (review M5).
+        if (seen.just_rotated) {
+          return res.status(400).json({
+            error: 'invalid_grant',
+            error_description: 'refresh token was already used — use the one issued with it',
+          });
+        }
+        // Later reuse of a rotated refresh token = the grant may be
+        // stolen (OAuth 2.1 §4.3.1): everything this user issued to
+        // this client is revoked, and the caller is told plainly.
         if (!seen.expired) await revokeClientGrant(db, seen.user_id, seen.client_id);
         return res.status(400).json({
           error: 'invalid_grant',
