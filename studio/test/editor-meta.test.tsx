@@ -390,4 +390,10 @@ describe('1.0 bug (fixed in client/index.html): the drop cap and small-caps swit
       expect(line, id).toMatch(/noteBookEdited\(\)/);
     }
   });
+  it('every bindSwitch in 1.0 marks the book edited: a switch click fires no "input", so without it the toggle alone is never saved (Justify, Hyphenation too)', () => {
+    const html = readFileSync(path.join(import.meta.dirname, '..', '..', 'client', 'index.html'), 'utf8');
+    const calls = html.split('\n').filter((l) => /bindSwitch\(\$\("/.test(l));
+    expect(calls.length).toBeGreaterThanOrEqual(4);
+    for (const line of calls) expect(/noteBookEdited\(\)/.test(line), line.trim().slice(0, 60)).toBe(true);
+  });
 });

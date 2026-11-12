@@ -36464,8 +36464,8 @@
         $("segParaMode").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
           state.theme.paraMode = b.getAttribute("data-mode"); customTheme(); syncStudioControls(); renderPreview();
         }));
-        bindSwitch($("tglJustify"), () => state.theme.justify, (v) => { state.theme.justify = v; customTheme(); renderPreview(); });
-        bindSwitch($("tglHyph"), () => state.theme.hyphens, (v) => { state.theme.hyphens = v; customTheme(); renderPreview(); });
+        bindSwitch($("tglJustify"), () => state.theme.justify, (v) => { state.theme.justify = v; customTheme(); noteBookEdited(); renderPreview(); }); /* a switch is no "input": it marks the book edited itself (as tglDropCap) */
+        bindSwitch($("tglHyph"), () => state.theme.hyphens, (v) => { state.theme.hyphens = v; customTheme(); noteBookEdited(); renderPreview(); });
         $("btnFlourishUpload").addEventListener("click", () => $("flourishFileInput").click());
         $("flourishFileInput").addEventListener("change", () => {
           const input = $("flourishFileInput");
