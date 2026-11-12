@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { Client, createTestDb, registerUser, startTestServer, type TestServer } from './helpers.js';
 import type { Db } from '../src/db.js';
+import { base32Decode, totpCode, totpStep } from '../src/twostep/totp.js';
 
 let db: Db;
 let server: TestServer;
@@ -56,6 +57,18 @@ class Browser {
     const res = await fetch(`${this.base}${path}`, { headers: this.headers(), redirect: 'manual' });
     this.storeCookie(res);
     return { status: res.status, text: await res.text(), location: res.headers.get('location') };
+  }
+
+  /** What the sign-in page's script sends: JSON, the session cookie kept. */
+  async postJson(path: string, body: unknown): Promise<{ status: number; body: Record<string, unknown>; setCookie: boolean }> {
+    const res = await fetch(`${this.base}${path}`, {
+      method: 'POST',
+      headers: this.headers({ 'content-type': 'application/json' }),
+      body: JSON.stringify(body),
+    });
+    const setCookie = res.headers.getSetCookie().some((c) => /^beuk_session=[^;]+/.test(c));
+    this.storeCookie(res);
+    return { status: res.status, body: (await res.json()) as Record<string, unknown>, setCookie };
   }
 
   async postForm(path: string, fields: Record<string, string>): Promise<{ status: number; text: string }> {
@@ -262,6 +275,41 @@ test('authorize shows the sign-in page when no session exists', async () => {
   assert.equal(page.status, 200);
   assert.match(page.text, /Sign in to Beuk/);
   assert.doesNotMatch(page.text, /name="consent"/);
+});
+
+test('two-step on: the sign-in page takes the code step, and login + code reaches the consent screen', async () => {
+  // The page: a password-only script loops forever for a two-step writer
+  // (login answers {twoStep, challenge} and sets no cookie, the page
+  // reloads into the same form). It must ask for the code and send it on.
+  const clientId = await registerOAuthClient();
+  const { challenge } = pkcePair();
+  const page = (await new Browser(server.base).get(authorizePath({ clientId, challenge }))).text;
+  assert.match(page, /id="code"/, 'the page has a code field');
+  assert.match(page, /\.twoStep/, 'the script reads twoStep from the login answer');
+  assert.match(page, /\/api\/auth\/login\/code/, 'the script sends the code to /api/auth/login/code');
+
+  // The server half, exactly as the page drives it.
+  const email = `oauth-twostep-${randomBytes(4).toString('hex')}@example.com`;
+  const studio = new Client(server.base);
+  assert.equal((await registerUser(studio, email, 'correct horse battery')).status, 201);
+  const s = await studio.post('/api/account/two-step/start', { currentPassword: 'correct horse battery' });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  const secret = base32Decode(s.body.secret as string);
+  const step = totpStep(Date.now());
+  assert.equal((await studio.post('/api/account/two-step/enable', { code: totpCode(secret, step) })).status, 200);
+
+  const browser = new Browser(server.base);
+  const login = await browser.postJson('/api/auth/login', { email, password: 'correct horse battery' });
+  assert.equal(login.status, 200);
+  assert.equal(login.body.twoStep, true);
+  assert.equal(login.setCookie, false, 'no session before the code');
+  // The next step: enable spent this one (replay guard).
+  const code = await browser.postJson('/api/auth/login/code', { challenge: login.body.challenge, code: totpCode(secret, step + 1) });
+  assert.equal(code.status, 200, JSON.stringify(code.body));
+  assert.equal(code.setCookie, true);
+  const consent = await browser.get(authorizePath({ clientId, challenge }));
+  assert.equal(consent.status, 200);
+  assert.match(consent.text, /name="consent"/, 'signed in with the code: the consent screen, not the sign-in form');
 });
 
 test('consent decision is CSRF-protected: forged, reused and cross-user tokens are refused', async () => {

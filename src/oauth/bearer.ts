@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { readCookie, SESSION_COOKIE, tokenHash } from '../auth.js';
+import { readCookie, SESSION_COOKIE, sessionUser } from '../auth.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { findAccessGrant, scopeGranted, type OAuthScope } from './model.js';
@@ -96,13 +96,8 @@ export function requireSessionOrBearer(db: Db, config: Config) {
     try {
       const cookie = readCookie(req, SESSION_COOKIE);
       if (cookie) {
-        const found = await db.query<{ id: string; email: string }>(
-          `select u.id, u.email from sessions s
-           join users u on u.id = s.user_id
-           where s.token_hash = $1 and s.expires_at > now()`,
-          [tokenHash(cookie)],
-        );
-        const user = found.rows[0];
+        // The same lookup requireAuth makes, "last active" included.
+        const user = await sessionUser(db, cookie);
         if (user) {
           req.user = user;
           return next();

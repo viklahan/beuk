@@ -87,6 +87,37 @@ export async function purgeExpiredSessions(db: Db): Promise<number> {
 }
 
 /** Express middleware: resolves the session cookie to req.user, else 401. */
+/** The ONE cookie-session lookup: the live session's user, or null, with
+ *  "last active" kept. requireAuth and the OAuth cookie-or-bearer
+ *  middleware (src/oauth/bearer.ts) both call it, so a route moved onto
+ *  either keeps the same session behaviour. */
+export async function sessionUser(db: Db, token: string): Promise<AuthedUser | null> {
+  const result = await db.query<{ id: string; email: string; session_id: string; stale: boolean }>(
+    `select u.id, u.email, s.id as session_id,
+            (s.last_seen_at is null or s.last_seen_at < now() - make_interval(mins => $2)) as stale
+     from sessions s
+     join users u on u.id = s.user_id
+     where s.token_hash = $1 and s.expires_at > now()`,
+    [tokenHash(token), LAST_SEEN_REFRESH_MINUTES],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  // "Last active": one write per session per 10 minutes at most. A
+  // failed write is logged and never refuses the request.
+  if (row.stale) {
+    try {
+      await db.query(
+        `update sessions set last_seen_at = now()
+         where id = $1 and (last_seen_at is null or last_seen_at < now() - make_interval(mins => $2))`,
+        [row.session_id, LAST_SEEN_REFRESH_MINUTES],
+      );
+    } catch (err) {
+      console.error(JSON.stringify({ event: 'auth.last_seen_failed', at: new Date().toISOString(), error: err instanceof Error ? err.message : String(err) }));
+    }
+  }
+  return { id: row.id, email: row.email };
+}
+
 export function requireAuth(db: Db) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -95,33 +126,12 @@ export function requireAuth(db: Db) {
         res.status(401).json({ error: 'not signed in' });
         return;
       }
-      const result = await db.query<{ id: string; email: string; session_id: string; stale: boolean }>(
-        `select u.id, u.email, s.id as session_id,
-                (s.last_seen_at is null or s.last_seen_at < now() - make_interval(mins => $2)) as stale
-         from sessions s
-         join users u on u.id = s.user_id
-         where s.token_hash = $1 and s.expires_at > now()`,
-        [tokenHash(token), LAST_SEEN_REFRESH_MINUTES],
-      );
-      const row = result.rows[0];
-      if (!row) {
+      const user = await sessionUser(db, token);
+      if (!user) {
         res.status(401).json({ error: 'session expired or invalid' });
         return;
       }
-      // "Last active": one write per session per 10 minutes at most. A
-      // failed write is logged and never refuses the request.
-      if (row.stale) {
-        try {
-          await db.query(
-            `update sessions set last_seen_at = now()
-             where id = $1 and (last_seen_at is null or last_seen_at < now() - make_interval(mins => $2))`,
-            [row.session_id, LAST_SEEN_REFRESH_MINUTES],
-          );
-        } catch (err) {
-          console.error(JSON.stringify({ event: 'auth.last_seen_failed', at: new Date().toISOString(), error: err instanceof Error ? err.message : String(err) }));
-        }
-      }
-      req.user = { id: row.id, email: row.email };
+      req.user = user;
       next();
     } catch (err) {
       next(err);

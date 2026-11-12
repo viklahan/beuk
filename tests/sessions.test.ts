@@ -257,6 +257,20 @@ test('last_seen_at: not rewritten within 10 minutes, rewritten after 10 minutes'
   assert.ok((await row()).last_seen_at);
 });
 
+test('last_seen_at: the shelf and jobs routes (cookie OR bearer since OAuth) refresh it like requireAuth', async () => {
+  const w = await writer();
+  const row = async () =>
+    (await db.query<{ id: string; last_seen_at: Date | string }>('select id, last_seen_at from sessions where user_id = $1', [w.id])).rows[0];
+  for (const route of ['/api/manuscripts', '/api/jobs/00000000-0000-4000-8000-000000000000']) {
+    const { id } = await row();
+    await db.query(`update sessions set last_seen_at = now() - interval '11 minutes' where id = $1`, [id]);
+    const before = new Date((await row()).last_seen_at).getTime();
+    await w.c.get(route);
+    const after = new Date((await row()).last_seen_at).getTime();
+    assert.ok(after > before + 10 * 60_000, `${route} refreshed last_seen_at (${after - before} ms later)`);
+  }
+});
+
 test('sessions: no IP address column exists', async () => {
   const cols = (
     await db.query<{ column_name: string }>(

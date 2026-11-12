@@ -44,36 +44,93 @@ function page(title: string, body: string): string {
 
 /** /authorize while signed out: sign in with the EXISTING session login
  *  (POST /api/auth/login sets the beuk_session cookie), then reload this
- *  same /authorize URL, query string and all. */
+ *  same /authorize URL, query string and all.
+ *
+ *  Two-step sign-in (migration 025): with it on, /api/auth/login answers
+ *  200 {twoStep, challenge} and sets NO cookie, so a reload would land on
+ *  this same form forever. The page then asks for the code (authenticator
+ *  or recovery code) and sends it to /api/auth/login/code with the
+ *  challenge; that answer sets the cookie, and the reload reaches the
+ *  consent screen. The password and the code are never kept. */
 export function signInPage(clientName: string): string {
   return page(
     'Sign in to Beuk',
     `<h1>Sign in to Beuk</h1>
 <p><strong>${esc(clientName)}</strong> is asking to connect to your Beuk account. Sign in to continue.</p>
 <form id="f">
-  <label for="email">Email</label>
-  <input id="email" name="email" type="email" autocomplete="email" required>
-  <label for="password">Password</label>
-  <input id="password" name="password" type="password" autocomplete="current-password" required>
-  <p class="error" id="err"></p>
-  <div class="row"><button class="primary" type="submit">Sign in</button></div>
+  <div id="pwStep">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" autocomplete="email" required>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+  </div>
+  <div id="codeStep" hidden>
+    <p>Two-step sign-in is on. Type the 6-digit code from your authenticator app, or a recovery code.</p>
+    <label for="code">Code</label>
+    <input id="code" name="code" type="text" inputmode="text" autocomplete="one-time-code" maxlength="32">
+  </div>
+  <p class="error" id="err" role="alert"></p>
+  <div class="row"><button class="primary" type="submit" id="go">Sign in</button></div>
 </form>
 <script>
+let challenge = null;
+const post = (path, body) => fetch(path, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(body),
+}).catch(() => null);
+const failText = async (res) => {
+  const body = res ? await res.json().catch(() => ({})) : {};
+  return body.error || 'sign-in failed — please try again';
+};
 document.getElementById('f').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = document.getElementById('err');
+  const go = document.getElementById('go');
   err.textContent = '';
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
+  go.disabled = true;
+  try {
+    if (challenge) {
+      const codeField = document.getElementById('code');
+      const res = await post('/api/auth/login/code', { challenge, code: codeField.value });
+      codeField.value = '';
+      if (res && res.ok) { location.reload(); return; }
+      // 410: the challenge died (5 minutes or 5 wrong codes) — start over.
+      if (res && res.status === 410) {
+        challenge = null;
+        document.getElementById('codeStep').hidden = true;
+        document.getElementById('pwStep').hidden = false;
+        document.getElementById('password').required = true;
+        document.getElementById('code').required = false;
+      }
+      err.textContent = await failText(res);
+      return;
+    }
+    const passwordField = document.getElementById('password');
+    const res = await post('/api/auth/login', {
       email: document.getElementById('email').value,
-      password: document.getElementById('password').value,
-    }),
-  }).catch(() => null);
-  if (res && res.ok) { location.reload(); return; }
-  const body = res ? await res.json().catch(() => ({})) : {};
-  err.textContent = body.error || 'sign-in failed — please try again';
+      password: passwordField.value,
+    });
+    passwordField.value = '';
+    if (res && res.ok) {
+      const body = await res.json().catch(() => ({}));
+      if (body.twoStep && typeof body.challenge === 'string') {
+        challenge = body.challenge;
+        document.getElementById('pwStep').hidden = true;
+        document.getElementById('codeStep').hidden = false;
+        passwordField.required = false;
+        const codeField = document.getElementById('code');
+        codeField.required = true;
+        codeField.focus();
+        return;
+      }
+      location.reload();
+      return;
+    }
+    err.textContent = await failText(res);
+  } finally {
+    go.disabled = false;
+  }
 });
 </script>`,
   );
