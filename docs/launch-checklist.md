@@ -363,10 +363,16 @@ only with the full gate green, fast-forward only.
 
 **Rollback, for emergencies only:** set `STUDIO_CLASSIC=true` in `.env`
 and run `docker compose up -d app`. The app then serves 1.0 at `/studio`
-again. Know the cost before you flip it: words written in 2.0 on a
-device are **not** in 1.0's device store (a book on the cloud shelf
-opens in both; a device-only book opens in 1.0 as it was before the
-switch), and 1.0 runs online only (its offline worker retires itself).
+again. Know the cost, both ways, before you flip it:
+- words written in 2.0 on a device are **not** in 1.0's device store (a
+  book on the cloud shelf opens in both; a device-only book opens in 1.0
+  as 1.0 last saved it);
+- words written in 1.0 on a device during the rollback **never reach
+  2.0** after you flip back (2.0 imports 1.0's store once only). **Before
+  flipping back, tell writers to put device-only books on the cloud shelf
+  or export them;**
+- 1.0 runs online only (its offline worker retires itself).
+
 Remove the setting (or set it to `false`) and run the same command to
 return to 2.0. [estimate: the rollback is covered by the server tests
 (`tests/studio.test.ts`), never flipped on the box.] README: "The front
@@ -400,8 +406,18 @@ door" has the details.
 
 - HTTP/3 is not offered: Compose publishes 443/tcp only. Browsers use
   HTTP/2 [measured]. Not needed for launch.
-- Unknown paths (including `/.env`, `/.git/config`) answer the studio
-  page with 200 — the SPA fallback — never a file from the server
-  [measured: the body was the studio's HTML in every case]. Since the
-  2.0 switch that fallback page is still `client/index.html`, 1.0's file
-  (the studio itself is 2.0 at `/studio/`).
+- Unknown paths: since the 2.0 switch there is no SPA fallback. A
+  missing path without an extension (`/.git/config`, an old link) answers
+  a 302 to `/studio`; one with an extension (`/.env`, a missing script)
+  a plain 404; `/index.html` a 308 to `/studio`. Never 1.0's page.
+  [estimate: pinned as Caddyfile text by `tests/studio.test.ts`; not yet
+  requested against a running Caddy. Before the switch the measured
+  answer was the studio's HTML with 200 for every unknown path.]
+- A browser that still holds 1.0's v22 worker and goes offline before
+  its first online visit after the deploy opens the cached 1.0 page
+  (only v22's own code runs there; nothing new can reach it). Its first
+  online visit installs the retiring v23.
+- An existing installed app may keep opening at `/` until the browser
+  applies 2.0's manifest (same id, start `/studio/`); offline, `/` then
+  shows the browser's offline page. Reinstalling from `/studio/` fixes
+  it (README, "The installed app").

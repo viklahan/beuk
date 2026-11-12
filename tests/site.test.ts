@@ -113,8 +113,8 @@ test('Caddy: / is the landing page (marked for the worker), /studio is the studi
   assert.ok(caddy.includes('\t@studio path /studio /studio/*\n\thandle @studio {\n\t\treverse_proxy app:3000\n\t}'));
   assert.ok(!caddy.includes('handle /studio {'), 'no static /studio');
   for (const p of ['/robots.txt', '/sitemap.xml']) assert.ok(caddy.includes(`handle ${p} {\n\t\treverse_proxy app:3000\n\t}`), p);
-  // The fallback for every other path stays (the static mount's index.html).
-  assert.match(caddy, /try_files \{path\} \/index\.html/);
+  // Review C1: the catch-all no longer falls back to 1.0's index.html (tests/studio.test.ts pins the new block).
+  assert.ok(!caddy.includes('try_files {path} /index.html'));
 });
 
 test("1.0's assets copy of its worker: the landing page is never cached as the studio; /studio refreshes the shell", () => {

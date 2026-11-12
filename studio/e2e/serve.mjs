@@ -5,10 +5,11 @@
    - /studio/<route>    → client/next/index.html (the app's own routes),
                           or state.navStatus when set (a 502 during a deploy)
    - /next, /next/<x>   → 308 /studio/<x> (the old address, the query kept)
-   - ONE (/index.html)  → client/index.html, 1.0's page, for the runs that put a 1.0 book on the device first or
-                          set 1.0 and 2.0 side by side. It is the static mount's file (the "anything else" rule
-                          below); 1.0's code is path-independent. /studio itself is never 1.0 here (the
-                          STUDIO_CLASSIC rollback is tests/studio.test.ts's).
+   - ONE (/index.html)  → client/index.html, 1.0's page: a TEST-ONLY door, for the runs that put a 1.0 book on the
+                          device first or set 1.0 and 2.0 side by side (the "anything else" rule below; 1.0's code
+                          is path-independent). Production never serves it there: Caddy answers /index.html with a
+                          308 to /studio, and /studio is 2.0 (1.0 only under the STUDIO_CLASSIC rollback,
+                          tests/studio.test.ts).
    - /api/*             → 404 JSON (no shelf in these runs), or, opt-in (wave 7a, constraint 84: startServer({ api: true })),
                           the REAL app (src/app.ts) on an embedded Postgres (PGlite, as tests/helpers.ts runs it), its
                           mail captured and never sent, billing off unless the caller passes Stripe test settings

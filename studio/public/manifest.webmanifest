@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "Beuk",
+  "short_name": "Beuk",
+  "description": "Beuk — your EPUB & print studio. Write, typeset and export beautiful books, online or off.",
+  "start_url": "/studio/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "en",
+  "background_color": "#f8f4e9",
+  "theme_color": "#eceee0",
+  "icons": [
+    {
+      "purpose": "any",
+      "sizes": "192x192",
+      "src": "/assets/icon-192.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "any",
+      "sizes": "512x512",
+      "src": "/assets/icon-512.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "maskable",
+      "sizes": "512x512",
+      "src": "/assets/icon-maskable-512.png",
+      "type": "image/png"
+    }
+  ]
+}

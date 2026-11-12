@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -92,6 +92,9 @@ test('the old /next address: 308 to the same path under /studio/, the query kept
   assert.deepEqual(await location(s.base + '/next/foo?q'), [308, '/studio/foo?q']);
   assert.deepEqual(await location(s.base + '/next/?book=abc&x=1'), [308, '/studio/?book=abc&x=1']);
   assert.deepEqual(await location(s.base + '/next/assets/index-AbC123.js'), [308, '/studio/assets/index-AbC123.js']);
+  // Review M3: the Location is always a same-origin path under /studio/, never another host.
+  assert.deepEqual(await location(s.base + '/next//evil.example'), [308, '/studio//evil.example']);
+  assert.deepEqual(await location(s.base + '/next/%5Cevil.example'), [308, '/studio/%5Cevil.example']);
   // Exact paths only: /nextbook is not /next.
   assert.equal((await fetch(s.base + '/nextbook', manual)).status, 404);
 });
@@ -167,9 +170,33 @@ test('the app mounts it, Caddy proxies /studio, /studio/* and /next* to the app 
   assert.ok(!caddy.includes('handle /studio {'), 'no static handle /studio');
   assert.ok(!caddy.includes('redir /studio/ /studio 308'), 'no /studio/ → /studio redirect');
   assert.ok(!/handle \/studio\*|handle \/next\*/.test(caddy), 'no bare /studio* or /next* prefix (it would take /studiofoo, /nextbook)');
-  // Before the catch-all, so /studio/ is never answered with the static mount.
-  assert.ok(caddy.indexOf('handle @studio {') < caddy.indexOf('try_files {path} /index.html'));
-  assert.ok(caddy.indexOf('handle @next {') < caddy.indexOf('try_files {path} /index.html'));
+  // Before the static mount's catch-all, so /studio/ is never answered by it.
+  assert.ok(caddy.indexOf('handle @studio {') < caddy.indexOf('# === STATIC CLIENT ==='));
+  assert.ok(caddy.indexOf('handle @next {') < caddy.indexOf('# === STATIC CLIENT ==='));
+  // Review C1: the catch-all never serves 1.0 (client/index.html) any more. /index.html → 308 /studio (query kept);
+  // a missing path without an extension → 302 /studio (no slash: the app decides 2.0 or the rollback; query kept);
+  // a missing path with an extension → file_server's plain 404; an existing static file is served as before.
+  assert.ok(!caddy.includes('try_files {path} /index.html'), 'no SPA fallback to 1.0');
+  assert.ok(!/try_files/.test(caddy.slice(caddy.indexOf('# === STATIC CLIENT ==='))), 'no try_files in the catch-all');
+  assert.ok(
+    caddy.includes(
+      '\thandle {\n' +
+        '\t\t# Revalidate on every load (cheap 304 via ETag) so a deploy reaches\n' +
+        '\t\t# writers immediately instead of a heuristically cached old file.\n' +
+        '\t\theader Cache-Control "no-cache"\n' +
+        '\t\troot * /srv/client\n' +
+        '\t\t@oldStudio path /index.html\n' +
+        '\t\tredir @oldStudio /studio{?query} 308\n' +
+        '\t\t@missingPage {\n' +
+        '\t\t\tnot file\n' +
+        '\t\t\tnot path_regexp \\.[^/]+$\n' +
+        '\t\t}\n' +
+        '\t\tredir @missingPage /studio{?query} 302\n' +
+        '\t\tfile_server\n' +
+        '\t}\n}',
+    ),
+    'the catch-all: /index.html 308, a missing extensionless path 302, everything else file_server (404 when missing)',
+  );
   // No CSP change (constraints): the one policy line is exactly as it was.
   const csp = caddy.split('\n').filter((l) => l.includes('Content-Security-Policy "'));
   assert.deepEqual(csp, [
@@ -209,4 +236,59 @@ test("1.0's assets copy of its worker still leaves /next alone, and 2.0's worker
   assert.ok(sw.includes('keys.filter((k) => k !== BEUK_CACHE && k !== BEUK_SOUND_CACHE && k.indexOf("beuk-next-") !== 0)'), 'activate keeps beuk-next-*');
   // The 2.0 worker's cache names keep their prefix (spec D4: renaming them would throw away warm caches).
   assert.ok(read('studio/public/sw.js').includes("const PREFIX = 'beuk-next-';"));
+});
+
+test("review I2: 2.0's own manifest, the same app as 1.0's install (same id), starting at /studio/", () => {
+  const one = JSON.parse(read('client/assets/manifest.webmanifest')) as Record<string, unknown>;
+  const two = JSON.parse(read('studio/public/manifest.webmanifest')) as Record<string, unknown>;
+  // the same app to the writer: every field but the addresses is 1.0's
+  for (const k of ['name', 'short_name', 'description', 'background_color', 'theme_color', 'display', 'orientation', 'lang']) {
+    assert.deepEqual(two[k], one[k], k);
+  }
+  assert.equal(two.id, '/');
+  assert.equal(two.start_url, '/studio/');
+  assert.equal(two.scope, '/');
+  // icons: 1.0's three, by absolute path (the files at the site root), same sizes, types and purposes
+  const oneIcons = (one.icons as { src: string }[]).map((i) => ({ ...i, src: '/assets/' + i.src }));
+  assert.deepEqual(two.icons, oneIcons);
+  for (const i of oneIcons) assert.ok(existsSync(path.join(root, 'client', i.src)), i.src);
+
+  // W3C Web Application Manifest, as browsers process them (manifest URL as the base for start_url and scope):
+  const site = 'https://beuk.studio';
+  const oneUrl = site + '/assets/manifest.webmanifest';
+  const twoUrl = site + '/studio/manifest.webmanifest';
+  const oneStart = new URL(one.start_url as string, oneUrl);
+  const twoStart = new URL(two.start_url as string, twoUrl);
+  // §1.11 "Processing the id member": 1.0 has no id, so its id is its start_url; 2.0's id is parsed against its
+  // start_url's ORIGIN, must be same-origin, and loses its fragment
+  assert.equal(one.id, undefined);
+  const oneId = oneStart.href;
+  const twoId = new URL(two.id as string, twoStart.origin);
+  assert.equal(twoId.origin, twoStart.origin);
+  twoId.hash = '';
+  assert.equal(twoId.href, oneId, 'the same id: an existing install is this app, not a second one');
+  // §1.6 "Processing the scope member" + §5 "within scope": start_url must be within scope (same origin, its path
+  // starts with the scope's path), or the scope falls back to the start_url's folder
+  const twoScope = new URL(two.scope as string, twoUrl);
+  assert.equal(twoStart.origin, twoScope.origin);
+  assert.ok(twoStart.pathname.startsWith(twoScope.pathname));
+  // the CSP's manifest-src 'self': same origin
+  assert.equal(new URL(twoUrl).origin, site);
+
+  // 2.0's page links it at the build's base; 1.0's manifest is untouched (the studio-dir-only hosting uses it)
+  assert.match(read('studio/index.html'), /<link rel="manifest" href="%BASE_URL%manifest\.webmanifest" \/>/);
+  assert.equal(one.start_url, '../');
+  assert.equal(one.scope, '../');
+});
+
+test('the manifest is served under /studio/ with no-cache, as a manifest', async (t) => {
+  const dir = fakeBuild(t);
+  writeFileSync(path.join(dir, 'manifest.webmanifest'), read('studio/public/manifest.webmanifest'));
+  const s = await serve({ dir });
+  t.after(s.close);
+  const r = await fetch(s.base + '/studio/manifest.webmanifest');
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('cache-control'), 'no-cache');
+  assert.match(r.headers.get('content-type') ?? '', /^application\/manifest\+json/);
+  assert.equal((JSON.parse(await r.text()) as { id: string }).id, '/');
 });

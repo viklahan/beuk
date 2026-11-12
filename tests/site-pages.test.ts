@@ -145,8 +145,8 @@ test('Caddy serves each page at its exact path, and a trailing slash redirects t
       `${p.url} → ${target}`,
     );
   }
-  // The studio fallback for every other path stays last.
-  assert.ok(caddy.indexOf('handle /compare/dabble {') < caddy.indexOf('try_files {path} /index.html'));
+  // The static catch-all stays last.
+  assert.ok(caddy.indexOf('handle /compare/dabble {') < caddy.indexOf('# === STATIC CLIENT ==='));
 });
 
 test("1.0's worker copy leaves /features and /compare to the network (the root copy answers nothing at all: tests/sw-retire.test.ts)", () => {

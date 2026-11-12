@@ -3745,23 +3745,55 @@ The same Compose file runs locally — only `.env` differs.
   cached 1.0 page is never served again. `client/assets/sw.js` is 1.0's
   fallback copy (scope `/assets/`, which controls no studio page) and is
   unchanged.
-- **1.0 is not served at `/studio`** any more; `client/index.html` stays in
-  the repo as 2.0's build-time source (strings, tokens, lifted functions).
-  The static catch-all still answers unknown paths (and `/index.html`)
-  with that file. The installed app still starts at the root (manifest
-  `start_url`); on beuk.studio the root sends a writer who has written
-  straight to `/studio`.
+- **1.0 is not served** any more (only `STUDIO_CLASSIC=true` brings it
+  back, below); `client/index.html` stays in the repo as 2.0's build-time
+  source (strings, tokens, lifted functions). The static catch-all no
+  longer falls back to it: `/index.html` (old bookmarks) answers a 308 to
+  `/studio` with the query kept; a missing path without an extension (an
+  old link, a typo) a 302 to `/studio`, query kept (to `/studio`, so the
+  app decides 2.0 or the rollback); a missing path with an extension a
+  plain 404, never a page. Existing static files (`/assets/…`, `/sw.js`)
+  are served as before. So no second studio writes to a device's books.
+- **The installed app.** 2.0 links its own manifest
+  (`studio/public/manifest.webmanifest`, served at
+  `/studio/manifest.webmanifest`, no-cache): 1.0's name, description,
+  colours, display and icons (by absolute path, `/assets/icon-*.png`),
+  `"id": "/"`, `"start_url": "/studio/"`, `"scope": "/"`. 1.0's manifest
+  has no `id`, so its id is its `start_url` (`../` from `/assets/`, which
+  is `/`); 2.0's `"/"` resolves against its start URL's origin to the same
+  URL (W3C Web Application Manifest §1.11, "Processing the `id` member").
+  The spec says a manifest with an installed app's id "SHOULD be used as a
+  signal that this manifest is a replacement" (§1.11), so a browser that
+  follows it updates the existing install in place: it opens at
+  `/studio/`, where 2.0's worker serves the studio offline. Whether and
+  when a given browser applies it is the browser's call and is unverified
+  (Chrome re-checks a manifest when it has not since the browser started
+  or in the last 24 hours, and advises against moving a manifest's file:
+  web.dev "How Chrome handles updates to the web app manifest"). Until it does, an existing install
+  still opens at `/`: online that is the landing page, which sends a
+  writer who has written to `/studio`; **offline it now shows the
+  browser's offline page** (no worker covers `/` after v22 retires), where
+  v22 used to open the cached 1.0 studio. Reinstalling from `/studio/`
+  fixes it at once. 1.0's own manifest is unchanged (the studio-directory
+  hosting still uses it).
 - **The rollback: `STUDIO_CLASSIC=true`** (`.env`, then restart the app).
   For emergencies, not a second studio. The app then serves 1.0's
   `client/index.html` at `/studio` (with `Cache-Control: no-cache`, as
   Caddy served it before the switch) and `/studio/` and every other page
   path under it redirect back to `/studio`; 2.0's files are not served.
   The costs, stated plainly:
-  - **Words written in 2.0 on a device are not in 1.0's device store.**
-    2.0 keeps its own device books (its own IndexedDB databases); 1.0 reads
-    only `beuk-local`. A book on the cloud shelf opens in both. A book kept
-    only on a device opens in 1.0 as 1.0 last saved it there, before the
-    switch, without anything written in 2.0 since.
+  - **Going to 1.0: words written in 2.0 on a device are not in 1.0's
+    device store.** 2.0 keeps its own device books (its own IndexedDB
+    databases); 1.0 reads only `beuk-local`. A book on the cloud shelf
+    opens in both. A book kept only on a device opens in 1.0 as 1.0 last
+    saved it there, without anything written in 2.0 since.
+  - **Coming back to 2.0: words written in 1.0 on a device during the
+    rollback never reach 2.0.** 2.0 imports `beuk-local` once only; after
+    that it opens its own existing book first and never reads 1.0's store
+    again (`studio/src/book/store.ts`, `startBook` / `importLegacyOnce`).
+    Those words stay in `beuk-local`, which nothing in 2.0 shows. **Before
+    flipping back, writers must put device-only books on the cloud shelf
+    or export them** (and import them in 2.0).
   - 1.0 runs **online only**: it registers `/sw.js`, which is the retiring
     v23 worker, so 1.0 has no offline shell (its `pwa.installable`
     self-check reports that).

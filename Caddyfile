@@ -297,8 +297,8 @@
 		reverse_proxy app:3000
 	}
 	# The landing page is the site's front door; the studio lives at /studio
-	# (above). Every other unknown path still falls back to the catch-all
-	# at the end, which answers with this mount's index.html: 1.0's file.
+	# (above). An unknown page path ends at the catch-all (the end of this
+	# block), which sends it to /studio.
 	@landing path /
 	handle @landing {
 		header Cache-Control "no-cache"
@@ -311,7 +311,7 @@
 	# The site pages beside the landing page (client/site/): /features and
 	# the comparisons, /compare and /compare/<name>. Exact paths only; a
 	# trailing slash redirects to the bare path. Any other /compare/... path
-	# falls through to the studio like every unknown path.
+	# ends at the catch-all like every unknown path (a 302 to /studio).
 	redir /features/ /features 308
 	handle /features {
 		header Cache-Control "no-cache"
@@ -378,14 +378,31 @@
 	}
 
 	# === STATIC CLIENT ===
-	# The built Beuk web client lives in ./client (mounted at /srv/client).
-	# SPA fallback: unknown paths return index.html.
+	# The ./client tree (mounted at /srv/client): 1.0's static files that
+	# the landing page, the site pages and 2.0 load from the site root
+	# (/assets/…, /sw.js, …), served as they are. No SPA fallback: the studio
+	# is 2.0 at /studio/ (above), and client/index.html (1.0) is never
+	# answered here, so no second studio writes to a device's books.
+	# - /index.html (old bookmarks, 1.0's offline shell address) → 308 to
+	#   /studio, the query kept ({?query}: "?" + the query when there is
+	#   one; Caddy 2.9+, https://github.com/caddyserver/caddy/pull/6714).
+	# - A missing path without an extension (an old link, a typo) → 302 to
+	#   /studio, the query kept. /studio, not /studio/: the app decides
+	#   (2.0, or 1.0 when STUDIO_CLASSIC=true). 302: nothing permanent.
+	# - A missing path with an extension (a script, /favicon.ico, /.env)
+	#   → file_server's plain 404, never a page.
 	handle {
 		# Revalidate on every load (cheap 304 via ETag) so a deploy reaches
-		# writers immediately instead of a heuristically cached old studio.
+		# writers immediately instead of a heuristically cached old file.
 		header Cache-Control "no-cache"
 		root * /srv/client
-		try_files {path} /index.html
+		@oldStudio path /index.html
+		redir @oldStudio /studio{?query} 308
+		@missingPage {
+			not file
+			not path_regexp \.[^/]+$
+		}
+		redir @missingPage /studio{?query} 302
 		file_server
 	}
 }
