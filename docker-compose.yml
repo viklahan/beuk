@@ -248,7 +248,10 @@ services:
       start_period: 15s
 
   caddy:
-    image: caddy:2-alpine
+    # Pinned: the Caddyfile's {?query} redirects need Caddy >= 2.9, and a
+    # floating tag is never re-pulled by `up -d --build` (a box could keep
+    # an older cached image). A changed tag forces the pull.
+    image: caddy:2.11.9-alpine
     restart: unless-stopped
     logging: *default-logging
     environment:
