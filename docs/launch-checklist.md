@@ -298,7 +298,7 @@ off-site backups" records how it was proven earlier.
 On a phone and a laptop, signed out and signed in:
 
 - [ ] https://beuk.studio loads the studio; the browser shows a valid lock.
-- [ ] https://beuk.studio/studio lands on `/studio/` and shows the 2.0 studio; `/studio?signin` opens the sign-in dialog there; an old `/next/` bookmark lands on `/studio/` too.
+- [ ] https://beuk.studio/studio shows the 2.0 studio and its address becomes `/studio/` (no redirect: the page tidies it); `/studio?signin` opens the sign-in dialog there; an old `/next/` bookmark lands on `/studio/` too.
 - [ ] Sign up a second test account; sign out; sign in.
 - [ ] "Forgot password" → the email arrives → the link opens `https://beuk.studio/reset?token=…` → new password works, old one does not.
 - [ ] Load the sample book → "On your shelf ✓" in the sidebar.
@@ -351,6 +351,9 @@ only with the full gate green, fast-forward only.
 
 - [ ] Before: `./deploy/hk.sh <your-email> backup before-<new-sha>` (as
   above).
+- [ ] Before: the release note asks writers to **close every open studio
+  tab before the deploy** (see "Known and accepted at launch": a 1.0 tab
+  left open can keep saving where 2.0 no longer looks).
 - [ ] Deploy as above. Caddy reloads (the `/studio` routing moved from the
   static mount to the app; the security headers, CSP included, are
   unchanged).
@@ -371,7 +374,13 @@ again. Know the cost, both ways, before you flip it:
   2.0** after you flip back (2.0 imports 1.0's store once only). **Before
   flipping back, tell writers to put device-only books on the cloud shelf
   or export them;**
-- 1.0 runs online only (its offline worker retires itself).
+- 1.0 runs online only (its offline worker retires itself), and a
+  browser that holds 2.0's worker opens **2.0's** cached studio at
+  `/studio` when offline or while the app is down (its scope `/studio`
+  covers that address); words written there are in 2.0's device store.
+- `/studio/…` answers a 302 to `/studio` that is never stored
+  (`no-store`), so neither direction of the flip can loop on a cached
+  redirect.
 
 Remove the setting (or set it to `false`) and run the same command to
 return to 2.0. [estimate: the rollback is covered by the server tests
@@ -417,6 +426,28 @@ door" has the details.
   its first online visit after the deploy opens the cached 1.0 page
   (only v22's own code runs there; nothing new can reach it). Its first
   online visit installs the retiring v23.
+- **A 1.0 studio tab left open through the deploy.** 2.0 imports 1.0's
+  device store (`beuk-local`) once only (`studio/src/book/store.ts`). A
+  1.0 tab that stays open through the deploy, and never reloads, can keep
+  saving to that store after 2.0 has imported it; those words don't
+  appear in 2.0, and nothing in 2.0 shows the store again. What reloads
+  such a tab (read in `client/index.html`, the `controllerchange`
+  handler, and `client/sw.js` v23; not yet watched in a browser):
+  - A tab that a worker (v22) **controlled** when it loaded reloads into
+    2.0, after its device save (`localSaveBeforeReload`), when v23
+    activates and claims it. v23 arrives only on the browser's next
+    update check of `/sw.js`: a navigation anywhere on the site in any
+    tab (opening `/studio` in another tab counts), or a request from the
+    tab itself once the last check is more than 24 hours old (W3C Service
+    Workers, Handle Fetch → Soft Update). 1.0 never calls `reg.update()`
+    itself, so a lone tab with neither waits, still on 1.0.
+  - A tab **no worker controlled** when it loaded (a hard reload, the
+    first visit, service workers off) is never reloaded: 1.0 skips the
+    reload when it had no controller (`swHadController`, BEUK:swfirst).
+    It stays on 1.0 until the writer reloads it.
+  Mitigation: the release note asks writers to close open studio tabs
+  before the deploy (step 11a). [estimate: by reading; G5 in the final
+  review measures it.]
 - An existing installed app may keep opening at `/` until the browser
   applies 2.0's manifest (same id, start `/studio/`); offline, `/` then
   shows the browser's offline page. Reinstalling from `/studio/` fixes
