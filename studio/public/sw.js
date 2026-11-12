@@ -77,7 +77,15 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(PREFIX) && k !== CACHE).map((k) => caches.delete(k))))
+      // Our older builds, and 1.0's retired shell and sound caches: 1.0's old v22 worker can still store 2.0's page
+      // as its shell on the first /studio visit, after v23 cleared it, and nothing else would ever delete that.
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => (k.startsWith(PREFIX) && k !== CACHE) || k.startsWith('beuk-shell-') || k.startsWith('beuk-sound-'))
+            .map((k) => caches.delete(k)),
+        ),
+      )
       .then(() => self.clients.claim()),
   );
 });

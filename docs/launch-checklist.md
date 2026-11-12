@@ -434,13 +434,22 @@ door" has the details.
   such a tab (read in `client/index.html`, the `controllerchange`
   handler, and `client/sw.js` v23; not yet watched in a browser):
   - A tab that a worker (v22) **controlled** when it loaded reloads into
-    2.0, after its device save (`localSaveBeforeReload`), when v23
-    activates and claims it. v23 arrives only on the browser's next
-    update check of `/sw.js`: a navigation anywhere on the site in any
-    tab (opening `/studio` in another tab counts), or a request from the
-    tab itself once the last check is more than 24 hours old (W3C Service
-    Workers, Handle Fetch → Soft Update). 1.0 never calls `reg.update()`
-    itself, so a lone tab with neither waits, still on 1.0.
+    2.0, after its device save (`localSaveBeforeReload`), when a new
+    worker claims it. Which one depends on what else that browser did:
+    - No 2.0 visit yet: v23 claims it on activation. v23 arrives only on
+      the browser's next update check of `/sw.js`: a navigation anywhere
+      on the site in any tab, or a request from the tab itself once the
+      last check is more than 24 hours old (W3C Service Workers, Handle
+      Fetch → Soft Update).
+    - Once 2.0's `/studio` worker is registered in that browser (another
+      tab opened the studio): that tab's `/studio` navigations no longer
+      update-check `/sw.js` (the longest matching scope wins), and v23's
+      `clients.claim()` skips a page under `/studio`. The reload then
+      comes from 2.0's worker claiming the tab on its activation; only
+      other site pages (`/`, `/account`, `/help`) still update-check
+      `/sw.js`.
+    1.0 never calls `reg.update()` itself, so a lone tab with none of
+    these waits, still on 1.0.
   - A tab **no worker controlled** when it loaded (a hard reload, the
     first visit, service workers off) is never reloaded: 1.0 skips the
     reload when it had no controller (`swHadController`, BEUK:swfirst).

@@ -59,12 +59,20 @@ test('online: /studio/ is the network answer (2.0), passed through, never stored
   assert.deepEqual(w.puts, [], 'not cached as ./index.html');
 });
 
-test("online: /studio's 308 (an opaque redirect to a navigation) passes through and is not stored", async () => {
+test("online: /index.html's 308 (an opaque redirect to a navigation) passes through and is not stored", async () => {
   const redirect = res(0, 'opaqueredirect');
   const w = load(async () => redirect);
-  assert.equal(await w.navigate(ORIGIN + '/studio'), redirect);
-  assert.equal(await w.navigate(ORIGIN + '/index.html'), redirect); // review C1: /index.html is a 308 too
+  assert.equal(await w.navigate(ORIGIN + '/index.html'), redirect); // review C1: Caddy's 308 to /studio
   assert.deepEqual(w.puts, []);
+});
+
+test('online: /studio answers 2.0 with a 200 (final fix C2), which v22 serves, and may store as its shell', async () => {
+  // Final re-review N1: v22 treats /studio as its shell and stores a 200 for it. That copy is never served again
+  // (v23 retires v22, and 2.0's worker then controls /studio), and 2.0's worker deletes beuk-shell-* on activate
+  // (tests/studio-sw.test.ts). What matters here: the writer is shown 2.0's page, the network's answer.
+  const two = res(200, 'basic', { 'content-type': 'text/html' });
+  const w = load(async () => two);
+  assert.equal(await w.navigate(ORIGIN + '/studio'), two);
 });
 
 test('online during a deploy: a 502 passes through (it resolves), the cached 1.0 page is not served', async () => {

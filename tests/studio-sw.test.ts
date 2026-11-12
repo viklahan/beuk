@@ -82,3 +82,31 @@ test('what the scope /studio also matches by prefix (/studiofoo, /studio.html) i
   const w = load(offline);
   for (const p of ['/studiofoo', '/studio.html', '/studio-x/', '/', '/account']) assert.equal(await w.navigate(p), 'untouched', p);
 });
+
+test("activate: 1.0's leftover caches go (a v22 worker can still store 2.0's page as its shell after v23 cleared it); 2.0's own and foreign caches stay", async () => {
+  // Final re-review N1: /studio answers 200, so 1.0's old v22 worker may cache 2.0's page under beuk-shell-v22 on the
+  // first visit, after v23's activate already deleted it. Nothing else would ever delete it; 2.0's worker does.
+  const listeners: Record<string, Listener[]> = {};
+  const deleted: string[] = [];
+  const keys = ['beuk-shell-v22', 'beuk-shell-v21', 'beuk-sound-v2', 'beuk-next-old', 'beuk-next-abc', 'someone-else'];
+  const self = {
+    BEUK_NEXT: { cache: 'beuk-next-abc', shell: SHELL, assets: [], optional: [] as string[] },
+    location: { href: ORIGIN + '/studio/sw.js', origin: ORIGIN },
+    addEventListener: (type: string, f: Listener) => (listeners[type] ??= []).push(f),
+    skipWaiting: () => Promise.resolve(),
+    clients: { claim: async () => {} },
+    registration: { scope: ORIGIN + '/studio' },
+  };
+  const ctx = vm.createContext({
+    self,
+    caches: { open: async () => ({}), keys: async () => keys, delete: async (k: string) => (deleted.push(k), true) },
+    URL,
+    console,
+    importScripts: () => {},
+  });
+  vm.runInContext(SRC, ctx, { filename: 'studio/public/sw.js' });
+  const waits: Promise<unknown>[] = [];
+  for (const f of listeners.activate ?? []) f({ waitUntil: (p: Promise<unknown>) => waits.push(p) });
+  await Promise.all(waits);
+  assert.deepEqual(deleted.sort(), ['beuk-next-old', 'beuk-shell-v21', 'beuk-shell-v22', 'beuk-sound-v2']);
+});

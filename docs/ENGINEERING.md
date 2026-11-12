@@ -3751,7 +3751,10 @@ The same Compose file runs locally — only `.env` differs.
   (`client/sw.js`, scope `/`) is v23 and retires itself: on a browser that
   still holds v22 it skips waiting, deletes 1.0's `beuk-shell-*` and
   `beuk-sound-*` caches (never a `beuk-next-*` one), claims the open
-  pages, unregisters, and while it lives answers no request, so the
+  pages its scope still wins (a page under `/studio` belongs to 2.0's
+  worker once that is registered, which then claims it itself, and
+  deletes any `beuk-shell-*`/`beuk-sound-*` cache v22 stored late),
+  unregisters, and while it lives answers no request, so the
   cached 1.0 page is never served again. `client/assets/sw.js` is 1.0's
   fallback copy (scope `/assets/`, which controls no studio page) and is
   unchanged.
