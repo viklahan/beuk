@@ -1,4 +1,5 @@
 import * as Y from 'yjs';
+import { studioDoor } from './doors';
 import { exportBook } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import {
@@ -695,9 +696,13 @@ export function bootCloud(): Promise<void> {
     booting = (async () => {
       const cm = await loadCloud();
       cm.api.renderCloudChrome();
+      // task 2: 1.0's studioDoorFromUrl runs at the end of every branch of initCloud (offline, signed in, signed out)
+      let work: Promise<unknown> | null = null;
+      const door = () => studioDoor(cm.api as never, cloudFacts, work, () => document.getElementById('btnAccount')?.click());
       const up = await cm.api.cloudProbe();
       if (!up) {
         cm.api.cloudGoLocal();
+        door();
         return;
       }
       cloudFacts.available = true;
@@ -708,8 +713,15 @@ export function bootCloud(): Promise<void> {
         cloudFacts.user = me.user;
         knownUser = userId();
         cm.api.renderCloudChrome();
-        if (leader.is) await cm.api.cloudAfterSignIn();
-        else {
+        if (leader.is) {
+          work = Promise.resolve(cm.api.cloudAfterSignIn());
+          try {
+            await work;
+          } catch (e) {
+            door(); // 1.0 never awaits its sign-in work at boot: the door still opens
+            throw e;
+          }
+        } else {
           takeLink(storedLink(linkBook));
           void cm.api.cloudLoadShelf();
         }
@@ -717,6 +729,7 @@ export function bootCloud(): Promise<void> {
         if (c.api.bibleAuthSignedOut(me)) c.api.bibleSeriesForget('*');
         c.api.bibleSeriesRefresh(true);
       });
+      door();
     })();
     cloudBootHook.p = booting;
   }
