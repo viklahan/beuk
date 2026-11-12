@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useBook } from '../book/BookProvider';
 import { useMeta } from '../book/hooks';
-import { loadClosure, type Closure, type Note, type ResearchFile } from '../closure/index';
+import { loadClosure, type Closure, type Note, type ResearchFile, type RsDocView } from '../closure/index';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Dialog } from '../shell/Dialog';
 import { Icon, type IconName } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
-import { addRead, bytesOf, fmtDateIntl, namesIn, nbState, nowIso, readOne, readResearch, textOf, writeNotebook, writeNotes, type FileItem, type NbState } from './notebook';
+import { addRead, bytesOf, docView, fmtDateIntl, namesIn, nbState, nowIso, readItems, readResearch, textOf, writeNotebook, writeNotes, type NbState } from './notebook';
 import { openCovenant } from '../covenant/CovenantDialog';
 
 /* 1.0's Notebook (client/index.html #modalNotebook, BEUK:notebook and
@@ -28,7 +28,12 @@ import { openCovenant } from '../covenant/CovenantDialog';
      that is revoked when the file closes, another opens or the Notebook
      closes (players paused and emptied first, as 1.0's rsReleaseView); a new
      tab only for a PDF or a raster picture (1.0's rsTabOk); download;
-     remove with Undo.
+     remove with Undo;
+   - a Word document or a saved web page (BEUK:webword): opened in 1.0's
+     worker before it is kept (refused by name with 1.0's keys when it
+     will not open), and read in the reader view — 1.0's worker job under
+     its time limit, its allowlist sanitizer, its note and fidelity lines
+     (RsDoc, 1.0's rsDocFill).
    Every name, type and text from the book is rendered as React text or an
    attribute (escaped); the only URLs are 1.0's rsUrl output (http/https),
    data: of a kept picture type, and the studio's own blob: URLs.
@@ -53,7 +58,7 @@ export function NotebookDialog({ open, onClose }: Props) {
   );
 }
 
-const RS_ICONS: Record<string, IconName> = { 'file-image': 'FileImage', 'file-text': 'FileText', 'file-audio': 'FileAudio', 'file-video': 'FileVideo', 'file-type': 'FileType', file: 'File' };
+const RS_ICONS: Record<string, IconName> = { 'file-image': 'FileImage', 'file-text': 'FileText', 'file-audio': 'FileAudio', 'file-video': 'FileVideo', 'file-type': 'FileType', 'file-pen-line': 'FilePenLine', globe: 'Globe', file: 'File' };
 
 function NotebookBody({ onClose }: { onClose: () => void }) {
   const { t, lang } = useLocale();
@@ -190,8 +195,8 @@ function NotebookBody({ onClose }: { onClose: () => void }) {
     });
   };
   const addFiles = async (list: File[]) => {
-    const items: FileItem[] = [];
-    for (const f of list) items.push({ name: f.name, type: f.type, size: f.size, data: await readOne(c, f) });
+    // 1.0's rsAddFiles: each file read, a Word document or web page opened in the worker first
+    const items = await readItems(c, list);
     if (!bk.isLive(ydoc)) return;
     const now = nbState(c, ydoc);
     const r = addRead(c, now, sel, items, tt);
@@ -687,7 +692,8 @@ function RsView({ c, f, t }: { c: Closure; f: ResearchFile; t: (k: string, p?: R
         {all.length > cap && <p className="nb-quiet">{t('rs.textCut', { n: a.fmtNum(cap) })}</p>}
       </>
     );
-  } else if (k === 'pdf' && url) inner = <iframe className="rs-pdf" title={f.name} src={url} />;
+  } else if (k === 'word' || k === 'web') inner = <RsDoc c={c} f={f} t={t} />; // BEUK:webword
+  else if (k === 'pdf' && url) inner = <iframe className="rs-pdf" title={f.name} src={url} />;
   else if (k === 'audio' && url) inner = <audio className="rs-audio" controls preload="metadata" src={url} />;
   else if (k === 'video' && url) inner = <video className="rs-video" controls preload="metadata" src={url} />;
   return (
@@ -706,6 +712,48 @@ function RsView({ c, f, t }: { c: Closure; f: ResearchFile; t: (k: string, p?: R
           {t('rs.newTab')}
         </button>
       )}
+    </div>
+  );
+}
+
+/** 1.0's rsViewHtml for a Word document or a saved web page, and rsDocFill (BEUK:webword): the slot is 1.0's
+ *  (.rs-doc[data-rsdoc], aria-busy with rs.opening while the worker reads), then 1.0's note, its fidelity line, the words
+ *  and rs.docCut when the file was cut — or the error (rs.docBig, rs.docFail, rs.docEmpty). The view (docView: 1.0's
+ *  worker job, rsSanitize, rsFidelity, 1.0's cache) carries detached nodes rsSanitize built from its allowlist; they are
+ *  imported as they are into a body React draws empty, never serialised and parsed again. */
+function RsDoc({ c, f, t }: { c: Closure; f: ResearchFile; t: (k: string, p?: Record<string, unknown>) => string }) {
+  const [view, setView] = useState<RsDocView | null>(null);
+  const body = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let alive = true; // the writer moved on meanwhile: nothing is drawn
+    void docView(c, f).then((v) => alive && setView(v));
+    return () => {
+      alive = false;
+    };
+  }, [c, f]);
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!el || !view || 'error' in view) return;
+    el.replaceChildren(document.importNode(view.node, true));
+  }, [view]);
+  if (!view)
+    return (
+      <div className="rs-doc" data-rsdoc={f.id} aria-busy="true">
+        <p className="nb-quiet">{t('rs.opening')}</p>
+      </div>
+    );
+  if ('error' in view)
+    return (
+      <div className="rs-doc" data-rsdoc={f.id}>
+        <p className="nb-quiet">{t(view.error)}</p>
+      </div>
+    );
+  return (
+    <div className="rs-doc" data-rsdoc={f.id}>
+      <p className="nb-quiet rs-doc-note">{t(view.note)}</p>
+      <p className={'nb-quiet rs-doc-fidelity' + (view.fidelity.whole ? '' : ' is-partial')}>{view.fidelity.text}</p>
+      <div className="rs-doc-body" dir="auto" ref={body} />
+      {view.cut && <p className="nb-quiet">{t('rs.docCut')}</p>}
     </div>
   );
 }
