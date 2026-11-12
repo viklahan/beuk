@@ -1,5 +1,6 @@
 import * as Y from 'yjs';
 import { studioDoor } from './doors';
+import { onlyPositionMigrations } from '../editor/positionMigrations';
 import { exportBook } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import {
@@ -505,6 +506,8 @@ export function deskChanged(ydoc: Y.Doc | null, own = false): void {
     // a real edit: typed here, or in another tab of this generation (BroadcastChannel) when this tab is the writer
     const fromTab = typeof BroadcastChannel === 'function' && origin instanceof BroadcastChannel;
     if (!(tr.local || fromTab)) return;
+    // task 5: clearing y-tiptap's position-migration records (an older build's, here or relayed) is no edit of the book
+    if (onlyPositionMigrations(tr)) return;
     // not (yet) the writer: an edit typed HERE is kept and noted if this tab becomes the writer (its own lock may still be
     // letting go: X → Y → X); a redundant save at most when another tab really was writing
     if (!leader.is && tr.local) leader.edited = true;

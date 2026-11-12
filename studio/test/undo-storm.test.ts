@@ -5,6 +5,7 @@ import { yUndoPluginKey } from '@tiptap/y-tiptap';
 import { prosemirrorToYXmlFragment as ypPmToFrag } from 'y-prosemirror';
 import { toDoc } from '@book/editor/index.js';
 import { createChapterEditor, positionMigrationStore } from '../src/editor/createEditor';
+import { MIGRATIONS, migrationMaps, onlyPositionMigrations } from '../src/editor/positionMigrations';
 import { applyTextEdit, editorText } from '../src/editor/insert';
 
 /* Task 5 (studio-2 cutover): undo storms never crash or slow down.
@@ -71,7 +72,7 @@ const undoManager = (ed: Editor) => (yUndoPluginKey.getState(ed.state) as { undo
 
 describe('undo storms (task 5)', () => {
   it('300 cycles of type, undo, redo on a 2,000-word chapter: no throw, and the p95 of the last 100 undos is no more than 2x the p95 of the first 100', () => {
-    const { ed, frag } = mount(chapter(2000));
+    const { ed, doc } = mount(chapter(2000));
     const times: number[] = [];
     expect(() => {
       for (let i = 0; i < 300; i++) {
@@ -91,8 +92,11 @@ describe('undo storms (task 5)', () => {
     const last = p95(times.slice(-100));
     console.log(`undo-storm: p95 first 100 = ${first.toFixed(2)} ms, last 100 = ${last.toFixed(2)} ms, max = ${Math.max(...times).toFixed(2)} ms`);
     expect(last).toBeLessThanOrEqual(2 * first);
-    // the cause, held: y-tiptap's position-migration map for this chapter stays empty (no records in the book)
-    expect(positionMigrationStore(frag)!.size).toBe(0);
+    // the cause, held: no position-migration records in the book. Scanned by prefix, not by our key formula (review M-2):
+    // y-tiptap's undo opens its own map under its own key, so a renamed key would show here as a map with records
+    const maps = [...doc.share.keys()].filter((k) => k.startsWith(MIGRATIONS));
+    expect(maps.length).toBeGreaterThan(0);
+    expect(migrationMaps(doc).map((m) => m.size)).toEqual(maps.map(() => 0));
     // every cycle is its own undo step, and the stack still reaches back to the first (nothing was capped)
     expect(undoManager(ed).undoStack.length).toBe(300);
   }, 120_000); // ~6 s here once fixed; before the fix the cycles grow quadratically and never finish in time
@@ -110,6 +114,8 @@ describe('undo storms (task 5)', () => {
     const orphan = doc.getMap('__tiptap_position_migrations:item:9:9'); // a section a move re-created
     orphan.set('2:2', { version: 1, transfers: [] });
     const before = Y.encodeStateAsUpdate(doc);
+    const seen: boolean[] = [];
+    doc.on('afterTransaction', (tr: Y.Transaction) => seen.push(onlyPositionMigrations(tr)));
     const element = document.createElement('div');
     document.body.appendChild(element);
     const ed = createChapterEditor({ element, fragment: frag, dir: 'ltr', lang: 'en', label: 'Chapter', onRefuse: () => undefined });
@@ -126,7 +132,13 @@ describe('undo storms (task 5)', () => {
     otherStore.set('3:3', { version: 1, transfers: [] });
     Y.applyUpdate(doc, Y.encodeStateAsUpdate(other, sv));
     expect(store.size).toBe(0);
+    // each clear, and the relayed record itself, is no edit of the book (review M-1: cloud.ts skips them)
+    expect(seen.length).toBeGreaterThanOrEqual(3);
+    expect(seen.every(Boolean)).toBe(true);
+    // a real edit is one
+    ed.view.dispatch(ed.state.tr.insertText('x', 2));
+    expect(seen[seen.length - 1]).toBe(false);
     // the text is untouched by any of it
-    expect(editorText(ed).text).toBe(chapter(200));
+    expect(editorText(ed).text).toBe(chapter(200).slice(0, 1) + 'x' + chapter(200).slice(1));
   });
 });
