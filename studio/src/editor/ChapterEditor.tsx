@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
 import type * as Y from 'yjs';
 import { TextSelection } from '@tiptap/pm/state';
-import { textOffsetToPos } from '@book/editor/index.js';
+import { escKey, fragmentText, textOffsetToPos } from '@book/editor/index.js';
 import { toBook } from './bridge';
 import { editorText } from './insert';
 import { useLocale } from '../i18n/LocaleProvider';
@@ -13,6 +13,8 @@ import { createChapterEditor } from './createEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { tbLayoutInit } from './toolbarLayout';
 import { EditorMeta } from './EditorMeta';
+import { GenEditor } from './GenEditor';
+import { closureIfLoaded, loadClosure } from '../closure/index';
 import { SceneBar } from '../pictures/SceneBar';
 import { SectionImages } from '../pictures/SectionImages';
 import { StarterBar } from './StarterBar';
@@ -52,6 +54,9 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
   const [marks, setMarks] = useState({ strong: false, em: false });
   const refuse = useRef(() => undefined as void);
   refuse.current = () => toast(t('next.markRefused'), 'Info');
+  const showArea = useShowArea(fragment, sectionMap);
+  const showAreaRef = useRef(showArea);
+  showAreaRef.current = showArea;
 
   useEffect(() => {
     if (!host.current) return;
@@ -73,6 +78,7 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
     });
     setEditor(ed);
     setActiveEditor(ed, section, sectionMap);
+    ed.setEditable(showAreaRef.current);
     (host.current as HTMLDivElement & { beukEditor?: Editor }).beukEditor = ed; // e2e and latency probes reach it here
     // and the section's text with the selection as text offsets (wave 2a e2e: the toolbar against 1.0's own page)
     (host.current as HTMLDivElement & { beukText?: unknown }).beukText = {
@@ -95,6 +101,13 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fragment]);
 
+  // 1.0's syncEditor: a generated page hides the manuscript editor (area.disabled, display none; the insert toolbar and
+  // the word bar with it), except a copyright page that brought its own words
+  useEffect(() => {
+    if (editor && editor.isEditable !== showArea) editor.setEditable(showArea);
+    if (bar.current) bar.current.style.display = showArea ? '' : 'none';
+  }, [editor, showArea]);
+
   const press = (name: 'strong' | 'em') => {
     if (!editor) return;
     toggleBookMark(editor, name, () => refuse.current());
@@ -109,10 +122,41 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
       <EditorToolbar ref={bar} editor={editor} marks={marks} onMark={press} sectionType={sectionType} sectionTexts={sectionTexts} ydoc={ydoc} />
       {ydoc && sectionMap && <SceneBar editor={editor} ydoc={ydoc} sectionId={sectionMap.get('id')} sectionType={sectionType} />}
       <LangBar />
-      <WordBar sectionId={sectionMap ? sectionMap.get('id') : undefined} />
+      <WordBar sectionId={sectionMap ? sectionMap.get('id') : undefined} hidden={!showArea} />
       {ydoc && sectionMap && <StarterBar editor={editor} ydoc={ydoc} section={sectionMap} />}
-      <div className="ms-page ms-editing" id="manuscript" dir={dir} lang={lang} data-section={section} ref={host} />
+      {ydoc && sectionMap && <GenEditor ydoc={ydoc} section={sectionMap} />}
+      <div className="ms-page ms-editing" id="manuscript" dir={dir} lang={lang} data-section={section} ref={host} style={showArea ? undefined : { display: 'none' }} />
       {ydoc && <SectionImages editor={editor} ydoc={ydoc} sectionType={sectionType} />}
     </>
   );
+}
+
+/** 1.0's syncEditor `showArea`: `!isAuto || (s.type === "copyright" && String(s.content || "").trim().length > 0)`,
+ *  AUTO_TYPES 1.0's own (lifted). Read when the section opens and again when its type changes (a retype: 1.0 runs
+ *  syncEditor after it), never on typing: the page that brought its words keeps its editor while they are edited. */
+function useShowArea(fragment: Y.XmlFragment, sectionMap: Y.Map<unknown> | null): boolean {
+  const [c, setC] = useState(() => closureIfLoaded());
+  useEffect(() => {
+    if (c) return;
+    let alive = true;
+    void loadClosure().then((cc) => alive && setC(cc));
+    return () => {
+      alive = false;
+    };
+  }, [c]);
+  const typeOf = () => (sectionMap ? String(sectionMap.get(escKey('type')) ?? 'chapter') : 'chapter');
+  const [type, setType] = useState(typeOf);
+  useEffect(() => {
+    if (!sectionMap) return;
+    const on = (e: Y.YMapEvent<unknown>) => {
+      if (e.keysChanged.has(escKey('type'))) setType(typeOf());
+    };
+    sectionMap.observe(on);
+    return () => sectionMap.unobserve(on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionMap]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const words = useMemo(() => fragmentText(fragment).trim().length > 0, [fragment, type]);
+  if (!c || !c.api.AUTO_TYPES.includes(type)) return true;
+  return type === 'copyright' && words;
 }

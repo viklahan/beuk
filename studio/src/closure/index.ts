@@ -64,6 +64,12 @@ export type ClosureApi = {
   sectionComplete: (s: unknown) => boolean;
   READ_WPM: number;
   AUTO_TYPES: string[];
+  // studio-2 task 4: the generated-page editor's values (renderGenEditor reads them against `state`)
+  halfTitleLine1: (s: unknown) => string;
+  halfTitleLine2: (s: unknown) => string;
+  tocHeadingOf: (s: unknown) => string;
+  sectionLabel: (s: unknown) => string;
+  imIsPlaceholderTitle: (s: string) => boolean;
   // wave 1b: the chapter operations (B2) — 1.0's plans and rules, read against `state`
   chopSplitPlan: (s: unknown, pos: number) => { c1: string; c2: string; title: string; lifted: boolean; sc1: unknown[]; sc2: unknown[] } | null;
   chopMergePlan: (a: unknown, b: unknown) => { content: string; scenes: unknown[]; relabelled: number };

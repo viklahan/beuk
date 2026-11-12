@@ -52,6 +52,9 @@ export const EXTRA_ROOTS = [
   'rightsNormalizeInto', 'RIGHTS_KEYS', 'bookSeriesNumberInto', 'imIsPlaceholderTitle', 'LANG_PACKS', 'langPack', 'a11ySummaryDefault',
   // wave 1b: the sidebar's counts (C1), the chapter operations' plans and rules (B2), the sample book (I8)
   'sectionChars', 'emptyOut', 'inBook', 'sectionComplete', 'READ_WPM', 'AUTO_TYPES',
+  // studio-2 task 4: the generated-page editor's values (renderGenEditor: the half title's lines, the contents heading;
+  // its entries are sectionLabel's, lifted below for the store audit), 1.0's own, read against `state`
+  'halfTitleLine1', 'halfTitleLine2', 'tocHeadingOf',
   'chopSplitPlan', 'chopMergePlan', 'chopMergeWhy', 'chopNumberStyle', 'chopStyleFits', 'chopName', 'chopSig', 'chopCanDelete', 'chopCanDuplicate',
   'chopCanSplitKind', 'chopGenerated', 'chopChapters', 'chopNumbers', 'chopClone', 'normalizeScenes', 'CHOP_TOAST_MS',
   'SAMPLE_IMAGE_FILES', 'SAMPLE_COVER_FILE', 'SAMPLE_WORDS', 'SAMPLE_BOOK_ID', 'LEGACY_SAMPLE_BOOK_ID', 'isSampleBookId',
