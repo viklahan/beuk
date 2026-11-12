@@ -26842,7 +26842,7 @@
            multipart/related, message/rfc822 or nothing, and an .html as text/html, none of which Beuk keeps as such */
         const ext0 = (String(name || "").toLowerCase().match(/\.([a-z0-9]{1,8})$/) || [])[1] || "";
         if (ext0 === "docx" && (!raw || raw === "application/octet-stream" || raw === RS_WORD || raw === "application/zip" || raw === "application/x-zip-compressed")) return RS_WORD;
-        if (/^(html?|mhtml?)$/.test(ext0) && (!raw || raw === "application/octet-stream" || raw === "text/html" || raw === "application/xhtml+xml" || raw === "multipart/related" || raw === "message/rfc822" || raw === "application/x-mimearchive" || raw === RS_WEB)) return RS_WEB;
+        if (/^(html?|mht|mhtml)$/.test(ext0) && (!raw || raw === "application/octet-stream" || raw === "text/html" || raw === "application/xhtml+xml" || raw === "multipart/related" || raw === "message/rfc822" || raw === "application/x-mimearchive" || raw === RS_WEB)) return RS_WEB;
         const alias = { "audio/x-m4a": "audio/mp4", "audio/m4a": "audio/mp4", "audio/x-wav": "audio/wav", "audio/wave": "audio/wav", "audio/vnd.wave": "audio/wav", "audio/mp3": "audio/mpeg", "text/x-markdown": "text/markdown", "image/jpg": "image/jpeg" };
         const ty = alias[raw] || raw;
         if (rsKinds()[ty]) return ty;
@@ -70647,7 +70647,7 @@
             applyBookDoc(buildEmptyBook());
             const n = nbNew(); n.title = ""; nbUi.sel = n.id;
             const pass = [
-              file("tides.docx", good), file("today.mhtml", enc(goodMhtmlFixed), "multipart/related"), file("page.html", enc("<!-- saved from url=(0031)https://example.org/saved/page -->\n" + pageHtml), "text/html"),
+              file("tides.docx", good), file("today.mhtml", enc(goodMhtmlFixed), "multipart/related"), file("edge.mht", enc(goodMhtmlFixed), "message/rfc822"), file("page.html", enc("<!-- saved from url=(0031)https://example.org/saved/page -->\n" + pageHtml), "text/html"),
               file("utf16.html", u16("<html><body><p>Wmark Möwe sixteen</p></body></html>"), "text/html"), file("old.htm", cp1252), file("deep.html", enc(deep), "text/html"), file(longName, enc("<p>Wmark long</p>"), "text/html")
             ];
             const fail = [
@@ -70667,7 +70667,7 @@
             });
             const byName = (nm) => rsBook().files.find((f) => f.name === nm);
             if (!byName("tides.docx") || byName("tides.docx").mediaType !== RS_WORD) bad.push("the .docx is not kept as a Word document");
-            ["today.mhtml", "page.html"].forEach((nm) => { if (!byName(nm) || byName(nm).mediaType !== RS_WEB) bad.push(nm + " is not kept as a web page (" + (byName(nm) || {}).mediaType + ")"); });
+            ["today.mhtml", "edge.mht", "page.html"].forEach((nm) => { if (!byName(nm) || byName(nm).mediaType !== RS_WEB) bad.push(nm + " is not kept as a web page (" + (byName(nm) || {}).mediaType + ")"); });
             if (n.title !== "Harbour & Tides") bad.push("note title " + JSON.stringify(n.title) + " (want the document's own, read and without its override)");
             if (n.url !== "https://example.org/tides/today") bad.push("note link " + JSON.stringify(n.url) + " (want the page's own address)");
             const lng = res.added.find((f) => f.name.indexOf("Tide") === 0);
