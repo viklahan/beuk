@@ -68,6 +68,8 @@ If you turn on two-step sign-in, Beuk stores the secret key your authenticator a
 
 When the server can send email, Beuk sends you security emails: when your account is signed in to from a device label none of your other sign-ins has, when two-step sign-in is turned on or off, when a recovery code is used, and when new recovery codes are made. Each one says what happened and when, and nothing else. They're account emails, so they can't be turned off.
 
+If you connect an app such as Claude to your Beuk account, you sign in to Beuk and approve what it may do: read your books, change them, or build exports. Beuk keeps the app's name and the addresses it may send you back to. For your approval it keeps keys stored only as hashes, with what you approved and when they stop working: a key for the app to use lasts an hour, and the key it uses to get a new one lasts 30 days. Changing or resetting your password, or "Sign out everywhere", cancels every connection at once. Keys are deleted after they stop working. Download all my data doesn't include them, because only their hashes are kept.
+
 All of this goes with your account when you delete it. Download all my data includes it as security.json: whether two-step sign-in is on and since when, how many recovery codes are left, and your sign-ins with their labels and dates. It never includes the secret key, the codes or any hash.
 
 ## The help pages and the Founders' Shelf
@@ -90,7 +92,7 @@ The server makes a backup of its data every {{backuphours}} hours, so a broken d
 [[if noschedule]]
 The operator makes backups of the server's data by hand, so a broken disk doesn't lose your books.
 [[end]]
-A backup includes accounts (with password hashes, two-step keys, hashed recovery codes and the hashes of recent sign-in steps not yet deleted), books, exports, authorship stamps, share copies and comments, and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
+A backup includes accounts (with password hashes, two-step keys, hashed recovery codes and the hashes of recent sign-in steps not yet deleted), books, exports, authorship stamps, share copies and comments, the names and return addresses of apps registered to connect (never their keys), and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
 [[if offsite]]
 An encrypted copy of each backup also goes to a private storage bucket with Backblaze B2. It's encrypted before it leaves the server, and only the operator holds the key. Copies are kept on a rolling schedule: one a day for {{keepdaily}} days, one a week for {{keepweekly}} weeks, and one a month for {{keepmonthly}} months. So a deleted item can survive in these copies for up to about {{keepmonthly}} months.
 [[end]]
