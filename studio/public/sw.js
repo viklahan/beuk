@@ -1,14 +1,18 @@
-/* Beuk 2.0 studio — service worker, scope /studio/ (hand-written, no plugin).
+/* Beuk 2.0 studio — service worker, scope /studio (hand-written, no plugin).
    The precache list comes from the build: sw-precache.js beside this file
    (written by vite.config.ts from Vite's build manifest) sets
    self.BEUK_NEXT = { cache, shell, assets, optional }. Its cache name
    carries a hash of the build, so every build gets a fresh cache and the
    old one is deleted on activate.
 
-   Fetch rules, in order (only GETs from pages under /studio/ reach here):
+   Scope /studio, no slash (src/sw-register.ts; the app sends Service-Worker-Allowed: /studio): the app answers
+   2.0's page at /studio and at /studio/ (final review C2 + I1), and every 1.0 bookmark names /studio. A scope
+   matches by prefix, so /studiofoo is in it too: nothing else lives there, and those navigations are left alone.
+
+   Fetch rules, in order (only GETs from pages at /studio and under /studio/ reach here):
    - /api/ and anything cross-origin: untouched (straight to the network;
      a cached manuscript is a stale manuscript, as in 1.0's sw.js).
-   - Navigations under /studio/: network first, the precached shell when
+   - Navigations to /studio and under /studio/: network first, the precached shell when
      the network fails or answers a server error (5xx: the app down
      during a deploy) — so the studio opens offline and through a deploy.
    - The build's own (hashed) files: cache first.
@@ -36,8 +40,10 @@ importScripts('./sw-precache.js');
 const NEXT = self.BEUK_NEXT;
 const CACHE = NEXT.cache;
 const PREFIX = 'beuk-next-';
-/* The worker's own folder (/studio/): its scope, so a navigation outside it is never this worker's. */
+/* The worker's own folder (/studio/) and the same address without its slash (/studio): the studio's two
+   addresses. Any other navigation the scope /studio matches (/studiofoo) is not this worker's. */
 const SCOPE_PATH = new URL('./', self.location.href).pathname;
+const ROOT_PATH = SCOPE_PATH.replace(/\/$/, '');
 
 /* The build must be whole: one missing file fails it (on install, the
    old worker keeps serving). Fonts are optional, one by one. */
@@ -86,7 +92,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return;
 
   if (req.mode === 'navigate') {
-    if (!url.pathname.startsWith(SCOPE_PATH)) return;
+    if (url.pathname !== ROOT_PATH && !url.pathname.startsWith(SCOPE_PATH)) return;
     event.respondWith(
       fetch(req).then(
         (res) => {

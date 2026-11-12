@@ -8,8 +8,8 @@ import { fileURLToPath } from 'node:url';
 
 /* Beuk 2.0 studio. Served at /studio/ (Caddy proxies /studio and
    /studio/* to the app, which serves client/next — see src/routes/studio.ts;
-   /studio redirects to /studio/, and the old /next address redirects
-   there too). The build output is not committed: the Dockerfile's studio
+   the page answers at /studio too and tidies its address to /studio/, and
+   the old /next address redirects there). The build output is not committed: the Dockerfile's studio
    stage makes it. */
 const here = (p: string): string => fileURLToPath(new URL(p, import.meta.url));
 

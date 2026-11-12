@@ -124,7 +124,7 @@ async function cspAndOffline() {
       if (!navigator.serviceWorker.controller) await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }));
       return { scope: reg.scope, controlled: !!navigator.serviceWorker.controller, caches: await caches.keys() };
     });
-    check(sw.controlled && sw.scope.endsWith('/studio/'), `(a) the service worker controls the page (scope ${sw.scope})`);
+    check(sw.controlled && sw.scope === srv.origin + '/studio', `(a) the service worker controls the page (scope ${sw.scope})`);
     check(sw.caches.some((c) => /^beuk-next-[0-9a-f]{12}$/.test(c)), `(b) the precache exists (${sw.caches.join(', ')})`);
     await page.reload();
     await page.waitForSelector('#topbar');

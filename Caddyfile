@@ -281,9 +281,11 @@
 	# client/next/) is made in the image, not committed, so this static
 	# ./client mount never has it: the app serves it (src/routes/studio.ts),
 	# with the same headers as everything else here (the CSP above
-	# included). The app also answers /studio with a 308 to /studio/ (the
-	# query kept: ?signin, ?signup, ?book=…), and with STUDIO_CLASSIC=true
-	# (the emergency rollback) it serves 1.0's index.html at /studio instead.
+	# included). The app answers 2.0's page at /studio too, with no
+	# redirect between /studio and /studio/ (the page tidies its address;
+	# the query kept: ?signin, ?signup, ?book=…), and with STUDIO_CLASSIC=true
+	# (the emergency rollback) it serves 1.0's index.html at /studio instead
+	# and sends /studio/… to /studio with a 302 that is never stored.
 	# Exactly /studio and /studio/… (a bare /studio* would also take /studiofoo).
 	@studio path /studio /studio/*
 	handle @studio {

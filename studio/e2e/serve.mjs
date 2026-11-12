@@ -1,8 +1,8 @@
 /* A tiny static server for the e2e script: the repo's client/ tree the way
    production serves it, with the real security headers.
-   - /studio            → 308 /studio/ (the query kept), as the app answers it (src/routes/studio.ts)
-   - /studio/<file>     → client/next/<file> (the 2.0 build; the directory keeps its name)
-   - /studio/<route>    → client/next/index.html (the app's own routes),
+   - /studio/<file>     → client/next/<file> (the 2.0 build; the directory keeps its name); sw.js with
+                          Service-Worker-Allowed: /studio, as the app sends it (src/routes/studio.ts)
+   - /studio, /studio/<route> → client/next/index.html (no redirect between /studio and /studio/, as the app),
                           or state.navStatus when set (a 502 during a deploy)
    - /next, /next/<x>   → 308 /studio/<x> (the old address, the query kept)
    - ONE (/index.html)  → client/index.html, 1.0's page: a TEST-ONLY door, for the runs that put a 1.0 book on the
@@ -101,6 +101,8 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
       if (!st || !st.isFile()) return false;
       res.setHeader('Content-Type', TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream');
       res.setHeader('Cache-Control', 'no-cache');
+      // the app's header (src/routes/studio.ts): 2.0's worker is scoped to /studio, wider than its folder
+      if (file === path.join(next, 'sw.js')) res.setHeader('Service-Worker-Allowed', '/studio');
       res.setHeader('Content-Length', st.size);
       createReadStream(file).pipe(res);
       return true;
@@ -133,9 +135,9 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
       res.setHeader('Location', to + url.search);
       return res.end();
     };
-    if (p === '/studio') return redirect('/studio/');
     if (p === '/next' || p.startsWith('/next/')) return redirect('/studio/' + p.slice(p === '/next' ? 5 : 6));
-    if (p.startsWith('/studio/')) {
+    // as the app (final review C2): 2.0's page at /studio and at /studio/, no redirect between the two
+    if (p === '/studio' || p.startsWith('/studio/')) {
       if (state.navStatus && !/\.[a-z0-9]+$/i.test(p)) {
         res.statusCode = state.navStatus;
         res.setHeader('Content-Type', 'text/plain');

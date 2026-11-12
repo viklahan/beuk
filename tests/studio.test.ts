@@ -10,10 +10,12 @@ import { studioRoutes } from '../src/routes/studio.js';
 import { createTestDb, startTestServer } from './helpers.js';
 
 /* The studio is Beuk 2.0 (React) at /studio/ (spec 2026-11-12-studio-2-cutover, D1–D3): Caddy proxies
-   /studio and /studio/* to the app, which serves the image's build of studio/ (client/next/). /studio
-   redirects to /studio/ (the service worker's scope), keeping the query (?signin, ?signup, ?book=…), and
-   the old /next address redirects to the same path under /studio/. STUDIO_CLASSIC=true is the
-   emergency rollback: 1.0's client/index.html at /studio, as Caddy served it before the switch. */
+   /studio and /studio/* to the app, which serves the image's build of studio/ (client/next/). 2.0's page
+   answers at /studio AND at /studio/ (final review C2: no redirect between the two, in either mode, so a
+   browser's cached permanent redirect can never loop), the query kept; the page tidies /studio to /studio/
+   itself. The old /next address redirects (308, no-cache) to the same path under /studio/.
+   STUDIO_CLASSIC=true is the emergency rollback: 1.0's client/index.html at /studio, as Caddy served it
+   before the switch, and /studio/… → 302 (no-store) /studio. */
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (f: string) => readFileSync(path.join(root, f), 'utf8');
@@ -47,21 +49,25 @@ async function location(url: string): Promise<[number, string | null]> {
   const r = await fetch(url, manual);
   return [r.status, r.headers.get('location')];
 }
+/** A redirect, with its Cache-Control (final review C2: never cached for ever). */
+async function redirect(url: string): Promise<[number, string | null, string | null]> {
+  const r = await fetch(url, manual);
+  return [r.status, r.headers.get('location'), r.headers.get('cache-control')];
+}
 
 test('/studio/ serves the 2.0 build: index, immutable hashed assets, the app\'s own routes, loud 404s', async (t) => {
   const s = await serve({ dir: fakeBuild(t) });
   t.after(s.close);
 
-  // /studio → /studio/ (308, the query kept: the doors ?signin, ?signup, ?book=<uuid> survive it)
-  assert.deepEqual(await location(s.base + '/studio'), [308, '/studio/']);
-  assert.deepEqual(await location(s.base + '/studio?book=abc&x=1'), [308, '/studio/?book=abc&x=1']);
-  assert.deepEqual(await location(s.base + '/studio?signin'), [308, '/studio/?signin']);
-
-  for (const p of ['/studio/', '/studio/?signup', '/studio/book/abc', '/studio/index.html']) {
+  // 2.0's page at both addresses: /studio is not redirected (final review C2), the query is the page's own (the doors
+  // ?signin, ?signup, ?book=<uuid>), and the page tidies its address to /studio/ itself (studio/index.html).
+  for (const p of ['/studio', '/studio?book=abc&x=1', '/studio?signin', '/studio/', '/studio/?signup', '/studio/book/abc', '/studio/index.html']) {
     const r = await fetch(s.base + p, manual);
     assert.equal(r.status, 200, p);
+    assert.equal(r.headers.get('location'), null, p);
     assert.match(await r.text(), /id="root"/, p);
     assert.equal(r.headers.get('cache-control'), 'no-cache', p);
+    assert.match(r.headers.get('content-type') ?? '', /^text\/html/, p);
   }
   const js = await fetch(s.base + '/studio/assets/index-AbC123.js');
   assert.equal(js.status, 200);
@@ -74,6 +80,9 @@ test('/studio/ serves the 2.0 build: index, immutable hashed assets, the app\'s 
     assert.equal(r.status, 200, p);
     assert.equal(r.headers.get('cache-control'), 'no-cache', p);
   }
+  // the worker's scope is /studio (both addresses; studio/src/sw-register.ts), wider than its folder: allowed by header
+  assert.equal((await fetch(s.base + '/studio/sw.js')).headers.get('service-worker-allowed'), '/studio');
+  assert.equal((await fetch(s.base + '/studio/sw-precache.js')).headers.get('service-worker-allowed'), null);
 
   // A missing file is a 404, never the page; the build manifest is not served.
   assert.equal((await fetch(s.base + '/studio/assets/gone-123.js')).status, 404);
@@ -86,6 +95,9 @@ test('/studio/ serves the 2.0 build: index, immutable hashed assets, the app\'s 
 test('the old /next address: 308 to the same path under /studio/, the query kept', async (t) => {
   const s = await serve({ dir: fakeBuild(t) });
   t.after(s.close);
+  // final review C2: a browser never keeps it for ever
+  assert.deepEqual(await redirect(s.base + '/next?x=1'), [308, '/studio/?x=1', 'no-cache']);
+  assert.deepEqual(await redirect(s.base + '/next/foo?q'), [308, '/studio/foo?q', 'no-cache']);
   assert.deepEqual(await location(s.base + '/next'), [308, '/studio/']);
   assert.deepEqual(await location(s.base + '/next?x=1'), [308, '/studio/?x=1']);
   assert.deepEqual(await location(s.base + '/next/'), [308, '/studio/']);
@@ -99,14 +111,14 @@ test('the old /next address: 308 to the same path under /studio/, the query kept
   assert.equal((await fetch(s.base + '/nextbook', manual)).status, 404);
 });
 
-test('/studio/ without a build on disk falls through (404), it never throws; /studio still redirects', async (t) => {
+test('/studio and /studio/ without a build on disk fall through (404), they never throw', async (t) => {
   const s = await serve({ dir: path.join(os.tmpdir(), 'beuk-studio-does-not-exist') });
   t.after(s.close);
   assert.equal((await fetch(s.base + '/studio/', manual)).status, 404);
-  assert.deepEqual(await location(s.base + '/studio?signin'), [308, '/studio/?signin']);
+  assert.equal((await fetch(s.base + '/studio?signin', manual)).status, 404);
 });
 
-test('STUDIO_CLASSIC: /studio is 1.0 (no-cache, as Caddy sent it), /studio/ → /studio, 2.0\'s build is not served', async (t) => {
+test('STUDIO_CLASSIC: /studio is 1.0 (no-cache, as Caddy sent it), /studio/ → 302 (no-store) /studio, 2.0\'s build is not served', async (t) => {
   const dir = fakeBuild(t);
   const classicFile = path.join(dir, '..', path.basename(dir) + '-classic.html');
   writeFileSync(classicFile, '<!doctype html><title>Beuk 1.0</title>');
@@ -121,14 +133,15 @@ test('STUDIO_CLASSIC: /studio is 1.0 (no-cache, as Caddy sent it), /studio/ → 
     assert.equal(r.headers.get('cache-control'), 'no-cache', p);
     assert.match(r.headers.get('content-type') ?? '', /^text\/html/, p);
   }
-  assert.deepEqual(await location(s.base + '/studio/'), [308, '/studio']);
-  assert.deepEqual(await location(s.base + '/studio/?book=abc&x=1'), [308, '/studio?book=abc&x=1']);
+  // final review C2: a temporary redirect, never stored, so flipping back to 2.0 can't loop on a cached one
+  assert.deepEqual(await redirect(s.base + '/studio/'), [302, '/studio', 'no-store']);
+  assert.deepEqual(await redirect(s.base + '/studio/?book=abc&x=1'), [302, '/studio?book=abc&x=1', 'no-store']);
   // 2.0's own routes land on 1.0 too, never on 2.0
-  assert.deepEqual(await location(s.base + '/studio/book/abc'), [308, '/studio']);
+  assert.deepEqual(await redirect(s.base + '/studio/book/abc'), [302, '/studio', 'no-store']);
   // 2.0's files are not served in this mode (its worker's update check finds no worker)
   for (const p of ['/studio/assets/index-AbC123.js', '/studio/sw.js', '/studio/index.html']) assert.equal((await fetch(s.base + p, manual)).status, 404, p);
   // /next still goes under /studio/ (and from there to /studio)
-  assert.deepEqual(await location(s.base + '/next/foo?q'), [308, '/studio/foo?q']);
+  assert.deepEqual(await redirect(s.base + '/next/foo?q'), [308, '/studio/foo?q', 'no-cache']);
   assert.equal((await fetch(s.base + '/studiofoo', manual)).status, 404);
 });
 
@@ -141,9 +154,10 @@ test('the app: STUDIO_CLASSIC off by default; both modes through the real app (P
 
   const two = await startTestServer(db);
   try {
-    assert.deepEqual(await location(two.base + '/studio?book=abc&x=1'), [308, '/studio/?book=abc&x=1']);
-    assert.deepEqual(await location(two.base + '/next/foo?q'), [308, '/studio/foo?q']);
-    assert.deepEqual(await location(two.base + '/next'), [308, '/studio/']);
+    // no redirect at /studio (this tree may hold no build: 200 with 2.0's page, else the 404 fall-through)
+    assert.equal((await location(two.base + '/studio?book=abc&x=1'))[1], null);
+    assert.deepEqual(await redirect(two.base + '/next/foo?q'), [308, '/studio/foo?q', 'no-cache']);
+    assert.deepEqual(await redirect(two.base + '/next'), [308, '/studio/', 'no-cache']);
   } finally {
     await two.close();
   }
@@ -155,7 +169,7 @@ test('the app: STUDIO_CLASSIC off by default; both modes through the real app (P
     assert.equal(r.headers.get('cache-control'), 'no-cache');
     const html = await r.text();
     assert.equal(html, read('client/index.html'), "1.0's index.html, byte for byte");
-    assert.deepEqual(await location(one.base + '/studio/?book=abc'), [308, '/studio?book=abc']);
+    assert.deepEqual(await redirect(one.base + '/studio/?book=abc'), [302, '/studio?book=abc', 'no-store']);
   } finally {
     await one.close();
   }

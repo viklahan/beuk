@@ -542,7 +542,7 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   // book's stamps and, from the beta list and readers above, the named readers of the linked shelf book's reading copies
   'authorshipRecordOpen', 'authorshipRecordClose',
   // wave 7b (H5): the platform's install area and update bar (1.0's pwa record, isStandalone, renderInstallArea,
-  // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /studio/), its listeners
+  // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /studio), its listeners
   // 1.0's initPlatform lines (src/cloud/platform.ts)
   'pwa', 'isStandalone', 'renderInstallArea', 'pwaOnLangChange', 'showUpdateBar', 'wireUpdateFlow',
   // wave 7b (I9): the opt-in error report (BEUK:errors, BEUK:errscrub) — off unless beuk.errors.v1 is "on"; the message

@@ -7,7 +7,7 @@ import vm from 'node:vm';
 /* Spec D4: 1.0's root worker (client/sw.js, scope /, last shell beuk-shell-v22) becomes v23, a worker that
    retires itself. A browser holding v22 fetches the new bytes on its next update check (any navigation in
    scope /), and v23 then: skips waiting; on activate deletes 1.0's own caches (beuk-shell-* and its sound
-   cache), keeps every beuk-next-* cache (2.0's worker, scope /studio/, owns them), claims the open pages and
+   cache), keeps every beuk-next-* cache (2.0's worker, scope /studio, owns them), claims the open pages and
    unregisters. While it lives its fetch handler answers nothing, so every request goes to the network and a
    cached 1.0 page is never served again. The file is run as it is, in a node:vm context with a fake
    ServiceWorkerGlobalScope. */

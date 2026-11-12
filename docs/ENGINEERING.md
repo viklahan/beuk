@@ -3722,11 +3722,16 @@ The same Compose file runs locally — only `.env` differs.
 - **The studio is Beuk 2.0** (React, `studio/`, built by the image to
   `client/next/`) at **`/studio/`**, served by the app
   (`src/routes/studio.ts`; Caddy proxies exactly `/studio`, `/studio/…`,
-  `/next` and `/next/…` to it). `/studio` answers a 308 to `/studio/`
-  with the query kept, so every link that names `/studio`, `/studio?signin`,
-  `/studio?signup` or `/studio?book=<id>` (the landing page, the account
-  page, Help, emails, bookmarks) still opens the studio, and its door. The
-  old 2.0 address `/next` and `/next/…` answers a 308 to the same path
+  `/next` and `/next/…` to it). `/studio` answers 2.0's page too (200,
+  no redirect: a browser keeps a permanent redirect with no
+  `Cache-Control` for good, so one between `/studio` and `/studio/` would
+  loop the moment the rollback, or 1.0's old Caddy, had sent the opposite
+  one), and the page tidies its own address to `/studio/` before anything
+  else runs, the query and the hash kept. So every link that names
+  `/studio`, `/studio?signin`, `/studio?signup` or `/studio?book=<id>`
+  (the landing page, the account page, Help, emails, bookmarks) still
+  opens the studio, and its door. The old 2.0 address `/next` and
+  `/next/…` answers a 308 (`Cache-Control: no-cache`) to the same path
   under `/studio/`. Hashed build files (`/studio/assets/…`) are immutable;
   the page, its worker and the precache list revalidate on every load; an
   extensionless path is the app's own route (the page); a missing file
@@ -3735,9 +3740,14 @@ The same Compose file runs locally — only `.env` differs.
 - **Books on a device carry over.** 2.0 reads 1.0's device store
   (`beuk-local`) read-only and imports a book it finds there; it never
   writes to it. Books on the cloud shelf open as before.
-- **Service workers.** 2.0's worker (`/studio/sw.js`, scope `/studio/`,
-  caches `beuk-next-*`, the prefix kept from the `/next` days so warm
-  caches survive) controls the studio. 1.0's old root worker
+- **Service workers.** 2.0's worker (`/studio/sw.js`, scope `/studio`
+  with no slash, allowed by the app's `Service-Worker-Allowed: /studio`
+  header, caches `beuk-next-*`, the prefix kept from the `/next` days so
+  warm caches survive) controls the studio at both addresses, so an old
+  `/studio` bookmark opens offline as `/studio/` does. A scope matches by
+  prefix, so it also takes `/studiofoo`, `/studio.html` and the like;
+  nothing lives there (Caddy answers them with a 302 to `/studio` or a
+  404), and the worker leaves those navigations alone. 1.0's old root worker
   (`client/sw.js`, scope `/`) is v23 and retires itself: on a browser that
   still holds v22 it skips waiting, deletes 1.0's `beuk-shell-*` and
   `beuk-sound-*` caches (never a `beuk-next-*` one), claims the open
@@ -3780,7 +3790,9 @@ The same Compose file runs locally — only `.env` differs.
   For emergencies, not a second studio. The app then serves 1.0's
   `client/index.html` at `/studio` (with `Cache-Control: no-cache`, as
   Caddy served it before the switch) and `/studio/` and every other page
-  path under it redirect back to `/studio`; 2.0's files are not served.
+  path under it answer a 302 (`Cache-Control: no-store`, so it is never
+  kept and flipping back cannot loop) to `/studio`, the query kept; 2.0's
+  files are not served.
   The costs, stated plainly:
   - **Going to 1.0: words written in 2.0 on a device are not in 1.0's
     device store.** 2.0 keeps its own device books (its own IndexedDB
@@ -3797,9 +3809,12 @@ The same Compose file runs locally — only `.env` differs.
   - 1.0 runs **online only**: it registers `/sw.js`, which is the retiring
     v23 worker, so 1.0 has no offline shell (its `pwa.installable`
     self-check reports that).
-  - A browser that already holds 2.0's worker keeps it (scope `/studio/`
-    does not cover `/studio`); it answers only `/studio/…` navigations,
-    which redirect to `/studio`.
+  - A browser that already holds 2.0's worker keeps it (its update check
+    finds no `/studio/sw.js`). Its scope `/studio` covers 1.0's `/studio`
+    too: online it is network first, so 1.0 opens; **offline, or while the
+    app answers a server error, it opens 2.0's cached studio instead**,
+    and words written there are in 2.0's device store, not 1.0's (they
+    are there again once you flip back to 2.0).
   Set it back to `false` (or remove it) and restart to return to 2.0.
 - **The page's claims are the studio's.** It names beuk.studio (not the
   sample book's imprint), and says nothing about being free or open

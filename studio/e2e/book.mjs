@@ -8496,7 +8496,8 @@ async function wave7bUpdate(srv) {
     });
     await a.waitForSelector('#updateBar', { state: 'attached', timeout: 30_000 });
     const scope = await a.evaluate(async () => (await navigator.serviceWorker.getRegistration()).scope);
-    check(scope === origin + '/studio/', `wave7b decision 4: 2.0's worker is scoped to /studio/ (${scope})`);
+    // final review C2 + I1: scope /studio (no slash), so both addresses the app answers 2.0 at are covered
+    check(scope === origin + '/studio', `wave7b decision 4: 2.0's worker is scoped to /studio (${scope})`);
     const cached = await a.evaluate(async () => {
       const out = [];
       for (const k of await caches.keys()) for (const r of await (await caches.open(k)).keys()) out.push(new URL(r.url).pathname);
