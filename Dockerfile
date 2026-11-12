@@ -11,7 +11,11 @@ RUN npm run build
 # package.json and lockfile. Its build extracts the interface strings and
 # the theme tokens from client/index.html (studio/scripts/extract-studio.mjs,
 # with src/book/studio/closure.ts's parser selection) and imports the
-# book-format code from src/book, so it needs both. Output: client/next/.
+# book-format code from src/book, so it needs both, plus Zen's scenes and
+# sounds (vite.config.ts beuk-zen-media). Its typecheck covers the app only
+# (studio/tsconfig.build.json): studio/test imports server code this stage
+# does not have. tests/dockerfile-studio.test.ts holds the list. Output:
+# client/next/.
 FROM node:24-slim AS studio
 WORKDIR /app
 COPY studio/package.json studio/package-lock.json ./studio/
