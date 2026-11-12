@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useBook } from '../book/BookProvider';
 import { Desk } from '../book/Desk';
 import { Outline } from '../book/Outline';
@@ -77,7 +78,8 @@ export function Shell() {
   // editor re-measure for their new width. (1.0's restore at start passes keep=false: nothing is written for it.)
   const fold = (side: 'left' | 'right') => {
     const next = { ...folds, [side]: !folds[side] };
-    setFolds(next);
+    // 1.0 changes the class first, then dispatches: commit the fold-* class now so resize listeners measure the new width
+    flushSync(() => setFolds(next));
     try {
       localStorage.setItem(PANES_KEY, JSON.stringify(next));
     } catch {
