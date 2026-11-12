@@ -298,6 +298,7 @@ off-site backups" records how it was proven earlier.
 On a phone and a laptop, signed out and signed in:
 
 - [ ] https://beuk.studio loads the studio; the browser shows a valid lock.
+- [ ] https://beuk.studio/studio lands on `/studio/` and shows the 2.0 studio; `/studio?signin` opens the sign-in dialog there; an old `/next/` bookmark lands on `/studio/` too.
 - [ ] Sign up a second test account; sign out; sign in.
 - [ ] "Forgot password" → the email arrives → the link opens `https://beuk.studio/reset?token=…` → new password works, old one does not.
 - [ ] Load the sample book → "On your shelf ✓" in the sidebar.
@@ -342,6 +343,35 @@ For a true undo of the data, restore the `before-<new-sha>` backup
 (step 9) after checking out the old commit. Return to normal updates
 with `git checkout main && git pull && ./deploy/install.sh`.
 
+### 11a. The studio switch: Beuk 2.0 at `/studio/` [owner]
+
+The deploy that makes 2.0 the studio (spec
+`docs/superpowers/specs/2026-11-12-studio-2-cutover-design.md`) ships
+only with the full gate green, fast-forward only.
+
+- [ ] Before: `./deploy/hk.sh <your-email> backup before-<new-sha>` (as
+  above).
+- [ ] Deploy as above. Caddy reloads (the `/studio` routing moved from the
+  static mount to the app; the security headers, CSP included, are
+  unchanged).
+- [ ] **After the deploy, take a fresh backup:**
+  `./deploy/hk.sh <your-email> backup after-studio-2`.
+- [ ] The smoke test (step 10), with the `/studio` line.
+- [ ] On a browser that used 1.0 before: `/studio` opens 2.0, at the latest
+  on the next reload, and a book that browser kept only on the device is
+  there.
+
+**Rollback, for emergencies only:** set `STUDIO_CLASSIC=true` in `.env`
+and run `docker compose up -d app`. The app then serves 1.0 at `/studio`
+again. Know the cost before you flip it: words written in 2.0 on a
+device are **not** in 1.0's device store (a book on the cloud shelf
+opens in both; a device-only book opens in 1.0 as it was before the
+switch), and 1.0 runs online only (its offline worker retires itself).
+Remove the setting (or set it to `false`) and run the same command to
+return to 2.0. [estimate: the rollback is covered by the server tests
+(`tests/studio.test.ts`), never flipped on the box.] README: "The front
+door" has the details.
+
 ## 12. The first week — what to watch
 
 - **Daily:** `./deploy/hk.sh <your-email> self-checks`. Any `fail` is
@@ -372,4 +402,6 @@ with `git checkout main && git pull && ./deploy/install.sh`.
   HTTP/2 [measured]. Not needed for launch.
 - Unknown paths (including `/.env`, `/.git/config`) answer the studio
   page with 200 — the SPA fallback — never a file from the server
-  [measured: the body was the studio's HTML in every case].
+  [measured: the body was the studio's HTML in every case]. Since the
+  2.0 switch that fallback page is still `client/index.html`, 1.0's file
+  (the studio itself is 2.0 at `/studio/`).
