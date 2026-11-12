@@ -1,10 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
-import { NEXT_STRINGS, PENDING_SIGNOFF } from '../src/i18n/next-strings';
 
 /* Every t("…") key studio/src uses must exist in 1.0's English pack. The
    UiKey type already makes tsc (and so the build) fail on a renamed or
@@ -25,7 +24,7 @@ describe("t() keys are 1.0's", () => {
     for (const f of files(SRC)) {
       for (const m of readFileSync(f, 'utf8').matchAll(/\bt\(\s*(['"`])([^'"`]+)\1/g)) {
         used.push(m[2]!);
-        if (!(m[2]! in en) && !(m[2]! in NEXT_STRINGS.en!)) missing.push(`${path.relative(SRC, f)}: ${m[2]}`);
+        if (!(m[2]! in en)) missing.push(`${path.relative(SRC, f)}: ${m[2]}`);
       }
     }
     expect(used.length).toBeGreaterThan(15);
@@ -33,19 +32,52 @@ describe("t() keys are 1.0's", () => {
   });
 });
 
-describe("2.0's own keys (i18n/next-strings.ts)", () => {
-  const keys = Object.keys(NEXT_STRINGS.en!);
-  it("are new keys only: none of them exists in 1.0's English pack (never a second copy of a 1.0 string)", () => {
-    expect(keys.length).toBeGreaterThan(0);
-    expect(keys.filter((k) => k in en)).toEqual([]);
+
+/* The 22 keys 2.0 once kept in an overlay (i18n/next-strings.ts) now live in 1.0's catalog (client/index.html
+   UI_STRINGS, the BEUK:next-strings block) and so in every generated pack. Their non-English text is a DRAFT:
+   nothing here is approved; V signs off each translation (docs/strings-pending-signoff.md lists them). */
+const NEXT_KEYS = [
+  'next.textWarning', 'next.textWarningPlural', 'next.markRefused', 'next.snapshotGone', 'next.bookReplaced',
+  'next.themes.everyH', 'next.themes.everySub', 'next.themes.account', 'next.themes.deviceOnly', 'next.themes.empty',
+  'next.themes.keep', 'next.themes.kept', 'next.themes.removed', 'next.themes.offer', 'next.themes.offerYes',
+  'next.themes.offerNo', 'next.themes.moveOffer', 'next.themes.moveYes', 'next.themes.deviceSuffix',
+  'next.themes.conflict', 'next.themes.full', 'next.themes.refused',
+] as const;
+const PACKS = path.join(import.meta.dirname, '..', 'src', 'generated', 'packs');
+const pack = (code: string): Record<string, string> => JSON.parse(readFileSync(path.join(PACKS, `${code}.json`), 'utf8'));
+const holes = (s: string): string[] => [...s.matchAll(/\{[A-Za-z]+\}/g)].map((m) => m[0]).sort();
+
+describe('the next.* keys are in the catalog (step 6)', () => {
+  it('there are 22 and en.json has exactly them under next.', () => {
+    expect(NEXT_KEYS.length).toBe(22);
+    expect(Object.keys(en).filter((k) => k.startsWith('next.')).sort()).toEqual([...NEXT_KEYS].sort());
   });
-  it("every interface language has every key (English, or the English placeholder awaiting V's sign-off)", () => {
-    expect(Object.keys(NEXT_STRINGS).sort()).toEqual([...meta.order].sort());
+  it('every interface language has every key, as non-empty text, with the English placeholders byte for byte', () => {
+    const e = pack('en');
     for (const code of meta.order) {
-      const pack = NEXT_STRINGS[code]!;
-      expect(Object.keys(pack).sort(), code).toEqual([...keys].sort());
-      for (const k of keys) expect(typeof (pack as Record<string, string>)[k] === 'string' && (pack as Record<string, string>)[k] !== '', `${code} ${k}`).toBe(true);
+      const p = pack(code);
+      for (const k of NEXT_KEYS) {
+        expect(typeof p[k] === 'string' && p[k] !== '', `${code} ${k}`).toBe(true);
+        expect(holes(p[k]!), `${code} ${k}`).toEqual(holes(e[k]!));
+        if (code !== 'en') expect(p[k], `${code} ${k} is still the English placeholder`).not.toBe(e[k]);
+      }
     }
-    expect([...PENDING_SIGNOFF].sort()).toEqual([...keys].sort());
+  });
+  it('the "this device" name in the conflict text is the suffix (trimmed), in every language', () => {
+    for (const code of meta.order) {
+      const p = pack(code);
+      expect(p['next.themes.conflict'], code).toContain(p['next.themes.deviceSuffix']!.trim());
+    }
+  });
+  it('the overlay is gone: no next-strings.ts, and nothing imports it', () => {
+    expect(existsSync(path.join(SRC, 'i18n', 'next-strings.ts'))).toBe(false);
+    const users = files(SRC).filter((f) => /next-strings/.test(readFileSync(f, 'utf8')));
+    expect(users.map((f) => path.relative(SRC, f))).toEqual([]);
+  });
+  it('docs/strings-pending-signoff.md lists every key as a draft, and approves none of them', () => {
+    const doc = readFileSync(path.join(import.meta.dirname, '..', '..', 'docs', 'strings-pending-signoff.md'), 'utf8');
+    expect(doc.toLowerCase()).toContain('not approved');
+    for (const k of NEXT_KEYS) expect(doc, k).toContain('`' + k + '`');
+    expect(doc.toLowerCase()).not.toMatch(/\bapproved by\b|\bsigned off by v\b/);
   });
 });
