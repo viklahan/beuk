@@ -9,6 +9,9 @@ declare module 'express-serve-static-core' {
     /** Set when the request authenticated with an OAuth bearer token
      *  (space-separated scopes as granted). Absent on cookie sessions. */
     oauthScopes?: string;
+    /** The bearer's token and client ids, set alongside oauthScopes —
+     *  what the mcp_writes audit rows (migration 028) record. */
+    oauthGrant?: { tokenId: string; clientId: string };
   }
 }
 
@@ -51,6 +54,7 @@ export function requireBearer(db: Db, config: Config, needed?: OAuthScope) {
       }
       req.user = { id: grant.userId, email: grant.email };
       req.oauthScopes = grant.scopes;
+      req.oauthGrant = { tokenId: grant.tokenId, clientId: grant.clientId };
       next();
     } catch (err) {
       next(err);
@@ -121,6 +125,7 @@ export function requireSessionOrBearer(db: Db, config: Config) {
         if (grant) {
           req.user = { id: grant.userId, email: grant.email };
           req.oauthScopes = grant.scopes;
+          req.oauthGrant = { tokenId: grant.tokenId, clientId: grant.clientId };
           return next();
         }
         return unauthorized(res, config, true, 'token expired, revoked or invalid');

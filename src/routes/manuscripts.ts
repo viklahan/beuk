@@ -212,6 +212,29 @@ export function manuscriptRoutes(db: Db, config: Config, tasks: BackgroundTasks)
   // base gets 428 (RFC 6585 §3) with the same copy — never a blind
   // overwrite. A doc naming pictures the account does not hold is
   // refused with 422 and nothing is written (revision unchanged).
+  /* Phase 3 audit (migration 028): the ids of sections whose content
+     differs between the stored and incoming doc — added, removed, or
+     edited — diffed HERE by the app, never self-reported by a client. */
+  function changedSections(beforeDoc: unknown, afterDoc: unknown): string[] {
+    const sectionsOf = (d: unknown): Map<string, string> => {
+      const parsed = typeof d === 'string' ? (JSON.parse(d) as unknown) : d;
+      const list = (parsed as { sections?: unknown } | null)?.sections;
+      const map = new Map<string, string>();
+      if (Array.isArray(list))
+        for (const s of list) {
+          const id = (s as { id?: unknown })?.id;
+          if (typeof id === 'string') map.set(id, JSON.stringify(s));
+        }
+      return map;
+    };
+    const a = sectionsOf(beforeDoc);
+    const b = sectionsOf(afterDoc);
+    const changed: string[] = [];
+    for (const [id, body] of b) if (a.get(id) !== body) changed.push(id);
+    for (const id of a.keys()) if (!b.has(id)) changed.push(id);
+    return changed;
+  }
+
   router.put('/:id', async (req, res, next) => {
     try {
       const doc = req.body?.doc;
@@ -230,6 +253,19 @@ export function manuscriptRoutes(db: Db, config: Config, tasks: BackgroundTasks)
         let row: ManuscriptRow | undefined;
         try {
           row = await db.tx(async (tx) => {
+            // Audit (mcp_writes): only bearer-authed doc writes — the
+            // MCP update_chapter path. The old doc is read in the same
+            // tx so bytes_before and the section diff are exact.
+            const grant = req.oauthGrant;
+            const before =
+              grant && doc !== undefined
+                ? (
+                    await tx.query<{ doc: unknown }>(
+                      'select doc from manuscripts where id = $1 and user_id = $2',
+                      [req.params.id, req.user!.id],
+                    )
+                  ).rows[0]
+                : undefined;
             const updated = await tx.query<ManuscriptRow>(
               `update manuscripts
                set doc = coalesce($3, doc),
@@ -248,6 +284,24 @@ export function manuscriptRoutes(db: Db, config: Config, tasks: BackgroundTasks)
             );
             const written = updated.rows[0];
             if (written && doc !== undefined) await writePictureRefs(tx, written.id, req.user!.id, refs);
+            if (written && grant && doc !== undefined && before !== undefined) {
+              const beforeJson =
+                typeof before.doc === 'string' ? before.doc : JSON.stringify(before.doc);
+              await tx.query(
+                `insert into mcp_writes
+                   (user_id, client_id, token_id, manuscript_id, changed_sections, bytes_before, bytes_after)
+                 values ($1, $2, $3, $4, $5, $6, $7)`,
+                [
+                  req.user!.id,
+                  grant.clientId,
+                  grant.tokenId,
+                  written.id,
+                  JSON.stringify(changedSections(before.doc, doc)),
+                  Buffer.byteLength(beforeJson),
+                  Buffer.byteLength(JSON.stringify(doc)),
+                ],
+              );
+            }
             return written;
           });
         } catch (err) {

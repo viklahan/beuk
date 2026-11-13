@@ -142,19 +142,25 @@ export interface AccessGrant {
   email: string;
   /** Space-separated scope string as granted. */
   scopes: string;
+  /** The oauth_tokens row and its client — the identity the audit
+   *  trail (mcp_writes, migration 028) records for bearer writes. */
+  tokenId: string;
+  clientId: string;
 }
 
 /** Resolve a bearer access token to its user, or null. */
 export async function findAccessGrant(db: Db, token: string): Promise<AccessGrant | null> {
-  const found = await db.query<{ user_id: string; email: string; scopes: string }>(
-    `select t.user_id, u.email, t.scopes
+  const found = await db.query<{ user_id: string; email: string; scopes: string; id: string; client_id: string }>(
+    `select t.id, t.client_id, t.user_id, u.email, t.scopes
      from oauth_tokens t join users u on u.id = t.user_id
      where t.token_hash = $1 and t.kind = 'access'
        and t.revoked_at is null and t.expires_at > now()`,
     [tokenHash(token)],
   );
   const row = found.rows[0];
-  return row ? { userId: row.user_id, email: row.email, scopes: row.scopes } : null;
+  return row
+    ? { userId: row.user_id, email: row.email, scopes: row.scopes, tokenId: row.id, clientId: row.client_id }
+    : null;
 }
 
 /** "Sign out everywhere" for OAuth: every live credential of the user —
