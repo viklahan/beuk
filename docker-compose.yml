@@ -58,6 +58,14 @@ services:
       # Largest book the shelf accepts (src/config.ts default 64 MiB).
       # Passed through so the .env.example knob actually reaches the app.
       MANUSCRIPT_MAX_BYTES: ${MANUSCRIPT_MAX_BYTES:-67108864}
+      # Server build size ceilings (src/config.ts default 128 MiB), their
+      # own caps bounded by the worker heaps below — separate from the
+      # shelf cap, so an image-heavy book can build.
+      EPUB_MAX_BYTES: ${EPUB_MAX_BYTES:-134217728}
+      WRAP_MAX_BYTES: ${WRAP_MAX_BYTES:-134217728}
+      # Each build's worker-thread heap, MB (src/config.ts default 512).
+      EPUB_WORKER_HEAP_MB: ${EPUB_WORKER_HEAP_MB:-512}
+      WRAP_WORKER_HEAP_MB: ${WRAP_WORKER_HEAP_MB:-512}
       # Shelf pictures (src/config.ts defaults: 32 MiB each, 2 GiB per account, 1 h grace).
       PICTURE_MAX_BYTES: ${PICTURE_MAX_BYTES:-33554432}
       PICTURE_QUOTA_BYTES: ${PICTURE_QUOTA_BYTES:-2147483648}
