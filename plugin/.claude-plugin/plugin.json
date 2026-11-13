@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "beuk",
+  "displayName": "Beuk",
+  "version": "0.1.0",
+  "description": "Work on your books in Beuk from chat: read your shelf and chapters, run EPUBCheck, build and download store-ready EPUBs. Sign in once with your Beuk account.",
+  "author": {
+    "name": "Vikrant Lahankar",
+    "email": "support@beuk.studio",
+    "url": "https://beuk.studio"
+  },
+  "homepage": "https://beuk.studio",
+  "repository": "https://github.com/viklahan/beuk",
+  "license": "UNLICENSED",
+  "keywords": ["writing", "ebook", "epub", "publishing", "manuscript", "epubcheck"],
+  "icon": "./.claude-plugin/icon.png",
+  "documentationUrl": "https://beuk.studio/help",
+  "supportUrl": "https://beuk.studio/support",
+  "privacyPolicyUrl": "https://beuk.studio/privacy",
+  "termsOfServiceUrl": "https://beuk.studio/terms"
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "beuk",
+  "owner": {
+    "name": "Vikrant Lahankar",
+    "url": "https://beuk.studio"
+  },
+  "plugins": [
+    {
+      "name": "beuk",
+      "source": "./plugin",
+      "description": "Work on your books in Beuk from chat: shelf, chapters, EPUBCheck, and store-ready EPUB exports."
+    }
+  ]
+}
