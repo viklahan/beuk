@@ -682,6 +682,34 @@ test('a beuk:write bearer may write, exactly as consent granted', async () => {
   assert.equal((created.body.manuscript as { title: string }).title, 'Bearer-Written Book');
 });
 
+test('Phase 3: the export routers accept a beuk:export bearer, and refuse one without it', async () => {
+  // The bug the live loop caught: /api/epub and /api/exports used
+  // session-only requireAuth, so an MCP bearer (export_epub,
+  // get_export_link) got 401 "not signed in" even with beuk:export.
+  const exportGrant = await fullGrant(`oauth-export-ok-${randomBytes(4).toString('hex')}@example.com`, 'beuk:read beuk:export');
+  const readGrant = await fullGrant(`oauth-export-no-${randomBytes(4).toString('hex')}@example.com`, 'beuk:read');
+
+  // Auth must pass (never 401): each route then answers on its own
+  // terms — the build/validation, not the credential.
+  const epub = await bearerFetch('POST', '/api/epub', exportGrant.access, {});
+  assert.notEqual(epub.status, 401, 'a beuk:export bearer reaches /api/epub');
+  assert.equal(epub.status, 400, 'epub asks for manuscriptId or book');
+
+  const archive = await bearerFetch('POST', '/api/exports', exportGrant.access, {});
+  assert.notEqual(archive.status, 401, 'a beuk:export bearer reaches /api/exports');
+  assert.equal(archive.status, 400, 'exports validates its query, not the credential');
+
+  // A read-only bearer is stopped at the SCOPE boundary, not the auth one.
+  const refusedEpub = await bearerFetch('POST', '/api/epub', readGrant.access, {});
+  assert.equal(refusedEpub.status, 403);
+  assert.equal(refusedEpub.body.error, 'this token is missing the beuk:export scope');
+  assert.match(refusedEpub.header('www-authenticate'), /scope="beuk:export"/);
+
+  const refusedArchive = await bearerFetch('POST', '/api/exports', readGrant.access, {});
+  assert.equal(refusedArchive.status, 403);
+  assert.equal(refusedArchive.body.error, 'this token is missing the beuk:export scope');
+});
+
 test('nothing irreversible from a bearer: no DELETE, no If-Match: * overwrite; a revisioned save still lands', async () => {
   const grant = await fullGrant('oauth-no-delete@example.com', 'beuk:read beuk:write beuk:export');
   const created = await bearerFetch('POST', '/api/manuscripts', grant.access, {

@@ -69,7 +69,7 @@ export function requireBearer(db: Db, config: Config, needed?: OAuthScope) {
  *  session passes untouched: the studio's behaviour does not change by
  *  one byte. Built on requireSessionOrBearer so the refusal bodies
  *  stay identical too. */
-export function sessionOrScopedBearer(db: Db, config: Config) {
+export function sessionOrScopedBearer(db: Db, config: Config, writeScope: OAuthScope = 'beuk:write') {
   const base = requireSessionOrBearer(db, config);
   return (req: Request, res: Response, next: NextFunction): void => {
     void base(req, res, (err?: unknown) => {
@@ -77,7 +77,10 @@ export function sessionOrScopedBearer(db: Db, config: Config) {
       // No oauthScopes ⇒ the request authenticated with a cookie
       // session (requireSessionOrBearer only sets it for bearers).
       if (req.oauthScopes === undefined) return next();
-      const needed: OAuthScope = req.method === 'GET' || req.method === 'HEAD' ? 'beuk:read' : 'beuk:write';
+      // Reads need beuk:read; writes need writeScope — beuk:write for
+      // the shelf, beuk:export for the build/archive/link routers, so a
+      // token's power matches exactly the scope its consent named.
+      const needed: OAuthScope = req.method === 'GET' || req.method === 'HEAD' ? 'beuk:read' : writeScope;
       if (!scopeGranted(req.oauthScopes, needed)) {
         res.setHeader(
           'WWW-Authenticate',

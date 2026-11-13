@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../auth.js';
+import { sessionOrScopedBearer } from '../oauth/bearer.js';
 import { EpubBuildError } from '../book/epub/closure.js';
 import { buildEpub, EpubInputError, type EpubInput } from '../book/epub/build.js';
 import { EpubBusyError, EpubQueue } from '../book/epub/queue.js';
@@ -27,7 +27,9 @@ import { isUuid } from '../ids.js';
  */
 export function epubRoutes(db: Db, config: Config, queue: EpubQueue = new EpubQueue(config.epubMaxConcurrent, config.epubMaxQueued)): Router {
   const router = Router();
-  router.use(requireAuth(db));
+  // The studio (cookies) and the MCP server's export_epub (a beuk:export
+  // bearer) both build here; cookies pass untouched.
+  router.use(sessionOrScopedBearer(db, config, 'beuk:export'));
 
   router.post('/', async (req, res, next) => {
     try {

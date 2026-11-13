@@ -5,7 +5,7 @@ import path from 'node:path';
 import express, { Router, type NextFunction, type Request, type Response } from 'express';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
-import { requireAuth } from '../auth.js';
+import { sessionOrScopedBearer } from '../oauth/bearer.js';
 import { isUuid, uuidParam } from '../ids.js';
 import { keepExportFileIfRowSurvived } from '../exports-store.js';
 
@@ -89,8 +89,8 @@ export function exportRoutes(db: Db, config: Config, now: () => Date = () => new
 
   /* ==== Phase 3: signed download links ==== A link a Claude client
      hands the writer must open in a bare browser — no session, no
-     bearer — so this one route sits BEFORE requireAuth and trusts an
-     HMAC instead: sha256(secret, "v1.<exportId>.<exp>"). A bad or
+     bearer — so this one route sits BEFORE the auth guard and trusts
+     an HMAC instead: sha256(secret, "v1.<exportId>.<exp>"). A bad or
      forged signature is a plain 404, indistinguishable from a missing
      export; only a VALID signature whose time has passed says 410
      "link expired". No secret configured => 501, nothing pretends. */
@@ -131,7 +131,10 @@ export function exportRoutes(db: Db, config: Config, now: () => Date = () => new
     }
   });
 
-  router.use(requireAuth(db));
+  // The studio (cookies) and the MCP server's export tools (a
+  // beuk:export bearer) both reach here; cookies pass untouched. The
+  // signed /file route above authenticates by HMAC and sits before this.
+  router.use(sessionOrScopedBearer(db, config, 'beuk:export'));
 
   // Metadata-only list, newest first.
   router.get('/', async (req, res, next) => {
