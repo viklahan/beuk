@@ -15,12 +15,18 @@ const read = (f: string) => readFile(path.join(here, '..', f), 'utf8');
 test('lanhttps: no-SNI clients get the LAN certificate; production names none', async () => {
   const caddy = await read('Caddyfile');
   const global = caddy.slice(0, caddy.indexOf('{$DOMAIN}'));
-  assert.match(global, /^\{\n\tdefault_sni \{\$DEFAULT_SNI:beuk\.invalid\}\n\}$/m, 'global default_sni, harmless default');
+  // The global block declares default_sni (and, since BEUK:tunnel, a
+  // trusted_proxies servers block beside it): assert the directive, not
+  // that it stands alone, so an unrelated global addition can't break this.
+  assert.match(global, /^\tdefault_sni \{\$DEFAULT_SNI:beuk\.invalid\}$/m, 'global default_sni, harmless default');
 });
 
 test('lanhttps: the https sites have their own variable, never folded into DOMAIN', async () => {
   const caddy = await read('Caddyfile');
-  assert.match(caddy, /^\{\$DOMAIN\} \{\$WWW_DOMAIN\} \{\$LAN_SITES\} \{$/m);
+  // {$SITE_PREFIX} (BEUK:tunnel) is the leading seam: empty normally,
+  // "http://" in tunnel mode. LAN_SITES must still be its own token
+  // alongside DOMAIN and WWW_DOMAIN, never folded into DOMAIN.
+  assert.match(caddy, /^\{\$SITE_PREFIX\}\{\$DOMAIN\} \{\$WWW_DOMAIN\} \{\$LAN_SITES\} \{$/m);
   // The www redirect names DOMAIN as one token: a list in DOMAIN broke Caddy.
   assert.match(caddy, /redir @www https:\/\/\{\$DOMAIN\}\{uri\} permanent/);
   const ps = await read('start-local.ps1');
