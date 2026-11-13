@@ -165,7 +165,7 @@ export function buildApp({
   app.use('/api/themes', userThemeRoutes(db, config));
   app.use('/api/pictures', pictureRoutes(db, config));
   app.use('/api/streak', streakRoutes(db, config, now));
-  app.use('/api/exports', exportRoutes(db, config));
+  app.use('/api/exports', exportRoutes(db, config, now ?? (() => new Date())));
   const epubQueue = new EpubQueue(config.epubMaxConcurrent, config.epubMaxQueued);
   app.locals.epubQueue = epubQueue;
   app.use('/api/epub', epubRoutes(db, config, epubQueue));

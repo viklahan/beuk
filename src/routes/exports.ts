@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -80,13 +80,58 @@ export function streamFile(file: string, res: Response): void {
   stream.pipe(res);
 }
 
-export function exportRoutes(db: Db, config: Config): Router {
+export function exportRoutes(db: Db, config: Config, now: () => Date = () => new Date()): Router {
   const router = Router();
-  router.use(requireAuth(db));
   router.param('id', uuidParam('export not found'));
 
   const filePath = (userId: string, exportId: string) =>
     path.join(config.exportDir, userId, exportId);
+
+  /* ==== Phase 3: signed download links ==== A link a Claude client
+     hands the writer must open in a bare browser — no session, no
+     bearer — so this one route sits BEFORE requireAuth and trusts an
+     HMAC instead: sha256(secret, "v1.<exportId>.<exp>"). A bad or
+     forged signature is a plain 404, indistinguishable from a missing
+     export; only a VALID signature whose time has passed says 410
+     "link expired". No secret configured => 501, nothing pretends. */
+  const SIG_RE = /^[0-9a-f]{64}$/;
+  const fileSig = (secret: string, exportId: string, exp: number): string =>
+    createHmac('sha256', secret).update(`v1.${exportId}.${exp}`).digest('hex');
+
+  router.get('/:id/file', async (req, res, next) => {
+    try {
+      const secret = config.exportUrlSecret;
+      if (!secret) return res.status(501).json({ error: 'signed links not configured' });
+      const exp = Number(req.query.exp);
+      const sig = String(req.query.sig ?? '');
+      if (!Number.isInteger(exp) || exp < 0 || !SIG_RE.test(sig))
+        return res.status(404).json({ error: 'export not found' });
+      const want = fileSig(secret, req.params.id, exp);
+      if (!timingSafeEqual(Buffer.from(sig), Buffer.from(want)))
+        return res.status(404).json({ error: 'export not found' });
+      if (exp * 1000 <= now().getTime()) return res.status(410).json({ error: 'link expired' });
+      const result = await db.query<ExportRow & { user_id: string }>(
+        `select id, user_id, format, filename, byte_size from exports where id = $1`,
+        [req.params.id],
+      );
+      const row = result.rows[0];
+      if (!row) return res.status(404).json({ error: 'export not found' });
+      const file = filePath(row.user_id, row.id);
+      try {
+        await stat(file);
+      } catch {
+        return res.status(500).json({ error: 'export file is missing from storage' });
+      }
+      res.setHeader('content-type', CONTENT_TYPES[row.format]);
+      res.setHeader('content-disposition', `attachment; filename="${row.filename.replace(/"/g, '')}"`);
+      res.setHeader('content-length', String(row.byte_size));
+      return streamFile(file, res);
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  router.use(requireAuth(db));
 
   // Metadata-only list, newest first.
   router.get('/', async (req, res, next) => {
@@ -171,6 +216,26 @@ export function exportRoutes(db: Db, config: Config): Router {
     );
     return result.rows[0] ?? null;
   }
+
+  /* Phase 3: mint a short-lived signed link for the export the signed-in
+     (or bearer-authed) owner names. ttlSeconds 60..86400, default 900. */
+  router.post('/:id/link', async (req, res, next) => {
+    try {
+      const secret = config.exportUrlSecret;
+      if (!secret) return res.status(501).json({ error: 'signed links not configured' });
+      const raw = (req.body as { ttlSeconds?: unknown } | undefined)?.ttlSeconds;
+      const ttl = raw === undefined ? 900 : Number(raw);
+      if (!Number.isInteger(ttl) || ttl < 60 || ttl > 86400)
+        return res.status(400).json({ error: 'ttlSeconds must be an integer between 60 and 86400' });
+      const row = await findOwned(req);
+      if (!row) return res.status(404).json({ error: 'export not found' });
+      const exp = Math.floor(now().getTime() / 1000) + ttl;
+      const url = `${config.appBaseUrl}/api/exports/${row.id}/file?exp=${exp}&sig=${fileSig(secret, row.id, exp)}`;
+      return res.json({ link: { url, expiresAt: new Date(exp * 1000).toISOString() } });
+    } catch (err) {
+      return next(err);
+    }
+  });
 
   router.get('/:id/download', async (req, res, next) => {
     try {

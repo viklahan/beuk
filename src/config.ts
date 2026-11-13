@@ -13,6 +13,10 @@ export interface Config {
   exportDir: string;
   /** M2: max accepted export upload size in bytes (default 50 MiB). */
   exportMaxBytes: number;
+  /** Phase 3: HMAC secret for signed export-download links
+   *  (EXPORT_URL_SECRET). null = signed links are not configured:
+   *  minting answers 501 and no signature is ever accepted. */
+  exportUrlSecret: string | null;
   /** Max accepted manuscript JSON body in bytes (MANUSCRIPT_MAX_BYTES,
    *  default 64 MiB). A book carries its pictures and its snapshot
    *  history, so the sample book alone is ~23 MB. */
@@ -367,6 +371,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     sessionTtlDays: Number(env.SESSION_TTL_DAYS ?? 30),
     exportDir: env.EXPORT_DIR ?? path.resolve(process.cwd(), 'data', 'exports'),
     exportMaxBytes: Number(env.EXPORT_MAX_BYTES ?? 50 * 1024 * 1024),
+    exportUrlSecret: env.EXPORT_URL_SECRET || null,
     manuscriptMaxBytes: Number(env.MANUSCRIPT_MAX_BYTES ?? 64 * 1024 * 1024),
     pictureMaxBytes: positiveInt(env.PICTURE_MAX_BYTES, 32 * 1024 * 1024),
     pictureQuotaBytes: positiveInt(env.PICTURE_QUOTA_BYTES, 2 * 1024 * 1024 * 1024),
