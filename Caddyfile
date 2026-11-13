@@ -13,6 +13,19 @@
 # it names a host with no certificate, which changes nothing.
 {
 	default_sni {$DEFAULT_SNI:beuk.invalid}
+
+	# ==== BEUK:tunnel ==== X-Forwarded-* from private addresses is kept,
+	# not stripped: in tunnel mode (deploy/docker-compose.tunnel.yml) the
+	# cloudflared container is Caddy's client, and Cloudflare's visitor
+	# headers (X-Forwarded-For/-Proto) must reach the app or rate limits
+	# would count every visitor as the tunnel. Safe outside tunnel mode:
+	# internet clients connect from public addresses, so their forged
+	# X-Forwarded-* is stripped as before; only compose-internal and LAN
+	# clients (our own containers, local dev) are trusted.
+	# https://caddyserver.com/docs/caddyfile/options#trusted-proxies
+	servers {
+		trusted_proxies static private_ranges
+	}
 }
 
 # ==== BEUK:mcp ==== Phase 2: the MCP server on its own subdomain
@@ -24,7 +37,13 @@
 # Encrypt can issue the certificate. Everything it serves is JSON
 # (metadata, health, the MCP endpoint) — no pages, so none of the main
 # site's CSP/header block applies here.
-mcp.{$DOMAIN} {
+#
+# SITE_PREFIX (BEUK:tunnel): empty everywhere except tunnel mode, where
+# it is "http://" — TLS then terminates at Cloudflare's edge and Caddy
+# serves these hosts as plain HTTP on :80 for the cloudflared container
+# (deploy/docker-compose.tunnel.yml). Empty → expands to nothing and the
+# address keeps its https default, exactly as before.
+{$SITE_PREFIX}mcp.{$DOMAIN} {
 	encode gzip
 	@hsts {
 		protocol https
@@ -44,7 +63,7 @@ mcp.{$DOMAIN} {
 # addresses (https://localhost:8443 https://192.168.x.x:8443 …). Its own
 # variable, not part of DOMAIN: the redir below names {$DOMAIN} as ONE
 # token. Unset → expands to nothing, as WWW_DOMAIN does.
-{$DOMAIN} {$WWW_DOMAIN} {$LAN_SITES} {
+{$SITE_PREFIX}{$DOMAIN} {$WWW_DOMAIN} {$LAN_SITES} {
 	encode gzip
 
 	# "www.invalid" keeps the matcher non-empty when WWW_DOMAIN is empty

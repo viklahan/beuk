@@ -1,0 +1,48 @@
+# ==== BEUK:tunnel ==== Cloudflare Tunnel overlay — the box serves the
+# public internet with no open inbound ports. One -f flips the world:
+#
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.tunnel.yml up -d
+#
+# TLS terminates at Cloudflare's edge; cloudflared delivers plain HTTP
+# to Caddy inside the compose network (SITE_PREFIX below turns the two
+# public site blocks into http:// addresses — Caddyfile BEUK:tunnel).
+# Caddy keeps its routing/headers job for both hostnames; certificates
+# never touch the box. Without this overlay nothing here exists and the
+# stack behaves exactly as before (Let's Encrypt on open 80/443).
+#
+# One-time setup on the box (the host cloudflared CLI, same version as
+# the image): `cloudflared tunnel login` (browser click), `tunnel create
+# beuk`, `tunnel route dns beuk <host>` for the apex and mcp, then put
+# config.yml + the tunnel's credentials .json in CLOUDFLARED_DIR.
+# config.yml ingress: both hostnames -> http://caddy:80, catch-all
+# http_status:404. The credentials file is a secret — never in git.
+services:
+  caddy:
+    environment:
+      # Caddyfile site addresses become http:// (see its BEUK:tunnel notes).
+      SITE_PREFIX: "http://"
+
+  app:
+    environment:
+      # The visitor is two proxy hops back (Cloudflare edge -> cloudflared
+      # -> Caddy -> app), not one: without this, rate limits would count
+      # every visitor as the tunnel container.
+      TRUST_PROXY_HOPS: "2"
+
+  # (mcp needs nothing here: it reads no client addresses — its trust
+  # proxy setting is inert and every URL it serves comes from
+  # MCP_PUBLIC_ORIGIN, which already names the public https origin.)
+
+  cloudflared:
+    # Pinned to the release current at introduction (2026-11); keep in
+    # step with the host CLI used for login/create.
+    image: cloudflare/cloudflared:2026.11.0
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      # CLOUDFLARED_DIR (.env, absolute path): config.yml + the tunnel's
+      # credentials .json, readable by the image's non-root user.
+      - ${CLOUDFLARED_DIR:?set CLOUDFLARED_DIR in .env to the folder holding config.yml and the tunnel credentials}:/etc/cloudflared:ro
+    depends_on:
+      caddy:
+        condition: service_started
