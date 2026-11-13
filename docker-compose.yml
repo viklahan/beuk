@@ -52,6 +52,9 @@ services:
       # M2: export archive bytes live on the exportdata volume.
       EXPORT_DIR: /data/exports
       EXPORT_MAX_BYTES: ${EXPORT_MAX_BYTES:-52428800}
+      # Phase 3: HMAC secret for signed export-download links. Empty =
+      # links not configured (minting answers 501, honestly).
+      EXPORT_URL_SECRET: ${EXPORT_URL_SECRET:-}
       # Largest book the shelf accepts (src/config.ts default 64 MiB).
       # Passed through so the .env.example knob actually reaches the app.
       MANUSCRIPT_MAX_BYTES: ${MANUSCRIPT_MAX_BYTES:-67108864}
