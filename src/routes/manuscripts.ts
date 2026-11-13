@@ -3,6 +3,7 @@ import type { BackgroundTasks } from './account.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { readBook } from '../book/index.js';
+import { computeBookInsights, InsightsBuildError } from '../book/insights/build.js';
 import { observeBook } from '../book/observe.js';
 import { sessionOrScopedBearer } from '../oauth/bearer.js';
 import { uuidParam } from '../ids.js';
@@ -200,6 +201,29 @@ export function manuscriptRoutes(db: Db, config: Config, tasks: BackgroundTasks)
         },
       });
     } catch (err) {
+      return next(err);
+    }
+  });
+
+  // Beuk's own writing insights for one book (cast, cadence, crutch words,
+  // dialogue share, readability, echoes, frequency, rhythm, variety),
+  // computed by the studio's insComputeFor in a fenced worker. Read-only;
+  // the canonical numbers the studio shows, for the MCP get_insights tool.
+  router.get('/:id/insights', async (req, res, next) => {
+    try {
+      const result = await db.query<{ doc: unknown; title: string; revision: number }>(
+        'select doc, title, revision from manuscripts where id = $1 and user_id = $2',
+        [req.params.id, req.user!.id],
+      );
+      const row = result.rows[0];
+      if (!row) return res.status(404).json({ error: 'manuscript not found' });
+      const data = (await computeBookInsights(row.doc)) as Record<string, unknown>;
+      return res.json({ insights: { title: row.title, revision: row.revision, ...data } });
+    } catch (err) {
+      if (err instanceof InsightsBuildError) {
+        const status = err.reason === 'timeout' || err.reason === 'memory' ? 503 : 500;
+        return res.status(status).json({ error: 'insights could not be computed for this book', reason: err.reason });
+      }
       return next(err);
     }
   });
