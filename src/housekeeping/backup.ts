@@ -62,6 +62,9 @@ export const BACKUP_TABLES = [
   // OAuth 2.1 (migration 026): client REGISTRATIONS are data (public
   // clients, no secret inside); the tokens themselves are excluded below.
   'oauth_clients',
+  // Phase 3 (migration 028): the MCP write audit — accountability rows
+  // about author text, kept with the account. Only FK parent is users.
+  'mcp_writes',
   'founders_applications',
   'shares',
   'share_recipients',

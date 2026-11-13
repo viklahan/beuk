@@ -32,6 +32,9 @@ import { twoStepStatus, type TwoStepStatus } from '../twostep/store.js';
  *  in neither list. */
 export const ACCOUNT_DELETED_TABLES = [
   'sessions',
+  // Phase 3 (migration 028): the MCP write audit cascades with its
+  // writer — an audit of a deleted account's books has no subject left.
+  'mcp_writes',
   'password_resets',
   'email_confirmations',
   'manuscripts',
