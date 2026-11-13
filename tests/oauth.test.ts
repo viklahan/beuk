@@ -682,6 +682,26 @@ test('a beuk:write bearer may write, exactly as consent granted', async () => {
   assert.equal((created.body.manuscript as { title: string }).title, 'Bearer-Written Book');
 });
 
+test('an expired access token is 401, like a revoked one — the clock running out is never an open door', async () => {
+  const email = `oauth-expired-${randomBytes(4).toString('hex')}@example.com`;
+  const grant = await fullGrant(email, 'beuk:read');
+  // It works now.
+  assert.equal((await bearerFetch('GET', '/api/auth/me', grant.access)).status, 200);
+  // Its access token's clock runs out (expires_at in the past), not revoked.
+  const updated = await db.query<{ id: string }>(
+    `update oauth_tokens set expires_at = now() - interval '1 minute'
+     where kind = 'access' and revoked_at is null
+       and user_id = (select id from users where email = $1)
+     returning id`,
+    [email],
+  );
+  assert.ok(updated.rows.length >= 1, 'the access token was found and expired');
+  // Now it is refused exactly like a dead token, and names the metadata.
+  const after = await bearerFetch('GET', '/api/auth/me', grant.access);
+  assert.equal(after.status, 401);
+  assert.match(after.header('www-authenticate'), /resource_metadata=/);
+});
+
 test('a beuk:read bearer can read series covenants (the MCP covenant tools)', async () => {
   const grant = await fullGrant(`oauth-coven-${randomBytes(4).toString('hex')}@example.com`, 'beuk:read beuk:write');
   // A bearer write seeds one, then a read-only token reads it back.
