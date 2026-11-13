@@ -682,6 +682,34 @@ test('a beuk:write bearer may write, exactly as consent granted', async () => {
   assert.equal((created.body.manuscript as { title: string }).title, 'Bearer-Written Book');
 });
 
+test('a beuk:read bearer can read series covenants (the MCP covenant tools)', async () => {
+  const grant = await fullGrant(`oauth-coven-${randomBytes(4).toString('hex')}@example.com`, 'beuk:read beuk:write');
+  // A bearer write seeds one, then a read-only token reads it back.
+  const put = await bearerFetch('PUT', '/api/series-covenants/salt%20road', grant.access, {
+    name: 'Salt Road',
+    doc: { entries: [{ id: 'c1', kind: 'character', name: 'Mara', note: 'keeps her word' }] },
+  });
+  assert.equal(put.status, 201, JSON.stringify(put.body));
+
+  const readOnly = await fullGrant(`oauth-coven-ro-${randomBytes(4).toString('hex')}@example.com`, 'beuk:read');
+  // Read-only token on ITS OWN (empty) shelf: auth passes, list is empty.
+  const emptyList = await bearerFetch('GET', '/api/series-covenants', readOnly.access);
+  assert.equal(emptyList.status, 200, 'a beuk:read bearer reaches the covenants list');
+  assert.deepEqual(emptyList.body.series, []);
+
+  // The writer's own read-only path: list names the series, get carries the doc.
+  const list = await bearerFetch('GET', '/api/series-covenants', grant.access);
+  assert.equal(list.status, 200);
+  assert.equal((list.body.series as Array<{ key: string }>)[0].key, 'salt road');
+  const one = await bearerFetch('GET', '/api/series-covenants/salt%20road', grant.access);
+  assert.equal(one.status, 200);
+  assert.equal(((one.body.series as { doc: { entries: Array<{ name: string }> } }).doc.entries)[0].name, 'Mara');
+
+  // A missing key is a 404, not a 401 — the bearer was judged.
+  const missing = await bearerFetch('GET', '/api/series-covenants/nope', readOnly.access);
+  assert.equal(missing.status, 404);
+});
+
 test('Phase 3: the export routers accept a beuk:export bearer, and refuse one without it', async () => {
   // The bug the live loop caught: /api/epub and /api/exports used
   // session-only requireAuth, so an MCP bearer (export_epub,

@@ -160,7 +160,7 @@ export function buildApp({
   // P0 #5: forgot/reset password, change password, sign out everywhere.
   app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits, signInLimit));
   app.use('/api/manuscripts', manuscriptRoutes(db, config, accountTasks));
-  app.use('/api/series-covenants', seriesCovenantRoutes(db));
+  app.use('/api/series-covenants', seriesCovenantRoutes(db, config));
   // My themes (migration 022): the writer's own themes, per account.
   app.use('/api/themes', userThemeRoutes(db, config));
   app.use('/api/pictures', pictureRoutes(db, config));

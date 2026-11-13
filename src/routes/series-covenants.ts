@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Db } from '../db.js';
-import { requireAuth } from '../auth.js';
+import type { Config } from '../config.js';
+import { sessionOrScopedBearer } from '../oauth/bearer.js';
 import { HTTP_CODES } from '../help/codes.js';
 
 interface SeriesRow {
@@ -59,9 +60,12 @@ function validDoc(doc: unknown): doc is Record<string, unknown> {
 const notFound = { error: 'series not found' };
 const COLUMNS = 'series_key, name, doc, revision, updated_at';
 
-export function seriesCovenantRoutes(db: Db): Router {
+export function seriesCovenantRoutes(db: Db, config: Config): Router {
   const router = Router();
-  router.use(requireAuth(db));
+  // The studio (cookies) and the MCP server (bearer) both read covenants;
+  // a bearer reads with beuk:read, and the irreversible-op guard inside
+  // keeps a connected app from deleting or blindly overwriting one.
+  router.use(sessionOrScopedBearer(db, config));
 
   // Every query below is owner-scoped: user_id always comes from the
   // session, never from the request.
