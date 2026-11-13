@@ -1,0 +1,5 @@
+{
+  "//": "The image build's view: only what vite ships. test/ stays out — the e2e tests boot the real backend (test/cloud-server.ts imports src/app, src/db, …) and so type-check only on a full checkout with root node_modules, which the Docker studio stage deliberately is not (it copies studio + src/book alone). `npm run typecheck` keeps the full gate, tests included.",
+  "extends": "./tsconfig.json",
+  "include": ["src", "vite.config.ts"]
+}

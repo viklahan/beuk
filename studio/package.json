@@ -10,7 +10,7 @@
   "scripts": {
     "extract": "node scripts/extract-studio.mjs",
     "typecheck": "node scripts/extract-studio.mjs && tsc --noEmit -p tsconfig.json",
-    "build": "node scripts/extract-studio.mjs && tsc --noEmit -p tsconfig.json && vite build",
+    "build": "node scripts/extract-studio.mjs && tsc --noEmit -p tsconfig.build.json && vite build",
     "test": "vitest run",
     "e2e": "node e2e/shell.mjs"
   },
