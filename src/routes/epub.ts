@@ -15,7 +15,11 @@ import { isUuid } from '../ids.js';
  *
  * Body: { manuscriptId, platform?, lang? } builds the shelf copy;
  * { book, platform?, lang? } builds a book that lives only on the device.
- * The body cap is the app-wide manuscript limit (express.json in app.ts).
+ * The body cap is the app-wide manuscript limit (express.json in app.ts),
+ * so an inline { book } cannot exceed it. The { manuscriptId } path has a
+ * tiny body and its pictures are hydrated from the store at build time,
+ * so the built size is bounded separately by EPUB_MAX_BYTES (config
+ * epubMaxBytes) — kept under the worker heap, not the shelf cap.
  * `platform` is one of the studio's eleven presets (default: the book's
  * own); `lang` is the writer's interface language, for the words the
  * studio would have shown (the notes). EPUBCheck is not run here (it is
@@ -53,7 +57,7 @@ export function epubRoutes(db: Db, config: Config, queue: EpubQueue = new EpubQu
       const gone = new AbortController();
       res.on('close', () => { if (!res.writableFinished) gone.abort(); });
       const out = await buildEpub(db, req.user!.id, input, platform as string | undefined, lang, {
-        maxBytes: config.manuscriptMaxBytes,
+        maxBytes: config.epubMaxBytes,
         timeoutMs: config.jobTimeoutMs,
         heapMb: config.epubWorkerHeapMb,
       }, queue, gone.signal);

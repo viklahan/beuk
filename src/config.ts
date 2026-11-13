@@ -21,6 +21,18 @@ export interface Config {
    *  default 64 MiB). A book carries its pictures and its snapshot
    *  history, so the sample book alone is ~23 MB. */
   manuscriptMaxBytes: number;
+  /** The server EPUB build's own size ceiling (EPUB_MAX_BYTES), separate
+   *  from the shelf cap. The build hands the whole book — pictures filled
+   *  back in — to a worker as one JSON string, so this bounds that
+   *  string; kept safely under the worker heap (EPUB_WORKER_HEAP_MB,
+   *  default 512: JSON.parse needs the string and its result at once).
+   *  Default 128 MiB. */
+  epubMaxBytes: number;
+  /** The server cover-wrap build's own size ceiling (WRAP_MAX_BYTES),
+   *  the wrap twin of epubMaxBytes: same JSON-to-worker handoff, same
+   *  512 MB worker heap (WRAP_WORKER_HEAP_MB), separate from the shelf
+   *  cap. Default 128 MiB. */
+  wrapMaxBytes: number;
   /** Shelf pictures (src/pictures.ts): the largest one picture, decoded
    *  (PICTURE_MAX_BYTES, default 32 MiB), every picture an account holds
    *  together (PICTURE_QUOTA_BYTES, default 2 GiB), and how long an
@@ -373,6 +385,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     exportMaxBytes: Number(env.EXPORT_MAX_BYTES ?? 50 * 1024 * 1024),
     exportUrlSecret: env.EXPORT_URL_SECRET || null,
     manuscriptMaxBytes: Number(env.MANUSCRIPT_MAX_BYTES ?? 64 * 1024 * 1024),
+    epubMaxBytes: Number(env.EPUB_MAX_BYTES ?? 128 * 1024 * 1024),
+    wrapMaxBytes: Number(env.WRAP_MAX_BYTES ?? 128 * 1024 * 1024),
     pictureMaxBytes: positiveInt(env.PICTURE_MAX_BYTES, 32 * 1024 * 1024),
     pictureQuotaBytes: positiveInt(env.PICTURE_QUOTA_BYTES, 2 * 1024 * 1024 * 1024),
     pictureGcGraceSeconds: nonNegativeInt(env.PICTURE_GC_GRACE_SECONDS, 3600),

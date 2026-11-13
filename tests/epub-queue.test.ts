@@ -26,7 +26,7 @@ let seq = 0;
 
 before(async () => {
   db = await createTestDb();
-  const app = buildApp({ db, config: testConfig({ manuscriptMaxBytes: 4 * 1024 * 1024 }) });
+  const app = buildApp({ db, config: testConfig({ manuscriptMaxBytes: 4 * 1024 * 1024, epubMaxBytes: 4 * 1024 * 1024 }) });
   queue = app.locals.epubQueue as EpubQueue;
   server = await new Promise((r) => { const s = app.listen(0, () => r(s)); });
   const a = server.address();

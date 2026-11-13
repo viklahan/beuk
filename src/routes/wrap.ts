@@ -65,7 +65,7 @@ export function wrapRoutes(db: Db, config: Config, queue: BuildQueue = new Build
       const gone = new AbortController();
       res.on('close', () => { if (!res.writableFinished) gone.abort(); });
       const out = await buildWrap(db, req.user!.id, input, kind, lang, {
-        maxBytes: config.manuscriptMaxBytes,
+        maxBytes: config.wrapMaxBytes,
         timeoutMs: config.jobTimeoutMs,
         heapMb: config.wrapWorkerHeapMb,
       }, queue, gone.signal);

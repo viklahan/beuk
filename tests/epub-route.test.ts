@@ -25,16 +25,19 @@ const DAY = 86_400_000;
 let db: Db;
 let on: TestServer; // billing on: trial / paused are real states
 let small: TestServer; // billing off, an 8 MB manuscript cap and a 1 ms build cap
+let epubcap: TestServer; // large shelf cap, small EPUB cap: the two are independent
 let seq = 0;
 
 before(async () => {
   db = await createTestDb();
   on = await startTestServer(db, undefined, ON);
   small = await startTestServer(db, undefined, { manuscriptMaxBytes: 8 * 1024 * 1024, jobTimeoutMs: 1 });
+  epubcap = await startTestServer(db, undefined, { manuscriptMaxBytes: 64 * 1024 * 1024, epubMaxBytes: 4 * 1024 * 1024 });
 });
 after(async () => {
   await on.close();
   await small.close();
+  await epubcap.close();
 });
 
 async function writer(base: string): Promise<{ c: Client; id: string }> {
@@ -168,6 +171,44 @@ test('size bound: a book over the manuscript limit (a 50 MB base64 picture) is r
   const big = 'A'.repeat(50 * 1024 * 1024);
   const r = await postEpub(small.base, w.c, { book: pictureBook(big) });
   assert.equal(r.status, 413);
+});
+
+/* Store N distinct ~mbEach-MB pictures and a shelf book that references
+   them all (the ref path: a small body, the pictures hydrated from the
+   store at build time — like a real illustrated book). */
+async function illustratedManuscript(base: string, count: number, mbEach: number): Promise<{ c: Client; id: string }> {
+  const w = await writer(base);
+  const images: { id: string; name: string; mediaType: string; ext: string; data: string }[] = [];
+  const sections: Record<string, unknown>[] = [];
+  for (let i = 0; i < count; i++) {
+    const bytes = Buffer.alloc(mbEach * 1024 * 1024, 0);
+    bytes.writeUInt32BE(i + 1, 0); // distinct content → distinct sha
+    const data = bytes.toString('base64');
+    const sha = createHash('sha256').update(bytes).digest('hex');
+    assert.equal((await w.c.put(`/api/pictures/${sha}`, { mediaType: 'image/png', data })).status, 201);
+    images.push({ id: `im${i}`, name: `p${i}.png`, mediaType: 'image/png', ext: 'png', data: PIC_REF_PREFIX + sha });
+    sections.push({ id: `ch${i}`, type: 'chapter', kind: 'body', title: `C${i}`, content: 'x', plateId: `im${i}`, plateAlt: 'a' });
+  }
+  const doc = {
+    meta: { title: 'Illustrated', author: 'A', language: 'en', bookId: 'urn:uuid:00000000-0000-4000-8000-000000000002' },
+    sections, images, cover: null,
+  };
+  const saved = await w.c.request('POST', '/api/manuscripts', { doc }, { 'beuk-pictures': 'ref' });
+  assert.equal(saved.status, 201, JSON.stringify(saved.body));
+  return { c: w.c, id: (saved.body.manuscript as { id: string }).id };
+}
+
+test('the EPUB build has its own size cap (epubMaxBytes), decoupled from the shelf cap', async () => {
+  // ~6 MB of hydrated pictures (3 × 2 MB), via the ref path: a tiny body
+  // that saves to the shelf fine (64 MB shelf cap), but whose BUILD size
+  // exceeds the 4 MB EPUB cap. The 413 names epubMaxBytes as its limit —
+  // proving the build no longer borrows manuscriptMaxBytes (under which
+  // 6 MB would sail through). Rejected at the size gate, before any build.
+  const m = await illustratedManuscript(epubcap.base, 3, 2);
+  const r = await postEpub(epubcap.base, m.c, { manuscriptId: m.id });
+  assert.equal(r.status, 413, r.bytes.toString('utf8').slice(0, 200));
+  assert.match(String(r.json().error), /too large for a server EPUB/);
+  assert.equal(r.json().limitBytes, 4 * 1024 * 1024); // epubMaxBytes, not the 64 MB shelf cap
 });
 
 test('time bound: a build past JOB_TIMEOUT_MS is stopped with a plain 503', async () => {

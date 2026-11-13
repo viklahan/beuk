@@ -557,6 +557,31 @@ test('size bound: a body over the manuscript limit (a 50 MB base64 picture) is r
   assert.equal(r.status, 413);
 });
 
+test('the cover-wrap build has its own size cap (wrapMaxBytes), decoupled from the shelf cap', async () => {
+  // ~6 MB of referenced pictures over a 4 MB wrap cap, on a server whose
+  // SHELF cap is 64 MB: the 413 names wrapMaxBytes, proving the wrap
+  // build no longer borrows manuscriptMaxBytes (6 MB would pass that).
+  const cap = await startTestServer(db, undefined, { manuscriptMaxBytes: 64 * 1024 * 1024, wrapMaxBytes: 4 * 1024 * 1024 });
+  try {
+    const w = await writer(cap.base);
+    const b = lantern();
+    b.images = [];
+    for (let i = 0; i < 3; i++) {
+      const bytes = Buffer.alloc(2 * 1024 * 1024, 0);
+      bytes.writeUInt32BE(i + 1, 0);
+      const data = bytes.toString('base64');
+      assert.equal((await w.c.put(`/api/pictures/${sha(data)}`, { mediaType: 'image/png', data })).status, 201);
+      b.images.push({ id: `im${i}`, name: `p${i}.png`, mediaType: 'image/png', ext: 'png', data: PIC_REF_PREFIX + sha(data) });
+    }
+    const r = await postWrap(cap.base, w.c, { book: b, kind: 'pdf' });
+    assert.equal(r.status, 413, r.bytes.toString('utf8').slice(0, 200));
+    assert.match(String(r.json().error), /too large for a server cover wrap/);
+    assert.equal(r.json().limitBytes, 4 * 1024 * 1024); // wrapMaxBytes, not the 64 MB shelf cap
+  } finally {
+    await cap.close();
+  }
+});
+
 test('size bound before hydration: a small book naming one stored picture many times is 413 with nothing hydrated or queued', async () => {
   const w = await writer(off.base);
   const data = Buffer.alloc(300_000, 7).toString('base64');
