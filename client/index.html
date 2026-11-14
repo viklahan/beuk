@@ -40055,7 +40055,21 @@
             images.set(p, mediaType ? { mediaType, ext: ext === "png" ? "png" : "jpg", data: await zip.file(p).async("base64") } : { mediaType: "", ext, data: "" });
           }
         }
-        return { meta, docs, images };
+        /* BEUK:epubcover — the declared cover image (properties="cover-image",
+           or the legacy <meta name="cover" content="id">). The cover PAGE is
+           skipped on read (EPUBIN_SKIP), so lift the image itself back into
+           book.cover; without this, a round trip (or any EPUB with a cover)
+           came in with no cover. jpg/png only, the formats the cover takes. */
+        let cover = null, coverId = null;
+        byTag("item").forEach((it) => { if ((" " + epubInAttr(it, "properties") + " ").indexOf(" cover-image ") !== -1) coverId = epubInAttr(it, "id"); });
+        if (!coverId) { const cm = byTag("meta").find((m) => epubInAttr(m, "name") === "cover"); if (cm) coverId = epubInAttr(cm, "content"); }
+        if (coverId) {
+          const ci = manifest.get(coverId), ct = ci && String(ci.type || "").toLowerCase();
+          if (ci && (ct === "image/jpeg" || ct === "image/png") && zip.file(ci.path)) {
+            cover = { data: await zip.file(ci.path).async("base64"), mediaType: ct, ext: ct === "image/png" ? "png" : "jpg" };
+          }
+        }
+        return { meta, docs, images, cover };
       }
       /* One page's blocks → Beuk's text: paragraphs, its own marks and
          containers, pictures (into the import's records), notes. */
@@ -40299,6 +40313,8 @@
           replaceBodyChapters(pieces, name, identity);
           const det = detectLanguageInText(pieces.map((p) => (p.body || []).join("\n")).join("\n"));
           offerDetectedLanguage(det);
+          /* BEUK:epubcover — the EPUB's own cover becomes the book's cover */
+          if (rd.cover && !state.cover) state.cover = { data: rd.cover.data, mediaType: rd.cover.mediaType, ext: rd.cover.ext, name: "cover." + rd.cover.ext };
           return irFinish(ir, pieces, det);
         } finally { irAbort(); }
       }
