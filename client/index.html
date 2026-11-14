@@ -2421,6 +2421,21 @@
       .bulk-drop { font-size: 12px; color: var(--muted); margin: 10px 0 0; line-height: 1.5; border: 1px dashed var(--line-2); border-radius: 9px; padding: 10px 12px; text-align: center; }
       .bulk-drop.over { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
       .bulk-progress { font-size: 12.5px; color: var(--ink-2); margin: 12px 0 0; font-family: var(--mono-font); }
+      /* ==== BEUK:bulkchip ==== */
+      .bulk-chip { position: fixed; z-index: 80; bottom: max(16px, env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 10px; max-width: min(340px, calc(100vw - 32px)); padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 24px -8px rgba(0,0,0,.35); }
+      .bulk-chip .bc-ico { width: 15px; height: 15px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+      .bulk-chip.busy .bc-ico { border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: bc-spin .8s linear infinite; }
+      .bulk-chip.done .bc-ico::before { content: "\2713"; color: var(--good); font-weight: 700; font-size: 14px; }
+      @keyframes bc-spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .bulk-chip.busy .bc-ico { animation: none; } }
+      .bulk-chip .bc-body { min-width: 0; display: flex; flex-direction: column; }
+      .bulk-chip .bc-text { font-size: 13px; color: var(--ink); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .bulk-chip .bc-sub { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .bulk-chip .bc-open { flex: 0 0 auto; border: 1px solid var(--accent); color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+      .bulk-chip .bc-x { flex: 0 0 auto; border: none; background: transparent; color: var(--muted); padding: 2px; cursor: pointer; display: inline-flex; align-items: center; }
+      .bulk-chip .bc-x:hover { color: var(--ink); }
+      .bulk-chip .bc-x svg { width: 15px; height: 15px; }
+      /* ==== /BEUK:bulkchip ==== */
       .bulk-summary { margin-top: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); padding: 11px 13px; }
       .bulk-summary h4 { margin: 0 0 6px; font-size: 13px; font-weight: 700; }
       .bulk-summary p { font-size: 12.5px; color: var(--ink-2); margin: 4px 0; line-height: 1.5; }
@@ -4435,6 +4450,14 @@
     <div class="piv-measure" id="pivMeasure" aria-hidden="true"></div>
 
     <div id="toasts" aria-live="polite"></div>
+    <!-- ==== BEUK:bulkchip ==== persistent import status, OUTSIDE the shelf modal so the writer can close it and keep writing; "Open" brings the shelf to the front -->
+    <div class="bulk-chip" id="bulkChip" role="status" aria-live="polite" hidden>
+      <span class="bc-ico" id="bulkChipIcon" aria-hidden="true"></span>
+      <div class="bc-body"><span class="bc-text" id="bulkChipText"></span><span class="bc-sub" id="bulkChipSub" hidden></span></div>
+      <button class="bc-open" id="bulkChipOpen" type="button" hidden></button>
+      <button class="bc-x" id="bulkChipDismiss" type="button" data-tip="insights.close"><i data-lucide="x"></i></button>
+    </div>
+    <!-- ==== /BEUK:bulkchip ==== -->
     <input type="file" id="fileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.epub,.zip,application/epub+zip,application/pdf,application/rtf,text/rtf,application/zip,application/x-zip-compressed" style="display:none;" />
     <input type="file" id="bulkFileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.epub,.zip,application/epub+zip,.png,.jpg,.jpeg,application/pdf,application/zip,application/x-zip-compressed" multiple style="display:none;" />
     <input type="file" id="bulkFolderInput" webkitdirectory style="display:none;" />
@@ -54012,6 +54035,8 @@
       }
       function renderShelfList() {
         const list = $("shelfList"); if (!list) return;
+        /* BEUK:bulkquiet — a folder import adds books one by one; without this the list re-renders per book and hands the writer a moving target to review. Hold the shelf steady until the batch settles; startBulkImport renders once when bulkBusy clears. */
+        if (bulkBusy) return;
         const email = $("shelfEmail");
         if (email && cloud.user) email.textContent = cloud.user.email;
         const bring = $("shelfBring");
@@ -55415,7 +55440,7 @@
           .then((r) => {
             if (r && r.manuscript && r.manuscript.id) {
               cloud.shelf.unshift(r.manuscript);
-              renderShelfList();
+              /* BEUK:bulkquiet — no per-book shelf render; startBulkImport renders the settled shelf once when the batch finishes */
               cb(null, r.manuscript);
             } else cb(new Error("shelf"));
           })
@@ -55457,7 +55482,7 @@
         const prog = $("bulkProgress");
         const sum = $("bulkSummary");
         if (sum) sum.style.display = "none";
-        const setProg = (txt) => { if (prog) { prog.style.display = ""; prog.textContent = txt; } };
+        const setProg = (txt) => { if (prog) { prog.style.display = ""; prog.textContent = txt; } bulkChipBusy(txt); };
         /* BEUK:onereader — a zip opens into its files first; what it holds that Beuk cannot read is named in the summary */
         importExpandZips(usable).then((ex) => bulkPrepareEntries(ex.entries, (idx, total, name) => setProg(t("bulk.reading", { current: idx + 1, total, name })),
           (prep) => {
@@ -55468,8 +55493,10 @@
                 (idx, total, item) => setProg(t("bulk.progress", { current: idx + 1, total, name: item.name })),
                 (summary) => {
                   bulkBusy = false;
+                  renderShelfList(); /* BEUK:bulkquiet — the shelf stayed steady through the batch; render it settled once now (so a failed reload still shows the new books), then reconcile with the server */
                   if (prog) prog.style.display = "none";
                   renderBulkSummary(summary);
+                  bulkChipDone(summary);
                   cloudLoadShelf();
                 });
             });
@@ -55538,7 +55565,45 @@
           bulkCollectDrop(e.dataTransfer, (entries) => startBulkImport(entries));
         });
         renderBulkChrome();
+        initBulkChip();
       }
+      /* ==== BEUK:bulkchip ==== A folder import is a background job: this
+         persistent, dismissible status chip lives OUTSIDE the shelf modal,
+         so the writer can close the shelf and keep writing. It mirrors the
+         import progress and, when the batch settles, offers to open the
+         shelf (bring it to the front). Strings are reused and already
+         localized: bulk.progress, bulk.summaryTitle, bulk.added,
+         shelf.openBtn, and insights.close for the dismiss tooltip. */
+      function bulkChipBusy(text) {
+        const chip = $("bulkChip"); if (!chip) return;
+        chip.classList.add("busy"); chip.classList.remove("done");
+        const tx = $("bulkChipText"); if (tx) tx.textContent = text || t("bulk.summaryTitle");
+        const sub = $("bulkChipSub"); if (sub) { sub.textContent = ""; sub.hidden = true; }
+        const open = $("bulkChipOpen"); if (open) open.hidden = true;
+        chip.hidden = false;
+      }
+      function bulkChipDone(summary) {
+        const chip = $("bulkChip"); if (!chip) return;
+        chip.classList.remove("busy"); chip.classList.add("done");
+        const added = summary && summary.added ? summary.added.length : 0;
+        const tx = $("bulkChipText"); if (tx) tx.textContent = t("bulk.summaryTitle");
+        const sub = $("bulkChipSub");
+        if (sub) { if (added > 0) { sub.textContent = t("bulk.added", { n: added }); sub.hidden = false; } else { sub.textContent = ""; sub.hidden = true; } }
+        const open = $("bulkChipOpen"); if (open) { open.textContent = t("shelf.openBtn"); open.hidden = false; }
+        chip.hidden = false;
+      }
+      function bulkChipHide() { const chip = $("bulkChip"); if (chip) chip.hidden = true; }
+      function initBulkChip() {
+        const open = $("bulkChipOpen"), x = $("bulkChipDismiss");
+        if (x) x.setAttribute("aria-label", t("insights.close"));
+        if (open) open.addEventListener("click", () => {
+          bulkChipHide();
+          const m = $("modalShelf");
+          if (m) { renderShelfList(); m.classList.add("open"); icons(); if (typeof cloudLoadShelf === "function") cloudLoadShelf(); }
+        });
+        if (x) x.addEventListener("click", bulkChipHide);
+      }
+      /* ==== /BEUK:bulkchip ==== */
       if (typeof window !== "undefined") {
         window.beukBulk = { runQueue: bulkRunQueue, buildBook: bulkBuildBook, context: bulkBatchContext, parseFrontmatter: bulkParseFrontmatter, resolveVault: bulkResolveVaultText, hash: bulkHashText, fingerprint: bulkFingerprint, docWords: bulkDocWords, renderChrome: renderBulkChrome, start: startBulkImport };
       }
@@ -64025,6 +64090,50 @@
               !!summary && summary.added.length === 2 && !!de && de.doc.meta.language === "de" && !!en && en.doc.meta.language === "en" &&
               summary.added.some((a) => a.detectedCode === "de"),
               "German file -> de book (detected and noted); English file -> en book");
+          } },
+        { id: "bulk.shelf.quiet-during-import", feature: "bulk", name: "Bulk import holds the shelf list steady: while a batch is importing the list is not re-rendered per book (no moving target to review), and it renders once when the batch settles",
+          run() {
+            const list = $("shelfList"); if (!list) return scVerdict(false, "no shelfList element");
+            const keepHTML = list.innerHTML, keepShelf = cloud.shelf, keepBusy = bulkBusy, keepUser = cloud.user, keepLinked = cloud.linkedId;
+            try {
+              cloud.user = cloud.user || { email: "self-check@beuk.studio" };
+              cloud.linkedId = null;
+              bulkBusy = false;
+              cloud.shelf = [{ id: "sc-a", title: "Alpha", updatedAt: new Date().toISOString() }];
+              renderShelfList();
+              const base = list.querySelectorAll(".shelf-row").length;
+              /* a second book lands mid-import: the in-memory shelf grows, but a render must leave the list alone */
+              bulkBusy = true;
+              cloud.shelf = [{ id: "sc-b", title: "Beta", updatedAt: new Date().toISOString() }].concat(cloud.shelf);
+              renderShelfList();
+              const during = list.querySelectorAll(".shelf-row").length;
+              /* the batch settles: now it renders the full shelf, once */
+              bulkBusy = false;
+              renderShelfList();
+              const settled = list.querySelectorAll(".shelf-row").length;
+              return scVerdict(base === 1 && during === 1 && settled === 2,
+                "baseline " + base + " row; mid-import " + during + " (held steady); settled " + settled + " rows");
+            } finally {
+              cloud.shelf = keepShelf; bulkBusy = keepBusy; cloud.user = keepUser; cloud.linkedId = keepLinked; list.innerHTML = keepHTML;
+            }
+          } },
+        { id: "bulk.chip.background", feature: "bulk", name: "A folder import is a background job: a persistent status chip outside the shelf modal reports progress, survives closing the shelf so the writer keeps working, offers to open the shelf when the batch settles, and dismisses",
+          run() {
+            const chip = $("bulkChip"); if (!chip) return scVerdict(false, "no bulkChip element");
+            const keepHidden = chip.hidden, keepCls = chip.className;
+            try {
+              const outside = !($("modalShelf") && $("modalShelf").contains(chip));
+              bulkChipBusy(t("bulk.progress", { current: 2, total: 5, name: "Draft.docx" }));
+              const busy = !chip.hidden && chip.classList.contains("busy") && $("bulkChipText").textContent.indexOf("2") !== -1 && $("bulkChipOpen").hidden;
+              bulkChipDone({ added: [1, 2], skipped: [], failed: [] });
+              const done = !chip.hidden && chip.classList.contains("done") && !$("bulkChipOpen").hidden && $("bulkChipOpen").textContent.trim().length > 0;
+              bulkChipHide();
+              const hid = chip.hidden === true;
+              return scVerdict(outside && busy && done && hid,
+                "outside the modal " + outside + "; busy shows progress " + busy + "; done offers Open " + done + "; dismiss hides " + hid);
+            } finally {
+              chip.hidden = keepHidden; chip.className = keepCls;
+            }
           } },
         { id: "bulk.gate.signed-out-no-controls", feature: "bulk", name: "Bulk gate: signed out, the shelf's bulk controls are hidden and only the one calm hint line shows; signed in, the controls appear and the hint retires",
           run() {
