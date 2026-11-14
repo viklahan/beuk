@@ -53,7 +53,9 @@ test('insights: the reading-rate and readability sources stay cited next to the 
   assert.ok(html.includes('const READ_WPM = 238;') && html.includes('const INS_WPM = READ_WPM;'), 'reading pace constant (Brysbaert 2019 average, non-fiction)');
   assert.ok(html.includes('https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests'), 'Flesch formula source');
   assert.ok(html.includes('return 206.835 - 1.015 * (words / sentences) - 84.6 * (syllables / words);'), 'Flesch formula constants');
-  const readme = await readFile(path.join(here, '..', 'README.md'), 'utf8');
-  assert.ok(readme.includes('doi:10.1016/j.jml.2019.104047'), 'README cites Brysbaert 2019');
-  assert.ok(readme.includes('## Studio: Story Insights (client-only)'), 'README documents Insights');
+  // The public README moved the engineering detail — these citations included —
+  // to docs/ENGINEERING.md (commit 9ffe573). The sources stay cited there.
+  const eng = await readFile(path.join(here, '..', 'docs', 'ENGINEERING.md'), 'utf8');
+  assert.ok(eng.includes('doi:10.1016/j.jml.2019.104047'), 'ENGINEERING.md cites Brysbaert 2019');
+  assert.ok(eng.includes('## Studio: Story Insights (client-only)'), 'ENGINEERING.md documents Insights');
 });
