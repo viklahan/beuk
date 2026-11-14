@@ -3061,6 +3061,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Vault parsing (frontmatter, [[links]], embeds) is client import behavior.',
   },
+  {
+    id: 'bulk.shelf.quiet-during-import',
+    title: 'A folder import holds the shelf list steady until the batch settles (no per-book churn to review)',
+    kind: 'client-only',
+    reason: 'The shelf list renders in the studio; holding it steady during a bulk import and rendering once at settle is a client DOM-timing property, exercised by the in-studio self-check.',
+  },
+  {
+    id: 'bulk.chip.background',
+    title: 'A folder import runs in the background with a persistent status chip (keep writing); it offers to open the shelf when done',
+    kind: 'client-only',
+    reason: 'The background status chip, its progress mirroring and the open-shelf / dismiss controls are studio DOM, exercised by the in-studio self-check.',
+  },
 
   /* ==== BEUK:outline ==== Cards and List: synopsis, status, tags, saved filters (client-side) */
   {
