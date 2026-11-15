@@ -232,6 +232,9 @@ export const EXTRA_ROOTS = [
   'startBulkImport', 'bulkPrepareEntries', 'bulkRunQueue', 'bulkBuildBook', 'bulkBatchContext', 'bulkShelfFingerprints', 'bulkCreateShelfBook',
   'renderBulkSummary', 'renderBulkChrome', 'bulkCollectDrop', 'bulkWalkEntry', 'bulkParseFrontmatter', 'bulkResolveVaultText', 'bulkHashText',
   'bulkFingerprint', 'bulkDocWords', 'bulkIsImage', 'bulkBusy',
+  // 069cf28 (BEUK:bulkchip): the status chip's three (startBulkImport reaches two; the chip's Open and dismiss, wired by
+  // src/cloud/CloudHost.tsx as 1.0's initBulkChip wires them, and 1.0's self-check reach all three through the api)
+  'bulkChipBusy', 'bulkChipDone', 'bulkChipHide',
   // (lifted already for the preview's inline Markdown: named so 1.0's bulk vault self-check reaches it through the api)
   'inlineMd',
   // locked review copy (design 2026-11-06), task 1: 1.0's PDF lock (BEUK:lockcopy) — AES-256 R6 over WebCrypto, and the
@@ -561,7 +564,11 @@ export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', '
   // the picture hash worker (1.0's page-relative assets/pichash.js, from /next/)
   'Worker'];
 /** 1.0's top-level lets of the cloud module the studio reads or sets. */
-export const CLOUD_VARS = ['uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloudRetryTimer', 'cloudSaveInFlight', 'cloudSaveFollowUp', 'authMode', 'portalFreshSignIn', 'billingPausedSaid',
+export const CLOUD_VARS = [
+  // 069cf28 (BEUK:bulkquiet): renderShelfList holds the list while a batch imports. The batch is the main closure's
+  // (its own bulkBusy); 2.0's bridge (src/closure/index.ts shelfBridge) carries that into this module's before each call
+  'bulkBusy',
+  'uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloudRetryTimer', 'cloudSaveInFlight', 'cloudSaveFollowUp', 'authMode', 'portalFreshSignIn', 'billingPausedSaid',
   // wave 7b (I9): the error report's build stamp (the worker's BEUK_SHELL_READY) and its count (tests: a fresh page)
   'beukErrBuild', 'beukErrCount',
   // account hardening (task 4, BEUK:twostep): the code step's challenge (tests: forgotten on close)

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useBook } from '../book/BookProvider';
-import { closureIfLoaded, cloudFacts, pageToast } from '../closure/index';
+import { closureIfLoaded, closureT, cloudFacts, pageToast, shelfBridge } from '../closure/index';
 import { translateCover } from '../cover/CoverMaker';
 import markup from '../generated/cloud-markup.json';
 import '../generated/cloud.css';
@@ -46,6 +46,11 @@ function on(id: string, type: string, fn: (e: Event) => void, off: (() => void)[
   if (!el) return;
   el.addEventListener(type, fn);
   off.push(() => el.removeEventListener(type, fn));
+}
+
+/** 1.0's initBulkChip names the chip's x (its words: insights.close); again on a language change. */
+function labelBulkChip(): void {
+  $('bulkChipDismiss')?.setAttribute('aria-label', closureT()('insights.close'));
 }
 
 /** 1.0's listeners on its shelf markup (initCloud, acctInit, portalInit, billingInit; initPlatform's online / offline). */
@@ -145,6 +150,21 @@ function wire(cm: CloudClosure, off: (() => void)[]): void {
     const dt = (e as DragEvent).dataTransfer;
     void importWire().then((c) => c.api.bulkCollectDrop(dt, (entries: unknown[]) => c.api.startBulkImport(entries))).catch(() => undefined);
   }, off);
+  // initBulkChip (069cf28, BEUK:bulkchip): the status chip's Open brings the shelf to the front, its x puts it away
+  labelBulkChip();
+  on('bulkChipOpen', 'click', () => {
+    void importWire().then((c) => {
+      c.api.bulkChipHide();
+      const m = $('modalShelf');
+      if (m) {
+        shelfBridge.renderShelfList();
+        m.classList.add('open');
+        drawIcons(document);
+        void shelfBridge.cloudLoadShelf();
+      }
+    }).catch(() => undefined);
+  }, off);
+  on('bulkChipDismiss', 'click', () => void importWire().then((c) => c.api.bulkChipHide()).catch(() => undefined), off);
   // initPlatform: the browser's word on the connection
   a.net.online = navigator.onLine !== false;
   const up = () => a.setConnectivity(true), down = () => a.setConnectivity(false);
@@ -206,7 +226,8 @@ export function CloudHost() {
     void loadCloud().then((c) => {
       if (!alive) return;
       cm.current = c;
-      el.innerHTML = markup.auth + markup.shelf + markup.bulkInputs;
+      // 069cf28: the bulk status chip after the dialogs, on the page: never inside the shelf (1.0's place, before </body>)
+      el.innerHTML = markup.auth + markup.shelf + markup.bulkInputs + markup.bulkChip;
       const slot = (id: string, html: string) => {
         const s = document.getElementById(id);
         if (s) s.innerHTML = html;
@@ -275,6 +296,7 @@ export function CloudHost() {
       if (s) translateCover(mc, s);
     }
     translateCover(mc, host.current);
+    labelBulkChip();
     c.api.setAuthMode(c.vars.authMode);
     c.api.renderCloudChrome();
     c.api.renderSyncLine();
