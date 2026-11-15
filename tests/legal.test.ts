@@ -343,6 +343,7 @@ const EMAIL_KIND_NEEDLES: Record<string, string> = {
   'housekeeping-test': 'a test email an admin asks for',
   'backup-alert': 'backup alerts to the operator',
   'self-check-probe': 'a self-check message that is never delivered',
+  invite: 'an invitation to try Beuk',
 };
 
 function srcKinds(): Set<string> {

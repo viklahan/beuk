@@ -15,9 +15,11 @@
     "client/support/index.html": "English-only at the guard's start (2026-10-30); not yet translated",
     "client/thanks/index.html": "English-only at the guard's start (2026-10-30); not yet translated",
     "src/account/page.ts": "English-only at the guard's start (2026-10-30); not yet translated",
+    "src/email/invite.ts": "The founding-reader invitation email (owner-only, 2026-11-14); English-only on purpose — a hand-sent invite, not studio UI.",
     "src/email/layout.ts": "English-only at the guard's start (2026-10-30); not yet translated",
     "src/help/render.ts": "English-only at the guard's start (2026-10-30); not yet translated",
     "src/oauth/pages.ts": "OAuth sign-in/consent pages for the MCP connector (2026-11-05); English-only on purpose until the studio's own l10n reaches server pages",
+    "src/routes/invite.ts": "The owner-only invite sender page /account/invite (2026-11-14); English-only on purpose — an internal admin tool.",
     "src/school/render.ts": "English-only at the guard's start (2026-10-30); not yet translated",
     "src/shares/reader.ts": "English-only at the guard's start (2026-10-30); not yet translated",
     "src/warmth/pages.ts": "English-only at the guard's start (2026-10-30); not yet translated"

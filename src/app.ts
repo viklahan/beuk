@@ -27,6 +27,7 @@ import { userThemeRoutes } from './routes/user-themes.js';
 import { pictureRoutes } from './routes/pictures.js';
 import { publicConfigRoutes, statusRoutes } from './routes/public.js';
 import { resetPageRoutes } from './routes/reset-page.js';
+import { inviteRoutes } from './routes/invite.js';
 import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
 import { authorshipRoutes } from './routes/authorship.js';
 import { twoStepRoutes } from './routes/two-step.js';
@@ -139,6 +140,8 @@ export function buildApp({
   // Accounts portal (/account + /api/account): the sign-up hook sends the
   // email confirmation after the register response.
   const portal = accountPortalRoutes({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now, limits: portalLimits });
+  // Owner-only invite sender (admin-gated). Sends through mail — the owner's Gmail in production.
+  const invite = inviteRoutes(db, config, mail);
   // Account hardening: the security emails, after the response (src/email/security.ts).
   const security = securityEmails({ db, config, mailer: mail, tasks: accountTasks, now });
   // The per-account sign-in limit, shared so a password reset can lift it.
@@ -244,6 +247,8 @@ export function buildApp({
   // Where you're signed in: the session list and signing one device out (never paused).
   app.use('/api/account/sessions', sessionRoutes(db));
   app.use('/api/account', portal.api);
+  // Owner-only invite sender API; requireAdmin makes it a 404 for everyone else.
+  app.use('/api/invite', invite.api);
 
   // Beuk School: free courses at /school; progress for signed-in writers only.
   const school = schoolRoutes(db, config);
@@ -281,6 +286,8 @@ export function buildApp({
   app.use(statusPage.page);
   // P0 #5: the "choose a new password" page the reset email links to.
   app.use(resetPageRoutes(config));
+  // Owner-only invite page (/account/invite), before the portal's /account pages.
+  app.use(invite.pages);
   // Accounts portal pages: /account, /account/confirm, /account/deleted.
   app.use(portal.pages);
   // Beuk 2.0 studio (React) at /next, from the image's build (Caddy proxies /next* here).

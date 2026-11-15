@@ -186,8 +186,10 @@ Where replies go. The example in section 2 sends from the subdomain
 
 ## 6. What Beuk sends
 
-Every email Beuk's code can send. Each one is caused by something a
-writer or the operator did; Beuk sends no newsletters and no marketing.
+Every email Beuk's code can send. Each is caused by something a writer
+or the operator did; Beuk sends no newsletters and no bulk marketing —
+the only operator-initiated outreach is the one-off `invite` an admin
+sends by hand.
 None of these can be turned off by a writer, because each is the only
 way that action can work; the operator can turn all of them off by
 leaving email unconfigured.
@@ -209,6 +211,7 @@ leaving email unconfigured.
 | `housekeeping-test` | An admin's `POST /api/housekeeping/mail/test` | That admin's own address | Subject "Beuk test email": one line naming the server and build | Operator only |
 | `backup-alert` | A backup self-check turning red, its retry, it turning green again, or an admin's alert test | `ALERT_EMAIL` (the operator), only when set and email is configured | Subjects "Beuk: backups need attention" / "Beuk: backups are working again": check names and their scrubbed detail, no writer data | Leave `ALERT_EMAIL` unset |
 | `self-check-probe` | The `auth.mail.delivery-state-honest` self-check | `probe@invalid.example` | Never sent: the check gives it only to an unconfigured mailer, to prove that mailer refuses to claim a delivery | Not an email anyone receives |
+| `invite` | An admin sends it from /account/invite (owner-only) | Whoever the admin chooses to invite (not necessarily an account holder) | Subject "You're one of the first into Beuk": a branded founding-reader invitation — what Beuk does, a link to the studio, and a request to reply with feedback; the gilt-b logo rides inline. The one operator-initiated outreach, sent by hand | Operator only (admin-gated; nothing sent without email) |
 | `stripe-receipt` | A successful payment, once billing is live | The paying writer | **Sent by Stripe, not by Beuk.** Beuk sends no receipts of its own. Stripe sends them when "Successful payments" is turned on in the Dashboard under Settings → Business → Customer emails ([Stripe: receipts](https://docs.stripe.com/receipts)); receipts cover subscription payments too | In the Stripe Dashboard |
 
 Writer-facing emails (`welcome`, `signup-confirm`, `email-change-*`,

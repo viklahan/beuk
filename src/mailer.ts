@@ -26,11 +26,22 @@ import type { Config } from './config.js';
  * verify(): https://nodemailer.com/#verify-the-connection-optional
  */
 
+/** An inline or file attachment, forwarded to nodemailer unchanged. A
+ *  `cid` makes the part inline, referenced from the HTML as
+ *  `src="cid:<cid>"` (how the invite email embeds its logo). */
+export interface MailAttachment {
+  filename: string;
+  content: Buffer;
+  cid?: string;
+  contentType?: string;
+}
+
 export interface MailMessage {
   to: string;
   subject: string;
   text: string;
   html?: string;
+  attachments?: MailAttachment[];
 }
 
 export type MailResult =
