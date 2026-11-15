@@ -38,8 +38,9 @@ export function invitePage(_config: Config): string {
   .sub{color:var(--muted);margin:0 0 24px;}
   form{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;}
   label{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;}
-  input{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);padding:11px 13px;font-size:16px;font-family:inherit;margin-bottom:16px;}
-  input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent;}
+  input,textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);padding:11px 13px;font-size:16px;font-family:inherit;margin-bottom:16px;}
+  textarea{resize:vertical;min-height:72px;line-height:1.5;}
+  input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent;}
   .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
   button{font:inherit;font-weight:700;cursor:pointer;border-radius:999px;padding:12px 22px;border:1px solid var(--accent);}
   .send{background:var(--accent);color:#f4fbfa;}
@@ -61,6 +62,8 @@ export function invitePage(_config: Config): string {
     <input id="name" name="name" type="text" placeholder="Marcus" required>
     <label for="email">Their email</label>
     <input id="email" name="email" type="email" placeholder="marcus@example.com" required>
+    <label for="message">Personal note (optional)</label>
+    <textarea id="message" name="message" rows="3" placeholder="A line just for them — why you thought of them, or what to look at first."></textarea>
     <div class="row">
       <button type="button" class="ghost" id="preview">Preview</button>
       <button type="submit" class="send" id="send">Send invite</button>
@@ -71,21 +74,21 @@ export function invitePage(_config: Config): string {
   <iframe id="pv" title="Email preview"></iframe>
 </main>
 <script>
-  var f=document.getElementById('f'),nameEl=document.getElementById('name'),emailEl=document.getElementById('email'),
+  var f=document.getElementById('f'),nameEl=document.getElementById('name'),emailEl=document.getElementById('email'),msgEl=document.getElementById('message'),
       msg=document.getElementById('msg'),send=document.getElementById('send'),previewBtn=document.getElementById('preview'),pv=document.getElementById('pv');
   function say(t,cls){msg.textContent=t;msg.className='msg '+(cls||'');}
   previewBtn.addEventListener('click',function(){
     var n=(nameEl.value||'there').trim();
-    pv.src='/api/invite/preview?name='+encodeURIComponent(n);
+    pv.src='/api/invite/preview?name='+encodeURIComponent(n)+'&message='+encodeURIComponent(msgEl.value||'');
     pv.style.display='block';
   });
   f.addEventListener('submit',function(e){
     e.preventDefault();
-    var name=nameEl.value.trim(), email=emailEl.value.trim();
+    var name=nameEl.value.trim(), email=emailEl.value.trim(), message=msgEl.value.trim();
     if(!name){say('Add their name.','err');return;}
     if(!email){say('Add their email.','err');return;}
     send.disabled=true;say('Sending…');
-    fetch('/api/invite',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:name,email:email})})
+    fetch('/api/invite',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:name,email:email,message:message})})
       .then(function(r){return r.json().then(function(b){return {ok:r.ok,b:b};});})
       .then(function(res){
         if(res.ok&&res.b&&res.b.ok){say('Sent to '+email+'. '+name+' is in. ✦','ok');f.reset();pv.style.display='none';}
@@ -114,9 +117,10 @@ export function inviteRoutes(db: Db, config: Config, mailer: Mailer): { pages: R
   // cid: image only resolves inside an email.
   api.get('/preview', (req, res) => {
     const name = firstNameOf(String(req.query.name ?? ''));
+    const message = String(req.query.message ?? '').slice(0, 2000);
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Robots-Tag', 'noindex');
-    return res.type('html').send(inviteHtml(config, name, '/assets/icon-192.png'));
+    return res.type('html').send(inviteHtml(config, name, '/assets/icon-192.png', message));
   });
 
   // Send one personalised invite through the mailer (the owner's Gmail in prod).
@@ -124,9 +128,10 @@ export function inviteRoutes(db: Db, config: Config, mailer: Mailer): { pages: R
     try {
       const name = String((req.body as { name?: unknown })?.name ?? '').trim();
       const email = String((req.body as { email?: unknown })?.email ?? '').trim().toLowerCase();
+      const message = String((req.body as { message?: unknown })?.message ?? '').slice(0, 2000);
       if (!name) return res.status(400).json({ error: 'A name is required.' });
       if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'A valid email address is required.' });
-      const msg = await inviteEmail(config, name);
+      const msg = await inviteEmail(config, name, message);
       // email-kind: invite
       const result = await mailer.send({
         to: email,

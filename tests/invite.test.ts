@@ -128,4 +128,26 @@ test('inviteEmail: renders the recipient first name and attaches the logo', asyn
   assert.ok(!/Hey Marcus Vane/.test(msg.html), 'greets by first name only');
   assert.match(msg.text, /Marcus/);
   assert.ok(msg.attachments.some((a) => a.cid === 'beuk-logo'));
+  assert.match(msg.html, /invite-watermark\.png/, 'carries the watermark background');
+});
+
+test('inviteEmail: carries a personal note when given, omits it otherwise', async () => {
+  const withNote = await inviteEmail(testConfig(), 'Marcus Vane', 'You were the first editor I ever trusted.');
+  assert.match(withNote.html, /You were the first editor I ever trusted\./);
+  assert.match(withNote.text, /You were the first editor I ever trusted\./);
+  const without = await inviteEmail(testConfig(), 'Marcus Vane');
+  assert.ok(!/first editor/.test(without.html), 'no note block when none was given');
+});
+
+test('POST /api/invite: a personal note reaches the sent email', async () => {
+  const { server, admin, mailer } = await setup();
+  try {
+    const res = await admin.post('/api/invite', { name: 'Marcus', email: 'm@example.com', message: 'Thought of you first.' });
+    assert.equal(res.status, 200);
+    const sent = invitesSent(mailer);
+    assert.equal(sent.length, 1);
+    assert.match(sent[0].html, /Thought of you first\./);
+  } finally {
+    await server.close();
+  }
 });

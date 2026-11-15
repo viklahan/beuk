@@ -42,10 +42,18 @@ function siteLabel(config: Config): string {
 /** The invite body as HTML. `logoSrc` is `cid:<cid>` for a real send and a
  *  URL for the in-browser preview. Everything is inline-styled and
  *  table-based so it survives an email client. */
-export function inviteHtml(config: Config, firstName: string, logoSrc: string): string {
+export function inviteHtml(config: Config, firstName: string, logoSrc: string, message?: string): string {
   const name = escapeHtml(firstName);
   const site = escapeHtml(config.appBaseUrl);
   const label = escapeHtml(siteLabel(config));
+  // The ghosted logo is a pre-baked faint PNG set as the card's background
+  // (email clients have no blend modes); Caddy serves it from client/assets.
+  const watermark = `${config.appBaseUrl}/assets/invite-watermark.png`;
+  // An optional personal line the sender typed, shown right after the greeting.
+  const note = (message ?? '').trim();
+  const noteBlock = note
+    ? `<p style="margin:0 0 14px;font-size:15.5px;line-height:1.65;color:#22333a;">${escapeHtml(note).replace(/\r?\n/g, '<br>')}</p>`
+    : '';
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -58,7 +66,7 @@ export function inviteHtml(config: Config, firstName: string, logoSrc: string): 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f4e9;">
 <tr><td align="center" style="padding:32px 16px;">
 <table role="presentation" width="540" cellpadding="0" cellspacing="0" style="width:540px;max-width:100%;background:#fffdf4;border:1px solid #d5dcc9;border-radius:16px;">
-<tr><td style="padding:36px 38px 30px;font-family:Arial,Helvetica,sans-serif;color:#22333a;">
+<tr><td background="${watermark}" style="padding:36px 38px 30px;font-family:Arial,Helvetica,sans-serif;color:#22333a;background-color:#fffdf4;background-image:url('${watermark}');background-repeat:no-repeat;background-position:center;">
 
   <table role="presentation" cellpadding="0" cellspacing="0"><tr>
     <td style="padding-right:12px;vertical-align:middle;"><img src="${logoSrc}" width="42" alt="Beuk" style="display:block;border:0;width:42px;height:auto;"></td>
@@ -75,6 +83,7 @@ export function inviteHtml(config: Config, firstName: string, logoSrc: string): 
   <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15;color:#22333a;margin-bottom:22px;">You&rsquo;re one of the first.</div>
 
   <p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#22333a;">Hey ${name},</p>
+  ${noteBlock}
   <p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#5d6d66;">I&rsquo;ve been building something on nights and weekends, and you&rsquo;re one of a small handful of people I&rsquo;m handing it to before anyone else &mdash; because I trust your eye.</p>
   <p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#5d6d66;"><span style="font-family:Georgia,'Times New Roman',serif;color:#22333a;">Beuk</span> takes a manuscript and turns it into a properly typeset book &mdash; print-ready and ebook &mdash; in minutes, with an AI editor riding along.</p>
   <p style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#5d6d66;">What I want from you isn&rsquo;t a compliment. It&rsquo;s <strong style="color:#22333a;">the feel of the journey</strong>: bring a draft in, typeset it, send it out as a book &mdash; and notice where it glides and where it snags.</p>
@@ -105,10 +114,12 @@ export function inviteHtml(config: Config, firstName: string, logoSrc: string): 
 }
 
 /** The plain-text part (what a text-only client shows). */
-export function inviteText(config: Config, firstName: string): string {
+export function inviteText(config: Config, firstName: string, message?: string): string {
+  const note = (message ?? '').trim();
   return [
     `Hey ${firstName},`,
     '',
+    ...(note ? [note, ''] : []),
     "I've been building something on nights and weekends, and you're one of a small handful of people I'm handing it to before anyone else — because I trust your eye.",
     '',
     'Beuk takes a manuscript and turns it into a properly typeset book — print-ready and ebook — in minutes, with an AI editor riding along.',
@@ -138,10 +149,10 @@ export interface InviteEmail {
 
 /** Build the invite for one recipient: subject, both bodies, and the
  *  inline logo (when the asset can be read). */
-export async function inviteEmail(config: Config, recipientName: string): Promise<InviteEmail> {
+export async function inviteEmail(config: Config, recipientName: string, message?: string): Promise<InviteEmail> {
   const first = firstNameOf(recipientName);
-  const html = inviteHtml(config, first, `cid:${INVITE_LOGO_CID}`);
-  const text = inviteText(config, first);
+  const html = inviteHtml(config, first, `cid:${INVITE_LOGO_CID}`, message);
+  const text = inviteText(config, first, message);
   const logo = await logoBytes();
   const attachments: MailAttachment[] = logo
     ? [{ filename: 'beuk.png', content: logo, cid: INVITE_LOGO_CID, contentType: 'image/png' }]
