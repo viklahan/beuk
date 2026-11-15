@@ -710,8 +710,13 @@ export function extractCloudMarkup(html) {
   for (const id of ['shelfBulk', 'btnBulkFiles', 'btnBulkFolder', 'bulkDropHint', 'bulkProgress', 'bulkSummary'])
     if (!shelf.includes('id="' + id + '"')) fail(`the shelf dialog no longer has #${id}`);
   for (const id of ['btnUpdateReload', 'btnUpdateLater']) if (!updateBar.includes('id="' + id + '"')) fail(`the update bar no longer has #${id}`);
-  if (/<script|\son[a-z]+=/i.test(auth + shelf + account + netPill + syncRow + bulkInputs + bulkHint + updateBar)) fail("the shelf's markup carries a script or a handler attribute: the studio puts it in place as it is");
-  return { auth, shelf, account, netPill, syncRow, bulkInputs, bulkHint, updateBar };
+  // 069cf28 (BEUK:bulkchip): bulk import's status chip, on the page OUTSIDE the shelf dialog (the writer closes the shelf
+  // and keeps writing); its rules are cloud.css's already (CLOUD_SELECTOR's .bulk-)
+  const bulkChip = divBlock(html, html.indexOf('<div class="bulk-chip" id="bulkChip"'), "bulk import's status chip (#bulkChip)");
+  for (const id of ['bulkChipIcon', 'bulkChipText', 'bulkChipSub', 'bulkChipOpen', 'bulkChipDismiss'])
+    if (!bulkChip.includes('id="' + id + '"')) fail(`the bulk status chip no longer has #${id}`);
+  if (/<script|\son[a-z]+=/i.test(auth + shelf + account + netPill + syncRow + bulkInputs + bulkHint + updateBar + bulkChip)) fail("the shelf's markup carries a script or a handler attribute: the studio puts it in place as it is");
+  return { auth, shelf, account, netPill, syncRow, bulkInputs, bulkHint, updateBar, bulkChip };
 }
 
 /* ---- the local pill's stylesheet (wave 5a, round 2) ----

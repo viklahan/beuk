@@ -674,6 +674,10 @@ export function loadCloud(): Promise<CloudClosure> {
       shelfEnv.getBook = (id, hydrate) => cm.api.shelfGetBook(id, hydrate);
       shelfEnv.loadShelf = () => cm.api.cloudLoadShelf();
       shelfEnv.apiFetch = (path, opts) => cm.api.apiFetch(path, opts);
+      // 069cf28 (BEUK:bulkquiet): the main closure's batch state, carried in (src/closure/index.ts shelfBridge)
+      shelfEnv.setBulkBusy = (busy) => {
+        cm.vars.bulkBusy = busy;
+      };
 
       if (typeof window !== 'undefined') (window as unknown as { beukCloud?: unknown }).beukCloud = cloudSeam;
       return cm;

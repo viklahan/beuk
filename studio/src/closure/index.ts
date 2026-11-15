@@ -864,6 +864,10 @@ export type ClosureApi = {
   startBulkImport: (entries: unknown[]) => void;
   bulkCollectDrop: (dt: unknown, cb: (entries: unknown[]) => void) => void;
   renderBulkChrome: () => void;
+  /** 069cf28 (BEUK:bulkchip): the status chip outside the shelf dialog. */
+  bulkChipBusy: (text?: string) => void;
+  bulkChipDone: (summary: { added?: unknown[] } | null) => void;
+  bulkChipHide: () => void;
   bulkRunQueue: (items: unknown[], deps: Record<string, unknown>, onProgress: unknown, onDone: (summary: Record<string, unknown>) => void) => Record<string, unknown>;
   bulkBuildBook: (item: unknown, ctx: unknown) => Record<string, unknown>;
 };
@@ -1356,6 +1360,8 @@ export const shelfEnv: {
   getBook: ((id: string, hydrate: boolean) => unknown) | null;
   loadShelf: (() => unknown) | null;
   apiFetch: ((path: string, opts?: Record<string, unknown>) => unknown) | null;
+  /** 069cf28 (BEUK:bulkquiet): sets the shelf module's own bulkBusy (its renderShelfList holds the list on it). */
+  setBulkBusy: ((busy: boolean) => void) | null;
 } = {
   makePrintJob: null,
   upload: null,
@@ -1367,6 +1373,26 @@ export const shelfEnv: {
   getBook: null,
   loadShelf: null,
   apiFetch: null,
+  setBulkBusy: null,
+};
+
+/** 069cf28 (BEUK:bulkquiet): on 1.0's page bulkBusy is one let; in 2.0 the batch's is the main closure's (startBulkImport
+ *  sets and resets it) and the list's is the shelf module's (renderShelfList reads it). Before every call from the main
+ *  closure into the shelf, and after startBulkImport has set it, the main closure's goes across: the shelf module's own
+ *  renders in between (cloudLoadShelf's) read the batch's state too. */
+function pushBulkBusy(): void {
+  if (loaded) shelfEnv.setBulkBusy?.(!!loaded.vars.bulkBusy);
+}
+/** The main closure's way into the shelf's list (its supplied renderShelfList and cloudLoadShelf). */
+export const shelfBridge = {
+  renderShelfList: (): void => {
+    pushBulkBusy();
+    shelfEnv.renderShelfList?.();
+  },
+  cloudLoadShelf: (): unknown => {
+    pushBulkBusy();
+    return shelfEnv.loadShelf?.() ?? null;
+  },
 };
 export async function shelfPrintJob(o?: unknown): Promise<unknown> {
   shelf.asked++;
@@ -1556,9 +1582,9 @@ export function loadClosure(): Promise<Closure> {
         refreshLangHint: () => undefined,
         // wave 7b (G3): bulk import's shelf half — 1.0's own, in the shelf's module (src/cloud/cloud.ts); before it loads
         // there is no shelf (1.0's startBulkImport returns at once signed out)
-        renderShelfList: () => shelfEnv.renderShelfList?.(),
+        renderShelfList: () => shelfBridge.renderShelfList(),
         shelfGetBook: (id: string, hydrate: boolean) => Promise.resolve(shelfEnv.getBook ? shelfEnv.getBook(id, hydrate) : null),
-        cloudLoadShelf: () => shelfEnv.loadShelf?.() ?? null,
+        cloudLoadShelf: () => shelfBridge.cloudLoadShelf(),
         // final fix I1 (BEUK:authorship): the Word stamp fingerprints the book 2.0's backup fingerprints (the open book's
         // export: src/book/BookProvider.tsx); no book open, no stamp
         authorshipDeskBook: () => authorshipEnv.deskBook(),
@@ -1570,6 +1596,12 @@ export function loadClosure(): Promise<Closure> {
       // wave 4c: a picture id is a key of 1.0's coverImgCache: never Object.prototype's (as the server's WRAP_API)
       Object.setPrototypeOf((c.api as unknown as ClosureApi).coverImgCache, null);
       loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, sample: null, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };
+      // 069cf28 (BEUK:bulkquiet): a batch's bulkBusy is set inside startBulkImport, at once: carry it to the shelf's module
+      const api = loaded.api, startBulk = api.startBulkImport;
+      api.startBulkImport = (entries: unknown[]) => {
+        startBulk(entries);
+        pushBulkBusy();
+      };
       return loaded;
     });
     loading.catch(() => {

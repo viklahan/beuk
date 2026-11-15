@@ -133,14 +133,42 @@ describe('wave 7b in the studio', () => {
     expect($('btnBulkFiles').textContent).toBe(t('bulk.filesBtn'));
     const before = JSON.stringify(exportBook(desk.ydoc!));
     const n = net.requests.length;
+    // 069cf28 (BEUK:bulkquiet): the list holds still through the batch — never the in-between count (one book added)
+    const rows = () => $('shelfList').querySelectorAll('.shelf-row').length;
+    await waitFor(() => expect(rows()).toBe(1));
+    const seen: number[] = [];
+    const watch = new MutationObserver(() => seen.push(rows()));
+    watch.observe($('shelfList'), { childList: true, subtree: true });
+    // 069cf28 (BEUK:bulkchip): the status chip is on the page, outside the shelf dialog, hidden until a batch runs
+    expect($('bulkChip')).not.toBeNull();
+    expect($('modalShelf').contains($('bulkChip'))).toBe(false);
+    expect($('bulkChip').hidden).toBe(true);
+    expect($('bulkChipDismiss').getAttribute('aria-label')).toBe(t('insights.close'));
     await pick('bulkFileInput', [new File(['# One\n\nThe first book.\n'], 'one.md', { type: 'text/markdown' }), new File(['Two\n\nThe second book.\n'], 'two.txt', { type: 'text/plain' })]);
     await waitFor(() => expect($('bulkSummary').style.display).toBe(''), { timeout: 20_000 });
     expect($('bulkSummary').textContent).toContain(t('bulk.added', { n: 2 }));
     expect(net.requests.slice(n).filter((r) => r.method === 'POST' && r.path === '/api/manuscripts').length).toBe(2);
     expect(net.requests.slice(n).filter((r) => r.method === 'PUT')).toEqual([]);
     expect(JSON.stringify(exportBook(desk.ydoc!))).toBe(before);
-    await waitFor(() => expect($('shelfList').querySelectorAll('.shelf-row').length).toBe(3));
+    await waitFor(() => expect(rows()).toBe(3));
+    watch.disconnect();
+    expect(seen).not.toContain(2);
     expect(hazards($('modalShelf').innerHTML)).toEqual([]);
+    // the chip: done, the count added, Open offered; Open brings the shelf back to the front, the x puts the chip away
+    expect($('bulkChip').hidden).toBe(false);
+    expect($('bulkChip').classList.contains('done')).toBe(true);
+    expect($('bulkChipText').textContent).toBe(t('bulk.summaryTitle'));
+    expect($('bulkChipSub').textContent).toBe(t('bulk.added', { n: 2 }));
+    expect($('bulkChipOpen').hidden).toBe(false);
+    expect($('bulkChipOpen').textContent).toBe(t('shelf.openBtn'));
+    await act(() => void $('modalShelf').classList.remove('open'));
+    await click($('bulkChipOpen'));
+    await waitFor(() => expect(isOpen('modalShelf')).toBe(true));
+    expect($('bulkChip').hidden).toBe(true);
+    expect(rows()).toBe(3);
+    await act(() => void ($('bulkChip').hidden = false));
+    await click($('bulkChipDismiss'));
+    await waitFor(() => expect($('bulkChip').hidden).toBe(true));
   }, 90_000);
 
   it("the archive: 1.0's section in the export modal, signed in; Save Markdown archives the open book's Markdown", async () => {
