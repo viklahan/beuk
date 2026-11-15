@@ -57,13 +57,13 @@ const openTab = (url: string) => {
 /* wave 5 cutover, task 1: 1.0's BEUK:panes (client/index.html panesFold, PANES_KEY) — either side column folds away from the
    tab on its seam and comes back from it; this device remembers which are folded. Same key, same {left, right} shape. */
 export const PANES_KEY = 'beuk.panes.v1';
-type Folds = { left: boolean; right: boolean };
+type Folds = { left: boolean; right: boolean }; // look: data, not a style (1.0's beuk.panes.v1 shape)
 function readFolds(): Folds {
   try {
     const o = JSON.parse(localStorage.getItem(PANES_KEY) || 'null') as { left?: unknown; right?: unknown } | null;
-    return { left: !!(o && o.left), right: !!(o && o.right) };
+    return { left: !!(o && o.left), right: !!(o && o.right) }; // look: data, not a style
   } catch {
-    return { left: false, right: false };
+    return { left: false, right: false }; // look: data, not a style
   }
 }
 

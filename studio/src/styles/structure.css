@@ -40,7 +40,7 @@
 /* Generated pages carry their own editors (1.0's renderGenEditor; src/editor/GenEditor.tsx): fields and controls on the
    section's own surface, laid out with the same rows and grids as the chapter settings (1.0's rules, verbatim) */
 .gen-panel { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
-.gen-toc-list { margin: 6px 0 0; padding-left: 1.3em; font-size: 13.5px; line-height: 1.75; color: var(--ink-2); }
+.gen-toc-list { margin: 6px 0 0; padding-inline-start: 1.3em; font-size: 13.5px; line-height: 1.75; color: var(--ink-2); }
 /* BEUK:starters */
 .gen-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .gen-quiet {

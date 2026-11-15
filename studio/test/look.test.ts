@@ -49,7 +49,9 @@ describe('the look: tokens only, logical properties only (review focus #3, #1)',
     const bad: string[] = [];
     const physical = /(?:^|[\s;{])((?:margin|padding|border)-(?:left|right)(?:-[a-z]+)?|(?:left|right)|border-(?:top|bottom)-(?:left|right)-radius)\s*:|text-align\s*:\s*(?:left|right)|float\s*:\s*(?:left|right)|clear\s*:\s*(?:left|right)/g;
     for (const f of css) for (const m of stripComments(readFileSync(f, 'utf8')).matchAll(physical)) bad.push(`${rel(f)}: ${m[0].trim()}`);
-    for (const f of tsx) for (const m of readFileSync(f, 'utf8').matchAll(/\b(?:marginLeft|marginRight|paddingLeft|paddingRight|left|right|borderLeft\w*|borderRight\w*)\s*:/g)) bad.push(`${rel(f)}: ${m[0]}`);
+    // A line marked `look: data, not a style` holds data keys named left/right (1.0's saved shapes), not styles.
+    const styleLines = (src: string) => src.split(/\r?\n/).filter((l) => !l.includes('look: data, not a style')).join('\n');
+    for (const f of tsx) for (const m of styleLines(readFileSync(f, 'utf8')).matchAll(/\b(?:marginLeft|marginRight|paddingLeft|paddingRight|left|right|borderLeft\w*|borderRight\w*)\s*:/g)) bad.push(`${rel(f)}: ${m[0]}`);
     expect(bad).toEqual([]);
   });
 
