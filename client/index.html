@@ -2422,7 +2422,8 @@
       .bulk-drop.over { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
       .bulk-progress { font-size: 12.5px; color: var(--ink-2); margin: 12px 0 0; font-family: var(--mono-font); }
       /* ==== BEUK:bulkchip ==== */
-      .bulk-chip { position: fixed; z-index: 80; bottom: max(16px, env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 10px; max-width: min(340px, calc(100vw - 32px)); padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 24px -8px rgba(0,0,0,.35); }
+      .bulk-chip { position: fixed; z-index: 80; bottom: max(16px, env(safe-area-inset-bottom, 0px)); inset-inline-end: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 10px; max-width: min(340px, calc(100vw - 32px)); padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 24px -8px rgba(0,0,0,.35); }
+      html[dir="rtl"] .bulk-chip { inset-inline-end: max(16px, env(safe-area-inset-left, 0px)); } /* in RTL the chip sits on the left: its notch inset is the left one */
       .bulk-chip .bc-ico { width: 15px; height: 15px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
       .bulk-chip.busy .bc-ico { border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: bc-spin .8s linear infinite; }
       .bulk-chip.done .bc-ico::before { content: "\2713"; color: var(--good); font-weight: 700; font-size: 14px; }
