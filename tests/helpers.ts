@@ -114,6 +114,11 @@ export function testConfig(overrides?: Partial<Config>): Config {
     // absent by default (billing tests pass stripeWebhookSecret in).
     exportDir: mkdtempSync(path.join(os.tmpdir(), 'beuk-exports-')),
     exportMaxBytes: 50 * 1024 * 1024,
+    // Signed export links: off unless a test passes a secret (as loadConfig gives null when EXPORT_URL_SECRET is unset).
+    exportUrlSecret: null,
+    // Server EPUB and wrap builds: their own caps (e721751), loadConfig's defaults.
+    epubMaxBytes: 128 * 1024 * 1024,
+    wrapMaxBytes: 128 * 1024 * 1024,
     manuscriptMaxBytes: 64 * 1024 * 1024,
     pictureMaxBytes: 32 * 1024 * 1024,
     pictureQuotaBytes: 2 * 1024 * 1024 * 1024,
