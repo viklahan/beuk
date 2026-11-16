@@ -3511,7 +3511,7 @@
 
         <div class="fmt-sec">
           <h3 data-i18n="exp.validationH"><i data-lucide="shield-check"></i>Structural Validation</h3>
-          <p>Beuk's own structural checks over the exact package above, for the preset you have selected: archive order, XML well-formedness, manifest and spine integrity, navigation landmarks, NCX targets, link and anchor resolution, image alt text and required metadata — every result explained in plain language. This is <b>structural validation, not EPUBCheck</b>: the full EPUBCheck suite runs in the server phase. Clear any errors here before uploading the book anywhere.</p>
+          <p>Beuk's own structural checks over the exact package above, for the preset you have selected: archive order, XML well-formedness, manifest and spine integrity, navigation landmarks, NCX targets, link and anchor resolution, image alt text and required metadata — every result explained in plain language. This is <b>structural validation, not EPUBCheck</b>: the full EPUBCheck suite runs on Beuk's server, from <b>Store-ready?</b> or <b>Run EPUBCheck</b> in your archive. Clear any errors here before uploading the book anywhere.</p>
           <div class="fmt-actions">
             <button class="tb-btn" id="btnValidate" type="button" data-i18n="exp.validateBtn"><i data-lucide="shield-check"></i>Validate This Book</button>
           </div>
@@ -4043,7 +4043,7 @@
             <div class="cm-sb-body" id="cmBackBody"></div>
           </details>
           <!-- ==== /BEUK:spineback ==== -->
-          <p class="cm-wrap-note" data-i18n="covermk.wrap.pdfNote">A standard PDF at the exact trim-plus-bleed size — the file KDP Print, IngramSpark, Barnes &amp; Noble Press, Lulu and BookVault ask for. IngramSpark prefers PDF/X: once your shelf is live, Beuk's server PDF/X conversion (Export archive jobs) can be applied to this file — this download itself is not PDF/X.</p>
+          <p class="cm-wrap-note" data-i18n="covermk.wrap.pdfNote">A standard PDF at the exact trim-plus-bleed size — the file KDP Print, IngramSpark, Barnes &amp; Noble Press, Lulu and BookVault ask for. Convert the wrap PDF to PDF/X-1a (for example Acrobat Pro → Preflight) before uploading — Beuk's server converts interiors only.</p>
           <!-- ==== BEUK:hardcover ==== -->
           <p class="cm-wrap-note cm-hc-only" style="display:none;" data-i18n="covermk.hc.specNote">Hardcover sizes follow the formula IngramSpark publishes in its File Creation Guide (rev. 8.24.26): case laminate = 0.625 in wrap + board + 0.5 in hinge + spine + 0.5 in hinge + board + 0.625 in wrap; dust jacket = 0.125 in bleed + 3.25 in flap + 0.25 in fold + panel + spine + panel + 0.25 in fold + 3.25 in flap + 0.125 in bleed. IngramSpark states the formula for custom trims; its cover template generator, emailed for your ISBN and page count, is the final word — compare the two before you upload.</p>
           <p class="cm-wrap-note cm-hc-only" style="display:none;" data-i18n="covermk.hc.kdpNote">KDP hardcover (case laminate only) uses its own wrap (0.51 in) and hinge (0.4 in) and does not publish a full-size formula — Beuk does not size KDP hardcovers yet; use KDP's cover calculator for those.</p>
@@ -9324,7 +9324,7 @@
         "covermk.wrap.narrow": "At this page count the spine is under 0.5 in — too narrow for spine text, so it stays plain. Printers recommend exactly that.",
         "covermk.wrap.barcode": "Barcode area",
         "covermk.wrap.pdf": "Download wrap PDF", "covermk.wrap.jpg": "Download wrap JPG",
-        "covermk.wrap.pdfNote": "A standard PDF at the exact trim-plus-bleed size — the file KDP Print, IngramSpark, Barnes & Noble Press, Lulu and BookVault ask for. IngramSpark prefers PDF/X: once your shelf is live, Beuk's server PDF/X conversion (Export archive jobs) can be applied to this file — this download itself is not PDF/X.",
+        "covermk.wrap.pdfNote": "A standard PDF at the exact trim-plus-bleed size — the file KDP Print, IngramSpark, Barnes & Noble Press, Lulu and BookVault ask for. Convert the wrap PDF to PDF/X-1a (for example Acrobat Pro → Preflight) before uploading — Beuk's server converts interiors only.",
         "covermk.wrap.pdfFail": "The PDF library couldn't be loaded — try the JPG, or check your connection and try again."
       });
       Object.assign(UI_STRINGS.es, {
@@ -9346,7 +9346,7 @@
         "covermk.wrap.narrow": "Con este número de páginas el lomo mide menos de 0,5 in — demasiado estrecho para texto, así que queda liso. Las imprentas recomiendan exactamente eso.",
         "covermk.wrap.barcode": "Zona del código de barras",
         "covermk.wrap.pdf": "Descargar PDF de la cubierta", "covermk.wrap.jpg": "Descargar JPG de la cubierta",
-        "covermk.wrap.pdfNote": "Un PDF estándar en el tamaño exacto de corte más sangrado — el archivo que piden KDP Print, IngramSpark, Barnes & Noble Press, Lulu y BookVault. IngramSpark prefiere PDF/X: cuando tu estantería esté activa, la conversión PDF/X en el servidor de Beuk (trabajos del archivo de exportación) podrá aplicarse a este archivo — esta descarga en sí no es PDF/X.",
+        "covermk.wrap.pdfNote": "Un PDF estándar en el tamaño exacto de corte más sangrado — el archivo que piden KDP Print, IngramSpark, Barnes & Noble Press, Lulu y BookVault. Convierte el PDF de la cubierta a PDF/X-1a (por ejemplo, Acrobat Pro → Comprobaciones) antes de subirlo — el servidor de Beuk solo convierte interiores.",
         "covermk.wrap.pdfFail": "No se pudo cargar la biblioteca de PDF — prueba con el JPG o revisa tu conexión e inténtalo de nuevo."
       });
       Object.assign(UI_STRINGS.fr, {
@@ -9368,7 +9368,7 @@
         "covermk.wrap.narrow": "À ce nombre de pages, la tranche fait moins de 0,5 in — trop étroite pour du texte, elle reste donc unie. C'est exactement ce que recommandent les imprimeurs.",
         "covermk.wrap.barcode": "Zone du code-barres",
         "covermk.wrap.pdf": "Télécharger le PDF de la jaquette", "covermk.wrap.jpg": "Télécharger le JPG de la jaquette",
-        "covermk.wrap.pdfNote": "Un PDF standard à la taille exacte format + fonds perdus — le fichier que demandent KDP Print, IngramSpark, Barnes & Noble Press, Lulu et BookVault. IngramSpark préfère le PDF/X : une fois votre étagère en ligne, la conversion PDF/X serveur de Beuk (tâches de l'archive d'export) pourra s'appliquer à ce fichier — ce téléchargement lui-même n'est pas un PDF/X.",
+        "covermk.wrap.pdfNote": "Un PDF standard à la taille exacte format + fonds perdus — le fichier que demandent KDP Print, IngramSpark, Barnes & Noble Press, Lulu et BookVault. Convertissez le PDF de la couverture en PDF/X-1a (par exemple Acrobat Pro → Contrôle en amont) avant l’envoi — le serveur Beuk ne convertit que les intérieurs.",
         "covermk.wrap.pdfFail": "La bibliothèque PDF n'a pas pu être chargée — essayez le JPG, ou vérifiez votre connexion et réessayez."
       });
       Object.assign(UI_STRINGS.de, {
@@ -9390,7 +9390,7 @@
         "covermk.wrap.narrow": "Bei dieser Seitenzahl ist der Buchrücken schmaler als 0,5 in — zu schmal für Text, also bleibt er leer. Druckereien empfehlen genau das.",
         "covermk.wrap.barcode": "Barcode-Bereich",
         "covermk.wrap.pdf": "Umschlag-PDF herunterladen", "covermk.wrap.jpg": "Umschlag-JPG herunterladen",
-        "covermk.wrap.pdfNote": "Ein Standard-PDF in exakter Beschnitt-plus-Anschnitt-Größe — die Datei, die KDP Print, IngramSpark, Barnes & Noble Press, Lulu und BookVault verlangen. IngramSpark bevorzugt PDF/X: Sobald Ihr Regal live ist, kann Beuks serverseitige PDF/X-Konvertierung (Exportarchiv-Jobs) auf diese Datei angewendet werden — dieser Download selbst ist kein PDF/X.",
+        "covermk.wrap.pdfNote": "Ein Standard-PDF in exakter Beschnitt-plus-Anschnitt-Größe — die Datei, die KDP Print, IngramSpark, Barnes & Noble Press, Lulu und BookVault verlangen. Wandle das Umschlag-PDF vor dem Hochladen in PDF/X-1a um (zum Beispiel Acrobat Pro → Preflight) — der Beuk-Server wandelt nur Innenteile um.",
         "covermk.wrap.pdfFail": "Die PDF-Bibliothek konnte nicht geladen werden — versuchen Sie das JPG oder prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
       });
       Object.assign(UI_STRINGS.it, {
@@ -9412,7 +9412,7 @@
         "covermk.wrap.narrow": "Con questo numero di pagine il dorso è sotto 0,5 in — troppo stretto per il testo, quindi resta liscio. Le tipografie raccomandano proprio questo.",
         "covermk.wrap.barcode": "Area del codice a barre",
         "covermk.wrap.pdf": "Scarica il PDF della copertina", "covermk.wrap.jpg": "Scarica il JPG della copertina",
-        "covermk.wrap.pdfNote": "Un PDF standard nella misura esatta di rifilo più abbondanza — il file richiesto da KDP Print, IngramSpark, Barnes & Noble Press, Lulu e BookVault. IngramSpark preferisce il PDF/X: quando il tuo scaffale sarà attivo, la conversione PDF/X lato server di Beuk (processi dell'archivio di esportazione) potrà essere applicata a questo file — questo download in sé non è un PDF/X.",
+        "covermk.wrap.pdfNote": "Un PDF standard nella misura esatta di rifilo più abbondanza — il file richiesto da KDP Print, IngramSpark, Barnes & Noble Press, Lulu e BookVault. Converti il PDF della copertina in PDF/X-1a (per esempio Acrobat Pro → Verifica preliminare) prima del caricamento — il server di Beuk converte solo gli interni.",
         "covermk.wrap.pdfFail": "Impossibile caricare la libreria PDF — prova il JPG, oppure controlla la connessione e riprova."
       });
       Object.assign(UI_STRINGS.pt, {
@@ -9434,7 +9434,7 @@
         "covermk.wrap.narrow": "Com este número de páginas a lombada tem menos de 0,5 in — demasiado estreita para texto, por isso fica lisa. As gráficas recomendam exatamente isso.",
         "covermk.wrap.barcode": "Área do código de barras",
         "covermk.wrap.pdf": "Descarregar PDF da capa", "covermk.wrap.jpg": "Descarregar JPG da capa",
-        "covermk.wrap.pdfNote": "Um PDF padrão no tamanho exato de corte mais sangria — o ficheiro que KDP Print, IngramSpark, Barnes & Noble Press, Lulu e BookVault pedem. A IngramSpark prefere PDF/X: quando a sua estante estiver ativa, a conversão PDF/X no servidor da Beuk (tarefas do arquivo de exportação) poderá ser aplicada a este ficheiro — este download em si não é PDF/X.",
+        "covermk.wrap.pdfNote": "Um PDF padrão no tamanho exato de corte mais sangria — o ficheiro que KDP Print, IngramSpark, Barnes & Noble Press, Lulu e BookVault pedem. Converta o PDF da capa para PDF/X-1a (por exemplo Acrobat Pro → Preflight) antes de o enviar — o servidor do Beuk só converte miolos.",
         "covermk.wrap.pdfFail": "Não foi possível carregar a biblioteca de PDF — tente o JPG, ou verifique a ligação e tente novamente."
       });
       Object.assign(UI_STRINGS.nl, {
@@ -9456,7 +9456,7 @@
         "covermk.wrap.narrow": "Bij dit aantal pagina's is de rug smaller dan 0,5 in — te smal voor tekst, dus blijft hij leeg. Drukkers raden precies dat aan.",
         "covermk.wrap.barcode": "Barcodegebied",
         "covermk.wrap.pdf": "Omslag-PDF downloaden", "covermk.wrap.jpg": "Omslag-JPG downloaden",
-        "covermk.wrap.pdfNote": "Een standaard-PDF in exact het snij-plus-afloopformaat — het bestand dat KDP Print, IngramSpark, Barnes & Noble Press, Lulu en BookVault vragen. IngramSpark geeft de voorkeur aan PDF/X: zodra je plank live is, kan Beuks server-PDF/X-conversie (exportarchief-taken) op dit bestand worden toegepast — deze download zelf is geen PDF/X.",
+        "covermk.wrap.pdfNote": "Een standaard-PDF in exact het snij-plus-afloopformaat — het bestand dat KDP Print, IngramSpark, Barnes & Noble Press, Lulu en BookVault vragen. Zet de omslag-pdf vóór het uploaden om naar PDF/X-1a (bijvoorbeeld Acrobat Pro → Preflight) — de Beuk-server zet alleen binnenwerken om.",
         "covermk.wrap.pdfFail": "De PDF-bibliotheek kon niet worden geladen — probeer de JPG, of controleer je verbinding en probeer het opnieuw."
       });
       Object.assign(UI_STRINGS.pl, {
@@ -9478,7 +9478,7 @@
         "covermk.wrap.narrow": "Przy tej liczbie stron grzbiet ma mniej niż 0,5 in — jest za wąski na tekst, więc zostaje pusty. Drukarnie zalecają dokładnie to.",
         "covermk.wrap.barcode": "Obszar kodu kreskowego",
         "covermk.wrap.pdf": "Pobierz PDF okładki", "covermk.wrap.jpg": "Pobierz JPG okładki",
-        "covermk.wrap.pdfNote": "Standardowy PDF w dokładnym rozmiarze formatu plus spad — plik, którego wymagają KDP Print, IngramSpark, Barnes & Noble Press, Lulu i BookVault. IngramSpark woli PDF/X: gdy twoja półka będzie aktywna, serwerowa konwersja PDF/X w Beuk (zadania archiwum eksportu) będzie mogła zostać zastosowana do tego pliku — samo to pobranie nie jest PDF/X.",
+        "covermk.wrap.pdfNote": "Standardowy PDF w dokładnym rozmiarze formatu plus spad — plik, którego wymagają KDP Print, IngramSpark, Barnes & Noble Press, Lulu i BookVault. Przekonwertuj PDF okładki do PDF/X-1a (np. Acrobat Pro → Preflight) przed wysłaniem — serwer Beuk konwertuje tylko wnętrza.",
         "covermk.wrap.pdfFail": "Nie udało się wczytać biblioteki PDF — spróbuj JPG albo sprawdź połączenie i spróbuj ponownie."
       });
       Object.assign(UI_STRINGS.ru, {
@@ -9500,7 +9500,7 @@
         "covermk.wrap.narrow": "При таком числе страниц корешок уже 0,5 in — слишком узкий для текста, поэтому остаётся пустым. Типографии рекомендуют именно так.",
         "covermk.wrap.barcode": "Область штрих-кода",
         "covermk.wrap.pdf": "Скачать PDF обложки", "covermk.wrap.jpg": "Скачать JPG обложки",
-        "covermk.wrap.pdfNote": "Стандартный PDF в точном размере обрезного формата плюс вылеты — файл, который требуют KDP Print, IngramSpark, Barnes & Noble Press, Lulu и BookVault. IngramSpark предпочитает PDF/X: когда ваша полка заработает, серверная конвертация PDF/X в Beuk (задания архива экспорта) сможет быть применена к этому файлу — сама эта загрузка не является PDF/X.",
+        "covermk.wrap.pdfNote": "Стандартный PDF в точном размере обрезного формата плюс вылеты — файл, который требуют KDP Print, IngramSpark, Barnes & Noble Press, Lulu и BookVault. Преобразуйте PDF обложки в PDF/X-1a (например, Acrobat Pro → Предпечатная проверка) перед загрузкой — сервер Beuk преобразует только внутренние блоки.",
         "covermk.wrap.pdfFail": "Не удалось загрузить библиотеку PDF — попробуйте JPG или проверьте соединение и повторите попытку."
       });
       Object.assign(UI_STRINGS.tr, {
@@ -9522,7 +9522,7 @@
         "covermk.wrap.narrow": "Bu sayfa sayısında sırt 0,5 in altında — yazı için çok dar, bu yüzden boş kalıyor. Matbaalar tam da bunu öneriyor.",
         "covermk.wrap.barcode": "Barkod alanı",
         "covermk.wrap.pdf": "Kapak PDF'ini indir", "covermk.wrap.jpg": "Kapak JPG'sini indir",
-        "covermk.wrap.pdfNote": "Kesim artı taşma ölçüsünde standart bir PDF — KDP Print, IngramSpark, Barnes & Noble Press, Lulu ve BookVault'un istediği dosya. IngramSpark PDF/X tercih eder: rafınız yayına girdiğinde Beuk'un sunucu PDF/X dönüşümü (dışa aktarma arşivi işleri) bu dosyaya uygulanabilir — bu indirmenin kendisi PDF/X değildir.",
+        "covermk.wrap.pdfNote": "Kesim artı taşma ölçüsünde standart bir PDF — KDP Print, IngramSpark, Barnes & Noble Press, Lulu ve BookVault'un istediği dosya. Yüklemeden önce kapak PDF’ini PDF/X-1a’ya dönüştürün (örneğin Acrobat Pro → Preflight) — Beuk sunucusu yalnızca iç sayfaları dönüştürür.",
         "covermk.wrap.pdfFail": "PDF kütüphanesi yüklenemedi — JPG'yi deneyin veya bağlantınızı kontrol edip tekrar deneyin."
       });
       Object.assign(UI_STRINGS.ar, {
@@ -9544,7 +9544,7 @@
         "covermk.wrap.narrow": "عند هذا العدد من الصفحات يقلّ عرض العمود عن 0.5 in — أضيق من أن يحمل نصاً، فيبقى خالياً. وهذا بالضبط ما توصي به المطابع.",
         "covermk.wrap.barcode": "منطقة الرمز الشريطي",
         "covermk.wrap.pdf": "تنزيل PDF الغلاف", "covermk.wrap.jpg": "تنزيل JPG الغلاف",
-        "covermk.wrap.pdfNote": "ملف PDF قياسي بمقاس القص مضافاً إليه الهامش الزائد بدقة — وهو الملف الذي تطلبه KDP Print وIngramSpark وBarnes & Noble Press وLulu وBookVault. تفضّل IngramSpark صيغة PDF/X: عندما يصبح رفّك حياً، يمكن تطبيق تحويل PDF/X الخادمي في Beuk (مهام أرشيف التصدير) على هذا الملف — وهذا التنزيل نفسه ليس PDF/X.",
+        "covermk.wrap.pdfNote": "ملف PDF قياسي بمقاس القص مضافاً إليه الهامش الزائد بدقة — وهو الملف الذي تطلبه KDP Print وIngramSpark وBarnes & Noble Press وLulu وBookVault. حوّل ملف PDF للغلاف إلى PDF/X-1a (مثلًا Acrobat Pro ← Preflight) قبل الرفع — خادم Beuk يحوّل الصفحات الداخلية فقط.",
         "covermk.wrap.pdfFail": "تعذّر تحميل مكتبة PDF — جرّب JPG، أو تحقّق من اتصالك وحاول مجدداً."
       });
       Object.assign(UI_STRINGS.ja, {
@@ -9566,7 +9566,7 @@
         "covermk.wrap.narrow": "このページ数では背の幅が 0.5 in 未満 — 文字を入れるには狭すぎるため、無地のままにします。印刷会社もまさにそれを推奨しています。",
         "covermk.wrap.barcode": "バーコード領域",
         "covermk.wrap.pdf": "カバーPDFをダウンロード", "covermk.wrap.jpg": "カバーJPGをダウンロード",
-        "covermk.wrap.pdfNote": "仕上がり＋塗り足しの正確なサイズの標準PDF — KDP Print、IngramSpark、Barnes & Noble Press、Lulu、BookVault が求めるファイルです。IngramSpark は PDF/X を推奨します：棚が公開されれば、Beuk のサーバー側 PDF/X 変換（エクスポートアーカイブのジョブ）をこのファイルに適用できます — このダウンロード自体は PDF/X ではありません。",
+        "covermk.wrap.pdfNote": "仕上がり＋塗り足しの正確なサイズの標準PDF — KDP Print、IngramSpark、Barnes & Noble Press、Lulu、BookVault が求めるファイルです。アップロード前にカバー PDF を PDF/X-1a に変換してください（例：Acrobat Pro → プリフライト）— Beuk のサーバーが変換するのは本文だけです。",
         "covermk.wrap.pdfFail": "PDFライブラリを読み込めませんでした — JPGを試すか、接続を確認して再試行してください。"
       });
       Object.assign(UI_STRINGS["zh-Hans"], {
@@ -9588,7 +9588,7 @@
         "covermk.wrap.narrow": "在这个页数下，书脊不足 0.5 in — 太窄，放不下文字，所以保持素面。印刷商正是这样建议的。",
         "covermk.wrap.barcode": "条形码区域",
         "covermk.wrap.pdf": "下载封面 PDF", "covermk.wrap.jpg": "下载封面 JPG",
-        "covermk.wrap.pdfNote": "标准 PDF，尺寸精确到开本加出血 — 这正是 KDP Print、IngramSpark、Barnes & Noble Press、Lulu 和 BookVault 要求的文件。IngramSpark 更青睐 PDF/X：当你的书架上线后，Beuk 的服务器 PDF/X 转换（导出存档任务）可以应用于此文件 — 本次下载本身不是 PDF/X。",
+        "covermk.wrap.pdfNote": "标准 PDF，尺寸精确到开本加出血 — 这正是 KDP Print、IngramSpark、Barnes & Noble Press、Lulu 和 BookVault 要求的文件。上传前请把封面 PDF 转为 PDF/X-1a（例如 Acrobat Pro → 印前检查）——Beuk 服务器只转换内页。",
         "covermk.wrap.pdfFail": "无法加载 PDF 库 — 请试用 JPG，或检查网络连接后重试。"
       });
 
@@ -47204,7 +47204,7 @@
           (state.printLargePrint ? " <b>" + esc(t("print.lpTag")) + ":</b> " + esc(t("print.lpNote")) : "") +
           (printPictureBookOn() ? " <b>" + esc(t("print.pbTag")) + ":</b> " + esc(t("print.pbNote")) : "") +
           printBleedNoteHtml(tr) + /* BEUK:bleed */
-          " <b>Honest note:</b> this produces a print-ready interior PDF through your browser's print-to-PDF; true PDF/X-1a conversion happens in the server phase, so the file is not PDF/X — most print-on-demand services accept it as a standard PDF interior.";
+          " The print view is a preview for checking the pages and printing them yourself. The file for the printer is <b>Download print-ready PDF</b>: Beuk's server makes it and converts the interior to PDF/X-1a, and calls it PDF/X only when the converted file itself says so.";
         const tg = $("tglRecto");
         if (tg) tg.setAttribute("aria-pressed", String(!!state.printRecto));
         const lg = $("tglLargePrint");
@@ -49654,7 +49654,7 @@
          order, XML well-formedness, manifest / spine / nav / NCX
          integrity, internal link and anchor resolution, image alt text
          and required metadata. It is NOT EPUBCheck and never claims to
-         be; the full EPUBCheck suite runs in the server phase. Checks
+         be; the full EPUBCheck suite runs on the server (Store-ready?, Run EPUBCheck). Checks
          that properly belong to the zipped archive (the mimetype's
          STORE flag and byte-0 offset) are asserted against the file
          set the zipper consumes, which fixes exactly those two facts. */
@@ -50173,7 +50173,7 @@
         box.innerHTML =
           '<div class="val-summary"><b>' + headline + ".</b> Checked the " + esc(platformPreset().name) + ' package (<span class="val-file">' + esc(platformFilename()) + "</span>): " +
           v.passes + " passed · " + v.warnings + " warning" + (v.warnings === 1 ? "" : "s") + " · " + v.errors + " error" + (v.errors === 1 ? "" : "s") +
-          ". Structural checks only — the full EPUBCheck suite runs in the server phase.</div>" +
+          ". Structural checks only — the full EPUBCheck suite runs on Beuk's server (Store-ready?, or Run EPUBCheck in your archive).</div>" +
           validationListHtml(sorted, iconFor);
         box.style.display = "";
         icons();
