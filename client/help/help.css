@@ -425,6 +425,78 @@ li.pick .see { margin-left: 8px; }
 .rm-when { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 2px; }
 .rm-older { margin-top: 10px; }
 .rm-older > summary { padding: 8px 0; }
+/* /changelog: a release table (after docs.stripe.com/changelog). Each
+   change is one row — what changed, its area on the right — and the detail
+   folds under it. Help tokens throughout, so Candlelight follows. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.cl { padding-top: 36px; }
+.cl-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.cl-top h1 { margin: 0; font-family: var(--serif); font-size: 44px; line-height: 1.05; font-weight: 600; letter-spacing: -.01em; }
+.cl-intro { margin: 10px 0 0; max-width: 40rem; font-family: var(--serif); font-size: 18px; line-height: 1.5; color: var(--ink-2); }
+.cl-card { max-width: 17rem; padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel-2); font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.cl-card p { margin: 0; }
+.cl-card p + p { margin-top: 6px; }
+.cl-card a { color: var(--accent); font-weight: 600; }
+.cl-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 20px 0 8px; }
+.cl-search input { width: 15rem; padding: 7px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--panel-2); color: var(--ink); font: 14px var(--ui); }
+.cl-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cl-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 12px; border: 1px dashed var(--line-2); border-radius: 999px; background: transparent; color: var(--ink-2); font: 13.5px var(--ui); cursor: pointer; }
+.cl-chip b { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.cl-chip:hover { border-color: var(--accent); }
+.cl-chip[aria-pressed="true"] { border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.cl-chip[aria-pressed="true"] b { color: var(--accent); }
+.cl-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cl-count { margin: 0 0 0 auto; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cl-layout { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); gap: 40px; margin-top: 12px; }
+.cl-side { position: sticky; top: 16px; align-self: start; max-height: calc(100vh - 32px); overflow: auto; font-size: 13.5px; }
+.cl-side-h { margin: 14px 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cl-side-h:first-child { margin-top: 4px; }
+.cl-side a { display: block; padding: 4px 0 4px 10px; border-left: 2px solid var(--line); color: var(--ink-2); text-decoration: none; line-height: 1.35; }
+.cl-side a time { display: block; font: 12px var(--mono); color: var(--muted); }
+.cl-side a span { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.cl-side a:hover, .cl-side a.on { border-left-color: var(--accent); color: var(--accent); }
+.cl-rel { padding: 26px 0 6px; scroll-margin-top: 16px; }
+.cl-rel[hidden] { display: none; }
+.cl-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 0 0 12px; }
+.cl-h time { font: 600 19px var(--mono); color: var(--ink); letter-spacing: -.01em; }
+.cl-title { font-family: var(--serif); font-size: 19px; font-weight: 600; color: var(--ink-2); }
+.cl-group { margin: 16px 0 8px; font: 700 14.5px var(--ui); color: var(--ink); }
+.cl-note { margin: 0 0 10px; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: var(--ink-2); max-width: 46rem; }
+.cl-table { border: 1px solid var(--line-2); border-radius: 8px; background: var(--panel-2); overflow: hidden; }
+.cl-row { border-top: 1px solid var(--line); }
+.cl-row:first-child { border-top: 0; }
+.cl-row[hidden] { display: none; }
+.cl-row > summary, .cl-plain { display: grid; grid-template-columns: minmax(0, 1fr) 8.5rem; align-items: baseline; gap: 16px; padding: 10px 14px; font-size: 14.5px; line-height: 1.45; color: var(--ink); }
+.cl-row > summary { cursor: pointer; list-style: none; }
+.cl-row > summary::-webkit-details-marker { display: none; }
+.cl-row > summary .cl-t::before { content: "›"; display: inline-block; width: 1em; color: var(--muted); transition: transform .15s; }
+.cl-row[open] > summary .cl-t::before { transform: rotate(90deg); }
+.cl-plain .cl-t { padding-left: 1em; }
+.cl-row > summary:hover { background: var(--hl); }
+.cl-row > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cl-t strong { font-weight: 600; }
+.cl-t code, .cl-body code { font: .9em var(--mono); }
+.cl-tag { font-size: 12.5px; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-tag[data-area="Fixes"] { color: var(--gold); }
+.cl-body { margin: 0; padding: 2px 14px 14px calc(14px + 1em); max-width: 50rem; font-family: var(--serif); font-size: 15.5px; line-height: 1.6; color: var(--ink-2); text-wrap: pretty; }
+.cl a { color: var(--accent); }
+.cl-empty { margin: 30px 0; color: var(--muted); }
+@media (max-width: 860px) {
+  .cl-layout { grid-template-columns: minmax(0, 1fr); }
+  .cl-side { display: none; }
+}
+@media (max-width: 560px) {
+  .cl-top h1 { font-size: 34px; }
+  .cl-search input { width: 100%; }
+  .cl-search { flex: 1 1 100%; }
+  .cl-row > summary, .cl-plain { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .cl-tag { padding-left: 1em; }
+}
+@media print {
+  .cl-tools, .cl-side { display: none; }
+  .cl-layout { display: block; }
+}
 /* /changelog: long-form notes in the reading face */
 .doc { max-width: 46rem; padding-top: 36px; }
 .doc h1 { margin: 0 0 10px; font-family: var(--serif); font-size: 40px; line-height: 1.1; font-weight: 600; }

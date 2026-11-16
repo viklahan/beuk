@@ -10,13 +10,13 @@ import {
   renderDocPage,
   repoRoot,
 } from '../warmth/pages.js';
-import { renderMarkdown } from '../warmth/markdown.js';
 import { renderLegalPage } from '../legal/render.js';
 import type { Db } from '../db.js';
 import { chrome, type PageCtx } from '../help/render.js';
 import { getHelpContent } from '../help/content.js';
 import { readShelfStatus } from '../help/status.js';
 import { parseRoadmap, renderRoadmapBody } from '../warmth/roadmap.js';
+import { parseChangelog, renderChangelogBody } from '../warmth/changelog.js';
 
 /**
  * M4 warmth pages, served by the app (Caddy proxies these paths to it —
@@ -93,8 +93,8 @@ export function warmthRoutes(config: Config, db: Db): Router {
   router.get('/changelog', async (_req, res, next) => {
     try {
       const source = await readFile(path.join(repoRoot(), 'CHANGELOG.md'), 'utf8');
-      const body = `<article class="doc">${renderMarkdown(source)}</article>`;
-      const html = chrome(await helpCtx(), { title: 'Changelog — Beuk', description: 'What changed in Beuk, newest first.', active: 'changelog', body });
+      const body = renderChangelogBody(parseChangelog(source));
+      const html = chrome(await helpCtx(), { title: 'Changelog — Beuk', description: 'What changed in Beuk, newest first.', active: 'changelog', body, wide: true });
       return res.type('html').set('Cache-Control', 'no-cache').send(html);
     } catch (err) {
       return next(err as Error);

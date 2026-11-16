@@ -227,4 +227,63 @@
         .catch(function () { if (result) result.textContent = "That did not get through — please try again in a moment."; });
     });
   }
+  // /changelog: search and area filters over the release table. Without
+  // JavaScript every row is simply shown.
+  var cl = document.getElementById("cl");
+  if (cl) {
+    var q = document.getElementById("cl-q");
+    var n = document.getElementById("cl-n");
+    var empty = document.getElementById("cl-empty");
+    var chips = cl.querySelectorAll(".cl-chip");
+    var rows = cl.querySelectorAll(".cl-row");
+    var rels = cl.querySelectorAll(".cl-rel");
+    var areas = {};
+    var apply = function () {
+      var words = (q && q.value || "").toLowerCase().split(/\s+/).filter(Boolean);
+      var anyArea = Object.keys(areas).length > 0;
+      var shown = 0;
+      rows.forEach(function (row) {
+        var text = row.textContent.toLowerCase();
+        var ok = (!anyArea || areas[row.getAttribute("data-area")]) &&
+          words.every(function (w) { return text.indexOf(w) !== -1; });
+        row.hidden = !ok;
+        if (ok) shown++;
+        // A match found only in the folded detail opens the row, so the reader sees why it matched.
+        var body = row.tagName === "DETAILS" ? row.querySelector(".cl-body") : null;
+        if (body && words.length) {
+          var t = body.textContent.toLowerCase();
+          row.open = ok && words.some(function (w) { return t.indexOf(w) !== -1; });
+        }
+      });
+      rels.forEach(function (rel) {
+        var visible = rel.querySelectorAll(".cl-row:not([hidden])").length > 0;
+        rel.hidden = !visible;
+        rel.querySelectorAll(".cl-table").forEach(function (t) { t.hidden = t.querySelectorAll(".cl-row:not([hidden])").length === 0; });
+        rel.querySelectorAll(".cl-group").forEach(function (h) { var t = h.nextElementSibling; h.hidden = !!(t && t.hidden); });
+      });
+      if (n) n.textContent = String(shown);
+      if (empty) empty.hidden = shown !== 0;
+    };
+    if (q) q.addEventListener("input", apply);
+    chips.forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        var a = chip.getAttribute("data-area");
+        var on = chip.getAttribute("aria-pressed") !== "true";
+        chip.setAttribute("aria-pressed", on ? "true" : "false");
+        if (on) areas[a] = true; else delete areas[a];
+        apply();
+      });
+    });
+    // Mark the release in view in the side list.
+    var links = cl.querySelectorAll(".cl-side a[href^='#']");
+    if ("IntersectionObserver" in window && links.length) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          links.forEach(function (l) { l.classList.toggle("on", l.getAttribute("href") === "#" + e.target.id); });
+        });
+      }, { rootMargin: "0px 0px -70% 0px" });
+      rels.forEach(function (r) { io.observe(r); });
+    }
+  }
 })();
