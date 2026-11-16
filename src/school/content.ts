@@ -15,8 +15,9 @@ import { repoRoot } from '../warmth/pages.js';
  * course.md front matter: title, blurb, order (number), stages ([idea,
  * draft, ship] — the landing page's "where are you with your book"), and
  * setup (what the recorder does before each lesson: `sample` loads the
- * sample story, `empty` leaves the desk empty), and an optional cover (a
- * /site/… image for the course card). Body: the lede.
+ * sample story, `empty` leaves the desk empty), an optional cover (a
+ * /site/… image for the course card), section (a name from sections.md)
+ * and level (novice, beginner or advanced). Body: the lede.
  *
  * Lesson file:
  *
@@ -81,6 +82,10 @@ export interface Course {
   blurb: string;
   /** Optional course cover (a site-root path, e.g. /site/school/maiden-voyage.webp); else the first lesson's first screenshot. */
   cover: string | null;
+  /** The home page section this course sits in (a name from sections.md). */
+  section: string;
+  /** How much the course assumes: shown as a three-step meter on its card. */
+  level: Level | null;
   order: number;
   stages: Stage[];
   setup: 'sample' | 'empty';
@@ -88,7 +93,19 @@ export interface Course {
   lessons: Lesson[];
   lessonBySlug: Map<string, Lesson>;
 }
+export const LEVELS = ['novice', 'beginner', 'advanced'] as const;
+export type Level = (typeof LEVELS)[number];
+
+/** A band on the School home: a name and one line on the left, its courses on the right. */
+export interface SchoolSection {
+  name: string;
+  blurb: string;
+  courses: Course[];
+}
+
 export interface SchoolContent {
+  /** In sections.md order; a section with no course yet is left out. */
+  sections: SchoolSection[];
   courses: Course[];
   courseBySlug: Map<string, Course>;
   stamp: string;
@@ -130,6 +147,41 @@ function coverOf(meta: Record<string, unknown>, file: string): string | null {
     throw new Error(`${file}: "cover" must be a /site/… image path (webp, jpg or png)`);
   }
   return v.trim();
+}
+
+function levelOf(meta: Record<string, unknown>, file: string): Level | null {
+  const v = meta.level;
+  if (v === undefined || v === null || v === '') return null;
+  if (typeof v !== 'string' || !(LEVELS as readonly string[]).includes(v.trim())) {
+    throw new Error(`${file}: "level" must be one of ${LEVELS.join(', ')}`);
+  }
+  return v.trim() as Level;
+}
+
+const DEFAULT_SECTION = 'Courses';
+
+/**
+ * sections.md beside the course folders: `## Name` then its one-line blurb,
+ * in the order the home page shows them. Without the file every course
+ * sits in one "Courses" band.
+ */
+export function parseSections(source: string, file: string): Array<{ name: string; blurb: string }> {
+  const out: Array<{ name: string; blurb: string }> = [];
+  for (const line of source.replace(/\r\n?/g, '\n').replace(/<!--[\s\S]*?-->/g, '').split('\n')) {
+    const h = /^##\s+(.+?)\s*$/.exec(line);
+    if (h) { out.push({ name: h[1], blurb: '' }); continue; }
+    if (!line.trim()) continue;
+    const cur = out[out.length - 1];
+    if (!cur) throw new Error(`${file}: text before the first ## section`);
+    cur.blurb = `${cur.blurb} ${line.trim()}`.trim();
+  }
+  const seen = new Set<string>();
+  for (const s of out) {
+    if (seen.has(s.name)) throw new Error(`${file}: section "${s.name}" is listed twice`);
+    seen.add(s.name);
+    if (!s.blurb) throw new Error(`${file}: section "${s.name}" needs a one-line blurb`);
+  }
+  return out;
 }
 
 function str(meta: Record<string, unknown>, key: string, file: string): string {
@@ -272,6 +324,8 @@ export function loadSchoolContent(lang: SchoolLang = 'en'): SchoolContent {
       title: str(meta, 'title', cfile),
       blurb: str(meta, 'blurb', cfile),
       cover: coverOf(meta, cfile),
+      section: typeof meta.section === 'string' && meta.section.trim() ? meta.section.trim() : DEFAULT_SECTION,
+      level: levelOf(meta, cfile),
       order: typeof meta.order === 'number' ? meta.order : 99,
       stages: stages as Stage[],
       setup,
@@ -281,7 +335,22 @@ export function loadSchoolContent(lang: SchoolLang = 'en'): SchoolContent {
     });
   }
   courses.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
-  return { courses, courseBySlug: new Map(courses.map((c) => [c.slug, c])), stamp: stampParts.join('|') };
+  const sfile = path.join(dir, 'sections.md');
+  let declared: Array<{ name: string; blurb: string }> = [];
+  if (existsSync(sfile)) {
+    declared = parseSections(readFileSync(sfile, 'utf8'), sfile);
+    stampParts.push(`${sfile}:${statSync(sfile).mtimeMs}`);
+  }
+  if (!declared.length) declared = [{ name: DEFAULT_SECTION, blurb: '' }];
+  for (const c of courses) {
+    if (!declared.some((s) => s.name === c.section)) {
+      throw new Error(`content/school/${lang}/${c.slug}/course.md: section "${c.section}" is not in sections.md`);
+    }
+  }
+  const sections = declared
+    .map((s) => ({ ...s, courses: courses.filter((c) => c.section === s.name) }))
+    .filter((s) => s.courses.length);
+  return { sections, courses, courseBySlug: new Map(courses.map((c) => [c.slug, c])), stamp: stampParts.join('|') };
 }
 
 /** Problems a content edit can introduce; the test suite requires none. */

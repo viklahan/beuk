@@ -1,7 +1,7 @@
 import type { Config } from '../config.js';
 import { getHelpContent } from '../help/content.js';
 import { escapeHtml as esc } from '../warmth/markdown.js';
-import { STAGE_NAMES, type Course, type Lesson, type SchoolContent, type Stage } from './content.js';
+import { LEVELS, STAGE_NAMES, type Course, type Lesson, type Level, type SchoolContent, type SchoolSection, type Stage } from './content.js';
 import { mediaUrl, readLessonMedia, type LessonMedia } from './media.js';
 import { getWeeklyContent } from '../weekly/content.js';
 
@@ -173,6 +173,16 @@ ${opts.body}
 
 /* ------------------------------ home ------------------------------ */
 
+const LEVEL_NAMES: Record<Level, string> = { novice: 'Novice', beginner: 'Beginner', advanced: 'Advanced' };
+
+/** Three bars, filled to the course's level (none drawn when the course names no level). */
+function levelMeter(level: Level | null): string {
+  if (!level) return '';
+  const n = LEVELS.indexOf(level) + 1;
+  const bars = [1, 2, 3].map((i) => `<i${i <= n ? ' class="on"' : ''}></i>`).join('');
+  return `<span class="lv" title="Level: ${LEVEL_NAMES[level]}"><span class="bars" aria-hidden="true">${bars}</span>${LEVEL_NAMES[level]}</span>`;
+}
+
 function courseCard(ctx: SchoolCtx, c: Course): string {
   const shot = c.cover ?? (c.lessons.length ? firstShot(ctx, c.lessons[0]) : null);
   const total = c.lessons.reduce((n, l) => n + lessonLength(ctx, l).minutes, 0);
@@ -180,13 +190,26 @@ function courseCard(ctx: SchoolCtx, c: Course): string {
   const anyAudio = c.lessons.some((l) => lessonMedia(ctx, l)?.audio);
   const fmts = [anyVideo ? 'Watch' : '', anyAudio ? 'Listen' : '', 'Read'].filter(Boolean).join(', ');
   return `<a class="cc" href="/school/${esc(c.slug)}" data-stages="${esc(c.stages.join(' '))}" data-course="${esc(c.slug)}">
-          <span class="thumb${c.cover ? ' cover' : ''}">${shot ? `<img src="${esc(shot)}" alt="" loading="lazy" />` : `<span class="spec">${esc(c.title)}</span>`}</span>
-          <span class="meta"><b>Course</b> · ${c.lessons.length} lessons · about ${total} min · ${esc(fmts)}</span>
-          <span class="t">${esc(c.title)}</span>
-          <span class="b">${esc(c.blurb)}</span>
-          <span class="prog" data-progress hidden><i></i></span>
-          <span class="go">Open the course →</span>
+          <span class="thumb${c.cover ? ' cover' : ''}">${shot ? `<img src="${esc(shot)}" alt="" loading="lazy" />` : ''}<span class="t">${esc(c.title)}</span></span>
+          <span class="cb">
+            <span class="b">${esc(c.blurb)}</span>
+            <span class="meta">${levelMeter(c.level)}<span class="n">${c.lessons.length} lessons</span><span class="n">about ${total} min</span><span class="n">${esc(fmts)}</span></span>
+            <span class="prog" data-progress hidden><i></i></span>
+          </span>
         </a>`;
+}
+
+function sectionBand(ctx: SchoolCtx, s: SchoolSection, i: number): string {
+  const id = `sec-${i + 1}`;
+  return `<section class="band" aria-labelledby="${id}">
+          <div class="band-h">
+            <h2 id="${id}">${esc(s.name)}</h2>
+            ${s.blurb ? `<p>${esc(s.blurb)}</p>` : ''}
+          </div>
+          <div class="grid">
+        ${s.courses.map((c) => courseCard(ctx, c)).join('\n        ')}
+          </div>
+        </section>`;
 }
 
 /** The School home's pointer to this week's paper (nothing while there is no issue). */
@@ -220,13 +243,10 @@ export function renderSchoolHome(ctx: SchoolCtx): string {
 
         ${weeklyBand()}
 
-        <section class="shelf" aria-labelledby="courses-h">
-          <h2 id="courses-h">Courses</h2>
-          <div class="grid">
-        ${courses.map((c) => courseCard(ctx, c)).join('\n        ')}
-          </div>
+        <div class="shelf" aria-label="Courses">
+        ${ctx.content.sections.map((sec, i) => sectionBand(ctx, sec, i)).join('\n        ')}
           ${courses.length ? '' : '<p class="muted">The first course is being recorded.</p>'}
-        </section>
+        </div>
 
         <section class="howto" aria-label="How lessons come">
           <div><span class="fmt v">Watch</span><h3>Watch</h3><p>A screen recording of the studio, step by step, with chapters to jump to the part you need.</p></div>
