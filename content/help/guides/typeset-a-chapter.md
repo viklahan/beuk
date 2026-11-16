@@ -4,8 +4,8 @@ title: Typeset a chapter
 blurb: Fonts, sizes, chapter headings, drop caps, and scene-break ornaments — the typesetting engine, gently.
 group: write
 audience: [new]
-updated: 2026-10-26
-readMinutes: 2
+updated: 2026-11-15
+readMinutes: 3
 related: [import-a-manuscript, footnotes-and-images]
 ---
 
@@ -14,13 +14,14 @@ What you're doing: deciding how your book *looks* as it's read — the typeface,
 ## Steps
 
 1. **Pick a theme first, if you like.** The theme library holds fifteen named full-book themes — font pairing, chapter header style, ornament, and rhythm in one click. Fine controls can override any of it afterwards.
-2. **Choose your typefaces.** Body and heading fonts are separate. The library holds seventeen book serifs (EB Garamond, Libre Baskerville, Cormorant Garamond, Spectral, and friends) plus a clean sans for nonfiction.
+2. **Choose your typefaces.** Body and heading fonts are separate. The library holds seventeen book serifs (EB Garamond, Libre Baskerville, Cormorant Garamond, Spectral, and friends) plus a clean sans for nonfiction. For headings only there are three display faces: Pinyon Script, Patrick Hand and Abril Fatface. Arabic and Hindi text is set in Amiri and Noto Serif Devanagari.
 3. **Set size and leading.** Font size runs 14–26px; line height 1.3–2.2. Most novels sit happily at 17–19px with 1.6–1.8 leading.
 4. **Paragraphs:** traditional literary indent (adjustable depth) or modern block spacing for nonfiction. Justification and hyphenation are handled for you, with widows and orphans suppressed.
 5. **Chapter openings:** four header styles — *classic centred*, *modern stacked*, *editorial left*, *ornate framed* — and optional drop caps of 2, 3, or 4 lines with small-caps follow-through.
 6. **Scene breaks:** pick an ornament — asterism (`* * *`), fleur-de-lis, diamonds, a botanical sprig, a hairline rule, and more.
-7. **Check it on devices.** Flip the preview between Kindle Paperwhite, iPad (two-page spread), Kobo, and a phone. What reads well on one should read well on all.
-8. **The preview keeps your place.** As you write and format, the preview stays on the page holding your cursor; a new font size, theme or device keeps you on the words you were reading. Typing a chapter's number, title or subtitle turns the preview to the page they stand on. Opening another chapter starts at its first page.
+7. **Book colour:** one accent colour for chapter titles and numbers, rules, ornaments, drop caps and the title page, and an optional page tint for screens and EPUB. Print keeps the accent and ignores the tint, and a contrast guard refuses a colour that would be hard to read.
+8. **Check it on devices.** Flip the preview between Kindle Paperwhite, iPad (two-page spread), Kobo, and a phone. What reads well on one should read well on all. **Hardcover** opens a 3D hardback on the book's real print spreads, and e-ink devices with black-and-white screens are shown in greyscale, as those screens show the book.
+9. **The preview keeps your place.** As you write and format, the preview stays on the page holding your cursor; a new font size, theme or device keeps you on the words you were reading. Typing a chapter's number, title or subtitle turns the preview to the page they stand on. Opening another chapter starts at its first page.
 
 ## Troubleshooting
 

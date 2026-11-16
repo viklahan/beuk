@@ -701,6 +701,13 @@
       body.zen #panes #pane-structure, body.zen #panes #pane-preview { display: none; }
       body.zen #panes #pane-center { display: flex; }
       body.zen #panes { grid-template-columns: 0px minmax(0, 1fr) 0px; }
+      /* Below 1024px the panes carry no explicit grid columns (620e602 pins them
+         only on desktop), so the three-column Zen grid would auto-place the editor
+         into the 0px first track. On narrow screens Zen is one column. */
+      @media (max-width: 1023px) {
+        body.zen:not(.zen-fading) #panes { grid-template-columns: minmax(0, 1fr); }
+        body.zen:not(.zen-fading) #panes #pane-center { grid-column: 1; }
+      }
       /* ==== BEUK:zencalm ==== In Zen it is the manuscript and nothing else:
          the chapter's settings (section type to backdrop) and its pictures
          each fold behind one closed line that opens on a click, the word

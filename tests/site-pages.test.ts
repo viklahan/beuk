@@ -235,7 +235,8 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
     assert.doesNotMatch(text, /no free tier after/i, p.url);
     assert.doesNotMatch(text, /one price after a free week|a free week, then one price\./i, p.url);
   }
-  assert.match(features, /Beuk's server converts the print interior to PDF\/X-1a; in the browser, the PDF comes from Print → Save as PDF/);
+  // Nov 2026: the server makes the print-ready PDF itself (01bc5b6); the browser's Print is a preview.
+  assert.match(features, /Beuk's server makes the print-ready PDF and converts the interior to PDF\/X-1a; Print → Save as PDF in the browser gives a preview you can print yourself\./);
   assert.match(features, /<li><b>PDF\/X-1a print conversion<\/b> on Beuk's server/);
   assert.match(features, /Everything above is yours for 21 days\. Your book is saved on your device as you write, and an account adds:/);
   const vellum = read('client', 'site', 'compare', 'vellum.html');
@@ -243,7 +244,7 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
   assert.doesNotMatch(stronger, /PDF\/X/, 'PDF/X is not a Vellum-only strength');
   assert.match(vellum, /Checks on Beuk's server<\/b>, with an account: the print interior converted to PDF\/X-1a, and your EPUB run through the official EPUBCheck\./);
   for (const slug of ['atticus', 'reedsy-studio']) {
-    assert.match(read('client', 'site', 'compare', `${slug}.html`), /Beuk's server converts the print interior to PDF\/X-1a; in the browser, the PDF comes from Print → Save as PDF\./, slug);
+    assert.match(read('client', 'site', 'compare', `${slug}.html`), /Its print-ready PDF and PDF\/X-1a file are made on Beuk's server, so they need an account and a connection\./, slug);
     assert.match(read('client', 'site', 'compare', `${slug}.html`), /Beuk needs an account from day one: 21 days free, then \$20 a month — everything included\./, slug);
   }
 });

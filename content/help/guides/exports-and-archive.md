@@ -1,11 +1,11 @@
 ---
 slug: exports-and-archive
 title: Exports & your archive
-blurb: EPUB, Markdown, HTML, and Word files — and where your copies are kept.
+blurb: EPUB, Markdown, HTML, Word and print files — and where your copies are kept.
 group: keep
 audience: [hand-edit]
-updated: 2026-10-25
-readMinutes: 2
+updated: 2026-11-15
+readMinutes: 3
 related: [check-your-book, print-interiors]
 ---
 
@@ -20,6 +20,12 @@ What you're doing: taking finished books out of Beuk in the shape each destinati
 - **Standalone HTML** — the whole typeset book as one self-contained page, styles embedded. Good for sharing a reading copy or archiving exactly what readers saw.
 - **Word (.docx)** — for editors and collaborators who live in Word: real heading styles, body text, scene breaks, and your endnotes gathered at the end.
 - **Print HTML** — the paginated interior from [Print interiors](/help/print-interiors), as a file.
+- **Print-ready PDF** — the interior to send to the printer, made by the Beuk server from the book on your desk, so you need to be signed in and online.
+- **Cover wrap** — front, spine and back in one PDF or JPG, from the Cover Maker, painted by the Beuk server.
+- **Submission manuscript** — a Word file in standard manuscript format, for querying agents and publishers.
+- **Audio Script for ACX** — narrator scripts in ACX order, from the opening to the closing credits, with a pronunciation guide, in one zip.
+
+The Word file, the submission manuscript and the print-ready PDF can each be downloaded locked: give a password, and the file opens only with it.
 
 ### Look inside before you ship
 

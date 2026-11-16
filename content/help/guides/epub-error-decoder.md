@@ -4,7 +4,7 @@ title: The EPUB error decoder
 blurb: A store rejected your file with a message written by a machine. Here's what it means, and the fix.
 group: ship
 audience: [shipping, hand-edit]
-updated: 2026-10-25
+updated: 2026-11-15
 readMinutes: 5
 related: [check-your-book, exports-and-archive]
 ---
@@ -91,4 +91,4 @@ What you're doing: translating. Stores reject files with messages written by mac
 
 **What it means:** The store ran the official EPUBCheck suite and something in it objected — the specific errors are always in the detail, sometimes one screen further down than the headline.
 
-**The fix:** find the detail and decode the first real error from it (the rest are often echoes). If the file came from Beuk and our [validator](/help/check-your-book) passed it, send us the store's full message — that gap is exactly what we want to know about. The full EPUBCheck suite itself runs on Beuk's servers in the SaaS phase.
+**The fix:** find the detail and decode the first real error from it (the rest are often echoes). If the file came from Beuk and our [validator](/help/check-your-book) passed it, send us the store's full message — that gap is exactly what we want to know about. To run the full EPUBCheck yourself, sign in, save the EPUB to **Your Archive** in the Export dialog, and choose **Run EPUBCheck** beside it.

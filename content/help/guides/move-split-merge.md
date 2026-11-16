@@ -4,7 +4,7 @@ title: Delete, split & merge chapters
 blurb: Reshape the book from a chapter's … menu — delete, duplicate, split and merge, each with Undo and a snapshot in History.
 group: write
 audience: [new]
-updated: 2026-10-26
+updated: 2026-11-15
 readMinutes: 3
 related: [import-a-manuscript, saving]
 new: true
@@ -19,7 +19,8 @@ What you're doing: reshaping the book — taking a chapter out, copying one, cut
 3. **Duplicate** makes a copy titled "… (copy)". Reader comments stay with the original.
 4. **Split at cursor** cuts the open section in two where your cursor is. Open the section, place the cursor where the second part should begin, then choose it. A heading at that spot becomes the new chapter's title, and footnotes travel with the text that cites them.
 5. **Merge with next** joins a section with the one after it, with a scene break between the two.
-6. Each of these takes its own snapshot and offers Undo. Once the notice has gone, the snapshot is still in **History**, where you can restore the whole book or a single section from it.
+6. To move a section, drag its card in the **Outline** tab, or use Alt + the arrow keys there.
+7. Each of these takes its own snapshot and offers Undo. Once the notice has gone, the snapshot is still in **History**, where you can restore the whole book or a single section from it.
 
 ## Explanation
 
@@ -38,6 +39,8 @@ A book always keeps at least one section, so the last one can't be deleted.
 ### Leaving a chapter out without deleting it
 
 The eye on a section's row (**Include in export**) leaves the section in the studio but out of the book: out of the exported files and out of the word total. Select it again to bring the section back.
+
+A front or back page with no words, picture or backdrop of its own is left out of every export by itself, and the sidebar marks it **Empty**. Generated pages (the cover, title pages, copyright and contents) are never left out.
 
 ### What the snapshots cost
 

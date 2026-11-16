@@ -50,3 +50,13 @@ test('zen calm: settings and pictures fold, the count and the tabs are not on sh
   assert.match(html, /body\.zen #panelContent > #editorArea \{ flex: 1 1 auto;/);
   assert.equal((html.match(/"zen\.paint\.pick": "/g) || []).length, 13);
 });
+
+test('zen calm: below 1024px the editor pane is the one Zen column, never the 0px first track', async () => {
+  // Regression (Nov 2026): 620e602 pins the panes to grid columns only at
+  // >= 1024px, so on narrower screens the three-track Zen grid (0 / 1fr / 0)
+  // auto-placed #pane-center into the 0px first track and the page vanished.
+  const html = await clientHtml();
+  const m = /@media \(max-width: 1023px\) \{\s*body\.zen:not\(\.zen-fading\) #panes \{ grid-template-columns: minmax\(0, 1fr\); \}\s*body\.zen:not\(\.zen-fading\) #panes #pane-center \{ grid-column: 1; \}/.exec(html);
+  assert.ok(m, 'narrow Zen collapses to one column with the editor in it');
+  assert.ok(html.indexOf(m![0]) > html.indexOf('body.zen #panes { grid-template-columns: 0px minmax(0, 1fr) 0px; }'), 'the narrow rule comes after the three-track rule');
+});

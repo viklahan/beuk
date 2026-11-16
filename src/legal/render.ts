@@ -25,8 +25,8 @@ import { pageChrome, repoRoot } from '../warmth/pages.js';
  *   {{slot}}                  filled from config after rendering.
  *
  * Operator slots (LEGAL_* in .env): a slot that is not set renders a
- * visible "being completed" notice in its place, and the page opens
- * with a box listing every unset slot. Nothing is ever invented.
+ * visible "will be published before launch" notice in its place, and the
+ * page opens with a short pre-launch note naming every unset slot. Nothing is ever invented.
  */
 
 export type LegalPage = 'privacy' | 'terms';
@@ -70,6 +70,10 @@ export interface LegalFlags {
   /** Scheduled local backups on (BACKUP_INTERVAL_HOURS > 0), and its opposite. */
   schedule: boolean;
   noschedule: boolean;
+  /** Operator details that are published (LEGAL_* set). Unset ones are
+   *  simply left out of the page, never shown as "to be completed". */
+  jurisdiction: boolean;
+  hosting: boolean;
 }
 
 /** What this server actually has switched on. billing = live billing,
@@ -85,6 +89,8 @@ export function legalFlags(config: Config): LegalFlags {
     mail: Boolean(config.smtpUrl && config.mailFrom),
     schedule: config.backupIntervalHours > 0,
     noschedule: !(config.backupIntervalHours > 0),
+    jurisdiction: Boolean(config.legal.jurisdiction),
+    hosting: Boolean(config.legal.hostingLocation),
   };
 }
 
@@ -100,7 +106,7 @@ export function applyConditionals(markdown: string, flags: LegalFlags): string {
  *  notice that stands inside a sentence takes `end = ''`, because the
  *  sentence brings its own full stop. */
 export function pendingNotice(what: string, end = '.'): string {
-  return `<span class="legal-pending" data-legal-pending>${esc(what)} has not been published yet — this part is being completed${end}</span>`;
+  return `<span class="legal-pending" data-legal-pending>${esc(what)} will be published here before Beuk opens to the public${end}</span>`;
 }
 
 interface Slot {
@@ -118,21 +124,15 @@ export function operatorSlots(config: Config): Record<'operator' | 'contact' | '
   };
 }
 
-/** The slots each page uses (the "being completed" box lists these). */
-const PAGE_SLOTS: Record<LegalPage, (keyof ReturnType<typeof operatorSlots>)[]> = {
-  privacy: ['operator', 'address', 'contact', 'hosting'],
-  terms: ['operator', 'address', 'contact', 'jurisdiction'],
-};
 
 function whoRuns(config: Config): string {
   const s = operatorSlots(config);
+  // Unset details are left out, not announced as pending.
   const name = s.operator.value
     ? `<p>Beuk is run by <strong>${esc(s.operator.value)}</strong>, who decides how the data described here is used (the "operator", or data controller).</p>`
-    : `<p>${pendingNotice(s.operator.label)}</p>`;
-  const address = s.address.value
-    ? `<p class="legal-address">Postal address: ${esc(s.address.value)}</p>`
-    : `<p>${pendingNotice(s.address.label)}</p>`;
-  return `<div class="legal-who">${name}${address}</div>`;
+    : '';
+  const address = s.address.value ? `<p class="legal-address">Postal address: ${esc(s.address.value)}</p>` : '';
+  return name || address ? `<div class="legal-who">${name}${address}</div>` : '';
 }
 
 function contactHtml(config: Config): string {
@@ -143,9 +143,7 @@ function contactHtml(config: Config): string {
 
 function jurisdictionHtml(config: Config): string {
   const j = config.legal.jurisdiction;
-  return j
-    ? `These terms are governed by the law of ${esc(j)}, without taking away any protection the law where you live gives you as a consumer.`
-    : pendingNotice(operatorSlots(config).jurisdiction.label);
+  return j ? `These terms are governed by the law of ${esc(j)}, without taking away any protection the law where you live gives you as a consumer.` : '';
 }
 
 function slugify(text: string): string {
@@ -172,11 +170,11 @@ export function renderLegalBody(page: LegalPage, doc: LegalDoc, config: Config):
   // Block slots sit alone in their paragraph.
   html = html
     .replace(/<p>\{\{whoruns\}\}<\/p>/g, () => whoRuns(config))
-    .replace(/<p>\{\{jurisdiction\}\}<\/p>/g, () => `<p>${jurisdictionHtml(config)}</p>`);
+    .replace(/<p>\{\{jurisdiction\}\}<\/p>/g, () => (config.legal.jurisdiction ? `<p>${jurisdictionHtml(config)}</p>` : ''));
   const o = config.offsite;
   const inline: Record<string, string> = {
     contact: contactHtml(config),
-    hosting: config.legal.hostingLocation ? `The server is located in ${esc(config.legal.hostingLocation)}` : pendingNotice(operatorSlots(config).hosting.label, ''),
+    hosting: config.legal.hostingLocation ? ` The server is located in ${esc(config.legal.hostingLocation)}.` : '',
     sessiondays: esc(String(config.sessionTtlDays)),
     backuphours: esc(String(config.backupIntervalHours)),
     keepdaily: esc(String(o.keepDaily)),
@@ -185,15 +183,8 @@ export function renderLegalBody(page: LegalPage, doc: LegalDoc, config: Config):
   };
   html = html.replace(/\{\{([a-z]+)\}\}/g, (m, key: string) => inline[key] ?? m);
 
-  const slots = operatorSlots(config);
-  const missing = PAGE_SLOTS[page].filter((k) => !slots[k].value).map((k) => slots[k].label);
-  const notice = missing.length
-    ? `<aside class="legal-incomplete" role="note" data-legal-incomplete>
-  <p><strong>This page is still being completed.</strong> These details have not been filled in yet:</p>
-  <ul>${missing.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>
-  <p>Everything else on this page describes what Beuk does today.</p>
-</aside>`
-    : '';
+  // No "in progress" box: an unset operator detail is simply not shown.
+  const notice = '';
   const date = config.legal.effectiveDate
     ? `<p class="legal-date">In effect from ${esc(humanDate(config.legal.effectiveDate))}.</p>`
     : doc.updated

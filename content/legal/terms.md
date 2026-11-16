@@ -62,12 +62,14 @@ The Ko-fi tip jar is entirely voluntary. A tip says thank you and buys nothing: 
 
 ## Leaving
 
-You can stop using Beuk at any time. Delete your books, exports and reading copies from the studio whenever you like. To delete your account, write to {{contact}} from the address on it. There's no self-serve button for that yet. The privacy page says how long copies can remain in backups.
+You can stop using Beuk at any time. Delete your books, exports and reading copies from the studio whenever you like. To delete your account, write to {{contact}} from the address on it. The privacy page says how long copies can remain in backups.
 
 ## Changes
 
 These terms may change as Beuk changes. The date at the top shows when they last did. If you keep using Beuk after a change, the new version applies.
 
+[[if jurisdiction]]
 ## The law that applies
 
 {{jurisdiction}}
+[[end]]

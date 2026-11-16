@@ -484,7 +484,7 @@
         { "from": "server", "code": "GET /read/:token", "text": "The reading period for this copy has ended." },
         { "from": "server", "code": "HTTP 410", "text": "this reading copy is closed" }
       ],
-      "cause": "The writer revoked this reading link, or its expiry date passed. Nothing is wrong on the reader's side. Comments left before then stay with the writer, on the writer's side of the link.",
+      "cause": "The writer revoked or closed this reading link, or its expiry date passed. Nothing is wrong on the reader's side. Comments left before then stay with the writer, on the writer's side of the link.",
       "steps": [
         "Ask the writer for a fresh link.",
         "No account is needed to read or comment."

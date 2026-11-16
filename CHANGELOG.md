@@ -4,11 +4,79 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-14 — Imports that keep their cover and stay out of your way
+
+- **An EPUB arrives with its cover.** Importing an EPUB used to leave its cover behind, even one Beuk had made itself, so a book you took out and brought back came in bare. The cover the EPUB declares now becomes your book's cover (JPG or PNG).
+- **Bulk import runs in the background.** Importing a folder of books used to redraw your shelf after every book, right above the import panel, so the list kept moving while you were asked to review it. The shelf now holds still while the batch runs and is drawn once when it is done. A small status chip outside the shelf shows how the import is going, so you can close the shelf and keep writing; when the batch is done it offers to open the shelf, and you can dismiss it at any time.
+- **Big illustrated books build on the server.** The store-ready EPUB and the cover wrap are built on Beuk's server, and a richly illustrated book could be turned away as too large before the build even began: one with 148 pictures, for example. Those builds now have a limit of their own, set by what the server can really build, instead of borrowing the smaller one your shelf uses.
+- **The Ramp says what you are looking at.** The Ramp now says plainly that it shows a few pages from each book, not the whole of any: a handful of spreads chosen to show the range. Help's header has a new Showcase link that takes you there.
+
+## 2026-11-10 — Locked manuscripts open
+
+- **A manuscript with a password opens.** Import a Word file or a PDF that is locked with a password, and Beuk now asks for the password instead of failing to read the file. It works in Import, Bulk import and Add a Book for box sets, and the file is unlocked in your browser.
+- **Cancel changes nothing.** Cancel the question and your book stays as it was; Bulk import marks that file "locked", and a box set leaves that volume out. A Word file locked with an older kind of protection says so.
+
+## 2026-11-09 — Two-step sign-in, and a record of what left the studio
+
+**Two-step sign-in**
+- **A code after your password.** Turn on two-step sign-in on your account page and Beuk asks, after your password, for a code from your authenticator app, or one of your 10 recovery codes. The studio's sign-in asks for it too.
+- **See where you are signed in.** Your account page lists your sign-ins, each with a short device label such as "Firefox on Windows" and when it was last active, so you can sign out a device you don't recognise.
+- **Security emails.** When this server can send email, Beuk tells you when your account is signed in to from a device none of your other sign-ins has used, when two-step sign-in is turned on or off, when a recovery code is used, and when new recovery codes are made.
+- Download all my data now includes whether two-step sign-in is on, how many recovery codes are left, and your sign-ins with their labels and dates. It never includes your key or your codes.
+
+**Your authorship record**
+- **Lock a backup with a password.** Export a backup can now lock the file. The locking happens in your browser: the password never leaves your device, and Beuk can't open the file without it.
+- **A backup says whether it was changed.** Open a backup and Beuk tells you whether it is untouched since it was exported: `Backup opened — "Your title". Untouched since …`. If the file was changed since, Beuk asks before opening it, and No leaves your desk exactly as it was. Older backups open as they always did.
+- **A dated stamp for every copy that leaves.** Signed in, each backup you export and each Word file you download leaves a small stamp on your account: a fingerprint of exactly that version of the book, its title, the kind of file and the time. It never holds your text. Your authorship record lists your stamps and the named readers you have shared with, and only you can see it.
+- Export a backup now makes one file per click, however quickly you press it.
+
+## 2026-11-08 — A reading link for each reader
+
+- **Named reading links.** Each reading copy in Share with beta readers now has a Readers list. Add a reader by name, with an expiry of their own, and they get a link that is theirs alone. Copy or close each reader's link by name, and once a named link exists you can close the open link too. Closing a link asks first, and revoking a copy that still has named links says so.
+- **The reader's name on every page.** A named copy says "Shared with" the reader's name and the date the link was made, and a faint stamp of the name sits behind the text, kept when the page is printed. If a page is ever passed on, you can tell whose copy it came from.
+- **Each reader sees only their own comments.** On a named link the comment form already carries the reader's name, and the reader sees their own comments, not other readers' names or words. In Reader comments, a comment from a named link is marked as such.
+- **When each link was opened.** Each reader's row says when they were added and when their link was first and last opened. Nothing else about their reading is recorded: no pages, no time spent, no IP address.
+
+## 2026-11-06 — Locked review copies
+
+- **Lock a copy before you send it.** The Word file, the submission manuscript and the print-ready PDF can now be downloaded locked with a password, for the editor, agent or printer who should be the only one to open it. The PDF is locked with 256-bit AES encryption; the Word file with the encryption Word itself uses, so Word asks for the password. For the print-ready PDF, choose Download locked copy.
+- **The password stays with you.** The lock is made in your browser and the password is never sent to Beuk. The password boxes empty themselves whenever the dialog closes.
+- It is optional: without a password, your downloads are exactly as before.
+
+## 2026-11-05 — Lighter typing, and box sets that keep every volume
+
+- **Typing while signed in is lighter.** Every keystroke used to redraw the account button and the shelf line with the same words, and the shelf dot pulsed the whole time you typed; together they slowed each key a little. Now they change only when what they say changes, and the dot holds still, in gold, while you type, and pulses again once you pause.
+- **Add a Book keeps every volume.** Adding several manuscripts to a box set (a Word file, a Markdown file, an EPUB, then a zip of three) could leave only the last book in the list. Every volume you add now stays. Adding a manuscript also no longer opens that volume's import report over the Export panel.
+- **Hyphens stay in titles taken from file names.** A file named "Tik-Tok of Oz.md" now becomes "Tik-Tok of Oz", not "Tik Tok of Oz". A name like my-book-title still reads as words.
+- **The book you have open stays linked to your shelf.** A bulk import, or adding a manuscript to a box set, could unlink the book on your desk from its shelf copy, so its next save put a second copy of it on your shelf. It now stays linked.
+- **A new book never takes over another's shelf copy.** If a shelf save was still on its way when you opened a book that had never been on your shelf, the new book could be tied to the first book's shelf copy and overwrite it on its next edit. Each save is now matched to the book on your desk as well.
+- **A first visit opens once.** On a first visit the studio could reload itself a moment after opening. It now reloads only when a new Beuk replaces an older one.
+- **Error reports carry none of your words.** If you turned on error reports in Project Settings, a report now carries only the kind of error, its help code and where in Beuk's code it happened. The error's own message, which could quote your book, is no longer sent.
+
+## 2026-11-01 — The front page as a tour
+
+- **One scene at a time.** On a wide window, beuk.studio's front page is now a tour of twelve scenes instead of one long scroll: Welcome, the six ports, Ports of call, the Manifest, Take the helm, the Proof, and Come home. Move on with the dots on the tour bar, Back and Next, the arrow or Page keys, one turn of the wheel, a swipe, or a click on the scene itself. It never moves by itself, and every scene has its own link.
+- Nothing was cut: every word and picture of the old page is in a scene. Phones, short windows and browsers without JavaScript keep the one long page.
+- **The Outline board in right-to-left languages.** Alt + Down now always moves a card later and Alt + Up earlier, in right-to-left interface languages too; Left and Right still follow the reading direction.
+
+## 2026-10-31 — Running heads that print, back-page starters, and true screens
+
+- **Running heads print.** In Beuk's print PDF, a chapter-title running head came out empty: a 917-page novel had one on none of its 820 body pages. And "No head on opening pages" took the head off no opening at all. Beuk's print renderer now sets the head on every page, the same words the Print Interior View shows, and every section's opening page prints bare, front and back matter included.
+- **Back matter heads its own pages.** The later pages of About the author or Acknowledgments now carry that page's own title in the head, not the last chapter's. A chapter can have a short running head in place of a long title, and a head still too wide is cut at a word with an ellipsis, so it always stays on one line.
+- **Starters for the back pages.** An empty About the author, Acknowledgments, Also by, Call to action or Colophon page offers starter texts in your book's language. Pick one to preview it; Use puts it on the page with your name, title and series filled in, and selects the first `[[blank]]` for you to fill. A `[[blank]]` left anywhere in the book is flagged by the EPUB check and the print preflight.
+- **Empty pages are left out.** A front or back page with no words, picture or backdrop of its own is now left out of every export: EPUB, print, Word, Markdown, HTML, the submission manuscript, box sets and the narrator script. The sidebar marks it Empty. The cover, title pages, copyright and contents are never left out.
+- **Each e-reader as its screen shows it.** The device preview now draws black-and-white e-ink in greys (every Kindle but the Colorsoft, the Kobo Clara BW and the Kobo Forma), colour e-ink a little muted, and LCD and OLED screens in full colour. The Kobo frames used to show full colour on black-and-white screens. The Kindle Colorsoft joins the devices, and one line under the frame explains a grey screen.
+- **Importing over a shelf book makes a new book.** Importing a manuscript while a shelf book was open used to save the import over that shelf book on the next save. An import is now a book of its own: the shelf book stays as it was, and the replace question says so.
+- **The roadmap as a board.** beuk.studio/roadmap now lays its items out in columns: In progress, Planned in the order it will be built, Exploring, and Shipped by date, each with its first line and the rest under More. The roadmap and this changelog wear Help's header, and Open the studio takes you to the studio.
+- **The cover's back colour reaches across the fold** of a dust jacket, and spine icons keep a small margin from the edges, so a narrow spine no longer sits on the store's limit.
+- **Caife at dawn.** On the support page, the thank-you note now falls onto a dawn sea, past a lighthouse on the headland, a ship in the haze and a few gulls, printed with the paper's grain.
+
 ## 2026-10-31 — Room for research
 
 - **A book with many pictures and files types as quickly as an empty one.** Beuk saves your book on your device a moment after you stop typing. It used to save every picture and research file again each time, so a book holding 25 MB of them stalled typing for about a tenth of a second on every save, and for nearly half a second on a slower computer. Each picture and file is now saved on your device once, when it arrives; after that a save takes a few thousandths of a second however much you keep. Your device also keeps one copy of each instead of two, so the book takes half the room. Backups, exports and your shelf copy are unchanged and still carry everything.
 - **More room for research.** A book now keeps up to 100 MB of research files, 25 MB each (it was 25 MB, 10 MB each), and up to 200 files.
 - **Said plainly if a picture is lost.** If a picture or file ever can't be read back from your device, Beuk opens your book with all its writing, says how many are missing, and suggests a backup or your shelf copy.
+
 ## 2026-10-31 — 21 days free, store-ready files from the server, and the spine and back cover
 
 **21 days free, then one plan** (once billing is switched on; until then everything stays open and no price is shown)
@@ -28,6 +96,51 @@ to make well.
 **Fixes**
 - An uploaded font now shows on the cover, in the preview and in the downloaded wrap. Before, covers fell back to Georgia.
 - The new controls and messages are translated into all 13 interface languages.
+
+## 2026-10-30 — EPUB import, a new book in one click, and the Lighthouse
+
+**Bringing books in**
+- **Import an EPUB.** The Import button now takes an .epub. Beuk reads its title, author and reading order, and reads each page by what it says it is: a chapter, a part, a prologue, a dedication. An EPUB Beuk made comes back exactly, with its chapter numbers, titles and subtitles, Parts, letters, verse, logs, margin notes, notes and pictures with their captions. A page that says nothing about itself is read by its headings, as a Word book is. The cover, title pages and contents are left out, because Beuk builds its own, and a book under DRM is refused.
+- **EPUBs, PDFs and zips wherever a manuscript goes.** Bulk import and a box set's Add a Book now take EPUBs, PDFs and zips, and read every file with the same reader as the Import button, so they get every import fix too. A zip opens into its files, with Mac and system clutter left out and anything unreadable named. The Import button takes a zip of one manuscript and points a zip of several to Bulk import or a box set.
+- **Start a new book.** A new button beside the sample's Remove clears the desk for a new book. The book on it goes into History first ("Before starting a new book"), and a book on your shelf stays there just as it is; the new book becomes a shelf book of its own once it has words. It asks first, and says where your old book is kept.
+- **A book Beuk wrote comes back as it was.** Importing a Word file Beuk made keeps sub-headings inside their chapter and chapters inside their Parts, leaves contents lines and the frontispiece out of the chapters, reads "Part One: Ebb" as Part One titled Ebb, and puts subtitles and endnotes back where they belong. Importing a PDF Beuk printed keeps italic subtitles, sub-headings, the notes at a chapter's end as footnotes, monospace logs, and sideways and upside-down text.
+- **PDFs read like the books they are.** A PDF's bookmarks now name its headings, so a diary of 42 dated entries no longer arrives as four month-long chapters. A diary or ledger set in a larger hand stays inside its chapter instead of becoming chapters of its own: one novel came in with 39 chapters for its 30, and now has 30. A title page, a setting note or an author's note never becomes chapter 1, letter-spaced capitals close up into their words, and a drop cap rejoins its word.
+- **Names keep their spaces.** A title set in spaced capitals no longer arrives with its words run together, and a line break inside a Word or EPUB heading reads as a space. If a title, byline or chapter title still looks run together, the import report names it and offers a one-click Use.
+
+**In the studio**
+- **The sample shows everything.** The Lantern Coast now has three Parts and every feature Beuk sets, each one carrying story: a private letter, a ledger in columns with an upside-down confession, lamp signals as texts, a transcript of the vote, a chant as verse, a dated log inside its chapter, a redacted notice, a sideways tide table, lists, a margin note and a plate caption. Its chapter titles, numbers and paragraphs are unchanged.
+- **Zen: the manuscript and nothing else.** In Zen the chapter's settings and pictures fold behind one line, the word count waits until you point at the bottom bar, and Zen always opens on the manuscript. Behind the page, the harbour sketch gives way to an ink painting you choose in the scene changer: Bliss, Calm, Mind or Sakura. They work offline, the day's light still eases over a long session, and in Candlelight the painting is drawn light on the dark.
+
+**Around the site**
+- **The Lighthouse on the Help home.** Help's status line is now a night harbour under the search box. The lighthouse is Beuk's server: its beam sweeps while the server answers, flickers amber when a part needs a look, and goes dark if the server doesn't answer. Each part is a named buoy, green, orange or red; point at one or tap it for the server's own words. There is a ship in the fog, and a button that sends a shooting star. It checks every 30 seconds and draws only while you can see it; with reduced motion it holds still, and where it can't be drawn the plain reading opens instead. On a phone, the buoys' names no longer pile up or run off the edge.
+- **The Bowmarket.** The School has a bookshop: books and box sets set in Beuk, each shown as a 3D book with pages and illustrations from inside it, newest first. On its shelves: the Crashlanders and Frost Line sets, What You See?, The Raven from Darkness, The Cheese Bandit Diaries, Kleos, The Devil's Ledger and The Ninth Finger.
+
+## 2026-10-29 — The Notebook, the plot grid, and Compare
+
+**The Notebook**
+- **Research, ideas and scraps, kept with the book.** A new Notes tool in the sidebar opens your book's Notebook: notes with a title, an optional folder and text, grouped by folder, with search across every note. Pin a note to sections, and the notes pinned to the section on your desk come first. Every name your Covenant knows is found in a note, with a count, and opens its entry. Delete has Undo. The sample comes with three notes, each pinned to the chapters its facts come from.
+- **Research files.** A note can carry the files it was written about (pictures, PDFs, recordings, video clips and text) and the link it came from, and each one opens inside the Notebook. On your shelf, each file is uploaded once. Notes and their files are never exported and never counted as words.
+
+**The Outline**
+- **The Grid.** A third Outline view beside Cards and List: your sections down the side, your Covenant's entries across the top, and in each square how often that name appears in that section, shaded against its busiest one. Click a square and the desk opens on the first mention. The status and tag filters narrow the rows. There is nothing to type in, and nothing is stored.
+- **Plot threads.** The Grid's first columns are your own plot threads. Add one from the bar above the grid, rename it in its header, or remove it there with Undo. Each square is a note on what that thread does in that section, and every story section has a row, even one with no words yet. The sample comes with three threads.
+- **Custom fields.** Make your own text, list, checkbox and date fields in a Custom fields panel, shown in every Outline view; rename or remove them, with Undo. Every card and list row gets a control for each field, and the Grid gets a column for each. They are notes for you: never exported, never counted.
+
+**History and import**
+- **Compare.** In History, every Changed row under "Since this snapshot" has a Compare button: the section as the snapshot holds it against the section now, struck through where words have gone and underlined where words are new, with counts of words added and removed. "Changes only" folds the paragraphs that didn't change; "Whole section" shows them. The sample loads with a snapshot of its own, "Chapter One, an earlier draft", to try it on.
+- **Import RTF.** Manuscripts saved as RTF from Word, Scrivener, TextEdit or LibreOffice now import, with their headings, italic and bold, links, footnotes, lists, PNG and JPEG pictures, and the title and author. The import report works as it does for Word: tables are left out with Undo, and comments, tracked deletions and page headers are listed. Bulk import and box sets take .rtf too.
+- **An import takes the desk whole.** Importing into a desk that held a book used to mix the two: the old book's front and back matter, title and author stayed beside the new one. Now the old book goes into History and the import lands on a fresh book. Before the file is read, a warning names what will be cleared and that History keeps a copy; Keep leaves your book exactly as it was. The typography you chose stays. The new book now brings its own title and author, in place of the 26 October rule that kept a title you had typed.
+- **Front and back matter stay out of the chapters.** In a manuscript that numbers its chapters, an unnumbered heading before chapter one is now front matter (the title page lifted out, a "For …" line the dedication, anything else a preface), and one after the last chapter is back matter (a sneak peek becomes a call to action, anything else an appendix).
+- **Bad files are refused plainly.** An empty or unreadable text file is refused and a broken Word file says so, with your desk left as it was. Invisible control characters are cleaned out of every import, while emoji and the scripts that need joining characters keep them. Volume and Book headings become Part dividers.
+
+**Room on the desk**
+- **Fold the columns away.** A tab on each edge folds away the left column or the reader, and the editor takes the room; the same tab brings it back. Your choice is kept on this device. Phones keep their tabs.
+- **The chapter list stays in reach** with the statistics open on a short laptop screen; the statistics scroll inside themselves instead.
+- **Removing the sample leaves nothing behind.** An untouched sample no longer counts as edited once its pictures arrive, and an empty desk shows no page totals.
+
+**The site catches up**
+- **Beta readers, pictured.** The features page now shows the reader's page and the studio's Reader comments window in two real screenshots, beside an illustration labelled "An illustration, not a screenshot".
+- **Comparisons brought up to date.** The pages comparing Beuk with other tools no longer say Beuk has no plot grid, outline, story notebook, character profiles or deadline maths. What Beuk still doesn't do stays listed.
 
 ## 2026-10-29 — Buy the maker a caife
 
@@ -357,6 +470,7 @@ _The trial is now 21 days, and the store-ready files pause after it: see 31 Octo
   they gather — offered as words to look at, never as mistakes.
 - **Quick on long books.** Insights remember a book until it changes, and
   repeated phrases in a long book are found far faster.
+
 ## 2026-10-26 — The preview stays on your page
 
 - **Formatting no longer throws the preview back to page 1.** Making a

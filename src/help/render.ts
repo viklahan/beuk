@@ -1,6 +1,6 @@
 import type { Config } from '../config.js';
 import { escapeHtml as esc } from '../warmth/markdown.js';
-import { BRAND_FOOTNOTE, BRAND_SUBLINE, billingGateHtml, kofiJarHtml, supportBlocks, supportNavHtml } from '../warmth/pages.js';
+import { BRAND_FOOTNOTE, BRAND_SUBLINE, billingGateHtml, kofiJarHtml, supportBlocks, supportNavHtml, SITE_FOOT_LINKS } from '../warmth/pages.js';
 import { helpAssetUrl } from './assets.js';
 import {
   ERROR_CATEGORIES,
@@ -198,7 +198,8 @@ export function chrome(
   const footLinks: string[] = [];
   if (config.supportEmail) footLinks.push(`<a href="mailto:${esc(config.supportEmail)}">${esc(config.supportEmail)}</a>`);
   footLinks.push('<a href="/help/#founders">Founders\' Shelf</a>');
-  footLinks.push('<a href="/privacy">Privacy</a>', '<a href="/terms">Terms</a>');
+  // The full site link set (same as every other page), so Help never strands a reader.
+  for (const [href, label] of SITE_FOOT_LINKS) footLinks.push(`<a href="${href}">${label}</a>`);
   return `<!doctype html>
 <html lang="en">
   <head>
