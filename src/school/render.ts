@@ -174,13 +174,13 @@ ${opts.body}
 /* ------------------------------ home ------------------------------ */
 
 function courseCard(ctx: SchoolCtx, c: Course): string {
-  const shot = c.lessons.length ? firstShot(ctx, c.lessons[0]) : null;
+  const shot = c.cover ?? (c.lessons.length ? firstShot(ctx, c.lessons[0]) : null);
   const total = c.lessons.reduce((n, l) => n + lessonLength(ctx, l).minutes, 0);
   const anyVideo = c.lessons.some((l) => lessonMedia(ctx, l)?.video);
   const anyAudio = c.lessons.some((l) => lessonMedia(ctx, l)?.audio);
   const fmts = [anyVideo ? 'Watch' : '', anyAudio ? 'Listen' : '', 'Read'].filter(Boolean).join(', ');
   return `<a class="cc" href="/school/${esc(c.slug)}" data-stages="${esc(c.stages.join(' '))}" data-course="${esc(c.slug)}">
-          <span class="thumb">${shot ? `<img src="${esc(shot)}" alt="" loading="lazy" />` : `<span class="spec">${esc(c.title)}</span>`}</span>
+          <span class="thumb${c.cover ? ' cover' : ''}">${shot ? `<img src="${esc(shot)}" alt="" loading="lazy" />` : `<span class="spec">${esc(c.title)}</span>`}</span>
           <span class="meta"><b>Course</b> · ${c.lessons.length} lessons · about ${total} min · ${esc(fmts)}</span>
           <span class="t">${esc(c.title)}</span>
           <span class="b">${esc(c.blurb)}</span>

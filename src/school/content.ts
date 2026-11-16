@@ -15,7 +15,8 @@ import { repoRoot } from '../warmth/pages.js';
  * course.md front matter: title, blurb, order (number), stages ([idea,
  * draft, ship] — the landing page's "where are you with your book"), and
  * setup (what the recorder does before each lesson: `sample` loads the
- * sample story, `empty` leaves the desk empty). Body: the lede.
+ * sample story, `empty` leaves the desk empty), and an optional cover (a
+ * /site/… image for the course card). Body: the lede.
  *
  * Lesson file:
  *
@@ -78,6 +79,8 @@ export interface Course {
   slug: string;
   title: string;
   blurb: string;
+  /** Optional course cover (a site-root path, e.g. /site/school/maiden-voyage.webp); else the first lesson's first screenshot. */
+  cover: string | null;
   order: number;
   stages: Stage[];
   setup: 'sample' | 'empty';
@@ -117,6 +120,16 @@ function frontMatter(source: string, file: string): { meta: Record<string, unkno
     meta[line.slice(0, i).trim()] = parseValue(line.slice(i + 1));
   }
   return { meta, body: text.slice(fm[0].length) };
+}
+
+/** `cover:` must be a plain site-root image path; anything else is a content error. */
+function coverOf(meta: Record<string, unknown>, file: string): string | null {
+  const v = meta.cover;
+  if (v === undefined || v === null || v === '') return null;
+  if (typeof v !== 'string' || !/^\/site\/[a-z0-9/_-]+\.(webp|jpg|jpeg|png)$/i.test(v.trim())) {
+    throw new Error(`${file}: "cover" must be a /site/… image path (webp, jpg or png)`);
+  }
+  return v.trim();
 }
 
 function str(meta: Record<string, unknown>, key: string, file: string): string {
@@ -258,6 +271,7 @@ export function loadSchoolContent(lang: SchoolLang = 'en'): SchoolContent {
       slug,
       title: str(meta, 'title', cfile),
       blurb: str(meta, 'blurb', cfile),
+      cover: coverOf(meta, cfile),
       order: typeof meta.order === 'number' ? meta.order : 99,
       stages: stages as Stage[],
       setup,

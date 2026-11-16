@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { readZip } from '../src/housekeeping/packages.js';
@@ -226,3 +226,21 @@ test('Housekeeping self-checks: School content parses clean, the progress table 
   await new Promise((r) => setTimeout(r, 20));
   await assert.rejects(run('school.media.manifests-whole'), /screenshot named in the manifest is missing/);
 });
+
+test('a course cover, when set, is a real file under client/ and leads the course card', async () => {
+  const c = loadSchoolContent('en');
+  for (const course of c.courses) {
+    if (!course.cover) continue;
+    assert.ok(existsSync(path.join(root, 'client', course.cover)), `${course.slug} cover ${course.cover} exists`);
+  }
+  assert.equal(c.courseBySlug.get('maiden-voyage')?.cover, '/site/school/maiden-voyage.webp');
+  const db = await createTestDb();
+  const s = await startTestServer(db);
+  try {
+    const { html } = await getPage(s.base, '/school');
+    assert.match(html, /<a class="cc" href="\/school\/maiden-voyage"[^>]*>\s*<span class="thumb cover"><img src="\/site\/school\/maiden-voyage\.webp" alt="" loading="lazy" \/><\/span>/);
+  } finally {
+    await s.close();
+  }
+});
+

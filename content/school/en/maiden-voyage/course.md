@@ -1,6 +1,7 @@
 ---
 title: Maiden Voyage
 blurb: The whole studio in twelve short lessons, from bringing a manuscript in to a book that passes its checks.
+cover: /site/school/maiden-voyage.webp
 order: 1
 stages: [idea, draft, ship]
 setup: sample
