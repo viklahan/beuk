@@ -211,7 +211,7 @@ test('Housekeeping self-checks: School content parses clean, the progress table 
   const config = testConfig();
   const ctx = buildCheckContext(db, config);
   const run = (id: string) => SELF_CHECK_CASES.find((c) => c.id === id)!.run!(ctx);
-  assert.match(await run('school.content.parses-clean'), /1 course\(s\), 12 lesson\(s\)/);
+  assert.match(await run('school.content.parses-clean'), /2 course\(s\), 18 lesson\(s\)/);
   assert.match(await run('school.schema.progress-table'), /0 lesson\(s\) marked done/);
   // No media on this server: reported as not configured, never as a pass.
   await assert.rejects(run('school.media.manifests-whole'), (e: unknown) => e instanceof NotConfigured);
@@ -220,7 +220,7 @@ test('Housekeeping self-checks: School content parses clean, the progress table 
   writeFileSync(path.join(dir, 'video.mp4'), 'x');
   writeFileSync(path.join(dir, 'step-1.jpg'), 'x');
   writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ video: { file: 'video.mp4', seconds: 60 }, shots: ['step-1.jpg'] }));
-  assert.match(await run('school.media.manifests-whole'), /1 of 12 lessons have video, 0 have audio/);
+  assert.match(await run('school.media.manifests-whole'), /1 of 18 lessons have video, 0 have audio/);
   // A manifest naming a screenshot that is not there fails the check.
   writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ video: { file: 'video.mp4', seconds: 60 }, shots: ['step-1.jpg', 'step-2.jpg'] }));
   await new Promise((r) => setTimeout(r, 20));
@@ -242,7 +242,8 @@ test('a course cover, when set, is a real file under client/ and leads the cours
     // Sectioned: the course sits in its band, with its level and counts.
     assert.match(html, /<section class="band" aria-labelledby="sec-1">\s*<div class="band-h">\s*<h2 id="sec-1">Start here<\/h2>\s*<p>The whole studio, end to end, on one book\.<\/p>/);
     assert.match(html, /<span class="lv" title="Level: Novice"><span class="bars" aria-hidden="true"><i class="on"><\/i><i><\/i><i><\/i><\/span>Novice<\/span><span class="n">12 lessons<\/span>/);
-    assert.doesNotMatch(html, /Make it print|Books in company/, 'a band with no course yet is not shown');
+    assert.match(html, /<h2 id="sec-2">Make it print<\/h2>[\s\S]*?href="\/school\/print-properly"/, 'the second band holds Print, properly');
+    assert.doesNotMatch(html, /Books in company/, 'a band with no course yet is not shown');
   } finally {
     await s.close();
   }
@@ -259,6 +260,17 @@ test('sections.md: names in order, each with a blurb; a course must name a liste
   assert.throws(() => parseSections('stray\n## A\nx\n', 'x.md'), /before the first/);
   assert.deepEqual(parseSections('<!-- a\nnote -->\n## A\nx\n', 'x.md'), [{ name: 'A', blurb: 'x' }]);
   const c = loadSchoolContent('en');
-  assert.deepEqual(c.sections.map((s) => s.name), ['Start here']);
+  assert.deepEqual(c.sections.map((s) => s.name), ['Start here', 'Make it print']);
+  const pp = c.courseBySlug.get('print-properly');
+  assert.ok(pp);
+  assert.equal(pp.lessons.length, 6);
+  assert.equal(pp.level, 'beginner');
+  for (const l of pp.lessons) {
+    assert.equal(l.guide, 'print-interiors');
+    for (const [i, st] of l.steps.entries()) {
+      assert.ok(st.say.length > 10, `${l.slug} step ${i + 1} is narrated`);
+      assert.ok(st.shots.some((cmd) => cmd.verb === 'show' || cmd.verb === 'click'), `${l.slug} step ${i + 1} points at something`);
+    }
+  }
   assert.equal(c.courseBySlug.get('maiden-voyage')?.level, 'novice');
 });
