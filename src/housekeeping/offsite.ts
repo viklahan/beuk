@@ -346,7 +346,7 @@ export class OffsiteBackups {
       scratch = await mkdtemp(path.join(os.tmpdir(), 'beuk-drill-'));
       const restore = await this.restic(settings, ['restore', snap.id, '--target', scratch]);
       if (restore.code !== 0) throw this.fail('restore', restore);
-      const dir = path.join(scratch, snap.paths[0]);
+      const dir = restoredPath(scratch, snap.paths[0]);
       const problems = await verifyRestoredBackup(dir, this.config);
       const name = path.basename(snap.paths[0]);
       result = problems.problems.length
@@ -367,6 +367,21 @@ export class OffsiteBackups {
     } satisfies DrillStatus, this.deps.secrets);
     return result;
   }
+}
+
+/** Where restic's `restore --target` puts a backed-up absolute path.
+ *  restic reproduces the original tree under the target: on POSIX,
+ *  /a/b lands at <target>/a/b (join with an absolute second segment
+ *  concatenates, which matches). On Windows the drive keeps its letter
+ *  but loses the colon: C:\a\b lands at <target>\C\a\b — observed with
+ *  restic 0.19.1 on Windows (snapshot JSON records "C:\a\b", the
+ *  restored tree starts at "<target>\C\"), 2026-11-17. A naive join
+ *  would embed a literal "C:" path component, which Windows refuses. */
+function restoredPath(target: string, snapshotPath: string): string {
+  const shape = process.platform === 'win32'
+    ? snapshotPath.replace(/^([A-Za-z]):/, '$1')
+    : snapshotPath;
+  return path.join(target, shape);
 }
 
 function emptyOffsite(): OffsiteStatus {
