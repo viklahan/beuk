@@ -1,0 +1,79 @@
+# Off-box down-alert for Beuk prod (rocket), run on GitHub-hosted runners so
+# it keeps working when rocket - the single point of failure - does not.
+#
+# What it does: probes the three public endpoints (app health includes a real
+# `select 1` against Postgres, so one GET covers tunnel + app + db). A probe
+# only counts as DOWN after 3 attempts 20s apart. On failure it opens (or
+# comments on) a "downtime"-labeled issue - that is the alert channel: issue
+# + @mention -> GitHub notification email. No SMTP, no third-party service,
+# no new credentials. A later green run closes the issue with a recovery note.
+#
+# Cost: private-repo Actions bill per job, rounded UP to a whole minute.
+# At */30 cadence this is ~1,440 of the 2,000 free monthly minutes (Linux 1x).
+# If CI ever needs the budget, relax the cron to '0 * * * *' (~720/month).
+#
+# GitHub cron is UTC and best-effort (runs can lag a few minutes - fine for a
+# down-alert). Nothing here runs until this file is on the default branch.
+
+name: uptime
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    # Default job timeout is 360 minutes; a hung probe must never bill that.
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ENDPOINTS: |
+        https://beuk.studio/api/health
+        https://mcp.beuk.studio/healthz
+        https://beuk.studio/
+    steps:
+      - name: Probe endpoints and alert
+        run: |
+          fails=""
+          while IFS= read -r url; do
+            [ -z "$url" ] && continue
+            ok=""
+            for try in 1 2 3; do
+              code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$url" 2>/dev/null) || code="000"
+              if [ "$code" = "200" ]; then ok=1; break; fi
+              echo "attempt $try on $url -> $code"
+              if [ "$try" -lt 3 ]; then sleep 20; fi
+            done
+            if [ -z "$ok" ]; then fails="$fails- $url -> last status: $code\n"; fi
+          done <<< "$ENDPOINTS"
+
+          utc=$(date -u +'%Y-%m-%d %H:%M UTC')
+          open=$(gh issue list -R "$GITHUB_REPOSITORY" --label downtime --state open --json number --jq '.[0].number // empty')
+
+          if [ -n "$fails" ]; then
+            {
+              printf 'Probes failed at %s (each endpoint tried 3 times, 20s apart):\n\n' "$utc"
+              printf '%b\n' "$fails"
+              printf 'Run: %s/%s/actions/runs/%s\n\ncc @viklahan\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            } > body.md
+            if [ -n "$open" ]; then
+              gh issue comment "$open" -R "$GITHUB_REPOSITORY" --body-file body.md
+            else
+              gh label create downtime -R "$GITHUB_REPOSITORY" --color B60205 \
+                --description "Prod down-alert (uptime workflow)" --force
+              gh issue create -R "$GITHUB_REPOSITORY" --title "beuk.studio prod DOWN" \
+                --label downtime --body-file body.md
+            fi
+            exit 1
+          fi
+
+          echo "all green at $utc"
+          if [ -n "$open" ]; then
+            gh issue close "$open" -R "$GITHUB_REPOSITORY" \
+              --comment "All probes green again at $utc - closing."
+          fi
