@@ -140,3 +140,28 @@ test('a key saved without a model stores null and shows none', async () => {
     await server.close();
   }
 });
+
+test('a whitespace-only model is stored as null', async () => {
+  const { server, client } = await boot();
+  try {
+    const put = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-abcd1234', model: '   ' });
+    assert.equal(put.status, 200);
+    const status = await client.get('/api/aris/status');
+    assert.ok(!(status.body.keys as Record<string, unknown>[])[0].model);
+  } finally {
+    await server.close();
+  }
+});
+
+test('a model of exactly 200 chars passes', async () => {
+  const { server, client } = await boot();
+  try {
+    const m = 'm'.repeat(200);
+    const put = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-abcd1234', model: m });
+    assert.equal(put.status, 200);
+    const status = await client.get('/api/aris/status');
+    assert.equal((status.body.keys as { model?: string }[])[0].model, m);
+  } finally {
+    await server.close();
+  }
+});

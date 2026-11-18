@@ -160,7 +160,7 @@
     var model = el("input", { type: "text", name: "model", placeholder: "Model (optional)", "aria-label": "Model", maxlength: "200", autocomplete: "off", spellcheck: "false" });
     r2m.appendChild(model);
     form.appendChild(r2m);
-    form.appendChild(el("p", { "class": "aris-hint" }, "Optional. Leave blank for the provider's default. For Gemini: choose openai-compat, set the base URL to https://generativelanguage.googleapis.com/v1beta/openai and a current Gemini model from Google's model list."));
+    form.appendChild(el("p", { "class": "aris-hint" }, "Optional for OpenRouter and Anthropic — leave blank to use Aris's default model. Required for a Gemini or other OpenAI-compatible key: set the base URL to https://generativelanguage.googleapis.com/v1beta/openai and a current Gemini model from Google's model list."));
     sel.addEventListener("change", function () { r2.hidden = sel.value !== "openai-compat"; });
     var save = el("button", { type: "submit" }, "Save key");
     var r3 = el("div", { "class": "aris-row" });
