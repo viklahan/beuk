@@ -1,4 +1,9 @@
-# WWAI — Write With AI (design)
+# Aris — Write With AI (design)
+
+**Aris** (ἄριστος — the best, the noblest; in epic poetry the *aristeia*
+is a hero's finest hour) is the writer-facing name, chosen by V
+2026-11-17. "WWAI" survives only as the internal engine term; env vars
+ship as `ARIS_*`.
 
 Drafted 2026-11-17 from the brainstorm with V; builder-checked the same
 evening (one defect fixed: the ai_writes schema contradiction) and every
@@ -109,7 +114,7 @@ Model picked per-writer, remembered per-lens.
 ### BYOK key handling (my call — V can overrule)
 
 Per-writer, encrypted at rest (AES-256-GCM under a server
-`WWAI_KEY_SECRET`), shown-once on save, one-click delete, never logged,
+`ARIS_KEY_SECRET`), shown-once on save, one-click delete, never logged,
 excluded from backups' plaintext surface, revoked on account deletion.
 Alternative considered and rejected: session-only paste-per-visit
 (safer, but kills the mobile/second-device story and writers will paste
@@ -117,7 +122,7 @@ keys into worse places).
 
 ### The enable/disable seam (law 1)
 
-- Server: `WWAI_ENABLED` env, default **off**. Unset ⇒ `/api/wwai/*`
+- Server: `ARIS_ENABLED` env, default **off**. Unset ⇒ `/api/wwai/*`
   404s, exactly like billing's unset⇒501 pattern.
 - Writer: per-account opt-in in settings, default off. Both must be on.
 - Client: the pane is one lazily-loaded module behind one mount-point
@@ -211,12 +216,55 @@ Exactly one WWAI surface exists at a time. **Host: Studio 2.0**
 built once, in the editor that has a future; it ships with or just
 after the 2.0 cutover and is never built into `client/`.
 
+## The persona (V + brainstorm, 2026-11-17)
+
+Aris is **the noblest reader your book will ever have** — not a
+ghostwriter, not a muse, not a coach. It has read every page, remembers
+what the writer decreed in the covenants, knows their cadence from the
+insights — and waits outside the room until called. The character IS
+the four laws worn as personality: never present uninvited; never
+touches the pen (it hands you pages — the pen is yours); never pretends
+to know. The grounding tiers speak in character: "here is where I read
+it" (SOURCED), "I counted it myself" (CALCULATED), "I believe, but
+cannot prove it — verify before print" (unverified). The product
+promise in one Greek word: you summon Aris to reach your *aristeia* —
+your best pages.
+
+**One file, two faces:** `aris-persona.md` — the behavior, nature and
+skill set — renders the public page AND seeds every lens's system
+prompt. The Aris writers read about and the Aris the model is
+instructed to be are the same text by construction; drift is
+structurally impossible.
+
+**Voice modes — Laconic (default) / Homeric.** One dial, set on the
+Aris page. Laconic: terse, clinical findings. Homeric: full first
+person wherever Aris speaks. Identical capabilities in both — the dial
+changes voice, never power (same models, same lenses, same tiers;
+anything else would be lying with a toggle). In BOTH modes, voice never
+enters the manuscript: a ghost-text proposal is pure prose with no
+wrapper and no commentary — the book never catches Aris's accent. The
+dial governs only the talking surfaces: workshop, drawer findings,
+research answers, status lines. Implementation: one dimension on the
+persona prompt, not a second UI.
+
+**The page — beuk.studio/aris.** Public, and the ONLY place AI is ever
+explained: the persona, the covenant of nevers, the summoning gestures,
+BYOK setup for all three adapters, the plain-words privacy note — and
+**the opt-in toggle lives there and nowhere else**. The desk never
+shows an "enable AI" switch; you meet Aris before you can invite it.
+The page doubles as the acquisition wedge ("meet the AI that never
+fabricates"). Idle mark: a thin laurel sprig.
+
+**Restraint rule:** lenses stay functionally named in the UI (beat,
+continue, audit — no Greek-named buttons). The persona lives in Aris's
+voice and on its page; the desk stays a desk.
+
 ## Phases (each closes on evidence, binary exit)
 
 **Help docs are part of every phase (V, 2026-11-17):** each phase's
 features land with their matching guide in Beuk's Help, written in the
 house voice, and every new page/table is classified in the three guard
-registries before the phase can close. The WWAI help set also carries
+registries before the phase can close. The /aris page carries
 the plain-words privacy note (what travels to the writer's provider,
 under whose key) and the BYOK setup walkthrough (getting an OpenRouter
 or Anthropic key, what it costs, how to revoke it).
@@ -224,12 +272,14 @@ or Anthropic key, what it costs, how to revoke it).
 - **Phase W1 — the seam + BYOK + Draft lens.** Env gate, opt-in, key
   vault, provider seam (OpenRouter + Anthropic), the summon menu +
   selection toolbar + ghost-proposal mechanics (beat, continue, fill,
-  rewrite/expand/condense), `ai_writes` migration + audit.
+  rewrite/expand/condense), `ai_writes` migration + audit, the /aris
+  page built from `aris-persona.md` (persona, covenant, BYOK setup,
+  privacy note, opt-in, voice dial).
   *Exit:* on the bench, a writer completes a scene with their own key and
-  the row is in `ai_writes`; with `WWAI_ENABLED` unset there is zero WWAI
-  surface anywhere and the full suite is green; deleting the WWAI client
-  module leaves the studio compiling; the Help guide for writing with
-  WWAI + BYOK setup is live and registered.
+  the row is in `ai_writes`; with `ARIS_ENABLED` unset there is zero Aris
+  surface anywhere and the full suite is green; deleting the Aris client
+  module leaves the studio compiling; the /aris page is live and
+  classified in the three guard registries.
   Summarize-section ships in W1 too (my call): it is a one-shot Draft
   action, and NovelCrafter parity's cheapest item.
 - **Phase W2 — the Workshop room** (my call on ordering: it is
@@ -275,14 +325,19 @@ billing.
 1. **Host studio: 2.0** (`studio/`) — V. Built once, in the editor with
    a future; never into `client/`.
 2. **Key custody: encrypted server vault** — V. AES-256-GCM under
-   `WWAI_KEY_SECRET`, show-once, one-click delete, excluded from backup
+   `ARIS_KEY_SECRET`, show-once, one-click delete, excluded from backup
    plaintext, dies with the account.
 3. **Workshop chat: its own full view**, not the drawer — V, mockup
    session.
-4. **Naming: V is choosing the writer-facing name himself.** "WWAI" is
-   the working token, all help copy is written name-agnostic, and W1
-   cannot CLOSE — though it can build — until the name lands, because
-   the Help guides carry it.
+4. **Name: Aris** — V, 2026-11-17 (ἄριστος; collision scan clean in the
+   writing-tool space, formal trademark screen stays on V's pre-launch
+   list). The naming block on W1's close is resolved.
+7. **Voice modes: Laconic (default) / Homeric** — V proposed the
+   two-mode dial; names from the brainstorm. Voice-only, identical
+   capabilities, set on the Aris page.
+8. **The Aris page** (beuk.studio/aris) is the sole home of AI
+   explanation AND the opt-in; generated from `aris-persona.md`, the
+   same file that seeds the system prompts.
 5. **Providers v1: OpenRouter + Anthropic direct + generic
    OpenAI-compatible** (V challenged the two-provider draft 2026-11-17;
    the compat adapter covers direct ChatGPT/DeepSeek/Grok/Mistral/Gemini
