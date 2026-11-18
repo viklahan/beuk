@@ -84,9 +84,27 @@ The LLM call goes through the app (`/api/wwai/*`), not browser→provider:
 ### Provider seam
 
 `WWAIProvider` interface (chat + optional web-search capability flag +
-streaming). v1 ships **OpenRouter** (one key, hundreds of models, browser
-of model prices) and **Anthropic direct**. Later: OpenAI direct, Ollama
-(the $0 local path). Model picked per-writer, remembered per-lens.
+streaming). The seam's promise: a new provider is one adapter file, the
+core never changes. v1 ships THREE adapters (V, 2026-11-17):
+
+1. **OpenRouter** — the aggregator: one key routes to Gemini, Grok,
+   DeepSeek, GPT, Mistral, Claude, Llama and hundreds more. This is the
+   "every model" answer on day one.
+2. **Anthropic direct** — first-class web search for the SOURCED tier,
+   one less hop for prose, no aggregator fee.
+3. **Generic OpenAI-compatible** — writer-supplied base URL + key;
+   covers direct keys for OpenAI, DeepSeek, Grok/xAI, Mistral and
+   Gemini's compat endpoint with a single adapter. Honest limit, which
+   the tier system already renders: through the compat layer these
+   mostly cannot produce SOURCED — their fact answers wear the
+   unverified label rather than fake citations. The builder verifies
+   each vendor's compat endpoint against current docs at W1 time.
+
+Later, on demand: native Gemini/OpenAI adapters (full search grounding),
+Ollama (the $0 local path). The real marginal cost of a native adapter
+is streaming event shapes + tool-call formats + search-citation wiring
++ its slice of the lens×provider test matrix — never core changes.
+Model picked per-writer, remembered per-lens.
 
 ### BYOK key handling (my call — V can overrule)
 
@@ -265,10 +283,13 @@ billing.
    the working token, all help copy is written name-agnostic, and W1
    cannot CLOSE — though it can build — until the name lands, because
    the Help guides carry it.
-5. My calls, standing unless V overrules: server-side proxy placement;
-   OpenRouter + Anthropic as v1 providers; `ai_writes` records facts
-   not policy; summarize ships in W1; Workshop room is W2 (parity
-   before differentiation).
+5. **Providers v1: OpenRouter + Anthropic direct + generic
+   OpenAI-compatible** (V challenged the two-provider draft 2026-11-17;
+   the compat adapter covers direct ChatGPT/DeepSeek/Grok/Mistral/Gemini
+   keys in one file).
+6. My calls, standing unless V overrules: server-side proxy placement;
+   `ai_writes` records facts not policy; summarize ships in W1;
+   Workshop room is W2 (parity before differentiation).
 
 ## What's left to the builder
 
