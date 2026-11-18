@@ -270,7 +270,7 @@ under whose key) and the BYOK setup walkthrough (getting an OpenRouter
 or Anthropic key, what it costs, how to revoke it).
 
 - **Phase W1 — the seam + BYOK + Draft lens.** Env gate, opt-in, key
-  vault, provider seam (OpenRouter + Anthropic), the summon menu +
+  vault, provider seam (OpenRouter + Anthropic direct + generic OpenAI-compatible), the summon menu +
   selection toolbar + ghost-proposal mechanics (beat, continue, fill,
   rewrite/expand/condense), `ai_writes` migration + audit, the /aris
   page built from `aris-persona.md` (persona, covenant, BYOK setup,
@@ -282,6 +282,20 @@ or Anthropic key, what it costs, how to revoke it).
   classified in the three guard registries.
   Summarize-section ships in W1 too (my call): it is a one-shot Draft
   action, and NovelCrafter parity's cheapest item.
+  *W1 build evidence (2026-11-18), on 014b94b:* server `npm run test:bench`
+  1069 tests, 1053 pass, 0 fail, 0 cancelled, 16 skipped (no site-pages
+  flake). Studio `npm run build` clean (tsc + vite); studio `npx vitest run`
+  1055 tests, 1043 pass, 3 FAIL, 9 skipped (115/117 files pass) -- the 3
+  failures are open findings, not closed: test/cloud-7b-selfchecks.test.ts
+  (2: bulk self-check count 9 vs expected 7; `renderShelfList is not
+  defined`) and test/look.test.ts (colour literals in `aris/aris.css`:
+  #19e3e3, rgba(, #0a0c10 outside tokens.css). Structural seam: on a
+  scratch branch with `studio/src/aris` removed and both `// aris mount`
+  Shell lines deleted, `tsc --noEmit -p tsconfig.build.json` compiled
+  clean (exit 0); branch restored and deleted. Remaining for the EXIT: V's
+  live bench run with a real key (scene completion + `ai_writes` row) and
+  the /aris page walked in a browser -- the W1 exit closes on V's hand, not
+  this note.
 - **Phase W2 — the Workshop room** (my call on ordering: it is
   NovelCrafter's flagship and V prioritized parity; audits are ours
   alone and can follow). Chat view, context chips (chapter, covenants,
