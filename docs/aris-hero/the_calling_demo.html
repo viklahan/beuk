@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Calling — live demo</title>
+<style>
+  * { margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg, #0a1317); overflow: hidden; font-family: Georgia, serif; }
+  canvas { display: block; cursor: grab; }
+  canvas.dragging { cursor: grabbing; }
+  .hint { position: fixed; left: 50%; transform: translateX(-50%); text-align: center; color: var(--hint, rgba(238,241,234,.5));
+          font-size: 13px; letter-spacing: .25em; text-transform: uppercase; pointer-events: none;
+          transition: opacity .8s ease; }
+  #hintTop { top: 5vh; }
+  #hintBottom { bottom: 6vh; }
+  .line { position: fixed; bottom: 11vh; width: 100%; text-align: center; color: var(--text, #eef1ea); pointer-events: none;
+          font-size: clamp(20px, 3vw, 34px); opacity: 0; transition: opacity 1.4s ease; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="hint" id="hintTop">the calling · live demo</div>
+<div class="hint" id="hintBottom">click or scroll to call · drag (either button) to orbit</div>
+<div class="line" id="line">Aris waits at your threshold.</div>
+
+<script>
+'use strict';
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const hintBottom = document.getElementById('hintBottom'), line = document.getElementById('line');
+let W, H;
+
+/* The studio's own tokens (studio/src/generated/tokens.css), so the hero
+   belongs on both themes. Candlelight: emissive motes, additive glow on the
+   dark stage. Paper: additive light is impossible on a light page, so the
+   motes become rich inks on bone — same calling, daylight telling.
+   Pick with ?theme=paper / ?theme=candlelight; otherwise the OS decides. */
+const THEMES = {
+  candlelight: {
+    bg: '#0a1317', fade: 'rgba(10,19,23,0.42)', comp: 'lighter',
+    motes: ['#d6a94f', '#ffd98a', '#5fb0c9', '#7fbf8f', '#c29ad0', '#eef1ea'],
+    text: '#eef1ea', hint: 'rgba(238,241,234,.5)', baseAlpha: 0.25, alphaGain: 0.55,
+  },
+  paper: {
+    bg: '#eceee0', fade: 'rgba(236,238,224,0.45)', comp: 'source-over',
+    motes: ['#14607a', '#22333a', '#a87e2c', '#2f6f45', '#7d4f86', '#b3352b'],
+    text: '#22333a', hint: 'rgba(34,51,58,.55)', baseAlpha: 0.45, alphaGain: 0.5,
+  },
+};
+const themeName = new URLSearchParams(location.search).get('theme')
+  || (matchMedia('(prefers-color-scheme: light)').matches ? 'paper' : 'candlelight');
+const T = THEMES[themeName] || THEMES.candlelight;
+document.documentElement.style.setProperty('--bg', T.bg);
+document.documentElement.style.setProperty('--text', T.text);
+document.documentElement.style.setProperty('--hint', T.hint);
+
+const PALETTE = T.motes;
+const N = 22000;            // "millions (not really)"
+const R_SHELL = 340;        // the sphere the burst lives inside
+const DEPTH_A = 46;         // thickness of the dense letter slab
+const DEPTH_WORD = 30;
+
+// ---- sample filled text into 3D points (dense, not outline) ----
+function textPoints(text, fontPx, count, depth) {
+  const off = document.createElement('canvas');
+  off.width = 1200; off.height = 500;
+  const o = off.getContext('2d');
+  o.fillStyle = '#fff';
+  o.font = `bold ${fontPx}px Georgia, serif`;
+  o.textAlign = 'center'; o.textBaseline = 'middle';
+  o.fillText(text, 600, 250);
+  const img = o.getImageData(0, 0, 1200, 500).data;
+  const hits = [];
+  for (let y = 0; y < 500; y += 2) for (let x = 0; x < 1200; x += 2)
+    if (img[(y * 1200 + x) * 4 + 3] > 90) hits.push([x - 600, y - 250]);
+  const pts = [];
+  for (let i = 0; i < count; i++) {
+    const [x, y] = hits[(Math.random() * hits.length) | 0];
+    pts.push({
+      x: (x + Math.random() * 2) * 0.9,
+      y: (y + Math.random() * 2) * 0.9,
+      z: (Math.random() - 0.5) * depth,
+    });
+  }
+  return pts;
+}
+const SHAPE_A   = textPoints('A', 420, N, DEPTH_A);
+const SHAPE_WORD = textPoints('Aris', 260, N, DEPTH_WORD);
+
+// ---- motes ----
+const motes = [];
+for (let i = 0; i < N; i++) {
+  // born on the shell, so the very first seconds are already the calling
+  const t = Math.random() * Math.PI * 2, p = Math.acos(2 * Math.random() - 1);
+  motes.push({
+    x: R_SHELL * Math.sin(p) * Math.cos(t),
+    y: R_SHELL * Math.sin(p) * Math.sin(t),
+    z: R_SHELL * Math.cos(p),
+    vx: 0, vy: 0, vz: 0,
+    c: PALETTE[(Math.random() * PALETTE.length) | 0],
+    s: Math.random() * 1.6 + 0.6,
+  });
+}
+
+// ---- states: 'A' forming -> (call) -> 'burst' -> 'word' forming ----
+let state = 'A', burstUntil = 0;
+window.__calling = {
+  get state() { return state; },
+  get yaw() { return yaw; },
+  get pitch() { return pitch; },
+  get nA() { return SHAPE_A.length; },
+  get a0() { return SHAPE_A.slice(0, 2); },
+  setYaw(v) { yaw = v; autoSpin = false; },
+  call: () => call(),
+};
+function call() {
+  if (state === 'burst') return;
+  state = 'burst';
+  burstUntil = performance.now() + 1500;
+  for (const m of motes) {
+    const d = Math.hypot(m.x, m.y, m.z) || 1;
+    const k = (9 + Math.random() * 13) / d;     // radial blast, randomized
+    m.vx += m.x * k + (Math.random() - .5) * 7;
+    m.vy += m.y * k + (Math.random() - .5) * 7;
+    m.vz += m.z * k + (Math.random() - .5) * 7;
+  }
+  hintBottom.style.opacity = '0';
+}
+
+// ---- orbit camera (drag with either button; wheel/scroll also calls once) ----
+let yaw = 0, pitch = 0, autoSpin = true, dragging = false, px = 0, py = 0;
+cv.addEventListener('contextmenu', (e) => e.preventDefault());
+cv.addEventListener('pointerdown', (e) => { dragging = true; px = e.clientX; py = e.clientY; cv.classList.add('dragging'); cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  yaw += (e.clientX - px) * 0.005; pitch += (e.clientY - py) * 0.005;
+  pitch = Math.max(-1.3, Math.min(1.3, pitch));
+  autoSpin = false; px = e.clientX; py = e.clientY;
+});
+let moved = false;
+cv.addEventListener('pointermove', () => { if (dragging) moved = true; });
+cv.addEventListener('pointerdown', () => { moved = false; });
+cv.addEventListener('pointerup', (e) => {
+  dragging = false; cv.classList.remove('dragging');
+  if (!moved) call();                            // a clean click calls
+});
+let scrolled = false;
+window.addEventListener('wheel', () => { if (!scrolled) { scrolled = true; call(); } }, { passive: true });
+
+// ---- simulation + render ----
+function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
+window.addEventListener('resize', resize); resize();
+
+let last = performance.now();
+function tick(now) {
+  const dt = Math.min((now - last) / 16.6, 2.5); last = now;
+
+  if (state === 'burst' && now > burstUntil) {
+    state = 'word';
+    line.style.opacity = '1';
+  }
+  if (autoSpin && state === 'word') yaw += 0.0012 * dt;
+
+  const target = state === 'A' ? SHAPE_A : state === 'word' ? SHAPE_WORD : null;
+  for (let i = 0; i < N; i++) {
+    const m = motes[i];
+    if (target) {
+      const t = target[i];
+      m.vx += (t.x - m.x) * 0.014 * dt; m.vx *= 0.90;
+      m.vy += (t.y - m.y) * 0.014 * dt; m.vy *= 0.90;
+      m.vz += (t.z - m.z) * 0.014 * dt; m.vz *= 0.90;
+    } else {
+      m.vx *= 0.985; m.vy *= 0.985; m.vz *= 0.985;   // burst coasts
+    }
+    m.x += m.vx * dt; m.y += m.vy * dt; m.z += m.vz * dt;
+    const d = Math.hypot(m.x, m.y, m.z);
+    if (d > R_SHELL) {                               // the circle holds them
+      const k = R_SHELL / d;
+      m.x *= k; m.y *= k; m.z *= k;
+      m.vx *= -0.4; m.vy *= -0.4; m.vz *= -0.4;
+    }
+  }
+
+  // project + draw (additive glow on candlelight; plain ink on paper)
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = T.fade;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = T.comp;
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const F = 900, CAMZ = 620, cx = W / 2, cyc = H / 2;
+  for (let i = 0; i < N; i++) {
+    const m = motes[i];
+    let x = m.x * cy + m.z * sy, z1 = -m.x * sy + m.z * cy;
+    let y = m.y * cp - z1 * sp,  z = m.y * sp + z1 * cp;
+    const pz = CAMZ - z;
+    if (pz < 60) continue;
+    const s = F / pz;
+    const sx = cx + x * s, sy2 = cyc + y * s;
+    if (sx < -4 || sx > W + 4 || sy2 < -4 || sy2 > H + 4) continue;
+    const r = Math.max(m.s * s, 0.6);
+    ctx.globalAlpha = Math.min(0.9, T.baseAlpha + s * T.alphaGain);
+    ctx.fillStyle = m.c;
+    ctx.fillRect(sx - r / 2, sy2 - r / 2, r, r);
+  }
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

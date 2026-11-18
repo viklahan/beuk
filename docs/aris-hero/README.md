@@ -1,8 +1,22 @@
-# The Calling — Aris hero launchpad (Blender)
+# The Calling — Aris hero launchpad (Blender + live demo)
 
 Direction C from the 2026-11-18 mockup session: vivid motes in chaos that
-answer the call and form a shape. These files are V's Blender starting
-point; the web page gets built around whatever comes out of here.
+answer the call and form a shape. V's storyboard: a dense **A** → a click
+or scroll bursts it inside its sphere → the motes settle as the name
+**Aris** → the visitor orbits it 360°. These files are V's playground;
+the /aris page gets built around what comes out of here.
+
+## The live demo (the page engine, proven)
+
+`the_calling_demo.html` — self-contained, no dependencies, double-click
+to run (or serve it; both work). 22k motes, the full storyboard, drag
+with either button to orbit. **Theme-aware with the studio's own tokens**
+(studio/src/generated/tokens.css): `?theme=candlelight` = emissive glow
+on the dark stage; `?theme=paper` = rich inks on bone (additive light is
+impossible on a light page, so Paper gets a pointillist telling of the
+same calling); no query = the OS decides. Knobs at the top of the file:
+`N`, `R_SHELL`, `THEMES` (palettes), fonts in the two `textPoints` calls,
+spring constant `0.014` for settle speed.
 
 ## Files
 
@@ -16,13 +30,13 @@ point; the web page gets built around whatever comes out of here.
 | `proof2_*.png` | Earlier laurel-formed / swarm proofs. |
 | `proof_*.png`, `proof3-6_*` | The debugging trail, kept honest: AgX wash-out, flat text, the Domain Size / Sample Curve dead ends. |
 
-## The two controls
+## The two controls (the .blend)
 
-On **Motes → modifier “TheCalling”**:
+Word-only since 2026-11-18 (V's call). On **Motes → modifier “TheCalling”**:
 
 - **Calling** — `0.0` chaos cloud → `1.0` formed. Keyframed 1→120; play = the calling.
-- **Target** — object dropdown: **ArisLaurel**, **LetterA**, **WordAris**.
-  Any curve object works; pick anything.
+- **Target** — object dropdown, default **WordAris**. Any curve object
+  works; the laurel is one line away in the script (`build_laurel()`).
 
 ## How it works (one idea)
 

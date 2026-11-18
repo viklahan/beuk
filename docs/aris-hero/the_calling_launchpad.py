@@ -133,7 +133,7 @@ def build_text_target(name, text, size, z):
     return obj
 
 
-def build_motes(laurel):
+def build_motes(target_obj):
     mesh = bpy.data.meshes.new("MotesBase")
     obj = bpy.data.objects.new("Motes", mesh)
     bpy.context.scene.collection.objects.link(obj)
@@ -218,8 +218,8 @@ def build_motes(laurel):
     L(realize.outputs["Geometry"], setmat.inputs["Geometry"])
     L(setmat.outputs["Geometry"], gout.inputs["Geometry"])
 
-    # default target: the laurel (switch to LetterA / WordAris on the modifier)
-    mod[target_sock.identifier] = laurel
+    # default target: the name (any curve object can take its place)
+    mod[target_sock.identifier] = target_obj
 
     # a play-through IS the calling: 0 at frame 1, formed by frame 120
     ident = calling.identifier
@@ -276,10 +276,10 @@ def build_stage():
 def main():
     for ob in list(bpy.data.objects):
         bpy.data.objects.remove(ob, do_unlink=True)
-    laurel = build_laurel()
-    build_text_target("LetterA", "A", 9.0, 0.6)
-    build_text_target("WordAris", "Aris", 4.5, 2.2)
-    build_motes(laurel)
+    # Word-only (V, 2026-11-18): the motes form the name. The laurel is one
+    # line away if ever wanted back: laurel = build_laurel(); point Target at it.
+    word = build_text_target("WordAris", "Aris", 4.5, 2.2)
+    build_motes(word)
     build_stage()
     here = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else bpy.path.abspath("//") or os.getcwd()
     out = os.path.join(here, "the_calling.blend")
