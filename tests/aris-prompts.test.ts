@@ -145,3 +145,38 @@ test('covenant entries stay whole and stop at the covenant budget', () => {
   assert.ok(block.split('\n').every((l) => /^- character · Name\d+: n{80}$/.test(l)), 'no entry is split');
   assert.ok(block.includes('Name0') && !u.includes('Name199'), 'kept in the order given');
 });
+
+test('a cursor inside a surrogate pair snaps back so the pair never splits', () => {
+  const text = 'Snow 🌲 fell.';
+  const inside = text.indexOf('🌲') + 1; // between the high and low surrogate
+  const u = userText(buildDraftPrompt({ ...base, action: 'continue', sectionText: text, cursorOffset: inside }));
+  const before = /<text_before>\n([\s\S]*?)\n<\/text_before>/.exec(u)![1];
+  const after = /<text_after>\n([\s\S]*?)\n<\/text_after>/.exec(u)![1];
+  assert.equal(before, 'Snow ');
+  assert.equal(after, '🌲 fell.');
+  assert.ok(!/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(u), 'no lone surrogate anywhere');
+});
+
+test('the page states what is not here yet, the BYOK walkthrough and the upper bound of what travels', () => {
+  const { page, core } = loadPersona();
+  assert.doesNotMatch(page, /has read every page/i);
+  assert.match(page, /reads what you show it/);
+  assert.match(page, /not here yet/);
+  assert.match(page, /the passage you selected and the text around it, or the passage around your cursor/);
+  assert.match(page, /openrouter\.ai\/keys/);
+  assert.match(page, /platform\.claude\.com/);
+  assert.match(page, /revoke it at the provider/i);
+  assert.match(page, /spending limit/);
+  assert.match(page, /never included in a backup/);
+  assert.match(page, /passes your request on to the model you picked/);
+  assert.doesNotMatch(page + core, /—/, 'dash-free house style');
+  assert.match(core, /In what you add, never contradict a covenant entry/);
+  assert.doesNotMatch(core, /follow the covenant/);
+});
+
+test('selection actions are told to keep the stated facts of the selection', () => {
+  for (const action of ['rewrite', 'expand', 'condense'] as const) {
+    const u = userText(buildDraftPrompt({ ...base, action, sectionText: 'A b c.', selection: { text: 'b' } }));
+    assert.match(u, /Keep every fact it states/, action);
+  }
+});

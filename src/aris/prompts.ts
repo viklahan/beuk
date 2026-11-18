@@ -36,11 +36,11 @@ const TASKS: Record<DraftAction, string> = {
   summarize:
     'Summarize <section> in plain prose: what happens, who is present, what changes. Use the book\'s names and tense. The summary only: no heading, no list, no opinion.',
   rewrite:
-    'Rewrite <selection>. Keep its events, its meaning and its point of view; make it read better in this book\'s voice. Your passage replaces <selection> exactly, so it must join <text_before> and <text_after> without a seam.',
+    'Rewrite <selection>. Keep its events, its meaning and its point of view; make it read better in this book\'s voice. Keep every fact it states (names, numbers, places, who did what), even where it disagrees with the covenant. Your passage replaces <selection> exactly, so it must join <text_before> and <text_after> without a seam.',
   expand:
-    'Expand <selection>: the same events, given more room, with more of what is seen, heard and felt, in this book\'s voice. Add no new plot. Your passage replaces <selection> exactly, so it must join <text_before> and <text_after> without a seam.',
+    'Expand <selection>: the same events, given more room, with more of what is seen, heard and felt, in this book\'s voice. Add no new plot. Keep every fact it states (names, numbers, places, who did what), even where it disagrees with the covenant. Your passage replaces <selection> exactly, so it must join <text_before> and <text_after> without a seam.',
   condense:
-    'Condense <selection> into fewer words. Keep every event and every line of dialogue that carries the story; drop what repeats. Your passage replaces <selection> exactly, so it must join <text_before> and <text_after> without a seam.',
+    'Condense <selection> into fewer words. Keep every event and every line of dialogue that carries the story; drop what repeats. Keep every fact it states (names, numbers, places, who did what), even where it disagrees with the covenant. Your passage replaces <selection> exactly, so it must join <text_before> and <text_after> without a seam.',
 };
 
 const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim();
@@ -69,9 +69,8 @@ export function windowAround(text: string, start: number, end: number, rest: num
   const room = Math.max(0, rest);
   const beforeAvail = start;
   const afterAvail = text.length - end;
-  let takeBefore = Math.min(beforeAvail, Math.max(Math.floor(room / 2), room - afterAvail));
+  const takeBefore = Math.min(beforeAvail, Math.max(Math.floor(room / 2), room - afterAvail));
   const takeAfter = Math.min(afterAvail, room - takeBefore);
-  takeBefore = Math.min(beforeAvail, room - takeAfter);
   let from = start - takeBefore;
   let to = end + takeAfter;
   if (from > 0 && from < start && isLow(text.charCodeAt(from))) from += 1;
@@ -106,6 +105,8 @@ export function buildDraftPrompt(o: DraftPromptInput): ArisMessage[] {
 
   // Where the window is anchored: the selection span, or the cursor (default: end of section).
   let start = o.cursorOffset ?? text.length;
+  // A cursor inside a surrogate pair snaps back one unit, so the pair never splits across text_before/text_after.
+  if (start > 0 && start < text.length && isHigh(text.charCodeAt(start - 1)) && isLow(text.charCodeAt(start))) start -= 1;
   let end = start;
   if (selected) {
     const at = locateSelection(text, sel, o.cursorOffset);
