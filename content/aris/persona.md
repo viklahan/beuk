@@ -27,7 +27,7 @@ The name is Greek. *Aristos* (ἄριστος) means the best, the noblest. In t
 
 Once Aris is on, the studio shows one dim laurel mark in the toolbar. That is all of it.
 
-- Type **/** in your manuscript for the menu: write a beat, continue the story, fill a gap, summarize a section.
+- Type **/** on an empty line in your manuscript for the menu: write a beat, continue the story, fill a gap, summarize a section.
 - Select a passage to rewrite it, expand it or condense it.
 - Whatever Aris writes appears as pale text where it would go. **Insert** takes it. **Edit first** lets you change it before it goes in. **Discard** sends it away, and **retry** asks again.
 
@@ -35,9 +35,9 @@ Every passage you insert is written into your book the same way as your own typi
 
 ### Your key, in plain words
 
-Aris runs on a model you choose, with a key you bring. Beuk never pays for the model and never sees the bill.
+Aris runs on a key you bring, from the provider you pick; Aris chooses a sensible model for it. Beuk never pays for the model and never sees the bill.
 
-1. **Get a key.** For OpenRouter, which reaches hundreds of models with one key, sign in at openrouter.ai/keys and create one; if you use OpenRouter, it passes your request on to the model you picked. For Anthropic, create one at platform.claude.com. Any other service that speaks the OpenAI-compatible standard gives you a key in its own console, along with the address to paste beside it.
+1. **Get a key.** For OpenRouter, which reaches hundreds of models with one key, sign in at openrouter.ai/keys and create one; if you use OpenRouter, it passes your request on to the model Aris chose for it. For Anthropic, create one at platform.claude.com. Any other service that speaks the OpenAI-compatible standard gives you a key in its own console, along with the address to paste beside it.
 2. **Know what it costs.** You pay the provider's own price per token, straight to the provider, for what you use. Set a spending limit at the provider if it offers one; it is worth the minute.
 3. **Paste it here.** Beuk keeps your key encrypted on its server. You see it once, when you save it. It is never written to a log and never included in a backup, so after a restore you paste it again. It is deleted with your account.
 4. **Revoke it when you are done.** Delete the key here with one click, then revoke it at the provider too. Deleting it here stops Beuk using it; revoking it there stops everyone.

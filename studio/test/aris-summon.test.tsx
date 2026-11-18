@@ -11,6 +11,7 @@ import { resetEditorExtras } from '../src/editor/extras';
 import { cloudFacts, resetCloudFacts } from '../src/closure/index';
 import { mountAris } from '../src/aris/index';
 import { setArisFetch } from '../src/aris/net';
+import { setInsertRetryMs } from '../src/aris/flow';
 import { insertFailure, resetArisState } from '../src/aris/state';
 import { DEFAULT_MODELS } from '../src/aris/propose';
 
@@ -48,6 +49,7 @@ function fakeFetch(): typeof fetch {
 
 const editors: Editor[] = [];
 beforeEach(() => {
+  setInsertRetryMs(0);
   calls = [];
   drafts = [];
   insertReply = { status: 202, body: { recorded: true } };
@@ -340,16 +342,64 @@ describe('aris summon', () => {
     expect(editorText(ed).text).toBe('');
   });
 
-  it('a failed insert record keeps the writer’s text and says so quietly', async () => {
+  it('insert record: 500 then 202 on the retry shows no notice', async () => {
     await mountAris(null);
     const { ed } = mount('');
-    insertReply = { status: 409, body: { error: 'this proposal is already recorded' } };
+    const replies = [{ status: 500, body: { error: 'x' } }, { status: 202, body: { recorded: true } }];
+    const f = fakeFetch();
+    setArisFetch(((p: string, i?: RequestInit) => (p === '/api/aris/insert' ? (calls.push({ path: p, body: null }), Promise.resolve(new Response(JSON.stringify(replies[0].body), { status: replies.shift()!.status }))) : f(p, i))) as unknown as typeof fetch);
+    await summonContinue(ed);
+    button(ghost(), 'Insert').click();
+    await settle();
+    await settle();
+    expect(posted('/api/aris/insert')).toHaveLength(2);
+    expect(insertFailure()).toBeNull();
+    expect(ghost()).toBeNull();
+  });
+
+  it('insert record: 500 then 409 on the retry is success, no notice', async () => {
+    await mountAris(null);
+    const { ed } = mount('');
+    const replies = [500, 409];
+    const f = fakeFetch();
+    setArisFetch(((p: string, i?: RequestInit) => (p === '/api/aris/insert' ? (calls.push({ path: p, body: null }), Promise.resolve(new Response('{"error":"dup"}', { status: replies.shift()! }))) : f(p, i))) as unknown as typeof fetch);
+    await summonContinue(ed);
+    button(ghost(), 'Insert').click();
+    await settle();
+    await settle();
+    expect(posted('/api/aris/insert')).toHaveLength(2);
+    expect(insertFailure()).toBeNull();
+    expect(ghost()).toBeNull();
+  });
+
+  it('insert record: both attempts fail shows a dismissible notice', async () => {
+    await mountAris(null);
+    const { ed } = mount('');
+    insertReply = { status: 500, body: { error: 'down' } };
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     await summonContinue(ed);
     button(ghost(), 'Insert').click();
     await settle();
+    await settle();
+    expect(posted('/api/aris/insert')).toHaveLength(2);
     expect(editorText(ed).text).toBe('The rain came.');
-    expect(insertFailure()).toBe('this proposal is already recorded');
+    expect(ghost()!.querySelector('[data-aris="notice"]')!.textContent).toMatch(/did not reach Beuk/);
+    button(ghost(), 'Discard').click();
+    expect(ghost()).toBeNull();
+    warn.mockRestore();
+  });
+
+  it('a failed insert record keeps the writer’s text and says so quietly', async () => {
+    await mountAris(null);
+    const { ed } = mount('');
+    insertReply = { status: 500, body: { error: 'the record store is down' } };
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await summonContinue(ed);
+    button(ghost(), 'Insert').click();
+    await settle();
+    await settle();
+    expect(editorText(ed).text).toBe('The rain came.');
+    expect(insertFailure()).toBe('the record store is down');
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
   });

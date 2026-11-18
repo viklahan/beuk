@@ -56,7 +56,7 @@ export function arisRoutes(db: Db, config: Config): Router {
   async function loadStatus(userId: number | string): Promise<ArisStatus> {
     const [keyRows, settings] = await Promise.all([
       db.query<{ provider: string; key_last4: string; base_url: string | null }>(
-        'select provider, key_last4, base_url from aris_keys where user_id = $1 order by provider',
+        'select provider, key_last4, base_url from aris_keys where user_id = $1 order by created_at, provider',
         [userId],
       ),
       db.query<{ opted_in: boolean; voice: Voice }>('select opted_in, voice from aris_settings where user_id = $1', [
@@ -270,10 +270,10 @@ export function arisRoutes(db: Db, config: Config): Router {
   router.post('/insert', requireOptIn, async (req, res, next) => {
     try {
       const b = (req.body ?? {}) as Record<string, unknown>;
-      const isBytes = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0;
+      const isBytes = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 2147483647;
       if (typeof b.token !== 'string' || !b.token) return res.status(400).json({ error: 'token is required' });
       if (!isBytes(b.bytesBefore) || !isBytes(b.bytesAfter))
-        return res.status(400).json({ error: 'bytesBefore and bytesAfter must be non-negative integers' });
+        return res.status(400).json({ error: 'bytesBefore and bytesAfter must be integers from 0 to 2147483647' });
       if (typeof b.writerEdited !== 'boolean') return res.status(400).json({ error: 'writerEdited must be a boolean' });
 
       const p = verifyProposalToken(config.arisKeySecret!, b.token);
@@ -340,6 +340,10 @@ export function arisRoutes(db: Db, config: Config): Router {
         }
         if (parsed.protocol !== 'https:') {
           res.status(400).json({ error: 'baseUrl must be an https URL' });
+          return;
+        }
+        if (parsed.username || parsed.password) {
+          res.status(400).json({ error: 'the base URL must not carry credentials' });
           return;
         }
         baseUrl = parsed.toString();

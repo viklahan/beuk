@@ -168,7 +168,7 @@ test('the page states what is not here yet, the BYOK walkthrough and the upper b
   assert.match(page, /revoke it at the provider/i);
   assert.match(page, /spending limit/);
   assert.match(page, /never included in a backup/);
-  assert.match(page, /passes your request on to the model you picked/);
+  assert.match(page, /passes your request on to the model Aris chose for it/);
   assert.doesNotMatch(page + core, /—/, 'dash-free house style');
   assert.match(core, /In what you add, never contradict a covenant entry/);
   assert.doesNotMatch(core, /follow the covenant/);

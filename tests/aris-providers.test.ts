@@ -145,7 +145,7 @@ test('providerFor rejects an unknown provider id', () => {
 test('openai-compat refuses a baseUrl that resolves to a private address', async () => {
   seen = null;
   const p = providerFor('openai-compat', testConfig());
-  for (const baseUrl of ['https://127.0.0.1:1', 'http://10.0.0.5', 'http://[::1]/v1', 'http://169.254.169.254', 'http://[::ffff:192.168.1.1]', 'http://localhost:1']) {
+  for (const baseUrl of ['https://127.0.0.1:1', 'http://10.0.0.5', 'http://[::1]/v1', 'http://169.254.169.254', 'http://[::ffff:192.168.1.1]', 'http://localhost:1', 'http://100.64.0.1', 'http://100.127.255.254', 'http://198.18.0.1', 'http://198.19.255.1', 'http://[64:ff9b::7f00:1]', 'http://[64:ff9b::10.0.0.1]', 'http://[2002:c0a8:101::1]', 'http://[fec0::1]']) {
     await assert.rejects(
       () => p.chat({ apiKey: 'k', model: 'm', messages: MSGS, maxTokens: 5, baseUrl }),
       (e: unknown) =>

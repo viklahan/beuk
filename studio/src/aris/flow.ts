@@ -42,21 +42,38 @@ async function ask(editor: Editor, at: number, args: ProposeArgs, replace?: Repl
   }, g.replace);
 }
 
+let insertRetryMs = 2000;
+/** Tests: the pause before the one insert-record retry. */
+export function setInsertRetryMs(ms: number): void {
+  insertRetryMs = ms;
+}
+
 const lf = (s: string) => s.replace(/\r\n?/g, '\n');
 
 async function insert(editor: Editor, token: string, proposal: string, text: string): Promise<void> {
   const facts = insertGhost(editor, text);
   if (!facts) return;
   const body = { token, bytesBefore: facts.bytesBefore, bytesAfter: facts.bytesAfter, writerEdited: text !== proposal };
-  const r = await apiFetch('/api/aris/insert', { method: 'POST', body: JSON.stringify(body) });
-  if (r && !('__error' in r)) {
+  const post = () => apiFetch('/api/aris/insert', { method: 'POST', body: JSON.stringify(body) });
+  const ok = (x: Awaited<ReturnType<typeof post>>) => !!x && !('__error' in x);
+  let r = await post();
+  if (ok(r)) {
     setInsertFailure(null);
     return;
   }
-  // the writer's text stands; only the record failed — said quietly, never reverted
+  // one retry after a pause; a 409 then means the first request landed and only its answer was lost
+  await new Promise((res) => setTimeout(res, insertRetryMs));
+  r = await post();
+  if (ok(r) || (r && r.__status === 409)) {
+    setInsertFailure(null);
+    return;
+  }
+  // the writer's text stands; only the record failed — said plainly, never reverted
   const why = r ? String(r.__error) : 'Aris could not be reached';
   setInsertFailure(why);
   console.warn('[aris] the insert is in your text, but its record was not kept: ' + why);
+  if (!editor.isDestroyed)
+    showNotice(editor, editor.state.selection.head, 'notice', 'Your text stands. The record of it did not reach Beuk.');
 }
 
 /** A menu choice in `editor` at `at`: the request is fixed here — this editor's own book and section (never whichever

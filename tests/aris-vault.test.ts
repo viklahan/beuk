@@ -60,6 +60,10 @@ test('baseUrl is openai-compat only and must be https', async () => {
     assert.equal(b.status, 400);
     const c = await client.put('/api/aris/key', { provider: 'openai-compat', apiKey: 'sk-abcd1234', baseUrl: 'not a url' });
     assert.equal(c.status, 400);
+    const cred = await client.put('/api/aris/key', { provider: 'openai-compat', apiKey: 'sk-abcd1234', baseUrl: 'https://user:pass@example.com/v1' });
+    assert.equal(cred.status, 400);
+    assert.deepEqual(cred.body, { error: 'the base URL must not carry credentials' });
+    assert.deepEqual((await client.get('/api/aris/status')).body.keys, []);
     const ok = await client.put('/api/aris/key', { provider: 'openai-compat', apiKey: 'sk-abcd1234', baseUrl: 'https://llm.example.com/v1' });
     assert.equal(ok.status, 200);
     const status = await client.get('/api/aris/status');

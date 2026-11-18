@@ -96,11 +96,23 @@ function isPrivateAddress(addr: string): boolean {
       o1 === 127 || o1 === 10 || o1 === 0 ||
       (o1 === 172 && o2 >= 16 && o2 <= 31) ||
       (o1 === 192 && o2 === 168) ||
-      (o1 === 169 && o2 === 254)
+      (o1 === 169 && o2 === 254) ||
+      (o1 === 100 && o2 >= 64 && o2 <= 127) || // 100.64.0.0/10 CGNAT
+      (o1 === 198 && (o2 === 18 || o2 === 19)) // 198.18.0.0/15
     );
   }
   if (a === '::1' || a === '::') return true;
-  return /^f[cd]/.test(a) || /^fe[89ab]/.test(a); // fc00::/7, fe80::/10
+  // NAT64 64:ff9b::/96 — judge the embedded IPv4 (dotted or the hex tail URL() normalises to)
+  const nat = /^64:ff9b::(?:(\d+\.\d+\.\d+\.\d+)|([0-9a-f]{1,4}):([0-9a-f]{1,4}))$/.exec(a);
+  if (nat) {
+    if (nat[1]) return isPrivateAddress(nat[1]);
+    const hi = parseInt(nat[2], 16);
+    const lo = parseInt(nat[3], 16);
+    return isPrivateAddress(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
+  }
+  if (/^64:ff9b:/.test(a)) return true; // any other form of the /96: refuse rather than guess
+  if (/^2002:/.test(a)) return true; // 6to4 2002::/16
+  return /^f[cd]/.test(a) || /^fe[89ab]/.test(a) || /^fe[c-f]/.test(a); // fc00::/7, fe80::/10, fec0::/10
 }
 
 /** Per-call SSRF guard for writer-supplied bases (DNS rebinding defeats save-time checks). */

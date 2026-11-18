@@ -143,6 +143,8 @@ services:
       # seals writers' stored provider keys.
       ARIS_ENABLED: ${ARIS_ENABLED:-}
       ARIS_KEY_SECRET: ${ARIS_KEY_SECRET:-}
+      ARIS_OPENROUTER_BASE: ${ARIS_OPENROUTER_BASE:-}
+      ARIS_ANTHROPIC_BASE: ${ARIS_ANTHROPIC_BASE:-}
       # Hardening: one trusted proxy hop (Caddy) so req.ip is the real
       # client for the auth rate limit and the founders throttle.
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}

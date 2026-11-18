@@ -135,6 +135,8 @@ test('a bad body is a 400 and no row', async () => {
     const good = { token, bytesBefore: 1, bytesAfter: 2, writerEdited: false };
     for (const bad of [
       { ...good, bytesBefore: -1 },
+      { ...good, bytesBefore: 1e10 },
+      { ...good, bytesAfter: 1e10 },
       { ...good, bytesAfter: 1.5 },
       { ...good, bytesAfter: '2' },
       { ...good, writerEdited: 'yes' },
