@@ -89,3 +89,54 @@ test('delete removes the key', async () => {
     await server.close();
   }
 });
+
+test('a key can carry a model override, shown in status', async () => {
+  const { server, client } = await boot();
+  try {
+    const put = await client.put('/api/aris/key', {
+      provider: 'openai-compat',
+      apiKey: 'AIza-secret-1234',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      model: '  gemini-2.5-flash ',
+    });
+    assert.equal(put.status, 200);
+    const status = await client.get('/api/aris/status');
+    const keys = status.body.keys as { provider: string; model?: string }[];
+    assert.equal(keys[0].model, 'gemini-2.5-flash');
+  } finally {
+    await server.close();
+  }
+});
+
+test('an over-long model is a 400 and writes no row', async () => {
+  const { server, client } = await boot();
+  try {
+    const put = await client.put('/api/aris/key', {
+      provider: 'openrouter',
+      apiKey: 'sk-or-v1-abcd1234',
+      model: 'm'.repeat(201),
+    });
+    assert.equal(put.status, 400);
+    assert.deepEqual(put.body, { error: 'model must be a short string' });
+    const nonString = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-abcd1234', model: 5 });
+    assert.equal(nonString.status, 400);
+    const status = await client.get('/api/aris/status');
+    assert.deepEqual(status.body.keys, []);
+  } finally {
+    await server.close();
+  }
+});
+
+test('a key saved without a model stores null and shows none', async () => {
+  const { server, client } = await boot();
+  try {
+    await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-abcd1234', model: 'a/b' });
+    const again = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-wxyz5678' });
+    assert.equal(again.status, 200);
+    const status = await client.get('/api/aris/status');
+    const k = (status.body.keys as Record<string, unknown>[])[0];
+    assert.ok(!k.model);
+  } finally {
+    await server.close();
+  }
+});

@@ -223,3 +223,36 @@ test('an oversized selection is a 400 asking for less', async () => {
     await server.close();
   }
 });
+
+test("a key's stored model wins over the model the client sent", async () => {
+  const { server, client, manuscriptId } = await boot({ withKey: false });
+  try {
+    const put = await client.put('/api/aris/key', {
+      provider: 'openrouter',
+      apiKey: 'sk-or-secret-1234',
+      model: 'stored/model',
+    });
+    assert.equal(put.status, 200);
+    handler = (res) => json(res, 200, { choices: [{ message: { content: 'Salt.' } }] });
+    const r = await client.post('/api/aris/draft', body(manuscriptId, { model: 'client/default' }));
+    assert.equal(r.status, 200);
+    assert.equal(seenBody.model, 'stored/model');
+    assert.equal(r.body.proposal.model, 'stored/model');
+    const p = verifyProposalToken(SECRET, r.body.token as string);
+    assert.equal(p?.model, 'stored/model');
+  } finally {
+    await server.close();
+  }
+});
+
+test('a key with no stored model falls back to the client model', async () => {
+  const { server, client, manuscriptId } = await boot();
+  try {
+    handler = (res) => json(res, 200, { choices: [{ message: { content: 'Salt.' } }] });
+    const r = await client.post('/api/aris/draft', body(manuscriptId, { model: 'client/default' }));
+    assert.equal(r.status, 200);
+    assert.equal(seenBody.model, 'client/default');
+  } finally {
+    await server.close();
+  }
+});

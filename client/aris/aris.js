@@ -124,7 +124,7 @@
       var ul = el("ul", { "class": "aris-keys" });
       status.keys.forEach(function (k) {
         var li = el("li");
-        li.appendChild(el("span", {}, k.provider + " · …" + k.last4 + (k.baseUrl ? " · " + k.baseUrl : "")));
+        li.appendChild(el("span", {}, k.provider + " · …" + k.last4 + (k.baseUrl ? " · " + k.baseUrl : "") + (k.model ? " · " + k.model : "")));
         var del = el("button", { type: "button" }, "Delete");
         del.addEventListener("click", function () {
           del.disabled = true;
@@ -156,6 +156,11 @@
     var base = el("input", { type: "url", name: "baseUrl", placeholder: "https://your-endpoint.example/v1", "aria-label": "Base URL" });
     r2.appendChild(base);
     form.appendChild(r2);
+    var r2m = el("div", { "class": "aris-row" });
+    var model = el("input", { type: "text", name: "model", placeholder: "Model (optional)", "aria-label": "Model", maxlength: "200", autocomplete: "off", spellcheck: "false" });
+    r2m.appendChild(model);
+    form.appendChild(r2m);
+    form.appendChild(el("p", { "class": "aris-hint" }, "Optional. Leave blank for the provider's default. For Gemini: choose openai-compat, set the base URL to https://generativelanguage.googleapis.com/v1beta/openai and a current Gemini model from Google's model list."));
     sel.addEventListener("change", function () { r2.hidden = sel.value !== "openai-compat"; });
     var save = el("button", { type: "submit" }, "Save key");
     var r3 = el("div", { "class": "aris-row" });
@@ -165,11 +170,13 @@
       e.preventDefault();
       var body = { provider: sel.value, apiKey: secret.value };
       if (sel.value === "openai-compat" && base.value.trim()) body.baseUrl = base.value.trim();
+      if (model.value.trim()) body.model = model.value.trim();
       save.disabled = true;
       call("PUT", "/api/aris/key", body).then(function (r) {
         save.disabled = false;
         if (r.status === 200) {
           secret.value = "";
+          model.value = "";
           refresh();
           say("Saved the " + r.data.provider + " key, ending …" + r.data.last4 + ". Only the last four show again.");
         } else fail(r);

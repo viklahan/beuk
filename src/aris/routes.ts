@@ -23,7 +23,7 @@ interface ArisStatus {
   enabled: true;
   optedIn: boolean;
   voice: Voice;
-  keys: { provider: string; last4: string; baseUrl?: string }[];
+  keys: { provider: string; last4: string; baseUrl?: string; model?: string }[];
 }
 
 /**
@@ -55,8 +55,8 @@ export function arisRoutes(db: Db, config: Config): Router {
   // No aris_settings row means the defaults (not opted in, laconic).
   async function loadStatus(userId: number | string): Promise<ArisStatus> {
     const [keyRows, settings] = await Promise.all([
-      db.query<{ provider: string; key_last4: string; base_url: string | null }>(
-        'select provider, key_last4, base_url from aris_keys where user_id = $1 order by created_at, provider',
+      db.query<{ provider: string; key_last4: string; base_url: string | null; model: string | null }>(
+        'select provider, key_last4, base_url, model from aris_keys where user_id = $1 order by created_at, provider',
         [userId],
       ),
       db.query<{ opted_in: boolean; voice: Voice }>('select opted_in, voice from aris_settings where user_id = $1', [
@@ -67,6 +67,7 @@ export function arisRoutes(db: Db, config: Config): Router {
       provider: r.provider,
       last4: r.key_last4,
       ...(r.base_url ? { baseUrl: r.base_url } : {}),
+      ...(r.model ? { model: r.model } : {}),
     }));
     const row = settings.rows[0];
     return { enabled: true, optedIn: row?.opted_in ?? false, voice: row?.voice ?? 'laconic', keys };
@@ -173,8 +174,8 @@ export function arisRoutes(db: Db, config: Config): Router {
         return bad('cursorOffset is outside the section');
 
       const keyRow = (
-        await db.query<{ key_ciphertext: string; base_url: string | null }>(
-          'select key_ciphertext, base_url from aris_keys where user_id = $1 and provider = $2',
+        await db.query<{ key_ciphertext: string; base_url: string | null; model: string | null }>(
+          'select key_ciphertext, base_url, model from aris_keys where user_id = $1 and provider = $2',
           [req.user!.id, provider],
         )
       ).rows[0];
@@ -229,11 +230,13 @@ export function arisRoutes(db: Db, config: Config): Router {
           .json({ error: `your ${provider} key could not be read — re-enter it on your /aris page` });
       }
 
+      // The key's stored model wins; the client's default is only the fallback.
+      const effectiveModel = keyRow.model ?? model;
       let reply;
       try {
         reply = await providerFor(provider, config).chat({
           apiKey,
-          model,
+          model: effectiveModel,
           messages,
           maxTokens: DRAFT_MAX_TOKENS,
           ...(keyRow.base_url ? { baseUrl: keyRow.base_url } : {}),
@@ -314,7 +317,7 @@ export function arisRoutes(db: Db, config: Config): Router {
   // Show-once: the response carries the last four characters, never the key.
   router.put('/key', async (req, res, next) => {
     try {
-      const body = (req.body ?? {}) as { provider?: unknown; apiKey?: unknown; baseUrl?: unknown };
+      const body = (req.body ?? {}) as { provider?: unknown; apiKey?: unknown; baseUrl?: unknown; model?: unknown };
       const provider = body.provider;
       if (typeof provider !== 'string' || !(PROVIDERS as readonly string[]).includes(provider)) {
         res.status(400).json({ error: 'provider must be one of: openrouter, anthropic, openai-compat' });
@@ -348,15 +351,25 @@ export function arisRoutes(db: Db, config: Config): Router {
         }
         baseUrl = parsed.toString();
       }
+      let model: string | null = null;
+      if (body.model !== undefined && body.model !== null) {
+        const m = typeof body.model === 'string' ? body.model.trim() : null;
+        if (m === null || m.length > MODEL_MAX) {
+          res.status(400).json({ error: 'model must be a short string' });
+          return;
+        }
+        model = m || null;
+      }
       const last4 = apiKey.slice(-4);
       await db.query(
-        `insert into aris_keys (user_id, provider, key_ciphertext, key_last4, base_url)
-         values ($1, $2, $3, $4, $5)
+        `insert into aris_keys (user_id, provider, key_ciphertext, key_last4, base_url, model)
+         values ($1, $2, $3, $4, $5, $6)
          on conflict (user_id, provider) do update
            set key_ciphertext = excluded.key_ciphertext,
                key_last4 = excluded.key_last4,
-               base_url = excluded.base_url`,
-        [req.user!.id, provider, encryptKey(config.arisKeySecret!, apiKey), last4, baseUrl],
+               base_url = excluded.base_url,
+               model = excluded.model`,
+        [req.user!.id, provider, encryptKey(config.arisKeySecret!, apiKey), last4, baseUrl, model],
       );
       res.json({ provider, last4 });
     } catch (err) {
