@@ -20,7 +20,7 @@ export type Proposal = { text: string; token: string };
  *  serves whatever its operator installed, and a wrong name comes back as that endpoint's own refusal. */
 export const DEFAULT_MODELS: Record<string, string> = {
   openrouter: 'anthropic/claude-sonnet-4.5',
-  anthropic: 'claude-sonnet-4-5',
+  anthropic: 'claude-sonnet-5-5',
   'openai-compat': 'gpt-4o-mini',
 };
 
