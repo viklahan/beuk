@@ -257,6 +257,11 @@ services:
     logging: *default-logging
     environment:
       DOMAIN: ${DOMAIN:-localhost}
+      # The MCP server's whole site address (see the Caddyfile's BEUK:mcp
+      # block): compose computes it because local mode's DOMAIN is a bare
+      # listener that cannot take an "mcp." prefix. Tunnel mode and
+      # start-local.ps1 each override it.
+      MCP_SITE: ${MCP_SITE:-mcp.${DOMAIN:-localhost}}
       # Optional www host redirected to DOMAIN (Caddyfile); empty = none.
       WWW_DOMAIN: ${WWW_DOMAIN:-}
     ports:
