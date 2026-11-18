@@ -78,7 +78,7 @@ test('anthropic adapter speaks messages', async () => {
 
 test('openai-compat uses the stored baseUrl', async () => {
   handler = (res) => json(res, 200, { choices: [{ message: { content: 'pong' } }] });
-  const p = providerFor('openai-compat', testConfig());
+  const p = providerFor('openai-compat', testConfig(), { allowPrivateHosts: true });
   assert.equal(p.id, 'openai-compat');
   const r = await p.chat({ apiKey: 'k-oc', model: 'local', messages: MSGS, maxTokens: 5, baseUrl: `${base}/v1/` });
   assert.deepEqual(r, { text: 'pong', model: 'local' }); // no model echoed → requested model
@@ -140,4 +140,41 @@ test('a hung upstream times out as an ArisUpstreamError', async () => {
 
 test('providerFor rejects an unknown provider id', () => {
   assert.throws(() => providerFor('nope', testConfig()), /unknown/i);
+});
+
+test('openai-compat refuses a baseUrl that resolves to a private address', async () => {
+  seen = null;
+  const p = providerFor('openai-compat', testConfig());
+  for (const baseUrl of ['https://127.0.0.1:1', 'http://10.0.0.5', 'http://[::1]/v1', 'http://169.254.169.254', 'http://[::ffff:192.168.1.1]', 'http://localhost:1']) {
+    await assert.rejects(
+      () => p.chat({ apiKey: 'k', model: 'm', messages: MSGS, maxTokens: 5, baseUrl }),
+      (e: unknown) =>
+        e instanceof ArisUpstreamError && e.status === null && e.detail === 'base url resolves to a private address',
+    );
+  }
+  // Even pointed at the live local stub, nothing is sent.
+  await assert.rejects(() => p.chat({ apiKey: 'k', model: 'm', messages: MSGS, maxTokens: 5, baseUrl: base }));
+  assert.equal(seen, null);
+});
+
+test('a redirecting upstream is refused, not followed', async () => {
+  seen = null;
+  let hits = 0;
+  handler = (res) => {
+    hits++;
+    res.writeHead(302, { location: `${base}/elsewhere` });
+    res.end();
+  };
+  const cases: Array<[Parameters<typeof providerFor>[0], ReturnType<typeof testConfig>, string | undefined]> = [
+    ['openrouter', testConfig({ arisOpenrouterBase: base }), undefined],
+    ['anthropic', testConfig({ arisAnthropicBase: base }), undefined],
+    ['openai-compat', testConfig(), base],
+  ];
+  for (const [id, cfg, baseUrl] of cases) {
+    await assert.rejects(
+      () => providerFor(id, cfg, { allowPrivateHosts: true }).chat({ apiKey: 'k', model: 'm', messages: MSGS, maxTokens: 5, baseUrl }),
+      (e: unknown) => e instanceof ArisUpstreamError && e.status === 302 && e.detail === 'redirects are not followed',
+    );
+  }
+  assert.equal(hits, 3); // one request each, the Location was never fetched
 });

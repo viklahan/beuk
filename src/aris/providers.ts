@@ -1,3 +1,5 @@
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import type { Config } from '../config.js';
 
 export type ArisMessage = { role: 'system' | 'user' | 'assistant'; content: string };
@@ -57,6 +59,7 @@ async function post(
       headers: { 'content-type': 'application/json', ...headers },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
+      redirect: 'manual',
     });
     raw = await res.text();
   } catch (err) {
@@ -67,6 +70,7 @@ async function post(
         : clip(err instanceof Error ? err.message : String(err));
     throw new ArisUpstreamError(provider, null, detail);
   }
+  if (res.status >= 300 && res.status < 400) throw new ArisUpstreamError(provider, res.status, 'redirects are not followed');
   if (!res.ok) throw new ArisUpstreamError(provider, res.status, upstreamWords(raw));
   try {
     return JSON.parse(raw);
@@ -75,16 +79,63 @@ async function post(
   }
 }
 
+
+function isPrivateAddress(addr: string): boolean {
+  let a = addr.toLowerCase();
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(a);
+  if (mapped) a = mapped[1];
+  const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(a); // URL() normalises ::ffff:1.2.3.4 to hex
+  if (hex) {
+    const hi = parseInt(hex[1], 16);
+    const lo = parseInt(hex[2], 16);
+    a = `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+  }
+  if (isIP(a) === 4) {
+    const [o1, o2] = a.split('.').map(Number);
+    return (
+      o1 === 127 || o1 === 10 || o1 === 0 ||
+      (o1 === 172 && o2 >= 16 && o2 <= 31) ||
+      (o1 === 192 && o2 === 168) ||
+      (o1 === 169 && o2 === 254)
+    );
+  }
+  if (a === '::1' || a === '::') return true;
+  return /^f[cd]/.test(a) || /^fe[89ab]/.test(a); // fc00::/7, fe80::/10
+}
+
+/** Per-call SSRF guard for writer-supplied bases (DNS rebinding defeats save-time checks). */
+async function assertPublicHost(base: string): Promise<void> {
+  const refuse = () => new ArisUpstreamError('openai-compat', null, 'base url resolves to a private address');
+  let host: string;
+  try {
+    host = new URL(base).hostname.replace(/^\[|\]$/g, '');
+  } catch {
+    throw new ArisUpstreamError('openai-compat', null, 'invalid baseUrl');
+  }
+  let addrs: string[];
+  if (isIP(host)) addrs = [host];
+  else {
+    try {
+      addrs = (await lookup(host, { all: true })).map((r) => r.address);
+    } catch (err) {
+      throw new ArisUpstreamError('openai-compat', null, clip(err instanceof Error ? err.message : String(err)));
+    }
+  }
+  if (addrs.some(isPrivateAddress)) throw refuse();
+}
+
 function openAiStyle(
   id: 'openrouter' | 'openai-compat',
   fixedBase: string | null,
   timeoutMs: number,
+  allowPrivateHosts = false,
 ): ArisProvider {
   return {
     id,
     async chat({ apiKey, model, messages, maxTokens, baseUrl }) {
       const base = (fixedBase ?? baseUrl ?? '').replace(/\/+$/, '');
       if (!base) throw new ArisUpstreamError(id, null, 'no baseUrl configured');
+      if (fixedBase === null && !allowPrivateHosts) await assertPublicHost(base);
       const j = await post(
         id,
         `${base}/chat/completions`,
@@ -125,7 +176,7 @@ function anthropic(base: string, timeoutMs: number): ArisProvider {
 }
 
 /** Timeout is injectable (default 60 000 ms) so tests can exercise a hung upstream quickly. */
-export function providerFor(id: string, config: Config, opts: { timeoutMs?: number } = {}): ArisProvider {
+export function providerFor(id: string, config: Config, opts: { timeoutMs?: number; allowPrivateHosts?: boolean } = {}): ArisProvider {
   const t = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   switch (id) {
     case 'openrouter':
@@ -133,7 +184,7 @@ export function providerFor(id: string, config: Config, opts: { timeoutMs?: numb
     case 'anthropic':
       return anthropic(config.arisAnthropicBase, t);
     case 'openai-compat':
-      return openAiStyle('openai-compat', null, t);
+      return openAiStyle('openai-compat', null, t, opts.allowPrivateHosts === true);
     default:
       throw new Error(`unknown Aris provider: ${id}`);
   }
