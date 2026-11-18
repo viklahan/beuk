@@ -9,8 +9,12 @@ the /aris page gets built around what comes out of here.
 ## The live demo (the page engine, proven)
 
 `the_calling_demo.html` — self-contained, no dependencies, double-click
-to run (or serve it; both work). 22k motes, the full storyboard, drag
-with either button to orbit. **Theme-aware with the studio's own tokens**
+to run (or serve it; both work). 22k motes, the full storyboard, paced
+to breathe (slow ceremonial A, a burst that hangs ~2.6s, then the name
+snaps home). Once Aris stands: **left button stirs** — push the motes,
+mess the name, and Aris composes itself again within seconds (the writer
+should feel Aris); **right button pans &amp; tilts**; idle, the name sways
+gently (a pendulum, never a full spin). **Theme-aware with the studio's own tokens**
 (studio/src/generated/tokens.css): `?theme=candlelight` = emissive glow
 on the dark stage; `?theme=paper` = rich inks on bone (additive light is
 impossible on a light page, so Paper gets a pointillist telling of the
