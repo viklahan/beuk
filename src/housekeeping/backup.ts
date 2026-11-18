@@ -135,6 +135,8 @@ export const SECRET_CONFIG_KEYS = [
   'OFFSITE_B2_APPLICATION_KEY',
   // Ops backup alerts: the webhook URL is itself a credential.
   'ALERT_WEBHOOK_URL',
+  // Aris: the secret that seals writers' stored provider keys.
+  'ARIS_KEY_SECRET',
 ] as const;
 
 export interface BackupManifest {

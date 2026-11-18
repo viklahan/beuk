@@ -179,6 +179,12 @@ export function testConfig(overrides?: Partial<Config>): Config {
     // the honest default); stock tests pass a key + stub base URL in.
     pexelsApiKey: null,
     pexelsApiBase: 'https://api.pexels.com/v1',
+    // Aris: off by default (the gated 404 is the honest default); aris
+    // tests turn it on and give it a secret.
+    arisEnabled: false,
+    arisKeySecret: null,
+    arisOpenrouterBase: 'https://openrouter.ai/api/v1',
+    arisAnthropicBase: 'https://api.anthropic.com',
     // Hardening: tests talk to the app directly; one trusted hop lets a
     // test pose as distinct clients via X-Forwarded-For. The auth rate
     // limit is generous by default so suites that register many users

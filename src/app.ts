@@ -34,6 +34,7 @@ import { twoStepRoutes } from './routes/two-step.js';
 import { sessionRoutes } from './routes/sessions.js';
 import { securityEmails } from './email/security.js';
 import { stockRoutes } from './routes/stock.js';
+import { arisRoutes } from './aris/routes.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
 import { siteRoutes } from './routes/site.js';
@@ -224,6 +225,10 @@ export function buildApp({
   // Stock photos (cover-maker backgrounds): signed-in Pexels search
   // proxy; 501 until PEXELS_API_KEY is set (see routes/stock.ts).
   app.use('/api/stock', stockRoutes(db, config));
+
+  // Aris (AI addon): mounted always, gated per request on ARIS_ENABLED
+  // (see aris/routes.ts); must precede the /api catch-all below.
+  app.use('/api/aris', arisRoutes(db, config));
 
   // M4 warmth: public status + public config + Founders' Shelf intake.
   app.use('/api/status', statusRoutes(db, config));
