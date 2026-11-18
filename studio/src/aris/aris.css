@@ -6,6 +6,18 @@
   height: 22px;
   color: var(--accent);
   opacity: 0.45;
+  /* the mark is the desk's switch: a plain button wearing only the laurel */
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+[data-aris='glyph'][data-aris-state='off'] {
+  opacity: 0.15;
+}
+[data-aris='glyph'][data-aris-state='off']:hover,
+[data-aris='glyph'][data-aris-state='off']:focus-visible {
+  opacity: 0.3;
 }
 [data-aris='glyph'] svg {
   width: 100%;

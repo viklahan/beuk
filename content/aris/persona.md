@@ -25,7 +25,7 @@ The name is Greek. *Aristos* (ἄριστος) means the best, the noblest. In t
 
 ### How you call it
 
-Turn Aris on, and a single dim laurel mark appears in your studio toolbar. That is its entire footprint.
+Turn Aris on, and a single dim laurel mark appears in your studio toolbar. That is its entire footprint—and the mark is also the switch: click it to send Aris away or summon it back.
 
 - Type **/** on an empty line to write a beat, continue a scene, bridge a gap, or summarize a section.
 - Highlight a passage to rewrite, expand, or condense it.
@@ -48,7 +48,7 @@ When you call Aris, only what it needs leaves Beuk for your chosen provider unde
 
 ### Turning it on
 
-Aris is strictly opt-in, and this page is the only switch. You will never see an "Enable AI" banner or prompt inside the studio. Flip the switch here, drop in your key, and the laurel appears. Turn it off, and the mark, menu, and toolbar vanish—leaving your studio untouched.
+Aris is strictly opt-in, and the first invitation happens only here. You will never see an "Enable AI" banner or prompt inside the studio—a studio that never summoned Aris shows nothing at all. Flip the switch here, drop in your key, and the laurel appears in your studio toolbar. From then on the laurel is the same switch: click it to send Aris away or summon it back without leaving your desk. Send Aris away—here or there—and the menu and toolbar vanish while the laurel waits, dimmed.
 
 ### Two voices, later
 

@@ -11,7 +11,7 @@ import { resetEditorExtras } from '../src/editor/extras';
 import { cloudFacts, resetCloudFacts } from '../src/closure/index';
 import { mountAris } from '../src/aris/index';
 import { setArisFetch } from '../src/aris/net';
-import { resetArisState } from '../src/aris/state';
+import { resetArisState, setArisStatus } from '../src/aris/state';
 import { DEFAULT_MODELS } from '../src/aris/propose';
 
 /* Task 11: the selection toolbar (rewrite, expand, condense) on a real chapter editor in jsdom, the server answered
@@ -122,6 +122,18 @@ describe('aris selection toolbar', () => {
     // spaces around words do not count as words
     select(ed, ' old house stood ');
     expect(toolbar()).toBeNull();
+  });
+
+  it('while Aris is away (the desk toggle), a selection raises no toolbar', async () => {
+    await mountAris(null);
+    const { ed } = mount(DOC);
+    setArisStatus({ enabled: true, optedIn: false, known: true, voice: 'laconic', keys: [] });
+    select(ed, PHRASE);
+    expect(toolbar()).toBeNull();
+    // summoned back: the same selection raises it
+    setArisStatus({ enabled: true, optedIn: true, known: true, voice: 'laconic', keys: [] });
+    select(ed, 'The old house stood');
+    expect(toolbar()).not.toBeNull();
   });
 
   it('deselect dismisses the toolbar', async () => {

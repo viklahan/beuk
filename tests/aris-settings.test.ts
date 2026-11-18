@@ -53,6 +53,42 @@ test('an invalid voice is refused', async () => {
   }
 });
 
+test('status says whether the account has summoned Aris before (known)', async () => {
+  const { server, client } = await boot();
+  try {
+    // a fresh account: Aris was never summoned — the studio shows nothing at all
+    const fresh = await client.get('/api/aris/status');
+    assert.equal(fresh.body.known, false);
+    assert.equal(fresh.body.optedIn, false);
+
+    const on = await client.put('/api/aris/settings', { optedIn: true });
+    assert.equal(on.body.known, true);
+
+    // sent away is not forgotten: the account stays known, so the desk shows the dormant laurel
+    const off = await client.put('/api/aris/settings', { optedIn: false });
+    assert.equal(off.body.known, true);
+    assert.equal(off.body.optedIn, false);
+
+    const status = await client.get('/api/aris/status');
+    assert.equal(status.body.known, true);
+  } finally {
+    await server.close();
+  }
+});
+
+test('a saved key alone makes the account known', async () => {
+  const { server, client } = await boot();
+  try {
+    const put = await client.put('/api/aris/key', { provider: 'anthropic', apiKey: 'sk-test-known-1234' });
+    assert.equal(put.status, 200);
+    const status = await client.get('/api/aris/status');
+    assert.equal(status.body.known, true);
+    assert.equal(status.body.optedIn, false);
+  } finally {
+    await server.close();
+  }
+});
+
 test('engine routes refuse before opt-in', async () => {
   const { server, client } = await boot();
   try {

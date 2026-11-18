@@ -12,7 +12,7 @@ import { cloudFacts, resetCloudFacts } from '../src/closure/index';
 import { mountAris } from '../src/aris/index';
 import { setArisFetch } from '../src/aris/net';
 import { setInsertRetryMs } from '../src/aris/flow';
-import { insertFailure, resetArisState } from '../src/aris/state';
+import { insertFailure, resetArisState, setArisStatus } from '../src/aris/state';
 import { DEFAULT_MODELS } from '../src/aris/propose';
 
 /* Task 10: the summon menu, the ghost proposal, and the insert flow, on a real chapter editor (TipTap on a Y fragment)
@@ -128,6 +128,24 @@ async function summonContinue(ed: Editor): Promise<void> {
 }
 
 describe('aris summon', () => {
+  it('while Aris is away (the desk toggle), / is just a character; back on, it summons again', async () => {
+    const { ed } = mount('Once');
+    await mountAris(null);
+    caretEnd(ed);
+    ed.commands.enter();
+    // sent away: the live status says not opted in — the summon stays silent, the / lands as typed
+    setArisStatus({ enabled: true, optedIn: false, known: true, voice: 'laconic', keys: [] });
+    const before = editorText(ed).text;
+    type(ed, '/');
+    expect(menu()).toBeNull();
+    expect(editorText(ed).text).toBe(before + '/');
+    // summoned back: the same empty-line gesture opens the menu
+    setArisStatus({ enabled: true, optedIn: true, known: true, voice: 'laconic', keys: [] });
+    ed.commands.enter();
+    type(ed, '/');
+    expect(menu()).not.toBeNull();
+  });
+
   it('typing / on an empty line summons the menu, and only then', async () => {
     // the editor exists BEFORE the module loads: it still gains the summon behaviour
     const { ed } = mount('Once');

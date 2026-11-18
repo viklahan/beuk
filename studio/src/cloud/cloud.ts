@@ -748,11 +748,21 @@ let authChannel: BroadcastChannel | null = null;
 let knownUser: string | null = null;
 let hearing = false;
 const userId = (): string | null => ((cloudFacts.user as { id?: string } | null)?.id ?? null);
+/* aris-desk-toggle: a module that must act when the account changes — Aris re-asks its status — subscribes here;
+   Shell wires it. A Set, so the same listener subscribed twice hears once. */
+const authListeners = new Set<() => void>();
+export function onAuthChange(l: () => void): void {
+  authListeners.add(l);
+}
+const authChanged = (): void => {
+  for (const l of [...authListeners]) l();
+};
 /** After 1.0's sign-in, sign-out or sign-out-everywhere in this tab: tell the other tabs when the account changed. */
 export function authAnnounce(): void {
   const now = userId();
   if (now === knownUser) return;
   knownUser = now;
+  authChanged();
   if (hearing || !authChannel) return;
   authChannel.postMessage({ auth: now ? 'in' : 'out' });
 }
@@ -775,7 +785,9 @@ async function authHeard(kind: unknown): Promise<void> {
       else takeLink(storedLink(linkBook));
     }
   } finally {
+    const was = knownUser;
     knownUser = userId();
+    if (knownUser !== was) authChanged(); // the other tab's change is this tab's too
     hearing = false;
   }
 }

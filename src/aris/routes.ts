@@ -22,6 +22,9 @@ type Voice = (typeof VOICES)[number];
 interface ArisStatus {
   enabled: true;
   optedIn: boolean;
+  /** Has this account ever summoned Aris (a settings row or a saved key)? The studio shows the dormant laurel to a
+   *  known account that sent Aris away, and nothing at all to one that never invited it. */
+  known: boolean;
   voice: Voice;
   keys: { provider: string; last4: string; baseUrl?: string; model?: string }[];
 }
@@ -70,7 +73,7 @@ export function arisRoutes(db: Db, config: Config): Router {
       ...(r.model ? { model: r.model } : {}),
     }));
     const row = settings.rows[0];
-    return { enabled: true, optedIn: row?.opted_in ?? false, voice: row?.voice ?? 'laconic', keys };
+    return { enabled: true, optedIn: row?.opted_in ?? false, known: settings.rows.length > 0 || keys.length > 0, voice: row?.voice ?? 'laconic', keys };
   }
 
   // Engine routes (draft, review) sit behind this until the user has opted in on /aris.

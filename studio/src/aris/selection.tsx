@@ -3,6 +3,7 @@ import { Plugin, PluginKey, TextSelection, type EditorState } from '@tiptap/pm/s
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { ghostKey } from './ghost';
 import type { ProposeAction } from './propose';
+import { arisStatus } from './state';
 
 /* The selection toolbar: a selection of FOUR OR MORE words inside a chapter editor raises rewrite · expand · condense
    beside it; three words or fewer, a collapsed selection, or a selection the writer dismissed raise none. Plain DOM in
@@ -20,8 +21,9 @@ const MIN_WORDS = 4;
 
 export const selectionKey = new PluginKey<Dismissed>('beukAiSelection');
 
-/** Does the selection call for the toolbar right now? */
+/** Does the selection call for the toolbar right now? Never while Aris is away (the live status). */
 function wanted(state: EditorState): { from: number; to: number } | null {
+  if (!arisStatus()?.optedIn) return null;
   const sel = state.selection;
   if (!(sel instanceof TextSelection) || sel.empty) return null;
   if (ghostKey.getState(state)) return null;

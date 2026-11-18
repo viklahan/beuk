@@ -2,10 +2,12 @@ import type { Editor } from '@tiptap/core';
 import { Plugin, PluginKey, type EditorState } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
 import { focusMenu, renderMenu, type MenuChoice } from './menu';
+import { arisStatus } from './state';
 
 /* The summon: "/" typed at the start of an EMPTY line (nothing before it on its line, nothing after it) opens the menu
    there. Input rules are off editor-wide, so this is handleTextInput. Anywhere else — mid-word, after a space, before
-   text — "/" is just a character.
+   text — "/" is just a character. While Aris is away (the desk toggle or /aris), the gesture is checked against the
+   LIVE status, so sending Aris away silences it at once and summoning it back needs no editor rebuild.
 
    The "/" is held back while the menu is open (the document does not change). Choosing an action consumes it.
    Dismissing the menu — Escape, a press outside it, or going on typing — puts it back as typed text; Backspace takes
@@ -75,7 +77,7 @@ export function summonPlugin(editor: Editor, onChoose: (editor: Editor, at: numb
           view.dispatch(tr);
           return true;
         }
-        if (text !== '/' || !onEmptyLine(view.state, from, to)) return false;
+        if (text !== '/' || !arisStatus()?.optedIn || !onEmptyLine(view.state, from, to)) return false;
         view.dispatch(view.state.tr.setMeta(summonKey, { open: from } satisfies Meta));
         // the keyboard goes to the menu: its first item
         focusMenu(view.dom.querySelector('[data-aris="menu"]'));
