@@ -6,7 +6,7 @@ import type { Db } from '../db.js';
 import { seriesKey } from '../routes/series-covenants.js';
 import { buildDraftPrompt, type CovenantEntry, type DraftAction } from './prompts.js';
 import { ArisUpstreamError, providerFor } from './providers.js';
-import { mintProposalToken, type ProposalKind } from './token.js';
+import { mintProposalToken, verifyProposalToken, type ProposalKind } from './token.js';
 import { decryptKey, encryptKey } from './vault.js';
 
 const PROVIDERS = ['openrouter', 'anthropic', 'openai-compat'] as const;
@@ -259,6 +259,53 @@ export function arisRoutes(db: Db, config: Config): Router {
         ts: Date.now(),
       });
       res.json({ proposal: { text: reply.text, model: reply.model, provider, action }, token });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Insert: the audit row. Every provenance fact comes from the verified
+  // token; only the span sizes (UTF-8 bytes) and writerEdited are the writer's
+  // own report. Replay is caught by unique (user_id, nonce), not pre-checked.
+  router.post('/insert', requireOptIn, async (req, res, next) => {
+    try {
+      const b = (req.body ?? {}) as Record<string, unknown>;
+      const isBytes = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0;
+      if (typeof b.token !== 'string' || !b.token) return res.status(400).json({ error: 'token is required' });
+      if (!isBytes(b.bytesBefore) || !isBytes(b.bytesAfter))
+        return res.status(400).json({ error: 'bytesBefore and bytesAfter must be non-negative integers' });
+      if (typeof b.writerEdited !== 'boolean') return res.status(400).json({ error: 'writerEdited must be a boolean' });
+
+      const p = verifyProposalToken(config.arisKeySecret!, b.token);
+      if (!p || p.userId !== String(req.user!.id))
+        return res.status(403).json({ error: 'this proposal token is not valid for you' });
+
+      try {
+        await db.query(
+          `insert into ai_writes (user_id, manuscript_id, section_id, lens, action, kind, provider, model,
+                                  proposal_chars, bytes_before, bytes_after, writer_edited, nonce)
+           values ($1, $2, $3, 'draft', $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          [
+            req.user!.id,
+            p.manuscriptId,
+            p.sectionId,
+            p.action,
+            p.kind,
+            p.provider,
+            p.model,
+            p.proposalChars,
+            b.bytesBefore,
+            b.bytesAfter,
+            b.writerEdited,
+            p.nonce,
+          ],
+        );
+      } catch (err) {
+        if ((err as { code?: string }).code === '23505')
+          return res.status(409).json({ error: 'this proposal is already recorded' });
+        throw err;
+      }
+      res.status(202).json({ recorded: true });
     } catch (err) {
       next(err);
     }
