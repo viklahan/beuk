@@ -26,6 +26,7 @@ test('/aris renders the persona page when enabled', async () => {
     assert.equal(js.status, 200);
     assert.match(js.type, /javascript/);
     assert.match(js.text, /\/api\/aris\/status/);
+    assert.match(js.text, /status === 404\) return GONE/);
   } finally {
     await server.close();
   }
@@ -56,5 +57,5 @@ test('the sitemap, service workers and Caddyfile carry /aris', async () => {
     await off.close();
   }
   for (const sw of ['client/sw.js', 'client/assets/sw.js']) assert.match(readFileSync(sw, 'utf8'), /\|aris\)/, sw);
-  assert.match(readFileSync('Caddyfile', 'utf8'), /handle \/aris\* \{\s*reverse_proxy app:3000/);
+  assert.match(readFileSync('Caddyfile', 'utf8'), /@aris path \/aris \/aris\/\*\s+handle @aris \{\s*reverse_proxy app:3000/);
 });

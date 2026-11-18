@@ -35,15 +35,26 @@
   var UNREACHABLE = "The server is out of reach just now. Nothing has changed — try again in a moment.";
   var TOO_MANY = "That has been tried a few times in a row. Please wait a little and try again.";
 
+  var GONE = "Aris is not available here just now. Nothing has changed.";
+
+  /* Aris switched off since this tab loaded: drop the controls, keep the quiet line. */
+  function gone() {
+    panel.hidden = true;
+    panel.textContent = "";
+    quiet.hidden = false;
+  }
+
   function common(r) {
     if (r.status === 0) return UNREACHABLE;
     if (r.status === 429) return TOO_MANY;
+    if (r.status === 404) return GONE;
     if (r.status === 401) return "You are signed out. Sign in again from the studio to use this page.";
     return null;
   }
 
   /* A failed call: the shared words, else the API's own, else its status. */
   function fail(r) {
+    if (r.status === 404) gone();
     say(common(r) || (r.data && r.data.error) || "That did not go through (" + r.status + ").", true);
   }
 
@@ -61,7 +72,10 @@
   }
 
   function refresh() {
-    call("GET", "/api/aris/status").then(function (s) { if (s.status === 200) render(s.data); });
+    call("GET", "/api/aris/status").then(function (s) {
+      if (s.status === 200) render(s.data);
+      else if (s.status === 404) { gone(); fail(s); }
+    });
   }
 
   function render(status) {
