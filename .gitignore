@@ -25,3 +25,6 @@ studio/src/generated/
 # the locked review copy's DOCX oracle (msoffcrypto-tool), installed in a venv inside the worktree, never globally
 studio/e2e/oracles/.venv/
 client/next/
+
+# Blender auto-backups (docs/aris-hero bench)
+*.blend1
