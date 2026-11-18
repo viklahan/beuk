@@ -58,7 +58,7 @@ test('engine routes refuse before opt-in', async () => {
   try {
     const no = await client.post('/api/aris/draft', {});
     assert.equal(no.status, 403);
-    assert.deepEqual(no.body, { error: 'summon Aris on your /aris page first' });
+    assert.deepEqual(no.body, { error: 'turn Aris on from your /aris page first' });
 
     await client.put('/api/aris/settings', { optedIn: true });
     const yes = await client.post('/api/aris/draft', {});

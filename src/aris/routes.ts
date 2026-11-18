@@ -79,7 +79,7 @@ export function arisRoutes(db: Db, config: Config): Router {
         req.user!.id,
       ]);
       if (!r.rows[0]?.opted_in) {
-        res.status(403).json({ error: 'summon Aris on your /aris page first' });
+        res.status(403).json({ error: 'turn Aris on from your /aris page first' });
         return;
       }
       next();

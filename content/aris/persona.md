@@ -11,50 +11,55 @@ Exactly four "## " sections. Use "### " inside a section.
 
 ## Page
 
-Aris is the best reader your book will ever have. It is not a ghostwriter, a muse or a coach. It reads what you show it, it keeps to what you decreed in your covenant, and it waits outside the room until you call it.
+Aris is the sharpest reader your book will ever have. Not a ghostwriter, a muse, or a coach. It reads what you show it, honors the rules of your covenant, and waits outside the door until you knock.
 
-The name is Greek. *Aristos* (ἄριστος) means the best, the noblest. In the old epics, a hero's *aristeia* is their finest hour. You call Aris in to help you reach yours: your best pages, written by you.
+The name is Greek. *Aristos* (ἄριστος) means the best, the noblest. In the old epics, a hero's *aristeia* is their finest hour. You call Aris to help you reach yours: your best pages, written by you.
 
 ### What Aris will never do
 
-- **Never come in uninvited.** Aris is off until you turn it on, and once it is on, it waits. It does not suggest, nudge, underline or pop up. You call it, or it is not there.
-- **Never touch the pen.** Aris hands you pages. Nothing it writes enters your book until you choose **Insert**, one passage at a time. No automatic edits, no quiet tidying, ever.
-- **Never pretend to know.** Today Aris only drafts, and a draft is fiction: it states no facts about the world. When Aris answers questions of fact, which is not here yet, it will say how it knows each one. *Here is where I read it*: a source you can open. *I counted it myself*: worked out by Beuk's own code, with the sum shown, not guessed by a model. *I believe, but cannot prove it. Verify before print*: what a model remembers, marked so you check it before it reaches a reader.
-- **Never speak in your book.** What Aris proposes for your manuscript is prose and nothing else: no notes, no "here is your scene", no accent. Your book never catches Aris's voice.
-- **Never set your type.** Formatting, styles and EPUB checks belong to Beuk's own engines. Aris never formats a page.
+- **Never enter uninvited.** Aris stays off until you switch it on. Even then, it waits. No nudges, no underlines, no pop-ups. If you don't call it, it isn't there.
+- **Never touch the pen.** Aris hands you pages; you hold the ink. Nothing enters your manuscript until you click **Insert**, one passage at a time. No silent edits, no automatic tidying.
+- **Never pretend to know.** Today, Aris only drafts—and a draft is fiction, stating no facts about the world. When fact-checking arrives, Aris will show its work: *Here is where I read it* (an openable source), *I counted it myself* (exact math run by Beuk's code, never guessed by a model), and *I believe, but cannot prove it. Verify before print* (flagged model memory for you to check before publication).
+- **Never speak in your book.** Aris returns pure prose—no chatter, no "Here is your scene," no stylistic bleed. Your manuscript never catches Aris's accent.
+- **Never set your type.** Formatting, styles, and EPUB checks belong strictly to Beuk's engines. Aris never touches the layout.
 
 ### How you call it
 
-Once Aris is on, the studio shows one dim laurel mark in the toolbar. That is all of it.
+Turn Aris on, and a single dim laurel mark appears in your studio toolbar. That is its entire footprint.
 
-- Type **/** on an empty line in your manuscript for the menu: write a beat, continue the story, fill a gap, summarize a section.
-- Select a passage to rewrite it, expand it or condense it.
-- Whatever Aris writes appears as pale text where it would go. **Insert** takes it. **Edit first** lets you change it before it goes in. **Discard** sends it away, and **retry** asks again.
+- Type **/** on an empty line to write a beat, continue a scene, bridge a gap, or summarize a section.
+- Highlight a passage to rewrite, expand, or condense it.
+- Review in place. Proposals appear as pale ghost-text right where they belong. **Insert** commits the text, **Edit first** lets you refine it before it lands, **Discard** clears it away, and **retry** rolls again.
 
-Every passage you insert is written into your book the same way as your own typing, and Beuk keeps a plain record of it: which section, which action, how much text, which model, and whether you edited it first. When a store asks whether AI was used in your book, Beuk will build the answer from that record. That summary is not here yet; the record is kept from the first passage you insert.
+Every inserted passage enters your book just like your own keystrokes, while Beuk keeps a quiet, plain ledger: the section, the action, how much text, the model used, and whether you edited it. When storefronts ask you to disclose AI use, Beuk will build that report directly from this log. The summary tool is coming soon, but the ledger starts recording from your very first insertion.
 
 ### Your key, in plain words
 
-Aris runs on a key you bring, from the provider you pick; Aris chooses a sensible model for it. Beuk never pays for the model and never sees the bill.
+Aris runs on your own API key from the provider you choose, paired with a sensible model selected by Aris. Beuk never pays for the tokens and never sees your bill.
 
-1. **Get a key.** For OpenRouter, which reaches hundreds of models with one key, sign in at openrouter.ai/keys and create one; if you use OpenRouter, it passes your request on to the model Aris chose for it. For Anthropic, create one at platform.claude.com. Any other service that speaks the OpenAI-compatible standard gives you a key in its own console, along with the address to paste beside it.
-2. **Know what it costs.** You pay the provider's own price per token, straight to the provider, for what you use. Set a spending limit at the provider if it offers one; it is worth the minute.
-3. **Paste it here.** Beuk keeps your key encrypted on its server. You see it once, when you save it. It is never written to a log and never included in a backup, so after a restore you paste it again. It is deleted with your account.
-4. **Revoke it when you are done.** Delete the key here with one click, then revoke it at the provider too. Deleting it here stops Beuk using it; revoking it there stops everyone.
+1. **Get a key.** Grab a key from [OpenRouter](https://openrouter.ai/keys) to reach hundreds of models at once, generate one at [Anthropic](https://platform.claude.com), or use any OpenAI-compatible service with its custom endpoint URL.
+2. **Know the cost.** You pay the provider's exact per-token rate directly. Take a minute to set a spending cap in their dashboard.
+3. **Paste it here.** Beuk encrypts your key on its servers. You see it once upon saving. It is never logged, never backed up—so you will re-enter it after a restore—and permanently wiped if you delete your account.
+4. **Revoke anytime.** Delete the key here in one click, then revoke it at your provider. Removing it here stops Beuk; revoking it there stops everyone.
 
 ### What travels, and where
 
-When you call Aris, the words it needs travel from Beuk to the provider you chose, under your key: the passage you selected and the text around it, or the passage around your cursor; your book's title; your covenant entries; and what you typed in the request. Nothing is sent until you call, and nothing is sent anywhere else. What the provider does with it is set by the provider's own terms, so read them. Beuk never trains anything on your writing.
-
-When Aris is off, nothing ever leaves.
+When you call Aris, only what it needs leaves Beuk for your chosen provider under your key: your selected text and surrounding context, your book's title, your covenant entries, and your prompt. Nothing moves until you call it, and nothing goes anywhere else. Check your provider's privacy terms for how they handle API data—Beuk never trains on your writing. When Aris is off, nothing leaves your page.
 
 ### Turning it on
 
-Aris is opt-in, and this page is the only place it can be switched on. The studio never shows an "enable AI" switch and never asks. Turn Aris on here, add your key, and the laurel mark appears. Turn it off here and the mark, the menu and the toolbar go with it; the studio works exactly as it did before.
+Aris is strictly opt-in, and this page is the only switch. You will never see an "Enable AI" banner or prompt inside the studio. Flip the switch here, drop in your key, and the laurel appears. Turn it off, and the mark, menu, and toolbar vanish—leaving your studio untouched.
 
 ### Two voices, later
 
-Drafting has no voice: what Aris writes for your book is your book's prose. Aris will talk to you in answers and findings later; that is not here yet. You can choose its voice on this page now, and the choice waits until then. **Laconic**, the default, is short and plain: the finding, the evidence, done. **Homeric** speaks in full, in the first person. Only the voice changes. Both use the same models, the same tools and the same rule about what is known and what is believed, and neither voice ever reaches your manuscript.
+Drafting has no voice; what Aris writes for your manuscript belongs to your book alone. Later, when Aris begins answering questions and sharing research findings, you will want a voice you like. Pick yours now, and it will wait until then:
+
+- **Laconic** (default): Crisp and plain. The finding, the evidence, done.
+- **Homeric**: Full-throated, speaking in the first person.
+
+Only the cadence changes. Both use the same models, tools, and strict truth-labeling—and neither voice will ever bleed into your manuscript.
+
+Aris waits at your threshold. Sign in to your account to set it up.
 
 ## Core
 
