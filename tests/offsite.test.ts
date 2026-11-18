@@ -98,7 +98,13 @@ function fakeRestic(): FakeRepo {
         const files = new Map(snap.files);
         repo.tamper?.(files);
         for (const [rel, bytes] of files) {
-          const dest = path.join(target, snap.path, rel);
+          // Lay the restore out the way real restic does: the backed-up
+          // absolute path reproduced under --target. On Windows the
+          // drive keeps its letter but loses the colon (C:\a\b lands at
+          // <target>\C\a\b — observed with restic 0.19.1, 2026-11-17);
+          // on POSIX /a/b lands at <target>/a/b.
+          const layout = process.platform === 'win32' ? snap.path.replace(/^([A-Za-z]):/, '$1') : snap.path;
+          const dest = path.join(target, layout, rel);
           await mkdir(path.dirname(dest), { recursive: true });
           await writeFile(dest, bytes);
         }
