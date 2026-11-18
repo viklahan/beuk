@@ -62,7 +62,7 @@ test('engine routes refuse before opt-in', async () => {
 
     await client.put('/api/aris/settings', { optedIn: true });
     const yes = await client.post('/api/aris/draft', {});
-    assert.equal(yes.status, 501);
+    assert.equal(yes.status, 400);
 
     await client.put('/api/aris/settings', { optedIn: false });
     const off = await client.post('/api/aris/draft', {});

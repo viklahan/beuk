@@ -1,10 +1,20 @@
+import { randomUUID } from 'node:crypto';
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import { requireAuth } from '../auth.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
-import { encryptKey } from './vault.js';
+import { seriesKey } from './../routes/series-covenants.js';
+import { buildDraftPrompt, type CovenantEntry, type DraftAction } from './prompts.js';
+import { ArisUpstreamError, providerFor } from './providers.js';
+import { mintProposalToken, type ProposalKind } from './token.js';
+import { decryptKey, encryptKey } from './vault.js';
 
 const PROVIDERS = ['openrouter', 'anthropic', 'openai-compat'] as const;
+const ACTIONS = ['beat', 'continue', 'fill', 'summarize', 'rewrite', 'expand', 'condense'] as const;
+const SELECTION_ACTIONS = new Set<string>(['rewrite', 'expand', 'condense']);
+const MODEL_MAX = 200;
+const DRAFT_MAX_TOKENS = 2048;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const API_KEY_MAX = 512;
 const VOICES = ['laconic', 'homeric'] as const;
 type Voice = (typeof VOICES)[number];
@@ -113,9 +123,134 @@ export function arisRoutes(db: Db, config: Config): Router {
     }
   });
 
-  // Placeholder: replaced by the real draft handler in Task 7.
-  router.post('/draft', requireOptIn, (_req, res) => {
-    res.status(501).json({ error: 'not yet' });
+  // Draft: one provider call, one signed proposal. The writer's key is decrypted
+  // for this request only; the section text is read server-side, never trusted
+  // from the client.
+  router.post('/draft', requireOptIn, async (req, res, next) => {
+    try {
+      const b = (req.body ?? {}) as Record<string, unknown>;
+      const bad = (error: string) => res.status(400).json({ error });
+      const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
+      const manuscriptId = str(b.manuscriptId);
+      const sectionId = str(b.sectionId);
+      const model = str(b.model)?.trim();
+      if (!manuscriptId || !sectionId) return bad('manuscriptId and sectionId are required');
+      if (typeof b.action !== 'string' || !(ACTIONS as readonly string[]).includes(b.action))
+        return bad(`action must be one of: ${ACTIONS.join(', ')}`);
+      const action = b.action as DraftAction;
+      if (typeof b.provider !== 'string' || !(PROVIDERS as readonly string[]).includes(b.provider))
+        return bad('provider must be one of: openrouter, anthropic, openai-compat');
+      const provider = b.provider;
+      if (!model || model.length > MODEL_MAX) return bad('model is required');
+      if (b.instruction !== undefined && typeof b.instruction !== 'string') return bad('instruction must be a string');
+      if (b.cursorOffset !== undefined && (!Number.isInteger(b.cursorOffset) || (b.cursorOffset as number) < 0))
+        return bad('cursorOffset must be a non-negative integer');
+      let selection: { text: string } | undefined;
+      if (b.selection !== undefined) {
+        const t = (b.selection as { text?: unknown } | null)?.text;
+        if (typeof t !== 'string') return bad('selection.text must be a string');
+        selection = { text: t };
+      }
+      const instruction = b.instruction as string | undefined;
+      if (action === 'beat' && !instruction?.trim()) return bad('a beat needs an instruction');
+      if (SELECTION_ACTIONS.has(action) && !selection?.text.trim()) return bad(`${action} needs a selection`);
+
+      if (!UUID_RE.test(manuscriptId)) return res.status(404).json({ error: 'manuscript not found' });
+      const ms = await db.query<{ title: string; doc: unknown }>(
+        'select title, doc from manuscripts where id = $1 and user_id = $2',
+        [manuscriptId, req.user!.id],
+      );
+      const row = ms.rows[0];
+      if (!row) return res.status(404).json({ error: 'manuscript not found' });
+      const doc = (typeof row.doc === 'string' ? JSON.parse(row.doc) : row.doc) as {
+        meta?: { series?: unknown };
+        sections?: { id?: unknown; content?: unknown }[];
+      } | null;
+      const section = Array.isArray(doc?.sections) ? doc!.sections!.find((s) => s?.id === sectionId) : undefined;
+      if (!section) return res.status(404).json({ error: 'section not found' });
+      const sectionText = typeof section.content === 'string' ? section.content : '';
+      if (b.cursorOffset !== undefined && (b.cursorOffset as number) > sectionText.length)
+        return bad('cursorOffset is outside the section');
+
+      const keyRow = (
+        await db.query<{ key_ciphertext: string; base_url: string | null }>(
+          'select key_ciphertext, base_url from aris_keys where user_id = $1 and provider = $2',
+          [req.user!.id, provider],
+        )
+      ).rows[0];
+      if (!keyRow) return bad(`no ${provider} key on your /aris page`);
+
+      // Covenant: the manuscript's meta.series names a series; series_covenants
+      // is keyed by that name's seriesKey(). No series, or no row, means none.
+      let covenants: CovenantEntry[] = [];
+      const seriesName = typeof doc?.meta?.series === 'string' ? doc.meta.series : '';
+      const key = seriesName ? seriesKey(seriesName) : '';
+      if (key) {
+        const cov = await db.query<{ doc: unknown }>(
+          'select doc from series_covenants where user_id = $1 and series_key = $2',
+          [req.user!.id, key],
+        );
+        const cdoc = cov.rows[0]?.doc as { entries?: unknown } | undefined;
+        if (Array.isArray(cdoc?.entries))
+          covenants = (cdoc!.entries as Record<string, unknown>[])
+            .filter((e) => e && typeof e.kind === 'string' && typeof e.name === 'string')
+            .map((e) => ({
+              kind: e.kind as string,
+              name: e.name as string,
+              note: typeof e.note === 'string' ? e.note : '',
+            }));
+      }
+
+      let messages;
+      try {
+        messages = buildDraftPrompt({
+          action,
+          instruction,
+          sectionText,
+          cursorOffset: b.cursorOffset as number | undefined,
+          selection,
+          bookTitle: row.title,
+          covenants,
+        });
+      } catch (err) {
+        // cursorOffset was range-checked above, so a RangeError here is the 24k budget.
+        if (err instanceof RangeError) return bad('that selection is too large for one pass — select less');
+        throw err;
+      }
+
+      let reply;
+      try {
+        reply = await providerFor(provider, config).chat({
+          apiKey: decryptKey(config.arisKeySecret!, keyRow.key_ciphertext),
+          model,
+          messages,
+          maxTokens: DRAFT_MAX_TOKENS,
+          ...(keyRow.base_url ? { baseUrl: keyRow.base_url } : {}),
+        });
+      } catch (err) {
+        if (err instanceof ArisUpstreamError) {
+          return res.status(502).json({ error: `${err.provider} refused the request`, detail: err.detail });
+        }
+        throw err;
+      }
+
+      const kind: ProposalKind = SELECTION_ACTIONS.has(action) ? 'replaced-own-prose' : 'generated-new';
+      const token = mintProposalToken(config.arisKeySecret!, {
+        userId: String(req.user!.id),
+        manuscriptId,
+        sectionId,
+        action,
+        kind,
+        provider,
+        model: reply.model,
+        proposalChars: reply.text.length,
+        nonce: randomUUID(),
+        ts: Date.now(),
+      });
+      res.json({ proposal: { text: reply.text, model: reply.model, provider, action }, token });
+    } catch (err) {
+      next(err);
+    }
   });
 
   // Show-once: the response carries the last four characters, never the key.
