@@ -1,19 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 const SRC = join(__dirname, '..', 'src');
 const ARIS_DIR = join(SRC, 'aris');
-// src/generated is git-ignored extraction output of 1.0 (its prose holds words like "Paris"), not studio source
+// src/generated is git-ignored extraction output of 1.0 (its prose holds words like "Paris"): only an import/path is checked there
 const GENERATED = join(SRC, 'generated');
-const MOUNT = join('shell', 'Shell.tsx');
+const MOUNT = 'shell/Shell.tsx';
+const TEXT = /\.(ts|tsx|js|jsx|css|html)$/;
+const GENERATED_IMPORT = /from\s+['"][^'"]*aris|import\(.*aris/i;
 
 function walk(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (p === ARIS_DIR || p === GENERATED) continue;
-    if (statSync(p).isDirectory()) walk(p, out);
-    else out.push(p);
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (p === ARIS_DIR || e.isSymbolicLink()) continue;
+    if (e.isDirectory()) walk(p, out);
+    else if (e.isFile() && TEXT.test(e.name)) out.push(p);
   }
   return out;
 }
@@ -26,9 +28,10 @@ describe('aris isolation', () => {
       const rel = relative(SRC, f).split(sep).join('/');
       let text: string;
       try { text = readFileSync(f, 'utf8'); } catch { continue; }
-      const lines = text.split(/\r?\n/).filter((l) => /aris/i.test(l));
+      const generated = f.startsWith(GENERATED + sep);
+      const lines = text.split(/\r?\n/).filter((l) => (generated ? GENERATED_IMPORT.test(l) : /aris/i.test(l)));
       if (!lines.length) continue;
-      if (rel === MOUNT.split(sep).join('/')) {
+      if (rel === MOUNT) {
         mountLines = lines.length;
         if (lines.some((l) => !l.includes('// aris mount'))) offenders.push(rel + ' (unmarked line)');
       } else offenders.push(rel);

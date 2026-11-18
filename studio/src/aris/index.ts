@@ -35,4 +35,9 @@ export async function mountAris(host: Element | null = document.body): Promise<v
   if (!host.querySelector('[data-aris="glyph"]')) host.appendChild(glyph());
 }
 
+/** What Shell's mount effect runs once a book is open: mount into the topbar (the element holding #btnHomeport). */
+export function mountArisInTopbar(): Promise<void> {
+  return mountAris(document.getElementById('btnHomeport')?.parentElement ?? null);
+}
+
 export { arisStatus };

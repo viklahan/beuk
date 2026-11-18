@@ -55,3 +55,22 @@ describe('aris gate', () => {
     expect(f).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('aris topbar mount (what Shell calls)', () => {
+  it('lands exactly one glyph beside #btnHomeport, once per session', async () => {
+    const { mountArisInTopbar } = await import('../src/aris/index');
+    host.innerHTML = '<div id="bar"><button id="btnHomeport"></button></div>';
+    setArisFetch(reply(200, { enabled: true, optedIn: true, voice: 'laconic', keys: [] }) as unknown as typeof fetch);
+    await mountArisInTopbar();
+    await mountArisInTopbar();
+    const bar = host.querySelector('#btnHomeport')!.parentElement!;
+    expect(bar.querySelectorAll('[data-aris="glyph"]').length).toBe(1);
+    expect(host.querySelectorAll('[data-aris]').length).toBe(1);
+  });
+  it('no topbar, no glyph, no throw', async () => {
+    const { mountArisInTopbar } = await import('../src/aris/index');
+    setArisFetch(reply(200, { enabled: true, optedIn: true, voice: 'laconic', keys: [] }) as unknown as typeof fetch);
+    await expect(mountArisInTopbar()).resolves.toBeUndefined();
+    expect(document.querySelector('[data-aris]')).toBeNull();
+  });
+});
