@@ -65,6 +65,10 @@ export const BACKUP_TABLES = [
   // Phase 3 (migration 028): the MCP write audit — accountability rows
   // about author text, kept with the account. Only FK parent is users.
   'mcp_writes',
+  // Aris W1 (migration 029): the writer's opt-in/voice and the AI-write
+  // audit. Only FK parent is users.
+  'aris_settings',
+  'ai_writes',
   'founders_applications',
   'shares',
   'share_recipients',
@@ -92,6 +96,7 @@ export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
   client_errors: 'studio error reports (scrubbed message + stack, counts; no user id, no IP); diagnostics kept 30 days, not user data',
   book_format_observations: 'derived: the latest readBook finding per book, as warning codes, field paths and unknown key names (cut to 80-120 characters, capped at 200 / 50), upgrade step names and a timing; no book text and no values; rewritten on the next save of each book, and a restore that replaces manuscripts drops its rows with them (on delete cascade)',
   usage_daily: 'daily aggregate counters (one number per day per counter; no identifiers); a restore must not rewrite them',
+  aris_keys: 'provider keys are re-pasted by the writer after a restore; they never leave the box, even encrypted',
   ops_alerts: 'backup alert state (open incident, last alert); operational state of this server, not data',
 };
 
