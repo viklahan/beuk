@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type NextFunction, type Request, type Response } from 'express';
 import { requireAuth } from '../auth.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
@@ -6,6 +6,15 @@ import { encryptKey } from './vault.js';
 
 const PROVIDERS = ['openrouter', 'anthropic', 'openai-compat'] as const;
 const API_KEY_MAX = 512;
+const VOICES = ['laconic', 'homeric'] as const;
+type Voice = (typeof VOICES)[number];
+
+interface ArisStatus {
+  enabled: true;
+  optedIn: boolean;
+  voice: Voice;
+  keys: { provider: string; last4: string; baseUrl?: string }[];
+}
 
 /**
  * Aris — the AI addon's server surface, mounted at /api/aris.
@@ -33,22 +42,80 @@ export function arisRoutes(db: Db, config: Config): Router {
 
   router.use(requireAuth(db));
 
-  // optedIn and voice become real in Task 4; the shape is fixed now.
-  router.get('/status', async (req, res, next) => {
-    try {
-      const rows = await db.query<{ provider: string; key_last4: string; base_url: string | null }>(
+  // No aris_settings row means the defaults (not opted in, laconic).
+  async function loadStatus(userId: number | string): Promise<ArisStatus> {
+    const [keyRows, settings] = await Promise.all([
+      db.query<{ provider: string; key_last4: string; base_url: string | null }>(
         'select provider, key_last4, base_url from aris_keys where user_id = $1 order by provider',
-        [req.user!.id],
-      );
-      const keys = rows.rows.map((r) => ({
-        provider: r.provider,
-        last4: r.key_last4,
-        ...(r.base_url ? { baseUrl: r.base_url } : {}),
-      }));
-      res.json({ enabled: true, optedIn: false, voice: 'laconic', keys });
+        [userId],
+      ),
+      db.query<{ opted_in: boolean; voice: Voice }>('select opted_in, voice from aris_settings where user_id = $1', [
+        userId,
+      ]),
+    ]);
+    const keys = keyRows.rows.map((r) => ({
+      provider: r.provider,
+      last4: r.key_last4,
+      ...(r.base_url ? { baseUrl: r.base_url } : {}),
+    }));
+    const row = settings.rows[0];
+    return { enabled: true, optedIn: row?.opted_in ?? false, voice: row?.voice ?? 'laconic', keys };
+  }
+
+  // Engine routes (draft, review) sit behind this until the user has opted in on /aris.
+  async function requireOptIn(req: Request, res: Response, next: NextFunction) {
+    try {
+      const r = await db.query<{ opted_in: boolean }>('select opted_in from aris_settings where user_id = $1', [
+        req.user!.id,
+      ]);
+      if (!r.rows[0]?.opted_in) {
+        res.status(403).json({ error: 'summon Aris on your /aris page first' });
+        return;
+      }
+      next();
     } catch (err) {
       next(err);
     }
+  }
+
+  router.get('/status', async (req, res, next) => {
+    try {
+      res.json(await loadStatus(req.user!.id));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.put('/settings', async (req, res, next) => {
+    try {
+      const body = (req.body ?? {}) as { optedIn?: unknown; voice?: unknown };
+      if (body.optedIn !== undefined && typeof body.optedIn !== 'boolean') {
+        res.status(400).json({ error: 'optedIn must be a boolean' });
+        return;
+      }
+      if (body.voice !== undefined && !(VOICES as readonly unknown[]).includes(body.voice)) {
+        res.status(400).json({ error: 'voice must be one of: laconic, homeric' });
+        return;
+      }
+      // Omitted fields keep their stored value (or the column default on first write).
+      await db.query(
+        `insert into aris_settings (user_id, opted_in, voice)
+         values ($1, coalesce($2::boolean, false), coalesce($3::text, 'laconic'))
+         on conflict (user_id) do update
+           set opted_in = coalesce($2::boolean, aris_settings.opted_in),
+               voice = coalesce($3::text, aris_settings.voice),
+               updated_at = now()`,
+        [req.user!.id, body.optedIn ?? null, body.voice ?? null],
+      );
+      res.json(await loadStatus(req.user!.id));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Placeholder: replaced by the real draft handler in Task 7.
+  router.post('/draft', requireOptIn, (_req, res) => {
+    res.status(501).json({ error: 'not yet' });
   });
 
   // Show-once: the response carries the last four characters, never the key.
