@@ -1,6 +1,6 @@
 import type { Editor } from '@tiptap/core';
 import { Fragment, Slice, type Node as PMNode } from '@tiptap/pm/model';
-import { TextSelection } from '@tiptap/pm/state';
+import { TextSelection, type PluginKey } from '@tiptap/pm/state';
 import { ReplaceStep } from '@tiptap/pm/transform';
 import { yUndoPluginKey } from '@tiptap/y-tiptap';
 import { posToTextOffset, textOffsetToPos, toDoc, toText } from '@book/editor/index.js';
@@ -112,8 +112,10 @@ const undoManager = (editor: Editor) => yUndoPluginKey.getState(editor.state)?.u
 /** Write `next` (a whole new text and its selection) into the editor: one transaction, one undo step. Returns false when
  *  the editor is gone. */
 /** `merge` (wave 3a, dictation): this edit joins the undo step of the edit before it — a phrase's interim rewrites
- *  and its final are ONE undo step; environment/page.ts decides where a phrase ends. */
-export function applyTextEdit(editor: Editor, next: TextEdit, opts: { merge?: boolean } = {}): boolean {
+ *  and its final are ONE undo step; environment/page.ts decides where a phrase ends.
+ *  `meta`: plugin metadata carried on the same transaction (a plugin's own state change lands with the edit, not in a
+ *  second transaction). */
+export function applyTextEdit(editor: Editor, next: TextEdit, opts: { merge?: boolean; meta?: [PluginKey | string, unknown] } = {}): boolean {
   if (editor.isDestroyed) return false;
   const { state } = editor;
   const old = toBook(state.doc);
@@ -141,6 +143,7 @@ export function applyTextEdit(editor: Editor, next: TextEdit, opts: { merge?: bo
   const len = next.text.length;
   const clamp = (o: number) => Math.max(0, Math.min(len, o));
   tr.setSelection(TextSelection.create(tr.doc, textOffsetToPos(nb, clamp(next.start)), textOffsetToPos(nb, clamp(next.end))));
+  if (opts.meta) tr.setMeta(opts.meta[0], opts.meta[1]);
   const um = undoManager(editor);
   if (opts.merge && um) um.lastChange = Date.now();
   else um?.stopCapturing();

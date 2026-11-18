@@ -1,6 +1,8 @@
 import './aris.css';
 import { apiFetch } from './net';
 import { askOnce, setArisStatus, arisStatus, type ArisStatus } from './state';
+import { registerEditorExtras } from '../editor/extras';
+import { editorExtra } from './flow';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -27,11 +29,14 @@ async function fetchStatus(): Promise<ArisStatus | null> {
   return s;
 }
 
-/** The module's one entry. Asks the server once per session; renders the glyph into `host` only when enabled and opted in. */
+/** The module's one entry. Asks the server once per session; only when enabled and opted in, gives every chapter
+ *  editor (open now or later) the summon menu and the ghost, and renders the glyph into `host`. */
 export async function mountAris(host: Element | null = document.body): Promise<void> {
   const s = await askOnce(fetchStatus);
   setArisStatus(s);
-  if (!host || !s || !s.optedIn) return;
+  if (!s || !s.optedIn) return;
+  registerEditorExtras([editorExtra]); // once: the registry keeps a factory a single time
+  if (!host) return;
   if (!host.querySelector('[data-aris="glyph"]')) host.appendChild(glyph());
 }
 

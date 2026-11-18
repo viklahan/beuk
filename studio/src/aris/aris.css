@@ -15,3 +15,58 @@
   stroke-width: 1;
   stroke-linecap: round;
 }
+
+/* the summon menu and the ghost: inside the editor's surface, so they take its direction and font; logical sides only */
+[data-aris='menu'],
+[data-aris='ghost'] {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  user-select: none;
+}
+[data-aris='menu'] {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 4px 8px;
+  border: 1px solid rgba(25, 227, 227, 0.4);
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+[data-aris='menu'] button,
+[data-aris='controls'] button {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #19e3e3;
+  cursor: pointer;
+}
+[data-aris='menu'] input {
+  font: inherit;
+  margin-inline-start: 6px;
+  min-width: 12em;
+}
+[data-aris='ghost'] {
+  display: block;
+  color: rgba(25, 227, 227, 0.75);
+}
+[data-aris='ghost'] [data-aris='text'] {
+  white-space: pre-wrap;
+}
+[data-aris='ghost'] textarea {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  user-select: text;
+}
+[data-aris='controls'] {
+  display: block;
+  font-size: 0.8em;
+  opacity: 0.85;
+}
+[data-aris='notice'] {
+  font-size: 0.85em;
+  font-style: italic;
+}
