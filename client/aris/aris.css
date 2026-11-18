@@ -1,0 +1,14 @@
+/* /aris controls. Reads the Help theme's variables where it can. */
+.aris-controls { margin: 2.5rem 0 1rem; padding-top: 1.5rem; border-top: 1px solid currentColor; border-top-color: rgba(128,128,128,.35); }
+.aris-quiet { opacity: .8; font-style: italic; }
+.aris-block { margin: 1.25rem 0; }
+.aris-block h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.aris-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .4rem 0; }
+.aris-row input, .aris-row select { font: inherit; padding: .35rem .5rem; max-width: 100%; }
+.aris-row input[type=password], .aris-row input[type=url] { flex: 1 1 14rem; }
+.aris-row button { font: inherit; padding: .35rem .8rem; cursor: pointer; }
+.aris-keys { list-style: none; padding: 0; margin: .5rem 0; }
+.aris-keys li { display: flex; gap: .75rem; align-items: center; margin: .3rem 0; }
+.aris-msg { margin-top: 1rem; }
+.aris-msg.bad { color: #b3261e; }
+.aris-hint { font-size: .9rem; opacity: .8; margin: .25rem 0 0; }

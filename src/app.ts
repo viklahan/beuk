@@ -37,6 +37,7 @@ import { stockRoutes } from './routes/stock.js';
 import { arisRoutes } from './aris/routes.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
+import { arisPageRoutes } from './routes/aris-page.js';
 import { siteRoutes } from './routes/site.js';
 import { schoolRoutes } from './routes/school.js';
 import { weeklyRoutes } from './routes/weekly.js';
@@ -286,6 +287,8 @@ export function buildApp({
   app.use(bowmarketRoutes(config));
   app.use(school.pages);
   app.use(warmthRoutes(config, db));
+  // Aris's one public page (404 unless ARIS_ENABLED); caddy proxies /aris* here.
+  app.use(arisPageRoutes(db, config));
   // The public site's robots.txt and sitemap.xml (they carry APP_BASE_URL).
   app.use(siteRoutes(config));
   app.use(statusPage.page);

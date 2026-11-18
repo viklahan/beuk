@@ -72,6 +72,7 @@ export function siteRoutes(config: Config): Router {
       ...COMPARE_SLUGS.map((s) => `/compare/${s}`),
       '/status',
       ...(config.kofiUrl ? ['/support'] : []),
+      ...(config.arisEnabled ? ['/aris'] : []),
     ];
     const xmlEsc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const lastmod = new Map(c.guides.map((g) => [`/help/${g.slug}`, g.updated]));

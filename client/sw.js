@@ -209,7 +209,7 @@ self.addEventListener("fetch", (event) => {
      returning visitor at once instead of waiting for a shell bump.
      BEUK:next — /next is the 2.0 studio, with its own worker: this one
      never caches or serves it (not even as the offline shell). */
-  if (url.origin === self.location.origin && /^\/(help|support|thanks|changelog|roadmap|privacy|terms|site|robots\.txt|sitemap\.xml|account|status|features|ramp|compare|next)(\/|$)/.test(url.pathname)) return;
+  if (url.origin === self.location.origin && /^\/(help|support|thanks|changelog|roadmap|privacy|terms|site|robots\.txt|sitemap\.xml|account|status|features|ramp|compare|next|aris)(\/|$)/.test(url.pathname)) return;
 
   /* The shelf and its API: network-first, never cached. On failure
      the rejection propagates untouched — the page already knows how

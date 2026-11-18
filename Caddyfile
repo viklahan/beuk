@@ -244,6 +244,11 @@
 	handle /roadmap {
 		reverse_proxy app:3000
 	}
+	# Aris: the one page that explains and enables it, plus its script
+	# (served by the app only while ARIS_ENABLED; 404 otherwise).
+	handle /aris* {
+		reverse_proxy app:3000
+	}
 	# The legal pages (src/legal/render.ts): their operator details
 	# come from the LEGAL_* settings in .env.
 	handle /privacy* {
