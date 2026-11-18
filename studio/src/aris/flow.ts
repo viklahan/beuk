@@ -4,10 +4,12 @@ import { posToTextOffset } from '@book/editor/index.js';
 import { editorSection } from '../editor/active';
 import { toBook } from '../editor/bridge';
 import { cloudFacts } from '../closure/index';
-import { ghostAt, ghostPlugin, insertGhost, showGhost, showNotice } from './ghost';
+import { editorText } from '../editor/insert';
+import { ghostAt, ghostPlugin, insertGhost, rangeText, showGhost, showNotice, type Replace } from './ghost';
 import type { MenuChoice } from './menu';
 import { apiFetch } from './net';
-import { propose, type ProposeArgs } from './propose';
+import { propose, type ProposeAction, type ProposeArgs } from './propose';
+import { selectionPlugin } from './selection';
 import { setInsertFailure } from './state';
 import { summonPlugin } from './summon';
 
@@ -16,17 +18,20 @@ import { summonPlugin } from './summon';
 
 /** Ask for a proposal with `args` and show it at `at` (the pending note first). A ghost replaced or discarded while
  *  the request was out drops its answer. */
-async function ask(editor: Editor, at: number, args: ProposeArgs): Promise<void> {
-  const mine = showNotice(editor, at, 'pending', 'drafting…');
+async function ask(editor: Editor, at: number, args: ProposeArgs, replace?: Replace): Promise<void> {
+  const mine = showNotice(editor, at, 'pending', 'drafting…', undefined, replace);
   const r = await propose(args);
   if (editor.isDestroyed) return;
   const g = ghostAt(editor.state);
   if (!g || g.ver !== mine) return;
   const again = (res: string) => {
-    if (res === 'retry') void ask(editor, ghostAt(editor.state)?.at ?? g.at, args);
+    if (res === 'retry') {
+      const now = ghostAt(editor.state);
+      void ask(editor, now?.at ?? g.at, args, now ? now.replace : g.replace);
+    }
   };
   if ('error' in r) {
-    showNotice(editor, g.at, 'notice', r.error, again);
+    showNotice(editor, g.at, 'notice', r.error, again, g.replace);
     return;
   }
   // line endings as the page holds them: an untouched proposal must never read as edited because of a carriage return
@@ -34,7 +39,7 @@ async function ask(editor: Editor, at: number, args: ProposeArgs): Promise<void>
   showGhost(editor, g.at, proposal, (res, text) => {
     if (res === 'insert') void insert(editor, r.token, proposal, lf(text ?? proposal));
     else again(res);
-  });
+  }, g.replace);
 }
 
 const lf = (s: string) => s.replace(/\r\n?/g, '\n');
@@ -69,5 +74,20 @@ function chosen(editor: Editor, at: number, c: MenuChoice): void {
   void ask(editor, at, args);
 }
 
-/** The editor behaviour the module registers: the summon menu and the ghost. */
-export const editorExtra: EditorExtra = (editor) => [summonPlugin(editor, chosen), ghostPlugin(editor)];
+/** A toolbar action on the selection [from, to) of `editor`: fixed as `chosen` fixes its own — this editor's book and
+ *  section — plus the selected text (as the section's text holds it) and the range the ghost will replace. */
+function chosenSelection(editor: Editor, from: number, to: number, action: ProposeAction): void {
+  const own = editorSection(editor);
+  const id = own?.sectionMap?.get('id');
+  const book = toBook(editor.state.doc);
+  const text = editorText(editor).text;
+  const args: ProposeArgs = {
+    action,
+    target: { manuscriptId: cloudFacts.linkedId, sectionId: typeof id === 'string' && id ? id : null },
+    selectionText: text.slice(posToTextOffset(book, from), posToTextOffset(book, to)),
+  };
+  void ask(editor, to, args, { from, to, orig: rangeText(editor.state.doc, from, to) });
+}
+
+/** The editor behaviour the module registers: the summon menu, the selection toolbar and the ghost. */
+export const editorExtra: EditorExtra = (editor) => [summonPlugin(editor, chosen), selectionPlugin(editor, chosenSelection), ghostPlugin(editor)];

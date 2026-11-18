@@ -10,7 +10,7 @@ import { arisStatus } from './state';
    W1 has no model picker: the writer's first stored key names the provider, and the model is that provider's
    default below. */
 
-export type ProposeAction = 'beat' | 'continue' | 'fill' | 'summarize';
+export type ProposeAction = 'beat' | 'continue' | 'fill' | 'summarize' | 'rewrite' | 'expand' | 'condense';
 /** The book and section a proposal is for, captured once where the writer summoned it (a retry reuses it as is). */
 export type ProposeTarget = { manuscriptId: string | null; sectionId: string | null };
 export type ProposeArgs = { action: ProposeAction; instruction?: string; cursorOffset?: number; selectionText?: string; target?: ProposeTarget };

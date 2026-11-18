@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { Plugin, PluginKey, type EditorState } from '@tiptap/pm/state';
-import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import type { Node as PMNode } from '@tiptap/pm/model';
+import { Decoration,DecorationSet } from '@tiptap/pm/view';
 import { posToTextOffset } from '@book/editor/index.js';
 import { toBook } from '../editor/bridge';
 import { applyTextEdit, editorText } from '../editor/insert';
@@ -12,10 +13,16 @@ import { applyTextEdit, editorText } from '../editor/insert';
 
 export type GhostResolve = 'insert' | 'edit' | 'discard' | 'retry';
 type OnResolve = (r: GhostResolve, text?: string) => void;
+/** A ghost for a selection: Insert REPLACES [from, to) (document positions, mapped along with the document); `orig` is
+ *  that range's text as it was selected, so a range edited since is told apart from one merely moved. `at` is `to`. */
+export type Replace = { from: number; to: number; orig: string };
 type Ghost =
-  | { kind: 'proposal'; at: number; text: string; editing: boolean; onResolve: OnResolve; ver: number }
-  | { kind: 'pending' | 'notice'; at: number; text: string; onResolve?: OnResolve; ver: number };
+  | { kind: 'proposal'; at: number; text: string; editing: boolean; onResolve: OnResolve; ver: number; replace?: Replace }
+  | { kind: 'pending' | 'notice'; at: number; text: string; onResolve?: OnResolve; ver: number; replace?: Replace };
 type Meta = { set: Ghost | null } | { editing: true };
+
+/** The text of [from, to) as a selection's ghost compares it. */
+export const rangeText = (doc: PMNode, from: number, to: number): string => doc.textBetween(from, to, '\n', '\n');
 
 export const ghostKey = new PluginKey<Ghost | null>('beukAiGhost');
 let ver = 0;
@@ -105,6 +112,14 @@ export function ghostPlugin(editor: Editor): Plugin<Ghost | null> {
         // spot ends it — and a Yjs-origin change replaces each block it touched whole (y-tiptap's replaceChangedChildren),
         // so a remote edit inside the ghost's own block drops it: fail-safe, it is never re-placed at a guessed spot
         // (test: 'a remote change in another block carries the ghost along; one in its own block drops it')
+        if (g.replace) {
+          // a selection's ghost: both ends map along, and the range must read exactly as it was selected — an edit
+          // inside it (or a block replaced whole) drops the ghost, never replacing text that is no longer what was chosen
+          const f = tr.mapping.mapResult(g.replace.from, 1);
+          const t = tr.mapping.mapResult(g.replace.to, -1);
+          if (f.deleted || t.deleted || t.pos < f.pos || rangeText(tr.doc, f.pos, t.pos) !== g.replace.orig) return null;
+          return { ...g, at: t.pos, replace: { ...g.replace, from: f.pos, to: t.pos } };
+        }
         const r = tr.mapping.mapResult(g.at, -1);
         return r.deleted ? null : { ...g, at: r.pos };
       },
@@ -126,23 +141,23 @@ const setGhost = (editor: Editor, g: Ghost | null) => {
 };
 
 /** The ghost now showing (its kind and where), or null. */
-export const ghostAt = (state: EditorState): { kind: Ghost['kind']; at: number; ver: number } | null => {
+export const ghostAt = (state: EditorState): { kind: Ghost['kind']; at: number; ver: number; replace?: Replace } | null => {
   const g = ghostKey.getState(state);
-  return g ? { kind: g.kind, at: g.at, ver: g.ver } : null;
+  return g ? { kind: g.kind, at: g.at, ver: g.ver, replace: g.replace } : null;
 };
 
 /** Show `text` as a proposal at `at`, with Insert · Edit first · Discard · retry. Replaces whatever ghost was there. */
-export function showGhost(editor: Editor, at: number, text: string, onResolve: OnResolve): number {
+export function showGhost(editor: Editor, at: number, text: string, onResolve: OnResolve, replace?: Replace): number {
   const v = ++ver;
-  setGhost(editor, { kind: 'proposal', at, text, editing: false, onResolve, ver: v });
+  setGhost(editor, { kind: 'proposal', at, text, editing: false, onResolve, ver: v, replace });
   return v;
 }
 
 /** Show a note at `at`: 'pending' while a proposal is on its way, 'notice' for the server's own words (with Discard,
  *  and retry when `onResolve` is given). */
-export function showNotice(editor: Editor, at: number, kind: 'pending' | 'notice', text: string, onResolve?: OnResolve): number {
+export function showNotice(editor: Editor, at: number, kind: 'pending' | 'notice', text: string, onResolve?: OnResolve, replace?: Replace): number {
   const v = ++ver;
-  setGhost(editor, { kind, at, text, onResolve, ver: v });
+  setGhost(editor, { kind, at, text, onResolve, ver: v, replace });
   return v;
 }
 
@@ -162,9 +177,12 @@ export function insertGhost(editor: Editor, text: string): InsertFacts | null {
   const g = ghostKey.getState(editor.state);
   if (!g || g.kind !== 'proposal') return null;
   const before = editorText(editor).text;
-  const at = posToTextOffset(toBook(editor.state.doc), g.at);
+  const book = toBook(editor.state.doc);
+  // a selection's ghost replaces its (mapped) range; any other goes in at its spot
+  const at = posToTextOffset(book, g.replace ? g.replace.from : g.at);
+  const cut = g.replace ? posToTextOffset(book, g.replace.to) : at;
   const end = at + text.length;
-  const next = before.slice(0, at) + text + before.slice(at);
+  const next = before.slice(0, at) + text + before.slice(cut);
   if (!applyTextEdit(editor, { text: next, start: end, end }, { meta: [ghostKey, { set: null } satisfies Meta] })) return null;
   return { bytesBefore: utf8(before), bytesAfter: utf8(editorText(editor).text), inserted: text };
 }

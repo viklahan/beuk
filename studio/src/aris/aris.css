@@ -70,3 +70,34 @@
   font-size: 0.85em;
   font-style: italic;
 }
+
+/* the selection toolbar: a zero-width anchor at the selection's end; the bar floats above it. Logical sides only, so it
+   follows the editor's direction */
+.aris-toolbar-anchor {
+  position: relative;
+  display: inline-block;
+  inline-size: 0;
+  user-select: none;
+}
+[data-aris='toolbar'] {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-end: 100%;
+  z-index: 5;
+  display: inline-flex;
+  gap: 4px 10px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  background: #0a0c10;
+  border: 1px solid rgba(25, 227, 227, 0.4);
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+[data-aris='toolbar'] button {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #19e3e3;
+  cursor: pointer;
+}
