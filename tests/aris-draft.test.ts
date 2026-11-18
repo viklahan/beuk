@@ -197,3 +197,29 @@ test('a bad body is a 400 and a tampered token fails verification', async () => 
     await server.close();
   }
 });
+
+test('a stored key the server cannot read is an honest 409, not a 500', async () => {
+  const { server, client, db, manuscriptId } = await boot();
+  try {
+    await db.query("update aris_keys set key_ciphertext = 'not-a-real-ciphertext' where provider = 'openrouter'");
+    const r = await client.post('/api/aris/draft', body(manuscriptId));
+    assert.equal(r.status, 409);
+    assert.deepEqual(r.body, { error: 'your openrouter key could not be read — re-enter it on your /aris page' });
+  } finally {
+    await server.close();
+  }
+});
+
+test('an oversized selection is a 400 asking for less', async () => {
+  const { server, client, manuscriptId } = await boot();
+  try {
+    const r = await client.post(
+      '/api/aris/draft',
+      body(manuscriptId, { action: 'rewrite', instruction: undefined, selection: { text: 'x'.repeat(25_000) } }),
+    );
+    assert.equal(r.status, 400);
+    assert.deepEqual(r.body, { error: 'that selection is too large for one pass — select less' });
+  } finally {
+    await server.close();
+  }
+});

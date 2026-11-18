@@ -3,7 +3,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import { requireAuth } from '../auth.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
-import { seriesKey } from './../routes/series-covenants.js';
+import { seriesKey } from '../routes/series-covenants.js';
 import { buildDraftPrompt, type CovenantEntry, type DraftAction } from './prompts.js';
 import { ArisUpstreamError, providerFor } from './providers.js';
 import { mintProposalToken, type ProposalKind } from './token.js';
@@ -218,10 +218,21 @@ export function arisRoutes(db: Db, config: Config): Router {
         throw err;
       }
 
+      // A key the server cannot read (corrupt row, rotated secret) is stale
+      // state, not an upstream fault: 409, never an opaque 500.
+      let apiKey: string;
+      try {
+        apiKey = decryptKey(config.arisKeySecret!, keyRow.key_ciphertext);
+      } catch {
+        return res
+          .status(409)
+          .json({ error: `your ${provider} key could not be read — re-enter it on your /aris page` });
+      }
+
       let reply;
       try {
         reply = await providerFor(provider, config).chat({
-          apiKey: decryptKey(config.arisKeySecret!, keyRow.key_ciphertext),
+          apiKey,
           model,
           messages,
           maxTokens: DRAFT_MAX_TOKENS,
