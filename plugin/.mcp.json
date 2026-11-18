@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "beuk": {
-      "type": "http",
-      "url": "https://mcp.beuk.studio/mcp"
-    }
-  }
-}
