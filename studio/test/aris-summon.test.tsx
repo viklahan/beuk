@@ -67,12 +67,12 @@ afterEach(() => {
 });
 
 /** A chapter editor on a fresh book holding `text` in section "sec-1", made the active editor. */
-function mount(text: string, dir: 'ltr' | 'rtl' = 'ltr'): { ed: Editor; frag: Y.XmlFragment } {
+function mount(text: string, dir: 'ltr' | 'rtl' = 'ltr', sectionId = 'sec-1'): { ed: Editor; frag: Y.XmlFragment } {
   const ydoc = new Y.Doc();
   const frag = ydoc.getXmlFragment('body');
   if (text) ypPmToFrag(toDoc(text), frag);
   const section = ydoc.getMap<unknown>('section');
-  section.set('id', 'sec-1');
+  section.set('id', sectionId);
   const element = document.createElement('div');
   document.body.appendChild(element);
   const ed = createChapterEditor({ element, fragment: frag, dir, lang: dir === 'rtl' ? 'ar' : 'en', label: 'Chapter', onRefuse: () => undefined });
@@ -104,6 +104,18 @@ const utf8 = (s: string) => new TextEncoder().encode(s).length;
 const posted = (path: string) => calls.filter((c) => c.path === path);
 /** The direction an element takes from its nearest dir. */
 const effectiveDir = (el: Element) => el.closest('[dir]')?.getAttribute('dir');
+
+/** Both ways the plugins reach an editor: at creation (module first) and live, by registerPlugin (editor first). */
+const UNDO_ORDERS = ['module loaded first', 'editor made first'] as const;
+async function mountIn(order: (typeof UNDO_ORDERS)[number], text: string) {
+  if (order === 'module loaded first') {
+    await mountAris(null);
+    return mount(text);
+  }
+  const m = mount(text);
+  await mountAris(null);
+  return m;
+}
 
 /** Summon on an empty line and choose "continue the story"; wait for the ghost. */
 async function summonContinue(ed: Editor): Promise<void> {
@@ -225,6 +237,67 @@ describe('aris summon', () => {
     expect(posted('/api/aris/insert')).toHaveLength(0);
   });
 
+  it.each(UNDO_ORDERS)('undo after a discard takes back only what the writer typed; the proposal never appears (%s)', async (order) => {
+    const { ed, frag } = await mountIn(order, 'Once');
+    const yBefore = fragText(frag);
+    caretEnd(ed);
+    type(ed, ' more');
+    ed.commands.enter();
+    const typed = editorText(ed).text;
+    expect(typed).toBe('Once more\n');
+    await summonContinue(ed);
+    expect(ghost()).not.toBeNull();
+    button(ghost(), 'Discard').click();
+    await settle();
+    expect(editorText(ed).text).toBe(typed);
+    expect(ed.commands.undo()).toBe(true);
+    expect(editorText(ed).text).toBe('Once');
+    expect(fragText(frag)).toBe(yBefore);
+    expect(fragText(frag)).not.toContain('rain');
+    // and nothing further to undo brings the proposal in: redo gives back exactly the typed text
+    expect(ed.commands.redo()).toBe(true);
+    expect(editorText(ed).text).toBe(typed);
+  });
+
+  it.each(UNDO_ORDERS)('one undo after Insert removes exactly the inserted text (%s)', async (order) => {
+    const { ed, frag } = await mountIn(order, 'Once upon a time.');
+    caretEnd(ed);
+    ed.commands.enter();
+    const before = editorText(ed).text;
+    const yBefore = fragText(frag);
+    await summonContinue(ed);
+    button(ghost(), 'Insert').click();
+    await settle();
+    expect(editorText(ed).text).toBe(before + 'The rain came.');
+    expect(ed.commands.undo()).toBe(true);
+    expect(editorText(ed).text).toBe(before);
+    expect(fragText(frag)).toBe(yBefore);
+  });
+
+  it('a remote change in another block carries the ghost along; one in its own block drops it', async () => {
+    await mountAris(null);
+    const { ed, frag } = mount('First.\n\nOnce');
+    caretEnd(ed);
+    ed.commands.enter();
+    await summonContinue(ed);
+    expect(ghost()).not.toBeNull();
+    const textOf = (i: number) => (frag.get(i) as Y.XmlElement).get(0) as Y.XmlText;
+    // another tab edits the first paragraph (a Yjs change with a foreign origin)
+    frag.doc!.transact(() => textOf(0).insert(0, 'Very '), 'remote');
+    expect(editorText(ed).text.startsWith('Very First.')).toBe(true);
+    expect(ghost()).not.toBeNull();
+    button(ghost(), 'Insert').click();
+    await settle();
+    expect(editorText(ed).text).toBe('Very First.\n\nOnce\nThe rain came.');
+    // a second proposal, and this time the remote edit lands in the ghost's own block: the block is replaced and the
+    // ghost dropped (fail-safe: never re-placed at a guessed spot)
+    ed.commands.enter();
+    await summonContinue(ed);
+    expect(ghost()).not.toBeNull();
+    frag.doc!.transact(() => textOf(1).insert(0, 'So '), 'remote');
+    expect(ghost()).toBeNull();
+  });
+
   it('retry asks again with the same request and replaces the ghost', async () => {
     await mountAris(null);
     const { ed } = mount('');
@@ -279,6 +352,87 @@ describe('aris summon', () => {
     expect(insertFailure()).toBe('this proposal is already recorded');
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
+  });
+
+  it("a proposal and its retry are for the summoning editor's own section, whichever editor is active", async () => {
+    await mountAris(null);
+    const a = mount('', 'ltr', 'sec-A');
+    const b = mount('', 'ltr', 'sec-B'); // mounted last: B is the active editor now
+    type(a.ed, '/');
+    button(menu(), 'continue the story').click();
+    await settle();
+    await settle();
+    setActiveEditor(b.ed, 1, null);
+    drafts.push({ status: 200, body: { proposal: { text: 'Again.', model: 'm', provider: 'anthropic', action: 'continue' }, token: 'tok-r' } });
+    button(ghost(), 'retry').click();
+    await settle();
+    await settle();
+    const d = posted('/api/aris/draft');
+    expect(d.map((c) => c.body!.sectionId)).toEqual(['sec-A', 'sec-A']);
+    expect(d[1].body).toEqual(d[0].body);
+  });
+
+  it('the menu works from the keyboard: focus on open, arrows move, Enter runs, Escape dismisses back to the page', async () => {
+    await mountAris(null);
+    const { ed } = mount('');
+    const press = (k: string) => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+    type(ed, '/');
+    expect(menu()!.getAttribute('role')).toBe('menu');
+    expect(document.activeElement?.textContent).toBe('beat');
+    press('ArrowDown');
+    expect(document.activeElement?.tagName).toBe('INPUT');
+    press('ArrowDown');
+    expect(document.activeElement?.textContent).toBe('continue the story');
+    press('ArrowUp');
+    press('ArrowUp');
+    press('ArrowUp'); // wraps from the first item to the last
+    expect(document.activeElement?.textContent).toBe('summarize section');
+    press('Escape');
+    expect(menu()).toBeNull();
+    expect(editorText(ed).text).toBe('/');
+    expect(document.activeElement).toBe(ed.view.dom);
+    // again, and Enter runs the focused item
+    ed.commands.undo();
+    caretAt(ed, 1);
+    expect(editorText(ed).text).toBe('');
+    type(ed, '/');
+    press('ArrowDown');
+    press('ArrowDown');
+    press('Enter');
+    await settle();
+    await settle();
+    expect(menu()).toBeNull();
+    expect(posted('/api/aris/draft')[0].body).toMatchObject({ action: 'continue' });
+    expect(ghost()).not.toBeNull();
+  });
+
+  it('carriage returns never count as a writer edit', async () => {
+    await mountAris(null);
+    const { ed } = mount('');
+    drafts.push({ status: 200, body: { proposal: { text: 'One.\r\nTwo.', model: 'm', provider: 'anthropic', action: 'continue' }, token: 'tok-cr' } });
+    await summonContinue(ed);
+    expect(ghost()!.textContent).not.toContain('\r');
+    button(ghost(), 'Edit first').click();
+    expect(ghost()!.querySelector('textarea')!.value).toBe('One.\nTwo.');
+    button(ghost(), 'Insert').click();
+    await settle();
+    expect(editorText(ed).text).toBe('One.\nTwo.');
+    expect(posted('/api/aris/insert')[0].body).toMatchObject({ token: 'tok-cr', writerEdited: false });
+  });
+
+  it('the draft is asked for the summon spot, wherever the caret has gone', async () => {
+    await mountAris(null);
+    const { ed } = mount('Once');
+    caretEnd(ed);
+    ed.commands.enter();
+    const spot = editorText(ed).start;
+    expect(spot).toBe(5);
+    type(ed, '/');
+    caretAt(ed, 1);
+    button(menu(), 'continue the story').click();
+    await settle();
+    await settle();
+    expect(posted('/api/aris/draft')[0].body).toMatchObject({ cursorOffset: spot });
   });
 
   it('the ghost inherits rtl direction', async () => {

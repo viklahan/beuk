@@ -1,6 +1,9 @@
 import type { Editor } from '@tiptap/core';
 import type { EditorExtra } from '../editor/extras';
-import { caretOffset, activeEditor } from '../editor/active';
+import { posToTextOffset } from '@book/editor/index.js';
+import { editorSection } from '../editor/active';
+import { toBook } from '../editor/bridge';
+import { cloudFacts } from '../closure/index';
 import { ghostAt, ghostPlugin, insertGhost, showGhost, showNotice } from './ghost';
 import type { MenuChoice } from './menu';
 import { apiFetch } from './net';
@@ -26,11 +29,15 @@ async function ask(editor: Editor, at: number, args: ProposeArgs): Promise<void>
     showNotice(editor, g.at, 'notice', r.error, again);
     return;
   }
-  showGhost(editor, g.at, r.text, (res, text) => {
-    if (res === 'insert') void insert(editor, r.token, r.text, text ?? r.text);
+  // line endings as the page holds them: an untouched proposal must never read as edited because of a carriage return
+  const proposal = lf(r.text);
+  showGhost(editor, g.at, proposal, (res, text) => {
+    if (res === 'insert') void insert(editor, r.token, proposal, lf(text ?? proposal));
     else again(res);
   });
 }
+
+const lf = (s: string) => s.replace(/\r\n?/g, '\n');
 
 async function insert(editor: Editor, token: string, proposal: string, text: string): Promise<void> {
   const facts = insertGhost(editor, text);
@@ -47,13 +54,18 @@ async function insert(editor: Editor, token: string, proposal: string, text: str
   console.warn('[aris] the insert is in your text, but its record was not kept: ' + why);
 }
 
+/** A menu choice in `editor` at `at`: the request is fixed here — this editor's own book and section (never whichever
+ *  editor is active by the time it is answered or retried) and the summon spot's offset in the section's text (where
+ *  the ghost renders, not wherever the caret has gone). A retry reuses these args unchanged. */
 function chosen(editor: Editor, at: number, c: MenuChoice): void {
-  const a = activeEditor();
-  // the caret is on the summon spot when the menu was chosen; its offset is the section's, read now
-  const cursorOffset = a && a.editor === editor ? caretOffset(a.section) : undefined;
-  const args: ProposeArgs = { action: c.action };
+  const own = editorSection(editor);
+  const id = own?.sectionMap?.get('id');
+  const args: ProposeArgs = {
+    action: c.action,
+    target: { manuscriptId: cloudFacts.linkedId, sectionId: typeof id === 'string' && id ? id : null },
+    cursorOffset: posToTextOffset(toBook(editor.state.doc), at),
+  };
   if (c.instruction !== undefined) args.instruction = c.instruction;
-  if (cursorOffset !== undefined && cursorOffset >= 0) args.cursorOffset = cursorOffset;
   void ask(editor, at, args);
 }
 

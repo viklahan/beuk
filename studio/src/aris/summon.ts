@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { Plugin, PluginKey, type EditorState } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
-import { renderMenu, type MenuChoice } from './menu';
+import { focusMenu, renderMenu, type MenuChoice } from './menu';
 
 /* The summon: "/" typed at the start of an EMPTY line (nothing before it on its line, nothing after it) opens the menu
    there. Input rules are off editor-wide, so this is handleTextInput. Anywhere else — mid-word, after a space, before
@@ -48,6 +48,8 @@ export function summonPlugin(editor: Editor, onChoose: (editor: Editor, at: numb
         if (m && 'open' in m) return { at: m.open, ver: ++ver };
         if (m && 'close' in m) return null;
         if (!s || !tr.docChanged) return s;
+        // as the ghost: mapped through changes in other blocks; a change covering its spot (a Yjs-origin change replaces
+        // each touched block whole) closes it, the held-back "/" with it
         const r = tr.mapping.mapResult(s.at, -1);
         return r.deleted ? null : { at: r.pos, ver: s.ver };
       },
@@ -75,6 +77,8 @@ export function summonPlugin(editor: Editor, onChoose: (editor: Editor, at: numb
         }
         if (text !== '/' || !onEmptyLine(view.state, from, to)) return false;
         view.dispatch(view.state.tr.setMeta(summonKey, { open: from } satisfies Meta));
+        // the keyboard goes to the menu: its first item
+        focusMenu(view.dom.querySelector('[data-aris="menu"]'));
         return true;
       },
       handleKeyDown(view, e) {
@@ -99,11 +103,12 @@ export function summonPlugin(editor: Editor, onChoose: (editor: Editor, at: numb
               const v = editor.view;
               const here = summonKey.getState(v.state)?.at ?? at; // the widget is reused while the spot moves
               v.dispatch(v.state.tr.setMeta(summonKey, { close: true } satisfies Meta));
+              editor.view.focus(); // the menu is gone: the keyboard goes back to the page, at the summon spot
               onChoose(editor, here, c);
             },
             () => {
               close(editor.view, true);
-              editor.commands.focus();
+              editor.view.focus();
             },
           );
         return DecorationSet.create(state.doc, [Decoration.widget(at, menu, { side: 1, key: 'summon:' + s.ver, ignoreSelection: true, stopEvent: () => true })]);

@@ -101,7 +101,10 @@ export function ghostPlugin(editor: Editor): Plugin<Ghost | null> {
         if (m && 'set' in m) return m.set;
         if (m && 'editing' in m && g?.kind === 'proposal') return { ...g, editing: true, ver: ++ver };
         if (!g || !tr.docChanged) return g;
-        // a change elsewhere (a remote edit, typing before it) carries the ghost along; its spot deleted ends it
+        // a change in ANOTHER block (typing above it, a remote edit there) maps the ghost along. A change that covers its
+        // spot ends it — and a Yjs-origin change replaces each block it touched whole (y-tiptap's replaceChangedChildren),
+        // so a remote edit inside the ghost's own block drops it: fail-safe, it is never re-placed at a guessed spot
+        // (test: 'a remote change in another block carries the ghost along; one in its own block drops it')
         const r = tr.mapping.mapResult(g.at, -1);
         return r.deleted ? null : { ...g, at: r.pos };
       },

@@ -11,7 +11,9 @@ import { arisStatus } from './state';
    default below. */
 
 export type ProposeAction = 'beat' | 'continue' | 'fill' | 'summarize';
-export type ProposeArgs = { action: ProposeAction; instruction?: string; cursorOffset?: number; selectionText?: string };
+/** The book and section a proposal is for, captured once where the writer summoned it (a retry reuses it as is). */
+export type ProposeTarget = { manuscriptId: string | null; sectionId: string | null };
+export type ProposeArgs = { action: ProposeAction; instruction?: string; cursorOffset?: number; selectionText?: string; target?: ProposeTarget };
 export type Proposal = { text: string; token: string };
 
 /** W1's per-provider default models (no picker yet). openai-compat's is a guess at a common name: such an endpoint
@@ -22,19 +24,30 @@ export const DEFAULT_MODELS: Record<string, string> = {
   'openai-compat': 'gpt-4o-mini',
 };
 
-export async function propose(o: ProposeArgs): Promise<Proposal | { error: string }> {
+/** The open editor's book and section, for a caller that captured none. */
+export function activeTarget(): ProposeTarget | null {
   const a = activeEditor();
-  if (!a) return { error: 'open a chapter first' };
-  const sectionId = a.sectionMap?.get('id');
-  if (typeof sectionId !== 'string' || !sectionId) return { error: 'this section has no id yet — type a word and try again' };
-  const manuscriptId = cloudFacts.linkedId;
+  if (!a) return null;
+  const id = a.sectionMap?.get('id');
+  return { manuscriptId: cloudFacts.linkedId, sectionId: typeof id === 'string' && id ? id : null };
+}
+
+/** `o.target`: the section to draft for (the summon's own editor); without it, the open editor's, with `cursorOffset`
+ *  defaulting to its caret. */
+export async function propose(o: ProposeArgs): Promise<Proposal | { error: string }> {
+  const t = o.target ?? activeTarget();
+  if (!t) return { error: 'open a chapter first' };
+  const sectionId = t.sectionId;
+  if (!sectionId) return { error: 'this section has no id yet — type a word and try again' };
+  const manuscriptId = t.manuscriptId;
   if (!manuscriptId) return { error: 'this book is not on your shelf yet — save it to the shelf first' };
   const key = arisStatus()?.keys[0] as { provider?: unknown } | undefined;
   const provider = typeof key?.provider === 'string' ? key.provider : '';
   if (!provider) return { error: 'add a provider key on your /aris page first' };
   const model = DEFAULT_MODELS[provider];
   if (!model) return { error: `no default model for ${provider}` };
-  const cursorOffset = o.cursorOffset ?? caretOffset(a.section);
+  const a = activeEditor();
+  const cursorOffset = o.cursorOffset ?? (o.target || !a ? -1 : caretOffset(a.section));
   const body: Record<string, unknown> = { manuscriptId, sectionId, action: o.action };
   if (o.instruction !== undefined) body.instruction = o.instruction;
   if (cursorOffset >= 0) body.cursorOffset = cursorOffset;
