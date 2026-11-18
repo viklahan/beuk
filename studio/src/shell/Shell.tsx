@@ -53,6 +53,7 @@ const openTab = (url: string) => {
   }
 };
 
+let arisLoad: Promise<typeof import('../aris/index.js')> | null = null; // aris mount
 export function Shell() {
   const { t, dir, lang } = useLocale();
   // 1.0's code in the closure reads t() and the interface language at call time
@@ -67,6 +68,7 @@ export function Shell() {
   }, []);
   const [dialog, setDialog] = useState<'history' | 'settings' | 'insights' | 'notebook' | 'goals' | null>(null);
   const bookOpen = bk.phase === 'open';
+  useEffect(() => { if (bookOpen) void (arisLoad ??= import('../aris/index.js')).then((m) => m.mountAris(document.getElementById('btnHomeport')?.parentElement)); }, [bookOpen]); // aris mount
   const ops = useChapterOps({ openHistory: () => setDialog('history') });
   const structure = useStructure();
   // 1.0's centre tabs: the chapter content, the Typography Studio (wave 4a) and the outline board

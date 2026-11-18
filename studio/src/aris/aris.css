@@ -1,0 +1,17 @@
+[data-aris='glyph'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: #19e3e3;
+  opacity: 0.45;
+}
+[data-aris='glyph'] svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-linecap: round;
+}
