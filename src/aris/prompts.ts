@@ -45,7 +45,8 @@ const TASKS: Record<DraftAction, string> = {
 
 const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim();
 
-function covenantBlock(entries: CovenantEntry[]): string {
+/** Shared with the editorial lens (src/aris/editorial.ts). */
+export function covenantBlock(entries: CovenantEntry[]): string {
   const lines: string[] = [];
   let used = 0;
   for (const e of entries) {
