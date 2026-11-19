@@ -49,7 +49,9 @@ test('/aris carries the journey: the Calling hero, six cards, the altar', async 
     // the copy still rides along (persona ## Page remains the single source)
     assert.match(page.text, /ἄριστος/);
     assert.match(page.text, /Never enter uninvited/);
-    // the altar at the end is unchanged
+    // the altar at the end: the key walkthrough docs sit above the controls
+    assert.match(page.text, /Your key, step by step/);
+    assert.match(page.text, /aistudio\.google\.com/);
     assert.match(page.text, /data-aris-controls/);
     assert.match(page.text, /data-aris-signed-out/);
     const js = await get(server.base, '/aris/calling.js');

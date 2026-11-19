@@ -47,8 +47,9 @@ const CARDS: { title: string; section: string }[] = [
   { title: 'What travels', section: 'What travels, and where' },
   { title: 'The ledger', section: 'The ledger' },
 ];
-/** Rendered with the altar, not as cards: the switch and the voices. */
-const ALTAR_SECTIONS = ['Turning it on', 'Two voices, later'];
+/** Rendered with the altar, not as cards: the switch, the voices, and the
+ *  key walkthrough sitting directly above the form it documents. */
+const ALTAR_SECTIONS = ['Turning it on', 'Two voices, later', 'Your key, step by step'];
 
 /** Slice "## Page" by its own "### " headings; '' keys the intro. */
 function pageSections(md: string): Map<string, string> {
@@ -133,7 +134,7 @@ export function arisPageRoutes(db: Db, config: Config): Router {
         (c, i) => `<article class="aris-card">
   <button type="button" class="aris-card-face" aria-haspopup="dialog">
     <img src="/aris/cards/${i + 1}" alt="" loading="lazy" width="600" height="400" />
-    <span class="aris-card-kicker">The journey · ${i + 1} of ${CARDS.length}</span>
+    <span class="aris-card-kicker">Journey with Aris · ${i + 1} of ${CARDS.length}</span>
     <span class="aris-card-title">${c.title}</span>
   </button>
   <template class="aris-card-copy">
@@ -141,7 +142,7 @@ ${renderMarkdown(slice(c.section))}
   </template>
 </article>`,
       ).join('\n');
-      const plate = `<dialog class="aris-plate" aria-label="The journey, opened">
+      const plate = `<dialog class="aris-plate" aria-label="Journey with Aris, opened">
   <button type="button" class="aris-plate-close" aria-label="Close">✕</button>
   <img alt="" />
   <div class="aris-plate-text">
@@ -162,7 +163,7 @@ ${renderMarkdown(slice(c.section))}
   <p class="aris-hero-line" data-calling-line>Aris waits at your threshold.</p>
   <p class="aris-hero-hint" data-calling-hint>click or scroll to call</p>
 </section>
-<section class="aris-journey" aria-label="The journey">
+<section class="aris-journey" aria-label="Journey with Aris">
 ${cards}
 ${plate}
 </section>

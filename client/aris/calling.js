@@ -21,19 +21,23 @@
   var hintEl = document.querySelector('[data-calling-hint]');
   var lineEl = document.querySelector('[data-calling-line]');
 
-  /* The motes are the same stars that fill the journey plates' skies —
-     silver, cream, candle-gold — so the hero and the watercolor cards read
-     as one night, not two apps meeting at a border. */
+  /* The hero IS the first plate of the edition: its canvas wears the same
+     watercolor night-teal as the card plates' skies, on BOTH themes, and
+     its motes are those plates' stars — silver, cream, candle-gold. Only
+     the bottom fade differs: it dissolves into whichever page (bone or
+     dark) sits beneath. */
+  var PLATE_NIGHT = '#22363e', PLATE_RGB = '34,54,62';
+  var STARS = ['#f2e9d8', '#cfd8d6', '#e8c87a', '#9fc3c9', '#e8eef0', '#f2e9d8'];
   var THEMES = {
     candlelight: {
-      bg: '#0a1317', bgRGB: '10,19,23', fade: 'rgba(10,19,23,0.42)', comp: 'lighter',
-      motes: ['#f2e9d8', '#cfd8d6', '#e8c87a', '#9fc3c9', '#e8eef0', '#f2e9d8'],
+      bg: PLATE_NIGHT, fade: 'rgba(' + PLATE_RGB + ',0.42)', comp: 'lighter',
+      pageRGB: '10,19,23', motes: STARS,
       baseAlpha: 0.25, alphaGain: 0.55, size: 1.0, grain: 0.1,
     },
     paper: {
-      bg: '#eceee0', bgRGB: '236,238,224', fade: 'rgba(236,238,224,0.68)', comp: 'source-over',
-      motes: ['#14607a', '#22333a', '#a87e2c', '#2f6f45', '#5d6d66', '#14607a'],
-      baseAlpha: 0.72, alphaGain: 0.45, size: 0.6, grain: 0.14,
+      bg: PLATE_NIGHT, fade: 'rgba(' + PLATE_RGB + ',0.42)', comp: 'lighter',
+      pageRGB: '236,238,224', motes: STARS,
+      baseAlpha: 0.25, alphaGain: 0.55, size: 1.0, grain: 0.12,
     },
   };
   var root = document.documentElement;
@@ -123,8 +127,8 @@
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     var fade = ctx.createLinearGradient(0, H * 0.8, 0, H);
-    fade.addColorStop(0, 'rgba(' + T.bgRGB + ',0)');
-    fade.addColorStop(1, 'rgba(' + T.bgRGB + ',1)');
+    fade.addColorStop(0, 'rgba(' + T.pageRGB + ',0)');
+    fade.addColorStop(1, 'rgba(' + T.pageRGB + ',1)');
     ctx.fillStyle = fade;
     ctx.fillRect(0, H * 0.8, W, H * 0.2);
   }
