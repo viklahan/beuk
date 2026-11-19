@@ -3,6 +3,7 @@ import { apiFetch } from './net';
 import { askOnce, forgetArisAsk, setArisStatus, arisStatus, type ArisStatus } from './state';
 import { registerEditorExtras } from '../editor/extras';
 import { editorExtra } from './flow';
+import { openEditorial } from './editorial';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -38,6 +39,25 @@ function paint(el: HTMLElement, on: boolean): void {
   el.setAttribute('aria-pressed', String(on));
   el.setAttribute('aria-label', on ? 'Aris is summoned — send it away' : 'Aris is away — summon it');
   el.title = el.getAttribute('aria-label')!;
+  syncEditorialControl(el, on);
+}
+
+/** The editorial read rides beside the laurel, and only while Aris is
+ *  summoned: sent away, the control goes with the menu and toolbar. */
+function syncEditorialControl(glyphEl: HTMLElement, on: boolean): void {
+  let btn = document.querySelector<HTMLButtonElement>('[data-aris="editorial-open"]');
+  if (!on) {
+    btn?.remove();
+    return;
+  }
+  if (btn) return;
+  btn = document.createElement('button');
+  btn.type = 'button';
+  btn.setAttribute('data-aris', 'editorial-open');
+  btn.textContent = 'Editorial';
+  btn.title = 'Aris reads the whole book and reports only what it can quote';
+  btn.addEventListener('click', () => openEditorial());
+  glyphEl.insertAdjacentElement('afterend', btn);
 }
 
 /** The laurel's press: flip the account's opt-in (the very switch /aris flips; keys stay put). A refusal or an
@@ -61,12 +81,13 @@ export async function mountAris(host: Element | null = document.body): Promise<v
   const live = document.querySelector<HTMLElement>('[data-aris="glyph"]');
   if (!s || (!s.optedIn && !s.known)) {
     live?.remove();
+    document.querySelector('[data-aris="editorial-open"]')?.remove();
     return;
   }
   registerEditorExtras([editorExtra]); // once: the registry keeps a factory a single time
   const el = live ?? glyph();
-  paint(el, s.optedIn);
   if (!live && host) host.appendChild(el);
+  paint(el, s.optedIn); // after insertion: paint also seats the editorial control beside the mark
 }
 
 /** What Shell's mount effect runs once a book is open: mount into the topbar (the element holding #btnHomeport). */

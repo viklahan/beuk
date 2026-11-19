@@ -180,7 +180,9 @@ describe('aris topbar mount (what Shell calls)', () => {
     await mountArisInTopbar();
     const bar = host.querySelector('#btnHomeport')!.parentElement!;
     expect(bar.querySelectorAll('[data-aris="glyph"]').length).toBe(1);
-    expect(host.querySelectorAll('[data-aris]').length).toBe(1);
+    // the laurel and, since the editorial lens, its one companion control
+    expect(host.querySelectorAll('[data-aris]').length).toBe(2);
+    expect(host.querySelectorAll('[data-aris="editorial-open"]').length).toBe(1);
   });
   it('no topbar, no glyph, no throw', async () => {
     const { mountArisInTopbar } = await import('../src/aris/index');

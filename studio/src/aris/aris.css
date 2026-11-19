@@ -83,6 +83,58 @@
   font-style: italic;
 }
 
+/* the editorial read: the control beside the laurel and its report dialog */
+[data-aris='editorial-open'] {
+  font: inherit;
+  font-size: 12px;
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 6px;
+  padding: 2px 8px;
+  color: var(--accent);
+  cursor: pointer;
+}
+[data-aris='editorial'] {
+  border: 0;
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  max-width: min(720px, 92vw);
+  max-height: 86vh;
+  overflow: auto;
+  background: var(--panel-2, #fffdf4);
+  color: var(--ink, #22333a);
+  box-shadow: var(--shadow, 0 10px 30px rgba(0, 0, 0, 0.3));
+}
+[data-aris='editorial']::backdrop { background: rgba(4, 9, 11, 0.6); }
+[data-aris='editorial-close'] {
+  position: absolute;
+  top: 0.5rem;
+  inset-inline-end: 0.6rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+}
+[data-aris='editorial-run'],
+[data-aris='editorial-abandon'] {
+  font: inherit;
+  padding: 0.3rem 0.9rem;
+  cursor: pointer;
+}
+[data-aris='editorial-gate'] { font-weight: 700; }
+[data-aris='editorial-gate'][data-gate='fail'] { color: var(--bad, #b3352b); }
+[data-aris='editorial-finding'] {
+  border-inline-start: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  padding-inline-start: 0.8rem;
+  margin: 0.7rem 0;
+}
+[data-aris='editorial-finding'] blockquote { margin: 0.2rem 0; font-style: italic; opacity: 0.85; }
+[data-aris='editorial-rejected'] { font-size: 0.85rem; opacity: 0.75; font-style: italic; }
+.aris-ed-where { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.65; margin: 0; }
+.aris-ed-fix { opacity: 0.85; }
+.aris-ed-claim { font-size: 0.9rem; margin: 0.2rem 0; }
+
 /* the selection toolbar: a zero-width anchor at the selection's end; the bar floats above it. Logical sides only, so it
    follows the editor's direction */
 .aris-toolbar-anchor {
