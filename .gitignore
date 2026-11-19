@@ -28,3 +28,6 @@ client/next/
 
 # Blender auto-backups (docs/aris-hero bench)
 *.blend1
+
+# /aris card art masters (web-size copies are committed; masters stay local)
+content/aris/cards/src/

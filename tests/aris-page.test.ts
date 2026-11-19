@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { createTestDb, startTestServer } from './helpers.js';
 
@@ -41,9 +41,11 @@ test('/aris carries the journey: the Calling hero, six cards, the altar', async 
     // the hero: the Calling engine mounts on its canvas
     assert.match(page.text, /id="calling"/);
     assert.match(page.text, /<script src="\/aris\/calling\.js"/);
-    // six journey cards, each a disclosure with its image slot
+    // six journey cards, each opening the shared plate dialog
     for (let n = 1; n <= 6; n++) assert.match(page.text, new RegExp(`/aris/cards/${n}`));
     assert.equal((page.text.match(/class="aris-card"/g) ?? []).length, 6);
+    assert.match(page.text, /<dialog class="aris-plate"/);
+    assert.match(page.text, /<script src="\/aris\/journey\.js"/);
     // the copy still rides along (persona ## Page remains the single source)
     assert.match(page.text, /ἄριστος/);
     assert.match(page.text, /Never enter uninvited/);
@@ -62,22 +64,31 @@ test('/aris carries the journey: the Calling hero, six cards, the altar', async 
 test('/aris/cards/N serves the writer-dropped image, or a placeholder until then', async () => {
   const db = await createTestDb();
   const server = await startTestServer(db, undefined, ON);
-  const dropped = 'content/aris/cards/card-6.webp';
+  // The writer's real art may occupy any slot. It is MOVED ASIDE, never
+  // overwritten or unlinked, and always put back — a test must not eat art.
+  const slot3 = 'content/aris/cards/card-3.webp';
+  const slot6 = 'content/aris/cards/card-6.webp';
+  const aside = (f: string) => { if (existsSync(f)) renameSync(f, `${f}.test-aside`); };
+  const restore = (f: string) => { if (existsSync(`${f}.test-aside`)) renameSync(`${f}.test-aside`, f); };
+  aside(slot3);
+  aside(slot6);
   try {
-    // no file dropped yet: a built-in SVG placeholder, never a broken image
+    // an empty slot: a built-in SVG placeholder, never a broken image
     const ph = await get(server.base, '/aris/cards/3');
     assert.equal(ph.status, 200);
     assert.match(ph.type, /svg/);
     assert.match(ph.text, /<svg/);
     // a dropped file wins the slot
-    writeFileSync(dropped, Buffer.from([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]));
+    writeFileSync(slot6, Buffer.from([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]));
     const img = await fetch(`${server.base}/aris/cards/6`);
     assert.equal(img.status, 200);
     assert.match(img.headers.get('content-type') ?? '', /webp/);
     // only the six slots exist
     for (const bad of ['0', '7', 'x', '1.webp']) assert.equal((await get(server.base, `/aris/cards/${bad}`)).status, 404);
   } finally {
-    try { unlinkSync(dropped); } catch { /* not created */ }
+    try { unlinkSync(slot6); } catch { /* our dummy, if it was written */ }
+    restore(slot3);
+    restore(slot6);
     await server.close();
   }
 });
@@ -90,6 +101,7 @@ test('/aris is 404 when the feature is off', async () => {
     assert.equal((await get(server.base, '/aris/aris.js')).status, 404);
     assert.equal((await get(server.base, '/aris/aris.css')).status, 404);
     assert.equal((await get(server.base, '/aris/calling.js')).status, 404);
+    assert.equal((await get(server.base, '/aris/journey.js')).status, 404);
     assert.equal((await get(server.base, '/aris/cards/1')).status, 404);
   } finally {
     await server.close();

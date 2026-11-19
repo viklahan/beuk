@@ -21,16 +21,19 @@
   var hintEl = document.querySelector('[data-calling-hint]');
   var lineEl = document.querySelector('[data-calling-line]');
 
+  /* The motes are the same stars that fill the journey plates' skies —
+     silver, cream, candle-gold — so the hero and the watercolor cards read
+     as one night, not two apps meeting at a border. */
   var THEMES = {
     candlelight: {
-      bg: '#0a1317', fade: 'rgba(10,19,23,0.42)', comp: 'lighter',
-      motes: ['#d6a94f', '#ffd98a', '#5fb0c9', '#7fbf8f', '#c29ad0', '#eef1ea'],
-      baseAlpha: 0.25, alphaGain: 0.55, size: 1.0,
+      bg: '#0a1317', bgRGB: '10,19,23', fade: 'rgba(10,19,23,0.42)', comp: 'lighter',
+      motes: ['#f2e9d8', '#cfd8d6', '#e8c87a', '#9fc3c9', '#e8eef0', '#f2e9d8'],
+      baseAlpha: 0.25, alphaGain: 0.55, size: 1.0, grain: 0.1,
     },
     paper: {
-      bg: '#eceee0', fade: 'rgba(236,238,224,0.68)', comp: 'source-over',
-      motes: ['#14607a', '#22333a', '#a87e2c', '#2f6f45', '#7d4f86', '#b3352b'],
-      baseAlpha: 0.72, alphaGain: 0.45, size: 0.6,
+      bg: '#eceee0', bgRGB: '236,238,224', fade: 'rgba(236,238,224,0.68)', comp: 'source-over',
+      motes: ['#14607a', '#22333a', '#a87e2c', '#2f6f45', '#5d6d66', '#14607a'],
+      baseAlpha: 0.72, alphaGain: 0.45, size: 0.6, grain: 0.14,
     },
   };
   var root = document.documentElement;
@@ -41,8 +44,12 @@
   var N = 14000;
   var R_SHELL = 320;
   var DEPTH_A = 46, DEPTH_WORD = 14;
-  var K_SEEK_A = 0.0075, K_SEEK_WORD = 0.016, DAMP_SEEK = 0.9;
-  var BURST_MS = 2600, DAMP_COAST = 0.99;
+  /* Paced for a first-time visitor (V: "the user is not able to see what
+     happened"): a ceremonial gathering, a burst that properly hangs, the
+     name arriving gently — then, once it stands, the quick spring takes
+     over so a stir recomposes Aris in seconds, not a slow ooze. */
+  var K_SEEK_A = 0.005, K_WORD_ARRIVE = 0.008, K_SEEK_WORD = 0.016, DAMP_SEEK = 0.9;
+  var BURST_MS = 4200, DAMP_COAST = 0.993, ARRIVE_MS = 7000;
 
   function textPoints(text, fontPx, depth) {
     var off = document.createElement('canvas');
@@ -90,7 +97,37 @@
   function recolor() { paintBg(); if (still) drawOnce(); }
   window.addEventListener('resize', resize);
 
-  var state = 'A', burstUntil = 0;
+  var state = 'A', burstUntil = 0, wordSnapAt = Infinity;
+
+  /* watercolor-paper grain, tiled over the sim each frame */
+  var grainPat = null;
+  (function () {
+    var g = document.createElement('canvas');
+    g.width = g.height = 160;
+    var gc = g.getContext('2d');
+    var id = gc.createImageData(160, 160);
+    for (var i = 0; i < id.data.length; i += 4) {
+      var v = 110 + ((Math.random() * 80) | 0);
+      id.data[i] = id.data[i + 1] = id.data[i + 2] = v;
+      id.data[i + 3] = 255;
+    }
+    gc.putImageData(id, 0, 0);
+    grainPat = ctx.createPattern(g, 'repeat');
+  })();
+  function finishFrame() {
+    // the paper tooth, then the hero dissolving into the page below it
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.globalAlpha = T.grain;
+    ctx.fillStyle = grainPat;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    var fade = ctx.createLinearGradient(0, H * 0.8, 0, H);
+    fade.addColorStop(0, 'rgba(' + T.bgRGB + ',0)');
+    fade.addColorStop(1, 'rgba(' + T.bgRGB + ',1)');
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, H * 0.8, W, H * 0.2);
+  }
   function call() {
     if (state !== 'A') return;
     state = 'burst';
@@ -157,6 +194,7 @@
     for (var i = 0; i < N; i++) { var q = project(motes[i], cy, sy, cp, sp); if (q) drawMote(motes[i], q); }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
+    finishFrame();
   }
 
   resize();
@@ -178,12 +216,13 @@
     var i, m;
     if (state === 'burst' && now > burstUntil) {
       state = 'word';
+      wordSnapAt = now + ARRIVE_MS;
       if (lineEl) lineEl.style.opacity = '1';
       if (hintEl) { hintEl.textContent = 'left: stir the motes · right: pan & tilt'; hintEl.style.opacity = '1'; }
     }
     if (autoSpin && state === 'word') yaw += (Math.sin(now * 0.00022) * 0.12 - yaw) * 0.01 * dt;
     var target = state === 'A' ? SHAPE_A : state === 'word' ? SHAPE_WORD : null;
-    var k = state === 'A' ? K_SEEK_A : K_SEEK_WORD;
+    var k = state === 'A' ? K_SEEK_A : now < wordSnapAt ? K_WORD_ARRIVE : K_SEEK_WORD;
     for (i = 0; i < N; i++) {
       m = motes[i];
       if (target) {
@@ -225,6 +264,7 @@
       drawMote(m, q);
     }
     ctx.globalAlpha = 1;
+    finishFrame();
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);

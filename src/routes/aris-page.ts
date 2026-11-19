@@ -94,6 +94,7 @@ export function arisPageRoutes(db: Db, config: Config): Router {
   router.get('/aris/aris.css', asset('aris.css', 'css'));
   router.get('/aris/aris.js', asset('aris.js', 'application/javascript'));
   router.get('/aris/calling.js', asset('calling.js', 'application/javascript'));
+  router.get('/aris/journey.js', asset('journey.js', 'application/javascript'));
 
   router.get('/aris/cards/:n', async (req, res, next) => {
     try {
@@ -125,18 +126,30 @@ export function arisPageRoutes(db: Db, config: Config): Router {
         if (s === undefined) throw new Error(`persona.md ## Page: missing "### ${name}" — the /aris cards slice by it`);
         return s;
       };
+      // A card face opens the shared plate dialog (client/aris/journey.js):
+      // the art keeps its 3:2 shape beside the copy instead of stretching
+      // into a banner. The copy rides along in a <template> per card.
       const cards = CARDS.map(
-        (c, i) => `<details class="aris-card">
-  <summary>
+        (c, i) => `<article class="aris-card">
+  <button type="button" class="aris-card-face" aria-haspopup="dialog">
     <img src="/aris/cards/${i + 1}" alt="" loading="lazy" width="600" height="400" />
     <span class="aris-card-kicker">The journey · ${i + 1} of ${CARDS.length}</span>
     <span class="aris-card-title">${c.title}</span>
-  </summary>
-  <div class="aris-card-body">
+  </button>
+  <template class="aris-card-copy">
 ${renderMarkdown(slice(c.section))}
-  </div>
-</details>`,
+  </template>
+</article>`,
       ).join('\n');
+      const plate = `<dialog class="aris-plate" aria-label="The journey, opened">
+  <button type="button" class="aris-plate-close" aria-label="Close">✕</button>
+  <img alt="" />
+  <div class="aris-plate-text">
+    <p class="aris-card-kicker"></p>
+    <h3 class="aris-plate-title"></h3>
+    <div class="aris-plate-body"></div>
+  </div>
+</dialog>`;
       const altar = ALTAR_SECTIONS.map((name) => `<h3>${name}</h3>\n${renderMarkdown(slice(name))}`).join('\n');
       const ctx = { config, content: getHelpContent(), status: await readShelfStatus(db, config) };
       const html = chrome(ctx, {
@@ -151,6 +164,7 @@ ${renderMarkdown(slice(c.section))}
 </section>
 <section class="aris-journey" aria-label="The journey">
 ${cards}
+${plate}
 </section>
 <section class="aris-altar" aria-label="Turning it on">
 ${altar}
@@ -162,6 +176,7 @@ ${altar}
 </section>
 </article>
 <script src="/aris/calling.js" defer></script>
+<script src="/aris/journey.js" defer></script>
 <script src="/aris/aris.js" defer></script>`,
       });
       res.type('html').send(html);
