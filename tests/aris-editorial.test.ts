@@ -6,6 +6,7 @@ import {
   EDITORIAL_WINDOW_CHARS,
   parseEditorialReply,
 } from '../src/aris/editorial.js';
+import { EDITORIAL_MAX_TOKENS } from '../src/aris/editorial.js';
 import { loadPersona } from '../src/aris/persona.js';
 
 const input = {
@@ -123,6 +124,45 @@ test('a claim with an absent quote is dropped and tallied; a count with a bad am
 test('a prose reply is an error, never an empty pass', () => {
   const out = parseEditorialReply('I read it and it seems fine to me.', input.sectionText, false);
   assert.ok('error' in out);
+});
+
+test('a JSON reply missing its fields is an error, never an empty pass', () => {
+  // {} would read as "zero findings, clean batch" — the fake-green the lens forbids
+  assert.ok('error' in parseEditorialReply('{}', input.sectionText, false));
+  // digest alone: no findings/claims arrays to trust
+  assert.ok('error' in parseEditorialReply('{"digest":"state"}', input.sectionText, false));
+  // no digest: the next batch would restart as "first batch" and wipe the rolling state
+  assert.ok(
+    'error' in
+      parseEditorialReply('{"findings":[],"claims":{"counts":[],"travel":[],"calendar":[]}}', input.sectionText, false),
+  );
+  assert.ok('error' in parseEditorialReply(reply({ digest: '   ' }), input.sectionText, false));
+  // but a genuinely clean batch with all three fields present still passes
+  const clean = parseEditorialReply(
+    '{"digest":"state carried","findings":[],"claims":{"counts":[],"travel":[],"calendar":[]}}',
+    input.sectionText,
+    false,
+  );
+  assert.ok(!('error' in clean));
+});
+
+test('the digest budget leaves room in the output budget, and the prompt states it', () => {
+  // ~4 chars/token: a full digest must still leave most of the reply for findings and claims
+  assert.ok(DIGEST_MAX_CHARS / 4 < EDITORIAL_MAX_TOKENS / 2, 'digest budget would crowd out the findings');
+  const user = buildEditorialPrompt(input).find((m) => m.role === 'user')!.content;
+  assert.ok(user.includes(String(DIGEST_MAX_CHARS)));
+});
+
+test('ellipses, dashes and markdown markers normalize on both sides of the quote bar', () => {
+  const text = 'The road -- long and *weary* -- ran on...';
+  const ok = reply({
+    findings: [{ severity: 'critical', category: 'continuity', location: 'x', quote: 'road — long and weary — ran on…', why: 'w', fix: 'f' }],
+    claims: { counts: [], travel: [], calendar: [] },
+  });
+  const out = parseEditorialReply(ok, text, false);
+  if ('error' in out) assert.fail('should parse');
+  assert.equal(out.findings.length, 1, 'a real critical must not be rejected over typography');
+  assert.equal(out.rejected, 0);
 });
 
 test('the digest is clamped and truncation is reported', () => {

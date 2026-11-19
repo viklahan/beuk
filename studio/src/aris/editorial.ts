@@ -29,12 +29,20 @@ const el = (tag: string, attrs: Record<string, string>, text?: string): HTMLElem
   return node;
 };
 
+/** Dialog methods degrade to the `open` attribute where unimplemented
+ *  (jsdom): `d.open` then tells the truth in both worlds, and the run
+ *  loop reads it as its abandon signal. */
+const shut = (d: HTMLDialogElement) => {
+  if (typeof d.close === 'function') d.close();
+  else d.removeAttribute('open');
+};
+
 function ensureDialog(): HTMLDialogElement {
   if (dialog && document.contains(dialog)) return dialog;
   const d = document.createElement('dialog');
   d.setAttribute('data-aris', 'editorial');
   const close = el('button', { type: 'button', 'data-aris': 'editorial-close', 'aria-label': 'Close' }, '✕');
-  close.addEventListener('click', () => d.close());
+  close.addEventListener('click', () => shut(d));
   const title = el('h3', {}, 'Editorial read');
   const status = el('p', { 'data-aris': 'editorial-status' }, 'Aris reads the whole book, section by section, and reports only what it can quote.');
   const run = el('button', { type: 'button', 'data-aris': 'editorial-run' }, 'Run the read');
@@ -45,7 +53,10 @@ function ensureDialog(): HTMLDialogElement {
   actions.append(run, abandon);
   const report = el('div', { 'data-aris': 'editorial-report', hidden: '' });
   d.append(close, title, status, actions, report);
-  d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+  d.addEventListener('click', (e) => { if (e.target === d) shut(d); });
+  // However it closes — ✕, backdrop, Esc — a run in flight stops. The read
+  // must never keep spending the writer's key behind a closed door.
+  d.addEventListener('close', () => { abandoned = true; });
   document.body.appendChild(d);
   dialog = d;
   return d;
@@ -54,6 +65,7 @@ function ensureDialog(): HTMLDialogElement {
 export function openEditorial(): void {
   const d = ensureDialog();
   if (typeof d.showModal === 'function') d.showModal();
+  else d.setAttribute('open', '');
 }
 
 const put = (d: HTMLDialogElement, sel: string, text: string) => {
@@ -81,55 +93,74 @@ async function runRead(d: HTMLDialogElement): Promise<void> {
 
   const findings: Finding[] = [];
   const claims: Claims = { counts: [], travel: [], calendar: [] };
+  const truncatedLabels: string[] = [];
   let digest = '';
   let rejected = 0;
   let error: string | null = null;
-  let index = 0;
-  let count = 1;
-  while (index < count && !abandoned) {
-    const r = await apiFetch('/api/aris/editorial', {
-      method: 'POST',
-      body: JSON.stringify({ manuscriptId, sectionIndex: index, digest, provider, model }),
-    });
-    if (!r) { error = 'Aris could not be reached'; break; }
-    if ('__error' in r) { error = String(r.__error); break; }
-    const section = r.section as { index: number; count: number; label: string; empty?: boolean };
-    count = section.count;
-    put(d, '[data-aris="editorial-status"]', `Reading ${section.label} — ${section.index + 1} of ${count}`);
-    const report = r.report as { findings: Finding[]; claims: Claims; digest: string; rejected: number } | undefined;
-    if (!section.empty && report) {
-      digest = report.digest;
-      rejected += report.rejected;
-      findings.push(...report.findings);
-      claims.counts.push(...report.claims.counts);
-      claims.travel.push(...report.claims.travel);
-      claims.calendar.push(...report.claims.calendar);
-    }
-    index++;
-  }
-
   let gate = '';
   let ledgerFindings: Finding[] = [];
-  if (!error && !abandoned) {
-    const v = await apiFetch('/api/aris/editorial/verdict', { method: 'POST', body: JSON.stringify({ findings, claims }) });
-    if (v && !('__error' in v)) {
-      gate = String(v.gate);
-      ledgerFindings = (v.ledgerFindings as Finding[]) ?? [];
-    } else error = v ? String(v.__error) : 'Aris could not be reached';
-  }
+  try {
+    let index = 0;
+    let count = 1;
+    while (index < count && !abandoned) {
+      if (!d.open) { abandoned = true; break; } // the dialog closed under the run (belt to the close event's braces)
+      const r = await apiFetch('/api/aris/editorial', {
+        method: 'POST',
+        body: JSON.stringify({ manuscriptId, sectionIndex: index, digest, provider, model }),
+      });
+      if (!r) { error = 'Aris could not be reached'; break; }
+      if ('__error' in r) { error = String(r.__error); break; }
+      const section = r.section as { index: number; count: number; label: string; empty?: boolean } | undefined;
+      if (!section || typeof section.count !== 'number') { error = 'Aris sent back something unreadable'; break; }
+      count = section.count;
+      put(d, '[data-aris="editorial-status"]', `Reading ${section.label} — ${section.index + 1} of ${count}`);
+      const report = r.report as
+        | { findings: Finding[]; claims: Claims; digest: string; rejected: number; truncated?: boolean }
+        | undefined;
+      if (!section.empty && report) {
+        digest = report.digest;
+        rejected += report.rejected;
+        if (report.truncated) truncatedLabels.push(section.label);
+        findings.push(...report.findings);
+        claims.counts.push(...report.claims.counts);
+        claims.travel.push(...report.claims.travel);
+        claims.calendar.push(...report.claims.calendar);
+      }
+      index++;
+    }
 
-  put(
-    d,
-    '[data-aris="editorial-status"]',
-    error ? `${error} — the partial report stands below` : abandoned ? 'Abandoned — the partial report stands below' : 'The read is done.',
-  );
-  render(d, gate, [...findings, ...ledgerFindings], claims, rejected);
-  if (runBtn) { runBtn.hidden = false; runBtn.textContent = 'Run it again'; }
-  if (abandonBtn) abandonBtn.hidden = true;
-  running = false;
+    if (!error && !abandoned) {
+      const v = await apiFetch('/api/aris/editorial/verdict', { method: 'POST', body: JSON.stringify({ findings, claims }) });
+      if (v && !('__error' in v)) {
+        gate = String(v.gate);
+        ledgerFindings = (v.ledgerFindings as Finding[]) ?? [];
+      } else error = v ? String(v.__error) : 'Aris could not be reached';
+    }
+  } catch {
+    error = 'the read broke off unexpectedly';
+  } finally {
+    // Whatever happened — a throw included — the dialog must come back
+    // usable: a wedged Run button would outlive any error message.
+    put(
+      d,
+      '[data-aris="editorial-status"]',
+      error ? `${error} — the partial report stands below` : abandoned ? 'Abandoned — the partial report stands below' : 'The read is done.',
+    );
+    render(d, gate, [...findings, ...ledgerFindings], claims, rejected, truncatedLabels);
+    if (runBtn) { runBtn.hidden = false; runBtn.textContent = 'Run it again'; }
+    if (abandonBtn) abandonBtn.hidden = true;
+    running = false;
+  }
 }
 
-function render(d: HTMLDialogElement, gate: string, findings: Finding[], claims: Claims, rejected: number): void {
+function render(
+  d: HTMLDialogElement,
+  gate: string,
+  findings: Finding[],
+  claims: Claims,
+  rejected: number,
+  truncatedLabels: string[] = [],
+): void {
   const box = d.querySelector<HTMLElement>('[data-aris="editorial-report"]');
   if (!box) return;
   box.hidden = false;
@@ -137,6 +168,17 @@ function render(d: HTMLDialogElement, gate: string, findings: Finding[], claims:
   if (gate) {
     const banner = el('p', { 'data-aris': 'editorial-gate', 'data-gate': gate.startsWith('PASS') ? 'pass' : 'fail' }, gate);
     box.appendChild(banner);
+  }
+  if (truncatedLabels.length) {
+    // A verdict over half-read chapters must say so — a quiet PASS over
+    // unread pages would be a fake-green.
+    box.appendChild(
+      el(
+        'p',
+        { 'data-aris': 'editorial-truncated' },
+        `Read only in part (over the lens's window): ${truncatedLabels.join(', ')} — the rest of those sections went unread.`,
+      ),
+    );
   }
   for (const severity of ['critical', 'major', 'minor'] as const) {
     const group = findings.filter((f) => f.severity === severity);

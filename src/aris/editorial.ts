@@ -12,7 +12,10 @@ import type { CalendarClaim, CountClaim, EditorialClaims, EditorialFinding, Trav
  */
 export const EDITORIAL_WINDOW_CHARS = 24_000;
 export const EDITORIAL_MAX_TOKENS = 4096;
-export const DIGEST_MAX_CHARS = 16_000;
+// Must leave most of EDITORIAL_MAX_TOKENS (~4 chars/token) for the findings
+// and claims: a digest that filled the output budget would cut the reply
+// mid-JSON on exactly the long books the lens targets.
+export const DIGEST_MAX_CHARS = 6_000;
 
 export type EditorialBatchInput = {
   sectionText: string;
@@ -36,7 +39,8 @@ const OUTPUT_CONTRACT = `Reply with ONE JSON object and nothing else — no prea
  "claims": {"counts": [{"chapter": "<label>", "subject": "<what is counted>", "op": "set|loss|gain", "amount": <number>, "quote": "<verbatim>"}],
             "travel": [{"chapter": "<label>", "from": "<place>", "to": "<place>", "quote": "<verbatim>"}],
             "calendar": [{"chapter": "<label>", "event": "<what>", "date": "<as stated>", "quote": "<verbatim>"}]}}
-Every quote must be copied verbatim from the section text. A finding or claim you cannot quote does not exist.`;
+Every quote must be copied verbatim from the section text. A finding or claim you cannot quote does not exist.
+Keep the digest under ${DIGEST_MAX_CHARS} characters — carry forward only what later batches need to keep the book honest.`;
 
 export function buildEditorialPrompt(input: EditorialBatchInput): ArisMessage[] {
   const persona = loadPersona();
@@ -62,7 +66,16 @@ export function buildEditorialPrompt(input: EditorialBatchInput): ArisMessage[] 
 
 /** Whitespace-collapsed, curly-quote-normalized containment: the honesty
  *  bar a quote must clear. */
-const normalize = (s: string) => s.replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
+const normalize = (s: string) =>
+  s
+    .replace(/[’‘]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/…/g, '...')
+    .replace(/—/g, '--') // stored text keeps '--' and '*' as typed (src/shares/render.ts); models quote them back typeset
+    .replace(/–/g, '-')
+    .replace(/[*_]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 const quoted = (haystackNorm: string, quote: unknown): quote is string =>
   typeof quote === 'string' && quote.trim().length > 0 && haystackNorm.includes(normalize(quote));
 
@@ -84,6 +97,12 @@ export function parseEditorialReply(
     raw = JSON.parse(replyText.slice(start, end + 1)) as Record<string, unknown>;
   } catch {
     return { error: 'the lens returned an unreadable report — retry' };
+  }
+  // A reply missing its fields must never read as a clean batch: {} would
+  // pass as "no findings", and a missing digest would wipe the rolling
+  // state the next batch depends on.
+  if (!Array.isArray(raw.findings) || typeof raw.claims !== 'object' || raw.claims === null || !str(raw.digest) || !raw.digest.trim()) {
+    return { error: 'the lens returned an incomplete report — retry' };
   }
   const haystack = normalize(sectionText);
   let rejected = 0;

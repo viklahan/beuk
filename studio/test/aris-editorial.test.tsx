@@ -13,12 +13,12 @@ let calls: Call[];
 let host: HTMLDivElement;
 
 const STATUS = { enabled: true, optedIn: true, known: true, voice: 'laconic', keys: [{ provider: 'openrouter', last4: 'abcd' }] };
-const batchReport = (digest: string, quote: string) => ({
+const batchReport = (digest: string, quote: string, truncated = false) => ({
   findings: [{ severity: 'major', category: 'continuity', location: 'here', quote, why: 'w', fix: 'f' }],
   claims: { counts: [], travel: [{ chapter: '1', from: 'A', to: 'B', quote }], calendar: [] },
   digest,
   rejected: digest === 'B' ? 1 : 0,
-  truncated: false,
+  truncated,
 });
 
 function fakeFetch(failSecond = false): typeof fetch {
@@ -102,5 +102,70 @@ describe('the editorial run', () => {
     expect(dialog()!.textContent).toContain('refused');
     expect(dialog()!.textContent).toContain('quote 0');
     expect(calls.some((c) => c.path === '/api/aris/editorial/verdict')).toBe(false);
+  });
+
+  it('a section the lens read only in part is named in the report', async () => {
+    setArisFetch((async (path: string, init?: RequestInit) => {
+      const body = typeof init?.body === 'string' ? (JSON.parse(init.body) as Record<string, unknown>) : null;
+      calls.push({ path, body });
+      const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200 });
+      if (path === '/api/aris/status') return json(STATUS);
+      if (path === '/api/aris/editorial') {
+        const idx = body?.sectionIndex as number;
+        return json({
+          section: { index: idx, count: 2, label: `Ch ${idx + 1}` },
+          report: batchReport(idx === 0 ? 'A' : 'B', `quote ${idx}`, idx === 0),
+        });
+      }
+      return json({ gate: 'PASS', tallies: { critical: 0, major: 2, minor: 0 }, ledgerFindings: [] });
+    }) as unknown as typeof fetch);
+    await mountAris(host);
+    control()!.click();
+    dialog()!.querySelector<HTMLButtonElement>('[data-aris="editorial-run"]')!.click();
+    await settle(12);
+    const flag = dialog()!.querySelector('[data-aris="editorial-truncated"]');
+    expect(flag).not.toBeNull();
+    expect(flag!.textContent).toContain('Ch 1');
+    expect(flag!.textContent).not.toContain('Ch 2');
+  });
+
+  it('closing the dialog abandons the read instead of burning the key in the dark', async () => {
+    setArisFetch((async (path: string, init?: RequestInit) => {
+      const body = typeof init?.body === 'string' ? (JSON.parse(init.body) as Record<string, unknown>) : null;
+      calls.push({ path, body });
+      const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200 });
+      if (path === '/api/aris/status') return json(STATUS);
+      if (path === '/api/aris/editorial') {
+        const idx = body?.sectionIndex as number;
+        await new Promise((r) => setTimeout(r, 5)); // each batch takes real time, as upstream would
+        return json({ section: { index: idx, count: 5, label: `Ch ${idx + 1}` }, report: batchReport('A', 'q') });
+      }
+      return json({ gate: 'PASS', tallies: {}, ledgerFindings: [] });
+    }) as unknown as typeof fetch);
+    await mountAris(host);
+    control()!.click();
+    const d = dialog()!;
+    d.querySelector<HTMLButtonElement>('[data-aris="editorial-run"]')!.click();
+    await settle(1); // the first batch is in flight
+    d.querySelector<HTMLButtonElement>('[data-aris="editorial-close"]')!.click(); // the writer closes it mid-run
+    await settle(20);
+    expect(calls.filter((c) => c.path === '/api/aris/editorial').length).toBeLessThan(5);
+    expect(calls.some((c) => c.path === '/api/aris/editorial/verdict')).toBe(false);
+  });
+
+  it('a shapeless 200 surfaces an error and frees the run button instead of wedging', async () => {
+    setArisFetch((async (path: string, init?: RequestInit) => {
+      const body = typeof init?.body === 'string' ? (JSON.parse(init.body) as Record<string, unknown>) : null;
+      calls.push({ path, body });
+      if (path === '/api/aris/status') return new Response(JSON.stringify(STATUS), { status: 200 });
+      return new Response('<html>tunnel interstitial</html>', { status: 200 });
+    }) as unknown as typeof fetch);
+    await mountAris(host);
+    control()!.click();
+    const run = dialog()!.querySelector<HTMLButtonElement>('[data-aris="editorial-run"]')!;
+    run.click();
+    await settle(12);
+    expect(dialog()!.textContent).toMatch(/unreadable|could not be reached/);
+    expect(run.hidden).toBe(false); // not wedged: the writer can run it again
   });
 });
