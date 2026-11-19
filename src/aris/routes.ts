@@ -4,6 +4,14 @@ import { requireAuth } from '../auth.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { seriesKey } from '../routes/series-covenants.js';
+import {
+  buildEditorialPrompt,
+  DIGEST_MAX_CHARS,
+  EDITORIAL_MAX_TOKENS,
+  EDITORIAL_WINDOW_CHARS,
+  parseEditorialReply,
+} from './editorial.js';
+import { verdict, verifyCounts, type CountClaim, type EditorialClaims, type EditorialFinding } from './ledger.js';
 import { buildDraftPrompt, type CovenantEntry, type DraftAction } from './prompts.js';
 import { ArisUpstreamError, providerFor } from './providers.js';
 import { mintProposalToken, verifyProposalToken, type ProposalKind } from './token.js';
@@ -318,6 +326,127 @@ export function arisRoutes(db: Db, config: Config): Router {
   });
 
   // Show-once: the response carries the last four characters, never the key.
+  // Editorial: one batch = one section read through the editorial lens.
+  // The client drives the loop (sectionIndex 0..count-1), carrying the
+  // rolling digest; the section text is read server-side like a draft's.
+  router.post('/editorial', requireOptIn, async (req, res, next) => {
+    try {
+      const b = (req.body ?? {}) as Record<string, unknown>;
+      const bad = (error: string) => res.status(400).json({ error });
+      const manuscriptId = typeof b.manuscriptId === 'string' ? b.manuscriptId : '';
+      if (!manuscriptId) return bad('manuscriptId is required');
+      if (!Number.isInteger(b.sectionIndex) || (b.sectionIndex as number) < 0)
+        return bad('sectionIndex must be a non-negative integer');
+      const sectionIndex = b.sectionIndex as number;
+      if (typeof b.provider !== 'string' || !(PROVIDERS as readonly string[]).includes(b.provider))
+        return bad('provider must be one of: openrouter, anthropic, openai-compat');
+      const provider = b.provider;
+      const model = typeof b.model === 'string' ? b.model.trim() : '';
+      if (!model || model.length > MODEL_MAX) return bad('model is required');
+      if (b.digest !== undefined && typeof b.digest !== 'string') return bad('digest must be a string');
+      const digest = (b.digest as string | undefined) ?? '';
+      if (digest.length > DIGEST_MAX_CHARS) return bad('the digest outgrew its budget — restart the read');
+
+      if (!UUID_RE.test(manuscriptId)) return res.status(404).json({ error: 'manuscript not found' });
+      const ms = await db.query<{ title: string; doc: unknown }>(
+        'select title, doc from manuscripts where id = $1 and user_id = $2',
+        [manuscriptId, req.user!.id],
+      );
+      const row = ms.rows[0];
+      if (!row) return res.status(404).json({ error: 'manuscript not found' });
+      const doc = (typeof row.doc === 'string' ? JSON.parse(row.doc) : row.doc) as {
+        meta?: { series?: unknown };
+        sections?: { id?: unknown; title?: unknown; content?: unknown }[];
+      } | null;
+      const sections = Array.isArray(doc?.sections) ? doc!.sections! : [];
+      const count = sections.length;
+      if (sectionIndex >= count) return bad(`sectionIndex ${sectionIndex} is outside the book (${count} sections)`);
+      const sec = sections[sectionIndex];
+      const label = typeof sec?.title === 'string' && sec.title ? sec.title : `Section ${sectionIndex + 1}`;
+      const sectionText = typeof sec?.content === 'string' ? sec.content : '';
+      const section = { index: sectionIndex, count, label };
+      if (!sectionText.trim()) return res.json({ section: { ...section, empty: true } });
+
+      const keyRow = (
+        await db.query<{ key_ciphertext: string; base_url: string | null; model: string | null }>(
+          'select key_ciphertext, base_url, model from aris_keys where user_id = $1 and provider = $2',
+          [req.user!.id, provider],
+        )
+      ).rows[0];
+      if (!keyRow) return bad(`no ${provider} key on your /aris page`);
+      let apiKey: string;
+      try {
+        apiKey = decryptKey(config.arisKeySecret!, keyRow.key_ciphertext);
+      } catch {
+        return res
+          .status(409)
+          .json({ error: `your ${provider} key could not be read — re-enter it on your /aris page` });
+      }
+
+      let covenants: CovenantEntry[] = [];
+      const seriesName = typeof doc?.meta?.series === 'string' ? doc.meta.series : '';
+      const seriesId = seriesName ? seriesKey(seriesName) : '';
+      if (seriesId) {
+        const cov = await db.query<{ doc: unknown }>(
+          'select doc from series_covenants where user_id = $1 and series_key = $2',
+          [req.user!.id, seriesId],
+        );
+        const cdoc = cov.rows[0]?.doc as { entries?: unknown } | undefined;
+        if (Array.isArray(cdoc?.entries))
+          covenants = (cdoc!.entries as Record<string, unknown>[])
+            .filter((e) => e && typeof e.kind === 'string' && typeof e.name === 'string')
+            .map((e) => ({
+              kind: e.kind as string,
+              name: e.name as string,
+              note: typeof e.note === 'string' ? e.note : '',
+            }));
+      }
+
+      const messages = buildEditorialPrompt({ sectionText, sectionLabel: label, digest, bookTitle: row.title, covenants });
+      let reply;
+      try {
+        reply = await providerFor(provider, config).chat({
+          apiKey,
+          model: keyRow.model ?? model,
+          messages,
+          maxTokens: EDITORIAL_MAX_TOKENS,
+          ...(keyRow.base_url ? { baseUrl: keyRow.base_url } : {}),
+        });
+      } catch (err) {
+        if (err instanceof ArisUpstreamError) {
+          return res.status(502).json({ error: `${err.provider} refused the request`, detail: err.detail });
+        }
+        throw err;
+      }
+      const report = parseEditorialReply(reply.text, sectionText, sectionText.length > EDITORIAL_WINDOW_CHARS);
+      if ('error' in report) return res.status(502).json({ error: report.error });
+      res.json({ section, report });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // The verdict: pure code. The accumulated claims get their arithmetic
+  // here (never in the model), and the gate is deterministic.
+  router.post('/editorial/verdict', requireOptIn, async (req, res, next) => {
+    try {
+      const b = (req.body ?? {}) as { findings?: unknown; claims?: unknown };
+      const findings = (Array.isArray(b.findings) ? b.findings : []).filter(
+        (f): f is EditorialFinding =>
+          !!f &&
+          ['critical', 'major', 'minor'].includes((f as EditorialFinding).severity) &&
+          ['continuity', 'prose', 'ledger'].includes((f as EditorialFinding).category),
+      );
+      const claims = (b.claims ?? {}) as Partial<EditorialClaims>;
+      const counts: CountClaim[] = Array.isArray(claims.counts) ? claims.counts : [];
+      const ledgerFindings = verifyCounts(counts);
+      const v = verdict([...findings, ...ledgerFindings]);
+      res.json({ gate: v.gate, tallies: v.tallies, ledgerFindings });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   router.put('/key', async (req, res, next) => {
     try {
       const body = (req.body ?? {}) as { provider?: unknown; apiKey?: unknown; baseUrl?: unknown; model?: unknown };
