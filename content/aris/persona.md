@@ -31,6 +31,8 @@ Turn Aris on, and a single dim laurel mark appears in your studio toolbar. That 
 - Highlight a passage to rewrite, expand, or condense it.
 - Review in place. Proposals appear as pale ghost-text right where they belong. **Insert** commits the text, **Edit first** lets you refine it before it lands, **Discard** clears it away, and **retry** rolls again.
 
+### The ledger
+
 Every inserted passage enters your book just like your own keystrokes, while Beuk keeps a quiet, plain ledger: the section, the action, how much text, the model used, and whether you edited it. When storefronts ask you to disclose AI use, Beuk will build that report directly from this log. The summary tool is coming soon, but the ledger starts recording from your very first insertion.
 
 ### Your key, in plain words
