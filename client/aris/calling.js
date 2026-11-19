@@ -20,6 +20,13 @@
   var hero = cv.parentElement;
   var hintEl = document.querySelector('[data-calling-hint]');
   var lineEl = document.querySelector('[data-calling-line]');
+  var panels = document.querySelectorAll('[data-calling-panel]');
+  var panelsOn = false;
+  function showPanels() {
+    if (panelsOn) return;
+    panelsOn = true;
+    for (var p = 0; p < panels.length; p++) panels[p].classList.add('on');
+  }
 
   /* The hero IS the first plate of the edition: its canvas wears the same
      watercolor night-teal as the card plates' skies, on BOTH themes, and
@@ -27,7 +34,7 @@
      the bottom fade differs: it dissolves into whichever page (bone or
      dark) sits beneath. */
   var PLATE_NIGHT = '#22363e', PLATE_RGB = '34,54,62';
-  var STARS = ['#f2e9d8', '#cfd8d6', '#e8c87a', '#9fc3c9', '#e8eef0', '#f2e9d8'];
+  var STARS = ['#f2e9d8', '#cfd8d6', '#e8c87a', '#9fc3c9', '#e8eef0', '#f2e9d8', '#3c5f94', '#2c4a78', '#52739f'];
   var THEMES = {
     candlelight: {
       bg: PLATE_NIGHT, fade: 'rgba(' + PLATE_RGB + ',0.42)', comp: 'lighter',
@@ -210,6 +217,7 @@
     for (var j = 0; j < N; j++) { motes[j].x = SHAPE_WORD[j].x; motes[j].y = SHAPE_WORD[j].y; motes[j].z = SHAPE_WORD[j].z; }
     if (hintEl) hintEl.hidden = true;
     if (lineEl) lineEl.style.opacity = '1';
+    showPanels(); // the name stands formed; the panels stand with it
     drawOnce();
     return;
   }
@@ -224,6 +232,7 @@
       if (lineEl) lineEl.style.opacity = '1';
       if (hintEl) { hintEl.textContent = 'left: stir the motes · right: pan & tilt'; hintEl.style.opacity = '1'; }
     }
+    if (!panelsOn && state === 'word' && now > wordSnapAt) showPanels(); // only once the name has truly settled
     if (autoSpin && state === 'word') yaw += (Math.sin(now * 0.00022) * 0.12 - yaw) * 0.01 * dt;
     var target = state === 'A' ? SHAPE_A : state === 'word' ? SHAPE_WORD : null;
     var k = state === 'A' ? K_SEEK_A : now < wordSnapAt ? K_WORD_ARRIVE : K_SEEK_WORD;

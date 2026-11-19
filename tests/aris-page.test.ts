@@ -63,6 +63,31 @@ test('/aris carries the journey: the Calling hero, six cards, the altar', async 
   }
 });
 
+test('/aris answers: threshold panels flank the hero, the FAQ stands before the altar', async () => {
+  const db = await createTestDb();
+  const server = await startTestServer(db, undefined, ON);
+  try {
+    const page = await get(server.base, '/aris');
+    assert.equal(page.status, 200);
+    // two threshold panels on the hero, revealed by the engine when the name settles
+    assert.equal((page.text.match(/data-calling-panel/g) ?? []).length, 2);
+    assert.match(page.text, /not a ghostwriter/);
+    assert.match(page.text, /You decide/);
+    // the same copy stacks below the hero for narrow screens
+    assert.match(page.text, /aris-threshold-stack/);
+    // the FAQ: nine questions a writer actually asks, as native details
+    assert.match(page.text, /Asked and answered/);
+    assert.equal((page.text.match(/<details class="aris-faq-item"/g) ?? []).length, 9);
+    assert.match(page.text, /Will Aris write for me/);
+    assert.match(page.text, /does not exist/); // the quote law, stated to the writer
+    // the engine knows the panels and reveals them at the settle
+    const js = await get(server.base, '/aris/calling.js');
+    assert.match(js.text, /data-calling-panel/);
+  } finally {
+    await server.close();
+  }
+});
+
 test('/aris/cards/N serves the writer-dropped image, or a placeholder until then', async () => {
   const db = await createTestDb();
   const server = await startTestServer(db, undefined, ON);

@@ -50,6 +50,10 @@ const CARDS: { title: string; section: string }[] = [
 /** Rendered with the altar, not as cards: the switch, the voices, and the
  *  key walkthrough sitting directly above the form it documents. */
 const ALTAR_SECTIONS = ['Turning it on', 'Two voices, later', 'Your key, step by step'];
+/** The hero's flanking panels: is/is-not to the left of the stage, the
+ *  call to the right. calling.js reveals them when the name settles; on
+ *  narrow screens the same copy stacks below the hero instead. */
+const THRESHOLD_SECTIONS = ['Is, and is not', 'When you call'];
 
 /** Slice "## Page" by its own "### " headings; '' keys the intro. */
 function pageSections(md: string): Map<string, string> {
@@ -152,6 +156,22 @@ ${renderMarkdown(slice(c.section))}
   </div>
 </dialog>`;
       const altar = ALTAR_SECTIONS.map((name) => `<h3>${name}</h3>\n${renderMarkdown(slice(name))}`).join('\n');
+      const threshold = THRESHOLD_SECTIONS.map(
+        (name, i) =>
+          `<aside class="aris-threshold aris-threshold-${i === 0 ? 'left' : 'right'}" data-calling-panel>\n${renderMarkdown(slice(name))}\n</aside>`,
+      ).join('\n');
+      const thresholdStack = `<div class="aris-threshold-stack">\n${THRESHOLD_SECTIONS.map((name) => renderMarkdown(slice(name))).join('\n')}\n</div>`;
+      // The FAQ: "### Asked and answered" holds bold question lines, each
+      // followed by its answer — split into native <details> plates.
+      const faqParts = slice('Asked and answered').split(/^\*\*(.+?)\*\*\s*$/m);
+      const faqItems: string[] = [];
+      for (let i = 1; i < faqParts.length; i += 2) {
+        faqItems.push(
+          `<details class="aris-faq-item"><summary>${faqParts[i].trim()}</summary>\n${renderMarkdown((faqParts[i + 1] ?? '').trim())}\n</details>`,
+        );
+      }
+      if (!faqItems.length) throw new Error('persona.md ## Page: "### Asked and answered" holds no **question** lines');
+      const faq = `<section class="aris-faq" aria-label="Asked and answered">\n<h2>Asked and answered</h2>\n${faqItems.join('\n')}\n</section>`;
       const ctx = { config, content: getHelpContent(), status: await readShelfStatus(db, config) };
       const html = chrome(ctx, {
         title: 'Aris — Beuk',
@@ -160,13 +180,16 @@ ${renderMarkdown(slice(c.section))}
 <article class="aris-page">
 <section class="aris-hero" aria-label="The Calling">
   <canvas id="calling"></canvas>
+${threshold}
   <p class="aris-hero-line" data-calling-line>Aris waits at your threshold.</p>
   <p class="aris-hero-hint" data-calling-hint>click or scroll to call</p>
 </section>
+${thresholdStack}
 <section class="aris-journey" aria-label="Journey with Aris">
 ${cards}
 ${plate}
 </section>
+${faq}
 <section class="aris-altar" aria-label="Turning it on">
 ${altar}
 <section class="aris-controls" id="summon" data-aris-controls aria-label="Summon Aris">

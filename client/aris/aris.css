@@ -13,6 +13,31 @@ body { overflow-x: hidden; } /* the full-bleed hero must not mint a horizontal s
   font-size: 11px; letter-spacing: .28em; text-transform: uppercase; opacity: .55;
   transition: opacity .8s ease; pointer-events: none; }
 
+/* ---------- the threshold panels: born with the name ---------- */
+.aris-threshold { position: absolute; top: 50%; transform: translateY(-50%); width: min(18rem, 17vw);
+  opacity: 0; transition: opacity 1.8s ease; pointer-events: none;
+  color: #cfdbd3; font-size: .92rem; line-height: 1.55;
+  text-shadow: 0 1px 10px rgba(10, 19, 23, .85); /* legible even when a stray mote drifts behind */ }
+.aris-threshold.on { opacity: .92; pointer-events: auto; }
+.aris-threshold p { margin: .4rem 0; }
+.aris-threshold-left { left: max(1.8rem, 3vw); }
+.aris-threshold-right { right: max(1.8rem, 3vw); }
+.aris-threshold-stack { display: none; margin: 0 0 2.2rem; }
+@media (max-width: 900px) {
+  .aris-threshold { display: none; } /* the stage stays clear; the copy stacks below instead */
+  .aris-threshold-stack { display: grid; gap: 1rem; }
+}
+
+/* ---------- asked and answered ---------- */
+.aris-faq { margin: 0 0 3rem; }
+.aris-faq h2 { margin: 0 0 1rem; }
+.aris-faq-item { border-top: 1px solid rgba(128,128,128,.3); padding: .3rem 0; }
+.aris-faq-item:last-of-type { border-bottom: 1px solid rgba(128,128,128,.3); }
+.aris-faq-item summary { padding: .55rem .2rem; font-weight: 600; cursor: pointer; }
+.aris-faq-item summary:hover { opacity: .8; }
+.aris-faq-item[open] summary { opacity: 1; }
+.aris-faq-item > :not(summary) { margin: .3rem .2rem .8rem; }
+
 /* ---------- the journey: six cards, opened on click ---------- */
 .aris-journey { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin: 0 0 3rem; }
 @media (max-width: 720px) { .aris-journey { grid-template-columns: 1fr; } }
