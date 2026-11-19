@@ -13,6 +13,12 @@ const allText = (msgs: ArisMessage[]) => msgs.map((m) => m.content).join('\n');
 
 const base = { bookTitle: 'The Frost Line', covenants: [] as { kind: string; name: string; note: string }[] };
 
+test('persona carries the Editorial lens', () => {
+  const p = loadPersona();
+  assert.match(p.editorial, /no finding without|cannot quote does not exist/i);
+  assert.match(p.editorial, /first-meeting/i);
+});
+
 test('persona file parses into its four sections', () => {
   const p = loadPersona();
   for (const k of ['page', 'core', 'laconic', 'homeric'] as const) {
@@ -112,8 +118,8 @@ test('drafting prompts never include voice modifiers', () => {
 
 test('persona parser refuses a missing, unknown, duplicate or empty section', async () => {
   const { parsePersona } = await import('../src/aris/persona.js');
-  const ok = '## Page\np\n## Core\nc\n## Laconic\nl\n## Homeric\nh\n';
-  assert.deepEqual(parsePersona('# Aris\npreamble\n' + ok), { page: 'p', core: 'c', laconic: 'l', homeric: 'h' });
+  const ok = '## Page\np\n## Core\nc\n## Laconic\nl\n## Homeric\nh\n## Editorial\ne\n';
+  assert.deepEqual(parsePersona('# Aris\npreamble\n' + ok), { page: 'p', core: 'c', laconic: 'l', homeric: 'h', editorial: 'e' });
   assert.throws(() => parsePersona(ok.replace('## Homeric\nh\n', '')), /missing section "## Homeric"/);
   assert.throws(() => parsePersona(ok + '## Extra\nx\n'), /unknown section/);
   assert.throws(() => parsePersona(ok + '## Core\nagain\n'), /duplicate section/);

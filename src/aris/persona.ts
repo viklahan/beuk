@@ -9,9 +9,9 @@ import { repoRoot } from '../warmth/pages.js';
  * writer-facing persona and the model's instructions are the same text,
  * so they cannot drift. Read once per process.
  */
-export type ArisPersona = { page: string; core: string; laconic: string; homeric: string };
+export type ArisPersona = { page: string; core: string; laconic: string; homeric: string; editorial: string };
 
-const SECTIONS = { Page: 'page', Core: 'core', Laconic: 'laconic', Homeric: 'homeric' } as const;
+const SECTIONS = { Page: 'page', Core: 'core', Laconic: 'laconic', Homeric: 'homeric', Editorial: 'editorial' } as const;
 
 export function personaPath(): string {
   return path.join(repoRoot(), 'content', 'aris', 'persona.md');
