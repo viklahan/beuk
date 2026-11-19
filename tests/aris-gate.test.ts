@@ -37,7 +37,7 @@ test('status answers for a signed-in writer when configured', async () => {
     await registerUser(client, 'aris-writer@example.com');
     const res = await client.get('/api/aris/status');
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { enabled: true, optedIn: false, voice: 'laconic', keys: [] });
+    assert.deepEqual(res.body, { enabled: true, optedIn: false, known: false, voice: 'laconic', keys: [] });
   } finally {
     await server.close();
   }
