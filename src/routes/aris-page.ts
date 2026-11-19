@@ -158,9 +158,11 @@ ${renderMarkdown(slice(c.section))}
       const altar = ALTAR_SECTIONS.map((name) => `<h3>${name}</h3>\n${renderMarkdown(slice(name))}`).join('\n');
       const threshold = THRESHOLD_SECTIONS.map(
         (name, i) =>
-          `<aside class="aris-threshold aris-threshold-${i === 0 ? 'left' : 'right'}" data-calling-panel>\n${renderMarkdown(slice(name))}\n</aside>`,
+          `<aside class="aris-tablet aris-threshold aris-threshold-${i === 0 ? 'left' : 'right'}" data-calling-panel>\n${renderMarkdown(slice(name))}\n</aside>`,
       ).join('\n');
-      const thresholdStack = `<div class="aris-threshold-stack">\n${THRESHOLD_SECTIONS.map((name) => renderMarkdown(slice(name))).join('\n')}\n</div>`;
+      const thresholdStack = `<div class="aris-threshold-stack">\n${THRESHOLD_SECTIONS.map(
+        (name) => `<div class="aris-tablet">\n${renderMarkdown(slice(name))}\n</div>`,
+      ).join('\n')}\n</div>`;
       // The FAQ: "### Asked and answered" holds bold question lines, each
       // followed by its answer — split into native <details> plates.
       const faqParts = slice('Asked and answered').split(/^\*\*(.+?)\*\*\s*$/m);

@@ -73,8 +73,9 @@ test('/aris answers: threshold panels flank the hero, the FAQ stands before the 
     assert.equal((page.text.match(/data-calling-panel/g) ?? []).length, 2);
     assert.match(page.text, /not a ghostwriter/);
     assert.match(page.text, /You decide/);
-    // the same copy stacks below the hero for narrow screens
+    // the same copy stacks below the hero for narrow screens, carved in the same stone
     assert.match(page.text, /aris-threshold-stack/);
+    assert.equal((page.text.match(/class="aris-tablet/g) ?? []).length, 4); // two flanking, two stacked
     // the FAQ: nine questions a writer actually asks, as native details
     assert.match(page.text, /Asked and answered/);
     assert.equal((page.text.match(/<details class="aris-faq-item"/g) ?? []).length, 9);
