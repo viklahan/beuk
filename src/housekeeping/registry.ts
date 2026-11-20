@@ -3141,6 +3141,20 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The readers and the manuscript parser (BEUK:headlevels) run in the studio; the server never sees an import.',
   },
   {
+    id: 'import.odt.reads-as-word',
+    title:
+      'An OpenDocument file imports as a Word file does: heading-styled chapters, a Heading 2 inside its chapter, italic, bold and a link as Beuk marks, a numbered list, a linked footnote, the table and comment reported as from the OpenDocument file, and the byline read',
+    kind: 'client-only',
+    reason: 'The OpenDocument reader (BEUK:docsimport) opens the file in the studio; the server never sees the .odt.',
+  },
+  {
+    id: 'import.html.google-docs-page',
+    title:
+      "A web page as Google Docs writes it imports as a Word file does: h1 chapters, an h2 inside its chapter, italic and bold from the page's style classes, a link freed of the redirect, a linked footnote, the zip's picture, and only a drawn rule as a scene break",
+    kind: 'client-only',
+    reason: 'The web-page reader (BEUK:docsimport) runs in the studio on the page and the pictures beside it; the server never sees them.',
+  },
+  {
     id: 'import.report.docx-honest',
     title:
       'Import report (Word): tables are reported as left out (words back on undo), footnotes link as notes, images land in the library with alt text, demoted headings, comments, tracked changes, headers, lists and converter warnings are all listed',

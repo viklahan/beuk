@@ -157,6 +157,10 @@ test('head levels: every reader of heading levels asks the one rule', async () =
   const rtfRule = html.slice(html.indexOf('function rtfSubHeadings('), html.indexOf('function rtfToManuscriptText('));
   assert.match(rtfRule, /irSubHeadings\(/, "RTF's two readers share one call of the rule");
   assert.doesNotMatch(rtf + rtfText, /"ilvl"/);
+  /* a PDF's bookmarks are nested as its headings were: their depth is the level the rule reads */
+  const pdf = html.slice(html.indexOf('function pdfLayout('), html.indexOf('function pdfIdentity('));
+  assert.match(pdf, /markLevel\.set\(n \+ " " \+ full, o\.level\)/, "PDF: a bookmark's depth is kept");
+  assert.match(pdf, /irSubHeadings\(marked\.map\(\(b\) => \(\{ level: markLevel\.get\(b\.page \+ " " \+ markKey\(b\.text\)\) > 1 \? 2 : 1, text: b\.text \}\)\)\)/, 'PDF');
   const plain = html.slice(html.indexOf('function importPlainManuscript('), html.indexOf('const IR_MAMMOTH_OPTS'));
   assert.match(plain, /irMdSubHeadings\(/, 'markdown and text');
 });
