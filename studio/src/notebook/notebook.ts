@@ -1,7 +1,7 @@
 import * as Y from 'yjs';
 import { BODY, getMetaValue, LAYOUT, META, packValue, setMetaValue, sectionList } from '@book/editor/index.js';
 import { TOP_LEVEL_KEYS } from '@book/schema.js';
-import type { Closure, Note, ResearchFile, State } from '../closure/index';
+import type { Closure, Note, ResearchFile, RsDocReply, RsDocView, State } from '../closure/index';
 import { repackHistory } from '../history/history';
 
 /* The book's Notebook and its research files (inventory C7, 1.0's
@@ -158,7 +158,8 @@ export const nowIso = () => new Date().toISOString();
 
 /* ---- research files: 1.0's reading and adding (rsReadOne, rsAddRead) ---- */
 
-export type FileItem = { name: string; type: string; size: number; data: string };
+/** A file read for adding: 1.0's rsAddFiles item, `check` the worker's answer for a Word document or web page. */
+export type FileItem = { name: string; type: string; size: number; data: string; check?: RsDocReply };
 
 /** 1.0's rsReadOne: the file as base64, or "" when it is refused anyway (too big, a kind not kept) or unreadable. */
 export function readOne(c: Closure, file: File): Promise<string> {
@@ -194,7 +195,8 @@ export function addRead(c: Closure, state: NbState, noteId: string | null, items
     const name = a.nbLine(it && it.name, 160) || 'file';
     const type = a.rsTypeOf(it && it.name, it && it.type);
     if (!type) {
-      refused.push(t('rs.badType', { name }));
+      // BEUK:webword — an old .doc or a Safari archive is told how to save it (1.0's rsRefusalKey)
+      refused.push(t(a.rsRefusalKey(it && it.name), { name }));
       continue;
     }
     if (it.size > L.file) {
@@ -203,6 +205,11 @@ export function addRead(c: Closure, state: NbState, noteId: string | null, items
     }
     if (!(it.size > 0) || typeof it.data !== 'string' || !it.data) {
       refused.push(t('rs.readFail', { name }));
+      continue;
+    }
+    // BEUK:webword — a Word document or web page is kept only once the worker has opened it (readItems, 1.0's rsAddFiles)
+    if ((type === a.RS_WORD || type === a.RS_WEB) && !(it.check && it.check.ok)) {
+      refused.push(t(a.rsCheckKey(type, it.check), { name }));
       continue;
     }
     if (a.rsTotal() + it.size > L.total || a.rsNamed().size >= L.files) {
@@ -221,6 +228,12 @@ export function addRead(c: Closure, state: NbState, noteId: string | null, items
     files.push(f);
     n.files = (n.files || []).concat([f.id]);
     added.push(f);
+    // BEUK:webword — the page's own title and address, the document's title: the note's when it has none
+    if (it.check && it.check.title && !n.title) n.title = a.nbLine(a.rsPlainTitle(it.check.title), 120);
+    if (it.check && it.check.url && !n.url) {
+      const u = a.rsUrl(it.check.url);
+      if (u) n.url = u;
+    }
   }
   if (added.length && n) {
     if (!n.title) n.title = a.nbLine(added[0]!.name.replace(/\.[^.]+$/, ''), 120);
@@ -230,6 +243,51 @@ export function addRead(c: Closure, state: NbState, noteId: string | null, items
   return { notes, files, added, refused, note: n };
 }
 
+/** 1.0's rsAddFiles, its reading half: each file read (readOne), and a Word document or web page opened in 1.0's worker
+ *  (rsDocCheck) before addRead keeps it. */
+export async function readItems(c: Closure, list: File[]): Promise<FileItem[]> {
+  const a = c.api, items: FileItem[] = [];
+  for (const file of list) {
+    const it: FileItem = { name: file.name, type: file.type, size: file.size, data: await readOne(c, file) };
+    const ty = a.rsTypeOf(file.name, file.type); // BEUK:webword — opened in the worker before it is kept
+    if (it.data && (ty === a.RS_WORD || ty === a.RS_WEB)) it.check = await a.rsDocCheck(ty, it.data);
+    items.push(it);
+  }
+  return items;
+}
+
+/** 1.0's rsDocFill, its view half (BEUK:webword): the worker's job under 1.0's time limit (rsDocJob), its HTML rebuilt by
+ *  1.0's allowlist sanitizer (rsSanitize), the note and the fidelity line (rsFidelity), kept in 1.0's small view cache
+ *  (rsDocW.cache, six views). 1.0 then writes the view into its slot (document.querySelector); 2.0's RsDoc
+ *  (NotebookDialog.tsx) draws it. Nothing the worker hands back is ever inserted as it came: only rsSanitize's nodes. */
+export async function docView(c: Closure, f: ResearchFile): Promise<RsDocView> {
+  const a = c.api;
+  const key = f.id + ':' + f.data.length;
+  let view = a.rsDocW.cache.get(key);
+  if (view) return view;
+  const word = f.mediaType === a.RS_WORD;
+  const r = await a.rsDocJob(word ? 'view-word' : 'view-web', f.data);
+  if (!r || !r.ok) view = { error: r && r.reason === 'timeout' ? 'rs.docBig' : 'rs.docFail' };
+  else {
+    const s = a.rsSanitize(r.html, { images: r.images || {}, base: a.rsUrl(r.url) || '' });
+    if (s.empty) view = { error: 'rs.docEmpty' };
+    else {
+      const v: Exclude<RsDocView, { error: string }> = { node: s.node, cut: !!(s.cut || r.cut), note: word ? 'rs.wordNote' : 'rs.webNote', gone: s.gone, shownChars: s.shownChars, expectChars: 0, fidelity: { text: '', whole: false } };
+      if (word && r.stats) {
+        // a Word file is counted from its own XML; the footnote numbers mammoth writes ("[1]") are Word's own numbering
+        let refDigits = 0;
+        for (let i = 1; i <= r.stats.refs; i++) refDigits += String(i).length; // once, in the text: the list numbers itself
+        Object.assign(v, { expectChars: r.stats.chars + refDigits, headers: r.stats.headers, comments: r.stats.comments, deleted: r.stats.deleted });
+      } else v.expectChars = s.srcChars;
+      if (v.cut) v.expectChars = v.shownChars + (s.gone.chars || 0); // what was cut is already said (rs.docCut)
+      v.fidelity = a.rsFidelity(v);
+      view = v;
+    }
+  }
+  a.rsDocW.cache.set(key, view);
+  if (a.rsDocW.cache.size > 6) a.rsDocW.cache.delete(a.rsDocW.cache.keys().next().value!);
+  return view;
+}
 /** 1.0's rsBytes: the file's bytes. */
 export function bytesOf(f: ResearchFile): Uint8Array<ArrayBuffer> {
   const bin = atob(f.data), u = new Uint8Array(bin.length);

@@ -75,14 +75,16 @@ export function LangBar() {
   );
 }
 
-export function WordBar({ sectionId }: { sectionId: unknown }) {
+export function WordBar({ sectionId, hidden = false }: { sectionId: unknown; hidden?: boolean }) {
   const { t, lang } = useLocale();
   const stats = useStats();
-  if (!stats) return <div id="editorWordBar" aria-live="polite" />;
+  // 1.0's syncEditor: the bar is hidden with the manuscript editor (a generated page)
+  const style = hidden ? { display: 'none' } : undefined;
+  if (!stats) return <div id="editorWordBar" aria-live="polite" style={style} />;
   const secW = typeof sectionId === 'string' ? (stats.sections.get(sectionId)?.words ?? 0) : 0;
   const book = stats.words;
   return (
-    <div id="editorWordBar" aria-live="polite">
+    <div id="editorWordBar" aria-live="polite" style={style}>
       <span id="edSecWords">{t('editor.countSection', { n: fmtNum(secW, lang), count: secW })}</span>
       <span aria-hidden="true">·</span>
       <span id="edBookWords">{t('editor.countBook', { n: fmtNum(book, lang), count: book })}</span>

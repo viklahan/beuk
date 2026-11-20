@@ -2,7 +2,7 @@
   "name": "beuk-studio-next",
   "private": true,
   "version": "0.0.0",
-  "description": "Beuk 2.0 studio (React), served at /next. Builds to ../client/next.",
+  "description": "Beuk 2.0 studio (React), served at /studio/. Builds to ../client/next.",
   "type": "module",
   "engines": {
     "node": ">=22.22.2"

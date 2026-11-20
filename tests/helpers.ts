@@ -196,6 +196,8 @@ export function testConfig(overrides?: Partial<Config>): Config {
     sessionPurgeIntervalMs: 3_600_000,
     // Account basics: no SMTP by default (the unconfigured path is the
     // honest default) and no console logging of reset links in tests.
+    // The studio is 2.0 at /studio/; tests/studio.test.ts turns the rollback on.
+    studioClassic: false,
     smtpUrl: null,
     mailFrom: null,
     mailLogLinks: false,

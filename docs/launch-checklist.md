@@ -298,6 +298,7 @@ off-site backups" records how it was proven earlier.
 On a phone and a laptop, signed out and signed in:
 
 - [ ] https://beuk.studio loads the studio; the browser shows a valid lock.
+- [ ] https://beuk.studio/studio shows the 2.0 studio and its address becomes `/studio/` (no redirect: the page tidies it); `/studio?signin` opens the sign-in dialog there; an old `/next/` bookmark lands on `/studio/` too.
 - [ ] Sign up a second test account; sign out; sign in.
 - [ ] "Forgot password" → the email arrives → the link opens `https://beuk.studio/reset?token=…` → new password works, old one does not.
 - [ ] Load the sample book → "On your shelf ✓" in the sidebar.
@@ -342,6 +343,50 @@ For a true undo of the data, restore the `before-<new-sha>` backup
 (step 9) after checking out the old commit. Return to normal updates
 with `git checkout main && git pull && ./deploy/install.sh`.
 
+### 11a. The studio switch: Beuk 2.0 at `/studio/` [owner]
+
+The deploy that makes 2.0 the studio (spec
+`docs/superpowers/specs/2026-11-12-studio-2-cutover-design.md`) ships
+only with the full gate green, fast-forward only.
+
+- [ ] Before: `./deploy/hk.sh <your-email> backup before-<new-sha>` (as
+  above).
+- [ ] Before: the release note asks writers to **close every open studio
+  tab before the deploy** (see "Known and accepted at launch": a 1.0 tab
+  left open can keep saving where 2.0 no longer looks).
+- [ ] Deploy as above. Caddy reloads (the `/studio` routing moved from the
+  static mount to the app; the security headers, CSP included, are
+  unchanged).
+- [ ] **After the deploy, take a fresh backup:**
+  `./deploy/hk.sh <your-email> backup after-studio-2`.
+- [ ] The smoke test (step 10), with the `/studio` line.
+- [ ] On a browser that used 1.0 before: `/studio` opens 2.0, at the latest
+  on the next reload, and a book that browser kept only on the device is
+  there.
+
+**Rollback, for emergencies only:** set `STUDIO_CLASSIC=true` in `.env`
+and run `docker compose up -d app`. The app then serves 1.0 at `/studio`
+again. Know the cost, both ways, before you flip it:
+- words written in 2.0 on a device are **not** in 1.0's device store (a
+  book on the cloud shelf opens in both; a device-only book opens in 1.0
+  as 1.0 last saved it);
+- words written in 1.0 on a device during the rollback **never reach
+  2.0** after you flip back (2.0 imports 1.0's store once only). **Before
+  flipping back, tell writers to put device-only books on the cloud shelf
+  or export them;**
+- 1.0 runs online only (its offline worker retires itself), and a
+  browser that holds 2.0's worker opens **2.0's** cached studio at
+  `/studio` when offline or while the app is down (its scope `/studio`
+  covers that address); words written there are in 2.0's device store.
+- `/studio/…` answers a 302 to `/studio` that is never stored
+  (`no-store`), so neither direction of the flip can loop on a cached
+  redirect.
+
+Remove the setting (or set it to `false`) and run the same command to
+return to 2.0. [estimate: the rollback is covered by the server tests
+(`tests/studio.test.ts`), never flipped on the box.] README: "The front
+door" has the details.
+
 ## 12. The first week — what to watch
 
 - **Daily:** `./deploy/hk.sh <your-email> self-checks`. Any `fail` is
@@ -370,6 +415,49 @@ with `git checkout main && git pull && ./deploy/install.sh`.
 
 - HTTP/3 is not offered: Compose publishes 443/tcp only. Browsers use
   HTTP/2 [measured]. Not needed for launch.
-- Unknown paths (including `/.env`, `/.git/config`) answer the studio
-  page with 200 — the SPA fallback — never a file from the server
-  [measured: the body was the studio's HTML in every case].
+- Unknown paths: since the 2.0 switch there is no SPA fallback. A
+  missing path without an extension (`/.git/config`, an old link) answers
+  a 302 to `/studio`; one with an extension (`/.env`, a missing script)
+  a plain 404; `/index.html` a 308 to `/studio`. Never 1.0's page.
+  [estimate: pinned as Caddyfile text by `tests/studio.test.ts`; not yet
+  requested against a running Caddy. Before the switch the measured
+  answer was the studio's HTML with 200 for every unknown path.]
+- A browser that still holds 1.0's v22 worker and goes offline before
+  its first online visit after the deploy opens the cached 1.0 page
+  (only v22's own code runs there; nothing new can reach it). Its first
+  online visit installs the retiring v23.
+- **A 1.0 studio tab left open through the deploy.** 2.0 imports 1.0's
+  device store (`beuk-local`) once only (`studio/src/book/store.ts`). A
+  1.0 tab that stays open through the deploy, and never reloads, can keep
+  saving to that store after 2.0 has imported it; those words don't
+  appear in 2.0, and nothing in 2.0 shows the store again. What reloads
+  such a tab (read in `client/index.html`, the `controllerchange`
+  handler, and `client/sw.js` v23; not yet watched in a browser):
+  - A tab that a worker (v22) **controlled** when it loaded reloads into
+    2.0, after its device save (`localSaveBeforeReload`), when a new
+    worker claims it. Which one depends on what else that browser did:
+    - No 2.0 visit yet: v23 claims it on activation. v23 arrives only on
+      the browser's next update check of `/sw.js`: a navigation anywhere
+      on the site in any tab, or a request from the tab itself once the
+      last check is more than 24 hours old (W3C Service Workers, Handle
+      Fetch → Soft Update).
+    - Once 2.0's `/studio` worker is registered in that browser (another
+      tab opened the studio): that tab's `/studio` navigations no longer
+      update-check `/sw.js` (the longest matching scope wins), and v23's
+      `clients.claim()` skips a page under `/studio`. The reload then
+      comes from 2.0's worker claiming the tab on its activation; only
+      other site pages (`/`, `/account`, `/help`) still update-check
+      `/sw.js`.
+    1.0 never calls `reg.update()` itself, so a lone tab with none of
+    these waits, still on 1.0.
+  - A tab **no worker controlled** when it loaded (a hard reload, the
+    first visit, service workers off) is never reloaded: 1.0 skips the
+    reload when it had no controller (`swHadController`, BEUK:swfirst).
+    It stays on 1.0 until the writer reloads it.
+  Mitigation: the release note asks writers to close open studio tabs
+  before the deploy (step 11a). [estimate: by reading; G5 in the final
+  review measures it.]
+- An existing installed app may keep opening at `/` until the browser
+  applies 2.0's manifest (same id, start `/studio/`); offline, `/` then
+  shows the browser's offline page. Reinstalling from `/studio/` fixes
+  it (README, "The installed app").

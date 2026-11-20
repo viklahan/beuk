@@ -113,8 +113,8 @@ async function pictureBlob(b: Blob): Promise<Blob> {
   return new Blob([b], { type: jpeg ? 'image/jpeg' : 'image/png' });
 }
 
-/** Where 1.0's page-relative font addresses land on 2.0's page (wave 5a: coverFetch sends them to 1.0's /assets/fonts/). */
-const NEXT_FONTS = '/next/assets/fonts/';
+/* Where 1.0's page-relative font addresses land on 2.0's page: <the build's base>assets/fonts/, /studio/assets/fonts/
+   (wave 5a: coverFetch sends them to 1.0's /assets/fonts/). The base is read per call (import.meta.env.BASE_URL). */
 
 /** The page's fetch as 1.0's cover code reaches it: a same-origin request unchanged; any other only when the served
  *  policy allows its address (else refused, as a network failure: 1.0's own catch says photoRetry / photoFail or tries
@@ -130,9 +130,10 @@ export function coverFetch(input: RequestInfo | URL, init?: RequestInit): Promis
   const same = url.origin === globalThis.location?.origin;
   if (!same && !allowedStockUrl(url.href)) return Promise.reject(new TypeError('refused: the served policy does not allow ' + url.origin));
   // wave 5a: 1.0 asks for its script and display faces page-relative ("assets/fonts/…" against document.baseURI), and
-  // its page is /studio, so they are 1.0's /assets/fonts/…; 2.0's page is /next/, where no such files are
-  if (same && url.pathname.startsWith(NEXT_FONTS)) {
-    url.pathname = url.pathname.slice('/next'.length);
+  // its page is /studio, so they are 1.0's /assets/fonts/…; 2.0's page is /studio/, where no such files are
+  const base = import.meta.env.BASE_URL;
+  if (same && base !== '/' && url.pathname.startsWith(base + 'assets/fonts/')) {
+    url.pathname = url.pathname.slice(base.length - 1);
     input = url.href;
   }
   // review round 2 (Minor 3): a body 1.0 reads as a picture (blob(): the chosen photo) is sniffed on every path

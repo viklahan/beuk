@@ -163,7 +163,8 @@ test('status: a database that does not answer is "down" with 503; readings are c
 test('status: Caddy routes /status to the app, both workers leave it to the network, sitemap lists it', async () => {
   const caddy = await read('Caddyfile');
   assert.ok(caddy.includes('handle /status* {\n\t\treverse_proxy app:3000\n\t}'));
-  for (const p of [['client', 'sw.js'], ['client', 'assets', 'sw.js']]) {
+  // 1.0's worker copy; the root copy answers nothing at all (tests/sw-retire.test.ts)
+  for (const p of [['client', 'assets', 'sw.js']]) {
     const sw = await read(...p);
     // Other server pages share the group (account, features, …): status must be one of them.
     assert.match(sw, /sitemap\\\.xml(\|[a-z-]+)*\|status(\|[a-z-]+)*\)\(\\\/\|\$\)/, p.join('/'));

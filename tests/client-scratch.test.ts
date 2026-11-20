@@ -23,9 +23,14 @@ test('client scratch: Caddy answers 404 for /_… before the static client can s
   // The catch-all is the only handle that serves an arbitrary file; the
   // guard has to be a sibling handle (they are mutually exclusive, and a
   // path matcher outranks the bare handle), so it sits in the same block.
-  const fallback = caddy.indexOf('try_files {path} /index.html');
-  assert.ok(fallback > 0, 'the static client fallback is still there');
-  assert.ok(at < fallback, 'the guard is declared ahead of the fallback');
+  // Since the 2.0 switch that catch-all has no SPA fallback (1.0's index.html is never answered): it is the
+  // bare handle whose last two lines send a missing page to /studio and serve every other file as it is.
+  const fallback = caddy.indexOf('\thandle {\n');
+  assert.ok(fallback > 0, 'the static client catch-all is still there');
+  assert.equal(caddy.indexOf('\thandle {\n', fallback + 1), -1, 'it is the only bare handle');
+  assert.ok(caddy.slice(fallback).includes('redir @missingPage /studio{?query} 302\n\t\tfile_server\n\t}'), 'it is the handle that serves the static client');
+  assert.ok(!caddy.includes('try_files {path} /index.html'), "no fallback to 1.0's index.html");
+  assert.ok(at < fallback, 'the guard is declared ahead of the catch-all');
 });
 
 test('client scratch: the image and the repo never pick up client/_…', async () => {

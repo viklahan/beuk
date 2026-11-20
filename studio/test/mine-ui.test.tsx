@@ -7,7 +7,6 @@ import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import { cloudFacts, loadClosure, setClosureLang, setClosureT } from '../src/closure/index';
 import { setCovenantFetch } from '../src/covenant/net';
-import { NEXT_STRINGS } from '../src/i18n/next-strings';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { styleRelease, styleReset, styleRoot, styleRun, styleUi } from '../src/style/session';
@@ -22,7 +21,7 @@ import { styledBook, ttfData } from './style-fixture';
    sign-in move offer, and a hostile theme drawn as text. */
 
 type Rec = Record<string, unknown>;
-const pack = { ...en, ...NEXT_STRINGS.en } as Pack;
+const pack = en as Pack;
 const t = (k: string, p?: Rec) => translate({ packs: { en: pack }, pluralForms: meta.pluralForms as PluralForms }, 'en', k, p);
 const toasts: string[] = [];
 

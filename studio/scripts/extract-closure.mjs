@@ -52,6 +52,9 @@ export const EXTRA_ROOTS = [
   'rightsNormalizeInto', 'RIGHTS_KEYS', 'bookSeriesNumberInto', 'imIsPlaceholderTitle', 'LANG_PACKS', 'langPack', 'a11ySummaryDefault',
   // wave 1b: the sidebar's counts (C1), the chapter operations' plans and rules (B2), the sample book (I8)
   'sectionChars', 'emptyOut', 'inBook', 'sectionComplete', 'READ_WPM', 'AUTO_TYPES',
+  // studio-2 task 4: the generated-page editor's values (renderGenEditor: the half title's lines, the contents heading;
+  // its entries are sectionLabel's, lifted below for the store audit), 1.0's own, read against `state`
+  'halfTitleLine1', 'halfTitleLine2', 'tocHeadingOf',
   'chopSplitPlan', 'chopMergePlan', 'chopMergeWhy', 'chopNumberStyle', 'chopStyleFits', 'chopName', 'chopSig', 'chopCanDelete', 'chopCanDuplicate',
   'chopCanSplitKind', 'chopGenerated', 'chopChapters', 'chopNumbers', 'chopClone', 'normalizeScenes', 'CHOP_TOAST_MS',
   'SAMPLE_IMAGE_FILES', 'SAMPLE_COVER_FILE', 'SAMPLE_WORDS', 'SAMPLE_BOOK_ID', 'LEGACY_SAMPLE_BOOK_ID', 'isSampleBookId',
@@ -232,6 +235,9 @@ export const EXTRA_ROOTS = [
   'startBulkImport', 'bulkPrepareEntries', 'bulkRunQueue', 'bulkBuildBook', 'bulkBatchContext', 'bulkShelfFingerprints', 'bulkCreateShelfBook',
   'renderBulkSummary', 'renderBulkChrome', 'bulkCollectDrop', 'bulkWalkEntry', 'bulkParseFrontmatter', 'bulkResolveVaultText', 'bulkHashText',
   'bulkFingerprint', 'bulkDocWords', 'bulkIsImage', 'bulkBusy',
+  // 069cf28 (BEUK:bulkchip): the status chip's three (startBulkImport reaches two; the chip's Open and dismiss, wired by
+  // src/cloud/CloudHost.tsx as 1.0's initBulkChip wires them, and 1.0's self-check reach all three through the api)
+  'bulkChipBusy', 'bulkChipDone', 'bulkChipHide',
   // (lifted already for the preview's inline Markdown: named so 1.0's bulk vault self-check reaches it through the api)
   'inlineMd',
   // locked review copy (design 2026-11-06), task 1: 1.0's PDF lock (BEUK:lockcopy) — AES-256 R6 over WebCrypto, and the
@@ -267,6 +273,13 @@ export const EXTRA_ROOTS = [
   // (BEUK:lockcopy's machinery, the scope "backup"); Add a Book's loader and the Word downloads reach the rest
   'backupExportText', 'backupReadAsking', 'backupPasswordAsk', 'backupOpenedNote', 'authorshipStamp', 'authorshipCheck', 'authorshipStampDesk',
   'lockFieldsTake', 'lockFieldsWire', 'lockFieldsSay', 'lockFailedText',
+  // research reader (BEUK:webword): a Word document and a saved web page as research — 1.0's types, the worker job under
+  // its time limit (rsDocJob, rsDocStop, rsDocCheck: the worker and its jobs and view cache in rsDocW, one per studio as
+  // in 1.0; `Worker` is supplied, BROWSER_SUPPLIED), the refusals' keys, the title rule, the allowlist sanitizer and the
+  // fidelity line. rsDocFill (its document.querySelector slot) is 2.0's own: src/notebook/notebook.ts docView and
+  // NotebookDialog.tsx RsDoc
+  'RS_WORD', 'RS_WEB', 'RS_DOC_MS', 'rsDocW', 'rsDocJob', 'rsDocStop', 'rsDocCheck', 'rsRefusalKey', 'rsCheckKey', 'rsPlainTitle',
+  'RS_SAN', 'rsSanitize', 'rsFidelity', 'rsChars', 'rsWords', 'rsVisibleText',
 ];
 
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
@@ -417,7 +430,10 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // final fix I1 (BEUK:authorship): the book a Word download's stamp fingerprints — 2.0's own backup's (the open book's
   // export, src/book/BookProvider.tsx authorshipEnv.deskBook), so the Word stamp and the next plain backup carry one
   // sha256; 1.0's is its serializeBook, as its backup's
-  'authorshipDeskBook'];
+  'authorshipDeskBook',
+  // research reader (BEUK:webword): 1.0's page-relative worker (new Worker("assets/rsdoc.js")) from the site's root,
+  // where 1.0's own is, as the cloud module's pichash.js (src/closure/index.ts pageWorker)
+  'Worker'];
 /** Wave 5a: 1.0's serializeBook, emitted as its own sub-module (closure-serialize.js, createSerialize(share)): the main
  *  closure keeps `serializeBook` SUPPLIED (the wrap download's book stays wave 4c's), and the export's request body is
  *  1.0's own serializeBook run on 1.0's state of the open book as applyBookDoc holds it (src/export/state.ts). */
@@ -529,7 +545,7 @@ export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackFor
   // book's stamps and, from the beta list and readers above, the named readers of the linked shelf book's reading copies
   'authorshipRecordOpen', 'authorshipRecordClose',
   // wave 7b (H5): the platform's install area and update bar (1.0's pwa record, isStandalone, renderInstallArea,
-  // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /next/), its listeners
+  // showUpdateBar, wireUpdateFlow, pwaOnLangChange); the worker is 2.0's own (public/sw.js, scope /studio), its listeners
   // 1.0's initPlatform lines (src/cloud/platform.ts)
   'pwa', 'isStandalone', 'renderInstallArea', 'pwaOnLangChange', 'showUpdateBar', 'wireUpdateFlow',
   // wave 7b (I9): the opt-in error report (BEUK:errors, BEUK:errscrub) — off unless beuk.errors.v1 is "on"; the message
@@ -558,10 +574,14 @@ export const CLOUD_SUPPLIED = ['t', 'UI_STRINGS', 'uiLangState', '$', 'icons', '
   // the calm confirm (2.0's useConfirm, 1.0's cloudConfirm), and the print file storeMakePrintJob uploads (print's module,
   // in the export session)
   'cloudConfirm', 'buildPrintHtml', 'preparePrintPress', 'printFilename',
-  // the picture hash worker (1.0's page-relative assets/pichash.js, from /next/)
+  // the picture hash worker (1.0's page-relative assets/pichash.js, from /studio/)
   'Worker'];
 /** 1.0's top-level lets of the cloud module the studio reads or sets. */
-export const CLOUD_VARS = ['uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloudRetryTimer', 'cloudSaveInFlight', 'cloudSaveFollowUp', 'authMode', 'portalFreshSignIn', 'billingPausedSaid',
+export const CLOUD_VARS = [
+  // 069cf28 (BEUK:bulkquiet): renderShelfList holds the list while a batch imports. The batch is the main closure's
+  // (its own bulkBusy); 2.0's bridge (src/closure/index.ts shelfBridge) carries that into this module's before each call
+  'bulkBusy',
+  'uiLangState', 'cloudDirty', 'cloudSaveTimer', 'cloudRetryTimer', 'cloudSaveInFlight', 'cloudSaveFollowUp', 'authMode', 'portalFreshSignIn', 'billingPausedSaid',
   // wave 7b (I9): the error report's build stamp (the worker's BEUK_SHELL_READY) and its count (tests: a fresh page)
   'beukErrBuild', 'beukErrCount',
   // account hardening (task 4, BEUK:twostep): the code step's challenge (tests: forgotten on close)
@@ -1022,7 +1042,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; renderArchiveList: () => void; cloudLoadArchive: () => unknown; crypto: unknown; storeMakePrintJob: (o?: unknown) => Promise<unknown>; storeUpload: (...a: unknown[]) => Promise<unknown>; storeCreateJob: (...a: unknown[]) => Promise<unknown>; storeRefreshJobs: (out: unknown) => Promise<boolean>; applyBookDoc: (doc: unknown, opts?: unknown) => boolean; restoreSnapshot: (id: string) => boolean; applySampleBookSync: () => void; deskIsUntouchedSample: () => boolean; renderSampleButton: () => void; refreshLangHint: () => void; renderShelfList: () => void; shelfGetBook: (id: string, hydrate: boolean) => Promise<unknown>; cloudLoadShelf: () => unknown; authorshipDeskBook: () => Record<string, unknown> | null };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number; refreshImagePickers: () => void; FileReader: unknown; samplePicsHold: (retry: () => unknown) => boolean; serializeBook: () => Record<string, unknown>; downloadBlob: (blob: Blob, name: string) => void; fetch: typeof fetch; openAuth: () => void; openSettings: () => void; setMobilePane: (pane: string) => void; runPrintPreflight: () => void; renderPrintControls: () => void; renderArchiveList: () => void; cloudLoadArchive: () => unknown; crypto: unknown; storeMakePrintJob: (o?: unknown) => Promise<unknown>; storeUpload: (...a: unknown[]) => Promise<unknown>; storeCreateJob: (...a: unknown[]) => Promise<unknown>; storeRefreshJobs: (out: unknown) => Promise<boolean>; applyBookDoc: (doc: unknown, opts?: unknown) => boolean; restoreSnapshot: (id: string) => boolean; applySampleBookSync: () => void; deskIsUntouchedSample: () => boolean; renderSampleButton: () => void; refreshLangHint: () => void; renderShelfList: () => void; shelfGetBook: (id: string, hydrate: boolean) => Promise<unknown>; cloudLoadShelf: () => unknown; authorshipDeskBook: () => Record<string, unknown> | null; Worker: unknown };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 

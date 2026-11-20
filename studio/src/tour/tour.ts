@@ -424,7 +424,7 @@ export function tourOnLangChange(): void {
   tourTick();
 }
 
-/** 1.0's tourInit, once the device's book is known: "Show the quick tour", Escape, /next#tour, and the offer on a
+/** 1.0's tourInit, once the device's book is known: "Show the quick tour", Escape, /studio/#tour (1.0's /studio#tour, through the 308), and the offer on a
  *  fresh device at a quiet moment. Returns the teardown. */
 export function tourInit(h: TourHost): () => void {
   host = h;

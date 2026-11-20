@@ -154,6 +154,13 @@ describe("wave 6: 1.0's Import button, the replace and the summary (task 2)", ()
     expect($('importSummary').textContent).toContain(t('import.recognised'));
     // the report, open over the new book, on the dialog stack; the reopen button shown
     expect($('modalImportReport').classList.contains('open')).toBe(true);
+    // BEUK:importcard — it opens on the book that came in: the file's name, the chapters found, and the one-by-one list a step behind
+    expect($('modalImportReport').querySelector('.ir-modal')!.classList.contains('ir-card-view')).toBe(true);
+    expect($('irBody').querySelector('.ir-kicker')!.textContent).toContain('plain-manuscript.txt');
+    expect($('irBody').querySelectorAll('.ir-row').length).toBe(2);
+    expect($('irSub').textContent).toBe(t('ir.card.lede', { words: '110' })); // the fixture's own word count
+    await click($('btnIrEvery'));
+    expect($('modalImportReport').querySelector('.ir-modal')!.classList.contains('ir-card-view')).toBe(false);
     expect($('irSub').textContent).toContain('plain-manuscript.txt');
     expect($('irReopen').style.display).toBe('');
     // its close; then the summary's close

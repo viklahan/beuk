@@ -16,7 +16,7 @@
        still works (packs are precached). Then, back online, the server
        answers the page with a 502 (the app down during a deploy): the
        worker serves the cached shell instead.
-   (c) Look: the shell next to 1.0's same regions (/studio) at 1280×800
+   (c) Look: the shell next to 1.0's same regions (its page, /index.html here) at 1280×800
        and 390×844, in Paper and Candlelight, region by region:
        - geometry of every frame region equal within GEOMETRY_PX;
        - the frame's computed styles (backgrounds, borders, fonts,
@@ -36,7 +36,7 @@ import { mkdirSync, mkdtempSync, existsSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { startServer } from './serve.mjs';
+import { ONE, startServer } from './serve.mjs';
 
 /* ---- pass criteria (fixed) ---- */
 const MAX_CSP_VIOLATIONS = 0;
@@ -99,8 +99,8 @@ async function cspAndOffline() {
     if (r.status() >= 400 && !new URL(r.url()).pathname.startsWith('/api/')) errors.push(`${r.status()} ${r.url()}`);
   });
   try {
-    const res = await page.goto(srv.origin + '/next/');
-    check(res.headers()['content-security-policy'] === srv.headers['Content-Security-Policy'], "(a) /next/ is served with the Caddyfile's Content-Security-Policy");
+    const res = await page.goto(srv.origin + '/studio/');
+    check(res.headers()['content-security-policy'] === srv.headers['Content-Security-Policy'], "(a) /studio/ is served with the Caddyfile's Content-Security-Policy");
     await page.waitForSelector('#topbar');
     // The click-through.
     await page.click('#btnUiLang');
@@ -124,7 +124,7 @@ async function cspAndOffline() {
       if (!navigator.serviceWorker.controller) await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }));
       return { scope: reg.scope, controlled: !!navigator.serviceWorker.controller, caches: await caches.keys() };
     });
-    check(sw.controlled && sw.scope.endsWith('/next/'), `(a) the service worker controls the page (scope ${sw.scope})`);
+    check(sw.controlled && sw.scope === srv.origin + '/studio', `(a) the service worker controls the page (scope ${sw.scope})`);
     check(sw.caches.some((c) => /^beuk-next-[0-9a-f]{12}$/.test(c)), `(b) the precache exists (${sw.caches.join(', ')})`);
     await page.reload();
     await page.waitForSelector('#topbar');
@@ -162,7 +162,7 @@ async function cspAndOffline() {
       .waitForSelector('#topbar', { timeout: 10_000 })
       .then(() => page.evaluate(() => !!document.getElementById('pane-center') && getComputedStyle(document.getElementById('topbar')).display === 'flex'))
       .catch(() => false);
-    const asked = srv.state.requests.slice(before502).filter((p) => p === '/next/').length;
+    const asked = srv.state.requests.slice(before502).filter((p) => p === '/studio/').length;
     check(shell502 && asked > 0, `(b) a 502 for the page (the app down during a deploy) still opens the cached shell (${asked} page request(s) answered 502)`);
     srv.state.navStatus = 0;
     const swr = await page.evaluate(async () => {
@@ -261,8 +261,8 @@ async function compare(diffPage, { width, height, theme, lang }) {
   const tag = `${width}x${height} ${theme}${lang ? ' ' + lang : ''}`;
   const file = `${width}-${theme}${lang ? '-' + lang : ''}`;
   const srv = await startServer({ repo: REPO });
-  const one = await open(srv.origin + '/studio', { width, height, theme, lang, hide: ONE_HIDE });
-  const two = await open(srv.origin + '/next/', { width, height, theme, lang });
+  const one = await open(srv.origin + ONE, { width, height, theme, lang, hide: ONE_HIDE });
+  const two = await open(srv.origin + '/studio/', { width, height, theme, lang });
   try {
     writeFileSync(path.join(OUT, `one-${file}.png`), await one.page.screenshot());
     writeFileSync(path.join(OUT, `two-${file}.png`), await two.page.screenshot());
@@ -302,7 +302,7 @@ async function compare(diffPage, { width, height, theme, lang }) {
 /** (d) German: nothing in the top bar overflows or clips. */
 async function noOverflow(width, height) {
   const srv = await startServer({ repo: REPO });
-  const two = await open(srv.origin + '/next/', { width, height, theme: 'paper', lang: 'de' });
+  const two = await open(srv.origin + '/studio/', { width, height, theme: 'paper', lang: 'de' });
   try {
     const r = await two.page.evaluate(() => {
       const bar = document.getElementById('topbar');
@@ -329,7 +329,7 @@ async function noOverflow(width, height) {
 /** (d) Arabic: the chrome mirrors (outline on the right), the manuscript stays LTR. */
 async function arabic() {
   const srv = await startServer({ repo: REPO });
-  const two = await open(srv.origin + '/next/', { width: 1280, height: 800, theme: 'paper', lang: 'ar' });
+  const two = await open(srv.origin + '/studio/', { width: 1280, height: 800, theme: 'paper', lang: 'ar' });
   try {
     const r = await two.page.evaluate(() => ({
       app: document.getElementById('app').getAttribute('dir'),
@@ -354,7 +354,7 @@ async function tourChecks() {
   await ctx.addInitScript(CSP_LISTENER);
   try {
     const page = await ctx.newPage();
-    await page.goto(srv.origin + '/next/');
+    await page.goto(srv.origin + '/studio/');
     // a fresh device (nothing stored): the tour offers itself once the desk is known and nothing is open
     await page.waitForSelector('#tourCard', { timeout: 15_000 });
     const first = await page.evaluate(() => ({ step: document.getElementById('tourCard').getAttribute('data-step'), count: document.getElementById('tourCount').textContent, focus: document.activeElement && document.activeElement.id }));

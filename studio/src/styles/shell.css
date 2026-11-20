@@ -107,7 +107,7 @@ input, select, textarea { font-family: inherit; color: var(--ink); }
   #btnUiLang { padding: 8px 10px; }
 }
 @media (max-width: 560px) {
-  #btnHomeport, #btnHelp { display: none; }
+  #btnHomeport, #btnHelp, #btnSupport { display: none; }
 }
 
 /* ---------- Panes ---------- */
@@ -123,6 +123,24 @@ input, select, textarea { font-family: inherit; color: var(--ink); }
 @media (min-width: 1024px) {
   #pane-structure { grid-column: 1; } #pane-center { grid-column: 2; } #pane-preview { grid-column: 3; }
 }
+
+/* BEUK:panes — either side column folds away from a tab on its seam; the editor takes the room (1.0's rules; the seam tabs
+   use logical sides so they sit on their own column's seam under RTL, where 1.0's physical left/right put them on the wrong one) */
+#panes.fold-left { --pane-l: 0px; }
+#panes.fold-right { --pane-r: 0px; }
+@media (min-width: 1024px) {
+  #panes.fold-left #pane-structure, #panes.fold-right #pane-preview { display: none; }
+}
+.pane-fold { position: absolute; top: 8px; z-index: 6; width: 16px; height: 32px; padding: 0; /* level with the editor tab row, clear of its scrollbar */ display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; opacity: .75; }
+.pane-fold:hover, .pane-fold:focus-visible { opacity: 1; color: var(--ink); background: var(--panel-2); }
+.pane-fold svg { width: 13px; height: 13px; transition: transform .15s ease; }
+#foldLeft { inset-inline-start: var(--pane-l); border-inline-start: 0; border-start-end-radius: 7px; border-end-end-radius: 7px; }
+#foldRight { inset-inline-end: var(--pane-r); border-inline-end: 0; border-start-start-radius: 7px; border-end-start-radius: 7px; }
+#panes.fold-left #foldLeft svg, #panes.fold-right #foldRight svg { transform: rotate(180deg); }
+html[dir="rtl"] .pane-fold svg { transform: scaleX(-1); }
+html[dir="rtl"] #panes.fold-left #foldLeft svg, html[dir="rtl"] #panes.fold-right #foldRight svg { transform: scaleX(-1) rotate(180deg); }
+body.zen .pane-fold { display: none; }
+@media (max-width: 1023px) { .pane-fold { display: none; } }
 
 /* ---------- Sidebar ---------- */
 .side-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 14px 10px; }

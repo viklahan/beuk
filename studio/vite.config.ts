@@ -6,9 +6,11 @@ import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/* Beuk 2.0 studio. Served at /next (Caddy proxies /next* to the app,
-   which serves client/next — see src/routes/next-studio.ts). The build
-   output is not committed: the Dockerfile's studio stage makes it. */
+/* Beuk 2.0 studio. Served at /studio/ (Caddy proxies /studio and
+   /studio/* to the app, which serves client/next — see src/routes/studio.ts;
+   the page answers at /studio too and tidies its address to /studio/, and
+   the old /next address redirects there). The build output is not committed: the Dockerfile's studio
+   stage makes it. */
 const here = (p: string): string => fileURLToPath(new URL(p, import.meta.url));
 
 type StringsMeta = { uiLangKey: string; themeKey: string; order: string[]; rtl: string[] };
@@ -72,7 +74,7 @@ function beukHtml(): Plugin[] {
    cache name carries a hash of the list and the page, so each build
    gets its own cache and the old one is retired on activate. */
 function precacheList(): Plugin {
-  const BASE = '/next/';
+  const BASE = STUDIO_BASE;
   return {
     name: 'beuk-precache',
     apply: 'build',
@@ -104,7 +106,7 @@ function precacheList(): Plugin {
 
 /* Wave 3a: 1.0's Zen code (lifted whole, one source) asks for its paintings and sounds RELATIVE to the page
    ("assets/zen/<id>.webp" as a background image; new URL("assets/sound/<scene>.mp3", document.baseURI)), which at
-   /studio is /assets/…; at /next/ the same words name /next/assets/…. The build copies 1.0's files there, byte for
+   /studio is /assets/…; at /studio/ (2.0's page) the same words name /studio/assets/…. The build copies 1.0's files there, byte for
    byte (test/environment.test.tsx compares them): the same files, fetched same-origin, nothing synthesised. */
 export const ZEN_MEDIA = ['zen/bliss.webp', 'zen/calm.webp', 'zen/mind.webp', 'zen/sakura.webp', 'sound/rain.mp3', 'sound/waves.mp3', 'sound/wind.mp3'];
 function zenMedia(): Plugin {
@@ -151,8 +153,11 @@ function esmEntry(name: string): string {
 /** The bare packages src/book/editor imports (besides zod). */
 export const BOOK_DEPS = ['yjs', 'y-prosemirror', 'prosemirror-model', 'prosemirror-state', 'prosemirror-view', 'prosemirror-transform'];
 
+/** The studio's address: Vite's base, the service worker's scope and its precache paths. */
+export const STUDIO_BASE = '/studio/';
+
 export default defineConfig({
-  base: '/next/',
+  base: STUDIO_BASE,
   plugins: [react(), ...beukHtml(), precacheList(), zenMedia()],
   resolve: {
     alias: [

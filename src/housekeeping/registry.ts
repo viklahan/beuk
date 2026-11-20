@@ -2488,7 +2488,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'notebook.research',
-    title: "Research files: text, picture, PDF, recording and clip attach to a note and open in the Notebook (a web page, an oversized and an empty file refused); source link http(s) only; written once and round-trip byte for byte, junk dropped; History names them, a removed file is written once in historyPool and restores; remove with Undo; never leak to the next book, never exported or counted; the sample's depths note carries its soundings and sketch",
+    title: "Research files: text, picture, PDF, recording and clip attach to a note and open in the Notebook (a program, an oversized and an empty file refused); source link http(s) only; written once and round-trip byte for byte, junk dropped; History names them, a removed file is written once in historyPool and restores; remove with Undo; never leak to the next book, never exported or counted; the sample's depths note carries its soundings and sketch",
     kind: 'client-only',
     reason: 'Research files ride the client book document and are viewed in the studio; on the shelf they are stored by the picture store as opaque bytes (its media-type rule is proven by tests/pictures.test.ts).',
   },
@@ -2497,6 +2497,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: "Research files are not blocked by the served Content-Security-Policy: frame-src and media-src allow blob:, and a PDF frame and an audio player from object URLs load with no violation",
     kind: 'client-only',
     reason: 'Only a browser enforces the policy; the check reads the header the studio was served with and loads real object URLs (the Caddyfile text itself is covered by infra.deploy.security-headers).',
+  },
+  {
+    id: 'notebook.research.webword',
+    title: "Word documents and saved web pages as research: a real .docx, a Chrome-style .mhtml with its picture and an .html are kept under their own types and read in the Notebook (words, headings, lists, tables, safe links, their own pictures); the note takes the document's title and the page's address; a messy pile (truncated, renamed, zip bomb, old .doc, empty, broken XML, scripts, handlers, frames, SVG, forms, hostile base, javascript:/data: links, broken MHTML, UTF-16, Windows-1252, binary, 10,000-deep nesting, Safari archive, a 300-character right-to-left name, a reader out of time) is refused by name or shown safely, never thrown; every view says what it does not show, each kind with its number, and its letters and numbers balance against the file's (a drop-cap text box is read where it sits)",
+    kind: 'client-only',
+    reason: 'The files are opened in a Web Worker (client/assets/rsdoc.js) and rebuilt for the page by an allowlist in the studio; the shelf only stores their bytes, under types tests/pictures.test.ts proves it accepts (and text/html, multipart/related it refuses).',
   },
   {
     id: 'infra.app.answers',
@@ -3132,6 +3138,34 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       'Import report (RTF): heading-1 chapters, a linked footnote, italic and a web link as Beuk marks, the table reported as left out, the comment, tracked deletion and page header listed as from the RTF file, the \\info byline read, and Undo the whole import restores the prior book',
     kind: 'client-only',
     reason: 'The RTF reader (BEUK:rtfimport) and the report run in the studio; the server never sees the .rtf.',
+  },
+  {
+    id: 'import.headlevels.same-book-every-reader',
+    title:
+      'One book through RTF, Word and markdown: Heading 1 chapters are the chapters, each Heading 2 stays inside its chapter, an unnumbered heading between numbered chapters invents no chapter, and a list level alone is not a list',
+    kind: 'client-only',
+    reason: 'The readers and the manuscript parser (BEUK:headlevels) run in the studio; the server never sees an import.',
+  },
+  {
+    id: 'import.card.opens-on-the-book',
+    title:
+      'The import report opens on the book that came in (chapters, the sections inside them, the pages around them, and three plain lines of what Beuk did); every change one by one is a step behind it, and a label opens its section',
+    kind: 'client-only',
+    reason: 'The import report (BEUK:importcard) is drawn in the studio from the book on the desk; the server never sees an import.',
+  },
+  {
+    id: 'import.odt.reads-as-word',
+    title:
+      'An OpenDocument file imports as a Word file does: heading-styled chapters, a Heading 2 inside its chapter, italic, bold and a link as Beuk marks, a numbered list, a linked footnote, the table and comment reported as from the OpenDocument file, and the byline read',
+    kind: 'client-only',
+    reason: 'The OpenDocument reader (BEUK:docsimport) opens the file in the studio; the server never sees the .odt.',
+  },
+  {
+    id: 'import.html.google-docs-page',
+    title:
+      "A web page as Google Docs writes it imports as a Word file does: h1 chapters, an h2 inside its chapter, italic and bold from the page's style classes, a link freed of the redirect, a linked footnote, the zip's picture, and only a drawn rule as a scene break",
+    kind: 'client-only',
+    reason: 'The web-page reader (BEUK:docsimport) runs in the studio on the page and the pictures beside it; the server never sees them.',
   },
   {
     id: 'import.report.docx-honest',

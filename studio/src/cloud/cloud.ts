@@ -1,4 +1,6 @@
 import * as Y from 'yjs';
+import { studioDoor } from './doors';
+import { onlyPositionMigrations } from '../editor/positionMigrations';
 import { exportBook } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import {
@@ -504,6 +506,8 @@ export function deskChanged(ydoc: Y.Doc | null, own = false): void {
     // a real edit: typed here, or in another tab of this generation (BroadcastChannel) when this tab is the writer
     const fromTab = typeof BroadcastChannel === 'function' && origin instanceof BroadcastChannel;
     if (!(tr.local || fromTab)) return;
+    // task 5: clearing y-tiptap's position-migration records (an older build's, here or relayed) is no edit of the book
+    if (onlyPositionMigrations(tr)) return;
     // not (yet) the writer: an edit typed HERE is kept and noted if this tab becomes the writer (its own lock may still be
     // letting go: X → Y → X); a redundant save at most when another tab really was writing
     if (!leader.is && tr.local) leader.edited = true;
@@ -670,6 +674,10 @@ export function loadCloud(): Promise<CloudClosure> {
       shelfEnv.getBook = (id, hydrate) => cm.api.shelfGetBook(id, hydrate);
       shelfEnv.loadShelf = () => cm.api.cloudLoadShelf();
       shelfEnv.apiFetch = (path, opts) => cm.api.apiFetch(path, opts);
+      // 069cf28 (BEUK:bulkquiet): the main closure's batch state, carried in (src/closure/index.ts shelfBridge)
+      shelfEnv.setBulkBusy = (busy) => {
+        cm.vars.bulkBusy = busy;
+      };
 
       if (typeof window !== 'undefined') (window as unknown as { beukCloud?: unknown }).beukCloud = cloudSeam;
       return cm;
@@ -695,9 +703,13 @@ export function bootCloud(): Promise<void> {
     booting = (async () => {
       const cm = await loadCloud();
       cm.api.renderCloudChrome();
+      // task 2: 1.0's studioDoorFromUrl runs at the end of every branch of initCloud (offline, signed in, signed out)
+      let work: Promise<unknown> | null = null;
+      const door = () => studioDoor(cm.api as never, cloudFacts, work, () => document.getElementById('btnAccount')?.click());
       const up = await cm.api.cloudProbe();
       if (!up) {
         cm.api.cloudGoLocal();
+        door();
         return;
       }
       cloudFacts.available = true;
@@ -708,8 +720,15 @@ export function bootCloud(): Promise<void> {
         cloudFacts.user = me.user;
         knownUser = userId();
         cm.api.renderCloudChrome();
-        if (leader.is) await cm.api.cloudAfterSignIn();
-        else {
+        if (leader.is) {
+          work = Promise.resolve(cm.api.cloudAfterSignIn());
+          try {
+            await work;
+          } catch (e) {
+            door(); // 1.0 never awaits its sign-in work at boot: the door still opens
+            throw e;
+          }
+        } else {
           takeLink(storedLink(linkBook));
           void cm.api.cloudLoadShelf();
         }
@@ -717,6 +736,7 @@ export function bootCloud(): Promise<void> {
         if (c.api.bibleAuthSignedOut(me)) c.api.bibleSeriesForget('*');
         c.api.bibleSeriesRefresh(true);
       });
+      door();
     })();
     cloudBootHook.p = booting;
   }
@@ -748,7 +768,7 @@ let authChannel: BroadcastChannel | null = null;
 let knownUser: string | null = null;
 let hearing = false;
 const userId = (): string | null => ((cloudFacts.user as { id?: string } | null)?.id ?? null);
-/* aris-desk-toggle: a module that must act when the account changes — Aris re-asks its status — subscribes here;
+/* A module that must act when the account changes (it re-asks the server who it is talking to) subscribes here;
    Shell wires it. A Set, so the same listener subscribed twice hears once. */
 const authListeners = new Set<() => void>();
 export function onAuthChange(l: () => void): void {

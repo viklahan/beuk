@@ -6,7 +6,7 @@ import type { CloudClosure } from './cloud';
 
    - Install: the browser's prompt is kept (beforeinstallprompt, never a banner) for 1.0's quiet Install button in
      Project Settings' About area; appinstalled and an accepted prompt say "installed" there.
-   - The worker is 2.0's own (public/sw.js, scope /next/, registered by src/sw-register.ts; it never caches /api/ and never
+   - The worker is 2.0's own (public/sw.js, scope /studio, registered by src/sw-register.ts; it never caches /api/ and never
      touches 1.0's scope). 1.0's wireUpdateFlow shows 1.0's bar ("A new Beuk is ready" · Reload · Later) when a new
      worker waits; Reload asks it to take over (SKIP_WAITING) and the page reloads once it has; Later hides the bar.
    - 2.0 never reloads a page by itself (decision 4): 1.0 reloads every tab when the controller changes (after landing
@@ -19,7 +19,7 @@ type SwLike = Pick<ServiceWorkerContainer, 'addEventListener' | 'removeEventList
 export type PlatformOpts = {
   /** The page's service worker container (null: none — 1.0's pwa.swState "unsupported"). */
   sw: SwLike | null;
-  /** The /next/ worker's registration (src/sw-register.ts), or null when there is none. */
+  /** The /studio/ worker's registration (src/sw-register.ts), or null when there is none. */
   registration: Promise<ServiceWorkerRegistration | null>;
   reload: () => void;
 };

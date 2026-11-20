@@ -127,6 +127,36 @@ describe('pre-paint (index.html), before any CSS — 1.0\'s rules', () => {
     expect(document.documentElement.getAttribute('lang')).toBe('ar');
   });
 
+  /* Final review C2 + I1: the app answers 2.0's page at /studio and at /studio/ (no redirect either way). At /studio
+     the page tidies its own address to /studio/ first, so everything relative (Zen's "assets/…" against
+     document.baseURI) resolves under /studio/, and the doors (cloud/doors.ts) still see their query and hash. */
+  it('at /studio, the address becomes /studio/ before anything else runs: the query, the hash and the state kept', () => {
+    const start = location.href;
+    try {
+      history.replaceState({ k: 1 }, '', '/studio?book=abc&x=1#top');
+      run();
+      expect(location.pathname).toBe('/studio/');
+      expect(location.search).toBe('?book=abc&x=1');
+      expect(location.hash).toBe('#top');
+      expect(history.state).toEqual({ k: 1 });
+      expect(new URL('assets/zen/calm.webp', document.baseURI).pathname).toBe('/studio/assets/zen/calm.webp');
+      // every other address is left as it is
+      for (const p of ['/studio/', '/studio/?signin', '/studio/book/abc', '/studiofoo', '/']) {
+        history.replaceState(null, '', p);
+        run();
+        expect(location.pathname + location.search).toBe(p);
+      }
+    } finally {
+      history.replaceState(null, '', start);
+    }
+  });
+
+  it('the tidy is the first statement of the first script, and nothing before it names a relative URL', () => {
+    expect(script.trimStart().startsWith("if (location.pathname === '/studio') history.replaceState(history.state, '', '/studio/' + location.search + location.hash);")).toBe(true);
+    const before = html.slice(0, html.indexOf('<script>'));
+    for (const m of before.matchAll(/(?:href|src)="([^"]*)"/g)) expect(m[1]).toMatch(/^(%BASE_URL%|\/)/);
+  });
+
   it('Paper by default, and an unknown saved language changes nothing', () => {
     localStorage.setItem('beuk.uiLang.v1', 'xx');
     run();

@@ -2431,8 +2431,8 @@ files it was written about and the link it came from.
   (plain, Markdown, CSV), added with **Add files** or dropped on the open
   Notebook (on the note in hand, or a new one titled after the file).
   The type is the browser's, or the file name's when the browser gives
-  none (`rsTypeOf`); anything else, a web page included, is refused, as
-  is an empty file. Limits (`rsLimits`): 25 MB a file, 20 files a note,
+  none (`rsTypeOf`), plus saved web pages and Word documents (below);
+  anything else is refused, as is an empty file. Limits (`rsLimits`): 25 MB a file, 20 files a note,
   200 files and 100 MB a book (raised from 10 MB, 60 and 25 MB by
   BEUK:localpics; see Local-first saving).
 - **Opened in the Notebook.** One file at a time, under its note: a
@@ -2466,7 +2466,9 @@ files it was written about and the link it came from.
   once by their SHA-256 and named in the saved book, so an autosave does
   not resend a 10 MB PDF. The picture store accepts these types
   (`PICTURE_MEDIA_RE` in `src/pictures.ts`), never HTML;
-  `tests/pictures.test.ts` holds both.
+  `tests/pictures.test.ts` holds both (a saved web page is stored as
+  `application/vnd.beuk.webpage`, never `text/html`, `multipart/related`
+  or `message/rfc822`).
 - **Content-Security-Policy.** The Caddyfile allows `blob:` in
   `frame-src` and `media-src` for the PDF frame and the players (see
   **Security headers**). Self-check `notebook.research.csp` reads the
@@ -2480,7 +2482,118 @@ files it was written about and the link it came from.
   chapters say, marked "a sketch, not to scale"); "Notices to
   Mariners" links to Wikipedia's article on notices to mariners.
 - All 13 interface languages. Self-checks: `notebook.research`,
-  `notebook.research.csp`.
+  `notebook.research.csp`, `notebook.research.webword`.
+
+### Web pages and Word documents (`BEUK:webword`)
+
+- **What is kept.** A Word document (`.docx`, kept as
+  `application/vnd.openxmlformats-officedocument.wordprocessingml.document`)
+  and a saved web page (`.html`, `.htm`, and Chrome and Edge's
+  "Webpage, Single File" `.mhtml` / `.mht`, kept as
+  `application/vnd.beuk.webpage` whatever the browser typed it). Both
+  are kept byte for byte; **Save a copy** gives the file back.
+- **Opened before it is kept.** `rsAddFiles` hands each one to a Web
+  Worker (`client/assets/rsdoc.js`, precached; shell cache v22) under a
+  20 s limit (`rsDocJob`; past it the worker is terminated and the next
+  job starts a fresh one). A `.docx` must be a zip holding
+  `word/document.xml`, declaring at most 200 MB unpacked, with no part
+  over 1 MB unpacking more than 200 times its packed size (a zip bomb is
+  refused before anything is unpacked); an OLE file (an old `.doc`,
+  renamed or not) is told to save as `.docx`. A web page must be an
+  MHTML archive with an HTML part, or text that reads as HTML (a
+  byte-order mark, the page's `<meta charset>`, else UTF-8; mostly NUL
+  or replacement characters is binary and refused); a Safari
+  `.webarchive` (a binary plist) is told to save as Page Source. The
+  note takes the document's `dc:title` or the page's `<title>` (read as
+  plain words, controls and direction overrides removed) when it has
+  none, and the page's own address (MHTML `Snapshot-Content-Location`,
+  Chrome's `saved from url` comment, `rel=canonical`, `og:url`, through
+  `rsUrl`) when it has no link.
+- **The reader view.** The worker unpacks (mammoth for Word; MHTML
+  parts decoded from base64 or quoted-printable, in their own charset)
+  and the studio rebuilds the result from an allowlist (`rsSanitize`):
+  headings, paragraphs, lists, quotes, code, tables (numeric
+  `colspan`/`rowspan`), links (`http(s)` only, read against the page's
+  own address, opening in a new tab with `noopener noreferrer
+  nofollow`), page boxes as plain `div`s, and pictures only as `data:`
+  PNG, JPEG, GIF or WebP — those saved inside an MHTML by their
+  `Content-Location` or `cid:`, never fetched from the web (a picture
+  with words shows them in brackets). No attribute survives but those;
+  scripts, styles, frames, SVG, MathML, forms, media, `<base>`, `<meta>`
+  and their contents never reach the page. The walk is a work list, not
+  recursion; output nesting stops at 120 and elements at 40,000 ("Only
+  the start of this file is shown"). The rebuilt nodes are imported as
+  they are: nothing is serialised and parsed again, so nothing can read
+  differently the second time. Unwrapped elements and side-by-side
+  links get a space, so words never run together.
+- **Nothing added or removed unsaid.** Under every view one line says
+  either "Every word in the file is shown here." or "Not shown here: …",
+  each kind with its number: menus, form fields and buttons, embedded
+  video/audio/frames, drawings and formulas (each with its words), parts
+  the page itself hid (`hidden`, `display:none`, `visibility:hidden`),
+  pictures not saved with the page, pictures in a format the view cannot
+  show (EMF, TIFF…), links that lead nowhere on the web (their words are
+  shown), scripts and styles (counted over the whole document, head
+  included), and for Word the header and footer words, comment words and
+  words deleted in tracked changes. Then the books are balanced in
+  **letters and numbers** (`\p{L}\p{N}`, so spacing may change but
+  characters may not): the file's own count — for Word from its XML in
+  the worker (`docxStats`: runs, footnotes and endnotes; a text box's
+  VML copy in `mc:Fallback` counted once; `<mc:Fallback/>` holds
+  nothing and `</mc:AlternateContent>` closes any fallback left open),
+  for a page from its visible text — must equal what is shown plus what
+  was named. Anything left over is said as "other letters and numbers:
+  N"; letters shown that the file does not hold are said as such. A
+  footnote number mammoth writes ("[1]") is Word's own numbering. A
+  picture that is not shown leaves a marked note in its place ("(a
+  picture not saved with the page: …)", styled as a note, never counted
+  as the file's words). The writer's own words are never re-spaced:
+  inline elements (`span`, `em`…) are joined as the browser joins them,
+  so a word split across them ("<span>O</span>urselves") stays one word.
+- **What the count found on real files.** Steady Ground (a Word book):
+  14 letters were missing, the "urselves" and "nxious" of two drop caps
+  whose rest of the word sits in DrawingML text boxes with an empty
+  fallback, which mammoth does not read. The worker now writes a text
+  box's words in where the box sits, in the copy it hands mammoth (the
+  file is never changed): "Ourselves" reads whole and the view says
+  every word is shown. My first word-level probe had missed this.
+- **Measured live** (`beuk-spikes/webword/smoke.mjs`, through the
+  Notebook's own file picker): a 1.2 MB Word book (10,721 words) and the
+  e2e manuscript (272 words, 4 headings, its picture, the note titled
+  from the document), and the Help and Roadmap pages saved by Chrome as
+  `.mhtml` (3,739 and 945 words, their logo) and `.html`; no unsafe
+  element or attribute, no CSP report, no request outside the studio.
+- **Self-check `notebook.research.webword`** (async, client-only) adds
+  20 files through `rsAddFiles`: 7 kept (a real `.docx` with a heading,
+  a table, a safe and a `javascript:` link and a picture; a Chrome-style
+  `.mhtml` with its picture and a garbage-base64 part; an `.html` with a
+  `saved from url` comment; UTF-16, Windows-1252, ten thousand nested
+  `div`s plus two thousand nested `blockquote`s, a 300-character name
+  with a right-to-left override) and 13 refused, each with its own
+  sentence (truncated, a renamed picture, no document, a zip bomb, an
+  OLE `.doc` by bytes and by name, empty, an MHTML with no boundary or
+  no HTML part, random bytes, HTML padded with NULs, a Safari archive by
+  name and by bytes). The test page carries scripts in its head and
+  body, `onclick`, `onerror`, an `<iframe>`, `<svg onload>`, a form,
+  `<meta refresh>`, a hostile `<base>`, `javascript:` and `data:` links,
+  styles and a tracking pixel: none reaches the view, no script runs and
+  no script or CSS text is shown. Broken Word XML is kept (its zip is
+  sound) and says it cannot be shown; a job past its time is stopped and
+  the next one works; the 200 MB total refuses incompressible parts past
+  a limit the job tightens (a job can only tighten it). The accounting
+  is held too: a drop-cap Word file (text box, `<mc:Fallback />`) reads
+  "Ourselves and the Wmark after the box." and says every word is
+  shown; a Word file with a header, footer, comment, tracked deletion
+  and an EMF picture names each with its count; the test page names its
+  1 form field, 2 frames, 1 drawing, 3 web pictures, 2 dead links and 4
+  scripts and styles, claims nothing extra and leaves nothing
+  unexplained; hidden parts and a menu are counted with their words; a
+  page inside one `<form>` keeps its words; a word split across spans
+  stays one; unexplained missing or extra letters are said. Mutation
+  test (`beuk-spikes/webword/mutate.py`): 33 of 34 caught; the 34th
+  (a self-closing fallback treated as open) is equivalent, since
+  `mc:Fallback` is always the last child and `</mc:AlternateContent>`
+  closes it.
 
 ## Studio: the preview keeps the writer's place (client-only)
 
@@ -3606,19 +3719,106 @@ The same Compose file runs locally — only `.env` differs.
 - **Returning writers skip it.** Once a writer has written on a device,
   the studio sets `localStorage["beuk.desk"] = "1"`, and the landing page
   sends that device straight to `/studio`. `/?home` always shows the page.
-- **`/studio` is the studio** (`client/index.html`; `/studio/` redirects
-  to it). `/index.html` and every other unknown path still fall back to
-  the studio, so old links keep working. Books saved on a device are kept
-  per origin, not per path, so they open at `/studio` unchanged. The
-  installed app still starts at the root (manifest `start_url`), because
-  the synced studio copy is also hosted where only `index.html` and
-  `assets/` exist; on beuk.studio the root sends a writer who has
-  written straight to `/studio`.
-- **Service worker v7.** Both copies cache the studio from `/`,
-  `/index.html` or `/studio`, but never a response marked as the landing
-  page. `/site/*`, `/robots.txt` and `/sitemap.xml` go straight to the
-  network, like Help. Offline, any navigation still opens the cached
-  studio.
+- **The studio is Beuk 2.0** (React, `studio/`, built by the image to
+  `client/next/`) at **`/studio/`**, served by the app
+  (`src/routes/studio.ts`; Caddy proxies exactly `/studio`, `/studio/…`,
+  `/next` and `/next/…` to it). `/studio` answers 2.0's page too (200,
+  no redirect: a browser keeps a permanent redirect with no
+  `Cache-Control` for good, so one between `/studio` and `/studio/` would
+  loop the moment the rollback, or 1.0's old Caddy, had sent the opposite
+  one), and the page tidies its own address to `/studio/` before anything
+  else runs, the query and the hash kept. So every link that names
+  `/studio`, `/studio?signin`, `/studio?signup` or `/studio?book=<id>`
+  (the landing page, the account page, Help, emails, bookmarks) still
+  opens the studio, and its door. The old 2.0 address `/next` and
+  `/next/…` answers a 308 (`Cache-Control: no-cache`) to the same path
+  under `/studio/`. Hashed build files (`/studio/assets/…`) are immutable;
+  the page, its worker and the precache list revalidate on every load; an
+  extensionless path is the app's own route (the page); a missing file
+  with an extension is a 404. 2.0 still reads 1.0's static files at the
+  site root (`/assets/…`, Caddy's static mount).
+- **Books on a device carry over.** 2.0 reads 1.0's device store
+  (`beuk-local`) read-only and imports a book it finds there; it never
+  writes to it. Books on the cloud shelf open as before.
+- **Service workers.** 2.0's worker (`/studio/sw.js`, scope `/studio`
+  with no slash, allowed by the app's `Service-Worker-Allowed: /studio`
+  header, caches `beuk-next-*`, the prefix kept from the `/next` days so
+  warm caches survive) controls the studio at both addresses, so an old
+  `/studio` bookmark opens offline as `/studio/` does. A scope matches by
+  prefix, so it also takes `/studiofoo`, `/studio.html` and the like;
+  nothing lives there (Caddy answers them with a 302 to `/studio` or a
+  404), and the worker leaves those navigations alone. 1.0's old root worker
+  (`client/sw.js`, scope `/`) is v23 and retires itself: on a browser that
+  still holds v22 it skips waiting, deletes 1.0's `beuk-shell-*` and
+  `beuk-sound-*` caches (never a `beuk-next-*` one), claims the open
+  pages its scope still wins (a page under `/studio` belongs to 2.0's
+  worker once that is registered, which then claims it itself, and
+  deletes any `beuk-shell-*`/`beuk-sound-*` cache v22 stored late),
+  unregisters, and while it lives answers no request, so the
+  cached 1.0 page is never served again. `client/assets/sw.js` is 1.0's
+  fallback copy (scope `/assets/`, which controls no studio page) and is
+  unchanged.
+- **1.0 is not served** any more (only `STUDIO_CLASSIC=true` brings it
+  back, below); `client/index.html` stays in the repo as 2.0's build-time
+  source (strings, tokens, lifted functions). The static catch-all no
+  longer falls back to it: `/index.html` (old bookmarks) answers a 308 to
+  `/studio` with the query kept; a missing path without an extension (an
+  old link, a typo) a 302 to `/studio`, query kept (to `/studio`, so the
+  app decides 2.0 or the rollback); a missing path with an extension a
+  plain 404, never a page. Existing static files (`/assets/…`, `/sw.js`)
+  are served as before. So no second studio writes to a device's books.
+- **The installed app.** 2.0 links its own manifest
+  (`studio/public/manifest.webmanifest`, served at
+  `/studio/manifest.webmanifest`, no-cache): 1.0's name, description,
+  colours, display and icons (by absolute path, `/assets/icon-*.png`),
+  `"id": "/"`, `"start_url": "/studio/"`, `"scope": "/"`. 1.0's manifest
+  has no `id`, so its id is its `start_url` (`../` from `/assets/`, which
+  is `/`); 2.0's `"/"` resolves against its start URL's origin to the same
+  URL (W3C Web Application Manifest §1.11, "Processing the `id` member").
+  The spec says a manifest with an installed app's id "SHOULD be used as a
+  signal that this manifest is a replacement" (§1.11), so a browser that
+  follows it updates the existing install in place: it opens at
+  `/studio/`, where 2.0's worker serves the studio offline. Whether and
+  when a given browser applies it is the browser's call and is unverified
+  (Chrome re-checks a manifest when it has not since the browser started
+  or in the last 24 hours, and advises against moving a manifest's file:
+  web.dev "How Chrome handles updates to the web app manifest"). Until it does, an existing install
+  still opens at `/`: online that is the landing page, which sends a
+  writer who has written to `/studio`; **offline it now shows the
+  browser's offline page** (no worker covers `/` after v22 retires), where
+  v22 used to open the cached 1.0 studio. Reinstalling from `/studio/`
+  fixes it at once. 1.0's own manifest is unchanged (the studio-directory
+  hosting still uses it).
+- **The rollback: `STUDIO_CLASSIC=true`** (`.env`, then restart the app).
+  For emergencies, not a second studio. The app then serves 1.0's
+  `client/index.html` at `/studio` (with `Cache-Control: no-cache`, as
+  Caddy served it before the switch) and `/studio/` and every other page
+  path under it answer a 302 (`Cache-Control: no-store`, so it is never
+  kept and flipping back cannot loop) to `/studio`, the query kept; 2.0's
+  files are not served.
+  The costs, stated plainly:
+  - **Going to 1.0: words written in 2.0 on a device are not in 1.0's
+    device store.** 2.0 keeps its own device books (its own IndexedDB
+    databases); 1.0 reads only `beuk-local`. A book on the cloud shelf
+    opens in both. A book kept only on a device opens in 1.0 as 1.0 last
+    saved it there, without anything written in 2.0 since.
+  - **Coming back to 2.0: words written in 1.0 on a device during the
+    rollback never reach 2.0.** 2.0 imports `beuk-local` once only; after
+    that it opens its own existing book first and never reads 1.0's store
+    again (`studio/src/book/store.ts`, `startBook` / `importLegacyOnce`).
+    Those words stay in `beuk-local`, which nothing in 2.0 shows. **Before
+    flipping back, writers must put device-only books on the cloud shelf
+    or export them** (and import them in 2.0).
+  - 1.0 runs **online only**: it registers `/sw.js`, which is the retiring
+    v23 worker, so 1.0 has no offline shell (its `pwa.installable`
+    self-check reports that).
+  - A browser that already holds 2.0's worker keeps it (its update check
+    finds no `/studio/sw.js`). Its scope `/studio` covers 1.0's `/studio`
+    too: online it is network first, so 1.0 opens; **offline, or while the
+    app answers a server error, it opens 2.0's cached studio instead**,
+    and words written there are in 2.0's device store, not 1.0's (they
+    are there again once you flip back to 2.0).
+  Set it back to `false` (or remove it) and restart to return to 2.0.
 - **The page's claims are the studio's.** It names beuk.studio (not the
   sample book's imprint), and says nothing about being free or open
   source. It says a 21-day free trial comes with the account, and that
@@ -3630,7 +3830,8 @@ The same Compose file runs locally — only `.env` differs.
   `client/site/`. Content stays visible without JavaScript; only the
   scroll reveal needs it.
 - **Search and link previews.** `GET /robots.txt` keeps `/api/`,
-  `/read/`, `/reset`, `/studio`, `/index.html` and Help search out of
+  `/read/`, `/reset`, `/studio` (and `/studio/…`, by prefix), `/next`,
+  `/index.html` and Help search out of
   search engines and names the sitemap. `GET /sitemap.xml` lists the
   landing page, Help (every guide, with its `updated` date, and every
   error entry), the changelog, roadmap, privacy and terms pages, and

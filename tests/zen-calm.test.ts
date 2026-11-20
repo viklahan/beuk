@@ -35,7 +35,8 @@ test('zen calm: the four paintings are small web images, listed in the scene cha
     assert.ok(st.size > 5_000 && st.size < 200_000, p + ' is a web-sized image');
     assert.ok(html.includes(`id: "${p}"`), p + ' in ZEN_PAINTINGS');
   }
-  for (const [rel, pre] of [['client/sw.js', './assets/zen/'], ['client/assets/sw.js', './zen/']] as const) {
+  // 1.0's worker copy (the root copy retires itself: tests/sw-retire.test.ts)
+  for (const [rel, pre] of [['client/assets/sw.js', './zen/']] as const) {
     const sw = await readFile(path.join(root, rel), 'utf8');
     for (const p of PAINTINGS) assert.ok(sw.includes(`"${pre}${p}.webp"`), `${rel} precaches ${p}`);
   }

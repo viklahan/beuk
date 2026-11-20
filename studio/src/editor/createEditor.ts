@@ -5,6 +5,9 @@ import { BookBehaviour } from './behaviour';
 import { bookExtensions } from './schema';
 import { CovenantMarks } from '../covenant/marks';
 import { attachEditorExtras } from './extras';
+import { holdPositionMigrations, wrapUndoInTransaction } from './positionMigrations';
+
+export { positionMigrationStore } from './positionMigrations';
 
 /* One TipTap editor on one chapter's Y fragment (one instance per open
    chapter, the spike's A1 shape). Collaboration binds it through
@@ -26,6 +29,8 @@ export type ChapterEditorOptions = {
 };
 
 export function createChapterEditor(o: ChapterEditorOptions): Editor {
+  // undo storms (task 5): y-tiptap's position-migration records kept out of the book; the caret restore kept
+  const held = holdPositionMigrations(o.fragment);
   const editor = new Editor({
     element: o.element,
     extensions: [...bookExtensions(), Collaboration.configure({ fragment: o.fragment }), BookBehaviour.configure({ onRefuse: o.onRefuse }), CovenantMarks],
@@ -44,6 +49,8 @@ export function createChapterEditor(o: ChapterEditorOptions): Editor {
       },
     },
   });
+  wrapUndoInTransaction(editor, held);
+  editor.on('destroy', held.release);
   // behaviour registered by modules that load later (editor/extras.ts): this editor gets it now and as it arrives
   attachEditorExtras(editor);
   return editor;

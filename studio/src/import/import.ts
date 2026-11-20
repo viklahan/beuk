@@ -353,7 +353,7 @@ export function loadMammoth(): Promise<void> {
 let pdfLoad: Promise<void> | null = null;
 /** pdf.js 6.4.299 (1.0's PDFJS_DIR and PDFJS_FILES: the worker build first, each under 1.0's SRI, as module scripts), on
  *  the first .pdf. 1.0's own pdfLoadLib then finds both globals and hands the library over. 1.0's PDFJS_DIR is relative
- *  to its page (/studio); on 2.0's page (/next/) it is taken from the site's root. */
+ *  to its page (/studio); on 2.0's page (/studio/) it is taken from the site's root. */
 export function loadPdfjs(c: Closure): Promise<void> {
   const g = globalThis as Record<string, unknown>;
   if (g.pdfjsLib && g.pdfjsWorker) return Promise.resolve();
@@ -409,7 +409,7 @@ export async function importWire(): Promise<Closure> {
         const name = String((file as { name?: unknown } | null)?.name ?? '').toLowerCase();
         if (name.endsWith('.docx')) await loadMammoth();
         else if (name.endsWith('.pdf')) await loadPdfjs(c);
-        if (name.endsWith('.epub') || name.endsWith('.docx') || name.endsWith('.zip')) await jszip();
+        if (name.endsWith('.epub') || name.endsWith('.docx') || name.endsWith('.odt') || name.endsWith('.zip')) await jszip(); // .odt: 1.0's odtRead (BEUK:docsimport) opens it with JSZip
         const run = await read(file);
         // a whole-book write still in flight (an import before this one): this import waits for its new book, and its
         // confirm then asks over that book (V's ruling 2026-11-04: nothing of the first is lost)

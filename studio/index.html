@@ -6,8 +6,15 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="robots" content="noindex" />
     <title>Beuk — beuk.studio</title>
+    <!-- The installed app (public/manifest.webmanifest): the same id as 1.0's manifest, starting at the studio. -->
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <script>
-      /* Pre-paint, before any CSS: 1.0's own rules and keys (client/index.html
+      if (location.pathname === '/studio') history.replaceState(history.state, '', '/studio/' + location.search + location.hash);
+      /* That first line, before anything reads document.baseURI: the app answers this page at /studio as well as at
+         /studio/ (no redirect between the two: final review C2), and the page tidies its own address to /studio/, so
+         everything relative (Zen's "assets/...") resolves under /studio/. The query and the hash stay (the doors,
+         src/cloud/doors.ts). Every URL above this script is absolute.
+         Pre-paint, before any CSS: 1.0's own rules and keys (client/index.html
          head script and applyUiLang). Theme: Paper unless the saved choice
          says candlelight. Interface language: the saved choice's lang and
          direction, so the chrome never flips after first paint. The keys and

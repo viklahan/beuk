@@ -1,10 +1,15 @@
 /* A tiny static server for the e2e script: the repo's client/ tree the way
    production serves it, with the real security headers.
-   - /studio            → client/index.html (1.0, as Caddy rewrites it)
-   - /next              → 308 /next/
-   - /next/<file>       → client/next/<file> (the 2.0 build)
-   - /next/<route>      → client/next/index.html (the app's own routes),
+   - /studio/<file>     → client/next/<file> (the 2.0 build; the directory keeps its name); sw.js with
+                          Service-Worker-Allowed: /studio, as the app sends it (src/routes/studio.ts)
+   - /studio, /studio/<route> → client/next/index.html (no redirect between /studio and /studio/, as the app),
                           or state.navStatus when set (a 502 during a deploy)
+   - /next, /next/<x>   → 308 /studio/<x> (the old address, the query kept)
+   - ONE (/index.html)  → client/index.html, 1.0's page: a TEST-ONLY door, for the runs that put a 1.0 book on the
+                          device first or set 1.0 and 2.0 side by side (the "anything else" rule below; 1.0's code
+                          is path-independent). Production never serves it there: Caddy answers /index.html with a
+                          308 to /studio, and /studio is 2.0 (1.0 only under the STUDIO_CLASSIC rollback,
+                          tests/studio.test.ts).
    - /api/*             → 404 JSON (no shelf in these runs), or, opt-in (wave 7a, constraint 84: startServer({ api: true })),
                           the REAL app (src/app.ts) on an embedded Postgres (PGlite, as tests/helpers.ts runs it), its
                           mail captured and never sent, billing off unless the caller passes Stripe test settings
@@ -22,6 +27,11 @@ import { createServer } from 'node:http';
 import { readFileSync, statSync, createReadStream } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+
+/** Where these runs open Beuk 1.0's page (client/index.html): see the header. */
+export const ONE = '/index.html';
+/** The studio (2.0): the build's base, vite.config.ts STUDIO_BASE. */
+export const STUDIO = '/studio/';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -73,7 +83,7 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
   const client = path.join(repo, 'client');
   const next = path.join(client, 'next');
   const headers = caddyHeaders(readFileSync(path.join(repo, 'Caddyfile'), 'utf8'));
-  /* navStatus: when set (e.g. 502), every /next/ page route answers it —
+  /* navStatus: when set (e.g. 502), every /studio/ page route answers it —
      the app container down behind Caddy during a deploy. */
   const state = { requests: [], navStatus: 0 };
   const server = createServer((req, res) => {
@@ -91,6 +101,8 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
       if (!st || !st.isFile()) return false;
       res.setHeader('Content-Type', TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream');
       res.setHeader('Cache-Control', 'no-cache');
+      // the app's header (src/routes/studio.ts): 2.0's worker is scoped to /studio, wider than its folder
+      if (file === path.join(next, 'sw.js')) res.setHeader('Service-Worker-Allowed', '/studio');
       res.setHeader('Content-Length', st.size);
       createReadStream(file).pipe(res);
       return true;
@@ -118,19 +130,20 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
       res.setHeader('Content-Type', 'application/json');
       return res.end('{"error":"not found"}');
     }
-    if (p === '/studio') return send(path.join(client, 'index.html')) || notFound();
-    if (p === '/next') {
+    const redirect = (to) => {
       res.statusCode = 308;
-      res.setHeader('Location', '/next/' + url.search);
+      res.setHeader('Location', to + url.search);
       return res.end();
-    }
-    if (p.startsWith('/next/')) {
+    };
+    if (p === '/next' || p.startsWith('/next/')) return redirect('/studio/' + p.slice(p === '/next' ? 5 : 6));
+    // as the app (final review C2): 2.0's page at /studio and at /studio/, no redirect between the two
+    if (p === '/studio' || p.startsWith('/studio/')) {
       if (state.navStatus && !/\.[a-z0-9]+$/i.test(p)) {
         res.statusCode = state.navStatus;
         res.setHeader('Content-Type', 'text/plain');
         return res.end('Bad Gateway');
       }
-      const rel = p.slice('/next'.length);
+      const rel = p.slice('/studio'.length);
       const f = inside(next, rel);
       if (f && send(f)) return;
       if (/\.[a-z0-9]+$/i.test(p)) return notFound();

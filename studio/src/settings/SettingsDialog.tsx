@@ -32,7 +32,7 @@ type Rec = Record<string, unknown>;
 
 /** 1.0's server probes, once per page: /api/health (legal links) and /api/config/public (support address). */
 let probes: Promise<{ server: boolean; support: string | null }> | null = null;
-function serverFacts(): Promise<{ server: boolean; support: string | null }> {
+export function serverFacts(): Promise<{ server: boolean; support: string | null }> {
   if (!probes) {
     const health = fetch('/api/health', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json().catch(() => null) : null))

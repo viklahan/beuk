@@ -27,7 +27,9 @@ test('word round trip: the structure check is registered client-only with a reas
 
 test('word round trip: the walk, the parser and the export carry the fixes', async () => {
   const html = await clientHtml();
-  assert.match(html, /tag === "h2" && seenH1 && h1n > h2n/, 'a Heading 2 under Heading 1 chapters is a sub-heading');
+  /* which Heading 2s those are is the one rule's to say (BEUK:headlevels, tests/import-headlevels.test.ts); "more Heading 1 than Heading 2" is still in it */
+  assert.match(html, /if \(tag === "h2" && htxt && subHeads\.has\(node\)\) \{\s*ir\.subs\.push\(htxt\);/, 'a Heading 2 under Heading 1 chapters is a sub-heading');
+  assert.match(html, /const byHeadingOne = holders\.size >= 2 \|\| h1n > h2n;/, 'the rule the Word import always had still holds');
   assert.match(html, /if \(inContents\) \{ ir\.tocLines/, 'the contents list is left out whole');
   assert.match(html, /normHeading\(htxt\) === "endnotes"/, "Beuk's Endnotes are read back");
   assert.match(html, /"frontispiece": \{ kind: "front", type: "frontispiece"/, 'a Frontispiece heading is front matter');

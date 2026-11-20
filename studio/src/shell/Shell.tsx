@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useBook } from '../book/BookProvider';
 import { Desk } from '../book/Desk';
 import { Outline } from '../book/Outline';
@@ -16,7 +17,7 @@ import { CovenantHost, openCovenant } from '../covenant/CovenantDialog';
 import { EnvironmentHost } from '../environment/EnvironmentHost';
 import { cloudLoadStreak } from '../goals/goals';
 import { probeCloud } from '../pictures/stock';
-import { SettingsDialog } from '../settings/SettingsDialog';
+import { SettingsDialog, serverFacts } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { syncClosureLocale } from '../closure/index';
 import { TourHost } from '../tour/TourHost';
@@ -54,6 +55,19 @@ const openTab = (url: string) => {
   }
 };
 
+/* wave 5 cutover, task 1: 1.0's BEUK:panes (client/index.html panesFold, PANES_KEY) — either side column folds away from the
+   tab on its seam and comes back from it; this device remembers which are folded. Same key, same {left, right} shape. */
+export const PANES_KEY = 'beuk.panes.v1';
+type Folds = { left: boolean; right: boolean }; // look: data, not a style (1.0's beuk.panes.v1 shape)
+function readFolds(): Folds {
+  try {
+    const o = JSON.parse(localStorage.getItem(PANES_KEY) || 'null') as { left?: unknown; right?: unknown } | null;
+    return { left: !!(o && o.left), right: !!(o && o.right) }; // look: data, not a style
+  } catch {
+    return { left: false, right: false }; // look: data, not a style
+  }
+}
+
 let arisLoad: Promise<typeof import('../aris/index.js') | undefined> | null = null; // aris mount
 export function Shell() {
   const { t, dir, lang } = useLocale();
@@ -61,6 +75,31 @@ export function Shell() {
   syncClosureLocale(t as (k: string, p?: Record<string, unknown>) => string, lang);
   const bk = useBook();
   const [mobile, setMobile] = useState<MobilePane>('structure');
+  const [folds, setFolds] = useState<Folds>(readFolds);
+  // 1.0's panesFold.set(side, !folded): remember (both sides, as 1.0 writes them), then a resize so the reader and the
+  // editor re-measure for their new width. (1.0's restore at start passes keep=false: nothing is written for it.)
+  const fold = (side: 'left' | 'right') => {
+    const next = { ...folds, [side]: !folds[side] };
+    // 1.0 changes the class first, then dispatches: commit the fold-* class now so resize listeners measure the new width
+    flushSync(() => setFolds(next));
+    try {
+      localStorage.setItem(PANES_KEY, JSON.stringify(next));
+    } catch {
+      /* 1.0: storage refused, nothing kept */
+    }
+    window.dispatchEvent(new Event('resize'));
+  };
+  // 1.0's beukSupportLoad: Support shows only while /api/config/public gives a plain support address
+  const [support, setSupport] = useState<string | null>(null);
+  useEffect(() => {
+    let gone = false;
+    void serverFacts().then((f) => {
+      if (!gone) setSupport(f.support);
+    });
+    return () => {
+      gone = true;
+    };
+  }, []);
   // wave 3a: 1.0's cloudAfterSignIn → cloudLoadStreak — with a shelf and a writer signed in, the server's streak
   useEffect(() => {
     void probeCloud()
@@ -166,6 +205,12 @@ export function Shell() {
           <Icon name="LifeBuoy" />
           <span className="tb-label lbl-collapse">{t('top.help')}</span>
         </button>
+        {support && (
+          <button type="button" className="tb-btn" id="btnSupport" data-tip="tips.support" data-tip-place="bottom" aria-label={t('top.supportAria')} onClick={() => openTab('/help/#support')}>
+            <Icon name="Coffee" />
+            <span className="tb-label lbl-collapse">{t('top.support')}</span>
+          </button>
+        )}
         {/* wave 5a, round 2: 1.0's #btnExport opens the export modal (its aria-label is 1.0's own English, with no key);
             the backup is in the local pill (src/book/LocalPill.tsx), where 1.0 keeps it */}
         <button
@@ -203,7 +248,32 @@ export function Shell() {
         </button>
       </nav>
 
-      <main id="panes" data-mobile={mobile}>
+      <main id="panes" data-mobile={mobile} className={[folds.left ? 'fold-left' : '', folds.right ? 'fold-right' : ''].filter(Boolean).join(' ') || undefined}>
+        {/* 1.0's two seam tabs (their titles and aria-labels are 1.0's own English, which has no key) */}
+        <button
+          type="button"
+          className="pane-fold"
+          id="foldLeft"
+          aria-controls="pane-structure"
+          aria-expanded={folds.left ? 'false' : 'true'}
+          title={folds.left ? 'Show the left column' : 'Hide the left column'}
+          aria-label={folds.left ? 'Show the left column' : 'Hide the left column'}
+          onClick={() => fold('left')}
+        >
+          <Icon name="ChevronLeft" />
+        </button>
+        <button
+          type="button"
+          className="pane-fold"
+          id="foldRight"
+          aria-controls="pane-preview"
+          aria-expanded={folds.right ? 'false' : 'true'}
+          title={folds.right ? 'Show the reader' : 'Hide the reader'}
+          aria-label={folds.right ? 'Show the reader' : 'Hide the reader'}
+          onClick={() => fold('right')}
+        >
+          <Icon name="ChevronRight" />
+        </button>
         <aside id="pane-structure" className="pane">
           <div className="side-actions">
             {/* wave 6: 1.0's Import Document (#btnImport), wired by 1.0's own initImport (src/import/ImportHost.tsx): it opens
