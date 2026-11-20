@@ -38127,6 +38127,67 @@
       }
       /* Volume One, Book Two, Part III: a divider between chapters, not a chapter. */
       const PART_HEAD_RE = new RegExp("^(?:#{1,2}\\s+)?(?:part|book|volume)\\s+(?:" + CHAPTER_NUM_TOKEN + ")(?![a-z])", "i");
+      /* ==== BEUK:headlevels ==== */
+      /* Which Heading 2 opens a chapter, and which is a sub-heading
+         inside its chapter: one rule, asked by every way in that reads
+         heading levels (Word, RTF, markdown's "#" and "##").
+         `heads` is the file's Heading 1s and Heading 2s in order, as
+         { level, text }; the answer says of each whether it is a
+         sub-heading. A Heading 1 never is. A Heading 2 is one when the
+         book's chapters are its Heading 1s —
+           - two or more Heading 1s that are not Part dividers or matter
+             pages each hold a Heading 2 of their own (a title set as
+             Heading 1 over Heading 2 chapters holds them all itself:
+             those stay chapters), or
+           - there are more Heading 1s than Heading 2s (the rule the
+             Word import always had) —
+         and it stands under a Heading 1 and names no chapter, part or
+         matter page itself. A book that numbers its chapters in Heading
+         2 ("Chapter 1", "Chapter 2") has said what a chapter is: none of
+         its Heading 2s is folded in. */
+      function irSubHeadings(heads) {
+        const hs = (heads || []).map((h) => ({ level: Number(h.level), text: String(h.text == null ? "" : h.text).replace(/\s+/g, " ").trim() }));
+        const matter = (t) => { const n = normHeading(t); return !!MATTER_HEADINGS[n] || n.indexOf("also by") === 0; };
+        const named = (t) => t.length > 2 && (CHAPTER_HEAD_RE.test(t) || matter(t));
+        const plain = (h) => h.level === 2 && !!h.text && !named(h.text) && !PART_HEAD_RE.test(h.text);
+        if (hs.filter((h) => h.level === 2 && CHAPTER_NUM_RE.test(h.text)).length >= 2) return hs.map(() => false);
+        const h1n = hs.filter((h) => h.level === 1).length, h2n = hs.filter((h) => h.level === 2).length;
+        const under = [], holders = new Set();
+        let cur = -1;
+        hs.forEach((h, i) => {
+          if (h.level === 1) { cur = i; under.push(-1); return; }
+          under.push(cur);
+          if (cur >= 0 && plain(h) && !PART_HEAD_RE.test(hs[cur].text) && !matter(hs[cur].text)) holders.add(cur);
+        });
+        const byHeadingOne = holders.size >= 2 || h1n > h2n;
+        return hs.map((h, i) => byHeadingOne && under[i] >= 0 && plain(h));
+      }
+      /* Markdown and text: a "#" line is a Heading 1 and a "##" line a
+         Heading 2, judged by the same rule. A sub-heading leaves its
+         line for a placeholder, a block of its own (irFinish sets it
+         back as the sub-heading it is); every other line is untouched. */
+      function irMdSubHeadings(text, ir) {
+        const src = String(text == null ? "" : text);
+        const lines = src.split("\n");
+        const heads = [];
+        let fence = false;
+        lines.forEach((line, i) => {
+          if (/^\s*(```|~~~)/.test(line)) { fence = !fence; return; }
+          if (fence) return;
+          const m = /^(#{1,2})\s+(\S.*)$/.exec(line.trim());
+          if (m) heads.push({ i, level: m[1].length, text: m[2].trim() });
+        });
+        const sub = irSubHeadings(heads);
+        if (!sub.some(Boolean)) return src;
+        ir.subs = ir.subs || [];
+        heads.forEach((h, k) => {
+          if (!sub[k]) return;
+          ir.subs.push(h.text);
+          lines[h.i] = "\n" + irSent("SUB", ir.subs.length - 1) + "\n";
+        });
+        return lines.join("\n");
+      }
+      /* ==== /BEUK:headlevels ==== */
       function parseManuscript(text, fallbackTitle, identity) {
         identity = identity || {};
         text = irCleanText(text);
@@ -38986,7 +39047,9 @@
             case "s": if (d === "style") st.buf.num = p || 0; else if (content()) para.s = p || 0; break;
             case "cs": case "ds": case "ts": case "tsrowd": if (d === "style") st.buf.charStyle = true; break;
             case "outlinelevel": if (content()) para.outline = p == null ? -1 : p; break;
-            case "ls": case "ilvl": if (content()) para.list = true; break;
+            /* A paragraph is in a list when it names its list (\ls) or carries a list mark (\listtext, \pntext).
+               A level alone (\ilvl) says nothing: Google Docs writes \ilvl0 on every paragraph of a file. */
+            case "ls": if (content()) para.list = true; break;
             case "par": case "page": case "sect": flush(); endPara(); break;
             case "cell": case "nestcell": flush(); endCell(); break;
             case "row": case "nestrow": endRow(); break;
@@ -39078,6 +39141,13 @@
         if (tableRows.length || row.length || tableImgs) flushTable();
         return res;
       }
+      /* BEUK:headlevels — the file's Heading 2s that are sub-headings
+         inside their chapter, by the one rule every reader asks. */
+      function rtfSubHeadings(rd) {
+        const hb = rd.blocks.filter((b) => b.kind === "h" && b.level <= 2);
+        const flags = irSubHeadings(hb);
+        return new Set(hb.filter((b, k) => flags[k]));
+      }
       /* Blocks -> manuscript text, for the readers that take text only
          (the shelf's bulk import and a box set's volumes): headings as
          "# ", Beuk's marks, lists in its list marks, each footnote's
@@ -39091,8 +39161,9 @@
         rd.notes.forEach((nt) => { noteMd[nt.n] = md(nt.runs); });
         const take = (text) => { const re = /\[\^(\d{1,3})\]/g; let m; while ((m = re.exec(text))) if (noteMd[m[1]] != null) defs.push("[^" + m[1] + "]: " + noteMd[m[1]]); };
         const flushDefs = () => { if (defs.length) out.push(defs.join("\n\n")); defs = []; };
+        const subs = rtfSubHeadings(rd);
         rd.blocks.forEach((b) => {
-          if (b.kind === "h") { if (b.level <= 2) { flushDefs(); out.push("# " + b.text); } else { const v = md(b.runs); take(v); out.push(v); } }
+          if (b.kind === "h") { if (b.level <= 2 && !subs.has(b)) { flushDefs(); out.push("# " + b.text); } else { const v = md(b.runs); take(v); out.push(v); } }
           else if (b.kind === "p") { const v = md(b.runs); if (!v) return; take(v); out.push(b.quote ? "> " + v : v); }
           else if (b.kind === "list") {
             const lines = b.items.map(md).filter(Boolean).map((l, k) => (b.ordered ? (k + 1) + ". " : "- ") + l);
@@ -39118,9 +39189,15 @@
           ir.scan = { scanned: true, comments: C.comments, ins: C.ins, del: C.del, headers: C.headers, textboxes: C.textboxes };
           const parts = [];
           const heads = [];
+          ir.subs = ir.subs || [];
+          const subs = rtfSubHeadings(rd);
           rd.blocks.forEach((b) => {
             if (b.kind === "h") {
-              if (b.level <= 2) {
+              if (subs.has(b)) {
+                /* BEUK:headlevels — a Heading 2 inside a Heading 1 chapter stays in it, as its sub-heading */
+                ir.subs.push(b.text);
+                parts.push(irSent("SUB", ir.subs.length - 1));
+              } else if (b.level <= 2) {
                 /* A chapter title is set in the book's heading style:
                    its words come across plain, its italic/bold counted. */
                 ir.headings.push({ level: b.level, key: irLoose(b.text) });
@@ -40361,7 +40438,7 @@
         const ir = irBegin(name, /\.txt$/i.test(name) ? "txt" : "md");
         try {
           if (parsed.body !== raw && (ident.title || ident.author || ident.subtitle)) ir.frontmatter = raw.slice(0, Math.max(0, raw.length - parsed.body.length)).trim();
-          const pieces = parseManuscript(irPlainTextPrep(text, ir), name.replace(/\.(md|markdown|txt)$/i, ""), ident);
+          const pieces = parseManuscript(irPlainTextPrep(irMdSubHeadings(text, ir), ir), name.replace(/\.(md|markdown|txt)$/i, ""), ident); /* BEUK:headlevels */
           replaceBodyChapters(pieces, name, ident);
           offerDetectedLanguage(det);
           return irFinish(ir, pieces, det);
@@ -40637,16 +40714,22 @@
            - the lines under a Contents heading are the contents list, up
              to the next heading: left out whole (one of them standing
              alone, "Chapter Five · …", would otherwise open a chapter);
-           - in a book whose sections are Heading 1 (more of them than
-             Heading 2), a Heading 2 that names no chapter, part or
-             matter is a sub-heading inside its section, kept as "# …";
-             a book of Heading 1 Parts and Heading 2 chapters keeps its
-             chapters;
+           - in a book whose chapters are Heading 1 (irSubHeadings says
+             when, BEUK:headlevels), a Heading 2 that names no chapter,
+             part or matter is a sub-heading inside its section, kept as
+             "# …"; a book of Heading 1 Parts and Heading 2 chapters
+             keeps its chapters;
            - Beuk's Endnotes ("[n] (Chapter One · Title) note") go back
              into the section each one names, as "[^n]: note", and that
              section's "[n]" mark becomes "[^n]". */
-        const h1n = doc.body.querySelectorAll("h1").length, h2n = doc.body.querySelectorAll("h2").length;
-        let inContents = false, inEndnotes = false, seenH1 = false, justHead = -1;
+        /* BEUK:headlevels — which Heading 2s those are is the one rule's to say, as it is for RTF and markdown */
+        const subHeads = new Set();
+        {
+          const hn = Array.prototype.filter.call(doc.body.children, (c) => /^h[12]$/i.test(c.tagName));
+          const flags = irSubHeadings(hn.map((c) => ({ level: c.tagName.toLowerCase() === "h1" ? 1 : 2, text: irTextBr(c) })));
+          hn.forEach((c, k) => { if (flags[k]) subHeads.add(c); });
+        }
+        let inContents = false, inEndnotes = false, justHead = -1;
         const endnotes = [];
         const headAt = [];
         doc.body.childNodes.forEach((node) => {
@@ -40704,12 +40787,11 @@
           const txt = (isH ? irTextBr(node) : node.textContent).replace(/ /g, " "); /* BEUK:gluefix — a heading's line break is a space */
           const htxt = txt.replace(/\s+/g, " ").trim();
           if (isH && normHeading(htxt) === "endnotes") { inEndnotes = true; return; }
-          if (tag === "h2" && seenH1 && h1n > h2n && htxt && !isHeadLine(htxt) && !PART_HEAD_RE.test(htxt)) {
+          if (tag === "h2" && htxt && subHeads.has(node)) {
             ir.subs.push(htxt);
             parts.push(irSent("SUB", ir.subs.length - 1));
             return;
           }
-          if (tag === "h1") seenH1 = true;
           if (isH && (normHeading(htxt) === "contents" || normHeading(htxt) === "table of contents")) inContents = true;
           if (isH) headAt.push({ at: parts.length, key: irLoose(htxt.replace(/[:·]/g, " ")) });
           if (tag === "h1" || tag === "h2") {
