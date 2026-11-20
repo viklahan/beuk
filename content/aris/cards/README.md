@@ -10,8 +10,8 @@ laurel placeholder, never a broken image.
 | 1 | The noblest reader |
 | 2 | The five nevers |
 | 3 | The calling |
-| 4 | Your key |
-| 5 | What travels |
+| 4 | The key |
+| 5 | The journey |
 | 6 | The ledger |
 
 3:2 landscape, ~1200×800 is plenty. They sit on both themes (Paper bone

@@ -43,8 +43,8 @@ const CARDS: { title: string; section: string }[] = [
   { title: 'The noblest reader', section: '' },
   { title: 'The five nevers', section: 'What Aris will never do' },
   { title: 'The calling', section: 'How you call it' },
-  { title: 'Your key', section: 'Your key, in plain words' },
-  { title: 'What travels', section: 'What travels, and where' },
+  { title: 'The key', section: 'Your key, in plain words' },
+  { title: 'The journey', section: 'What travels, and where' },
   { title: 'The ledger', section: 'The ledger' },
 ];
 /** Rendered with the altar, not as cards: the switch, the voices, and the
