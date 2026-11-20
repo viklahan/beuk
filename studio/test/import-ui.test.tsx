@@ -158,7 +158,7 @@ describe("wave 6: 1.0's Import button, the replace and the summary (task 2)", ()
     expect($('modalImportReport').querySelector('.ir-modal')!.classList.contains('ir-card-view')).toBe(true);
     expect($('irBody').querySelector('.ir-kicker')!.textContent).toContain('plain-manuscript.txt');
     expect($('irBody').querySelectorAll('.ir-row').length).toBe(2);
-    expect($('irSub').textContent).toBe(t('ir.card.lede', { words: '110' })); // the fixture's own word count
+    expect($('irSub').textContent).toBe(t('ir.card.lede', { words: '48' })); // the words the import placed (the whole book counts 110 with the pages Beuk builds itself)
     await click($('btnIrEvery'));
     expect($('modalImportReport').querySelector('.ir-modal')!.classList.contains('ir-card-view')).toBe(false);
     expect($('irSub').textContent).toContain('plain-manuscript.txt');

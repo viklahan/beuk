@@ -40752,7 +40752,7 @@
           ir.scan = scan || null; /* read by the walk too: the paragraphs' alignment */
           const text = irDocxHtmlToText(html, ir);
           ir.messages = messages || [];
-          identity = Object.assign({ via: "docx" }, identity || {}); /* BEUK:importmeta */
+          identity = Object.assign({ via: format ? "meta" : "docx" }, identity || {}); /* BEUK:importmeta; BEUK:docsimport — an .odt's or a web page's details are "the document's own", not "the Word file's" */
           const pieces = parseManuscript(text, name.replace(/\.(docx|odt|html?)$/i, ""), identity);
           replaceBodyChapters(pieces, name, identity);
           const det = docxDet && docxDet.strong ? docxDet : (detectLanguageInText(text) || docxDet);
@@ -42231,6 +42231,11 @@
          its undo, are the same report as ever, a step behind the card.
          The card is read from the book as it stands, never from a copy. */
       let irView = "card", irCardAll = false;
+      /* The words the import put in the book: the sections that hold text. A page Beuk builds for
+         itself (a title page from the book's details, say) is nothing it read, so it is not counted. */
+      function irCardWords() {
+        return state.sections.filter((s) => /\S/.test(String(s.content || ""))).reduce((a, s) => a + sectionWords(s), 0);
+      }
       const IR_CARD_ROWS = 6;
       function irCardHtml(rep) {
         const has = (s) => /\S/.test(String(s.content || ""));
@@ -42284,7 +42289,7 @@
         if (headText) headText.textContent = t(card ? "ir.card.title" : "ir.title");
         const every = $("btnIrEvery");
         if (every) every.textContent = t("ir.card.every", { n: rep.items.length });
-        $("irSub").textContent = card ? t("ir.card.lede", { words: fmtNum(bookTotalWords()) }) : t("ir.sub", { file: rep.file, when: fmtDateIntl(new Date(rep.at)) });
+        $("irSub").textContent = card ? t("ir.card.lede", { words: fmtNum(irCardWords()) }) : t("ir.sub", { file: rep.file, when: fmtDateIntl(new Date(rep.at)) });
         const by = {};
         IR_GROUPS.forEach((g) => { by[g] = []; });
         rep.items.forEach((it) => { (by[it.group] || (by[it.group] = [])).push(it); });
