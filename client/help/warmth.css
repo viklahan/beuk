@@ -12,6 +12,11 @@
   --line: #d5dcc9;       /* Voyage --line */
   --amber: #14607a;      /* Voyage --accent (the accent, despite the name) */
   --amber-soft: #dcebee;
+  /* One type system across the site (the same pair as Help, the Changelog
+     and the marketing pages): Literata for headings and reading prose,
+     Karla for the chrome — nav, buttons, footer, forms. */
+  --serif: "Literata", "EB Garamond", "Libre Baskerville", Georgia, "Times New Roman", serif;
+  --ui: "Karla", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -20,10 +25,11 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: "Literata", "EB Garamond", "Libre Baskerville", Georgia, "Times New Roman", serif;
-  font-size: 1.125rem;
-  line-height: 1.65;
+  font-family: var(--ui);
+  font-size: 1rem;
+  line-height: 1.6;
 }
+button, input, select, textarea { font: inherit; }
 
 .site-head {
   display: flex;
@@ -37,8 +43,9 @@ body {
 }
 
 .wordmark {
-  font-size: 1.9rem;
-  font-weight: 700;
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 600;
   color: var(--ink);
   text-decoration: none;
   letter-spacing: 0.01em;
@@ -51,7 +58,7 @@ body {
 }
 
 .site-nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 0.25rem 1.1rem; }
-.site-nav a { color: var(--amber); text-decoration: none; font-size: 1rem; }
+.site-nav a { color: var(--amber); text-decoration: none; font-size: 0.875rem; }
 .site-nav a:hover { text-decoration: underline; }
 .caife-link { display: inline-flex; align-items: center; gap: 0.3em; }
 .caife-cup { width: 1.05em; height: 1.05em; flex: none; }
@@ -60,8 +67,12 @@ body {
   max-width: 46rem;
   margin: 0 auto;
   padding: 1.5rem 1.5rem 2.5rem;
+  font-family: var(--serif);
+  font-size: 1.125rem;
+  line-height: 1.65;
 }
 
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; }
 h1 { font-size: 2.1rem; line-height: 1.2; margin: 0.4em 0 0.5em; }
 h2 { font-size: 1.45rem; margin: 1.6em 0 0.5em; }
 h3 { font-size: 1.2rem; margin: 1.3em 0 0.4em; }

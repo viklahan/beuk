@@ -56,8 +56,7 @@ export function portalChrome(config: Config, title: string, body: string, opts: 
       <a class="wordmark" href="${SITE_HOME_HREF}">beuk</a>
       <span class="subbrand">${esc(BRAND_SUBLINE)}</span>
       <nav class="site-nav" aria-label="Site">
-        ${siteNavHtml()}
-        ${opts.signedIn ? '<a href="/account">Your account</a>' : ''}
+        ${siteNavHtml({ signedIn: opts.signedIn, current: '/account' })}
       </nav>
     </header>
     <main class="page portal">
