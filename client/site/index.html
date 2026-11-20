@@ -64,12 +64,14 @@
       .lockup .mark{flex:none;color:var(--ink)}
       .lockup .word{font-family:var(--book);font-weight:700;font-size:25px;line-height:1;letter-spacing:-.01em}
       .lockup .sub{font-size:9.5px;font-weight:800;letter-spacing:.3em;color:var(--accent);text-transform:uppercase;margin-top:3px}
-      .tagline{font-style:italic;font-family:var(--book);color:var(--muted);font-size:14.5px;border-left:1px solid var(--line);padding-left:14px}
-      @media(max-width:760px){.tagline{display:none}}
+      .tagline{font-style:italic;font-family:var(--book);color:var(--muted);font-size:14.5px;border-left:1px solid var(--line);padding-left:14px;white-space:nowrap}
+      @media(max-width:1000px){.tagline{display:none}}
       .topbar nav{margin-left:auto;display:flex;gap:4px;align-items:center}
-      .topbar nav a.nl{color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;padding:8px 11px;border-radius:999px}
+      .topbar nav a.nl{color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;padding:8px 11px;border-radius:999px;white-space:nowrap}
+      [data-aris][hidden]{display:none}
       .topbar nav a.nl:hover{background:var(--bg2)}
-      @media(max-width:640px){.topbar nav a.nl{display:none}}
+      @media(max-width:820px){.topbar nav{gap:2px}.topbar nav a.nl{font-size:13px;padding:8px 6px}}
+      @media(max-width:700px){.topbar nav a.nl{display:none}}
       @media(max-width:560px){.topbar .btn-sm{display:none}.topbar-in{padding:10px 16px}}
       .btn-sm{background:var(--cta);color:var(--cta-ink);text-decoration:none;font-weight:800;font-size:14px;padding:10px 18px;border-radius:999px;white-space:nowrap;transition:transform .25s,box-shadow .25s}
       .btn-sm:hover{transform:translateY(-1px);box-shadow:0 10px 22px -10px rgba(13,74,95,.55)}
@@ -441,13 +443,13 @@
           <span><span class="word">beuk</span><span class="sub" style="display:block">beuk.studio</span></span>
           <span class="tagline">your EPUB &amp; print studio</span>
         </a>
-        <nav aria-label="On this page">
-          <a class="nl" href="#voyage">The voyage</a>
-          <a class="nl" href="#helm">Take the helm</a>
+        <!-- Site links only. The way around this page is the tour bar below. -->
+        <nav aria-label="Site">
           <a class="nl" href="/features">Features</a>
           <a class="nl" href="/ramp">Ramp</a>
           <a class="nl" href="/compare">Compare</a>
           <a class="nl" href="/school">School</a>
+          <a class="nl" href="/aris" data-aris hidden>Aris</a>
           <a class="nl" href="/help">Help</a>
           <a class="nl" href="/studio?signin">Sign in</a>
           <a class="btn-sm" href="/studio">Start writing</a>
@@ -841,6 +843,7 @@
                 <a href="/ramp">Ramp</a>
                 <a href="/compare">Compare</a>
                 <a href="/school">School</a>
+                <a href="/aris" data-aris hidden>Aris</a>
                 <a href="/help">Help</a>
                 <a href="/changelog">Changelog</a>
                 <a href="/roadmap">Roadmap</a>
@@ -862,6 +865,16 @@
     </div>
 
     <script>
+      /* BEUK:aris-link — /aris is 404 while Aris is off on this server, and
+         this page is a static file that cannot know. The two Aris links ship
+         hidden; they show only once /aris has answered 200. */
+      (function(){
+        try {
+          fetch("/aris", { method: "HEAD" }).then(function(r){
+            if (r.ok) document.querySelectorAll("[data-aris]").forEach(function(a){ a.hidden = false; });
+          }).catch(function(){});
+        } catch (e) {}
+      })();
       (function(){
         "use strict";
         var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
