@@ -250,11 +250,22 @@ fi
 # (EPUBCheck / PDF/X "not configured"). Paths are ':'-separated, the
 # default COMPOSE_PATH_SEPARATOR on Linux:
 # https://docs.docker.com/compose/how-tos/environment-variables/envvars/
-if [ "${#COMPOSE_FILES[@]}" -gt 2 ]; then
-  set_env COMPOSE_FILE "docker-compose.yml:deploy/docker-compose.tools.yml"
-else
-  set_env COMPOSE_FILE "docker-compose.yml"
+# ==== BEUK:tunnel ==== A box served through Cloudflare Tunnel (CLOUDFLARED_DIR
+# set in .env) must always carry deploy/docker-compose.tunnel.yml: without it
+# Caddy loses SITE_PREFIX=http://, answers the tunnel's plain-HTTP requests
+# with a 308 to https, and every visitor gets a redirect loop (prod outage,
+# 2026-11-15). The overlay goes last so its Caddy/app settings win.
+CLOUDFLARED_DIR_SET="${CLOUDFLARED_DIR:-}"
+if [ -z "${CLOUDFLARED_DIR_SET}" ] && [ -f .env ]; then
+  CLOUDFLARED_DIR_SET="$(grep '^CLOUDFLARED_DIR=' .env | tail -n 1 | cut -d= -f2- || true)"
 fi
+if [ -n "${CLOUDFLARED_DIR_SET}" ]; then
+  COMPOSE_FILES+=(-f deploy/docker-compose.tunnel.yml)
+  note "Cloudflare Tunnel overlay will be used (CLOUDFLARED_DIR is set)"
+fi
+
+COMPOSE_FILE_LIST="$(printf '%s\n' "${COMPOSE_FILES[@]}" | grep -v '^-f$' | paste -sd: -)"
+set_env COMPOSE_FILE "${COMPOSE_FILE_LIST}"
 
 # ── 5. Up ────────────────────────────────────────────────────────────────────
 log "Starting the stack"

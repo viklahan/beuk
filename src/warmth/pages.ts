@@ -165,8 +165,16 @@ export const SITE_FOOT_LINKS: ReadonlyArray<readonly [string, string]> = [
   ['/privacy', 'Privacy'],
   ['/terms', 'Terms'],
 ];
-export function siteNavHtml(): string {
-  return SITE_NAV_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('\n        ');
+/**
+ * The site nav. A page that knows its reader is signed in (the account
+ * portal) passes signedIn: "Sign in" becomes "Your account" in the same
+ * place, so a signed-in reader is never offered a sign-in.
+ */
+export function siteNavHtml(opts: { signedIn?: boolean; current?: string } = {}): string {
+  return SITE_NAV_LINKS.map(([h, t]) => {
+    const [href, text] = opts.signedIn && h === '/studio?signin' ? ['/account', 'Your account'] : [h, t];
+    return `<a href="${href}"${opts.current === href ? ' aria-current="page"' : ''}>${text}</a>`;
+  }).join('\n        ');
 }
 export function siteFootLinksHtml(): string {
   return SITE_FOOT_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join(' · ');
