@@ -14,7 +14,7 @@ import { loadMammoth } from './vendor';
 import markup from '../src/generated/import-markup.json';
 
 /* Wave 6 — review focus #5: 1.0's import self-checks (client/index.html: every SELF_CHECKS / SELF_CHECKS_ASYNC entry with
-   feature "import" — the 39 `id: "import.` checks and the 5 `id: "pdf.` ones, and any other the grep finds), RUN VERBATIM:
+   feature "import" — the 43 `id: "import.` checks and the 5 `id: "pdf.` ones, and any other the grep finds), RUN VERBATIM:
    each check's own object literal, cut out of 1.0's source by the TypeScript AST, is evaluated inside a module of 1.0's
    own declarations that it reaches (buildTestModule, the extractor the closure is built by), with only 1.0's redraws and
    page hooks stubbed (ORACLE_STUBS). The functions it runs are the very text 2.0's closure lifts (import-closure.test.ts
@@ -29,7 +29,9 @@ const HTML = readFileSync(path.join(import.meta.dirname, '..', '..', 'client', '
 /** Checks that need what jsdom cannot give, with the reason (each is held by the e2e instead, where it says so). */
 const PAGE = "it drives 1.0's own page fields (Project Settings' #metaTitle / #metaAuthor, the top bar's title, a section editor's title box), which 2.0 has as React (waves 1a, 2c): the import's identity rules it checks are held instead by the parity of every corpus file onto a written book and the untouched sample (import-data, the e2e)";
 const PDFJS = "it parses a real PDF with pdf.js, which jsdom cannot load (an ES module build): the e2e imports real PDFs beside 1.0's page";
+const LAYOUT = "it reads which of the report's two views is shown from computed styles, and the section a label opens from 1.0's own desk: jsdom applies no stylesheet, and the open section is 2.0's (React). The card's drawing and its steps are held by import-ui.test.tsx; 1.0's page runs the check whole";
 export const SKIP: Record<string, string> = {
+  'import.card.opens-on-the-book': LAYOUT,
   'import.displaces-sample-identity': PAGE,
   'import.credits-document-fills-blanks-only': PAGE,
   'import.semantics.review': PAGE,
@@ -124,8 +126,8 @@ function env(): Rec {
 }
 
 describe("wave 6: 1.0's import self-checks, run verbatim (review focus #5)", () => {
-  it('the grep counts: 39 import.* and 5 pdf.* ids; every feature "import" check is found', () => {
-    expect((HTML.match(/id: *"import[^"]*"/g) || []).length).toBe(39);
+  it('the grep counts: 43 import.* and 5 pdf.* ids; every feature "import" check is found', () => {
+    expect((HTML.match(/id: *"import[^"]*"/g) || []).length).toBe(43); // +4 (2026-11-20): import.headlevels.*, import.card.*, import.odt.*, import.html.*
     expect((HTML.match(/id: *"pdf[^"]*"/g) || []).length).toBe(5);
     expect(mod.checks.filter((c) => c.feature === 'import').length).toBe((HTML.match(/feature: *"import"/g) || []).length);
     expect(mod.checks.filter((c) => WAVE6_OTHERS.includes(c.id)).map((c) => c.id).sort()).toEqual([...WAVE6_OTHERS].sort());
@@ -151,6 +153,6 @@ describe("wave 6: 1.0's import self-checks, run verbatim (review focus #5)", () 
     console.log(results.map((r) => (r.pass ? 'PASS ' : 'FAIL ') + r.id + (r.pass ? '' : ' — ' + r.detail)).join('\n'));
     expect(results.filter((r) => !r.pass)).toEqual([]);
     expect(results.length).toBe(mod.checks.length - Object.keys(SKIP).length);
-    expect(results.length).toBe(34);
+    expect(results.length).toBe(37); // 34 + the four of 2026-11-20, less the card (SKIP: LAYOUT)
   }, 600_000);
 });
