@@ -298,7 +298,7 @@ off-site backups" records how it was proven earlier.
 On a phone and a laptop, signed out and signed in:
 
 - [ ] https://beuk.studio loads the studio; the browser shows a valid lock.
-- [ ] https://beuk.studio/studio shows the 2.0 studio and its address becomes `/studio/` (no redirect: the page tidies it); `/studio?signin` opens the sign-in dialog there; an old `/next/` bookmark lands on `/studio/` too.
+- [ ] https://beuk.studio/studio shows the 2.0 studio and its address becomes `/studio/` (no redirect: the page tidies it); `/studio?signin` opens the sign-in dialog there.
 - [ ] Sign up a second test account; sign out; sign in.
 - [ ] "Forgot password" → the email arrives → the link opens `https://beuk.studio/reset?token=…` → new password works, old one does not.
 - [ ] Load the sample book → "On your shelf ✓" in the sidebar.

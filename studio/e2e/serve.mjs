@@ -4,7 +4,8 @@
                           Service-Worker-Allowed: /studio, as the app sends it (src/routes/studio.ts)
    - /studio, /studio/<route> → client/next/index.html (no redirect between /studio and /studio/, as the app),
                           or state.navStatus when set (a 502 during a deploy)
-   - /next, /next/<x>   → 308 /studio/<x> (the old address, the query kept)
+   - /next, /next/<x>   → 404: the old address is gone. (This tree holds the build at client/next/, which
+                          production's static mount never has, so it must not be served from there.)
    - ONE (/index.html)  → client/index.html, 1.0's page: a TEST-ONLY door, for the runs that put a 1.0 book on the
                           device first or set 1.0 and 2.0 side by side (the "anything else" rule below; 1.0's code
                           is path-independent). Production never serves it there: Caddy answers /index.html with a
@@ -130,12 +131,7 @@ export async function startServer({ repo, port = 0, api = false, apiConfig = {} 
       res.setHeader('Content-Type', 'application/json');
       return res.end('{"error":"not found"}');
     }
-    const redirect = (to) => {
-      res.statusCode = 308;
-      res.setHeader('Location', to + url.search);
-      return res.end();
-    };
-    if (p === '/next' || p.startsWith('/next/')) return redirect('/studio/' + p.slice(p === '/next' ? 5 : 6));
+    if (p === '/next' || p.startsWith('/next/')) return notFound();
     // as the app (final review C2): 2.0's page at /studio and at /studio/, no redirect between the two
     if (p === '/studio' || p.startsWith('/studio/')) {
       if (state.navStatus && !/\.[a-z0-9]+$/i.test(p)) {

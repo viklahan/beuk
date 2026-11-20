@@ -39,7 +39,6 @@ export function siteRoutes(config: Config): Router {
         'Disallow: /reset',
         'Disallow: /account',
         'Disallow: /studio',
-        'Disallow: /next',
         'Disallow: /index.html',
         'Disallow: /help/search',
         '',

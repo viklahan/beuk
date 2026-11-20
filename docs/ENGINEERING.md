@@ -3721,8 +3721,8 @@ The same Compose file runs locally — only `.env` differs.
   sends that device straight to `/studio`. `/?home` always shows the page.
 - **The studio is Beuk 2.0** (React, `studio/`, built by the image to
   `client/next/`) at **`/studio/`**, served by the app
-  (`src/routes/studio.ts`; Caddy proxies exactly `/studio`, `/studio/…`,
-  `/next` and `/next/…` to it). `/studio` answers 2.0's page too (200,
+  (`src/routes/studio.ts`; Caddy proxies exactly `/studio` and
+  `/studio/…` to it). `/studio` answers 2.0's page too (200,
   no redirect: a browser keeps a permanent redirect with no
   `Cache-Control` for good, so one between `/studio` and `/studio/` would
   loop the moment the rollback, or 1.0's old Caddy, had sent the opposite
@@ -3730,10 +3730,11 @@ The same Compose file runs locally — only `.env` differs.
   else runs, the query and the hash kept. So every link that names
   `/studio`, `/studio?signin`, `/studio?signup` or `/studio?book=<id>`
   (the landing page, the account page, Help, emails, bookmarks) still
-  opens the studio, and its door. The old 2.0 address `/next` and
-  `/next/…` answers a 308 (`Cache-Control: no-cache`) to the same path
-  under `/studio/`. Hashed build files (`/studio/assets/…`) are immutable;
-  the page, its worker and the precache list revalidate on every load; an
+  opens the studio, and its door. The old 2.0 address `/next` is gone
+  (2026-11-20): the app has no route for it and Caddy no longer proxies
+  it, so it is an unknown path like any other (Caddy's catch-all: 302 to
+  `/studio` without an extension, 404 with one). Hashed build files
+  (`/studio/assets/…`) are immutable; the page, its worker and the precache list revalidate on every load; an
   extensionless path is the app's own route (the page); a missing file
   with an extension is a 404. 2.0 still reads 1.0's static files at the
   site root (`/assets/…`, Caddy's static mount).
@@ -3830,7 +3831,7 @@ The same Compose file runs locally — only `.env` differs.
   `client/site/`. Content stays visible without JavaScript; only the
   scroll reveal needs it.
 - **Search and link previews.** `GET /robots.txt` keeps `/api/`,
-  `/read/`, `/reset`, `/studio` (and `/studio/…`, by prefix), `/next`,
+  `/read/`, `/reset`, `/studio` (and `/studio/…`, by prefix),
   `/index.html` and Help search out of
   search engines and names the sitemap. `GET /sitemap.xml` lists the
   landing page, Help (every guide, with its `updated` date, and every

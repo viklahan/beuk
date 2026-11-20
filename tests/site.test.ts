@@ -16,7 +16,7 @@ test('robots.txt keeps the studio, the API, reading copies and reset out of sear
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type') ?? '', /^text\/plain/);
     const body = await res.text();
-    for (const p of ['/api/', '/read/', '/reset', '/studio', '/next', '/index.html', '/help/search']) assert.ok(body.includes(`Disallow: ${p}\n`), p);
+    for (const p of ['/api/', '/read/', '/reset', '/studio', '/index.html', '/help/search']) assert.ok(body.includes(`Disallow: ${p}\n`), p);
     assert.match(body, /^Sitemap: https:\/\/beuk\.studio\/sitemap\.xml$/m);
   } finally {
     await server.close();

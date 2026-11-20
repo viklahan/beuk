@@ -298,8 +298,8 @@ export function buildApp({
   app.use(invite.pages);
   // Accounts portal pages: /account, /account/confirm, /account/deleted.
   app.use(portal.pages);
-  // The studio: Beuk 2.0 (React) at /studio/, from the image's build; /next redirects there. STUDIO_CLASSIC=true
-  // serves 1.0's index.html at /studio instead (the rollback). Caddy proxies /studio, /studio/* and /next* here.
+  // The studio: Beuk 2.0 (React) at /studio/, from the image's build. STUDIO_CLASSIC=true
+  // serves 1.0's index.html at /studio instead (the rollback). Caddy proxies /studio and /studio/* here.
   app.use(studioRoutes({ classic: config.studioClassic }));
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

@@ -6,7 +6,7 @@ import { clientDir } from '../warmth/pages.js';
 /**
  * The studio: Beuk 2.0 (React) at /studio/ (spec 2026-11-12-studio-2-cutover, D1–D3). Its build
  * (studio/ → client/next/) is made in the image's studio stage and is not committed, so Caddy's static
- * ./client mount never has it: Caddy proxies /studio, /studio/* and /next* here and the app serves it
+ * ./client mount never has it: Caddy proxies /studio and /studio/* here and the app serves it
  * from the image (see the Caddyfile and the Dockerfile). The build directory keeps its name client/next/
  * (fewer moving parts); only its address changed.
  *
@@ -21,8 +21,7 @@ import { clientDir } from '../warmth/pages.js';
  * - Any other path under /studio/ without a file extension is the app's own route: it gets index.html.
  *   A missing file with an extension is a 404, never the page (a missing script must fail loudly).
  * - No build on disk (a dev box that never built it): 404 through next().
- * - The old address: /next and /next/* redirect (308, Cache-Control: no-cache) to the same path under /studio/
- *   (D2), the query kept.
+ * - The old address /next is gone (2026-11-20): the app has no route for it, so it is an unknown path here.
  *
  * classic (STUDIO_CLASSIC=true, the emergency rollback, D3): /studio serves 1.0's client/index.html with
  * the header Caddy sent for it before the switch (Cache-Control: no-cache); /studio/ and every other
@@ -40,14 +39,6 @@ export function studioRoutes(opts: { dir?: string; classic?: boolean; classicFil
     return q === -1 ? [req.originalUrl, ''] : [req.originalUrl.slice(0, q), req.originalUrl.slice(q)];
   };
   const hasExtension = (p: string) => /\.[a-z0-9]+$/i.test(p);
-
-  // D2: the old address. "/next" is the studio's root; "/next/<rest>" is "/studio/<rest>".
-  router.get(['/next', '/next/*'], (req, res, next) => {
-    const [pathname, query] = split(req);
-    if (pathname !== '/next' && !pathname.startsWith('/next/')) return next();
-    res.setHeader('Cache-Control', 'no-cache');
-    return res.redirect(308, '/studio/' + pathname.slice(pathname === '/next' ? '/next'.length : '/next/'.length) + query);
-  });
 
   if (opts.classic) {
     router.get(['/studio', '/studio/*'], (req, res, next) => {
