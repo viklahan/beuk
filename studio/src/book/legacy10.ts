@@ -37,7 +37,36 @@ import { loadClosure } from '../closure/index';
 export const LEGACY_DB = 'beuk-local';
 export const LEGACY_STORE = 'kv';
 
-export type LegacyBook = { book: Record<string, unknown>; from: 'book' | 'book-prev'; savedAt: string | null; missing: number };
+/** 1.0's "link" record: which shelf book this device's book is, and from which revision (1.0's localLinkSnapshot). */
+export type LegacyLink = { savedAt: string; link: Record<string, unknown> };
+export type LegacyBook = { book: Record<string, unknown>; from: 'book' | 'book-prev'; savedAt: string | null; missing: number; link: LegacyLink | null };
+
+/* The shelf link comes across with the book (found 2026-11-20, a real upgrade in a browser): 1.0 kept, beside the
+   book, which shelf book it was and from which revision. Without it 2.0 opened the imported book as one the shelf had
+   never seen, and the writer's first edit put a SECOND copy on their shelf while the original went stale. 2.0 keeps the
+   very same record, per book, in localStorage (cloud.ts LINKS_KEY, held equal to this key by legacy10.test.ts), so it
+   is carried over as it stands; 1.0's own rules then decide what it is worth (another writer signed in, a shelf that
+   has moved on). A link 2.0 already holds for the book is never overwritten. */
+export const LEGACY_LINKS_KEY = 'beuk.next.shelfLinks.v1';
+export function carryLegacyLink(bookId: string, rec: LegacyLink | null | undefined, storage: Pick<Storage, 'getItem' | 'setItem'> | undefined = globalThis.localStorage): boolean {
+  if (!bookId || !rec || !storage) return false;
+  try {
+    const v: unknown = JSON.parse(storage.getItem(LEGACY_LINKS_KEY) || '{}');
+    const all = (typeof v === 'object' && v !== null && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
+    if (all[bookId]) return false;
+    all[bookId] = { savedAt: rec.savedAt, link: rec.link };
+    storage.setItem(LEGACY_LINKS_KEY, JSON.stringify(all));
+    return true;
+  } catch {
+    return false; // storage refused: the book is in, linked on its next save as a new book would be
+  }
+}
+const legacyLinkOf = (rec: unknown, fallbackSavedAt: string | null): LegacyLink | null => {
+  const r = rec as { savedAt?: unknown; link?: unknown } | null;
+  if (!r || typeof r !== 'object' || !r.link || typeof r.link !== 'object' || Array.isArray(r.link)) return null;
+  // a link record without its own time takes its book's (never the clock: the same device reads the same link twice)
+  return { savedAt: typeof r.savedAt === 'string' ? r.savedAt : fallbackSavedAt ?? '', link: r.link as Record<string, unknown> };
+};
 export const LEGACY_PIC = 'pic:'; // 1.0's LOCAL_PIC
 
 /** 1.0's picSwap / picIsRef / PIC_REF (from the browser closure). */
@@ -164,11 +193,11 @@ export async function readLegacyBook(idb: IDBFactory | undefined = globalThis.in
     if (!db.objectStoreNames.contains(LEGACY_STORE)) return null;
     const tx = db.transaction(LEGACY_STORE, 'readonly');
     const store = tx.objectStore(LEGACY_STORE);
-    const [book, prev] = await Promise.all([get(store, 'book'), get(store, 'book-prev')]);
+    const [book, prev, link] = await Promise.all([get(store, 'book'), get(store, 'book-prev'), get(store, 'link')]);
     if (!parseLegacyRecord(book) && !parseLegacyRecord(prev)) return null;
     const pick = await pickLegacy(db, { book, prev }, await picCode());
     if (!pick.doc || !pick.from) return null;
-    return { book: pick.doc.book, from: pick.from, savedAt: savedAtOf(pick.from === 'book' ? book : prev), missing: pick.missing };
+    return { book: pick.doc.book, from: pick.from, savedAt: savedAtOf(pick.from === 'book' ? book : prev), missing: pick.missing, link: legacyLinkOf(link, savedAtOf(book) ?? savedAtOf(prev)) };
   } catch {
     return null;
   } finally {
