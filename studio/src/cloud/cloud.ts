@@ -752,7 +752,7 @@ let authChannel: BroadcastChannel | null = null;
 let knownUser: string | null = null;
 let hearing = false;
 const userId = (): string | null => ((cloudFacts.user as { id?: string } | null)?.id ?? null);
-/* aris-desk-toggle: a module that must act when the account changes — Aris re-asks its status — subscribes here;
+/* A module that must act when the account changes (it re-asks the server who it is talking to) subscribes here;
    Shell wires it. A Set, so the same listener subscribed twice hears once. */
 const authListeners = new Set<() => void>();
 export function onAuthChange(l: () => void): void {
