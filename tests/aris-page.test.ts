@@ -148,6 +148,10 @@ test('the sitemap, service workers and Caddyfile carry /aris', async () => {
     await on.close();
     await off.close();
   }
-  for (const sw of ['client/sw.js', 'client/assets/sw.js']) assert.match(readFileSync(sw, 'utf8'), /\|aris\)/, sw);
+  // 1.0's assets copy of its worker still caches, so /aris is on its straight-to-the-network list.
+  assert.match(readFileSync('client/assets/sw.js', 'utf8'), /\|aris\)/, 'client/assets/sw.js');
+  // The root worker retired itself with the 2.0 switch (v23): it answers no fetch at all, so /aris, like every
+  // address, goes to the network and needs no entry in a list (tests/sw-retire.test.ts runs that worker).
+  assert.doesNotMatch(readFileSync('client/sw.js', 'utf8'), /respondWith\s*\(/, 'client/sw.js answers no fetch');
   assert.match(readFileSync('Caddyfile', 'utf8'), /@aris path \/aris \/aris\/\*\s+handle @aris \{\s*reverse_proxy app:3000/);
 });
