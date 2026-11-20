@@ -34,8 +34,10 @@ import { twoStepRoutes } from './routes/two-step.js';
 import { sessionRoutes } from './routes/sessions.js';
 import { securityEmails } from './email/security.js';
 import { stockRoutes } from './routes/stock.js';
+import { arisRoutes } from './aris/routes.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
+import { arisPageRoutes } from './routes/aris-page.js';
 import { siteRoutes } from './routes/site.js';
 import { schoolRoutes } from './routes/school.js';
 import { weeklyRoutes } from './routes/weekly.js';
@@ -225,6 +227,10 @@ export function buildApp({
   // proxy; 501 until PEXELS_API_KEY is set (see routes/stock.ts).
   app.use('/api/stock', stockRoutes(db, config));
 
+  // Aris (AI addon): mounted always, gated per request on ARIS_ENABLED
+  // (see aris/routes.ts); must precede the /api catch-all below.
+  app.use('/api/aris', arisRoutes(db, config));
+
   // M4 warmth: public status + public config + Founders' Shelf intake.
   app.use('/api/status', statusRoutes(db, config));
   // Public status: /status (page) and /api/status/public (monitors).
@@ -281,6 +287,8 @@ export function buildApp({
   app.use(bowmarketRoutes(config));
   app.use(school.pages);
   app.use(warmthRoutes(config, db));
+  // Aris's one public page (404 unless ARIS_ENABLED); caddy proxies /aris* here.
+  app.use(arisPageRoutes(db, config));
   // The public site's robots.txt and sitemap.xml (they carry APP_BASE_URL).
   app.use(siteRoutes(config));
   app.use(statusPage.page);

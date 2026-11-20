@@ -21,6 +21,9 @@ services:
     environment:
       # Caddyfile site addresses become http:// (see its BEUK:tunnel notes).
       SITE_PREFIX: "http://"
+      # The MCP site, with the same plain-HTTP prefix (Caddyfile BEUK:mcp):
+      # byte-identical to the pre-MCP_SITE value {$SITE_PREFIX}mcp.{$DOMAIN}.
+      MCP_SITE: "http://mcp.${DOMAIN}"
 
   app:
     environment:

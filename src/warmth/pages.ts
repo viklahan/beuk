@@ -137,6 +137,49 @@ export async function readClientPage(
 export const LEGAL_LINKS_HTML =
   '<a href="/privacy">Privacy</a> · <a href="/terms">Terms</a>';
 
+/** The site-wide link set. Every page outside the marketing templates
+ *  (legal, changelog, roadmap, account, support, thanks, reset) carries
+ *  exactly the marketing site's header and footer links, so a reader can
+ *  always get home and to every section from anywhere. Keep in step with
+ *  client/site/*.html and src/school/render.ts. */
+export const SITE_HOME_HREF = '/?home';
+export const SITE_NAV_LINKS: ReadonlyArray<readonly [string, string]> = [
+  ['/features', 'Features'],
+  ['/ramp', 'Ramp'],
+  ['/compare', 'Compare'],
+  ['/school', 'School'],
+  ['/help', 'Help'],
+  ['/studio?signin', 'Sign in'],
+  ['/studio', 'Start writing'],
+];
+export const SITE_FOOT_LINKS: ReadonlyArray<readonly [string, string]> = [
+  ['/?home', 'Home'],
+  ['/features', 'Features'],
+  ['/ramp', 'Ramp'],
+  ['/compare', 'Compare'],
+  ['/school', 'School'],
+  ['/studio', 'The studio'],
+  ['/help', 'Help'],
+  ['/changelog', 'Changelog'],
+  ['/roadmap', 'Roadmap'],
+  ['/privacy', 'Privacy'],
+  ['/terms', 'Terms'],
+];
+/**
+ * The site nav. A page that knows its reader is signed in (the account
+ * portal) passes signedIn: "Sign in" becomes "Your account" in the same
+ * place, so a signed-in reader is never offered a sign-in.
+ */
+export function siteNavHtml(opts: { signedIn?: boolean; current?: string } = {}): string {
+  return SITE_NAV_LINKS.map(([h, t]) => {
+    const [href, text] = opts.signedIn && h === '/studio?signin' ? ['/account', 'Your account'] : [h, t];
+    return `<a href="${href}"${opts.current === href ? ' aria-current="page"' : ''}>${text}</a>`;
+  }).join('\n        ');
+}
+export function siteFootLinksHtml(): string {
+  return SITE_FOOT_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join(' · ');
+}
+
 export function pageChrome(
   config: Config,
   title: string,
@@ -158,12 +201,10 @@ export function pageChrome(
   </head>
   <body>
     <header class="site-head">
-      <a class="wordmark" href="/help/">beuk</a>
+      <a class="wordmark" href="${SITE_HOME_HREF}">beuk</a>
       <span class="subbrand">${escapeHtml(BRAND_SUBLINE)}</span>
-      <nav class="site-nav">
-        <a href="/help/">Help</a>
-        <a href="/changelog">Changelog</a>
-        <a href="/roadmap">Roadmap</a>
+      <nav class="site-nav" aria-label="Site">
+        ${siteNavHtml()}
         ${supportNavHtml(config)}
       </nav>
     </header>
@@ -173,7 +214,7 @@ ${bodyHtml}
     <footer class="site-foot">
 ${kofiJarHtml(config)}
       <p class="foot-note">${escapeHtml(BRAND_FOOTNOTE)}</p>
-      <p class="foot-links">${LEGAL_LINKS_HTML}</p>
+      <p class="foot-links">${siteFootLinksHtml()}</p>
     </footer>
   </body>
 </html>

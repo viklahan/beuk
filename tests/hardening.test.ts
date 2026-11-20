@@ -287,7 +287,14 @@ async function seedJob(db: Db, base: string, exportDir: string) {
   return { first: await insert(), second: await insert() };
 }
 
-test('graceful shutdown: a job that outlives the grace period is failed honestly; queued jobs stay queued', async () => {
+test('graceful shutdown: a job that outlives the grace period is failed honestly; queued jobs stay queued', {
+  // The sleepy stand-in below is a POSIX shell script the server spawns
+  // as an executable; Windows cannot exec a shebang script, so on win32
+  // the precondition is structurally absent. Covered on Linux CI/prod.
+  skip: process.platform === 'win32'
+    ? 'fake tools are POSIX shell scripts; Windows cannot spawn them — covered on Linux'
+    : false,
+}, async () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'beuk-hard-tools-'));
   const sleepy = path.join(dir, 'sleepy-java.sh');
   writeFileSync(sleepy, '#!/bin/sh\nsleep 30\n');

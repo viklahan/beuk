@@ -119,7 +119,7 @@ test('legal: /privacy and /terms serve 200 HTML that covers every inventory cate
     ]) {
       assert.ok(privacy.html.includes(needle), `/privacy should mention ${needle}`);
     }
-    assert.match(privacy.html, /no button for this yet/);
+    assert.match(privacy.html, /Delete your account:<\/strong> write to/);
     assert.doesNotMatch(privacy.html, /googleapis|gstatic|Google receives/, 'the fonts are self-hosted: the page must not say otherwise');
     assert.match(privacy.html, /Drafted from the code on 2026-10-25[^>]*Not legal advice/);
     assert.match(privacy.html, /<h2 id="your-rights-and-how-to-use-them">/);
@@ -138,7 +138,6 @@ test('legal: /privacy and /terms serve 200 HTML that covers every inventory cate
       'Limits on responsibility',
       'To delete your account',
       'Changes',
-      'The law that applies',
     ]) {
       assert.ok(terms.html.includes(needle), `/terms should mention ${needle}`);
     }
@@ -149,23 +148,23 @@ test('legal: /privacy and /terms serve 200 HTML that covers every inventory cate
   });
 });
 
-test('legal: unset operator slots render the "being completed" notice, never a placeholder', async () => {
-  await withServer(NO_SLOTS, async (base) => {
+test('legal: unset operator details are left out, never shown as in progress', async () => {
+  await withServer({ ...NO_SLOTS, supportEmail: 'shelf@example.com' }, async (base) => {
     for (const p of ['/privacy', '/terms']) {
       const { html } = await get(base, p);
-      assert.match(html, /data-legal-incomplete/, `${p}: the incomplete box`);
-      assert.match(html, /This page is still being completed/);
-      assert.ok((html.match(/data-legal-pending/g) ?? []).length >= 3, `${p}: inline notices`);
-      assert.match(html, /The operator&#39;s name|The operator's name has not been published yet/);
-      assert.doesNotMatch(html, /\{\{|\}\}|\[\[|undefined|null\b|mailto:/, `${p}: no raw slot, no empty mailto`);
+      assert.doesNotMatch(html, /data-legal-incomplete|data-legal-pending/, `${p}: no in-progress box or notice`);
+      assert.doesNotMatch(html, /still being completed|has not been published|will be published|pre-launch|being completed|\byet\b/i, `${p}: no unfinished wording`);
+      assert.doesNotMatch(html, /\{\{|\}\}|\[\[|undefined|null\b/, `${p}: no raw slot`);
+      assert.match(html, /mailto:shelf@example\.com/, `${p}: contact still shown`);
       assert.match(html, /Last changed 25 October 2026\./, `${p}: the content file's own date`);
     }
     const terms = (await get(base, '/terms')).html;
-    assert.match(terms, /The governing law has not been published yet/);
+    assert.doesNotMatch(terms, /The law that applies|governed by the law/, 'no governing-law section while unset');
     const privacy = (await get(base, '/privacy')).html;
-    assert.match(privacy, /Where the server is located has not been published yet/);
+    assert.doesNotMatch(privacy, /server is located/i);
+    assert.match(privacy, /served from Beuk&#39;s own server\. The services|served from Beuk's own server\. The services/, 'hosting sentence collapses cleanly');
     for (const [p, html] of [['/terms', terms], ['/privacy', privacy]]) {
-      assert.doesNotMatch(html.replace(/<[^>]+>/g, ''), /\.\./, `${p}: an inline notice never doubles the full stop`);
+      assert.doesNotMatch(html.replace(/<[^>]+>/g, ''), /\.\./, `${p}: never a doubled full stop`);
     }
   });
 });
@@ -196,7 +195,7 @@ test('legal: set slots render their values (escaped) and no notice', async () =>
       assert.match(html, /In effect from 1 November 2026\./);
       assert.doesNotMatch(html, /\{\{|\[\[/);
     }
-    assert.match((await get(base, '/terms')).html, /governed by the law of England and Wales/);
+    assert.match((await get(base, '/terms')).html, /The law that applies[\s\S]*governed by the law of England and Wales/);
     assert.match((await get(base, '/privacy')).html, /The server is located in Germany \(Hetzner\)\./);
   });
 });

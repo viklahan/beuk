@@ -4,7 +4,7 @@ title: Footnotes, endnotes & images
 blurb: Notes that link both ways, pictures that sit properly, and words for readers who can't see them.
 group: write
 audience: [new, hand-edit]
-updated: 2026-10-26
+updated: 2026-11-15
 readMinutes: 4
 related: [check-your-book, typeset-a-chapter]
 ---
@@ -17,13 +17,13 @@ What you're doing: adding the apparatus of a serious book — notes that link bo
 
 1. Place the cursor where the note belongs and use the **Endnote** toolbar button (or type a reference like `[^1]`), then write the note's text where Beuk asks for it.
 2. In the preview, the reference is a small linked number. Tap it and you land on the note; the note carries a back-link that returns you to the exact line you left.
-3. In the exported EPUB these are true notes — marked with the proper `epub:type` semantics — so e-readers can offer them as pop-ups where they support it, and as a notes section where they don't.
+3. In the exported EPUB these are true notes — marked with the proper `epub:type` semantics — so e-readers can offer them as pop-ups where they support it, and as a notes section where they don't. In print, **Notes in print** (in Export and the Print Interior View) sets them at the foot of the page or at the end of the chapter; the EPUB keeps its linked notes either way.
 4. A reference with no note behind it degrades politely to a plain superscript number. It never becomes a dead link in a reader's hands.
 
 ### Images
 
 1. Use **Insert Image** in the editor. Upload a `JPG` or `PNG` to the book's image library, or pick one already there.
-2. **Write the alt text.** One plain sentence describing the image for readers who can't see it. Stores increasingly require it; readers have always deserved it.
+2. **Write the alt text.** One plain sentence describing the image for readers who can't see it. Stores increasingly require it; readers have always deserved it. Add a **Caption** too, if you like: it is set under the picture.
 3. Choose **Standard** (sits within the text column) or **Full-bleed** (runs to the page edges where the reading system allows).
 4. Placed images can be adjusted later from the strip under the editor: change alt text, toggle full-bleed, or remove the placement (the library keeps the file).
 
@@ -38,13 +38,17 @@ Each removal keeps a snapshot in History ("Before removing a picture"), so a pic
 
 ### Typing the marks yourself
 
-Every button in the editor simply types a small mark for you. If you ever write or import text by hand, these are all of them — you never need this list to use Beuk; it's here for the curious.
+Every button in the editor simply types a small mark for you. If you ever write or import text by hand, these are the ones you'll meet most — you never need this list to use Beuk; it's here for the curious.
 
 1. `***` alone on a line — a scene break (it wears whichever ornament the book's typesetting chose).
 2. `>` at the start of a line — a blockquote.
 3. `*italic*` and `**bold**` — emphasis, the usual way.
 4. `[^1]` in the text, with its note defined on its own line as `[^1]: the note itself` — a linked endnote.
-5. An image sits on its own line, placed by **Insert Image** from the book's library.
+5. `- ` at the start of each line — a bulleted list; `1. ` — a numbered list.
+6. `[words](https://…)` — a web link (a `mailto:` address works too).
+7. `::: verse` on a line of its own, then the lines, then `:::` — a block set apart. Other kinds include `center`, `right`, `letter`, `texts`, `transcript`, `log` and `margin`; the toolbar buttons type these for you.
+8. `||words||` — redacted: readers see bars in place of the words, never the words themselves.
+9. An image sits on its own line, placed by **Insert Image** from the book's library.
 
 And one thing needs no mark at all: Auto-Format. Straight quotes become smart quotes, double hyphens become em-dashes, three dots become an ellipsis — the preview and the exported EPUB always use the polished text.
 

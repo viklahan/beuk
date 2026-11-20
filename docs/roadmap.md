@@ -5,7 +5,7 @@ column and moves along as the work moves. Dates are the day a feature
 reached the build; the [changelog](/changelog) explains the changes in
 plain words.
 
-Last updated: 2026-10-31.
+Last updated: 2026-11-15.
 
 **The statuses.** *In progress*: being built right now. *Planned*: agreed,
 and in the order it will be built. *Exploring*: wanted, not yet designed

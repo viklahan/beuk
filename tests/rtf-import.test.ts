@@ -111,6 +111,22 @@ test('rtf: lists, tables and set-aside text are kept apart and counted', async (
   );
 });
 
+test('rtf: a list level on its own is not a list — only a paragraph in a list (\\ls) or with a list mark is', async () => {
+  const { read } = await reader();
+  /* Google Docs writes \ilvl0 on every paragraph of the file, prose and headings alike; its real list items carry \ls too. */
+  const r = read(String.raw`{\rtf1\ansi{\stylesheet{\s0 Normal;}{\s1 heading 1;}}
+\pard\s1\ilvl0 Chapter One\par
+\pard\s0\ilvl0 It was a dark night.\par
+\pard\s0\ilvl0 The lamp was lit.\par
+\pard\s0\ls1\ilvl0{\listtext \'95\tab}A real bullet\par
+\pard\s0\ls1\ilvl0{\listtext \'95\tab}Another\par
+\pard\s0\ls2\ilvl0 A list item with no mark of its own\par
+\pard\s0\ilvl0 Prose again.\par}`);
+  assert.deepEqual(r.blocks.map((b) => b.kind), ['h', 'p', 'p', 'list', 'p']);
+  assert.deepEqual(texts(r).filter((t) => t !== 'list'), ['Chapter One', 'It was a dark night.', 'The lamp was lit.', 'Prose again.']);
+  assert.deepEqual(r.blocks[3].items!.map(plain), ['A real bullet', 'Another', 'A list item with no mark of its own']);
+});
+
 test('rtf: PNG and JPEG pictures come through; other formats and \\nonshppict fallbacks do not', async () => {
   const { read } = await reader();
   const png = '89504e470d0a1a0a0000000d49484452';
@@ -169,11 +185,31 @@ test('rtf: the text-only reader (shelf bulk import, box-set volumes) writes Beuk
   const block = /\/\* ==== BEUK:rtfimport ==== \*\/([\s\S]*?)\/\* ==== \/BEUK:rtfimport ==== \*\//.exec(html)![1];
   const start = html.indexOf('      function irRunsToMd(');
   const marks = html.slice(start, html.indexOf('\n      function ', start + 10));
+  /* the reader asks the one heading rule (BEUK:headlevels), which reads the heading vocabulary */
+  const vocab = html.slice(html.indexOf('      const MATTER_HEADINGS = {'), html.indexOf('      function parseChapterHeading('));
+  const part = /\n(\s*const PART_HEAD_RE = [^\n]+)\n/.exec(html)![1];
+  const levels = /\/\* ==== BEUK:headlevels ==== \*\/([\s\S]*?)\/\* ==== \/BEUK:headlevels ==== \*\//.exec(html)![1];
   const sandbox: Record<string, unknown> = { TextDecoder, btoa, Uint8Array, String };
-  vm.runInNewContext(marks + '\n' + block + '\nthis.toText = (s) => rtfToManuscriptText(rtfRead(s));', sandbox);
+  vm.runInNewContext([vocab, part, levels, marks, block, 'this.toText = (s) => rtfToManuscriptText(rtfRead(s));'].join('\n'), sandbox);
   const toText = sandbox.toText as (s: string) => string;
   const out = toText(String.raw`{\rtf1\ansi{\stylesheet{\s1 heading 1;}}\pard\s1 One\par\pard It was {\i dark}.{\super\chftn}{\footnote\pard{\super\chftn} A note.}\par{\listtext 1.\tab}\ls1 Step\par\pard\s1 Two\par\pard The end.\par}`);
   assert.equal(out, '# One\n\nIt was *dark*.[^1]\n\n1. Step\n\n[^1]: A note.\n\n# Two\n\nThe end.');
+});
+
+test('rtf: the text-only reader keeps a Heading 2 inside its Heading 1 chapter (BEUK:headlevels)', async () => {
+  const html = await clientHtml();
+  const block = /\/\* ==== BEUK:rtfimport ==== \*\/([\s\S]*?)\/\* ==== \/BEUK:rtfimport ==== \*\//.exec(html)![1];
+  const start = html.indexOf('      function irRunsToMd(');
+  const marks = html.slice(start, html.indexOf('\n      function ', start + 10));
+  const vocab = html.slice(html.indexOf('      const MATTER_HEADINGS = {'), html.indexOf('      function parseChapterHeading('));
+  const part = /\n(\s*const PART_HEAD_RE = [^\n]+)\n/.exec(html)![1];
+  const levels = /\/\* ==== BEUK:headlevels ==== \*\/([\s\S]*?)\/\* ==== \/BEUK:headlevels ==== \*\//.exec(html);
+  assert.ok(levels, 'the BEUK:headlevels block is in the studio');
+  const sandbox: Record<string, unknown> = { TextDecoder, btoa, Uint8Array, String };
+  vm.runInNewContext([vocab, part, levels[1], marks, block, 'this.toText = (s) => rtfToManuscriptText(rtfRead(s));'].join('\n'), sandbox);
+  const toText = sandbox.toText as (s: string) => string;
+  const out = toText(String.raw`{\rtf1\ansi{\stylesheet{\s1 heading 1;}{\s2 heading 2;}}\pard\s1 The Harbour\par\pard Dawn.\par\pard\s2 Morning\par\pard Fog.\par\pard\s1 The Crossing\par\pard\s2 The Squall\par\pard Rain.\par}`);
+  assert.equal(out, '# The Harbour\n\nDawn.\n\nMorning\n\nFog.\n\n# The Crossing\n\nThe Squall\n\nRain.');
 });
 
 test('rtf: the import report names the RTF file, not a Word file, in all 13 locales', async () => {

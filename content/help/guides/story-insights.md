@@ -4,8 +4,8 @@ title: Story Insights & Goals
 blurb: The book at a glance, charts you can open chapters from, the names on stage, and the road so far — and where each count comes from.
 group: write
 audience: [new]
-updated: 2026-10-26
-readMinutes: 3
+updated: 2026-11-15
+readMinutes: 4
 related: [your-streak, move-split-merge]
 new: true
 ---
@@ -17,7 +17,7 @@ What you're doing: stepping back from the page to see the whole book — its len
 1. Open **Story Insights**. It begins with **At a glance**: words, chapters, reading time, pages on your reading device, average sentence length and how much of the book is dialogue — the same counts the sidebar and the reading desk show.
 2. Explore the charts. Hover or tab to any chapter in **Chapter rhythm**, **Cadence**, **Reading ease** or **Dialogue and narration** to see its words, sentence length and dialogue share; click it, or press Enter, to open that chapter.
 3. Read **Names on stage**, the last section: one row per name the book keeps returning to, one column per section, each square shaded by how often the name appears there for the section's length. Choose a square and the studio opens that section with the first mention selected.
-4. Open **Goals** to set a daily target, a project target or a deadline, and to see **The road so far**: the book's length over time.
+4. Open **Goals** to set a daily target, a project target or a deadline, and to see **The road so far**: the book's length over time. Choose the days of the week you write; with a project target and a deadline, **Set my daily target from the deadline** works the daily target out for you and shows the sum, and one line says whether the book is on pace. **Just write** turns the goals, streak and pace off; your words are still counted.
 
 ## Explanation
 
@@ -30,7 +30,7 @@ What you're doing: stepping back from the page to see the whole book — its len
 
 ### Names on stage
 
-Names are found by capital letters, on this device — a rule of thumb, not a reading of the story. A name appears once it is used often enough, in at least two sections. Places and ships turn up too; hide any that aren't names, and they stay hidden with the book. Books in scripts without capital letters get a short note instead of a guess.
+Names are found by capital letters, on this device — a rule of thumb, not a reading of the story. A name appears once it is used often enough, in at least two sections. Places and ships turn up too; hide any that aren't names, and they stay hidden with the book. Books in scripts without capital letters get a short note instead of a guess. The Covenant can start from these names: you choose which ones to keep, and what each one is.
 
 ### The road so far
 

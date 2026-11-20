@@ -38,12 +38,15 @@
 # (metadata, health, the MCP endpoint) — no pages, so none of the main
 # site's CSP/header block applies here.
 #
-# SITE_PREFIX (BEUK:tunnel): empty everywhere except tunnel mode, where
-# it is "http://" — TLS then terminates at Cloudflare's edge and Caddy
-# serves these hosts as plain HTTP on :80 for the cloudflared container
-# (deploy/docker-compose.tunnel.yml). Empty → expands to nothing and the
-# address keeps its https default, exactly as before.
-{$SITE_PREFIX}mcp.{$DOMAIN} {
+# MCP_SITE is the whole site address, computed by compose (the Caddyfile
+# cannot build it: local mode's DOMAIN is a listener like "http://:8090",
+# and "mcp." prefixed to that is no address at all — Caddy exits 1 on it).
+# Base compose: mcp.<DOMAIN> (the https default). Tunnel mode
+# (deploy/docker-compose.tunnel.yml): "http://mcp.<DOMAIN>" — TLS
+# terminates at Cloudflare's edge and Caddy serves plain HTTP on :80 for
+# the cloudflared container. start-local.ps1: "mcp.localhost", which
+# Caddy's internal CA covers.
+{$MCP_SITE} {
 	encode gzip
 	@hsts {
 		protocol https
@@ -244,6 +247,12 @@
 	handle /roadmap {
 		reverse_proxy app:3000
 	}
+	# Aris: the one page that explains and enables it, plus its script
+	# (served by the app only while ARIS_ENABLED; 404 otherwise).
+	@aris path /aris /aris/*
+	handle @aris {
+		reverse_proxy app:3000
+	}
 	# The legal pages (src/legal/render.ts): their operator details
 	# come from the LEGAL_* settings in .env.
 	handle /privacy* {
@@ -377,6 +386,16 @@
 		root * /srv/client
 		rewrite * /site/compare/novelcrafter.html
 		file_server
+	}
+
+	# === BENCH SCRATCH ===
+	# ./client is the web root, and the handle below serves any file in it.
+	# Top-level names that start with an underscore are bench working files
+	# (probe PDFs, book backups); nothing the site serves is named that way.
+	# They are never published, whatever is lying in the folder.
+	@scratch path /_*
+	handle @scratch {
+		respond 404
 	}
 
 	# === STATIC CLIENT ===

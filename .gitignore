@@ -25,3 +25,13 @@ studio/src/generated/
 # the locked review copy's DOCX oracle (msoffcrypto-tool), installed in a venv inside the worktree, never globally
 studio/e2e/oracles/.venv/
 client/next/
+
+# Bench scratch in the web root (probe PDFs, book backups). Kept on disk,
+# never committed, never in the image, and Caddy answers 404 for /_*
+/client/_*
+
+# Blender auto-backups (docs/aris-hero bench)
+*.blend1
+
+# /aris card art masters (web-size copies are committed; masters stay local)
+content/aris/cards/src/

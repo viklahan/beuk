@@ -141,6 +141,12 @@ services:
       # configured"; the key is used server-side only.
       PEXELS_API_KEY: ${PEXELS_API_KEY:-}
       PEXELS_API_BASE: ${PEXELS_API_BASE:-https://api.pexels.com/v1}
+      # Aris (AI addon): off unless ARIS_ENABLED=true; the key secret
+      # seals writers' stored provider keys.
+      ARIS_ENABLED: ${ARIS_ENABLED:-}
+      ARIS_KEY_SECRET: ${ARIS_KEY_SECRET:-}
+      ARIS_OPENROUTER_BASE: ${ARIS_OPENROUTER_BASE:-}
+      ARIS_ANTHROPIC_BASE: ${ARIS_ANTHROPIC_BASE:-}
       # Hardening: one trusted proxy hop (Caddy) so req.ip is the real
       # client for the auth rate limit and the founders throttle.
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
@@ -256,6 +262,11 @@ services:
     logging: *default-logging
     environment:
       DOMAIN: ${DOMAIN:-localhost}
+      # The MCP server's whole site address (see the Caddyfile's BEUK:mcp
+      # block): compose computes it because local mode's DOMAIN is a bare
+      # listener that cannot take an "mcp." prefix. Tunnel mode and
+      # start-local.ps1 each override it.
+      MCP_SITE: ${MCP_SITE:-mcp.${DOMAIN:-localhost}}
       # Optional www host redirected to DOMAIN (Caddyfile); empty = none.
       WWW_DOMAIN: ${WWW_DOMAIN:-}
     ports:

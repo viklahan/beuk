@@ -31,6 +31,7 @@ import { exportEnv } from '../closure/index';
 import { Icon } from './Icon';
 import { LocalPill } from '../book/LocalPill';
 import { CLOUD_SLOTS, CloudHost, CloudSlot } from '../cloud/CloudHost';
+import { onAuthChange } from '../cloud/cloud';
 import { LangMenu } from './LangMenu';
 import { ThemeButton } from './ThemeButton';
 
@@ -67,6 +68,7 @@ function readFolds(): Folds {
   }
 }
 
+let arisLoad: Promise<typeof import('../aris/index.js') | undefined> | null = null; // aris mount
 export function Shell() {
   const { t, dir, lang } = useLocale();
   // 1.0's code in the closure reads t() and the interface language at call time
@@ -106,6 +108,7 @@ export function Shell() {
   }, []);
   const [dialog, setDialog] = useState<'history' | 'settings' | 'insights' | 'notebook' | 'goals' | null>(null);
   const bookOpen = bk.phase === 'open';
+  useEffect(() => { if (bookOpen) void (arisLoad ??= import('../aris/index.js').catch(() => undefined)).then((m) => { if (!m) return; void m.mountArisInTopbar(); onAuthChange(m.arisAuthChanged); }); }, [bookOpen]); // aris mount; a later sign-in or sign-out re-asks (the one ask would otherwise go stale)
   const ops = useChapterOps({ openHistory: () => setDialog('history') });
   const structure = useStructure();
   // 1.0's centre tabs: the chapter content, the Typography Studio (wave 4a) and the outline board

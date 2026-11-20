@@ -4,6 +4,7 @@ import type * as Y from 'yjs';
 import { BookBehaviour } from './behaviour';
 import { bookExtensions } from './schema';
 import { CovenantMarks } from '../covenant/marks';
+import { attachEditorExtras } from './extras';
 import { holdPositionMigrations, wrapUndoInTransaction } from './positionMigrations';
 
 export { positionMigrationStore } from './positionMigrations';
@@ -50,5 +51,7 @@ export function createChapterEditor(o: ChapterEditorOptions): Editor {
   });
   wrapUndoInTransaction(editor, held);
   editor.on('destroy', held.release);
+  // behaviour registered by modules that load later (editor/extras.ts): this editor gets it now and as it arrives
+  attachEditorExtras(editor);
   return editor;
 }

@@ -189,6 +189,29 @@ const ADDED_2026_10_30: [string, string, string][] = [
 const ADDED_2026_10_31: [string, string, string][] = [
   ["exports-and-archive", "exactly per the standard.", "exactly per the standard. The Beuk server builds it from the book on your desk, so you need to be signed in and online to download it."],
 ];
+// 2026-11-15: the guides refreshed against the log to the 2026-11-14 build — import replaces the desk and never
+// overwrites a shelf book (13a815a, 5e249a0), EPUB covers (8d082da), zips (663c3db) and locked files (03be39f); box-set
+// backups (53ae176); the spine and back cover (28574c6, 85998f4); Run EPUBCheck (9279781); server print files, the
+// submission manuscript, ACX and locked copies (cc0072f, 85998f4, dbf3341, f0a88ae, 3779396); notes in print, captions,
+// lists, links, containers and redaction (e6a1484, c5322ce, 3ddac4f, 18c18cb, 06ebdc6, 1902b05); display faces, script
+// faces, book colour and the device preview (ab129b9, adf1cc2, d59a68b, 02f95fa). Applied after the additions above.
+const ADDED_2026_11_15: [string, string, string][] = [
+  ["add-a-cover", "maker yourself stays as you wrote it. The cover appears at the", "maker yourself stays as you wrote it. For a print edition, the maker's Spine and Back cover sections design the rest of the wrap, each with its own background, font and colour. Beuk's server paints the wrap PDF or JPG you download, so you need to be signed in and online for it. The cover appears at the"],
+  ["box-sets", ".md , .txt , or .rtf ). Each is listed with its chapter and word counts;", ".md , .txt , or .rtf ), or as Beuk backup files ( .beuk-backup.json ), which bring each book whole: its cover and every picture. A zip of manuscripts opens into its files, and a locked Word file or PDF asks for its password. Each book is listed under its own title, with its chapter and word counts;"],
+  ["epub-error-decoder", "what we want to know about. The full EPUBCheck suite itself runs on Beuk's servers in the SaaS phase.", "what we want to know about. To run the full EPUBCheck yourself, sign in, save the EPUB to Your Archive in the Export dialog, and choose Run EPUBCheck beside it."],
+  ["exports-and-archive", "Print interiors , as a file. Look inside before you ship The", "Print interiors , as a file. Print-ready PDF — the interior to send to the printer, made by the Beuk server from the book on your desk, so you need to be signed in and online. Cover wrap — front, spine and back in one PDF or JPG, from the Cover Maker, painted by the Beuk server. Submission manuscript — a Word file in standard manuscript format, for querying agents and publishers. Audio Script for ACX — narrator scripts in ACX order, from the opening to the closing credits, with a pronunciation guide, in one zip. The Word file, the submission manuscript and the print-ready PDF can each be downloaded locked: give a password, and the file opens only with it. Look inside before you ship The"],
+  ["footnotes-and-images", "a notes section where they don't. A reference with no note behind", "a notes section where they don't. In print, Notes in print (in Export and the Print Interior View) sets them at the foot of the page or at the end of the chapter; the EPUB keeps its linked notes either way. A reference with no note behind"],
+  ["footnotes-and-images", "it; readers have always deserved it. Choose Standard (sits within the text", "it; readers have always deserved it. Add a Caption too, if you like: it is set under the picture. Choose Standard (sits within the text"],
+  ["footnotes-and-images", "import text by hand, these are all of them — you never need this list", "import text by hand, these are the ones you'll meet most — you never need this list"],
+  ["footnotes-and-images", "note itself — a linked endnote. An image sits on its own", "note itself — a linked endnote. - at the start of each line — a bulleted list; 1. — a numbered list. [words](https://…) — a web link (a mailto: address works too). ::: verse on a line of its own, then the lines, then ::: — a block set apart. Other kinds include center , right , letter , texts , transcript , log and margin ; the toolbar buttons type these for you. ||words|| — redacted: readers see bars in place of the words, never the words themselves. An image sits on its own"],
+  ["import-a-manuscript", "EPUB under DRM cannot be read). New to the studio? Show the", "EPUB under DRM cannot be read). An EPUB that declares a cover brings it along as the book's cover. New to the studio? Show the"],
+  ["import-a-manuscript", "italics, and blockquotes survive the trip. Beuk reads the file and lays", "italics, and blockquotes survive the trip. A zip holding one manuscript works too. Beuk reads the file and lays"],
+  ["import-a-manuscript", "says where each detail came from. A title, subtitle or author you typed yourself is never overwritten by a new import. The report shows what the document calls itself and offers Use instead.", "says where each detail came from. An import replaces the book on the desk. If the desk already holds a book, Beuk first says what will be cleared and that History keeps a copy; Keep leaves the book exactly as it was. The typography you chose stays. A book on your shelf is never overwritten: the import becomes a new book of its own."],
+  ["import-a-manuscript", "Save As → Word Document (.docx). Very large files with many embedded", "Save As → Word Document (.docx). A Word file or PDF locked with a password asks for its password; a Word file with an older kind of lock says so. A scanned PDF has no text to read, so Beuk refuses it rather than guess. Very large files with many embedded"],
+  ["typeset-a-chapter", "plus a clean sans for nonfiction. Set size and leading. Font size", "plus a clean sans for nonfiction. For headings only there are three display faces: Pinyon Script, Patrick Hand and Abril Fatface. Arabic and Hindi text is set in Amiri and Noto Serif Devanagari. Set size and leading. Font size"],
+  ["typeset-a-chapter", "sprig, a hairline rule, and more. Check it on devices. Flip the", "sprig, a hairline rule, and more. Book colour: one accent colour for chapter titles and numbers, rules, ornaments, drop caps and the title page, and an optional page tint for screens and EPUB. Print keeps the accent and ignores the tint, and a contrast guard refuses a colour that would be hard to read. Check it on devices. Flip the"],
+  ["typeset-a-chapter", "one should read well on all. The preview keeps your place. As", "one should read well on all. Hardcover opens a 3D hardback on the book's real print spreads, and e-ink devices with black-and-white screens are shown in greyscale, as those screens show the book. The preview keeps your place. As"],
+];
 
 test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 pages), with the two edits the spec asks for and the 2026-10-26 additions', async () => {
   const db = await createTestDb();
@@ -224,7 +247,7 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
       }
       // 2026-10-26: the features added since H1 (removing a picture, the preview keeping its place,
       // the title read from the manuscript, Split at cursor, the Cover Maker), each added in place.
-      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31]) if (s === slug) {
+      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15]) if (s === slug) {
         assert.ok(expected.includes(from), `${slug}: the addition's anchor is in the fixture`);
         expected = expected.replace(from, to);
       }

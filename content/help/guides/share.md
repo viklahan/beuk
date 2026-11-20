@@ -4,7 +4,7 @@ title: Beta-reader share links
 blurb: Send a read-only link, collect comments, and what a reader sees when a link is revoked or expires.
 group: keep
 audience: [reader, shipping]
-updated: 2026-10-25
+updated: 2026-11-15
 readMinutes: 3
 related: [saving, exports-and-archive]
 new: true
@@ -18,9 +18,10 @@ What you're doing: sending beta readers a frozen, read-only copy of a book on yo
 1. Signed in, with the book on your shelf, open **Export** and find **Share with beta readers**.
 2. Create a link: choose when it expires, whether comments are on, and whether readers are asked for their name. Copy it with the copy button.
    tech: `POST /api/shares` returns the token once; the server stores only its SHA-256, like a session token.
-3. Send the link to your readers. They open it in any browser — no account, no app.
-4. Read what they wrote in the sidebar's **Reader comments**: grouped by section in book order, with a jump to the quoted passage in the editor, and resolve / reopen.
-5. Changed the book? **Republish** re-renders the copy from the shelf manuscript's current text. Finished? **Revoke** closes the link.
+3. Want to know who is reading? In the link's list of readers, add a reader by name, with an expiry: each named reader gets a link of their own, which you can copy or close by name. Once a named link exists, **Close the open link** shuts the shared one; the named links stay open.
+4. Send the link to your readers. They open it in any browser — no account, no app.
+5. Read what they wrote in the sidebar's **Reader comments**: grouped by section in book order, with a jump to the quoted passage in the editor, and resolve / reopen.
+6. Changed the book? **Republish** re-renders the copy from the shelf manuscript's current text. Finished? **Revoke** closes the link.
 
 ## Explanation
 
@@ -29,17 +30,18 @@ What you're doing: sending beta readers a frozen, read-only copy of a book on yo
 - The copy as it was when you shared (or last republished) it — your later edits don't leak into it until you republish.
 - Chapter navigation that works even without JavaScript, in the Paper look of the help pages, made for phones first.
 - Never your email address or your account id.
+- On a named link, the reader's own name: the page says who it was shared with and when ("Shared with Priya · 8 Nov 2026"), with a faint stamp of the name behind the text that stays when the page is printed. The comment form carries that name.
 
 ### Comments
 
 - A reader selects a passage and chooses **Comment on this**, which anchors the comment to that paragraph and its quoted words; or comments on the chapter as a whole.
 - A comment can be up to 2000 characters, a name up to 60.
-- Comments are visible to everyone holding the link: the reader's name, the text, the quoted passage and the time.
+- Comments are visible to everyone holding the link: the reader's name, the text, the quoted passage and the time. A named reader sees only their own comments.
 - To keep a link from being flooded, one network address can post 10 comments to a link per 10 minutes, and a link takes at most 200 an hour.
 
 ### When a link is closed
 
-A revoked link, or one past its expiry date, shows a calm page instead of the book: **This reading copy is closed**, with "The writer has closed this reading copy." or "The reading period for this copy has ended." A link that was mistyped or cut short shows **We couldn't find this reading copy**.
+A revoked link, a named link you closed, or one past its expiry date, shows a calm page instead of the book: **This reading copy is closed**, with "The writer has closed this reading copy." or "The reading period for this copy has ended." A link that was mistyped or cut short shows **We couldn't find this reading copy**.
 
 ## Troubleshooting
 

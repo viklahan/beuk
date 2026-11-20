@@ -1,0 +1,167 @@
+[data-aris='glyph'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--accent);
+  opacity: 0.45;
+  /* the mark is the desk's switch: a plain button wearing only the laurel */
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+[data-aris='glyph'][data-aris-state='off'] {
+  opacity: 0.15;
+}
+[data-aris='glyph'][data-aris-state='off']:hover,
+[data-aris='glyph'][data-aris-state='off']:focus-visible {
+  opacity: 0.3;
+}
+[data-aris='glyph'] svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+/* the summon menu and the ghost: inside the editor's surface, so they take its direction and font; logical sides only */
+[data-aris='menu'],
+[data-aris='ghost'] {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  user-select: none;
+}
+[data-aris='menu'] {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+[data-aris='menu'] button,
+[data-aris='controls'] button {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+}
+[data-aris='menu'] input {
+  font: inherit;
+  margin-inline-start: 6px;
+  min-width: 12em;
+}
+[data-aris='ghost'] {
+  display: block;
+  color: color-mix(in srgb, var(--accent) 75%, transparent);
+}
+[data-aris='ghost'] [data-aris='text'] {
+  white-space: pre-wrap;
+}
+[data-aris='ghost'] textarea {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  user-select: text;
+}
+[data-aris='controls'] {
+  display: block;
+  font-size: 0.8em;
+  opacity: 0.85;
+}
+[data-aris='notice'] {
+  font-size: 0.85em;
+  font-style: italic;
+}
+
+/* the editorial read: the control beside the laurel and its report dialog */
+[data-aris='editorial-open'] {
+  font: inherit;
+  font-size: 12px;
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 6px;
+  padding: 2px 8px;
+  color: var(--accent);
+  cursor: pointer;
+}
+[data-aris='editorial'] {
+  border: 0;
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  max-width: min(720px, 92vw);
+  max-height: 86vh;
+  overflow: auto;
+  background: var(--panel-2, #fffdf4);
+  color: var(--ink, #22333a);
+  box-shadow: var(--shadow, 0 10px 30px rgba(0, 0, 0, 0.3));
+}
+[data-aris='editorial']::backdrop { background: rgba(4, 9, 11, 0.6); }
+[data-aris='editorial-close'] {
+  position: absolute;
+  top: 0.5rem;
+  inset-inline-end: 0.6rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+}
+[data-aris='editorial-run'],
+[data-aris='editorial-abandon'] {
+  font: inherit;
+  padding: 0.3rem 0.9rem;
+  cursor: pointer;
+}
+[data-aris='editorial-gate'] { font-weight: 700; }
+[data-aris='editorial-gate'][data-gate='fail'] { color: var(--bad, #b3352b); }
+[data-aris='editorial-finding'] {
+  border-inline-start: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  padding-inline-start: 0.8rem;
+  margin: 0.7rem 0;
+}
+[data-aris='editorial-finding'] blockquote { margin: 0.2rem 0; font-style: italic; opacity: 0.85; }
+[data-aris='editorial-rejected'] { font-size: 0.85rem; opacity: 0.75; font-style: italic; }
+.aris-ed-where { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.65; margin: 0; }
+.aris-ed-fix { opacity: 0.85; }
+.aris-ed-claim { font-size: 0.9rem; margin: 0.2rem 0; }
+
+/* the selection toolbar: a zero-width anchor at the selection's end; the bar floats above it. Logical sides only, so it
+   follows the editor's direction */
+.aris-toolbar-anchor {
+  position: relative;
+  display: inline-block;
+  inline-size: 0;
+  user-select: none;
+}
+[data-aris='toolbar'] {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-end: 100%;
+  z-index: 5;
+  display: inline-flex;
+  gap: 4px 10px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+[data-aris='toolbar'] button {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+}

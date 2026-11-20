@@ -10,11 +10,20 @@ import { toBook } from './bridge';
 
 type Active = { editor: Editor; section: number; sectionMap: Y.Map<unknown> | null };
 let current: Active | null = null;
+/** Every editor's own section, as it was mounted with (an editor that is not the active one still knows its section). */
+const owners = new WeakMap<Editor, Active>();
 
 /** `sectionMap`: the section's own Y map, so a reader can ask which section the editor holds by the section itself
  *  (its 1.0 id), not by the index it was mounted with (a move shifts indexes; the Desk remounts on the next render). */
 export function setActiveEditor(editor: Editor, section: number, sectionMap: Y.Map<unknown> | null = null): void {
   current = { editor, section, sectionMap };
+  owners.set(editor, current);
+}
+/** The section `editor` was mounted on (its index and Y map), whether or not it is the active editor now; null for an
+ *  editor never made active, or destroyed. */
+export function editorSection(editor: Editor): Active | null {
+  const o = owners.get(editor);
+  return o && !editor.isDestroyed ? o : null;
 }
 export function clearActiveEditor(editor: Editor): void {
   if (current?.editor === editor) current = null;

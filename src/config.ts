@@ -231,6 +231,18 @@ export interface Config {
   /** Stock photos: Pexels API base URL (PEXELS_API_BASE, default
    *  https://api.pexels.com/v1); tests point it at a stub server. */
   pexelsApiBase: string;
+  /** Aris (AI addon) gate: ARIS_ENABLED=true turns the /api/aris routes
+   *  on; otherwise every one is a plain 404, identical to the /api
+   *  catch-all. */
+  arisEnabled: boolean;
+  /** Aris: the secret that seals writers' stored provider keys
+   *  (ARIS_KEY_SECRET). Null until set — while enabled but null, the
+   *  routes answer an honest 503. Never sent to clients. */
+  arisKeySecret: string | null;
+  /** Aris: OpenRouter API base (ARIS_OPENROUTER_BASE); tests stub it. */
+  arisOpenrouterBase: string;
+  /** Aris: Anthropic API base (ARIS_ANTHROPIC_BASE); tests stub it. */
+  arisAnthropicBase: string;
   /** Hardening: how many reverse-proxy hops sit in front of the app
    *  (TRUST_PROXY_HOPS, default 1 = Caddy). Handed to Express's
    *  `trust proxy` so req.ip is the real client address. Set 0 when the
@@ -448,6 +460,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     jobMaxQueued: positiveInt(env.JOB_MAX_QUEUED, 20),
     pexelsApiKey: env.PEXELS_API_KEY || null,
     pexelsApiBase: (env.PEXELS_API_BASE ?? 'https://api.pexels.com/v1').replace(/\/$/, ''),
+    arisEnabled: (env.ARIS_ENABLED ?? '').toLowerCase() === 'true',
+    arisKeySecret: env.ARIS_KEY_SECRET || null,
+    arisOpenrouterBase: (env.ARIS_OPENROUTER_BASE ?? 'https://openrouter.ai/api/v1').replace(/\/$/, ''),
+    arisAnthropicBase: (env.ARIS_ANTHROPIC_BASE ?? 'https://api.anthropic.com').replace(/\/$/, ''),
     trustProxyHops: Number(env.TRUST_PROXY_HOPS ?? 1),
     authRateBurst: Number(env.AUTH_RATE_BURST ?? 10),
     authRateRefillMs: Number(env.AUTH_RATE_REFILL_MS ?? 60_000),

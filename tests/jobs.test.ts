@@ -118,6 +118,17 @@ async function waitForJob(client: Client, jobId: string): Promise<JobView> {
   }
 }
 
+/** The fake tools this file drives (fake-java.sh, fake-gs.sh, sleepy
+ *  variants) are POSIX shell scripts the server spawns as executables —
+ *  deliberate, controlled stand-ins whose canned output the assertions
+ *  check. Windows cannot exec a shebang script (and Node refuses
+ *  .cmd/.bat without a shell), so on win32 these tests' precondition is
+ *  structurally absent: they are SKIPPED with this reason, never faked
+ *  green. The contract is covered on Linux — CI and prod. */
+const stubSkip = process.platform === 'win32'
+  ? 'fake tools are POSIX shell scripts; Windows cannot spawn them — covered on Linux'
+  : false;
+
 before(async () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'beuk-fake-tools-'));
 
@@ -282,7 +293,7 @@ after(async () => {
   await new Promise<void>((resolve) => stubRenderer.close(() => resolve()));
 });
 
-test('epubcheck job on own epub export runs to done with the parsed report stored', async () => {
+test('epubcheck job on own epub export runs to done with the parsed report stored', { skip: stubSkip }, async () => {
   const created = await alice.post('/api/jobs/epubcheck', { exportId: aliceEpubId });
   assert.equal(created.status, 201);
   const jobId = (created.body.job as JobView).id;
@@ -359,7 +370,7 @@ test('wrong-format sources are rejected cleanly, per kind', async () => {
   assert.ok(jobs.every((j) => j.sourceExportId !== aliceMarkdownId));
 });
 
-test('pdfx job on a print interior renders HTML to PDF first, then archives the converted file', async () => {
+test('pdfx job on a print interior renders HTML to PDF first, then archives the converted file', { skip: stubSkip }, async () => {
   const created = await alice.post('/api/jobs/pdfx', { exportId: alicePrintId });
   assert.equal(created.status, 201);
   const jobId = (created.body.job as JobView).id;
@@ -418,7 +429,7 @@ test('pdfx job on a print interior renders HTML to PDF first, then archives the 
   assert.equal(call.body.toString('utf8'), '<html><body>print interior</body></html>');
 });
 
-test('a Ghostscript run that reverts to plain PDF fails honestly — no artifact claiming PDF/X', async () => {
+test('a Ghostscript run that reverts to plain PDF fails honestly — no artifact claiming PDF/X', { skip: stubSkip }, async () => {
   const marker = path.join(fakeToolsDir, 'gs-revert');
   writeFileSync(marker, '');
   try {
@@ -435,7 +446,7 @@ test('a Ghostscript run that reverts to plain PDF fails honestly — no artifact
   }
 });
 
-test('the Ghostscript step has its own timeout (PDFX_TIMEOUT_MS), stated when it overruns', async () => {
+test('the Ghostscript step has its own timeout (PDFX_TIMEOUT_MS), stated when it overruns', { skip: stubSkip }, async () => {
   const marker = path.join(fakeToolsDir, 'gs-slow');
   writeFileSync(marker, '');
   const slow = await startTestServer(db, undefined, {
@@ -494,7 +505,7 @@ test('unconfigured tools: job creation still succeeds, the job completes FAILED,
   }
 });
 
-test('a job whose tool overruns the per-job timeout fails with the timeout stated', async () => {
+test('a job whose tool overruns the per-job timeout fails with the timeout stated', { skip: stubSkip }, async () => {
   const slow = await startTestServer(db, undefined, {
     exportDir: server.config.exportDir,
     epubcheckJar: stubJar,
@@ -523,7 +534,7 @@ test('job endpoints require auth', async () => {
   assert.equal((await anon.get('/api/jobs/whatever')).status, 401);
 });
 
-test('admission caps: a user holds at most JOB_MAX_ACTIVE_PER_USER jobs, the server JOB_MAX_QUEUED', async () => {
+test('admission caps: a user holds at most JOB_MAX_ACTIVE_PER_USER jobs, the server JOB_MAX_QUEUED', { skip: stubSkip }, async () => {
   // A sleepy tool keeps jobs active long enough to fill the slots; the
   // short timeout then fails each one so the slots free up again.
   const capped = await startTestServer(db, undefined, {
@@ -580,7 +591,7 @@ test('admission caps: a user holds at most JOB_MAX_ACTIVE_PER_USER jobs, the ser
   }
 });
 
-test('renderer failures are honest: an HTTP error, a non-PDF reply, an unreachable renderer', async () => {
+test('renderer failures are honest: an HTTP error, a non-PDF reply, an unreachable renderer', { skip: stubSkip }, async () => {
   try {
     rendererMode = 'error';
     const errored = await waitForJob(

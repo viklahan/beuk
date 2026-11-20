@@ -35,6 +35,11 @@ export const ACCOUNT_DELETED_TABLES = [
   // Phase 3 (migration 028): the MCP write audit cascades with its
   // writer — an audit of a deleted account's books has no subject left.
   'mcp_writes',
+  // Aris W1 (migration 029): settings, key vault and AI-write audit are
+  // the writer's own rows and cascade with the account.
+  'aris_settings',
+  'aris_keys',
+  'ai_writes',
   'password_resets',
   'email_confirmations',
   'manuscripts',

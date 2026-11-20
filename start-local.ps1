@@ -139,7 +139,8 @@ services:
     ports: !override
       - $publish
     environment:
-      DOMAIN: "$siteAddr"$caddyEnv$appEnv
+      DOMAIN: "$siteAddr"
+      MCP_SITE: "mcp.localhost"$caddyEnv$appEnv
 "@ | Out-File -FilePath $override -Encoding utf8
 Note "wrote docker-compose.override.yml (port $Port$(if ($Lan) { ", https $HttpsPort" }))"
 $compose = ComposeArgs

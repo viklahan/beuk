@@ -74,7 +74,7 @@ Turn through whole books in the full-screen reader at **[beuk.studio/ramp](https
 Beuk ships as a Claude plugin: connect your shelf and Claude can read your manuscripts, edit chapters, build the store-ready EPUB, run EPUBCheck, and report **Beuk's own writing analytics** — cast, cadence, crutch words, dialogue share, readability, echoes — computed server-side by Beuk, never estimated.
 
 ```
-claude plugin marketplace add viklahan/beuk
+claude plugin marketplace add viklahan/beuk-plugin
 claude plugin install beuk@beuk
 ```
 

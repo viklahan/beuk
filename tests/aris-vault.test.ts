@@ -1,0 +1,167 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { Client, createTestDb, registerUser, startTestServer } from './helpers.js';
+import { decryptKey, encryptKey } from '../src/aris/vault.js';
+
+async function boot() {
+  const db = await createTestDb();
+  const server = await startTestServer(db, undefined, { arisEnabled: true, arisKeySecret: 'test-secret' });
+  const client = new Client(server.base);
+  await registerUser(client, 'aris-vault@example.com');
+  return { server, client };
+}
+
+test('vault round-trips and refuses tampering', () => {
+  const ct = encryptKey('s3cret', 'sk-or-v1-abcdef1234');
+  assert.match(ct, /^v1:[^:]+:[^:]+:[^:]+$/);
+  assert.equal(decryptKey('s3cret', ct), 'sk-or-v1-abcdef1234');
+
+  const [v, iv, tag, body] = ct.split(':');
+  const bytes = Buffer.from(body, 'base64');
+  bytes[0] ^= 0x01;
+  assert.throws(() => decryptKey('s3cret', [v, iv, tag, bytes.toString('base64')].join(':')));
+
+  assert.throws(() => decryptKey('other-secret', ct));
+});
+
+test('a saved key is shown once as last4, retrievable never', async () => {
+  const { server, client } = await boot();
+  try {
+    const plain = 'sk-or-v1-SUPERSECRETVALUE9876';
+    const put = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: plain });
+    assert.equal(put.status, 200);
+    assert.deepEqual(put.body, { provider: 'openrouter', last4: '9876' });
+    assert.ok(!JSON.stringify(put.body).includes(plain));
+
+    const status = await client.get('/api/aris/status');
+    assert.equal(status.status, 200);
+    assert.deepEqual(status.body.keys, [{ provider: 'openrouter', last4: '9876' }]);
+    const raw = JSON.stringify(status.body);
+    assert.ok(!raw.includes(plain));
+    assert.ok(!raw.includes('SUPERSECRET'));
+    assert.ok(!/ciphertext|v1:/.test(raw));
+
+    // replacing the same provider keeps one row
+    const again = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-other1111' });
+    assert.equal(again.status, 200);
+    const after = await client.get('/api/aris/status');
+    assert.deepEqual(after.body.keys, [{ provider: 'openrouter', last4: '1111' }]);
+  } finally {
+    await server.close();
+  }
+});
+
+test('baseUrl is openai-compat only and must be https', async () => {
+  const { server, client } = await boot();
+  try {
+    const a = await client.put('/api/aris/key', { provider: 'anthropic', apiKey: 'sk-ant-abcd1234', baseUrl: 'https://x.example.com' });
+    assert.equal(a.status, 400);
+    const b = await client.put('/api/aris/key', { provider: 'openai-compat', apiKey: 'sk-abcd1234', baseUrl: 'http://x.example.com' });
+    assert.equal(b.status, 400);
+    const c = await client.put('/api/aris/key', { provider: 'openai-compat', apiKey: 'sk-abcd1234', baseUrl: 'not a url' });
+    assert.equal(c.status, 400);
+    const cred = await client.put('/api/aris/key', { provider: 'openai-compat', apiKey: 'sk-abcd1234', baseUrl: 'https://user:pass@example.com/v1' });
+    assert.equal(cred.status, 400);
+    assert.deepEqual(cred.body, { error: 'the base URL must not carry credentials' });
+    assert.deepEqual((await client.get('/api/aris/status')).body.keys, []);
+    const ok = await client.put('/api/aris/key', { provider: 'openai-compat', apiKey: 'sk-abcd1234', baseUrl: 'https://llm.example.com/v1' });
+    assert.equal(ok.status, 200);
+    const status = await client.get('/api/aris/status');
+    assert.deepEqual(status.body.keys, [{ provider: 'openai-compat', last4: '1234', baseUrl: 'https://llm.example.com/v1' }]);
+    const bad = await client.put('/api/aris/key', { provider: 'nope', apiKey: 'sk-abcd1234' });
+    assert.equal(bad.status, 400);
+    const empty = await client.put('/api/aris/key', { provider: 'anthropic', apiKey: '' });
+    assert.equal(empty.status, 400);
+  } finally {
+    await server.close();
+  }
+});
+
+test('delete removes the key', async () => {
+  const { server, client } = await boot();
+  try {
+    await client.put('/api/aris/key', { provider: 'anthropic', apiKey: 'sk-ant-abcd1234' });
+    const del = await client.delete('/api/aris/key/anthropic');
+    assert.equal(del.status, 204);
+    const status = await client.get('/api/aris/status');
+    assert.deepEqual(status.body.keys, []);
+  } finally {
+    await server.close();
+  }
+});
+
+test('a key can carry a model override, shown in status', async () => {
+  const { server, client } = await boot();
+  try {
+    const put = await client.put('/api/aris/key', {
+      provider: 'openai-compat',
+      apiKey: 'AIza-secret-1234',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      model: '  gemini-2.5-flash ',
+    });
+    assert.equal(put.status, 200);
+    const status = await client.get('/api/aris/status');
+    const keys = status.body.keys as { provider: string; model?: string }[];
+    assert.equal(keys[0].model, 'gemini-2.5-flash');
+  } finally {
+    await server.close();
+  }
+});
+
+test('an over-long model is a 400 and writes no row', async () => {
+  const { server, client } = await boot();
+  try {
+    const put = await client.put('/api/aris/key', {
+      provider: 'openrouter',
+      apiKey: 'sk-or-v1-abcd1234',
+      model: 'm'.repeat(201),
+    });
+    assert.equal(put.status, 400);
+    assert.deepEqual(put.body, { error: 'model must be a short string' });
+    const nonString = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-abcd1234', model: 5 });
+    assert.equal(nonString.status, 400);
+    const status = await client.get('/api/aris/status');
+    assert.deepEqual(status.body.keys, []);
+  } finally {
+    await server.close();
+  }
+});
+
+test('a key saved without a model stores null and shows none', async () => {
+  const { server, client } = await boot();
+  try {
+    await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-abcd1234', model: 'a/b' });
+    const again = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-wxyz5678' });
+    assert.equal(again.status, 200);
+    const status = await client.get('/api/aris/status');
+    const k = (status.body.keys as Record<string, unknown>[])[0];
+    assert.ok(!k.model);
+  } finally {
+    await server.close();
+  }
+});
+
+test('a whitespace-only model is stored as null', async () => {
+  const { server, client } = await boot();
+  try {
+    const put = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-abcd1234', model: '   ' });
+    assert.equal(put.status, 200);
+    const status = await client.get('/api/aris/status');
+    assert.ok(!(status.body.keys as Record<string, unknown>[])[0].model);
+  } finally {
+    await server.close();
+  }
+});
+
+test('a model of exactly 200 chars passes', async () => {
+  const { server, client } = await boot();
+  try {
+    const m = 'm'.repeat(200);
+    const put = await client.put('/api/aris/key', { provider: 'openrouter', apiKey: 'sk-or-v1-abcd1234', model: m });
+    assert.equal(put.status, 200);
+    const status = await client.get('/api/aris/status');
+    assert.equal((status.body.keys as { model?: string }[])[0].model, m);
+  } finally {
+    await server.close();
+  }
+});

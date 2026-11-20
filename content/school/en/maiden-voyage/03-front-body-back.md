@@ -11,7 +11,7 @@ A finished book is more than its chapters. The pages around them, from the half 
 2. **Body** holds the story itself: a prologue, the chapters, and parts if your book has them.
    say: The body is the story itself: a prologue if you have one, then the chapters, and parts if the book is divided into them.
    do: show "Prologue"
-3. **Back Matter** follows the story: acknowledgments, About the Author, Also by the Author and a colophon.
+3. **Back Matter** follows the story: acknowledgments, About the Author, Also by the Author and a colophon. An empty back page offers starter texts to begin from, and a page left empty stays out of every export.
    say: Back matter follows the story: acknowledgments, about the author, a list of your other books, and a colophon.
    do: show "Back Matter"
 4. **Add a page** offers the other kinds of page a book can carry, each in its proper place.

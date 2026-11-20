@@ -179,6 +179,38 @@ test('the landing top bar hides nothing of its own: the two in-page links it gav
   for (const a of ['#ports', '#manifest', '#helm']) assert.ok(html.includes(`<a href="${a}">`), `footer keeps ${a}`);
 });
 
+test('the landing top bar is site links only: the tour bar beneath it is the way around the page', () => {
+  const html = read('client', 'site', 'index.html');
+  const bar = /<nav aria-label="Site">([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
+  assert.ok(bar, 'the top bar is labelled Site, like every other site page');
+  assert.doesNotMatch(bar, /href="#/, 'no in-page link in the top bar');
+  const order = [...bar.matchAll(/<a class="(?:nl|btn-sm)" href="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(order, ['/features', '/ramp', '/compare', '/school', '/aris', '/help', '/studio?signin', '/studio']);
+  // One line each, at any width: a label never breaks in two.
+  assert.match(html, /\.topbar nav a\.nl\{[^}]*white-space:nowrap/);
+  // What gives way as the window narrows, in order: the tagline, then the
+  // links' padding, then the links (Start writing stays). Measured in a
+  // browser on 2026-11-19: no wrap and no sideways scroll from 390 to 1280.
+  assert.match(html, /@media\(max-width:1000px\)\{\.tagline\{display:none\}\}/);
+  assert.match(html, /@media\(max-width:820px\)\{\.topbar nav\{gap:2px\}\.topbar nav a\.nl\{font-size:13px;padding:8px 6px\}\}/);
+  assert.match(html, /@media\(max-width:700px\)\{\.topbar nav a\.nl\{display:none\}\}/);
+  // The two links the bar gave up are still in the footer, and the tour's
+  // dots still reach both scenes.
+  for (const a of ['#voyage', '#helm']) assert.ok(html.includes(`<a href="${a}">`), `footer keeps ${a}`);
+  assert.match(html, /data-scene="9" aria-label="10 of 12 — Take the helm/);
+});
+
+test('the landing links Aris only where Aris answers: hidden in the markup, shown after /aris says 200', () => {
+  const html = read('client', 'site', 'index.html');
+  // /aris is 404 while ARIS_ENABLED is off, and this page is a static file
+  // that cannot know. Both links ship hidden; the page asks, then shows them.
+  assert.match(html, /<a class="nl" href="\/aris" data-aris hidden>Aris<\/a>/);
+  assert.match(html, /<a href="\/aris" data-aris hidden>Aris<\/a>/);
+  assert.equal((html.match(/href="\/aris"/g) ?? []).length, 2);
+  assert.match(html, /fetch\("\/aris", \{ method: "HEAD" \}\)/);
+  assert.match(html, /if \(r\.ok\) [\s\S]{0,120}querySelectorAll\("\[data-aris\]"\)[\s\S]{0,80}hidden = false/);
+});
+
 test("the site pages' numbers are the studio's", () => {
   const studio = read('client', 'index.html');
   const themes = /const PRESETS = \[([\s\S]*?)\n\s*\];/.exec(studio)?.[1] ?? '';
@@ -235,7 +267,8 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
     assert.doesNotMatch(text, /no free tier after/i, p.url);
     assert.doesNotMatch(text, /one price after a free week|a free week, then one price\./i, p.url);
   }
-  assert.match(features, /Beuk's server converts the print interior to PDF\/X-1a; in the browser, the PDF comes from Print → Save as PDF/);
+  // Nov 2026: the server makes the print-ready PDF itself (01bc5b6); the browser's Print is a preview.
+  assert.match(features, /Beuk's server makes the print-ready PDF and converts the interior to PDF\/X-1a; Print → Save as PDF in the browser gives a preview you can print yourself\./);
   assert.match(features, /<li><b>PDF\/X-1a print conversion<\/b> on Beuk's server/);
   assert.match(features, /Everything above is yours for 21 days\. Your book is saved on your device as you write, and an account adds:/);
   const vellum = read('client', 'site', 'compare', 'vellum.html');
@@ -243,7 +276,7 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
   assert.doesNotMatch(stronger, /PDF\/X/, 'PDF/X is not a Vellum-only strength');
   assert.match(vellum, /Checks on Beuk's server<\/b>, with an account: the print interior converted to PDF\/X-1a, and your EPUB run through the official EPUBCheck\./);
   for (const slug of ['atticus', 'reedsy-studio']) {
-    assert.match(read('client', 'site', 'compare', `${slug}.html`), /Beuk's server converts the print interior to PDF\/X-1a; in the browser, the PDF comes from Print → Save as PDF\./, slug);
+    assert.match(read('client', 'site', 'compare', `${slug}.html`), /Its print-ready PDF and PDF\/X-1a file are made on Beuk's server, so they need an account and a connection\./, slug);
     assert.match(read('client', 'site', 'compare', `${slug}.html`), /Beuk needs an account from day one: 21 days free, then \$20 a month — everything included\./, slug);
   }
 });

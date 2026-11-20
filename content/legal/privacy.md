@@ -92,7 +92,7 @@ The server makes a backup of its data every {{backuphours}} hours, so a broken d
 [[if noschedule]]
 The operator makes backups of the server's data by hand, so a broken disk doesn't lose your books.
 [[end]]
-A backup includes accounts (with password hashes, two-step keys, hashed recovery codes and the hashes of recent sign-in steps not yet deleted), books, exports, authorship stamps, share copies and comments, the names and return addresses of apps registered to connect (never their keys), and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
+A backup includes accounts (with password hashes, two-step keys, hashed recovery codes and the hashes of recent sign-in steps still on record), books, exports, authorship stamps, share copies and comments, the names and return addresses of apps registered to connect (never their keys), and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
 [[if offsite]]
 An encrypted copy of each backup also goes to a private storage bucket with Backblaze B2. It's encrypted before it leaves the server, and only the operator holds the key. Copies are kept on a rolling schedule: one a day for {{keepdaily}} days, one a week for {{keepweekly}} weeks, and one a month for {{keepmonthly}} months. So a deleted item can survive in these copies for up to about {{keepmonthly}} months.
 [[end]]
@@ -113,7 +113,7 @@ Backups are a safety net, not a promise. Keep your own exports too.
 - **Stripe** handles paid plans, as described above.
 [[end]]
 
-The studio loads no scripts from anyone else: its libraries are served from Beuk's own server. {{hosting}}. The services above may handle data in other countries.
+The studio loads no scripts from anyone else: its libraries are served from Beuk's own server.{{hosting}} The services above may handle data in other countries.
 
 ## Why Beuk uses your data (the legal bases, in plain words)
 
@@ -128,7 +128,7 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 - **Two-step key and recovery codes:** until you turn two-step sign-in off, or until the account is deleted. A two-step setup you started but didn't finish keeps its key until you start again (which replaces it), until you finish (it then becomes the key two-step uses), or until the account is deleted.
 - **Password-reset links:** expire after 60 minutes, and are cleared the next time anyone asks for a reset.
 - **Server error logs:** rotated by size (at most 3 × 10 MB per container), with no time limit.
-- **Help search records, Founders' Shelf entries and backups on the server:** no automatic limit yet.
+- **Help search records, Founders' Shelf entries and backups on the server:** no automatic limit.
 - **In-memory attempt counts:** until the server restarts.
 
 ## Your rights, and how to use them
@@ -138,7 +138,7 @@ Depending on where you live (for example under the EU or UK GDPR, or California'
 - **See and take your data:** export any book (EPUB, Word, Markdown, HTML, print files, or a `.beuk-backup.json` backup) and download anything in your export archive.
 - **Correct it:** edit your books in the studio, and change your password from Your shelf → Account & security.
 - **Delete it:** delete books from your shelf, exports from your archive, and reading copies and their comments.
-- **Delete your account:** there's no button for this yet. Write to {{contact}} from the address on the account, and the account and everything on it will be deleted. Copies can remain in backups for the time described under Backups.
+- **Delete your account:** write to {{contact}} from the address on the account, and the account and everything on it will be deleted. Copies can remain in backups for the time described under Backups.
 - **Anything else** (a copy of everything held about you, a Founders' Shelf entry, a question): write to {{contact}}.
 
 ## Changes to this page
