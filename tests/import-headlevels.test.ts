@@ -118,6 +118,32 @@ test('head levels: markdown follows the same rule — "##" under "#" chapters is
   assert.deepEqual(t.subs, []);
 });
 
+test('head levels: Google Docs\' markdown — headings wholly in bold, and bare "#" lines for empty paragraphs — reads as the headings it means', async () => {
+  const { md } = await rule();
+  /* the shape Google Docs' "Markdown (.md)" download writes */
+  const book = ['# ', '', '**The Title**', '', '## ', '', '# **Chapter 1: The Harbour**', '', 'Dawn.', '', '## **Morning**', '', 'Fog.', '', '# **Chapter 2: The Crossing**', '', '## **The Squall**', '', 'Rain, *sideways*.', '', '# *Not* all *of it*'].join('\n');
+  const r = md(book);
+  assert.match(r.out, /^# Chapter 1: The Harbour$/m, 'the bold marks are not part of the title');
+  assert.match(r.out, /^# Chapter 2: The Crossing$/m);
+  assert.deepEqual(r.subs, ['Morning', 'The Squall'], 'a sub-heading comes across plain too');
+  assert.doesNotMatch(r.out, /^#{1,6}\s*$/m, 'an empty heading line is nothing');
+  assert.match(r.out, /^\*\*The Title\*\*$/m, 'a bold line that is no heading is left alone');
+  assert.match(r.out, /Rain, \*sideways\*\./, 'emphasis in the prose is left alone');
+  assert.match(r.out, /^# \*Not\* all \*of it\*$/m, 'a heading with emphasis inside it keeps it');
+});
+
+test('head levels: a numbered book invents no chapter, and the studio checks one book through every reader', async () => {
+  const html = await clientHtml();
+  const parse = html.slice(html.indexOf('function parseManuscript('), html.indexOf('function importFoundList('));
+  /* an unnumbered heading between two numbered chapters joins the chapter before it, as its sub-heading */
+  assert.match(parse, /if \(ii > firstN && ii < lastN\) \{[\s\S]{0,900}host\.bodyText = \[host\.bodyText, line, it\.bodyText\]\.filter\(Boolean\)\.join\("\\n\\n"\);\s*it\.cls = "skip";/);
+  const id = 'import.headlevels.same-book-every-reader';
+  assert.ok(html.includes(`{ id: "${id}"`), 'the self-check is in the studio');
+  const { SELF_CHECK_CASES } = await import('../src/housekeeping/registry.js');
+  const c = SELF_CHECK_CASES.find((x) => x.id === id);
+  assert.ok(c && c.kind === 'client-only' && c.reason && c.reason.length > 10, 'and registered client-only, with a reason');
+});
+
 test('head levels: every reader of heading levels asks the one rule', async () => {
   const html = await clientHtml();
   assert.equal((html.match(/function irSubHeadings\(/g) || []).length, 1, 'one rule, declared once');

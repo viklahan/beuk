@@ -38170,15 +38170,29 @@
         const src = String(text == null ? "" : text);
         const lines = src.split("\n");
         const heads = [];
-        let fence = false;
+        let fence = false, touched = false;
         lines.forEach((line, i) => {
           if (/^\s*(```|~~~)/.test(line)) { fence = !fence; return; }
           if (fence) return;
+          /* Google Docs' markdown sets an empty styled paragraph as a bare "#" or "##": no heading, no text. */
+          if (/^#{1,6}$/.test(line.trim())) { lines[i] = ""; touched = true; return; }
           const m = /^(#{1,2})\s+(\S.*)$/.exec(line.trim());
-          if (m) heads.push({ i, level: m[1].length, text: m[2].trim() });
+          if (!m) return;
+          let text = m[2].trim();
+          /* …and every heading wholly in bold ("# **Chapter 1: …**"): a chapter title is set in the
+             book's heading style, so its words come across plain (counted, as a Word heading's are),
+             and "Chapter 1" is read as the number it is. */
+          const em = /^(\*{1,3}|_{1,3})(\S[\s\S]*?)\1$/.exec(text);
+          if (em && em[2].indexOf(em[1].charAt(0)) === -1 && /\S$/.test(em[2])) {
+            text = em[2];
+            lines[i] = m[1] + " " + text;
+            touched = true;
+            if (ir && ir.drops) ir.drops.fmtHeading = (ir.drops.fmtHeading || 0) + 1;
+          }
+          heads.push({ i, level: m[1].length, text });
         });
         const sub = irSubHeadings(heads);
-        if (!sub.some(Boolean)) return src;
+        if (!sub.some(Boolean)) return touched ? lines.join("\n") : src;
         ir.subs = ir.subs || [];
         heads.forEach((h, k) => {
           if (!sub[k]) return;
@@ -38255,7 +38269,22 @@
           const headOf = (it) => String(it.raw || "").replace(/^#{1,2}\s+/, "").trim();
           const zoneable = (it) => it && it.cls === "chapter" && !it.head.number && !/^(part|book|volume|act|interlude)\b/i.test(headOf(it));
           items.forEach((it, ii) => {
-            if (!zoneable(it) || (ii > firstN && ii < lastN)) return;
+            if (!zoneable(it)) return;
+            if (ii > firstN && ii < lastN) {
+              /* BEUK:headlevels (V's ruling, 2026-11-20) — the book marks its own
+                 chapters, so Beuk invents none: an unnumbered heading between two
+                 numbered chapters is a section of the chapter before it, set there
+                 as its sub-heading with its text under it. */
+              let host = null;
+              for (let k = ii - 1; k >= firstN && !host; k--) if (items[k].cls === "chapter") host = items[k];
+              if (!host) return;
+              const sub = headOf(it);
+              let line = "# " + sub;
+              if (IR_REC) { IR_REC.subs = IR_REC.subs || []; IR_REC.subs.push(sub); line = irSent("SUB", IR_REC.subs.length - 1); }
+              host.bodyText = [host.bodyText, line, it.bodyText].filter(Boolean).join("\n\n");
+              it.cls = "skip";
+              return;
+            }
             const head = headOf(it);
             if (ii < firstN) {
               const lead = irLoose(head.split(":")[0]);
@@ -65812,6 +65841,31 @@
               const allOk = all && restoredJson === priorJson && state.importReport === null && state.sections.some((s) => s.id === priorId);
               return scVerdict(recOk && metaOk && allOk,
                 "recorded 2 Heading 1 chapters, the note, the link, the table and the RTF file's comment, deletion and header (" + recOk + "), the \\info byline (" + metaOk + "), the whole import undone (" + allOk + ")");
+            });
+          } },
+        /* BEUK:headlevels */
+        { id: "import.headlevels.same-book-every-reader", feature: "import", name: "One book, three ways in (RTF, Word, markdown): its numbered Heading 1 chapters are its chapters, each Heading 2 stays inside its chapter as a sub-heading, an unnumbered heading between two numbered chapters is a section of the chapter before it (no chapter is invented), and prose that only carries a list level is prose, not a bullet list",
+          run() {
+            return irCheckRun(() => {
+              const B = String.fromCharCode(92);
+              const shape = () => state.sections.filter((s) => s.kind === "body" && s.type === "chapter").map((s) => (s.number || "-") + " " + s.title +
+                " [" + irBlocks(s.content).filter((b) => /^# /.test(b)).map((b) => b.slice(2)).join(", ") + "]" + (/^- /m.test(s.content) ? " BULLETS" : "") + (/Dear all\./.test(s.content) ? " +letter" : "")).join(" | ");
+              const want = "1 The Harbour [Morning, A Letter Home] +letter | 2 The Crossing [The Squall]";
+              /* every paragraph carries \ilvl0, as a Google Docs export does */
+              const rtf = ["{", "rtf1", "ansi{", "stylesheet{", "s0 Normal;}{", "s1 heading 1;}{", "s2 heading 2;}}",
+                "pard", "s1", "ilvl0 Chapter 1: The Harbour", "par", "pard", "s0", "ilvl0 Dawn broke over the water.", "par", "pard", "s2", "ilvl0 Morning", "par", "pard", "s0", "ilvl0 Fog on the quay.", "par",
+                "pard", "s1", "ilvl0 A Letter Home", "par", "pard", "s0", "ilvl0 Dear all.", "par",
+                "pard", "s1", "ilvl0 Chapter 2: The Crossing", "par", "pard", "s2", "ilvl0 The Squall", "par", "pard", "s0", "ilvl0 Rain came sideways.", "par}"].join(B);
+              importRtfRead("fixture.rtf", rtfRead(rtf));
+              const viaRtf = shape();
+              const html = "<h1>Chapter 1: The Harbour</h1><p>Dawn broke over the water.</p><h2>Morning</h2><p>Fog on the quay.</p><h1>A Letter Home</h1><p>Dear all.</p>" +
+                "<h1>Chapter 2: The Crossing</h1><h2>The Squall</h2><p>Rain came sideways.</p>";
+              importDocxConverted("fixture.docx", html, [], null, {}, null);
+              const viaWord = shape();
+              const md = ["# Chapter 1: The Harbour", "Dawn broke over the water.", "## Morning", "Fog on the quay.", "# A Letter Home", "Dear all.", "# Chapter 2: The Crossing", "## The Squall", "Rain came sideways."].join("\n\n");
+              importPlainManuscript("fixture.md", md);
+              const viaMd = shape();
+              return scVerdict(viaRtf === want && viaWord === want && viaMd === want, "RTF: " + viaRtf + " · Word: " + viaWord + " · markdown: " + viaMd);
             });
           } },
         { id: "import.report.docx-honest", feature: "import", name: "Import report (Word): a Mammoth-shaped document's table is reported as left out (and its words come back on undo), the footnote is linked as a Beuk note, the image lands in the library with its alt text, Heading 3 is reported as demoted, and comments, tracked changes, headers, lists and converter warnings are all listed — never silently lost",

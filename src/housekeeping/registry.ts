@@ -3134,6 +3134,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The RTF reader (BEUK:rtfimport) and the report run in the studio; the server never sees the .rtf.',
   },
   {
+    id: 'import.headlevels.same-book-every-reader',
+    title:
+      'One book through RTF, Word and markdown: Heading 1 chapters are the chapters, each Heading 2 stays inside its chapter, an unnumbered heading between numbered chapters invents no chapter, and a list level alone is not a list',
+    kind: 'client-only',
+    reason: 'The readers and the manuscript parser (BEUK:headlevels) run in the studio; the server never sees an import.',
+  },
+  {
     id: 'import.report.docx-honest',
     title:
       'Import report (Word): tables are reported as left out (words back on undo), footnotes link as notes, images land in the library with alt text, demoted headings, comments, tracked changes, headers, lists and converter warnings are all listed',
