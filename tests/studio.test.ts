@@ -13,7 +13,8 @@ import { createTestDb, startTestServer } from './helpers.js';
    /studio and /studio/* to the app, which serves the image's build of studio/ (client/next/). 2.0's page
    answers at /studio AND at /studio/ (final review C2: no redirect between the two, in either mode, so a
    browser's cached permanent redirect can never loop), the query kept; the page tidies /studio to /studio/
-   itself. The old /next address redirects (308, no-cache) to the same path under /studio/.
+   itself. The old /next address is gone (2026-11-20): to the app it is an unknown path (404), and Caddy no
+   longer proxies it, so its catch-all treats it as any unknown path.
    STUDIO_CLASSIC=true is the emergency rollback: 1.0's client/index.html at /studio, as Caddy served it
    before the switch, and /studio/… → 302 (no-store) /studio. */
 
@@ -92,23 +93,20 @@ test('/studio/ serves the 2.0 build: index, immutable hashed assets, the app\'s 
   assert.equal((await fetch(s.base + '/studio.html', manual)).status, 404);
 });
 
-test('the old /next address: 308 to the same path under /studio/, the query kept', async (t) => {
-  const s = await serve({ dir: fakeBuild(t) });
-  t.after(s.close);
-  // final review C2: a browser never keeps it for ever
-  assert.deepEqual(await redirect(s.base + '/next?x=1'), [308, '/studio/?x=1', 'no-cache']);
-  assert.deepEqual(await redirect(s.base + '/next/foo?q'), [308, '/studio/foo?q', 'no-cache']);
-  assert.deepEqual(await location(s.base + '/next'), [308, '/studio/']);
-  assert.deepEqual(await location(s.base + '/next?x=1'), [308, '/studio/?x=1']);
-  assert.deepEqual(await location(s.base + '/next/'), [308, '/studio/']);
-  assert.deepEqual(await location(s.base + '/next/foo?q'), [308, '/studio/foo?q']);
-  assert.deepEqual(await location(s.base + '/next/?book=abc&x=1'), [308, '/studio/?book=abc&x=1']);
-  assert.deepEqual(await location(s.base + '/next/assets/index-AbC123.js'), [308, '/studio/assets/index-AbC123.js']);
-  // Review M3: the Location is always a same-origin path under /studio/, never another host.
-  assert.deepEqual(await location(s.base + '/next//evil.example'), [308, '/studio//evil.example']);
-  assert.deepEqual(await location(s.base + '/next/%5Cevil.example'), [308, '/studio/%5Cevil.example']);
-  // Exact paths only: /nextbook is not /next.
-  assert.equal((await fetch(s.base + '/nextbook', manual)).status, 404);
+test('the old /next address is gone: the studio routes answer nothing there, in either mode (no redirect, no build file)', async (t) => {
+  const dir = fakeBuild(t);
+  for (const classic of [false, true]) {
+    const s = await serve({ dir, classic, classicFile: path.join(dir, 'index.html') });
+    t.after(s.close);
+    // the build is on disk (client/next/ in the image) and is still never served from the old address
+    for (const p of ['/next', '/next?x=1', '/next/', '/next/foo?q', '/next/?book=abc&x=1', '/next/index.html', '/next/assets/index-AbC123.js', '/next/sw.js', '/nextbook']) {
+      const r = await fetch(s.base + p, manual);
+      const where = p + ' (classic: ' + classic + ')';
+      assert.equal(r.status, 404, where);
+      assert.equal(r.headers.get('location'), null, where);
+      assert.equal(await r.text(), 'nope', where + ": the harness's own 404, nothing of the studio's");
+    }
+  }
 });
 
 test('/studio and /studio/ without a build on disk fall through (404), they never throw', async (t) => {
@@ -140,8 +138,6 @@ test('STUDIO_CLASSIC: /studio is 1.0 (no-cache, as Caddy sent it), /studio/ → 
   assert.deepEqual(await redirect(s.base + '/studio/book/abc'), [302, '/studio', 'no-store']);
   // 2.0's files are not served in this mode (its worker's update check finds no worker)
   for (const p of ['/studio/assets/index-AbC123.js', '/studio/sw.js', '/studio/index.html']) assert.equal((await fetch(s.base + p, manual)).status, 404, p);
-  // /next still goes under /studio/ (and from there to /studio)
-  assert.deepEqual(await redirect(s.base + '/next/foo?q'), [308, '/studio/foo?q', 'no-cache']);
   assert.equal((await fetch(s.base + '/studiofoo', manual)).status, 404);
 });
 
@@ -156,8 +152,8 @@ test('the app: STUDIO_CLASSIC off by default; both modes through the real app (P
   try {
     // no redirect at /studio (this tree may hold no build: 200 with 2.0's page, else the 404 fall-through)
     assert.equal((await location(two.base + '/studio?book=abc&x=1'))[1], null);
-    assert.deepEqual(await redirect(two.base + '/next/foo?q'), [308, '/studio/foo?q', 'no-cache']);
-    assert.deepEqual(await redirect(two.base + '/next'), [308, '/studio/', 'no-cache']);
+    // the old address is gone: through the real app /next is an unknown path (404, no redirect)
+    for (const p of ['/next', '/next/', '/next/foo?q']) assert.deepEqual(await location(two.base + p), [404, null], p);
   } finally {
     await two.close();
   }
@@ -175,18 +171,21 @@ test('the app: STUDIO_CLASSIC off by default; both modes through the real app (P
   }
 });
 
-test('the app mounts it, Caddy proxies /studio, /studio/* and /next* to the app (no CSP change), and the image builds it', () => {
+test('the app mounts it, Caddy proxies /studio and /studio/* to the app and no longer /next (no CSP change), and the image builds it', () => {
   assert.match(read('src/app.ts'), /app\.use\(studioRoutes\(\{ classic: config\.studioClassic \}\)\);/);
   const caddy = read('Caddyfile');
   assert.ok(caddy.includes('\t@studio path /studio /studio/*\n\thandle @studio {\n\t\treverse_proxy app:3000\n\t}'), 'Caddyfile: @studio (/studio, /studio/*) → app');
-  assert.ok(caddy.includes('\t@next path /next /next/*\n\thandle @next {\n\t\treverse_proxy app:3000\n\t}'), 'Caddyfile: @next (/next, /next/*) → app, which redirects it');
+  // The old address is gone: no matcher, no handle and no other directive names /next (comments about the build
+  // directory client/next/ are about a folder), so /next reaches the catch-all below like any unknown path:
+  // 302 /studio without an extension, file_server's 404 with one.
+  assert.ok(!/@next\b/.test(caddy), 'Caddyfile: no @next matcher or handle');
+  for (const l of caddy.split('\n')) if (!l.trim().startsWith('#')) assert.ok(!/\/next(\/|\*|\s|$)/.test(l), 'Caddyfile: no directive names /next: ' + l.trim());
   // the old static studio is gone: no rewrite of /studio to 1.0, no /studio/ → /studio redirect
   assert.ok(!caddy.includes('handle /studio {'), 'no static handle /studio');
   assert.ok(!caddy.includes('redir /studio/ /studio 308'), 'no /studio/ → /studio redirect');
   assert.ok(!/handle \/studio\*|handle \/next\*/.test(caddy), 'no bare /studio* or /next* prefix (it would take /studiofoo, /nextbook)');
   // Before the static mount's catch-all, so /studio/ is never answered by it.
   assert.ok(caddy.indexOf('handle @studio {') < caddy.indexOf('# === STATIC CLIENT ==='));
-  assert.ok(caddy.indexOf('handle @next {') < caddy.indexOf('# === STATIC CLIENT ==='));
   // Review C1: the catch-all never serves 1.0 (client/index.html) any more. /index.html → 308 /studio (query kept);
   // a missing path without an extension → 302 /studio (no slash: the app decides 2.0 or the rollback; query kept);
   // a missing path with an extension → file_server's plain 404; an existing static file is served as before.
