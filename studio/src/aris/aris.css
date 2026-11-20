@@ -101,11 +101,11 @@
   max-width: min(720px, 92vw);
   max-height: 86vh;
   overflow: auto;
-  background: var(--panel-2, #fffdf4);
-  color: var(--ink, #22333a);
-  box-shadow: var(--shadow, 0 10px 30px rgba(0, 0, 0, 0.3));
+  background: var(--panel-2);
+  color: var(--ink);
+  box-shadow: var(--shadow);
 }
-[data-aris='editorial']::backdrop { background: rgba(4, 9, 11, 0.6); }
+[data-aris='editorial']::backdrop { background: var(--scrim); }
 [data-aris='editorial-close'] {
   position: absolute;
   top: 0.5rem;
@@ -123,7 +123,7 @@
   cursor: pointer;
 }
 [data-aris='editorial-gate'] { font-weight: 700; }
-[data-aris='editorial-gate'][data-gate='fail'] { color: var(--bad, #b3352b); }
+[data-aris='editorial-gate'][data-gate='fail'] { color: var(--bad); }
 [data-aris='editorial-finding'] {
   border-inline-start: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
   padding-inline-start: 0.8rem;
