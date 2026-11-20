@@ -387,7 +387,7 @@ function withImportLock<T>(fn: () => Promise<T>): Promise<T> {
 
 /** 1.0's book, imported automatically: never clears or replaces. If this book (or any 2.0 book) is already on the device,
  *  that is opened instead. `imported` says whether anything was written. */
-async function importLegacyOnce(book: unknown): Promise<{ book: OpenBook; imported: boolean }> {
+async function importLegacyOnce(book: unknown, carryLink?: (bookId: string) => void): Promise<{ book: OpenBook; imported: boolean }> {
   const existing = await discoverBook();
   if (existing) return { book: existing, imported: false };
   const ydoc = new Y.Doc();
@@ -402,6 +402,8 @@ async function importLegacyOnce(book: unknown): Promise<{ book: OpenBook; import
   const persistence = new IndexeddbPersistence(dbNameFor(id, LEGACY_EPOCH), ydoc);
   await synced(persistence);
   remember(id, LEGACY_EPOCH, String(bookMeta(ydoc).title ?? ''));
+  // the shelf link 1.0 kept for this book comes with it, before anything reads the book's link (legacy10.ts carryLegacyLink)
+  if (carryLink) carryLink(id);
   const legacy = new OpenBook(id, LEGACY_EPOCH, ydoc, persistence, res.textWarnings);
   legacy.savedAt = Date.now(); // written whole before it synced, as importToDevice's
   return { book: legacy, imported: true };
@@ -409,12 +411,15 @@ async function importLegacyOnce(book: unknown): Promise<{ book: OpenBook; import
 
 /** What the studio opens at start-up: the last book, else any 2.0 book on this device, else 1.0's local book imported once
  *  (under a Web Lock, re-checked inside it), else nothing. `importedLegacy` is true only when 1.0's book was written now. */
-export async function startBook(readLegacy: () => Promise<{ book: Rec; missing?: number } | null>): Promise<{ book: OpenBook; importedLegacy: boolean; picsMissing: number } | null> {
+export async function startBook(
+  readLegacy: () => Promise<{ book: Rec; missing?: number; link?: unknown } | null>,
+  carryLink?: (bookId: string, link: unknown) => void,
+): Promise<{ book: OpenBook; importedLegacy: boolean; picsMissing: number } | null> {
   const found = await discoverBook();
   if (found) return { book: found, importedLegacy: false, picsMissing: 0 };
   const legacy = await readLegacy();
   if (!legacy) return null;
-  const r = await withImportLock(() => importLegacyOnce(legacy.book));
+  const r = await withImportLock(() => importLegacyOnce(legacy.book, carryLink && legacy.link ? (id) => carryLink(id, legacy.link) : undefined));
   // 1.0's local.picsMissing: pictures of 1.0's saved book this device could not read (their names kept, as 1.0 opens it)
   return { book: r.book, importedLegacy: r.imported, picsMissing: r.imported ? legacy.missing ?? 0 : 0 };
 }

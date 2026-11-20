@@ -11,7 +11,7 @@ import meta from '../generated/strings-meta.json';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useToast } from '../shell/Toasts';
 import { backupFilename, backupJson, downloadText, parseBackup } from './backup';
-import { readLegacyBook } from './legacy10';
+import { carryLegacyLink, readLegacyBook, type LegacyLink } from './legacy10';
 import { outlineRows, type OutlineRow } from './outlineRows';
 import { REGISTRY_KEY, bookMeta, importToDevice, openStoredBook, registryEpoch, startBook, type OpenBook } from './store';
 
@@ -199,7 +199,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
       if (!sm || typeof sm.persist !== 'function') setLocal((l) => ({ ...l, persisted: 'unsupported' }));
       else if (typeof sm.persisted === 'function') void sm.persisted().then((p) => setLocal((l) => ({ ...l, persisted: !!p })), () => undefined);
       try {
-        const r = await startBook(readLegacyBook);
+        const r = await startBook(readLegacyBook, (id, link) => void carryLegacyLink(id, link as LegacyLink));
         setLocal((l) => ({ ...l, status: 'saved', errorName: '' }));
         if (r) {
           outside.current.add(r.book.ydoc);

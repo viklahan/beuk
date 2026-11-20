@@ -117,7 +117,7 @@ describe('1.0\'s packed device save (BEUK:localpics), read-only', () => {
     const idb = new IDBFactory();
     await seed10(idb, { book: { format: 1, savedAt: '2026-10-30T10:00:00.000Z', json: JSON.stringify({ book: BOOK }) } });
     const got = await readLegacyBook(idb);
-    expect(got).toEqual({ book: BOOK, from: 'book', savedAt: '2026-10-30T10:00:00.000Z', missing: 0 });
+    expect(got).toEqual({ book: BOOK, from: 'book', savedAt: '2026-10-30T10:00:00.000Z', missing: 0, link: null });
   });
 
   it('fix round 1: a picture that cannot be READ is a failed restore, not a missing picture — nothing is imported, so the next start tries again (1.0\'s localReq rejects)', async () => {
