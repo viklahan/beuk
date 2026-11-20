@@ -26,6 +26,10 @@ studio/src/generated/
 studio/e2e/oracles/.venv/
 client/next/
 
+# Bench scratch in the web root (probe PDFs, book backups). Kept on disk,
+# never committed, never in the image, and Caddy answers 404 for /_*
+/client/_*
+
 # Blender auto-backups (docs/aris-hero bench)
 *.blend1
 

@@ -10,3 +10,5 @@ tests
 # Beuk 2.0 studio: the image builds its own (studio stage)
 studio/node_modules
 client/next
+# Bench scratch in the web root (probe PDFs, book backups): never in the image
+client/_*

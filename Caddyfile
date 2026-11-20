@@ -384,6 +384,16 @@
 		file_server
 	}
 
+	# === BENCH SCRATCH ===
+	# ./client is the web root, and the handle below serves any file in it.
+	# Top-level names that start with an underscore are bench working files
+	# (probe PDFs, book backups); nothing the site serves is named that way.
+	# They are never published, whatever is lying in the folder.
+	@scratch path /_*
+	handle @scratch {
+		respond 404
+	}
+
 	# === STATIC CLIENT ===
 	# The built Beuk web client lives in ./client (mounted at /srv/client).
 	# SPA fallback: unknown paths return index.html.
