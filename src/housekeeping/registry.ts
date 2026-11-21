@@ -3330,7 +3330,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.tables.block-every-format',
     title:
-      "Every format (Word, RTF, OpenDocument, web page, EPUB, Markdown) writes the same table block: a header row only where marked, the caption where the file has one, merged cells flattened, a bar escaped, a cell's paragraphs joined, a note in a cell linked, a nested table lifted after its parent; 21 columns stay plain rows and say so, 11 are kept with a warning; the report counts what flattening took, and the undo steps",
+      "Every format (Word, RTF, OpenDocument, web page, EPUB, Markdown) writes the same table block: a header row only where marked, the caption where the file has one (a paragraph styled as a caption beside the table in Word, RTF and OpenDocument, said in the report; a bold line stays a paragraph), merged cells flattened, a bar escaped, a cell's paragraphs joined, a note in a cell linked, a nested table lifted after its parent, its report line naming the row and column it stood in; 21 columns stay plain rows and say so, 11 are kept with a warning; the report counts what flattening took, and the undo steps",
     kind: 'client-only',
     reason: 'The readers and the table block writer (BEUK:tableimport) and the import report run in the studio; the server never sees the file.',
   },
