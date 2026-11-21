@@ -86,7 +86,8 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     pdfLib = (await import(/* @vite-ignore */ pathToFileURL(path.join(import.meta.dirname, '..', '..', 'node_modules', 'pdf-lib', 'cjs', 'index.js')).href)) as unknown as PdfLib;
     const g = globalThis as Rec;
     /* pdf.js loads in a Node environment (as lockcopy-pdf.test.ts loads it); the import's page is a jsdom window set up here */
-    const { JSDOM } = (await import('jsdom')) as unknown as { JSDOM: new (h: string, o?: Rec) => { window: Rec & { document: Document } } };
+    const jsdomModule = 'jsdom'; /* a computed specifier, as pdf-lib is loaded above: jsdom ships no types, and the test needs none */
+    const { JSDOM } = (await import(/* @vite-ignore */ jsdomModule)) as unknown as { JSDOM: new (h: string, o?: Rec) => { window: Rec & { document: Document } } };
     const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { pretendToBeVisual: true });
     for (const k of Object.getOwnPropertyNames(dom.window)) if (!(k in g)) { try { g[k] = dom.window[k]; } catch (e) { /* read-only */ } }
     g.document = dom.window.document;
