@@ -4331,19 +4331,24 @@ Table 3. Tonnage by port, 1921
   are not read for it. `12 kg`, `1921–22` and `06:12` are words. The
   header row is never read for it; with no `header`, the first row is a
   body row and its words keep its columns from being figures.
-- **CSS** (`buildBookCss`): full measure, collapsed borders, a rule above
+- **CSS** (`buildBookCss`): as wide as its words need, at least half the
+  measure (a caption is as wide as its table, so a narrower one would
+  squeeze it) and at most the whole, centred; collapsed borders, a rule above
   and below the table and under the header row, no upright rules, caption
   above in italic, cells from the line's start with logical padding, rows
   never split (`break-inside: avoid`), caption and `thead` kept with the
   next row (`break-after: avoid`). No sideways scroll (the design asked
   for one in the preview): a scrolling box cannot break between pages and
-  no e-reader scrolls one, so a body word too long for its cell breaks
-  (`overflow-wrap: anywhere`), a figure never does (`td.num` is `nowrap`)
+  no e-reader scrolls one. A cell breaks at spaces, then hyphenates as
+  the book's prose does (it inherits the book's `hyphens`; Chromium does
+  not hyphenate a capitalised word), and only then anywhere
+  (`overflow-wrap: anywhere`); a figure never does (`td.num` is `nowrap`)
   and a header word is kept whole up to eight columns (`th` is
   `break-word`). Measured in the 2.0 preview, an eight-column table
   stays inside the narrowest measures (334px two-up tablet, 353px phone)
-  with its header words whole and long body words broken
-  ("Unremarkabl/e"). A table with more or longer unbreakable cells than
+  with its header words whole and long body words hyphenated
+  ("unremark-able"; a capitalised "Unremarkable" still breaks
+  "Unremarkabl/e"). A table with more or longer unbreakable cells than
   the measure holds will run past it; nothing prevents that yet. In a
   right-to-left book a figure cell is `unicode-bidi: plaintext`, so
   "+4%" is not set "4%+".

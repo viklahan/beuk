@@ -30912,7 +30912,10 @@
           S + ".columns > :first-child, " + S + ".hanging > :first-child { margin-top: 0; }",
           S + ".hanging + p, " + S + ".columns + p { text-indent: 0; }",
           ...(scope ? [S + ".columns { columns: 2 13em; -webkit-columns: 2 13em; column-gap: 1.6em; column-fill: balance; }"] : []),
-          /* BEUK:table — a table as a book sets one: the full measure,
+          /* BEUK:table — a table as a book sets one: as wide as its
+             words need, never under half the measure (so a caption is
+             not squeezed into a narrow table's width) and never over
+             it, centred as a figure is;
              a rule above and below and one under the header row, no
              upright rules and no boxes; the caption above, in italic;
              cells set from the line's start, ragged, never indented,
@@ -30922,27 +30925,30 @@
              readers without logical properties), so a right-to-left
              book mirrors by its direction alone. A row is never split
              between pages; the caption and the header row stay with
-             the row after them. A body word too long for its cell
-             breaks rather than run off the page or screen (there is no
-             sideways scroll: a scrolling box cannot be broken between
-             pages, and no e-reader scrolls one); a figure and a short
-             cell (.nb) never break. Tables of five, seven and nine
-             columns and more step their type down. */
+             the row after them. A cell breaks at its spaces first,
+             then hyphenates as the book's prose does (the hyphens the
+             book sets are inherited; a caption and a header never
+             hyphenate), and only a string with neither is broken where
+             it must be, rather than run off the page or screen (there
+             is no sideways scroll: a scrolling box cannot be broken
+             between pages, and no e-reader scrolls one); a figure and
+             a short cell (.nb) never break. Tables of five, seven and
+             nine columns and more step their type down. */
           S + ".tbl { margin: 1.15em 0; text-indent: 0; }",
-          S + ".tbl table { width: 100%; margin: 0; border-collapse: collapse; border-spacing: 0; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; font-size: 0.92em; line-height: 1.35; text-indent: 0; hyphens: manual; -webkit-hyphens: manual; font-variant-numeric: lining-nums tabular-nums; }",
-          S + ".tbl caption { caption-side: top; padding: 0 0 0.5em 0; font-style: italic; line-height: 1.35; text-align: left; text-align: start; text-indent: 0; page-break-after: avoid; break-after: avoid; }",
+          S + ".tbl table { width: auto; min-width: 50%; max-width: 100%; margin: 0 auto; border-collapse: collapse; border-spacing: 0; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; font-size: 0.92em; line-height: 1.35; text-indent: 0; font-variant-numeric: lining-nums tabular-nums; }",
+          S + ".tbl caption { caption-side: top; padding: 0 0 0.5em 0; font-style: italic; line-height: 1.35; text-align: left; text-align: start; text-indent: 0; hyphens: manual; -webkit-hyphens: manual; page-break-after: avoid; break-after: avoid; }",
           S + ".tbl caption em, " + S + ".tbl caption i { font-style: normal; }",
-          S + ".tbl th, " + S + ".tbl td { padding: 0.34em 0.9em 0.34em 0; padding-inline-start: 0; padding-inline-end: 0.9em; border: 0; vertical-align: top; text-align: left; text-align: start; text-indent: 0; font-weight: inherit; overflow-wrap: anywhere; }",
+          S + ".tbl th, " + S + ".tbl td { padding: 0.34em 1.5em 0.34em 0; padding-inline-start: 0; padding-inline-end: 1.5em; border: 0; vertical-align: top; text-align: left; text-align: start; text-indent: 0; font-weight: inherit; overflow-wrap: anywhere; }",
           S + ".tbl thead th { vertical-align: bottom; font-weight: 600; border-bottom: 0.75px solid currentColor; }",
           S + ".tbl .num { text-align: right; text-align: end; }",
           S + ".tbl td.num, " + S + ".tbl .nb { white-space: nowrap; }",
           /* a header word is kept whole (the column is never narrower
              than its longest header word) up to eight columns; past
              that nothing is promised but that it all stays on the page */
-          S + ".tbl th { overflow-wrap: break-word; }",
+          S + ".tbl th { overflow-wrap: break-word; hyphens: manual; -webkit-hyphens: manual; }",
           /* the steps are set on the cells (of the table's 0.92em), so
              the caption keeps its size: 0.84, 0.77 and 0.7 of the text */
-          S + ".tbl.tbl-w1 th, " + S + ".tbl.tbl-w1 td { font-size: 0.913em; }",
+          S + ".tbl.tbl-w1 th, " + S + ".tbl.tbl-w1 td { font-size: 0.913em; padding-inline-end: 1em; }",
           S + ".tbl.tbl-w2 th, " + S + ".tbl.tbl-w2 td { font-size: 0.837em; padding-inline-end: 0.55em; }",
           S + ".tbl.tbl-w3 th, " + S + ".tbl.tbl-w3 td { font-size: 0.761em; padding-inline-end: 0.45em; overflow-wrap: anywhere; }",
           S + ".tbl th:last-child, " + S + ".tbl td:last-child { padding-right: 0; padding-inline-end: 0; }",
@@ -31140,7 +31146,7 @@
                (plaintext), so "+4%" is never set "4%+". The physical
                values are for readers without logical properties. */
             S + ".tbl caption, " + S + ".tbl th, " + S + ".tbl td { text-align: right; text-align: start; }",
-            S + ".tbl th, " + S + ".tbl td { padding-right: 0; padding-left: 0.9em; padding-inline-start: 0; padding-inline-end: 0.9em; }",
+            S + ".tbl th, " + S + ".tbl td { padding-right: 0; padding-left: 1.5em; padding-inline-start: 0; padding-inline-end: 1.5em; }",
             S + ".tbl th:last-child, " + S + ".tbl td:last-child { padding-left: 0; padding-inline-end: 0; }",
             S + ".tbl .num { text-align: left; unicode-bidi: plaintext; }");
         }
@@ -64059,6 +64065,9 @@
                     headWords: Array.prototype.every.call(wideTb.querySelectorAll("th"), (c) => { const r = document.createRange(); r.selectNodeContents(c); return r.getClientRects().length <= (c.textContent.trim().split(/\s+/).length); }),
                     whole: cs(tb.querySelector("tbody tr")).breakInside + "/" + cs(tb.querySelector("thead")).breakAfter + "/" + cs(tb.querySelector("caption")).breakAfter,
                     shortWhole: (() => { const c = d.querySelectorAll("table")[2].querySelector("tbody td"), r = document.createRange(); r.selectNodeContents(c); return c.textContent === "11 March" && r.getClientRects().length === 1 && box(d.querySelectorAll("table")[2]).right <= box(d).right + 1; })(),
+                    centred: box(tb).width < box(d).width - 8 && box(tb).width >= box(d).width / 2 - 1 && Math.abs((box(tb).left - box(d).left) - (box(d).right - box(tb).right)) < 1.5,
+                    longFull: Math.abs(box(d.querySelectorAll("table")[2]).width - box(d).width) < 1.5,
+                    hyph: cs(tds[0]).hyphens + "/" + cs(th).hyphens + "/" + cs(tds[0]).overflowWrap,
                     indent: px(cs(tds[0]).textIndent)
                   };
                 } finally { d.remove(); st.remove(); }
@@ -64067,6 +64076,8 @@
               if (!ltr.rules || ltr.boxes || !ltr.captionAbove || !ltr.headBold || ltr.indent) bad.push("preview: rules " + ltr.rules + ", boxes " + ltr.boxes + ", caption above " + ltr.captionAbove + ", header bold " + ltr.headBold + ", indent " + ltr.indent);
               if (!ltr.numAtRight || !ltr.firstAtLeft || ltr.firstColOnRight) bad.push("preview: figures are not at the line's end (right) with words at its start");
               if (!ltr.fits || !ltr.stepped || !ltr.headWords) bad.push("preview: an eight-column table runs past a 420px measure (" + ltr.fits + "), its type is not stepped down with the caption kept (" + ltr.stepped + ") or a header word is broken (" + ltr.headWords + ")");
+              if (!ltr.centred || !ltr.longFull) bad.push("preview: a short table is not centred at its own width (at least half the measure): " + ltr.centred + "; a table with a long cell does not take the full measure: " + ltr.longFull);
+              if (ltr.hyph !== (state.theme.hyphens ? "auto" : "manual") + "/manual/anywhere") bad.push("a cell does not hyphenate as the book does, with a break anywhere only as the last resort: " + ltr.hyph);
               if (!ltr.shortWhole) bad.push("preview: a short cell beside a long one is broken over two lines, or the table runs past the measure");
               if (ltr.whole !== "avoid/avoid/avoid") bad.push("a row may split, or the header or caption may part from its row: " + ltr.whole);
               /* 330px: under the narrowest measure the preview sets (334px, the two-up tablet; a phone 353px) */
@@ -64097,7 +64108,7 @@
               if (!["Table 3. Tonnage by port, 1921", "Port; Ships; Tonnage", "Leith; 14; 9,200", "Hull; 22; 15,750", "Witness; Statement"].every((x) => acx.includes(x)) || !acx.some((x) => /^H\. Lindholm; \*\*Absent\*\* \| on leave$/.test(x)) || /:::/.test(acx.join("\n"))) bad.push("narration: " + JSON.stringify(acx));
               const ra = raCleanText(t1);
               if (/\||:::/.test(ra) || !/Leith; 14; 9,200/.test(ra) || !/\n\s*\n\s*Hull; 22; 15,750/.test(ra)) bad.push("read aloud: " + JSON.stringify(ra));
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "computed: a rule above, below and under the header, no boxes, caption above, header bold; figures at the line's end and words at its start, mirrored right to left; eight columns inside a 420px and a 330px measure, type stepped down, header words whole; a short cell beside a long one kept on one line; rows whole, header and caption kept with the next row; print file and EPUB carry the table (validator errors 0); a note reference in a cell links both ways; escaped bars, redactions, short rows and stray lines read as written; the beautifier and the Markdown export leave the fence unchanged; Word: a paragraph per row; counts 15 / 16 / 3; narration and read aloud say each row as \"cell; cell\"");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "computed: a rule above, below and under the header, no boxes, caption above, header bold; a short table centred at its own width, a long one the full measure; cells hyphenate as the book does; figures at the line's end and words at its start, mirrored right to left; eight columns inside a 420px and a 330px measure, type stepped down, header words whole; a short cell beside a long one kept on one line; rows whole, header and caption kept with the next row; print file and EPUB carry the table (validator errors 0); a note reference in a cell links both ways; escaped bars, redactions, short rows and stray lines read as written; the beautifier and the Markdown export leave the fence unchanged; Word: a paragraph per row; counts 15 / 16 / 3; narration and read aloud say each row as \"cell; cell\"");
             } finally {
               applyBookDoc(keepDoc);
             }

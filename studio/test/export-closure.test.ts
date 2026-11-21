@@ -42,7 +42,7 @@ function byName(statements: readonly ts.Statement[], sf: ts.SourceFile): Map<str
 describe("wave 5a: the browser's EPUB code is 1.0's, the same text as the server's EPUB_CLOSURE (constraint 52)", () => {
   it('every EPUB_CLOSURE name the browser does not supply is lifted, and every EPUB_ROOT is a root of the browser closure', () => {
     const epub = epubList('EPUB_CLOSURE');
-    expect(epub.length).toBe(305); // 301 + picDataSrc (wave 7b, 1.0 fix 3d34720) + PLATE_FITS, plateFitOf, bookHasWholePlate (BEUK:platefit)
+    expect(epub.length).toBe(314); // 301 + picDataSrc (wave 7b, 1.0 fix 3d34720) + PLATE_FITS, plateFitOf, bookHasWholePlate (BEUK:platefit) + the table block's 9 (BEUK:table: TABLE_BAR_RE, TABLE_NUM_RE, tableCellBare, tableCellHtml, tableCellShort, tableHasHeader, tableNumericCols, tableParts, tableRowCells)
     const browserOwn = epub.filter((n) => SUPPLIED_BY_BROWSER.test(n));
     expect(browserOwn.sort()).toEqual(['$', 'UI_PLURAL_FORMS', 'UI_STRINGS', 't', 'tCountForm', 'uiLangState', 'uiPluralCategory', 'uiPluralRulesCache'].sort());
     expect(CLOSURE_SUPPLIED).toEqual(expect.arrayContaining(['t', 'UI_STRINGS', 'uiLangState', '$']));
@@ -75,7 +75,7 @@ describe("wave 5a: the browser's EPUB code is 1.0's, the same text as the server
       if (s.get(n) !== b.get(n)) unequal.push(n);
     }
     expect(unequal).toEqual([]);
-    expect(epub.length).toBe(297); // 293 + picDataSrc (wave 7b, 1.0 fix 3d34720) + PLATE_FITS, plateFitOf, bookHasWholePlate (BEUK:platefit)
+    expect(epub.length).toBe(306); // 293 + picDataSrc (wave 7b, 1.0 fix 3d34720) + PLATE_FITS, plateFitOf, bookHasWholePlate (BEUK:platefit) + the table block's 9 (BEUK:table: TABLE_BAR_RE, TABLE_NUM_RE, tableCellBare, tableCellHtml, tableCellShort, tableHasHeader, tableNumericCols, tableParts, tableRowCells)
     expect(b.get('buildEpubBlob')).toBe(s.get('buildEpubBlob'));
     expect(b.get('buildEpubBlob')).toMatch(/new JSZip\(\)/);
   });
