@@ -357,4 +357,89 @@ describe('removing the shelf book that is open on the desk', () => {
     expect(now[0]).not.toBe(deskId);
     expect(now[0]).toBe(cloudFacts.linkedId);
   }, 120_000);
+
+  it("a real browser's order at a reload: the account known before the boot answers, then the writer lock granted — the stored link is not written over, and the book stays off the shelf", async () => {
+    await studio(off);
+    const deskId = await signUpLinked();
+    const bookId = deskBookId()!;
+    await openShelf(1);
+    await click(removeBtn(deskId));
+    await waitFor(() => expect(isOpen('modalConfirm')).toBe(true));
+    await click($('btnConfirmYes'));
+    await waitFor(() => expect(toasts()).toContain(t('toast.shelfRemovedDesk', { title: LANTERN_TITLE })));
+    await waitFor(() => expect(cloudSeam.link(bookId)).toMatchObject({ linkedId: null, linkState: 'declined' }));
+    const me = ((await (await net.fetch('/api/auth/me')).json()) as { user: Rec }).user;
+    const before = saves().length;
+
+    // the reload, in the order a real browser was seen to run it (headless Chromium, 2026-11-20):
+    // 1. the page starts and asks for the book's writer lock (Web Locks answer later; jsdom has none, so one is put in);
+    // 2. who is signed in becomes known before the shelf's boot has its own answer (pictures/stock.ts probeCloud);
+    // 3. the lock is granted, and lead() writes the link;  4. the boot's /api/auth/me answers.
+    cleanup();
+    cloudReset();
+    resetCloudFacts();
+    resetCloudProbe();
+    desk.ydoc = null;
+    desk.active = null;
+    const grants: (() => void)[] = [];
+    const locks = {
+      request(_name: string, a: unknown, b?: unknown) {
+        const cb = (typeof a === 'function' ? a : b) as (l: unknown) => unknown;
+        return new Promise((res, rej) => {
+          grants.push(() => {
+            try {
+              res(cb({ name: _name }));
+            } catch (e) {
+              rej(e);
+            }
+          });
+        });
+      },
+    };
+    Object.defineProperty(navigator, 'locks', { value: locks, configurable: true });
+    const heldMe: (() => void)[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
+      const raw = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (raw.includes('/api/auth/me')) await new Promise<void>((r) => heldMe.push(r));
+      return net.fetch(input, init);
+    }) as typeof fetch;
+    try {
+      mount();
+      await waitFor(() => expect(grants.length).toBeGreaterThan(0), { timeout: 20_000 }); // 1: the lock is asked for
+      await waitFor(() => expect(heldMe.length).toBeGreaterThan(0), { timeout: 20_000 }); // the boot's answer is still out
+      expect(cloudSeam.leader()).toBe(false);
+      expect(deskBookId()).toBe(bookId);
+      act(() => {
+        cloudFacts.available = true; // 2: stock.ts probeCloud's two lines
+        cloudFacts.user = me;
+      });
+      act(() => grants.splice(0).forEach((g) => g())); // 3
+      await pause(300);
+      expect(cloudSeam.leader()).toBe(true);
+      // the device's stored link is still the one the removal left
+      expect(cloudSeam.link(bookId)).toMatchObject({ linkedId: null, linkState: 'declined' });
+      for (let i = 0; i < 40 && !cloudBootHook.p; i++) await pause(50);
+      const boot = cloudBootHook.p!;
+      const release = setInterval(() => heldMe.splice(0).forEach((r) => r()), 20); // 4
+      try {
+        await boot;
+      } finally {
+        clearInterval(release);
+      }
+      expect(cloudFacts.linkState).toBe('declined');
+      expect(cloudFacts.linkedId).toBe(null);
+      await waitFor(() => expect($('syncText').textContent).toBe(t('sync.onDevice')));
+      edit('Device Only, In A Browser');
+      await waitFor(() => expect($('projectTitleDisplay').textContent).toBe('Device Only, In A Browser'));
+      await pause(4000);
+      expect(saves().length).toBe(before);
+      expect(await onServer()).toEqual([]);
+      expect(cloudSeam.link(bookId)).toMatchObject({ linkedId: null, linkState: 'declined' });
+    } finally {
+      heldMe.splice(0).forEach((r) => r());
+      cleanup();
+      cloudReset();
+      delete (navigator as unknown as { locks?: unknown }).locks;
+    }
+  }, 120_000);
 });
