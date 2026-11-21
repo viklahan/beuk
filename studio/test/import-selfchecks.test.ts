@@ -14,7 +14,7 @@ import { loadMammoth } from './vendor';
 import markup from '../src/generated/import-markup.json';
 
 /* Wave 6 — review focus #5: 1.0's import self-checks (client/index.html: every SELF_CHECKS / SELF_CHECKS_ASYNC entry with
-   feature "import" — the 62 `id: "import.` checks and the 5 `id: "pdf.` ones, and any other the grep finds), RUN VERBATIM:
+   feature "import" — the 63 `id: "import.` checks and the 5 `id: "pdf.` ones, and any other the grep finds), RUN VERBATIM:
    each check's own object literal, cut out of 1.0's source by the TypeScript AST, is evaluated inside a module of 1.0's
    own declarations that it reaches (buildTestModule, the extractor the closure is built by), with only 1.0's redraws and
    page hooks stubbed (ORACLE_STUBS). The functions it runs are the very text 2.0's closure lifts (import-closure.test.ts
@@ -126,8 +126,8 @@ function env(): Rec {
 }
 
 describe("wave 6: 1.0's import self-checks, run verbatim (review focus #5)", () => {
-  it('the grep counts: 62 import.* and 5 pdf.* ids; every feature "import" check is found', () => {
-    expect((HTML.match(/id: *"import[^"]*"/g) || []).length).toBe(62); // +1 (import.txt.appendix-dash-and-notes); +1 (nested lists): import.lists.nested-every-format; +3 (2026-11-20, tables kept as plain rows): import.tables.kept-as-rows, .rtf-cells-and-nesting, .every-reader; +4 (2026-11-20): import.headlevels.*, import.card.*, import.odt.*, import.html.*; +4 more that day: import.epub.structure-by-headings, .notes-by-id, .lists-captions-paragraphs, .credit-says-where; +9 (2026-11-20, web pages and Markdown): import.headlevels.depth-is-relative, import.html.footnotes, import.html.details-and-formatting, import.odt.formatting-reported, import.report.smallcaps-and-typewriter, import.md.footnote-labels, import.md.tables-and-markup, import.md.zip-pictures, import.report.names-the-file; +1 (the owner's ruling on skipped levels): import.headlevels.skipped-level-every-reader
+  it('the grep counts: 63 import.* and 5 pdf.* ids; every feature "import" check is found', () => {
+    expect((HTML.match(/id: *"import[^"]*"/g) || []).length).toBe(63); // +1 (import.titlepage.one-rule); +1 (import.txt.appendix-dash-and-notes); +1 (nested lists): import.lists.nested-every-format; +3 (2026-11-20, tables kept as plain rows): import.tables.kept-as-rows, .rtf-cells-and-nesting, .every-reader; +4 (2026-11-20): import.headlevels.*, import.card.*, import.odt.*, import.html.*; +4 more that day: import.epub.structure-by-headings, .notes-by-id, .lists-captions-paragraphs, .credit-says-where; +9 (2026-11-20, web pages and Markdown): import.headlevels.depth-is-relative, import.html.footnotes, import.html.details-and-formatting, import.odt.formatting-reported, import.report.smallcaps-and-typewriter, import.md.footnote-labels, import.md.tables-and-markup, import.md.zip-pictures, import.report.names-the-file; +1 (the owner's ruling on skipped levels): import.headlevels.skipped-level-every-reader
     expect((HTML.match(/id: *"pdf[^"]*"/g) || []).length).toBe(5);
     expect(mod.checks.filter((c) => c.feature === 'import').length).toBe((HTML.match(/feature: *"import"/g) || []).length);
     expect(mod.checks.filter((c) => WAVE6_OTHERS.includes(c.id)).map((c) => c.id).sort()).toEqual([...WAVE6_OTHERS].sort());
@@ -153,6 +153,6 @@ describe("wave 6: 1.0's import self-checks, run verbatim (review focus #5)", () 
     console.log(results.map((r) => (r.pass ? 'PASS ' : 'FAIL ') + r.id + (r.pass ? '' : ' — ' + r.detail)).join('\n'));
     expect(results.filter((r) => !r.pass)).toEqual([]);
     expect(results.length).toBe(mod.checks.length - Object.keys(SKIP).length);
-    expect(results.length).toBe(56); // + import.txt.appendix-dash-and-notes; + the nested-lists check; + the three table checks (all run); 34 + the four of 2026-11-20, less the card (SKIP: LAYOUT), + the four EPUB checks of the same day (all four run here), + the nine of the web-page and Markdown work and the skipped-level check (all run)
+    expect(results.length).toBe(57); // + import.titlepage.one-rule; + import.txt.appendix-dash-and-notes; + the nested-lists check; + the three table checks (all run); 34 + the four of 2026-11-20, less the card (SKIP: LAYOUT), + the four EPUB checks of the same day (all four run here), + the nine of the web-page and Markdown work and the skipped-level check (all run)
   }, 600_000);
 });

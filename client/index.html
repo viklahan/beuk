@@ -38416,9 +38416,12 @@
          epigraph, and what short prose remains is the dedication.
          Longer prose is handed back untouched as prose. */
       const IR_PIC_RE = new RegExp("^" + String.fromCharCode(0xe000) + "IMG\\d+" + String.fromCharCode(0xe000) + "$"); /* BEUK:pdffront — a picture's import placeholder */
-      function frontZonePieces(blocks, identity, fallbackTitle, bodyless) {
+      function frontZonePieces(blocks, identity, fallbackTitle, bodyless, flags) {
         const pieces = [];
         const rest = [];
+        /* BEUK:titlepage — the title page's own lines first, by the one rule every format shares: what is left is read by shape */
+        const titleRun = bodyless ? null : imTitlePageRun(blocks, identity, fallbackTitle, flags);
+        if (titleRun) { blocks = titleRun.rest; if (titleRun.text) irNote({ kind: "lifted", reason: "titlepage", text: titleRun.text }); }
         const titleKeys = new Set();
         const addKey = (v) => { const k = String(v || "").trim().toLowerCase().replace(/\s+/g, " "); if (k) titleKeys.add(k); };
         addKey(identity && identity.title); addKey(identity && identity.author);
@@ -38490,7 +38493,7 @@
           else prose = restText;
         }
         pieces.sort((a, b) => a.ord - b.ord);
-        return { pieces, prose };
+        return { pieces, prose, titleRun };
       }
       /* A line that opens a chapter or a named matter section. The
          Word import asks the same question of a paragraph's words. */
@@ -38689,7 +38692,7 @@
                title opens the front matter; it is not a chapter. */
             if (/^#{1,2}\s+/.test(seg.heading.trim()) && (n === titleKey || (fallbackKey && n === fallbackKey)) && si <= 1) {
               irNote({ kind: "lifted", reason: "title-heading", text: seg.heading });
-              return { bodyText, cls: "lead" };
+              return { bodyText, cls: "lead", titleHead: true };
             }
             return { bodyText, cls: "chapter", head: parseChapterHeading(seg.heading), raw: seg.heading };
           }
@@ -38763,7 +38766,7 @@
                 irNote({ kind: "lifted", reason: "title-heading", text: it.raw });
                 const hl = irLoose(head);
                 if (!String(identity.title || "").trim() && hl !== authorL && hl !== seriesL && hl.length >= 4 && irLoose(fallbackTitle).includes(hl) && head.length > ownTitle.length) ownTitle = head;
-                it.cls = "lead";
+                it.cls = "lead"; it.titleHead = true;
               } else if (ii === 1 && !items[0].bodyText && (imTitlePageFromHeading(it.raw, it.bodyText) || {}).author) {
                 /* BEUK:gluefix — a heading with its byline under it ("THE DEVIL'S
                    LEDGER / by Zoey Suzuki") is the title page: left for the
@@ -38818,6 +38821,7 @@
         if (titlePage) irNote({ kind: "lifted", reason: "titlepage", text: titlePage.text });
         const pieces = [];
         const proseChunks = [];
+        const titleRuns = [];
         items.forEach((it, ii) => {
           if (it.cls === "part") {
             /* BEUK:wordback — "Part One: Ebb" (as Beuk writes a Part) is Part One, titled Ebb; a bare "Part One" keeps its words as its title */
@@ -38841,7 +38845,8 @@
              body piece, exactly as the plain splitter treated it. */
           if (firstBody === -1 || ii < firstBody) {
             const blocks = it.bodyText.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
-            const zone = frontZonePieces(blocks, identity, fallbackTitle, firstBody === -1); /* BEUK:onereader — with no body heading at all, the text is the book */
+            const zone = frontZonePieces(blocks, identity, fallbackTitle, firstBody === -1, { near: !!it.titleHead || !!(items[ii + 1] && items[ii + 1].titleHead), under: !!it.titleHead }); /* BEUK:onereader — with no body heading at all, the text is the book */
+            if (zone.titleRun) titleRuns.push(zone.titleRun); /* BEUK:titlepage */
             zone.pieces.forEach((p) => pieces.push({ kind: p.kind, type: p.type, title: p.title, number: "", body: p.bodyText.split("\n"), _ir: { via: "shape" } }));
             if (zone.prose) proseChunks.push(zone.prose);
           } else if (ii > lastBody && pieces.length) {
@@ -38882,6 +38887,12 @@
         });
         if (!kept.length) kept.push({ kind: "body", type: "chapter", title: fallbackTitle || "Untitled Chapter", number: "", body: String(text).split("\n") });
         if (titlePage) kept.titlePage = titlePage; /* BEUK:importmeta */
+        /* BEUK:titlepage — what the title page's lines say for the book's details */
+        if (titleRuns.length) {
+          const tp = kept.titlePage = kept.titlePage || { title: "", subtitle: "", author: "", text: "", rest: "" };
+          titleRuns.forEach((r) => { if (!tp.subtitle && r.subtitle) tp.subtitle = r.subtitle; if (!tp.author && r.author) tp.author = r.author; if (!tp.publisher && r.publisher) tp.publisher = r.publisher; });
+          tp.imprint = titleRuns.map((r) => r.text).join("\n");
+        }
         return kept;
       }
       /* What the parse found, in the book's own order — the calm
@@ -39113,6 +39124,105 @@
           rest: lines.slice(last + 1).join("\n")
         };
       }
+      /* ==== BEUK:titlepage ==== */
+      /* The lines of a title page, by one rule for every format (V's
+         ruling, 2026-11-20: the same book gives the same front pages
+         from every format, and no page is invented for a line that is
+         not one). A title page is the run of short lines the book opens
+         with, around its title: the title, a subtitle, the author's
+         credit ("Clara Halvorsen · Northbridge Press · ISBN …"), an
+         imprint line with the ISBN, a series line, and whatever short
+         unpunctuated lines stand among them. It ends at the first line
+         that is a page of its own by its shape: a sentence, a
+         quotation, an attribution, a dedication ("For …"), a rights
+         statement, a picture. What it holds is not a Copyright page, a
+         Dedication or an Epigraph — whether a line is italic, or the
+         credit says "By", or the ISBN shares its line, changes nothing.
+         The lines are lifted (reported, and put back by the report's
+         undo) and what the book's details have a place for is read from
+         them: the subtitle, the author when the file names none, the
+         publisher when its line says what it is (Press, Books,
+         Publishing, Verlag, Editions …), and the ISBN.
+         `blocks` is the lead text's paragraphs; `flags.near` says the
+         book's title stands as a heading beside this text, `flags.under`
+         that this text stands under that heading, `flags.whole` that
+         every line is the title page's (an EPUB page typed titlepage).
+         Returns { text, rest, subtitle, author, publisher } or null. */
+      const IM_PUBLISHER_RE = /\b(?:press|books|publishing|publishers?|publications|verlag|[ée]ditions?|editorial|editore|uitgeverij|house|media|imprint|ltd|inc|llc|gmbh)\b/i;
+      function imTitlePageRun(blocks, identity, fallbackTitle, flags) {
+        flags = flags || {};
+        const mark = String.fromCharCode(0xe000);
+        const breakRe = new RegExp("^" + mark + "SB\\d+" + mark + "$");
+        const bare = (l) => String(l || "").replace(/\*+/g, "").replace(/^[\s_#>]+|[\s_]+$/g, "").replace(/\s+/g, " ").trim();
+        const titleL = irLoose(identity && identity.title), fileL = irLoose(fallbackTitle), authorL = irLoose(identity && identity.author), subL = irLoose(identity && identity.subtitle);
+        const SEG = /\s+[·|•]\s+/;
+        const isbnRe = /isbn(?:-1[03])?\s*:?\s*[0-9][0-9\-–— ]*[0-9Xx]/ig;
+        const rights = (t) => isCopyrightBlock(t.replace(isbnRe, " "));
+        const kindOf = (t) => {
+          const k = irLoose(t);
+          if (k.length >= 3 && (k === titleL || k === fileL)) return "title";
+          const first = t.split(SEG)[0];
+          if (imByline(first) || (authorL && (irLoose(first) === authorL || irLoose(first) === "by" + authorL))) return "credit";
+          if (subL && k === subL) return "subtitle";
+          if (/isbn(?:-1[03])?\s*:?\s*[0-9]/i.test(t) && !rights(t)) return "imprint";
+          if (wordCountOf(t) <= 14 && !/[.!?…]$/.test(t) && (/\b(?:series|trilogy|saga|cycle|quartet|duology)\b/i.test(t) || /\b(?:volume|vol\.|book)\s+(?:[ivxlc]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/i.test(t))) return "series";
+          if (IM_FURNITURE_RE.test(t)) return "furniture";
+          return "";
+        };
+        const plain = (t) => wordCountOf(t) <= 20 && t.length <= 160 && !/[.!?…]$/.test(t) && !/^[“"‘'«„‚>]/.test(t) && !/^(?:—|–|-)\s*\S/.test(t) && !/^(?:for|to|in memory|dedicated)\b/i.test(t) && !rights(t);
+        const all = [];
+        (blocks || []).forEach((b, bi) => { const ls = String(b).split("\n").filter((l) => l.trim()); ls.forEach((l) => all.push({ at: all.length, bi, raw: l.trim(), multi: ls.length > 1 })); });
+        /* a paragraph of several lines (a text file's) is the title page's only when every line of it could be: a wrapped paragraph of prose ends in a full stop */
+        const blockOk = new Map();
+        const fits = (x) => { if (!x.multi || flags.whole) return true; if (!blockOk.has(x.bi)) blockOk.set(x.bi, all.filter((y) => y.bi === x.bi).every((y) => { const t = bare(y.raw); return breakRe.test(y.raw) || !/[\p{L}\p{N}]/u.test(t) || /^(title|credit|subtitle|imprint)$/.test(kindOf(t)) || plain(t); })); return blockOk.get(x.bi); };
+        const run = [];
+        for (const x of all) {
+          if (run.length >= 16 && !flags.whole) break;
+          if (!fits(x)) break;
+          const isBreak = breakRe.test(x.raw);
+          if (!isBreak && (x.raw.indexOf(mark) !== -1 || /!\[[^\]]*\]\(/.test(x.raw))) break; /* a picture, a table, a sub-heading: not a line of the title page */
+          const t = bare(x.raw);
+          if (isBreak || !/[\p{L}\p{N}]/u.test(t)) { run.push(Object.assign({ t, kind: "", orn: true }, x)); continue; }
+          const kind = kindOf(t);
+          if (!kind && !flags.whole && !plain(t)) break;
+          run.push(Object.assign({ t, kind, orn: false }, x));
+        }
+        let anchor = -1;
+        run.forEach((r, i) => { if (r.kind) anchor = i; });
+        if (anchor < 0 || !(flags.whole || flags.near || run.some((r) => r.kind === "title"))) return null;
+        let end = anchor;
+        if (flags.whole) end = run.length - 1;
+        else {
+          /* after the last line that is the title page's by what it says: a line in the same paragraph block, or a short line of its own set like a title or a row of details */
+          const own = new Set(run.filter((r) => r.kind).map((r) => r.bi));
+          for (let i = anchor + 1; i < run.length; i++) {
+            const r = run[i];
+            if (r.orn) continue;
+            if (!(own.has(r.bi) || (!r.multi && ((imTitleCased(r.t) && wordCountOf(r.t) <= 8) || SEG.test(r.t))))) break;
+            end = i;
+          }
+          /* a rule or an ornament that closes it goes with it */
+          while (end + 1 < run.length && run[end + 1].orn && (run[end + 1].bi === run[end].bi || !run[end + 1].multi)) end++;
+        }
+        const taken = run.slice(0, end + 1), gone = new Set(taken.map((r) => r.at));
+        let subtitle = "", author = "", publisher = "";
+        if (!subL) {
+          const ti = taken.findIndex((r) => r.kind === "title");
+          const next = taken.slice(ti >= 0 ? ti + 1 : (flags.under ? 0 : taken.length)).filter((r) => !r.orn)[0];
+          if (next && !next.kind && imTitleShape(next.t, 16) && imTitleCased(next.t)) subtitle = next.t;
+        }
+        taken.forEach((r) => {
+          if (r.kind !== "credit" && r.kind !== "imprint") return;
+          const segs = r.t.split(SEG);
+          if (r.kind === "credit" && !author) author = imByline(segs[0]) || (imNameShape(segs[0]) ? segs[0].trim() : "");
+          segs.slice(r.kind === "credit" ? 1 : 0).forEach((sg) => { const v = sg.replace(isbnRe, "").replace(/^[\s,;:]+|[\s,;:]+$/g, ""); if (!publisher && v && IM_PUBLISHER_RE.test(v) && wordCountOf(v) <= 10 && /^[\p{L}\p{N} ,.&'’()\-]+$/u.test(v)) publisher = v; });
+        });
+        const rest = [];
+        let at = 0;
+        (blocks || []).forEach((b) => { const keep = String(b).split("\n").filter((l) => l.trim()).filter(() => !gone.has(at++)); if (keep.length) rest.push(keep.join("\n")); });
+        return { text: taken.filter((r) => !r.orn).map((r) => r.raw).join("\n"), rest, subtitle, author: authorL ? "" : author, publisher };
+      }
+      /* ==== /BEUK:titlepage ==== */
       /* The same title page set as a markdown/Heading-1 title: "# The
          Long Way Home" whose only text is an optional subtitle and a
          by-line, with the body still to come. */
@@ -39248,9 +39358,12 @@
           /* The manuscript's own copyright page speaks for the
              imprint too: its ISBN, publisher and year take the desk
              with the book, like its title and author. */
-          const cr = copyrightMetaFrom(sink.copyrightTexts.join("\n\n"));
+          /* BEUK:titlepage — and so do the title page's own lines, where the ISBN and the publisher stand on it */
+          const tpLines = pieces.titlePage || null;
+          const cr = copyrightMetaFrom(sink.copyrightTexts.concat(tpLines && tpLines.imprint ? [tpLines.imprint] : []).join("\n\n"));
           if (cr.isbn) state.meta.isbn = cr.isbn;
           if (cr.publisher) state.meta.publisher = cr.publisher;
+          else if (tpLines && tpLines.publisher) state.meta.publisher = tpLines.publisher;
           if (cr.year) state.meta.year = cr.year;
           sampleState.loaded = false; sampleState.loadedJson = null;
           renderSampleButton();
@@ -41902,7 +42015,7 @@
         ir.epubPlates = 0; ir.epubSkipped = 0;
         ir.epubHeads = []; ir.epubSub2 = []; ir.epubNoteOrphans = [];
         /* 1. Every page of the spine, parsed. The pages Beuk builds for itself (the cover, the title pages, the contents) are left out. */
-        const pages = [], pageOf = new Map();
+        const pages = [], pageOf = new Map(), titleLines = [];
         rd.docs.forEach((d) => {
           if (d.nav) { ir.epubSkipped++; return; }
           let doc = new DOMParser().parseFromString(d.html, "application/xhtml+xml");
@@ -41912,6 +42025,16 @@
           const types = epubTypes(body).concat(Array.prototype.slice.call(body.children).filter((c) => /^(section|article|div)$/.test(epubTag(c))).slice(0, 1).reduce((a, c) => a.concat(epubTypes(c)), []));
           const skip = types.some((t) => EPUBIN_SKIP.has(t)) || (types.indexOf("copyright-page") !== -1 && (rd.meta.beuk || !!body.querySelector(".copyright")));
           if (skip) ir.epubSkipped++;
+          /* BEUK:titlepage — the title page is left out as a page (Beuk sets its own from the book's details), and its
+             lines are read by the rule every format shares for what those details have a place for: the subtitle, the
+             publisher and the ISBN, which the package often does not carry */
+          if (skip && types.indexOf("titlepage") !== -1 && !titleLines.length) {
+            Array.prototype.slice.call(body.getElementsByTagName("*")).forEach((e) => {
+              if (!/^(p|h[1-6]|div|li)$/.test(epubTag(e)) || Array.prototype.some.call(e.children, (k) => /^(p|h[1-6]|div|li|ul|ol|section|header)$/.test(epubTag(k)))) return;
+              const v = irTextBr(e).replace(/\s+/g, " ").trim();
+              if (v) titleLines.push(v);
+            });
+          }
           const pg = { d, path: d.path, doc, body, types, skip };
           pages.push(pg);
           if (!pageOf.has(d.path)) pageOf.set(d.path, pg);
@@ -42027,6 +42150,15 @@
         flushRun();
         /* a plate after the last section stays with it */
         if (plates.length && pieces.length) pieces[pieces.length - 1].body = pieces[pieces.length - 1].body.concat([""], plates.splice(0).join("\n\n").split("\n"));
+        if (titleLines.length) {
+          const run = imTitlePageRun(titleLines, { title: rd.meta.title, author: rd.meta.author, subtitle: "" }, "", { whole: true, near: true });
+          if (run) {
+            const tp = pieces.titlePage = pieces.titlePage || { title: "", subtitle: "", author: "", text: "", rest: "" };
+            if (!tp.subtitle) tp.subtitle = run.subtitle;
+            if (!tp.publisher) tp.publisher = run.publisher;
+            tp.imprint = [tp.imprint, run.text].filter(Boolean).join("\n");
+          }
+        }
         return epubSettle(pieces, ir);
       }
       function importEpubRead(name, rd) {
@@ -68840,6 +68972,46 @@
               if (back.length !== 1 || back[0].type !== "appendix" || back[0].title !== "Appendix A: Tide Tables" || back[0].content.trim() !== "The tables." || !c2 || /Appendix/.test(c2.content)) bad.push("Word appendix " + JSON.stringify(back.map((s) => s.title + " / " + s.content)) + " / " + (c2 ? c2.content : ""));
             });
             return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "titles without the dash, the appendix a page of its own (a Word file's too), three notes linked chapter by chapter, the stray mark kept as text and reported, the card counting it");
+          } },
+        { id: "import.titlepage.one-rule", feature: "import", name: "A title page's lines are read by one rule in every format, and none is filed as a page the book does not have: the same title page — a series line, the title, a subtitle (italic or not), the author's credit with the publisher and the ISBN on its line or on the next, a label line — gives no Copyright page, no Dedication and no Epigraph from a Word file, an RTF-shaped one, Markdown or plain text, and its subtitle, publisher and ISBN reach the book's details (an EPUB's from the page it types titlepage); a real dedication, copyright page and epigraph after the title are still found",
+          async run() {
+            if (!window.JSZip) return scVerdict(false, "JSZip is not loaded");
+            const bad = [], NL = String.fromCharCode(10), P2 = NL + NL;
+            const scan = { comments: 0, ins: 0, del: 0, textboxes: 0, headers: 0, scanned: true };
+            const front = () => state.sections.filter((s) => s.kind === "front" && /\S/.test(String(s.content || ""))).map((s) => s.type);
+            const details = () => [state.meta.title, state.meta.subtitle, state.meta.author, state.meta.publisher, state.meta.isbn].join(" | ");
+            const WANT = "The Salt Road | A Chronicle of the Pans | Ines Morrow | Northbridge Press, Zurich | 978-0-9984120-7-4";
+            const judge = (what, rep, want) => {
+              const f = front(), d = details(), lifted = (rep ? rep.items : []).filter((i) => i.kind === "lifted" && i.data.reason === "titlepage");
+              if (f.length) bad.push(what + ": front pages " + f.join(", "));
+              if (d !== (want || WANT)) bad.push(what + ": details " + d);
+              if (state.sections.filter((s) => s.kind === "body" && s.type === "chapter").length !== 2) bad.push(what + ": not two chapters");
+              if (rep && !lifted.length) bad.push(what + ": the title page's lines are not reported as lifted");
+            };
+            const body = "<h1>Chapter 1: Dawn</h1><p>The caravan left at dawn for the coast.</p><h1>Chapter 2: Noon</h1><p>The pans lay white under the sun.</p>";
+            const who = { title: "The Salt Road", author: "Ines Morrow" };
+            /* a Word file: the credit, the publisher and the ISBN share a line */
+            irCheckRun(() => judge("Word", importDocxConverted("fixture.docx", "<p>Northbridge Series · Volume I</p><p>The Salt Road</p><p>A Chronicle of the Pans</p><p>Ines Morrow · Northbridge Press, Zurich · ISBN 978-0-9984120-7-4</p><p>Front Matter</p>" + body, [], scan, Object.assign({}, who), null)));
+            /* the same page as an RTF sets it: an italic subtitle, "By …" on its own line, the imprint under it, an ornament */
+            irCheckRun(() => judge("italic subtitle and By-line", importDocxConverted("fixture.docx", "<p>Northbridge Series · Volume I</p><p><strong>The Salt Road</strong></p><p><em>A Chronicle of the Pans</em></p><p>By Ines Morrow</p><p>Northbridge Press, Zurich · ISBN 978-0-9984120-7-4</p><p>❦ ❧ ❦</p><p>Front Matter</p>" + body, [], scan, Object.assign({}, who), null)));
+            /* Markdown: the title a heading, the lines under it, a rule */
+            irCheckRun(() => judge("Markdown", importPlainManuscript("the-salt-road.md", ["# The Salt Road", "*A Chronicle of the Pans*", "By **Ines Morrow** · Northbridge Press, Zurich · ISBN 978-0-9984120-7-4", "---", "## Chapter 1: Dawn", "The caravan left at dawn for the coast.", "## Chapter 2: Noon", "The pans lay white under the sun."].join(P2))));
+            /* plain text: the title page a boxed paragraph of lines */
+            const box = "════════════════════════";
+            irCheckRun(() => judge("plain text", importPlainManuscript("the-salt-road.txt", [[box, "THE SALT ROAD", "A Chronicle of the Pans", "By Ines Morrow · Northbridge Press, Zurich · ISBN 978-0-9984120-7-4", "Total Words: 12 · Chapters: 2", box].join(NL), "Chapter 1: Dawn", "The caravan left at dawn for the coast.", "Chapter 2: Noon", "The pans lay white under the sun."].join(P2)),
+              "The Salt Road | A Chronicle of the Pans | Ines Morrow | Northbridge Press, Zurich | 978-0-9984120-7-4".replace("The Salt Road", state.meta.title)));
+            /* an EPUB: the page typed titlepage is Beuk's to set, and its lines are read for the details */
+            const rd = await epubCheckRead("The Salt Road", "Ines Morrow", [
+              ["title.xhtml", '<section epub:type="titlepage"><p>Northbridge Series · Volume I</p><h1>The Salt Road</h1><p>A Chronicle of the Pans</p><p><strong>Ines Morrow</strong></p><p>Northbridge Press, Zurich · ISBN 978-0-9984120-7-4</p></section>'],
+              ["c1.xhtml", "<h1>Chapter 1: Dawn</h1><p>The caravan left at dawn for the coast.</p>"], ["c2.xhtml", "<h1>Chapter 2: Noon</h1><p>The pans lay white under the sun.</p>"]]);
+            irCheckRun(() => { importEpubRead("the-salt-road.epub", rd); judge("EPUB", null); });
+            /* the pages a book does have are still found */
+            irCheckRun(() => {
+              importDocxConverted("fixture.docx", "<p>The Salt Road</p><p>by Ines Morrow</p><p>For Megan, who waited.</p><p>Copyright © 2026 Ines Morrow. All rights reserved.</p><p>“The sea is patient.”</p><p>— Old saying</p>" + body, [], scan, Object.assign({}, who), null);
+              const f = front().sort().join(", ");
+              if (f !== "copyright, dedication, epigraph") bad.push("real front pages: " + f);
+            });
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Word, RTF-shaped, Markdown, plain text and EPUB: no page invented from a title-page line, subtitle, publisher and ISBN in the book's details; a real dedication, copyright page and epigraph still found");
           } },
         { id: "import.md.zip-pictures", feature: "import", name: "A zip of one Markdown file brings its pictures, as a zipped web page does: each link is resolved against the zip's own paths whatever its case or the direction of its slashes (and a zip that names its folders with a backslash), the picture lands in the library under its file name with its alt text and caption, one that is not in the zip stays the link it was and is counted; and the file's YAML gives the ISBN, the publisher and the year",
           async run() {

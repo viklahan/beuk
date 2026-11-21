@@ -3274,6 +3274,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The text reader (BEUK:txtnotes, BEUK:importzones) and the import report run in the studio; the server never sees the file.',
   },
   {
+    id: 'import.titlepage.one-rule',
+    title:
+      "A title page's lines are read by one rule in every format: no Copyright page, Dedication or Epigraph is made of them, the subtitle, publisher and ISBN reach the book's details, and a real dedication, copyright page and epigraph are still found",
+    kind: 'client-only',
+    reason: 'The title-page reader (BEUK:titlepage) and every importer run in the studio; the server never sees the file.',
+  },
+  {
     id: 'import.tables.kept-as-rows',
     title:
       "A table's words stay in the book as plain rows where it stood: cells joined by a bar with empty and merged-over cells kept in their columns, marks and a note's mark kept in their cell, a nested table after its parent and said once, reported as kept, the bars not counted as words, and out again on undo",
