@@ -3199,6 +3199,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The readers and the heading rule (BEUK:headlevels) run in the studio; the server never sees an import.',
   },
   {
+    id: 'import.headlevels.skipped-level-every-reader',
+    title:
+      'One small book of Heading 1 chapters and Heading 3 sections, with no Heading 2, comes out the same from Word-shaped HTML, RTF, a web page and markdown: each Heading 3 a sub-heading inside its chapter, none demoted',
+    kind: 'client-only',
+    reason: 'The readers and the heading rule (BEUK:headlevels) run in the studio; the server never sees an import.',
+  },
+  {
     id: 'import.html.footnotes',
     title:
       "A web page's footnotes become Beuk notes however the page marks them (doc-noteref, a fn-ref link to an aside, a raised link to a paragraph that links back), numbered in order of first reference; a raised number that links nowhere is no note; a missing note and an unreferenced one are reported",

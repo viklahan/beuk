@@ -38507,9 +38507,11 @@
       }
       /* Depth is relative. A file's heading levels are the levels it
          uses: markdown that sets its chapters in "#" and their sections
-         in "###" has two levels, not three — a level no heading stands
-         in is no level (a web page's reader, htmlRead, hands its h1–h6
-         on by the same reading). So the levels in use are read, in
+         in "###" has two levels, not three, and so has a Word or RTF file
+         of Heading 1 and Heading 3, a web page of h1 and h3, an EPUB — a
+         level no heading stands in is no level (V's ruling, 2026-11-20:
+         the same book comes out the same from every format; every reader
+         of heading levels asks here). So the levels in use are read, in
          order, as Heading 1, Heading 2, Heading 3 …; the one rule
          above says which second-level headings are sub-headings; and a
          third-level heading standing under a second-level heading that
@@ -39562,12 +39564,17 @@
         if (tableRows.length || row.length || tableImgs) flushTable();
         return res;
       }
-      /* BEUK:headlevels — the file's Heading 2s that are sub-headings
-         inside their chapter, by the one rule every reader asks. */
+      /* BEUK:headlevels — what each of the file's headings is, by the one
+         reading every reader asks (irHeadDepths): "open" (it opens a
+         chapter or a page), "sub" (a sub-heading inside its chapter: a
+         Heading 2 under Heading 1 chapters, and a Heading 3 where the file
+         has no Heading 2 at all) or "deep" (below what a section holds). */
       function rtfSubHeadings(rd) {
-        const hb = rd.blocks.filter((b) => b.kind === "h" && b.level <= 2);
-        const flags = irSubHeadings(hb);
-        return new Set(hb.filter((b, k) => flags[k]));
+        const hb = rd.blocks.filter((b) => b.kind === "h");
+        const depth = irHeadDepths(hb);
+        const roles = new Map();
+        hb.forEach((b, k) => { roles.set(b, depth[k].sub ? "sub" : (depth[k].rank <= 2 ? "open" : "deep")); });
+        return roles;
       }
       /* Blocks -> manuscript text, for the readers that take text only
          (the shelf's bulk import and a box set's volumes): headings as
@@ -39584,7 +39591,7 @@
         const flushDefs = () => { if (defs.length) out.push(defs.join("\n\n")); defs = []; };
         const subs = rtfSubHeadings(rd);
         rd.blocks.forEach((b) => {
-          if (b.kind === "h") { if (b.level <= 2 && !subs.has(b)) { flushDefs(); out.push("# " + b.text); } else { const v = md(b.runs); take(v); out.push(v); } }
+          if (b.kind === "h") { if (subs.get(b) === "open") { flushDefs(); out.push("# " + b.text); } else { const v = md(b.runs); take(v); out.push(v); } }
           else if (b.kind === "p") { const v = md(b.runs); if (!v) return; take(v); out.push(b.quote ? "> " + v : v); }
           else if (b.kind === "list") {
             const lines = b.items.map(md).filter(Boolean).map((l, k) => (b.ordered ? (k + 1) + ". " : "- ") + l);
@@ -39614,11 +39621,11 @@
           const subs = rtfSubHeadings(rd);
           rd.blocks.forEach((b) => {
             if (b.kind === "h") {
-              if (subs.has(b)) {
+              if (subs.get(b) === "sub") {
                 /* BEUK:headlevels — a Heading 2 inside a Heading 1 chapter stays in it, as its sub-heading */
                 ir.subs.push(b.text);
                 parts.push(irSent("SUB", ir.subs.length - 1));
-              } else if (b.level <= 2) {
+              } else if (subs.get(b) === "open") {
                 /* A chapter title is set in the book's heading style:
                    its words come across plain, its italic/bold counted. */
                 ir.headings.push({ level: b.level, key: irLoose(b.text) });
@@ -40167,17 +40174,9 @@
           });
         };
         blocks(doc.body);
-        /* BEUK:headlevels — a web page's heading levels are read by their order, not their numbers: pages skip
-           levels for the look of them (h1 chapters with h3 sections and no h2 anywhere), and a level no heading
-           stands in is no level. So the headings are handed on at their place among the levels the page uses —
-           h1 and h3 as Heading 1 and Heading 2, the shape a Word file has — with the level the page gave kept
-           for the report (data-ir-level). */
-        const levelsUsed = Array.from(new Set(html.filter((x) => typeof x !== "string").map((x) => x.level))).sort((a, b) => a - b);
-        const pieces = html.map((x) => {
-          if (typeof x === "string") return x;
-          const rank = levelsUsed.indexOf(x.level) + 1;
-          return "<h" + rank + (rank !== x.level ? ' data-ir-level="' + x.level + '"' : "") + ">" + x.v + "</h" + rank + ">";
-        });
+        /* BEUK:headlevels — the headings are handed on at the levels the page gave them: the walk reads every file's
+           levels by their order (a page of h1 chapters and h3 sections is walked as Heading 1 and Heading 2). */
+        const pieces = html.map((x) => (typeof x === "string" ? x : "<h" + x.level + ">" + x.v + "</h" + x.level + ">"));
         /* Beuk numbers the notes itself, in the order their references stand */
         let seq = 0;
         const number = (h) => String(h).replace(/\u0001(\d+)\u0002/g, (m, k) => { const rec = noteRecs[Number(k)]; if (!rec) return ""; if (!rec.n) rec.n = ++seq; return docsNoteRef(rec.n); });
@@ -41645,11 +41644,8 @@
            own heading and "## " below that). */
         const plainHeads = [];
         pages.forEach((pg) => { if (!pg.skip && !pg.plateOnly && !pg.kindType) for (let k = pg.h0; k < pg.h1; k++) plainHeads.push(ir.epubHeads[k]); });
-        const levels = Array.from(new Set(plainHeads.map((h) => h.level))).sort((a, b) => a - b);
-        plainHeads.forEach((h) => { h.rank = levels.indexOf(h.level) + 1; });
-        const top = plainHeads.filter((h) => h.rank <= 2);
-        const subFlags = irSubHeadings(top.map((h) => ({ level: h.rank, text: h.text })));
-        top.forEach((h, k) => { if (!subFlags[k]) h.role = "chapter"; });
+        const depth = irHeadDepths(plainHeads); /* the one reading every format asks: rank among the levels in use, and which headings are sub-headings */
+        plainHeads.forEach((h, k) => { h.rank = depth[k].rank; if (h.rank <= 2 && !depth[k].sub) h.role = "chapter"; });
         let cur = 0;
         plainHeads.forEach((h) => {
           if (h.role === "chapter") { cur = h.rank; return; }
@@ -42247,15 +42243,27 @@
         });
         ir.docNotes = Object.keys(notesById).map((k) => notesById[k]);
         doc.querySelectorAll("*").forEach((el) => { el.removeAttribute("style"); el.removeAttribute("class"); el.removeAttribute("lang"); });
-        /* BEUK:headlevels — a Heading 3 standing under a Heading 2 that opens a chapter (a book titled in Heading 1
-           with Heading 2 chapters; Heading 1 Parts over Heading 2 chapters) is that chapter's sub-heading, as a
-           Heading 2 is under a Heading 1 chapter: the first level below the chapter's own (irHeadDepths). Only in a
-           file that uses Heading 1, 2 and 3 as such: a Word file that skips a level is walked as it always was. */
+        /* BEUK:headlevels — depth is relative (irHeadDepths; V's ruling, 2026-11-20: the same book comes out the same
+           from every format). A level the file never uses is no level, so its headings are set at their place among
+           the levels it does use before the walk reads them: a file of Heading 1 and Heading 3 is walked as Heading 1
+           and Heading 2, and its Heading 3s are sub-headings inside their chapters, as a web page's and an EPUB's are.
+           The level the file gave is kept for the report (data-ir-level). And a third level under a second-level
+           heading that opens a chapter is that chapter's sub-heading. */
         const deepSubs = new Set();
         {
           const hs = Array.prototype.filter.call(doc.body ? doc.body.children : [], (c) => /^h[1-6]$/i.test(c.tagName));
           const depth = irHeadDepths(hs.map((c) => ({ level: Number(c.tagName.slice(1)), text: irTextBr(c) })));
-          hs.forEach((c, k) => { if (depth[k].sub && depth[k].rank === 3 && c.tagName.toLowerCase() === "h3") deepSubs.add(c); });
+          hs.forEach((c, k) => {
+            const level = Number(c.tagName.slice(1)), d = depth[k];
+            let el = c;
+            if (d.rank !== level && d.rank >= 1 && d.rank <= 6) {
+              el = doc.createElement("h" + d.rank);
+              while (c.firstChild) el.appendChild(c.firstChild);
+              el.setAttribute("data-ir-level", c.getAttribute("data-ir-level") || String(level));
+              c.parentNode.replaceChild(el, c);
+            }
+            if (d.sub && d.rank > 2) deepSubs.add(el);
+          });
         }
         const parts = [];
         const frontLines = [];
@@ -42451,6 +42459,7 @@
           if (tag === "h2" && htxt && subHeads.has(node)) {
             ir.subs.push(htxt);
             parts.push(irSent("SUB", ir.subs.length - 1));
+            pushImages(node); /* a picture set in a sub-heading follows it, as one in any other heading does */
             return;
           }
           if (isH && (normHeading(htxt) === "contents" || normHeading(htxt) === "table of contents")) inContents = true;
@@ -67860,6 +67869,29 @@
                 "Word h1+h2: " + viaWord + " · page h1+h3: " + viaPage + " · page h1 title, h2, h3: " + viaTitled + " (h4 reported as level 4: " + demOk + ") · markdown #, ##, ###: " + viaMd + " (#### reported, no raw marks: " + mdOk + ") · markdown # and ###: " + viaMdSkipped);
             });
           } },
+        { id: "import.headlevels.skipped-level-every-reader", feature: "import", name: "One small book whose chapters are Heading 1 and whose sections are Heading 3, with no Heading 2 anywhere, comes out the same from every reader (Word-shaped HTML, RTF, a web page, markdown): two chapters, each Heading 3 a sub-heading inside its chapter, none turned into body text and none reported as demoted",
+          async run() {
+            const B = String.fromCharCode(92), P2 = String.fromCharCode(10, 10);
+            const html = "<h1>Chapter 1: The Harbour</h1><p>Dawn broke over the water.</p><h3>Morning</h3><p>Fog on the quay.</p><h3>Noon</h3><p>The tide turned.</p><h1>Chapter 2: The Crossing</h1><h3>The Squall</h3><p>Rain came sideways.</p>";
+            const page = await htmlRead("<html><body>" + html + "</body></html>", []);
+            return irCheckRun(() => {
+              const shape = () => state.sections.filter((s) => s.kind === "body" && s.type === "chapter").map((s) => (s.number || "-") + " " + s.title + " [" + irBlocks(s.content).filter((b) => /^# /.test(b)).map((b) => b.slice(2)).join(", ") + "]" +
+                (/(^|\n)(Morning|Noon|The Squall)(\n|$)/.test(s.content) ? " BODY-TEXT" : "")).join(" | ") + ((state.importReport ? state.importReport.items : []).some((i) => i.kind === "demoted") ? " DEMOTED" : "");
+              const want = "1 The Harbour [Morning, Noon] | 2 The Crossing [The Squall]";
+              importDocxConverted("fixture.docx", html, [], null, {}, null);
+              const viaWord = shape();
+              const rtf = ["{", "rtf1", "ansi{", "stylesheet{", "s0 Normal;}{", "s1 heading 1;}{", "s3 heading 3;}}",
+                "pard", "s1 Chapter 1: The Harbour", "par", "pard", "s0 Dawn broke over the water.", "par", "pard", "s3 Morning", "par", "pard", "s0 Fog on the quay.", "par", "pard", "s3 Noon", "par", "pard", "s0 The tide turned.", "par",
+                "pard", "s1 Chapter 2: The Crossing", "par", "pard", "s3 The Squall", "par", "pard", "s0 Rain came sideways.", "par}"].join(B);
+              importRtfRead("fixture.rtf", rtfRead(rtf));
+              const viaRtf = shape();
+              importDocxConverted("fixture.html", page.html, page.messages, page.scan, page.identity, null, "html");
+              const viaPage = shape();
+              importPlainManuscript("fixture.md", ["# Chapter 1: The Harbour", "Dawn broke over the water.", "### Morning", "Fog on the quay.", "### Noon", "The tide turned.", "# Chapter 2: The Crossing", "### The Squall", "Rain came sideways."].join(P2));
+              const viaMd = shape();
+              return scVerdict(viaWord === want && viaRtf === want && viaPage === want && viaMd === want, "Word: " + viaWord + " · RTF: " + viaRtf + " · web page: " + viaPage + " · markdown: " + viaMd);
+            });
+          } },
         { id: "import.html.footnotes", feature: "import", name: "A web page's footnotes come in as Beuk notes, however the page marks them: a doc-noteref link to an item of a notes list, a fn-ref link to an <aside> that opens with its own number and ends with a way back, a raised link to a paragraph that links back; each is numbered in the order of first reference, its number and its back-link left out of its text. A raised number that links nowhere, or to an ordinary paragraph, is no footnote. A reference whose note is missing and a note nothing points at are both reported, and an emptied notes section leaves no scene break",
           async run() {
             const page = '<html><body><h1>Chapter 1: The Harbour</h1>' +
@@ -68083,13 +68115,13 @@
                 "), Word keeps its own words (" + wordOk + "), the summary's count is the list's (" + countOk + ": " + inCard + " / " + (chip ? chip.textContent : "-") + " / " + listed + ")");
             });
           } },
-        { id: "import.report.docx-honest", feature: "import", name: "Import report (Word): a Mammoth-shaped document's table is reported as left out (and its words come back on undo), the footnote is linked as a Beuk note, the image lands in the library with its alt text, Heading 3 is reported as demoted, and comments, tracked changes, headers, lists and converter warnings are all listed — never silently lost",
+        { id: "import.report.docx-honest", feature: "import", name: "Import report (Word): a Mammoth-shaped document's table is reported as left out (and its words come back on undo), the footnote is linked as a Beuk note, the image lands in the library with its alt text, a Heading 3 straight under a Heading 1 chapter is its sub-heading and the Heading 4 below it is reported as demoted, and comments, tracked changes, headers, lists and converter warnings are all listed — never silently lost",
           run() {
             return irCheckRun(() => {
               const html = "<p>Copyright © 2026 Fixture Author. All rights reserved.</p><h1>The Harbour</h1>" +
                 '<p>She said "wait".<sup><a href="#footnote-1" id="footnote-ref-1">[1]</a></sup></p>' +
                 '<p><img src="data:image/png;base64,iVBORw0KGgo=" alt="A gull on the rail" /></p>' +
-                "<h3>Low tide</h3><p>Words under the low tide heading.</p>" +
+                "<h3>Low tide</h3><p>Words under the low tide heading.</p><h4>Slack water</h4><p>Words under the slack water heading.</p>" +
                 "<table><tr><td>Tide</td><td>Height</td></tr><tr><td>Low</td><td>0.4 m</td></tr></table>" +
                 "<p>After the table.</p><h1>The Chart Room</h1><p>Second chapter text.</p><ul><li>One</li><li>Two</li></ul>" +
                 '<ol><li id="footnote-1"><p>Ledger, page 9. <a href="#footnote-ref-1">↑</a></p></li></ol>';
@@ -68103,7 +68135,7 @@
               const imgOk = !!img && img.data.alt === "A gull on the rail" && state.images.some((im) => im.id === img.data.imgId) &&
                 ch1.content.indexOf("![A gull on the rail](img:" + img.data.imgId + ")") !== -1;
               const tableOk = !!tbl && tbl.group === "dropped" && tbl.before.indexOf("Tide | Height") !== -1 && ch1.content.indexOf("Tide") === -1;
-              const listedOk = !!dem && dem.data.level === 3 && !!has("comments") && !!has("tracked") && !!has("headers") && !has("lists") &&
+              const listedOk = !!ch1 && irBlocks(ch1.content).indexOf("# Low tide") !== -1 && items.filter((i) => i.kind === "demoted").length === 1 && !!dem && dem.data.level === 4 && dem.data.text === "Slack water" && !!has("comments") && !!has("tracked") && !!has("headers") && !has("lists") &&
                 ((state.sections.find((x) => x.title === "The Chart Room") || {}).content || "").includes("- One\n- Two") &&
                 !!has("mammoth") && !!items.find((i) => i.kind === "matter" && i.data.type === "copyright") && !!has("typography");
               const rt = irUndoItem(tbl.id);
@@ -68112,10 +68144,10 @@
               const ri = irUndoItem(img.id);
               const imgGone = ri.ok && ch1.content.indexOf("img:" + img.data.imgId) === -1 && !state.images.some((im) => im.id === img.data.imgId);
               const rd = irUndoItem(dem.id);
-              const demBack = rd.ok && ch1.content.indexOf("## Low tide") !== -1;
-              const naOk = !has("comments").reversible && !!$("irBody") && /Low tide/.test($("irBody").textContent);
+              const demBack = rd.ok && ch1.content.indexOf("## Slack water") !== -1;
+              const naOk = !has("comments").reversible && !!$("irBody") && /Slack water/.test($("irBody").textContent);
               return scVerdict(noteOk && imgOk && tableOk && listedOk && tableBack && imgGone && demBack && naOk,
-                "footnote linked as [^1] (" + noteOk + "), image in library with alt (" + imgOk + "), table reported left out (" + tableOk + "), demoted heading + comments/tracked/headers/warning/copyright/typography listed, the Word list kept as a list (" + listedOk + "), table words back on undo (" + tableBack + "), image undo (" + imgGone + "), subheading restored (" + demBack + "), unrevertable items say so (" + naOk + ")");
+                "footnote linked as [^1] (" + noteOk + "), image in library with alt (" + imgOk + "), table reported left out (" + tableOk + "), Heading 3 kept as a sub-heading, the Heading 4 demoted + comments/tracked/headers/warning/copyright/typography listed, the Word list kept as a list (" + listedOk + "), table words back on undo (" + tableBack + "), image undo (" + imgGone + "), subheading restored (" + demBack + "), unrevertable items say so (" + naOk + ")");
             });
           } },
         /* ---- BEUK:wordback: a Word book Beuk wrote comes back as the book it was ---- */
@@ -68208,6 +68240,7 @@
                 "<blockquote><p>To <em>be</em>.</p><p>Or <strong>not</strong>.</p></blockquote>" +
                 "<ul><li>One <em>fish</em></li><li><strong>Two</strong> fish</li></ul>" +
                 "<p><strong>Chapter Two</strong></p><p>Second <em>chapter</em> text.</p>" +
+                "<h2>Coda</h2><p>Last words.</p>" + /* a Heading 2 in the file: the Heading 3 above is a third level, below what a section holds */
                 '<ol><li id="footnote-1"><p>See the <em>Ledger</em>, page 9. <a href="#footnote-ref-1">↑</a></p></li></ol>';
               const rep = importDocxConverted("formatting.docx", html, [], { comments: 0, ins: 0, del: 0, textboxes: 0, headers: 0, scanned: true }, {}, null);
               const items = rep ? rep.items : [];
@@ -68251,6 +68284,11 @@
               const dem = has("demoted");
               const rd = dem ? irUndoItem(dem.id) : { ok: false };
               const demBack = rd.ok && String(ch1.content).includes("## Low *tide*");
+              /* BEUK:headlevels — the same Heading 3 in a file with no Heading 2 is no third level: it is the chapter's sub-heading */
+              importDocxConverted("skipped.docx", "<h1>One</h1><p>First.</p><h3>Low <em>tide</em></h3><p>Under it.</p><h1>Two</h1><p>Second.</p>", [], { comments: 0, ins: 0, del: 0, textboxes: 0, headers: 0, scanned: true }, {}, null);
+              const one = state.sections.find((s) => s.type === "chapter" && s.title === "One");
+              const skipOk = !!one && irBlocks(one.content).indexOf("# Low tide") !== -1 && !(state.importReport ? state.importReport.items : []).some((i) => i.kind === "demoted");
+              if (!skipOk) return scVerdict(false, "a Heading 3 under a Heading 1 chapter, in a file with no Heading 2, is not its sub-heading: " + (one ? JSON.stringify(one.content) : "no chapter One"));
               return scVerdict(walkOk && marks && links && blocks && plainKept && heads && reportOk && render && words && docxOk && typoBack && demBack,
                 "400 generated run patterns render with their italic/bold (" + walkOk + (bad ? ", " + bad + " bad, e.g. " + firstBad : "") + "), *, ** and *** marks in prose (" + marks + "), links as [words](address) with the address intact (" + links +
                 "), subheading/quote/list/footnote keep theirs (" + blocks + "), underline/sub/sup/strike words kept plain (" + plainKept + "), bold chapter line still splits, titles plain (" + heads +
@@ -68307,7 +68345,7 @@
             return scVerdict(marks && split && opts,
               "marks kept (" + marks + (marks ? "" : ": " + JSON.stringify(text.slice(0, 300))) + "), chapter line still splits (" + split + ", " + chs.length + "), both readers use the import's Mammoth options (" + opts + ")");
           } },
-        { id: "import.report.images-accounted", feature: "import", name: "Import report (Word): every picture is accounted for — images inside a Heading 1, a Heading 3, a list item and a quote are imported into the library, and one the import cannot hold (inside a footnote) is listed as left out, so the all-clear line never appears",
+        { id: "import.report.images-accounted", feature: "import", name: "Import report (Word): every picture is accounted for — images inside a Heading 1, a Heading 3 (the chapter's sub-heading, the file having no Heading 2), a list item and a quote are imported into the library, and one the import cannot hold (inside a footnote) is listed as left out, so the all-clear line never appears",
           run() {
             return irCheckRun(() => {
               const png = "data:image/png;base64,iVBORw0KGgo=";
@@ -68323,7 +68361,9 @@
               const lost = items.find((i) => i.kind === "imageLost");
               const alts = imgs.map((i) => i.data.alt).sort().join("|");
               const inBook = imgs.every((i) => state.images.some((im) => im.id === i.data.imgId) && state.sections.some((s) => String(s.content || "").indexOf("img:" + i.data.imgId) !== -1));
-              const importedOk = imgs.length === 4 && alts === "Heading gull|List gull|Quote gull|Sub gull" && inBook && state.images.length === before + 4;
+              const subAt = (state.sections.find((s) => s.type === "chapter" && s.title === "One") || { content: "" }).content;
+              const importedOk = imgs.length === 4 && alts === "Heading gull|List gull|Quote gull|Sub gull" && inBook && state.images.length === before + 4 &&
+                /(^|\n)# Low tide\n\n!\[Sub gull\]\(img:/.test(subAt); /* BEUK:headlevels — the Heading 3 (no Heading 2 in the file) is the chapter's sub-heading, its picture under it */
               const lostOk = !!lost && lost.group === "dropped" && lost.data.n === 1 && !lost.reversible;
               const noClean = !!$("irBody") && !$("irBody").querySelector(".ir-clean");
               return scVerdict(importedOk && lostOk && noClean,

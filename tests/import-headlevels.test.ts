@@ -155,7 +155,16 @@ test('head levels: every reader of heading levels asks the one rule', async () =
   const rtfText = html.slice(html.indexOf('function rtfToManuscriptText('), html.indexOf('function importRtfRead('));
   assert.match(rtfText, /rtfSubHeadings\(rd\)/, 'RTF, the text-only reader');
   const rtfRule = html.slice(html.indexOf('function rtfSubHeadings('), html.indexOf('function rtfToManuscriptText('));
-  assert.match(rtfRule, /irSubHeadings\(/, "RTF's two readers share one call of the rule");
+  /* V's ruling, 2026-11-20: depth is relative for every format. RTF asks irHeadDepths (the levels in use, read in order, then the one
+     rule irSubHeadings inside it), so a file of Heading 1 and Heading 3 keeps its Heading 3s as sub-headings; it no longer reads
+     "level <= 2" for itself. */
+  assert.match(rtfRule, /irHeadDepths\(hb\)/, "RTF's two readers share one call of the rule");
+  assert.doesNotMatch(rtfRule + rtf + rtfText, /b\.level <= 2/, 'RTF reads no heading level by its number');
+  const depths = html.slice(html.indexOf('function irHeadDepths('), html.indexOf('function irMdSubHeadings('));
+  assert.match(depths, /irSubHeadings\(/, 'the reading of depth asks the one rule');
+  assert.match(docx, /irHeadDepths\(/, 'Word, OpenDocument and web pages are walked by the levels in use');
+  const epub = html.slice(html.indexOf('/* ==== BEUK:epubimport ==== '), html.indexOf('/* ==== /BEUK:epubimport ==== */'));
+  assert.match(epub, /irHeadDepths\(plainHeads\)/, 'EPUB asks the same reading');
   assert.doesNotMatch(rtf + rtfText, /"ilvl"/);
   /* a PDF's bookmarks are nested as its headings were: their depth is the level the rule reads */
   const pdf = html.slice(html.indexOf('function pdfLayout('), html.indexOf('function pdfIdentity('));
