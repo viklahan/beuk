@@ -4,7 +4,7 @@ import { observeSections } from '@book/editor/index.js';
 import { closureIfLoaded, loadClosure, type BookImage, type Closure } from '../closure/index';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useToast } from '../shell/Toasts';
-import { addPicture, imageById, PICTURE_ACCEPT, PICTURE_ADDED, PICTURE_TYPE_REFUSED, pickerList, readPictureFile, sectionKey, sectionMapById, setSectionKeys } from './pictures';
+import { addPicture, imageById, PICTURE_ACCEPT, PICTURE_ADDED, PICTURE_TYPE_REFUSED, pickerList, plateFitFor, readPictureFile, sectionKey, sectionMapById, setSectionKeys } from './pictures';
 
 /* BEUK:images — 1.0's chapter-art rows (#bodyArtRows after the drop cap and
    small-caps rows: the opening plate, its alt text, the backdrop and its
@@ -19,7 +19,10 @@ import { addPicture, imageById, PICTURE_ACCEPT, PICTURE_ADDED, PICTURE_TYPE_REFU
 
    Every write is a section key, as 1.0 sets it on the section: plateId (null
    for "No plate"), plateAlt (offered from the picture's name when empty,
-   kept per keystroke as 1.0's "input" listener does), backdropId,
+   kept per keystroke as 1.0's "input" listener does), plateFit (BEUK:platefit:
+   "fill" or "whole"; written with every newly chosen picture by 1.0's own
+   rule, plateFitFor, and by the Fit row, which shows only while a plate is
+   set; a section without the key reads as "fill"), backdropId,
    backdropStrength ("whisper" when it is none of 1.0's four). */
 
 const UPLOAD = '__upload__';
@@ -85,10 +88,10 @@ const onPlate = (v: string) => {
     return;
   }
   const patch: Record<string, unknown> = { plateId: v || null };
-  if (v && !String(get('plateAlt') || '').trim()) {
-    const im = imageById(ydoc, v);
-    if (im) patch.plateAlt = nameOf(im);
-  }
+  const im = v ? imageById(ydoc, v) : null;
+  if (im && !String(get('plateAlt') || '').trim()) patch.plateAlt = nameOf(im);
+  // BEUK:platefit — a newly chosen picture gets its fit chosen with it (1.0's chPlate handler): never cut unasked
+  if (v) patch.plateFit = plateFitFor(c, ydoc, im ?? ({ id: v } as BookImage));
   setSectionKeys(ydoc, id, patch);
 };
 const onBackdrop = (v: string) => {
@@ -117,7 +120,7 @@ const onFile = async (which: 'plate' | 'bd', f: File | undefined) => {
     const target = (forId == null ? null : sectionMapById(ydoc, forId)) ?? section;
     const tid = sectionKey(target, 'id');
     if (which === 'plate') {
-      const patch: Record<string, unknown> = { plateId: im.id };
+      const patch: Record<string, unknown> = { plateId: im.id, plateFit: plateFitFor(c, ydoc, im) };
       if (!String(sectionKey(target, 'plateAlt') || '').trim()) patch.plateAlt = nameOf(im);
       setSectionKeys(ydoc, tid, patch);
     } else {
@@ -138,6 +141,23 @@ return (
         </div>
         <select className="txt-input" id="chPlate" style={{ width: 200, flex: '0 1 200px' }} aria-label={t('editor.plate')} value={plateId} onChange={(e) => onPlate(e.target.value)}>
           {options(t('editor.plateNone'), t('editor.plateUpload'))}
+        </select>
+      </div>
+      <div className="switch-row" id="plateFitRow" style={plateId ? undefined : { display: 'none' }}>
+        <div className="sw-txt">
+          <b>{t('editor.plateFit')}</b>
+          <span>{t('editor.plateFitDesc')}</span>
+        </div>
+        <select
+          className="txt-input"
+          id="chPlateFit"
+          style={{ width: 200, flex: '0 1 200px' }}
+          aria-label={t('editor.plateFit')}
+          value={c.api.plateFitOf({ plateFit: get('plateFit') })}
+          onChange={(e) => setSectionKeys(ydoc, id, { plateFit: e.target.value === 'whole' ? 'whole' : 'fill' })}
+        >
+          <option value="fill">{t('editor.plateFitFill')}</option>
+          <option value="whole">{t('editor.plateFitWhole')}</option>
         </select>
       </div>
       <div className="switch-row" id="plateAltRow" style={plateId ? undefined : { display: 'none' }}>

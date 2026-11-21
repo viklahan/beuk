@@ -1513,6 +1513,8 @@
       .piv-fnotes.piv-fncont .piv-fnrule { width: 100%; }
       .piv-fnfrag { overflow: hidden; }
       .piv-plate-full { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+      /* BEUK:platefit — a plate shown whole: inside the page's margins (placed by pivPageEl), never cropped */
+      .piv-plate-whole { position: absolute; object-fit: contain; display: block; }
       /* A paired spread (a chapter carrying both a plate and a backdrop):
          the opening leaf's backdrop leaves the clip and takes the print
          file's own geometry — full-bleed to the trim, dissolving over
@@ -3078,8 +3080,16 @@
                     <button class="switch" id="tglSmallCaps" aria-pressed="true" aria-label="Toggle small caps lead-in" data-i18n-aria="editor.smallCapsAria"></button>
                   </div>
                   <div class="switch-row">
-                    <div class="sw-txt"><b data-i18n="editor.plate">Opening plate</b><span data-i18n="editor.plateDesc">A full-bleed illustration on its own page, just before this chapter opens.</span></div>
+                    <div class="sw-txt"><b data-i18n="editor.plate">Opening plate</b><span data-i18n="editor.plateDesc">An illustration on its own page, just before this chapter opens.</span></div>
                     <select class="txt-input" id="chPlate" style="width:200px; flex:0 1 200px;" aria-label="Opening plate" data-i18n-aria="editor.plate"></select>
+                  </div>
+                  <!-- BEUK:platefit — shown only while a plate is set -->
+                  <div class="switch-row" id="plateFitRow" style="display:none;">
+                    <div class="sw-txt"><b data-i18n="editor.plateFit">Fit</b><span data-i18n="editor.plateFitDesc">Fill the page and the picture is cropped to the page's shape; show it whole and all of it stays, inside the margins.</span></div>
+                    <select class="txt-input" id="chPlateFit" style="width:200px; flex:0 1 200px;" aria-label="Fit" data-i18n-aria="editor.plateFit">
+                      <option value="fill" data-i18n="editor.plateFitFill">Fill the page</option>
+                      <option value="whole" data-i18n="editor.plateFitWhole">Show the whole picture</option>
+                    </select>
                   </div>
                   <div class="switch-row" id="plateAltRow" style="display:none;">
                     <div class="sw-txt"><b data-i18n="editor.plateAlt">Plate alt text</b><span data-i18n="editor.plateAltDesc">Describe the plate for readers who cannot see it — a plate needs its description to appear.</span></div>
@@ -4778,7 +4788,7 @@
         "editor.dropCap": "Drop cap", "editor.dropCapDesc": "Open this chapter with a large initial letter.",
         "editor.smallCaps": "Small-caps lead-in", "editor.smallCapsDesc": "Set the first words of the chapter in small capitals.",
         "editor.placeholder": "Start writing…", "editor.dropCapAria": "Toggle drop cap", "editor.smallCapsAria": "Toggle small caps lead-in",
-        "editor.plate": "Opening plate", "editor.plateDesc": "A full-bleed illustration on its own page, just before this chapter opens.",
+        "editor.plate": "Opening plate", "editor.plateDesc": "An illustration on its own page, just before this chapter opens.", "editor.plateFit": "Fit", "editor.plateFitDesc": "Fill the page and the picture is cropped to the page's shape; show it whole and all of it stays, inside the margins.", "editor.plateFitFill": "Fill the page", "editor.plateFitWhole": "Show the whole picture",
         "editor.plateNone": "No plate", "editor.plateUpload": "Upload an image…", "editor.plateAlt": "Plate alt text", "editor.plateAltDesc": "Describe the plate for readers who cannot see it — a plate needs its description to appear.", "editor.plateAltPh": "The harbour at first light",
         "editor.backdrop": "Chapter backdrop", "editor.backdropDesc": "Art that lies behind this chapter's opening, beneath the words.", "editor.backdropNone": "No backdrop", "editor.backdropUpload": "Upload a picture…", "editor.backdropStrength": "Backdrop strength", "editor.backdropNote": "Some e-readers ignore backdrops; the words always carry the page.", "editor.bdWhisper": "Whisper", "editor.bdSoft": "Soft", "editor.bdStrong": "Strong", "editor.bdSpread": "Spread — across the gutter",
         "tool.bold": "Bold", "tool.italic": "Italic", "tool.blockquote": "Blockquote", "tool.sceneBreak": "Scene Break", "tool.emDash": "Em Dash —",
@@ -5536,7 +5546,7 @@
         "editor.dropCap": "Letra capital", "editor.dropCapDesc": "Abre este capítulo con una inicial grande.",
         "editor.smallCaps": "Versalitas iniciales", "editor.smallCapsDesc": "Compone las primeras palabras del capítulo en versalitas.",
         "editor.placeholder": "Empieza a escribir…", "editor.dropCapAria": "Activar o desactivar la letra capital", "editor.smallCapsAria": "Activar o desactivar las versalitas iniciales",
-        "editor.plate": "Lámina de apertura", "editor.plateDesc": "Una ilustración a página completa, en su propia página, justo antes de que se abra este capítulo.",
+        "editor.plate": "Lámina de apertura", "editor.plateDesc": "Una ilustración en su propia página, justo antes de que se abra este capítulo.", "editor.plateFit": "Ajuste", "editor.plateFitDesc": "Al llenar la página, la imagen se recorta a la forma de la página; mostrada entera, se conserva completa, dentro de los márgenes.", "editor.plateFitFill": "Llenar la página", "editor.plateFitWhole": "Mostrar la imagen entera",
         "editor.plateNone": "Sin lámina", "editor.plateUpload": "Subir una imagen…", "editor.plateAlt": "Texto alternativo de la lámina", "editor.plateAltDesc": "Describe la lámina para quienes no pueden verla: una lámina necesita su descripción para aparecer.", "editor.plateAltPh": "El puerto al amanecer",
         "editor.backdrop": "Fondo del capítulo", "editor.backdropDesc": "Arte que queda detrás de la apertura de este capítulo, bajo las palabras.", "editor.backdropNone": "Sin fondo", "editor.backdropUpload": "Subir una imagen…", "editor.backdropStrength": "Intensidad del fondo", "editor.backdropNote": "Algunos lectores electrónicos ignoran los fondos; las palabras siempre sostienen la página.", "editor.bdWhisper": "Susurro", "editor.bdSoft": "Suave", "editor.bdStrong": "Fuerte", "editor.bdSpread": "Doble página — cruza el medianil",
         "tool.bold": "Negrita", "tool.italic": "Cursiva", "tool.blockquote": "Cita", "tool.sceneBreak": "Cambio de escena", "tool.emDash": "Raya —",
@@ -5757,7 +5767,7 @@
         "editor.dropCap": "Lettrine", "editor.dropCapDesc": "Ouvre ce chapitre avec une grande initiale.",
         "editor.smallCaps": "Début en petites capitales", "editor.smallCapsDesc": "Compose les premiers mots du chapitre en petites capitales.",
         "editor.placeholder": "Commencez à écrire…", "editor.dropCapAria": "Activer ou couper la lettrine", "editor.smallCapsAria": "Activer ou couper le début en petites capitales",
-        "editor.plate": "Planche d'ouverture", "editor.plateDesc": "Une illustration pleine page, sur sa propre page, juste avant l'ouverture de ce chapitre.",
+        "editor.plate": "Planche d'ouverture", "editor.plateDesc": "Une illustration sur sa propre page, juste avant l'ouverture de ce chapitre.", "editor.plateFit": "Cadrage", "editor.plateFitDesc": "En remplissant la page, l'image est rognée à la forme de la page ; montrée entière, elle reste complète, à l'intérieur des marges.", "editor.plateFitFill": "Remplir la page", "editor.plateFitWhole": "Montrer l'image entière",
         "editor.plateNone": "Aucune planche", "editor.plateUpload": "Importer une image…", "editor.plateAlt": "Texte alternatif de la planche", "editor.plateAltDesc": "Décrivez la planche pour les lecteurs qui ne peuvent pas la voir — une planche a besoin de sa description pour apparaître.", "editor.plateAltPh": "Le port à l'aube",
         "editor.backdrop": "Arrière-plan du chapitre", "editor.backdropDesc": "Une image qui se tient derrière l'ouverture de ce chapitre, sous les mots.", "editor.backdropNone": "Aucun arrière-plan", "editor.backdropUpload": "Importer une image…", "editor.backdropStrength": "Force de l'arrière-plan", "editor.backdropNote": "Certaines liseuses ignorent les arrière-plans ; les mots portent toujours la page.", "editor.bdWhisper": "Murmure", "editor.bdSoft": "Douce", "editor.bdStrong": "Forte", "editor.bdSpread": "Double page — à travers la gouttière",
         "tool.bold": "Gras", "tool.italic": "Italique", "tool.blockquote": "Citation", "tool.sceneBreak": "Saut de scène", "tool.emDash": "Tiret cadratin —",
@@ -5978,7 +5988,7 @@
         "editor.dropCap": "Initiale", "editor.dropCapDesc": "Dieses Kapitel mit einem großen Anfangsbuchstaben eröffnen.",
         "editor.smallCaps": "Kapitälchen-Anlauf", "editor.smallCapsDesc": "Die ersten Worte des Kapitels in Kapitälchen setzen.",
         "editor.placeholder": "Fangen Sie an zu schreiben…", "editor.dropCapAria": "Initiale umschalten", "editor.smallCapsAria": "Kapitälchen-Anlauf umschalten",
-        "editor.plate": "Eröffnungstafel", "editor.plateDesc": "Eine ganzseitige Illustration auf einer eigenen Seite, unmittelbar bevor dieses Kapitel beginnt.",
+        "editor.plate": "Eröffnungstafel", "editor.plateDesc": "Eine Illustration auf einer eigenen Seite, unmittelbar bevor dieses Kapitel beginnt.", "editor.plateFit": "Einpassung", "editor.plateFitDesc": "Füllt das Bild die Seite, wird es auf das Seitenformat beschnitten; ganz gezeigt bleibt es vollständig, innerhalb der Ränder.", "editor.plateFitFill": "Seite füllen", "editor.plateFitWhole": "Ganzes Bild zeigen",
         "editor.plateNone": "Keine Tafel", "editor.plateUpload": "Bild hochladen…", "editor.plateAlt": "Alt-Text der Tafel", "editor.plateAltDesc": "Beschreiben Sie die Tafel für Leserinnen und Leser, die sie nicht sehen können — eine Tafel braucht ihre Beschreibung, um zu erscheinen.", "editor.plateAltPh": "Der Hafen im ersten Licht",
         "editor.backdrop": "Kapitel-Hintergrund", "editor.backdropDesc": "Ein Bild, das hinter dem Anfang dieses Kapitels liegt, unter den Worten.", "editor.backdropNone": "Kein Hintergrund", "editor.backdropUpload": "Bild hochladen…", "editor.backdropStrength": "Hintergrundstärke", "editor.backdropNote": "Manche E-Reader ignorieren Hintergründe; die Worte tragen die Seite immer.", "editor.bdWhisper": "Hauch", "editor.bdSoft": "Sanft", "editor.bdStrong": "Kräftig", "editor.bdSpread": "Doppelseite — über den Bund",
         "tool.bold": "Fett", "tool.italic": "Kursiv", "tool.blockquote": "Blockzitat", "tool.sceneBreak": "Szenenwechsel", "tool.emDash": "Gedankenstrich —",
@@ -6199,7 +6209,7 @@
         "editor.dropCap": "Capolettera", "editor.dropCapDesc": "Apri questo capitolo con una grande lettera iniziale.",
         "editor.smallCaps": "Inizio in maiuscoletto", "editor.smallCapsDesc": "Compone le prime parole del capitolo in maiuscoletto.",
         "editor.placeholder": "Inizia a scrivere…", "editor.dropCapAria": "Attiva o disattiva il capolettera", "editor.smallCapsAria": "Attiva o disattiva l'inizio in maiuscoletto",
-        "editor.plate": "Tavola di apertura", "editor.plateDesc": "Un'illustrazione a piena pagina, su una pagina propria, subito prima che questo capitolo si apra.",
+        "editor.plate": "Tavola di apertura", "editor.plateDesc": "Un'illustrazione su una pagina propria, subito prima che questo capitolo si apra.", "editor.plateFit": "Adattamento", "editor.plateFitDesc": "Se riempie la pagina, l'immagine viene ritagliata alla forma della pagina; mostrata intera, resta completa, dentro i margini.", "editor.plateFitFill": "Riempi la pagina", "editor.plateFitWhole": "Mostra l'immagine intera",
         "editor.plateNone": "Nessuna tavola", "editor.plateUpload": "Carica un'immagine…", "editor.plateAlt": "Testo alternativo della tavola", "editor.plateAltDesc": "Descrivi la tavola per chi non può vederla: una tavola ha bisogno della sua descrizione per apparire.", "editor.plateAltPh": "Il porto alle prime luci",
         "editor.backdrop": "Sfondo del capitolo", "editor.backdropDesc": "Un'immagine che sta dietro l'apertura di questo capitolo, sotto le parole.", "editor.backdropNone": "Nessuno sfondo", "editor.backdropUpload": "Carica un'immagine…", "editor.backdropStrength": "Intensità dello sfondo", "editor.backdropNote": "Alcuni e-reader ignorano gli sfondi; le parole reggono sempre la pagina.", "editor.bdWhisper": "Sussurro", "editor.bdSoft": "Morbida", "editor.bdStrong": "Intensa", "editor.bdSpread": "Doppia pagina — oltre la piega",
         "tool.bold": "Grassetto", "tool.italic": "Corsivo", "tool.blockquote": "Citazione", "tool.sceneBreak": "Cambio di scena", "tool.emDash": "Trattino lungo —",
@@ -6420,7 +6430,7 @@
         "editor.dropCap": "Capitular", "editor.dropCapDesc": "Abre este capítulo com uma letra inicial grande.",
         "editor.smallCaps": "Abertura em versaletes", "editor.smallCapsDesc": "Compõe as primeiras palavras do capítulo em versaletes.",
         "editor.placeholder": "Comece a escrever…", "editor.dropCapAria": "Ativar ou desativar a capitular", "editor.smallCapsAria": "Ativar ou desativar a abertura em versaletes",
-        "editor.plate": "Gravura de abertura", "editor.plateDesc": "Uma ilustração de página inteira, numa página própria, mesmo antes de este capítulo começar.",
+        "editor.plate": "Gravura de abertura", "editor.plateDesc": "Uma ilustração numa página própria, mesmo antes de este capítulo começar.", "editor.plateFit": "Ajuste", "editor.plateFitDesc": "Ao preencher a página, a imagem é recortada à forma da página; mostrada inteira, mantém-se completa, dentro das margens.", "editor.plateFitFill": "Preencher a página", "editor.plateFitWhole": "Mostrar a imagem inteira",
         "editor.plateNone": "Sem gravura", "editor.plateUpload": "Enviar uma imagem…", "editor.plateAlt": "Texto alternativo da gravura", "editor.plateAltDesc": "Descreva a gravura para quem não a pode ver — uma gravura precisa da sua descrição para aparecer.", "editor.plateAltPh": "O porto às primeiras luzes",
         "editor.backdrop": "Fundo do capítulo", "editor.backdropDesc": "Arte que fica atrás da abertura deste capítulo, sob as palavras.", "editor.backdropNone": "Sem fundo", "editor.backdropUpload": "Enviar uma imagem…", "editor.backdropStrength": "Intensidade do fundo", "editor.backdropNote": "Alguns leitores eletrónicos ignoram os fundos; as palavras sustentam sempre a página.", "editor.bdWhisper": "Sussurro", "editor.bdSoft": "Suave", "editor.bdStrong": "Forte", "editor.bdSpread": "Página dupla — cruza a medianiz",
         "tool.bold": "Negrito", "tool.italic": "Itálico", "tool.blockquote": "Citação", "tool.sceneBreak": "Mudança de cena", "tool.emDash": "Travessão —",
@@ -6641,7 +6651,7 @@
         "editor.dropCap": "Initiaal", "editor.dropCapDesc": "Open dit hoofdstuk met een grote beginletter.",
         "editor.smallCaps": "Aanhef in kleinkapitalen", "editor.smallCapsDesc": "Zet de eerste woorden van het hoofdstuk in kleinkapitalen.",
         "editor.placeholder": "Begin met schrijven…", "editor.dropCapAria": "Initiaal aan- of uitzetten", "editor.smallCapsAria": "Aanhef in kleinkapitalen aan- of uitzetten",
-        "editor.plate": "Openingsplaat", "editor.plateDesc": "Een paginavullende illustratie op een eigen pagina, vlak voordat dit hoofdstuk opent.",
+        "editor.plate": "Openingsplaat", "editor.plateDesc": "Een illustratie op een eigen pagina, vlak voordat dit hoofdstuk opent.", "editor.plateFit": "Passing", "editor.plateFitDesc": "Vult de afbeelding de pagina, dan wordt ze bijgesneden tot de vorm van de pagina; geheel getoond blijft ze volledig, binnen de marges.", "editor.plateFitFill": "Pagina vullen", "editor.plateFitWhole": "Hele afbeelding tonen",
         "editor.plateNone": "Geen plaat", "editor.plateUpload": "Afbeelding uploaden…", "editor.plateAlt": "Alt-tekst van de plaat", "editor.plateAltDesc": "Beschrijf de plaat voor lezers die haar niet kunnen zien — een plaat heeft haar beschrijving nodig om te verschijnen.", "editor.plateAltPh": "De haven in het eerste licht",
         "editor.backdrop": "Hoofdstukachtergrond", "editor.backdropDesc": "Beeld dat achter de opening van dit hoofdstuk ligt, onder de woorden.", "editor.backdropNone": "Geen achtergrond", "editor.backdropUpload": "Afbeelding uploaden…", "editor.backdropStrength": "Sterkte van de achtergrond", "editor.backdropNote": "Sommige e-readers negeren achtergronden; de woorden dragen de pagina altijd.", "editor.bdWhisper": "Fluistering", "editor.bdSoft": "Zacht", "editor.bdStrong": "Sterk", "editor.bdSpread": "Dubbele pagina — over de rug",
         "tool.bold": "Vet", "tool.italic": "Cursief", "tool.blockquote": "Blokcitaat", "tool.sceneBreak": "Scènewissel", "tool.emDash": "Gedachtestreepje —",
@@ -6862,7 +6872,7 @@
         "editor.dropCap": "Inicjał", "editor.dropCapDesc": "Otwórz ten rozdział dużą literą początkową.",
         "editor.smallCaps": "Początek kapitalikami", "editor.smallCapsDesc": "Składa pierwsze słowa rozdziału kapitalikami.",
         "editor.placeholder": "Zacznij pisać…", "editor.dropCapAria": "Włącz lub wyłącz inicjał", "editor.smallCapsAria": "Włącz lub wyłącz początek kapitalikami",
-        "editor.plate": "Plansza otwierająca", "editor.plateDesc": "Ilustracja na całą stronę, na własnej stronie, tuż przed otwarciem tego rozdziału.",
+        "editor.plate": "Plansza otwierająca", "editor.plateDesc": "Ilustracja na własnej stronie, tuż przed otwarciem tego rozdziału.", "editor.plateFit": "Dopasowanie", "editor.plateFitDesc": "Gdy obraz wypełnia stronę, jest przycinany do kształtu strony; pokazany w całości pozostaje cały, w obrębie marginesów.", "editor.plateFitFill": "Wypełnij stronę", "editor.plateFitWhole": "Pokaż cały obraz",
         "editor.plateNone": "Bez planszy", "editor.plateUpload": "Prześlij obraz…", "editor.plateAlt": "Tekst alternatywny planszy", "editor.plateAltDesc": "Opisz planszę dla czytelników, którzy jej nie widzą — plansza potrzebuje opisu, aby się pojawić.", "editor.plateAltPh": "Port o pierwszym świetle",
         "editor.backdrop": "Tło rozdziału", "editor.backdropDesc": "Grafika, która leży za otwarciem tego rozdziału, pod słowami.", "editor.backdropNone": "Bez tła", "editor.backdropUpload": "Prześlij obraz…", "editor.backdropStrength": "Siła tła", "editor.backdropNote": "Niektóre czytniki ignorują tła; słowa zawsze niosą stronę.", "editor.bdWhisper": "Szept", "editor.bdSoft": "Łagodne", "editor.bdStrong": "Mocne", "editor.bdSpread": "Rozkładówka — przez grzbiet",
         "tool.bold": "Pogrubienie", "tool.italic": "Kursywa", "tool.blockquote": "Cytat blokowy", "tool.sceneBreak": "Przerwa sceny", "tool.emDash": "Myślnik —",
@@ -7083,7 +7093,7 @@
         "editor.dropCap": "Буквица", "editor.dropCapDesc": "Открыть эту главу большой начальной буквой.",
         "editor.smallCaps": "Зачин капителью", "editor.smallCapsDesc": "Набрать первые слова главы капителью.",
         "editor.placeholder": "Начните писать…", "editor.dropCapAria": "Включить или выключить буквицу", "editor.smallCapsAria": "Включить или выключить зачин капителью",
-        "editor.plate": "Вступительная вклейка", "editor.plateDesc": "Иллюстрация на всю страницу, на отдельной странице, прямо перед началом этой главы.",
+        "editor.plate": "Вступительная вклейка", "editor.plateDesc": "Иллюстрация на отдельной странице, прямо перед началом этой главы.", "editor.plateFit": "Размещение", "editor.plateFitDesc": "Если изображение заполняет страницу, оно обрезается по форме страницы; показанное целиком, оно остаётся полным, в пределах полей.", "editor.plateFitFill": "Заполнить страницу", "editor.plateFitWhole": "Показать изображение целиком",
         "editor.plateNone": "Без вклейки", "editor.plateUpload": "Загрузить изображение…", "editor.plateAlt": "Альтернативный текст вклейки", "editor.plateAltDesc": "Опишите вклейку для читателей, которые не могут её видеть, — вклейке нужно описание, чтобы появиться.", "editor.plateAltPh": "Гавань на рассвете",
         "editor.backdrop": "Фон главы", "editor.backdropDesc": "Изображение, которое лежит за началом этой главы, под словами.", "editor.backdropNone": "Без фона", "editor.backdropUpload": "Загрузить изображение…", "editor.backdropStrength": "Сила фона", "editor.backdropNote": "Некоторые ридеры игнорируют фоны; слова всегда несут страницу.", "editor.bdWhisper": "Шёпот", "editor.bdSoft": "Мягкий", "editor.bdStrong": "Сильный", "editor.bdSpread": "Разворот — через корешок",
         "tool.bold": "Полужирный", "tool.italic": "Курсив", "tool.blockquote": "Цитата", "tool.sceneBreak": "Смена сцены", "tool.emDash": "Тире —",
@@ -7304,7 +7314,7 @@
         "editor.dropCap": "Büyük ilk harf", "editor.dropCapDesc": "Bu bölümü büyük bir ilk harfle açar.",
         "editor.smallCaps": "Küçük büyük harfli giriş", "editor.smallCapsDesc": "Bölümün ilk kelimelerini küçük büyük harflerle dizer.",
         "editor.placeholder": "Yazmaya başlayın…", "editor.dropCapAria": "Büyük ilk harfi aç veya kapat", "editor.smallCapsAria": "Küçük büyük harfli girişi aç veya kapat",
-        "editor.plate": "Açılış levhası", "editor.plateDesc": "Bu bölüm açılmadan hemen önce, kendi sayfasında tam sayfa bir illüstrasyon.",
+        "editor.plate": "Açılış levhası", "editor.plateDesc": "Bu bölüm açılmadan hemen önce, kendi sayfasında bir illüstrasyon.", "editor.plateFit": "Sığdırma", "editor.plateFitDesc": "Sayfayı doldurduğunda resim sayfanın biçimine göre kırpılır; bütün olarak gösterildiğinde tamamı kenar boşluklarının içinde kalır.", "editor.plateFitFill": "Sayfayı doldur", "editor.plateFitWhole": "Resmin tamamını göster",
         "editor.plateNone": "Levha yok", "editor.plateUpload": "Resim yükle…", "editor.plateAlt": "Levha alternatif metni", "editor.plateAltDesc": "Levhayı göremeyen okurlar için onu anlatın — bir levhanın görünmesi için açıklaması gerekir.", "editor.plateAltPh": "İlk ışıkta liman",
         "editor.backdrop": "Bölüm arka planı", "editor.backdropDesc": "Bu bölümün açılışının arkasında, sözcüklerin altında duran görsel.", "editor.backdropNone": "Arka plan yok", "editor.backdropUpload": "Resim yükle…", "editor.backdropStrength": "Arka plan gücü", "editor.backdropNote": "Bazı e-okuyucular arka planları yok sayar; sayfayı her zaman sözcükler taşır.", "editor.bdWhisper": "Fısıltı", "editor.bdSoft": "Yumuşak", "editor.bdStrong": "Güçlü", "editor.bdSpread": "Çift sayfa — cilt boşluğunu aşar",
         "tool.bold": "Kalın", "tool.italic": "İtalik", "tool.blockquote": "Alıntı", "tool.sceneBreak": "Sahne arası", "tool.emDash": "Uzun tire —",
@@ -7525,7 +7535,7 @@
         "editor.dropCap": "حرف استهلالي كبير", "editor.dropCapDesc": "افتتح هذا الفصل بحرف أول كبير.",
         "editor.smallCaps": "بداية بأحرف صغيرة كبيرة", "editor.smallCapsDesc": "يضبط الكلمات الأولى من الفصل بأحرف صغيرة كبيرة.",
         "editor.placeholder": "ابدأ الكتابة…", "editor.dropCapAria": "تبديل الحرف الاستهلالي الكبير", "editor.smallCapsAria": "تبديل البداية بالأحرف الصغيرة الكبيرة",
-        "editor.plate": "لوحة الافتتاح", "editor.plateDesc": "رسم بملء الصفحة في صفحة خاصة به، قبيل افتتاح هذا الفصل مباشرة.",
+        "editor.plate": "لوحة الافتتاح", "editor.plateDesc": "رسم في صفحة خاصة به، قبيل افتتاح هذا الفصل مباشرة.", "editor.plateFit": "الملاءمة", "editor.plateFitDesc": "إذا ملأت الصورة الصفحة قُصّت على شكل الصفحة؛ وإذا عُرضت كاملة بقيت كلها داخل الهوامش.", "editor.plateFitFill": "ملء الصفحة", "editor.plateFitWhole": "عرض الصورة كاملة",
         "editor.plateNone": "بلا لوحة", "editor.plateUpload": "رفع صورة…", "editor.plateAlt": "النص البديل للوحة", "editor.plateAltDesc": "صِف اللوحة للقراء الذين لا يستطيعون رؤيتها — تحتاج اللوحة إلى وصفها كي تظهر.", "editor.plateAltPh": "الميناء عند أول ضوء",
         "editor.backdrop": "خلفية الفصل", "editor.backdropDesc": "صورة تقع خلف افتتاحية هذا الفصل، تحت الكلمات.", "editor.backdropNone": "بلا خلفية", "editor.backdropUpload": "رفع صورة…", "editor.backdropStrength": "قوة الخلفية", "editor.backdropNote": "بعض أجهزة القراءة تتجاهل الخلفيات؛ الكلمات تحمل الصفحة دائمًا.", "editor.bdWhisper": "همس", "editor.bdSoft": "خفيفة", "editor.bdStrong": "قوية", "editor.bdSpread": "صفحتان متقابلتان — عبر الكعب",
         "tool.bold": "عريض", "tool.italic": "مائل", "tool.blockquote": "اقتباس", "tool.sceneBreak": "فاصل مشهد", "tool.emDash": "شرطة طويلة —",
@@ -7746,7 +7756,7 @@
         "editor.dropCap": "ドロップキャップ", "editor.dropCapDesc": "この章を大きな頭文字で始めます。",
         "editor.smallCaps": "スモールキャップスの書き出し", "editor.smallCapsDesc": "章の最初の数語をスモールキャップスで組みます。",
         "editor.placeholder": "書き始めましょう…", "editor.dropCapAria": "ドロップキャップの切り替え", "editor.smallCapsAria": "スモールキャップス書き出しの切り替え",
-        "editor.plate": "口絵", "editor.plateDesc": "この章が始まる直前に、それだけで1ページを占める全面イラスト。",
+        "editor.plate": "口絵", "editor.plateDesc": "この章が始まる直前に、それだけで1ページを占めるイラスト。", "editor.plateFit": "収め方", "editor.plateFitDesc": "ページいっぱいにすると、絵はページの形に合わせて切り取られます。全体を表示すると、余白の内側に絵のすべてが収まります。", "editor.plateFitFill": "ページいっぱいにする", "editor.plateFitWhole": "絵の全体を表示",
         "editor.plateNone": "口絵なし", "editor.plateUpload": "画像をアップロード…", "editor.plateAlt": "口絵の代替テキスト", "editor.plateAltDesc": "見られない読者のために口絵を説明してください — 口絵は説明があって初めて表示されます。", "editor.plateAltPh": "夜明けの港",
         "editor.backdrop": "章の背景", "editor.backdropDesc": "この章の開きの背後、言葉の下に敷かれる絵。", "editor.backdropNone": "背景なし", "editor.backdropUpload": "画像をアップロード…", "editor.backdropStrength": "背景の強さ", "editor.backdropNote": "一部の電子書籍リーダーは背景を無視します。言葉が常にページを支えます。", "editor.bdWhisper": "ささやき", "editor.bdSoft": "やわらか", "editor.bdStrong": "つよめ", "editor.bdSpread": "見開き — ノドをまたぐ",
         "tool.bold": "太字", "tool.italic": "斜体", "tool.blockquote": "引用", "tool.sceneBreak": "場面転換", "tool.emDash": "ダッシュ —",
@@ -7967,7 +7977,7 @@
         "editor.dropCap": "首字放大", "editor.dropCapDesc": "以一个大号首字母开启本章。",
         "editor.smallCaps": "小型大写引子", "editor.smallCapsDesc": "将本章开头几词以小型大写字母排版。",
         "editor.placeholder": "开始写作…", "editor.dropCapAria": "切换首字放大", "editor.smallCapsAria": "切换小型大写引子",
-        "editor.plate": "卷首插图", "editor.plateDesc": "在本章开始之前，单独一页的全幅插图。",
+        "editor.plate": "卷首插图", "editor.plateDesc": "在本章开始之前，单独一页的插图。", "editor.plateFit": "适应方式", "editor.plateFitDesc": "铺满页面时，图片会按页面形状裁切；显示整幅图片时，图片完整保留在页边距之内。", "editor.plateFitFill": "铺满页面", "editor.plateFitWhole": "显示整幅图片",
         "editor.plateNone": "无插图", "editor.plateUpload": "上传图片…", "editor.plateAlt": "插图替代文字", "editor.plateAltDesc": "为无法看见的读者描述这幅插图——插图需要描述才能呈现。", "editor.plateAltPh": "晨光中的港口",
         "editor.backdrop": "章节背景", "editor.backdropDesc": "位于本章开篇之后、文字之下的图画。", "editor.backdropNone": "无背景", "editor.backdropUpload": "上传图片…", "editor.backdropStrength": "背景强度", "editor.backdropNote": "有些电子阅读器会忽略背景；文字始终承载着页面。", "editor.bdWhisper": "轻语", "editor.bdSoft": "柔和", "editor.bdStrong": "浓烈", "editor.bdSpread": "跨页 — 越过书脊",
         "tool.bold": "粗体", "tool.italic": "斜体", "tool.blockquote": "引用块", "tool.sceneBreak": "场景分隔", "tool.emDash": "破折号 —",
@@ -30008,14 +30018,49 @@
         if (!alt) return null;
         return { img, alt };
       }
+      /* BEUK:platefit — how a plate sits on its page: "fill" covers the
+         page and is cropped to its shape (the only behaviour before the
+         field existed, and what a section without the field keeps);
+         "whole" is scaled to fit inside the page's margins, centred,
+         never cropped. The field is section.plateFit, present only when
+         set. A book stored before it reads as "fill", so no stored
+         book changes its look; the choice is made for the writer only
+         at the moment a picture is chosen as a plate (plateFitFor):
+         whole when filling the page would cut away more than a tenth
+         of the picture, by the picture's own pixel size (read from its
+         bytes, imagePixelSize) against the book's trim. A picture
+         whose size cannot be read is shown whole — never cut unasked. */
+      const PLATE_FITS = ["fill", "whole"];
+      const PLATE_FIT_FAR = 0.1;
+      function plateFitOf(section) {
+        return section && section.plateFit === "whole" ? "whole" : "fill";
+      }
+      /* Whether any section (of the book, or of a box set's other volumes) asks for a whole plate. */
+      function bookHasWholePlate() {
+        const whole = (secs) => (Array.isArray(secs) ? secs : []).some((s) => s && s.plateFit === "whole");
+        return whole(state.sections) || (Array.isArray(state.boxSetVolumes) ? state.boxSetVolumes : []).some((v) => v && whole(v.sections));
+      }
+      function plateFitFor(img, trimId) {
+        const px = imagePixelSize(img);
+        if (!px || !(px.w > 0) || !(px.h > 0)) return "whole";
+        const tr = trimSize(trimId);
+        const a = px.w / px.h, b = tr.w / tr.h;
+        return 1 - Math.min(a, b) / Math.max(a, b) > PLATE_FIT_FAR ? "whole" : "fill";
+      }
       function plateHtml(section, forExport, dataMedia, ownPage) {
         const p = plateImage(section);
         if (!p) return "";
         const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(p.img) : picDataSrc(p.img.mediaType, p.img.data);
         const imgTag = '<img src="' + src + '" alt="' + esc(altSaid(p.alt)) + '"/>';
+        const whole = plateFitOf(section) === "whole";
+        /* The class is ADDED after the plate's own, so a "fill" plate's
+           markup is byte for byte what it was (the print renderer reads
+           `<figure class="plate-page"` to draw a plate edge to edge, and
+           so leaves a whole one in the page: deploy/renderer/spreads.mjs).
+           Zen (own page, not an export) already shows a plate whole. */
         return ownPage
-          ? '<div class="plate-full">' + imgTag + "</div>"
-          : '<figure class="plate-page">' + imgTag + "</figure>";
+          ? '<div class="plate-full' + (whole && forExport ? " plate-whole" : "") + '">' + imgTag + "</div>"
+          : '<figure class="plate-page' + (whole ? " plate-whole" : "") + '">' + imgTag + "</figure>";
       }
       /* ---- Chapter backdrops ----
          A body section may also carry a backdrop: art that lies behind
@@ -30786,6 +30831,9 @@
           S + ".empty-note { text-indent: 0; font-style: italic; opacity: 0.6; text-align: center; margin-top: 3em; }",
           S + ".plate-page { margin: 0; height: 100%; text-indent: 0; page-break-after: always; break-after: page; -webkit-column-break-after: always; break-inside: avoid; }",
           S + ".plate-page img { display: block; width: 100%; height: 100%; object-fit: cover; }",
+          /* BEUK:platefit — shown whole: the same box (the page area, inside the margins), the picture fitted in it and centred.
+             Written only for a book that has a whole plate, so every other book's stylesheet is byte for byte what it was. */
+          ...(bookHasWholePlate() ? [S + ".plate-page.plate-whole img { object-fit: contain; object-position: center center; }"] : []),
           /* Chapter backdrops: the art layer sits behind the opening,
              sized to the first page or so and dissolving at its foot so
              it never ends in a hard edge; the words ride above it. The
@@ -30804,6 +30852,10 @@
           '[dir="rtl"] ' + S + ".bd-spread, " + S + '[dir="rtl"] .bd-spread { -webkit-mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 97%), linear-gradient(to left, rgba(0,0,0,.34) 0%, rgba(0,0,0,.14) 8%, rgba(0,0,0,.04) 20%, rgba(0,0,0,0) 36%); mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 97%), linear-gradient(to left, rgba(0,0,0,.34) 0%, rgba(0,0,0,.14) 8%, rgba(0,0,0,.04) 20%, rgba(0,0,0,0) 36%); }',
           S + ".plate-full { margin: 0; text-align: center; text-indent: 0; }",
           S + ".plate-full img { display: block; width: 100%; height: auto; margin: 0 auto; }",
+          /* BEUK:platefit — shown whole in the ebook: its own proportions
+             (width and height both auto), held inside the screen both
+             ways so a tall picture neither overflows nor splits. */
+          ...(bookHasWholePlate() ? [S + ".plate-full.plate-whole img { width: auto; height: auto; max-width: 100%; max-height: 94vh; }"] : []),
           /* A captioned frontispiece: the picture held short enough for
              its caption to stay on the plate, the caption set as a
              figure's is (print holds the picture to the page area). */
@@ -34681,6 +34733,9 @@
       function renderPlateControls(s) {
         const sel = $("chPlate"); if (!sel) return;
         const altRow = $("plateAltRow");
+        const fitRow = $("plateFitRow"); /* BEUK:platefit — only while a plate is set */
+        if (fitRow) fitRow.style.display = (s && s.kind === "body" && s.type !== "part" && s.plateId) ? "" : "none";
+        if (fitRow && $("chPlateFit")) $("chPlateFit").value = plateFitOf(s);
         if (!s || s.kind !== "body" || s.type === "part") { if (altRow) altRow.style.display = "none"; return; }
         sel.innerHTML = '<option value="">' + esc(t("editor.plateNone")) + "</option>" +
           pickerImages().map((im) => '<option value="' + esc(im.id) + '">' + esc(im.name || im.id) + "</option>").join("") +
@@ -35150,7 +35205,14 @@
             const im = imageById(s.plateId);
             if (im) s.plateAlt = String(im.name || "").replace(/\.[^.]+$/, "").replace(/[-_—]+/g, " ").trim();
           }
+          /* BEUK:platefit — a newly chosen picture gets its fit chosen with it: never cut unasked */
+          if (s.plateId) s.plateFit = plateFitFor(imageById(s.plateId));
           noteBookEdited(); syncEditor(); renderPreview(); refreshExportTree();
+        });
+        $("chPlateFit").addEventListener("change", (e) => {
+          const s = activeSection(); if (!s) return;
+          s.plateFit = e.target.value === "whole" ? "whole" : "fill";
+          noteBookEdited(); syncEditor(); renderPreview();
         });
         $("plateFileInput").addEventListener("change", () => {
           const input = $("plateFileInput");
@@ -35169,6 +35231,7 @@
             plateUploadFor = null;
             if (s) {
               s.plateId = im.id;
+              s.plateFit = plateFitFor(im); /* BEUK:platefit */
               if (!String(s.plateAlt || "").trim()) s.plateAlt = String(im.name || "").replace(/\.[^.]+$/, "").replace(/[-_—]+/g, " ").trim();
             }
             noteBookEdited(); refreshImagePickers(); renderPreview(); refreshExportTree();
@@ -37614,7 +37677,7 @@
         try { theme = JSON.stringify(state.theme); } catch (e) { theme = ""; }
         return [printKeys, theme, state.meta.title || "", state.meta.author || "", state.meta.language || "",
           (state.images || []).map((im) => im.id).join(","),
-          state.sections.map((s) => [s.id, s.kind, s.type, s.included ? 1 : 0, s.number || "", s.title || "", s.subtitle || "", s.runHead || "", s.plateId || "", s.plateAlt || "", s.backdropId || "", s.backdropStrength || "", s.content || ""].join("\u0001")).join("\u0002")
+          state.sections.map((s) => [s.id, s.kind, s.type, s.included ? 1 : 0, s.number || "", s.title || "", s.subtitle || "", s.runHead || "", s.plateId || "", s.plateAlt || "", s.plateFit || "", s.backdropId || "", s.backdropStrength || "", s.content || ""].join("\u0001")).join("\u0002")
         ].join("\u0003");
       }
       function hcEnsureModel(force) {
@@ -48049,7 +48112,7 @@
       /* The included chapters whose art prints to the page edge: a
          plate (always a paired spread's edge-to-edge verso) or a backdrop. */
       function printEdgeSections() {
-        return state.sections.filter((s) => s.included && s.type !== "cover" && s.kind === "body" && (plateImage(s) || backdropImage(s)));
+        return state.sections.filter((s) => s.included && s.type !== "cover" && s.kind === "body" && ((plateImage(s) && plateFitOf(s) === "fill") /* BEUK:platefit — a whole plate stays inside the margins */ || backdropImage(s)));
       }
       function printBleedConfig() { return { in: PRINT_BLEED_IN, rtl: isRtlLang(state.meta.language || "en") }; }
       const bleedInStr = (n) => String(Math.round(n * 1000) / 1000);
@@ -48805,11 +48868,20 @@
           target.html = target.html.replace(/<\/section>\s*$/, '<p class="lp-edition">' + esc(t("print.lpEdition")) + "</p>\n</section>");
         }
         const secs = pairs.map((p) => p.html).join("\n");
+        /* BEUK:platefit — a plate shown whole stays in its page: the
+           renderer draws beneath the page only a figure that opens
+           exactly `<figure class="plate-page"` (spreads.mjs PLATE_RE),
+           so it draws no whole plate. But when the section also has a
+           backdrop the renderer stamps, its stand-down rule
+           (`#ps-N .plate-page img { visibility: hidden !important }`)
+           would hide the in-page plate with nothing drawn in its place;
+           this rule, more specific and as important, keeps it shown. */
+        const wholeCss = pairs.map((p, k) => (plateImage(p.s) && plateFitOf(p.s) === "whole") ? "#ps-" + k + " .plate-page.plate-whole img { visibility: visible !important; }" : "").filter(Boolean).join("\n");
         return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n' +
           (atFoot ? '<meta name="beuk-footnotes" content="' + esc(JSON.stringify(printFootnoteConfig())) + '"/>\n' : "") +
           (printBleedOn() ? '<meta name="beuk-bleed" content="' + esc(JSON.stringify(printBleedConfig())) + '"/>\n' : "") + /* BEUK:bleed */
           (printHeadsConfig() ? '<meta name="beuk-heads" content="' + esc(JSON.stringify(printHeadsConfig())) + '"/>\n' : "") + /* BEUK:runheads */ "<title>" +
-          esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
+          esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + (wholeCss ? "\n" + wholeCss : "") + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
       }
       /* ==== BEUK:print ==== */
       /* Print for press. IngramSpark requires a PDF/X-1a:2001 or
@@ -49420,11 +49492,20 @@
           /* The verso plate of a paired spread prints edge to edge. */
           const pl = plateImage(page.section);
           const im = document.createElement("img");
-          im.className = "piv-plate-full";
+          const whole = plateFitOf(page.section) === "whole"; /* BEUK:platefit */
+          im.className = whole ? "piv-plate-whole" : "piv-plate-full";
           im.src = picDataSrc(pl.img.mediaType, pl.img.data);
           im.alt = pl.alt;
+          if (whole) {
+            /* Shown whole: the page area inside this page's margins, as
+               the print file sets it (in the trim box when bleed is on). */
+            im.style.left = mLeft + "px"; im.style.top = (mg.top * PIV_PX) + "px";
+            im.style.width = g.contentW + "px"; im.style.height = g.contentH + "px";
+            host.appendChild(im);
+          } else {
           if (bpx) im.style.objectPosition = side === "left" ? "right center" : "left center"; /* BEUK:bleed */
           el.insertBefore(im, host === el ? null : host);
+          }
           el.classList.add("piv-plate-leaf");
         } else if (!page.blank && page.section) {
           const clip = document.createElement("div");
@@ -52444,7 +52525,14 @@
         state.sections.filter((s) => inBook(s) && s.type !== "cover").forEach((s) => {
           if (s.kind === "body") {
             const plate = plateImage(s);
-            if (plate) push(plate.img, s, tr.w, tr.h);
+            if (plate && plateFitOf(s) === "whole") {
+              /* BEUK:platefit — shown whole, it is fitted inside the page area: those are the inches it occupies */
+              const px = imagePixelSize(plate.img);
+              if (px && px.w && px.h) {
+                const k = Math.min(textW / px.w, (tr.h - mg.top - mg.bottom) / px.h);
+                push(plate.img, s, px.w * k, px.h * k);
+              }
+            } else if (plate) push(plate.img, s, tr.w, tr.h);
             const bd = backdropImage(s);
             if (bd) push(bd.img, s, tr.w, tr.h);
           }
@@ -55450,6 +55538,7 @@
           smallCaps: s.smallCaps !== false, included: s.included !== false,
           plateId: typeof s.plateId === "string" ? s.plateId : null,
           plateAlt: typeof s.plateAlt === "string" ? s.plateAlt : "",
+          ...(PLATE_FITS.includes(s.plateFit) ? { plateFit: s.plateFit } : {}), /* BEUK:platefit — present only when set; absent reads as "fill" */
           backdropId: typeof s.backdropId === "string" ? s.backdropId : null,
           backdropStrength: BACKDROP_STRENGTHS.includes(s.backdropStrength) ? s.backdropStrength : "whisper",
           htLine1: typeof s.htLine1 === "string" ? s.htLine1 : null,
@@ -64376,6 +64465,169 @@
               streakState.streak = keepStreak.streak; streakState.lastDay = keepStreak.lastDay;
               saveStreak(); renderStreak();
               cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+            }
+          } },
+        /* ---- BEUK:platefit — a plate fills its page or is shown whole ---- */
+        { id: "plate.fit.choice", feature: "plate", name: "Plate fit, the choice: a section stored without the field reads as Fill the page and is saved without it (no stored book changes); only fill and whole are kept, through a save and a reload; a newly chosen picture gets its fit chosen with it — whole when filling the page would cut more than a tenth of it, by its pixel size against the book's trim, and whole when its size cannot be read; the Fit row shows only while a plate is set, shows the stored choice and writes the writer's",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepStreak = { streak: streakState.streak, lastDay: streakState.lastDay };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            try {
+              const bad = [];
+              /* A PNG's first bytes stating a size: all the fit rule reads. */
+              const png = (w, h) => btoa(String.fromCharCode(137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, (w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255, (h >>> 24) & 255, (h >>> 16) & 255, (h >>> 8) & 255, h & 255, 8, 2, 0, 0, 0, 0, 0, 0, 0));
+              const pic = (id, w, h) => ({ id, name: id + ".png", mediaType: "image/png", ext: "png", data: png(w, h) });
+              applyBookDoc(buildEmptyBook());
+              state.meta.title = "Fit Fixture"; state.meta.author = "Fixture Author";
+              state.printTrim = "6x9";
+              /* the rule */
+              const rule = [
+                [pic("a", 600, 900), undefined, "fill", "a picture of the page's own shape"],
+                [pic("b", 912, 1376), undefined, "fill", "a picture within a hundredth of the page's shape"],
+                [pic("c", 600, 900), "5x8", "fill", "a 2:3 picture on a 5 × 8 page (a sixteenth cut)"],
+                [pic("d", 960, 1280), undefined, "whole", "a 3:4 picture on a 6 × 9 page (a ninth cut)"],
+                [pic("e", 900, 900), undefined, "whole", "a square picture on a 6 × 9 page"],
+                [pic("f", 640, 400), undefined, "whole", "a wide picture on a 6 × 9 page"],
+                [pic("g", 900, 900), "8x8", "fill", "a square picture on a square page"],
+                [{ id: "h", name: "h.png", mediaType: "image/png", ext: "png", data: "AAAA" }, undefined, "whole", "a picture whose size cannot be read"]
+              ];
+              rule.forEach((r) => { const got = plateFitFor(r[0], r[1]); if (got !== r[2]) bad.push(r[3] + " was given " + got + ", not " + r[2]); });
+              state.printTrim = "8.5x8.5";
+              if (plateFitFor(pic("i", 900, 900)) !== "fill") bad.push("the rule does not read the book's own trim");
+              state.printTrim = "6x9";
+              /* the field */
+              const old = normalizeSection({ id: "sold", kind: "body", type: "chapter", plateId: "a", plateAlt: "An old plate" });
+              if ("plateFit" in old || plateFitOf(old) !== "fill") bad.push("a section stored without the field does not read as fill, or gained the field");
+              if ("plateFit" in normalizeSection({ plateFit: "cover" }) || "plateFit" in normalizeSection({ plateFit: 1 })) bad.push("a value outside fill / whole was kept");
+              if (normalizeSection({ plateFit: "whole" }).plateFit !== "whole" || normalizeSection({ plateFit: "fill" }).plateFit !== "fill") bad.push("fill / whole are not kept");
+              state.images = [pic("fitsq", 900, 900), pic("fitpage", 600, 900)];
+              let ch = state.sections.find((s) => s.type === "chapter");
+              const chId = ch.id;
+              ch.plateId = "fitsq"; ch.plateAlt = "A square picture"; ch.plateFit = "whole";
+              const doc = JSON.parse(JSON.stringify(serializeBook()));
+              const others = doc.sections.filter((s) => s.id !== chId);
+              if ((doc.sections.find((s) => s.id === chId) || {}).plateFit !== "whole") bad.push("the choice is not saved");
+              if (others.some((s) => "plateFit" in s)) bad.push("a section with no choice was saved with one");
+              applyBookDoc(doc);
+              ch = state.sections.find((s) => s.id === chId);
+              if (!ch || ch.plateFit !== "whole" || plateFitOf(ch) !== "whole") bad.push("the choice did not survive a reload");
+              /* the control */
+              delete ch.plateFit; ch.plateId = null;
+              state.activeId = ch.id; syncEditor();
+              const row = $("plateFitRow"), fitSel = $("chPlateFit"), sel = $("chPlate");
+              if (!(row && fitSel && sel)) bad.push("the Fit row is not in the page");
+              else {
+                if (row.style.display !== "none") bad.push("the Fit row shows with no plate set");
+                const opts = Array.prototype.map.call(fitSel.options, (o) => o.value + "=" + o.textContent).join("|");
+                if (opts !== "fill=" + t("editor.plateFitFill") + "|whole=" + t("editor.plateFitWhole")) bad.push("the Fit choice is not the two named values (" + opts + ")");
+                if (!row.textContent.includes(t("editor.plateFit")) || !row.textContent.includes(t("editor.plateFitDesc"))) bad.push("the Fit row lacks its words");
+                sel.value = "fitsq"; sel.dispatchEvent(new Event("change"));
+                if (!(ch.plateId === "fitsq" && ch.plateFit === "whole" && row.style.display !== "none" && fitSel.value === "whole")) bad.push("choosing a square picture did not store and show whole (" + ch.plateFit + "/" + fitSel.value + ")");
+                sel.value = "fitpage"; sel.dispatchEvent(new Event("change"));
+                if (!(ch.plateId === "fitpage" && ch.plateFit === "fill" && fitSel.value === "fill")) bad.push("choosing a page-shaped picture did not store and show fill (" + ch.plateFit + "/" + fitSel.value + ")");
+                fitSel.value = "whole"; fitSel.dispatchEvent(new Event("change"));
+                if (!(ch.plateFit === "whole" && sectionHtml(ch).includes('<figure class="plate-page plate-whole">'))) bad.push("the writer's choice of whole was not written or not typeset");
+                fitSel.value = "fill"; fitSel.dispatchEvent(new Event("change"));
+                if (!(ch.plateFit === "fill" && sectionHtml(ch).includes('<figure class="plate-page"><img'))) bad.push("the writer's choice of fill was not written or not typeset");
+                sel.value = ""; sel.dispatchEvent(new Event("change"));
+                if (!(ch.plateId === null && row.style.display === "none")) bad.push("No plate did not hide the Fit row");
+              }
+              if (/full-bleed/i.test(UI_STRINGS.en["editor.plateDesc"])) bad.push("the plate's description still promises full bleed for both choices");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
+                rule.length + " shapes given the fit the rule states (the book's trim read); a section without the field reads fill and is saved without it; fill / whole kept through a save and a reload, anything else dropped; the Fit row hidden with no plate, storing whole for a square picture and fill for a page-shaped one, and writing the writer's own choice");
+            } finally {
+              applyBookDoc(keepDoc);
+              streakState.streak = keepStreak.streak; streakState.lastDay = keepStreak.lastDay;
+              saveStreak(); renderStreak();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+            }
+          } },
+        { id: "plate.fit.surfaces", feature: "plate", name: "Plate fit, every surface: a plate with no stored choice or with fill is typeset byte for byte as before (preview figure, EPUB plate page, print file); a whole plate is marked in the preview and the print file and fitted, not cropped, by the book stylesheet; its EPUB page keeps the alt text and holds the picture inside the screen both ways; the print file keeps it in its page inside the margins (and shown beside a stamped backdrop), it is no longer counted as art to the page edge, its printed size is the fitted one; the Print Interior View sets it inside the margins; Zen is unchanged",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepTrim = state.printTrim, keepRecto = state.printRecto;
+            try {
+              const bad = [];
+              const png = (w, h) => btoa(String.fromCharCode(137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, (w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255, (h >>> 24) & 255, (h >>> 16) & 255, (h >>> 8) & 255, h & 255, 8, 2, 0, 0, 0, 0, 0, 0, 0));
+              applyBookDoc(buildEmptyBook());
+              state.meta.title = "Fit Fixture"; state.meta.author = "Fixture Author";
+              state.printTrim = "6x9"; state.printRecto = true;
+              state.images = [{ id: "fitwide", name: "Wide Grid.png", mediaType: "image/png", ext: "png", data: png(640, 400) }];
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.title = "One"; ch.content = "The harbour bell rang over the water at first light.";
+              ch.plateId = "fitwide"; ch.plateAlt = "A wide grid of ruled lines";
+              ch.backdropId = "fitwide"; ch.backdropStrength = "whisper";
+              const ch2 = mkSection("body", "chapter", "Two", { number: "2", content: "The tide turned before noon.", plateId: "fitwide", plateAlt: "The same grid, filling its page", plateFit: "fill" });
+              state.sections.splice(state.sections.indexOf(ch) + 1, 0, ch2);
+              const img = state.images[0];
+              const ownPage = (s, cls) => '<div class="' + cls + '"><img src="../Images/' + imageFileName(img) + '" alt="' + esc(s.plateAlt) + '"/></div>';
+              /* no stored choice, and fill: as before */
+              if (!sectionHtml(ch).startsWith('<figure class="plate-page"><img src="data:image/png;base64,')) bad.push("a plate with no stored choice is not typeset as before");
+              if (plateHtml(ch, true, false, true) !== ownPage(ch, "plate-full")) bad.push("a plate with no stored choice changed in the EPUB");
+              if (!sectionHtml(ch2).startsWith('<figure class="plate-page"><img src="data:image/png;base64,') || plateHtml(ch2, true, false, true) !== ownPage(ch2, "plate-full")) bad.push("a fill plate is not typeset as before");
+              /* whole */
+              if (buildBookCss("").includes("plate-whole")) bad.push("a book with no whole plate has a changed stylesheet");
+              ch.plateFit = "whole";
+              if (!sectionHtml(ch).startsWith('<figure class="plate-page plate-whole"><img src="data:image/png;base64,') || !sectionHtml(ch).includes('alt="A wide grid of ruled lines"')) bad.push("a whole plate is not marked in the preview, or lost its alt text");
+              if (plateHtml(ch, true, false, true) !== ownPage(ch, "plate-full plate-whole")) bad.push("a whole plate's EPUB page is not marked or lost its alt text");
+              if (plateHtml(ch, false, true, true).indexOf('<div class="plate-full"><img') !== 0) bad.push("Zen's plate changed");
+              const css = buildBookCss("");
+              if (!css.includes(".plate-page img { display: block; width: 100%; height: 100%; object-fit: cover; }")) bad.push("the fill rule changed");
+              if (!css.includes(".plate-page.plate-whole img { object-fit: contain; object-position: center center; }")) bad.push("the stylesheet does not fit a whole plate inside its page");
+              if (!css.includes(".plate-full.plate-whole img { width: auto; height: auto; max-width: 100%; max-height: 94vh; }")) bad.push("the stylesheet does not hold a whole plate inside the screen");
+              /* EPUB */
+              const files = epubFiles("generic");
+              const plan = epubPlan();
+              const e1 = plan.find((p) => p.plate && p.section === ch), e2 = plan.find((p) => p.plate && p.section === ch2);
+              const x1 = e1 ? scText(files, "OEBPS/" + e1.file) : "", x2 = e2 ? scText(files, "OEBPS/" + e2.file) : "";
+              if (!(x1.includes('<div class="plate-full plate-whole"><img src="../Images/' + imageFileName(img) + '" alt="A wide grid of ruled lines"/>'))) bad.push("the EPUB's whole plate page is not marked with its alt text");
+              if (!x2.includes('<div class="plate-full"><img ')) bad.push("the EPUB's fill plate page changed");
+              if (!files.some((f) => /\.css$/.test(f.path) && String(f.content).includes(".plate-full.plate-whole img { width: auto; height: auto; max-width: 100%; max-height: 94vh; }"))) bad.push("the EPUB's stylesheet lacks the whole rule");
+              const val = validateEpubPackage(files);
+              if (val.errors !== 0) bad.push("the EPUB has " + val.errors + " validator errors");
+              /* print */
+              const print = buildPrintHtml();
+              const inPrint = state.sections.filter((s) => inBook(s) && s.type !== "cover");
+              const k1 = inPrint.indexOf(ch), k2 = inPrint.indexOf(ch2);
+              const keep = (k) => "#ps-" + k + " .plate-page.plate-whole img { visibility: visible !important; }";
+              if (!print.includes('<figure class="plate-page plate-whole"><img src="data:image/png;base64,')) bad.push("the print file's whole plate is not marked (the renderer would draw it edge to edge)");
+              if (!print.includes('<figure class="plate-page"><img src="data:image/png;base64,')) bad.push("the print file's fill plate is not as the renderer reads it");
+              if (!print.includes(keep(k1)) || print.includes(keep(k2))) bad.push("the print file does not keep exactly the whole plate shown beside a stamped backdrop");
+              if (!/\.print-sec \.plate-page \{ height: [0-9.]+in; overflow: hidden; \}/.test(print)) bad.push("the print file no longer holds a plate to the page area");
+              const edge = printEdgeSections();
+              if (edge.includes(ch2) !== true) bad.push("a fill plate is not counted as art to the page edge");
+              ch.backdropId = null;
+              if (printEdgeSections().includes(ch)) bad.push("a whole plate is counted as art to the page edge");
+              const tr = trimSize();
+              const pl1 = printPlacements().find((p) => p.section === ch), pl2 = printPlacements().find((p) => p.section === ch2);
+              if (!(pl1 && pl1.placedW < tr.w && pl1.placedH < tr.h && Math.abs(pl1.placedW / pl1.placedH - 1.6) < 1e-6)) bad.push("a whole plate's printed size is not the fitted one");
+              if (!(pl2 && pl2.placedW === tr.w && pl2.placedH === tr.h)) bad.push("a fill plate's printed size is not the page");
+              /* the Print Interior View */
+              openPrintInteriorView();
+              const leaf = (s) => {
+                const pg = piv.model.pages.find((p) => p.section === s && p.col === 0);
+                if (!pg) return null;
+                piv.spread = Math.floor(pg.n / 2); renderPrintView();
+                return $("pivSpread").querySelector('.piv-page[data-page="' + pg.n + '"]');
+              };
+              const el1 = leaf(ch);
+              const w1 = el1 && el1.querySelector(".piv-plate-whole");
+              const g = piv.model.g;
+              if (!(w1 && !el1.querySelector(".piv-plate-full") && !el1.querySelector(".piv-runhead") && !el1.querySelector(".piv-folio"))) bad.push("the view's whole plate leaf is not a bare page with the picture fitted");
+              else {
+                const l = parseFloat(w1.style.left), tp = parseFloat(w1.style.top), w = parseFloat(w1.style.width), h = parseFloat(w1.style.height);
+                if (!(l > 0 && tp > 0 && Math.abs(w - g.contentW) < 0.01 && Math.abs(h - g.contentH) < 0.01 && l + w < g.pageW && tp + h < g.pageH && w1.alt === "A wide grid of ruled lines")) bad.push("the view's whole plate is not inside the margins (" + [l, tp, w, h].join(",") + ")");
+                if (getComputedStyle(w1).objectFit !== "contain") bad.push("the view's whole plate is not fitted");
+              }
+              const el2 = leaf(ch2);
+              if (!(el2 && el2.querySelector(".piv-plate-full") && !el2.querySelector(".piv-plate-whole"))) bad.push("the view's fill plate leaf is not edge to edge");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
+                "no stored choice and fill typeset as before in the preview, the EPUB and the print file; whole marked and fitted in the preview and the print file (kept in its page, shown beside a stamped backdrop, not counted as edge art, printed at its fitted size), its EPUB page with alt text held inside the screen (validator errors 0), set inside the margins in the Print Interior View; Zen unchanged");
+            } finally {
+              $("modalPrintView").classList.remove("open");
+              state.printTrim = keepTrim; state.printRecto = keepRecto;
+              applyBookDoc(keepDoc);
             }
           } },
         /* ---- Language detection: the book names its own language ---- */

@@ -94,7 +94,7 @@ Every object is open: a key the schema does not know survives a read. Strings in
 | `meta` | `title`, `subtitle`, `author`, `publisher`, `isbn`, `language`, `langSource`, `langGuess`, `year`, `rights`, `description`, `a11ySummary`, `bookId`. Optional: `series`, `seriesNumber`, `legacyBookIds`, `titleSource`, `subtitleSource`, `authorSource`, `castHidden`, `rightsMode`, `ccLicence`, `firstPublished`, `editionHolder`. | CI:20519, CI:20976 |
 | `theme` | `bodyFont`, `headFont`, `fontSize`, `lineHeight`, `paraMode`, `indentDepth`, `headerStyle`, `dropDepth`, `smallCapsWords`, `ornament`, `justify`, `hyphens`. Optional: `headingFlourish`, `headingFlourishPos`, `header` (`number`, `title`, `subtitle`, each `{font, size, align, casing, above, below}`). | CI:19226, CI:19620 |
 | `colour` | `accent`, `tint`, optional `printBlack` | CI:19425 |
-| section | `id`, `kind`, `type`, `title`, `subtitle`, `number`, `content`, `dropCap`, `smallCaps`, `included`, `plateId`, `plateAlt`, `backdropId`, `backdropStrength`, `htLine1`, `htLine2`, `tocHeading`, `scenes`. Outline fields, each present only when set: `synopsis`, `status`, `tags`, `pov`, `threads`, `custom`. | CI:50099, CI:32939 |
+| section | `id`, `kind`, `type`, `title`, `subtitle`, `number`, `content`, `dropCap`, `smallCaps`, `included`, `plateId`, `plateAlt`, `backdropId`, `backdropStrength`, `htLine1`, `htLine2`, `tocHeading`, `scenes`. Optional, present only when set: `plateFit` (`fill` or `whole`: the opening plate covers its page, cropped to its shape, or is shown whole inside the margins; absent reads as `fill`, so a book saved before the field looks as it did). Outline fields, each present only when set: `synopsis`, `status`, `tags`, `pov`, `threads`, `custom`. | CI:50099, CI:32939 |
 | scene | `at`, `imageId`, `name`, `caption`, `alt` | CI:50122 |
 | image | `id`, `name`, `mediaType`, `data`. Optional: `ext`, `credit {name, url}`. | CI:34535, CI:35061 |
 | `cover` | `data`, `mediaType`, `ext`, `name` | CI:42195, CI:43563 |
@@ -132,7 +132,7 @@ Ids: a section id is `s` plus 7 base36 characters; a `bookId` is `urn:uuid:<uuid
 
 Where 1.0 enforces a value on load, the schema is strict and the reader replaces a bad value (see [The lossless rule](#the-lossless-rule)). Where 1.0 accepts any string, the schema takes a string and the reader only warns when it is not in the known list.
 
-- Enforced: `section.backdropStrength`, `section.status`, `printMarginMode`, `printHeadContent`, `printHeadPlace`, `printFolio`, `printNotes`, `storeCheck.*`, `manuscript.paper`, `manuscript.font`, `manuscript.italics`, `history[].auto`, `bible` entry `type`, `coverRecipe` layout, background and texture, `wrap.paper`, `wrap.binding`.
+- Enforced: `section.backdropStrength`, `section.plateFit`, `section.status`, `printMarginMode`, `printHeadContent`, `printHeadPlace`, `printFolio`, `printNotes`, `storeCheck.*`, `manuscript.paper`, `manuscript.font`, `manuscript.italics`, `history[].auto`, `bible` entry `type`, `coverRecipe` layout, background and texture, `wrap.paper`, `wrap.binding`.
 - Warn only: `exportPlatform`, `printTrim`, `section.kind`, `section.type`, `theme.headerStyle`, `theme.paraMode`, `theme.headingFlourishPos`, `meta.rightsMode`, `meta.ccLicence`, `meta.langSource`.
 
 The known lists are `KNOWN` in `src/book/schema.ts`.
