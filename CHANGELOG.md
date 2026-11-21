@@ -4,6 +4,33 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-21 — Your manuscript arrives whole, and Beuk shows its count
+
+**The studio**
+- **One studio.** The new studio is the only one now, at the same address. A book you were writing on this device comes with you, once, and stays linked to its copy on your shelf.
+- **Remove a book from your shelf.** Each book on your shelf has a Remove button. It asks first, and it removes that book for good; the copy on your desk stays where it is.
+
+**Import**
+- **A summary you can read.** After an import Beuk opens a card: what it found before your chapters, the chapters themselves with their word counts, what comes after, and what it did along the way. One button opens the book; another shows every change.
+- **Every word accounted for.** The card now says how many words were in your file, how many are in your book, and how many were set aside and why: a typed contents page, running headers, the title page's own lines. If a single word is unexplained, Beuk says how many instead of saying nothing. The full report has the tally: paragraphs, headings, breaks, pictures, tables, lists and notes, in the file and in the book.
+- **Your chapters stay your chapters.** A book that numbers its own chapters keeps exactly those. A heading between two numbered chapters is a section of the chapter before it, not a chapter Beuk made up. A file that jumps from Heading 1 to Heading 3 keeps the Heading 3s as sections.
+- **The same book from any file.** Word, RTF, OpenDocument, a web page, Markdown and EPUB now follow one rule for chapters and sections, so the same manuscript comes in the same way whichever one you exported.
+- **Two more kinds of file.** Import reads OpenDocument (`.odt`) and a web page, alone or zipped with its pictures, which is what Google Docs gives you when you download a page.
+- **EPUBs come in as books.** An EPUB from another tool used to break into a chapter per sub-heading and lose its footnotes. It now keeps its own chapters, its sections inside them, its front and back pages, and its notes.
+- **Footnotes follow their words.** Notes link in a web page and in a text file that lists them, Markdown notes work under any name, and a note marked inside a table is linked like any other.
+- **Tables keep their words.** A table used to be left out and listed in the report. Its rows now stay in the book where the table stood, one line each.
+- **Markdown reads clean.** Tables, backticks and HTML tags no longer sit raw in your prose, and a zipped Markdown file brings its pictures.
+- **Lists inside lists** come in as lines of their own, in order, none run together.
+- **A title page is a title page.** Its lines go to your book's details. They are no longer filed as a Copyright page or a Dedication your book doesn't have.
+
+**Typesetting**
+- **Tables.** Type `::: table`, then a row per line between bars, and Beuk sets a real table in the preview, the ebook and print: the caption above, a header row when you ask for one, number columns aligned. Word export writes one line per row for now.
+- **An opening plate, whole or filling the page.** Under Opening plate there is a Fit choice: fill the page, cropped to its shape, or show the whole picture inside the margins. A plate you already set stays as it was.
+
+**The site**
+- **Beuk Weekly has a shelf.** Five issues are on the School's newsstand, the newest first.
+- A missing page now says so in Beuk's own voice, and every page names the version at its foot.
+
 ## 2026-11-14 — Imports that keep their cover and stay out of your way
 
 - **An EPUB arrives with its cover.** Importing an EPUB used to leave its cover behind, even one Beuk had made itself, so a book you took out and brought back came in bare. The cover the EPUB declares now becomes your book's cover (JPG or PNG).
