@@ -19,7 +19,7 @@ test('epubcover: epubRead extracts the declared cover-image and returns it', asy
   const fn = html.slice(html.indexOf('async function epubRead('), html.indexOf('function epubBlocks('));
   assert.ok(fn.length > 0, 'epubRead present');
   assert.match(fn, /cover-image/, 'epubRead locates the declared cover-image item');
-  assert.match(fn, /return \{ meta, docs, images, cover \}/, 'epubRead returns the extracted cover alongside pages and images');
+  assert.match(fn, /return \{ meta, docs, images, cover, flex \}/, 'epubRead returns the extracted cover alongside pages and images');
 });
 
 test('epubcover: importEpubRead sets book.cover from the extracted cover', async () => {

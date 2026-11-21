@@ -41128,12 +41128,13 @@
               return;
             }
             if (/^h[1-6]$/.test(tag)) {
-              let t = epubNoMarks(irTextBr(c), null).replace(/\s+/g, " ").trim(); /* BEUK:gluefix */
-              if (!t || inNotes) return;
+              const t = irTextBr(c).replace(/\s+/g, " ").trim(); /* BEUK:gluefix */
+              let h = epubNoMarks(t, null).replace(/\s+/g, " ").trim(); /* a note's mark in a heading is not one of its words */
+              if (!h || inNotes) return;
               const lab = labels.get(c);
-              if (lab) t = (/^(?:\d{1,3}|(?=[IVXLC])C{0,3}(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))$/.test(lab) ? "Chapter " + lab : lab) + ": " + t;
-              if (ctx.heads) { ctx.heads.push({ level: Number(tag.slice(1)), text: t, rank: 0, role: "" }); out.push(irSent("EH", ctx.heads.length - 1)); }
-              else out.push((tag === "h1" || tag === "h2" ? "# " : "## ") + t);
+              if (lab) h = (/^(?:\d{1,3}|(?=[IVXLC])C{0,3}(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))$/.test(lab) ? "Chapter " + lab : lab) + ": " + h;
+              if (ctx.heads) { ctx.heads.push({ level: Number(tag.slice(1)), text: h, rank: 0, role: "" }); out.push(irSent("EH", ctx.heads.length - 1)); }
+              else out.push((tag === "h1" || tag === "h2" ? "# " : "## ") + h);
               return;
             }
             if (tag === "blockquote") {
