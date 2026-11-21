@@ -41993,6 +41993,11 @@
         return wordsOfClean(String(text == null ? "" : text).replace(/^[ \t]*(?:[-•]|\d{1,3}[.)])[ \t]+/gm, " ")).filter((w) => /[\p{L}\p{N}]/u.test(w));
       }
       const irTallyN = (text) => irTallyTokens(text).length;
+      /* A PDF marks no lists: on its side every piece with a letter or a digit in it is a word, "116." too, before and
+         after any join. Where the book then sets such a number as a list's marker, which the studio does not count, it is
+         a counted line of its own (listMarks), never a word lost. */
+      const irTallyPdfTokens = (text) => wordsOfClean(String(text == null ? "" : text)).filter((w) => /[\p{L}\p{N}]/u.test(w));
+      const irTallyPdfN = (text) => irTallyPdfTokens(text).length;
       /* What the import puts aside, handed over as it happens. Readers run before the import is recorded, so the
          buckets are opened when a file starts being read (readImportFile) and closed when its tally is written. */
       let IR_ASIDE = null;
@@ -42490,6 +42495,10 @@
         const studio = { chapterNumbers: 0, partHeadings: 0, pageNames: 0, signs: 0 }, labels = [];
         const W = (v) => irTallyN(countWordsClean(v)), S = (v) => wordsOfClean(countWordsClean(v)).length; /* the tally's count, the studio's */
         const push = (p) => { parts.push(p); studio.signs += wordsOfClean(p).length - irTallyN(p); };
+        /* a line the book sets as a list's item: the number that opens it, which the studio's count does not read
+           (countWordsClean's last rule, matched on the line as the book holds it) */
+        const listNums = [];
+        const cleanOf = (v) => { (String(v || "").match(/^[ \t]*\d{1,3}[.)](?=[ \t])/gm) || []).forEach((m) => listNums.push(m.trim())); return countWordsClean(v); };
         state.sections.forEach((s) => {
           const c = String(s.content || "");
           if (!/\S/.test(c) && s.type !== "part") return;
@@ -42498,19 +42507,19 @@
             chapters++;
             /* the chapter's number ("Chapter I") is counted with the book's words only where the file has it (irTallyLabels) */
             const label = s.number && !/^chapter\b/i.test(String(s.title || "")) ? "Chapter " + s.number : "";
-            push(countWordsClean(s.title || ""));
+            push(cleanOf(s.title || ""));
             labels.push({ label, title: s.title || "" });
-          } else if (s.type === "part") { const h = (s.number ? "Part " + s.number + " " : "") + (s.title || ""); push(countWordsClean(h)); studio.partHeadings += S(h); irTallyItem(R, "headings", h); }
-          else if (named.has(s.id)) { pages++; push(countWordsClean(s.title || "")); irTallyItem(R, "headings", s.title || ""); }
+          } else if (s.type === "part") { const h = (s.number ? "Part " + s.number + " " : "") + (s.title || ""); push(cleanOf(h)); studio.partHeadings += S(h); irTallyItem(R, "headings", h); }
+          else if (named.has(s.id)) { pages++; push(cleanOf(s.title || "")); irTallyItem(R, "headings", s.title || ""); }
           else if (s.title && s.type !== "frontispiece" && s.type !== "toc") studio.pageNames += S(s.title);
-          if (s.subtitle) push(countWordsClean(s.subtitle));
+          if (s.subtitle) push(cleanOf(s.subtitle));
           irBlocks(c).forEach((b) => {
             const v = b.trim();
             if (!v) return;
             const img = parseImageLine(v);
             for (const m of v.matchAll(/!\[([^\]\n]*)\]\((?!img:)[^)\n]*\)/g)) { const n = irTallyN(m[1]); if (n) { R.descUnlinked = (R.descUnlinked || 0) + 1; R.descUnlinkedWords = (R.descUnlinkedWords || 0) + n; } }
-            if (img) { R.pictures++; irTallyDesc(R, "", img.alt); if (img.caption) { push(countWordsClean(img.caption)); irTallyItem(R, "captions", countWordsClean(img.caption)); } return; }
-            push(countWordsClean(v));
+            if (img) { R.pictures++; irTallyDesc(R, "", img.alt); if (img.caption) { push(cleanOf(img.caption)); irTallyItem(R, "captions", countWordsClean(img.caption)); } return; }
+            push(cleanOf(v));
             if (/^\[\^\d{1,3}\]:/.test(v)) { R.noteDefs++; irTallyItem(R, "notes", countWordsClean(v)); return; }
             R.noteRefs += new Set(v.match(/\[\^\d{1,3}\](?!:)/g) || []).size;
             R.links += (v.match(mdLinkRe()) || []).length;
@@ -42557,7 +42566,7 @@
         R.picsLost = items.reduce((a, it) => a + (it.kind === "imageDropped" ? 1 : it.kind === "imageLost" || it.kind === "mdImage" ? (Number(it.data && it.data.n) || 1) : 0), 0);
         R.notesOrphan = items.filter((it) => it.kind === "noteOrphan").length;
         plain.forEach((it) => (it.data.lines || []).forEach((l) => { const k = irTallyKey(countWordsClean(l)), P = R.items.paragraphs || [], j = P.indexOf(k); if (j >= 0) P.splice(j, 1); irTallyItem(R, "tableRows", countWordsClean(l)); }));
-        return { rows: R, text: parts.join("\n"), studio, labels };
+        return { rows: R, text: parts.join("\n"), studio, labels, listNums: listNums.join("\n") };
       }
       /* ---- the reconciliation, written into the report ---- */
       const IR_TALLY_JOINS = ["pdfRejoined", "pdfPieced", "pdfOverprint"];
@@ -42579,12 +42588,15 @@
         /* what the import never reads is set aside as the file holds it: page headers and footers, comments and tracked deletions of a Word or OpenDocument file */
         if (src && src.counted && src.own) Object.keys(src.own).forEach((k) => { if (src.own[k]) aside[k] = (aside[k] || "") + "\n" + src.own[k]; });
         const deltas = aside["\u0000delta"] || [];
-        IR_TALLY_BUCKETS.forEach((b) => { const n = irTallyN(aside[b] || "") + deltas.filter((d) => d[0] === b).reduce((a, d) => a + irTallyN(d[1]) - irTallyN(d[2]), 0); if (n) tally.aside[b] = n; });
+        const pdf = !!(tally.counted && src.kind === "pdf"), fN = pdf ? irTallyPdfN : irTallyN; /* the file side's rule */
+        /* a PDF's lines the book sets as a list's items: the numbers that open them, which the studio does not count */
+        if (pdf && book.listNums) aside.listMarks = (aside.listMarks || "") + book.listNums + "\n";
+        IR_TALLY_BUCKETS.forEach((b) => { const n = fN(aside[b] || "") + deltas.filter((d) => d[0] === b).reduce((a, d) => a + fN(d[1]) - fN(d[2]), 0); if (n) tally.aside[b] = n; });
         /* a PDF: its pieces' words, less the joins the reader made where it made them (each measured: the pieces' words
            before, the joined text's after), are the file's words a reader of it would count */
-        if (tally.counted && src.kind === "pdf") {
-          tally.pdf = { raw: Object.keys(src.parts).reduce((a, k) => a + irTallyN(src.parts[k].join("\n")), 0), joins: {}, pages: src.pdf.pages, unread: src.pdf.unread };
-          IR_TALLY_JOINS.forEach((b) => { const n = irTallyN(aside[b] || "") + deltas.filter((d) => d[0] === b).reduce((a, d) => a + irTallyN(d[1]) - irTallyN(d[2]), 0); if (n) tally.pdf.joins[b] = n; });
+        if (pdf) {
+          tally.pdf = { raw: Object.keys(src.parts).reduce((a, k) => a + fN(src.parts[k].join("\n")), 0), joins: {}, pages: src.pdf.pages, unread: src.pdf.unread };
+          IR_TALLY_JOINS.forEach((b) => { const n = fN(aside[b] || "") + deltas.filter((d) => d[0] === b).reduce((a, d) => a + fN(d[1]) - fN(d[2]), 0); if (n) tally.pdf.joins[b] = n; });
         }
         if (tally.counted) {
           tally.file = tally.pdf ? tally.pdf.raw - Object.keys(tally.pdf.joins).reduce((a, k) => a + tally.pdf.joins[k], 0) : Object.keys(src.parts).reduce((a, k) => a + irTallyN(src.parts[k].join("\n")), 0);
@@ -42720,14 +42732,16 @@
          stands that the file does not have — never the text around them. */
       const IR_TALLY_FOLD = (w) => String(w).normalize("NFC").replace(/[‘’‚‛′`´]/g, "'").replace(/[“”„‟″«»]/g, '"').replace(/[‐‑‒–—―−]/g, "-").replace(/…/g, "...").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
       function irTallyWords(src, book, aside) {
-        const bag = (m, text, sign, lower) => irTallyTokens(text).forEach((w) => { let k = IR_TALLY_FOLD(w); if (lower) k = k.toLowerCase(); if (!k) return; m.set(k, (m.get(k) || 0) + sign); });
+        const fileTok = src.kind === "pdf" ? irTallyPdfTokens : irTallyTokens; /* the file side's rule, as irTallyWrite counts it */
+        const bagBy = (tok) => (m, text, sign, lower) => tok(text).forEach((w) => { let k = IR_TALLY_FOLD(w); if (lower) k = k.toLowerCase(); if (!k) return; m.set(k, (m.get(k) || 0) + sign); });
+        const bag = bagBy(fileTok), bagBook = bagBy(irTallyTokens);
         const diff = (lower) => {
           const m = new Map();
           Object.keys(src.parts).forEach((k) => bag(m, src.parts[k].join("\n"), 1, lower));
           IR_TALLY_BUCKETS.forEach((b) => bag(m, aside[b] || "", -1, lower));
           IR_TALLY_JOINS.forEach((b) => bag(m, aside[b] || "", -1, lower)); /* a PDF's copies printed over, dropped: their words leave the file's side (the joins measured as before → after are among the deltas) */
           (aside["\u0000delta"] || []).forEach((d) => { bag(m, d[1], -1, lower); bag(m, d[2], 1, lower); });
-          bag(m, book.text, -1, lower);
+          bagBook(m, book.text, -1, lower);
           return m;
         };
         const lo = diff(true), cased = diff(false);

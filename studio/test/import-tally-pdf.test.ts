@@ -130,6 +130,36 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
       .toEqual({ raw: 49, joins: { pdfRejoined: 1, pdfPieced: 1 }, file: 47, book: 35, unaccounted: 0 });
   }, 120_000);
 
+  /* A PDF marks no lists: a note's printed number ("7.") is a word of the file before and after the reader joins its
+     line, never a join. Kept by the book (set bold, as the Meridian PDFs' notes are), nothing is set aside; set by the
+     book as a list's number, which the studio does not count, it is a counted line, "list numbers". */
+  async function numbered(bold: boolean) {
+    const doc = await pdfLib.PDFDocument.create();
+    const font = (await doc.embedFont(pdfLib.StandardFonts.Helvetica)) as { widthOfTextAtSize: (s: string, n: number) => number };
+    const face = bold ? await doc.embedFont(pdfLib.StandardFonts.HelveticaBold) : font;
+    const w = (face as typeof font).widthOfTextAtSize('7. ', 11);
+    BOOK.forEach((lines, k) => {
+      const pg = doc.addPage([420, 595]);
+      lines.forEach(([s, x, y, size]) => pg.drawText(s, { x, y, size, font }));
+      if (k === 1) {
+        /* the number and its line as two pieces (pdf.js gives one per drawn run), on a line of its own */
+        pg.drawText('7.', { x: 60, y: 380, size: 11, font: face });
+        pg.drawText('The clerk counted the plates.', { x: 60 + w, y: 380, size: 11, font: face });
+      }
+    });
+    return (await importPdf('salt-road-numbered.pdf', await doc.save())).tally as Tally & { words: { same: boolean; fileOnly: unknown[]; bookOnly: unknown[] } };
+  }
+  it('a numbered line the book keeps (set bold): "7." is a word on both sides, no join is counted, and every word is the book\'s', async () => {
+    const ty = await numbered(true);
+    expect({ raw: ty.pdf && ty.pdf.raw, joins: ty.pdf && ty.pdf.joins, file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, same: ty.words.same, fileOnly: ty.words.fileOnly, bookOnly: ty.words.bookOnly })
+      .toEqual({ raw: 54, joins: { pdfRejoined: 1 }, file: 53, book: 41, aside: { headers: 9, pageNumbers: 3 }, unaccounted: 0, same: true, fileOnly: [], bookOnly: [] });
+  }, 120_000);
+  it('a numbered line the book sets as a list\'s item: "7." is counted as a list number the book now sets, not lost', async () => {
+    const ty = await numbered(false);
+    expect({ raw: ty.pdf && ty.pdf.raw, joins: ty.pdf && ty.pdf.joins, file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, same: ty.words.same })
+      .toEqual({ raw: 54, joins: { pdfRejoined: 1 }, file: 53, book: 40, aside: { headers: 9, pageNumbers: 3, listMarks: 1 }, unaccounted: 0, same: true });
+  }, 120_000);
+
   it('a step the reader takes that the tally is not told of shows as unaccounted, never hidden: a line dropped after the count is 2 words unaccounted', async () => {
     document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
     const m = make(env());
