@@ -721,6 +721,11 @@ export function bootCloud(): Promise<void> {
         knownUser = userId();
         cm.api.renderCloudChrome();
         if (leader.is) {
+          // BEUK:shelfremove — a book this account keeps off the shelf on this device (removed from the shelf while it was
+          // on the desk, or "Not now") is still kept off after a reload: without this the page starts "unlinked" and the
+          // next edit puts the book on the shelf unasked. The same link a book change or a follower tab takes (takeLink).
+          const kept = storedLink(linkBook);
+          if (kept && kept.linkState === 'declined' && !kept.linkedId && kept.userId === userId() && !cloudFacts.linkedId) cloudFacts.linkState = 'declined';
           work = Promise.resolve(cm.api.cloudAfterSignIn());
           try {
             await work;
@@ -860,6 +865,8 @@ export function cloudReset(): void {
     loadedCloud.vars.cloudSaveTimer = null;
     loadedCloud.vars.cloudRetryTimer = null;
     loadedCloud.vars.cloudDirty = false;
+    // BEUK:shelfremove: no removal is being asked or sent on a fresh page
+    Object.assign(loadedCloud.api.shelfRemove as Rec, { busy: null, sending: null });
     // wave 7b: 1.0's pwa record, beta record and error-report counts, as a fresh page has them
     loadedCloud.vars.beukErrCount = 0;
     for (const k of Object.keys(loadedCloud.api.beukErrSeen as Rec)) delete (loadedCloud.api.beukErrSeen as Rec)[k];

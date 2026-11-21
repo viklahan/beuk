@@ -97,6 +97,27 @@ test("owner isolation: user B cannot read, update, delete, or even see user A's 
   assert.deepEqual((stillThere.body.manuscript as { doc: unknown }).doc, sampleDoc);
 });
 
+test('removing a book from the shelf: 204, then 404, and it is gone from the list while the others stay', async () => {
+  const keep = await alice.post('/api/manuscripts', { title: 'Stays', doc: sampleDoc });
+  const drop = await alice.post('/api/manuscripts', { title: 'Goes', doc: sampleDoc });
+  const keepId = (keep.body.manuscript as { id: string }).id;
+  const dropId = (drop.body.manuscript as { id: string }).id;
+  const idsOf = (r: { body: Record<string, unknown> }) => (r.body.manuscripts as { id: string }[]).map((m) => m.id);
+  const before = idsOf(await alice.get('/api/manuscripts'));
+  assert.ok(before.includes(keepId) && before.includes(dropId));
+
+  const removed = await alice.delete(`/api/manuscripts/${dropId}`);
+  assert.equal(removed.status, 204);
+  const again = await alice.delete(`/api/manuscripts/${dropId}`);
+  assert.equal(again.status, 404);
+  assert.equal(again.body.error, 'manuscript not found');
+
+  const after = idsOf(await alice.get('/api/manuscripts'));
+  assert.ok(!after.includes(dropId), 'the removed book is not listed');
+  assert.ok(after.includes(keepId), 'the other book is still listed');
+  assert.equal(after.length, before.length - 1);
+});
+
 test('manuscript endpoints require auth and a valid doc', async () => {
   const anon = new Client(server.base);
   assert.equal((await anon.get('/api/manuscripts')).status, 401);
