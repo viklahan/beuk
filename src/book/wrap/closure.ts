@@ -47,7 +47,7 @@ export const WRAP_CLOSURE: readonly string[] = [
   'SPINE_ICON_MIN_IN', 'SPINE_IMPRINT_FLOOR_IN', 'SPINE_MARGIN_IN', 'SPINE_TEXT_ROOM_IN', 'SPINE_TTB_LANGS',
   'TEXT_HEAD_FONTS', 'TRIM_SIZES', 'UI_PLURAL_FORMS', 'UI_STRINGS', 'WRAP_BG_DIRS', 'WRAP_BG_MODES',
   'WRAP_BLEED', 'WRAP_HEX', 'WRAP_PANEL_COLOR', 'WRAP_PANEL_COLOR2', 'WRAP_PAPERS', 'WRAP_PATTERNS',
-  'WRAP_SPINE_DIRS', 'WRAP_SPINE_MIN', 'WRAP_SPINE_SHOW', 'countWords', 'countWordsFresh', 'countWordsRaw',
+  'WRAP_SPINE_DIRS', 'WRAP_SPINE_MIN', 'WRAP_SPINE_SHOW', 'countWords', 'countWordsClean', 'countWordsFresh', 'countWordsRaw',
   'countWordsShort', 'coverBgSource', 'coverImgCache', 'coverLines', 'defaultCoverRecipe', 'displayFontOf',
   'drawCoverTo', 'drawImageCover', 'drawLucideIcon', 'drawUploadedIcon', 'drawWrapTo', 'fontStack',
   'frontispieceCaption', 'hcAboutAuthorText', 'hcDrawFlaps', 'hcDrawGuides', 'hcFlapBackText',
@@ -60,7 +60,7 @@ export const WRAP_CLOSURE: readonly string[] = [
   'printMarginsAuto', 'printPageEstimate', 'printPictureBookOn', 'printTextArea', 'renderCoverCanvas',
   'renderWrapCanvas', 'sectionProseWords', 'sectionWords', 'sectionWordsMemo', 'slug', 'spineDirection', 't',
   'tCountForm', 'trimSize', 'uiLangState', 'uiPluralCategory', 'uiPluralRulesCache', 'uid',
-  'uploadedFontByFamily', 'uploadedFonts', 'wrapDefaults', 'wrapDims', 'wrapFactor', 'wrapLines', 'wrapPictureIds',
+  'uploadedFontByFamily', 'uploadedFonts', 'wordsOfClean', 'wrapDefaults', 'wrapDims', 'wrapFactor', 'wrapLines', 'wrapPictureIds',
 ];
 
 /** The book's arrival: the lines of the studio's applyBookDoc
