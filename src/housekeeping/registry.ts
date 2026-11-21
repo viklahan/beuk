@@ -1878,7 +1878,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'import.epub.lists-captions-paragraphs',
-    title: "An EPUB's nested list items are never fused or repeated, a table's caption is kept with its rows under it, a <div> of text is one paragraph, and a picture inside a paragraph is imported",
+    title: "An EPUB's nested list items are never fused or repeated, a table comes in as a table block with its caption and header row, a <div> of text is one paragraph, and a picture inside a paragraph is imported",
     kind: 'client-only',
     reason: 'The EPUB import runs in the studio page; the server never sees the file.',
   },
@@ -3177,7 +3177,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.report.rtf-honest',
     title:
-      'Import report (RTF): heading-1 chapters, a linked footnote, italic and a web link as Beuk marks, the table kept as plain rows and reported so, the comment, tracked deletion and page header listed as from the RTF file, the \\info byline read, and Undo the whole import restores the prior book',
+      'Import report (RTF): heading-1 chapters, a linked footnote, italic and a web link as Beuk marks, the table kept as a table block and reported so, the comment, tracked deletion and page header listed as from the RTF file, the \\info byline read, and Undo the whole import restores the prior book',
     kind: 'client-only',
     reason: 'The RTF reader (BEUK:rtfimport) and the report run in the studio; the server never sees the .rtf.',
   },
@@ -3198,7 +3198,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.odt.reads-as-word',
     title:
-      'An OpenDocument file imports as a Word file does: heading-styled chapters, a Heading 2 inside its chapter, italic, bold and a link as Beuk marks, a numbered list, a linked footnote, the table kept as plain rows, the comment reported as from the OpenDocument file, and the byline read',
+      'An OpenDocument file imports as a Word file does: heading-styled chapters, a Heading 2 inside its chapter, italic, bold and a link as Beuk marks, a numbered list, a linked footnote, the table kept as a table block, the comment reported as from the OpenDocument file, and the byline read',
     kind: 'client-only',
     reason: 'The OpenDocument reader (BEUK:docsimport) opens the file in the studio; the server never sees the .odt.',
   },
@@ -3261,7 +3261,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.md.tables-and-markup',
     title:
-      'A Markdown file leaves no raw markup in the prose: pipe and HTML tables are kept as plain rows where they stood and reported so (out again on undo), and code, strike-through and inline HTML keep their words while what Beuk has no mark for is counted',
+      'A Markdown file leaves no raw markup in the prose: pipe and HTML tables are kept as table blocks with their header rows where they stood and reported so (plain rows instead on undo, then out again), and code, strike-through and inline HTML keep their words while what Beuk has no mark for is counted',
     kind: 'client-only',
     reason: 'The Markdown reader (BEUK:mdimport) and the import report run in the studio; the server never sees the file.',
   },
@@ -3309,23 +3309,30 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.tables.kept-as-rows',
     title:
-      "A table's words stay in the book as plain rows where it stood: cells joined by a bar with empty and merged-over cells kept in their columns, marks and a note's mark kept in their cell, a nested table after its parent and said once, reported as kept, the bars not counted as words, and out again on undo",
+      "A table comes in as a table block where it stood: empty and merged-over cells kept in their columns, marks and a note's mark kept in their cell, a nested table a block after its parent and said once, reported as kept as a table with its merged cells and lifted table counted, bars and fences not counted as words, plain rows instead on undo and then out again",
     kind: 'client-only',
     reason: 'The table rows (BEUK:tablerows), the Word walk and the import report run in the studio; the server never sees the file.',
   },
   {
     id: 'import.tables.rtf-cells-and-nesting',
     title:
-      "An RTF table's cells keep their italic and their note's mark, and a table set inside a cell (itap2, nestcell, nestrow in either place a writer puts it) is a table of its own after its parent, no word said twice",
+      "An RTF table's cells keep their italic and their note's mark, and a table set inside a cell (itap2, nestcell, nestrow in either place a writer puts it) is a table of its own after its parent, no word said twice; each a table block",
     kind: 'client-only',
     reason: 'The RTF reader (BEUK:rtfimport) runs in the studio; the server never sees the file.',
   },
   {
     id: 'import.tables.every-reader',
     title:
-      'The same table comes in the same from an OpenDocument file, a web page, an EPUB and a Markdown file: plain rows where it stood, covered cells kept empty, a nested table after its parent, the caption above the rows, and a note marked in a cell linked in its section',
+      "The same table comes in the same from an OpenDocument file, a web page, an EPUB and a Markdown file: a table block where it stood, its header row where the file marks one, covered cells kept empty, a nested table a block after its parent, the caption the block's own, and a note marked in a cell linked in its section",
     kind: 'client-only',
     reason: 'Each reader (BEUK:docsimport, BEUK:epubimport, BEUK:mdimport) and the import report run in the studio; the server never sees the file.',
+  },
+  {
+    id: 'import.tables.block-every-format',
+    title:
+      "Every format (Word, RTF, OpenDocument, web page, EPUB, Markdown) writes the same table block: a header row only where marked, the caption where the file has one (a paragraph styled as a caption beside the table in Word, RTF and OpenDocument, said in the report; a bold line stays a paragraph), merged cells flattened, a bar escaped, a cell's paragraphs joined, a note in a cell linked, a nested table lifted after its parent, its report line naming the row and column it stood in; 21 columns stay plain rows and say so, 11 are kept with a warning; the report counts what flattening took, and the undo steps",
+    kind: 'client-only',
+    reason: 'The readers and the table block writer (BEUK:tableimport) and the import report run in the studio; the server never sees the file.',
   },
   {
     id: 'import.md.zip-pictures',
@@ -3350,7 +3357,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.report.docx-honest',
     title:
-      'Import report (Word): a table is kept as plain rows where it stood (out again on undo), footnotes link as notes, images land in the library with alt text, demoted headings, comments, tracked changes, headers, lists and converter warnings are all listed',
+      'Import report (Word): a table is kept as a table block where it stood (plain rows instead on undo, then out again), footnotes link as notes, images land in the library with alt text, demoted headings, comments, tracked changes, headers, lists and converter warnings are all listed',
     kind: 'client-only',
     reason: 'Word conversion (Mammoth.js) and the report are client-side; the server never sees the .docx.',
   },
