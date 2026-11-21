@@ -244,6 +244,24 @@ ${kofiJarHtml(config)}
 `;
 }
 
+/**
+ * The site's "page not found", for a reader who asked for a page at an
+ * address the app does not answer (src/app.ts sends it, status 404). It
+ * says nothing about the address: a page that is switched off on this
+ * server (/support without KOFI_URL, /aris without ARIS_ENABLED) gets
+ * exactly what an address that never existed gets.
+ */
+export function renderNotFoundPage(config: Config): string {
+  return pageChrome(
+    config,
+    'Page not found',
+    `      <h1>That page isn't on the shelf</h1>
+      <p class="lede">There is nothing at this address. It may have moved, or the link may have been mistyped.</p>
+      <p><a href="${SITE_HOME_HREF}">Back to the front page</a> · <a href="/studio">Open the studio</a></p>`,
+    { titleSuffix: 'Beuk' },
+  );
+}
+
 /** Render a Markdown document (Changelog / Roadmap) as a full page. */
 export async function renderDocPage(
   config: Config,

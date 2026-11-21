@@ -5,8 +5,9 @@ import { test } from 'node:test';
 import { BRAND_VERSION, SITE_ICON_HTML } from '../src/warmth/pages.js';
 import { createTestDb, startTestServer } from './helpers.js';
 
-/* What every page family shares (site audit, 2026-11-20): the tab icon,
-   the meta description, and the footer's quiet "Beuk 2.0". */
+/* What every page family shares (site audit, 2026-11-20): the page a
+   reader gets at an address the app does not answer, the tab icon, the
+   meta description, and the footer's quiet "Beuk 2.0". */
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (...p: string[]) => readFileSync(path.join(root, ...p), 'utf8');
@@ -18,6 +19,64 @@ async function get(base: string, p: string, headers: Record<string, string> = {}
   return { status: res.status, type: res.headers.get('content-type') ?? '', text: await res.text() };
 }
 const count = (s: string, needle: string) => s.split(needle).length - 1;
+
+test('page not found: a reader asking for a page gets the site\'s own 404; a switched-off page is the same page as one that never existed', async () => {
+  // Aris off and no Ko-fi, as production is set: /aris and /support are switched off.
+  const off = await startTestServer(await createTestDb(), undefined, { arisEnabled: false, kofiUrl: null });
+  try {
+    const never = await get(off.base, '/no-such-page', AS_PAGE);
+    assert.equal(never.status, 404);
+    assert.match(never.type, /^text\/html/);
+    assert.match(never.text, /<title>Page not found — Beuk<\/title>/);
+    assert.match(never.text, /<link rel="stylesheet" href="\/help\/warmth\.css" \/>/, 'in the warmth pages\' own look');
+    assert.match(never.text, /<a href="\/\?home">Back to the front page<\/a>/);
+    assert.match(never.text, /<a href="\/studio">Open the studio<\/a>/);
+    assert.doesNotMatch(never.text, /Cannot GET/);
+    for (const p of ['/support', '/support/', '/aris', '/aris/']) {
+      const r = await get(off.base, p, AS_PAGE);
+      assert.equal(r.status, 404, p);
+      assert.equal(r.text, never.text, `${p}: byte for byte the page an unknown address gets`);
+      assert.equal(r.type, never.type, p);
+    }
+    // Not asked for as a page (a monitor, curl, a script's fetch): the plain 404 it always was.
+    for (const p of ['/support', '/aris', '/no-such-page']) {
+      const r = await get(off.base, p);
+      assert.equal(r.status, 404, p);
+      assert.doesNotMatch(r.text, /Page not found — Beuk|warmth\.css/, `${p} without Accept: text/html keeps the plain 404`);
+    }
+    // A missing script, style or picture is never answered with a page, whatever the Accept.
+    for (const p of ['/aris/aris.css', '/aris/aris.js', '/help/static/evil.js', '/studio/assets/missing.js', '/no-such-file.png']) {
+      const r = await get(off.base, p, AS_PAGE);
+      assert.equal(r.status, 404, p);
+      assert.doesNotMatch(r.text, /Page not found — Beuk|warmth\.css/, `${p} keeps the plain 404`);
+    }
+    // The API keeps its JSON 404.
+    const api = await get(off.base, '/api/no-such-thing', AS_PAGE);
+    assert.equal(api.status, 404);
+    assert.match(api.type, /^application\/json/);
+    assert.deepEqual(JSON.parse(api.text), { error: 'not found' });
+    // Only a GET is a request for a page.
+    const post = await fetch(`${off.base}/support`, { method: 'POST', headers: AS_PAGE });
+    assert.equal(post.status, 404);
+    assert.doesNotMatch(await post.text(), /Page not found — Beuk/);
+    // Help and the School keep their own "not found" pages.
+    assert.match((await get(off.base, '/help/no-such-guide', AS_PAGE)).text, /<title>Not found — Beuk Help<\/title>/);
+    assert.match((await get(off.base, '/school/no-such-course', AS_PAGE)).text, /<title>Not found — Beuk School<\/title>/);
+  } finally {
+    await off.close();
+  }
+  // Switched on, the same addresses are their pages: the gate itself is as it was.
+  const on = await startTestServer(await createTestDb(), undefined, { arisEnabled: true, arisKeySecret: 'test-secret', kofiUrl: KOFI });
+  try {
+    for (const p of ['/support', '/aris']) {
+      const r = await get(on.base, p, AS_PAGE);
+      assert.equal(r.status, 200, p);
+      assert.doesNotMatch(r.text, /Page not found/, p);
+    }
+  } finally {
+    await on.close();
+  }
+});
 
 /** Every static page under client/ that is a page of the site (not the 1.0 studio, not a build). */
 function sitePages(): string[] {
@@ -41,10 +100,10 @@ test('one tab icon: every page family names the file the landing page names', as
   // The 1.0 studio (the rollback page) names it relative to its own address; 2.0's build injects ICON_FILE.
   assert.deepEqual(iconsOf(read('client', 'index.html')), ['assets/icon-192.png']);
   assert.match(read('studio', 'vite.config.ts'), /export const ICON_FILE = '\/assets\/icon-192\.png';/);
-  // The rendered pages: Help (and the pages in its frame), the legal pages, the account page, the School.
+  // The rendered pages: Help (and the pages in its frame), the legal pages, the account page, the School, the 404.
   const server = await startTestServer(await createTestDb(), undefined, { kofiUrl: KOFI, arisEnabled: true, arisKeySecret: 'test-secret' });
   try {
-    for (const p of ['/help/', '/help/import-a-manuscript', '/help/errors', '/changelog', '/roadmap', '/status', '/aris', '/privacy', '/terms', '/account', '/thanks', '/support', '/reset', '/school']) {
+    for (const p of ['/help/', '/help/import-a-manuscript', '/help/errors', '/changelog', '/roadmap', '/status', '/aris', '/privacy', '/terms', '/account', '/thanks', '/support', '/reset', '/school', '/no-such-page']) {
       const r = await get(server.base, p, AS_PAGE);
       assert.deepEqual(iconsOf(r.text), ['/assets/icon-192.png'], `${p} (${r.status})`);
     }
@@ -86,7 +145,7 @@ test('"Beuk 2.0": said once in every family\'s footer, as plain text, from one p
   assert.equal(BRAND_VERSION, 'Beuk 2.0');
   const text = (html: string) => html.replace(/&nbsp;/g, ' ');
   const footerOf = (html: string) => /<footer[\s\S]*<\/footer>/.exec(html)?.[0] ?? '';
-  // Server-rendered families (Help and its frame, the warmth pages, the account page): the one string in
+  // Server-rendered families (Help and its frame, the warmth pages, the account page, the 404): the one string in
   // src/warmth/pages.ts. The static warmth pages carry a slot, never the words.
   for (const f of ['client/thanks/index.html', 'client/support/index.html', 'client/reset/index.html']) {
     const html = read(...f.split('/'));
@@ -97,7 +156,7 @@ test('"Beuk 2.0": said once in every family\'s footer, as plain text, from one p
     assert.doesNotMatch(read(...f.split('/')), /Beuk 2\.0/, `${f} takes it from BRAND_VERSION, or from site.css`);
   const server = await startTestServer(await createTestDb(), undefined, { kofiUrl: KOFI });
   try {
-    for (const p of ['/help/', '/help/import-a-manuscript', '/changelog', '/roadmap', '/status', '/privacy', '/terms', '/thanks', '/support', '/reset', '/account']) {
+    for (const p of ['/help/', '/help/import-a-manuscript', '/changelog', '/roadmap', '/status', '/privacy', '/terms', '/thanks', '/support', '/reset', '/account', '/no-such-page']) {
       const r = await get(server.base, p, AS_PAGE);
       assert.doesNotMatch(r.text, /BEUK_VERSION/, `${p}: no leftover slot`);
       const foot = text(footerOf(r.text));

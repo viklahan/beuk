@@ -37,6 +37,7 @@ import { stockRoutes } from './routes/stock.js';
 import { arisRoutes } from './aris/routes.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
+import { renderNotFoundPage } from './warmth/pages.js';
 import { arisPageRoutes } from './routes/aris-page.js';
 import { siteRoutes } from './routes/site.js';
 import { schoolRoutes } from './routes/school.js';
@@ -301,6 +302,20 @@ export function buildApp({
   // The studio: Beuk 2.0 (React) at /studio/, from the image's build. STUDIO_CLASSIC=true
   // serves 1.0's index.html at /studio instead (the rollback). Caddy proxies /studio and /studio/* here.
   app.use(studioRoutes({ classic: config.studioClassic }));
+
+  // Nothing above answered. A reader who asked for a PAGE (a GET whose
+  // Accept names text/html, at an address with no file extension) gets the
+  // site's own "page not found" (src/warmth/pages.ts), still a 404. It is
+  // one page for every such address, so a page that is switched off here
+  // (/support, /aris) reads exactly like one that never existed. Everything
+  // else keeps Express's plain 404: scripts, styles and pictures (a missing
+  // asset must not come back as a page), monitors and curl (Accept: */*).
+  // /api never arrives here: its own JSON 404 is above.
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const wantsPage = (req.method === 'GET' || req.method === 'HEAD') && (req.headers.accept ?? '').includes('text/html');
+    if (!wantsPage || /\.[^/]+$/.test(req.path)) return next();
+    return res.status(404).type('html').set('Cache-Control', 'no-store').send(renderNotFoundPage(config));
+  });
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     // body-parser marks an over-limit body; say so instead of a bare 500
