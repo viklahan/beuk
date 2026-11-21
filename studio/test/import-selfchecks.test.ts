@@ -14,7 +14,7 @@ import { loadMammoth } from './vendor';
 import markup from '../src/generated/import-markup.json';
 
 /* Wave 6 — review focus #5: 1.0's import self-checks (client/index.html: every SELF_CHECKS / SELF_CHECKS_ASYNC entry with
-   feature "import" — the 43 `id: "import.` checks and the 5 `id: "pdf.` ones, and any other the grep finds), RUN VERBATIM:
+   feature "import" — the 47 `id: "import.` checks and the 5 `id: "pdf.` ones, and any other the grep finds), RUN VERBATIM:
    each check's own object literal, cut out of 1.0's source by the TypeScript AST, is evaluated inside a module of 1.0's
    own declarations that it reaches (buildTestModule, the extractor the closure is built by), with only 1.0's redraws and
    page hooks stubbed (ORACLE_STUBS). The functions it runs are the very text 2.0's closure lifts (import-closure.test.ts
@@ -126,8 +126,8 @@ function env(): Rec {
 }
 
 describe("wave 6: 1.0's import self-checks, run verbatim (review focus #5)", () => {
-  it('the grep counts: 43 import.* and 5 pdf.* ids; every feature "import" check is found', () => {
-    expect((HTML.match(/id: *"import[^"]*"/g) || []).length).toBe(43); // +4 (2026-11-20): import.headlevels.*, import.card.*, import.odt.*, import.html.*
+  it('the grep counts: 47 import.* and 5 pdf.* ids; every feature "import" check is found', () => {
+    expect((HTML.match(/id: *"import[^"]*"/g) || []).length).toBe(47); // +4 (2026-11-20): import.headlevels.*, import.card.*, import.odt.*, import.html.*; +4 more that day: import.epub.structure-by-headings, .notes-by-id, .lists-captions-paragraphs, .credit-says-where
     expect((HTML.match(/id: *"pdf[^"]*"/g) || []).length).toBe(5);
     expect(mod.checks.filter((c) => c.feature === 'import').length).toBe((HTML.match(/feature: *"import"/g) || []).length);
     expect(mod.checks.filter((c) => WAVE6_OTHERS.includes(c.id)).map((c) => c.id).sort()).toEqual([...WAVE6_OTHERS].sort());
@@ -153,6 +153,6 @@ describe("wave 6: 1.0's import self-checks, run verbatim (review focus #5)", () 
     console.log(results.map((r) => (r.pass ? 'PASS ' : 'FAIL ') + r.id + (r.pass ? '' : ' — ' + r.detail)).join('\n'));
     expect(results.filter((r) => !r.pass)).toEqual([]);
     expect(results.length).toBe(mod.checks.length - Object.keys(SKIP).length);
-    expect(results.length).toBe(37); // 34 + the four of 2026-11-20, less the card (SKIP: LAYOUT)
+    expect(results.length).toBe(41); // 34 + the four of 2026-11-20, less the card (SKIP: LAYOUT), + the four EPUB checks of the same day (all four run here)
   }, 600_000);
 });

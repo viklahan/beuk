@@ -1865,6 +1865,30 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Bulk import and box sets read their files in the studio page.',
   },
   {
+    id: 'import.epub.structure-by-headings',
+    title: 'An EPUB with h1 chapters, h3 sections and each chapter number in a line above its title comes in as its numbered chapters: sub-headings stay inside them, front and back matter are found, no label line is left behind',
+    kind: 'client-only',
+    reason: 'The EPUB import runs in the studio page; the server never sees the file.',
+  },
+  {
+    id: 'import.epub.notes-by-id',
+    title: "An EPUB's notes are matched by the file's own ids across its pages and set in the chapter that holds each reference; what cannot be matched is reported",
+    kind: 'client-only',
+    reason: 'The EPUB import runs in the studio page; the server never sees the file.',
+  },
+  {
+    id: 'import.epub.lists-captions-paragraphs',
+    title: "An EPUB's nested list items are never fused or repeated, a table's caption is kept, a <div> of text is one paragraph, and a picture inside a paragraph is imported",
+    kind: 'client-only',
+    reason: 'The EPUB import runs in the studio page; the server never sees the file.',
+  },
+  {
+    id: 'import.epub.credit-says-where',
+    title: "An EPUB's title and author are reported as coming from the EPUB's own details, never as a raw string key",
+    kind: 'client-only',
+    reason: 'The EPUB import runs in the studio page; the server never sees the file.',
+  },
+  {
     id: 'book.new.keeps-the-old-in-history',
     title: 'Start a new book: the old book goes into History, the desk is empty, a shelf book is left alone',
     kind: 'client-only',
