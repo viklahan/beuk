@@ -16,7 +16,9 @@ to make well.
 - **A summary you can read.** After an import Beuk opens a card: what it found before your chapters, the chapters themselves with their word counts, what comes after, and what it did along the way. One button opens the book; another shows every change.
 - **Every word accounted for.** The card now says how many words were in your file, how many are in your book, and how many were set aside and why: a typed contents page, running headers, the title page's own lines. If a single word is unexplained, Beuk says how many instead of saying nothing. The full report has the tally: paragraphs, headings, breaks, pictures, tables, lists and notes, in the file and in the book.
 - **Your chapters stay your chapters.** A book that numbers its own chapters keeps exactly those. A heading between two numbered chapters is a section of the chapter before it, not a chapter Beuk made up. A file that jumps from Heading 1 to Heading 3 keeps the Heading 3s as sections.
-- **The same book from any file.** Word, RTF, OpenDocument, a web page, Markdown and EPUB now follow one rule for chapters and sections, so the same manuscript comes in the same way whichever one you exported.
+- **The same book from any file.** Word, RTF, OpenDocument, a web page, Markdown and EPUB now follow one rule for chapters and sections, so the same manuscript comes in the same way whichever one you exported: word for word from Word, RTF, OpenDocument and a web page. An RTF's dashes no longer arrive as stray characters, and words set side by side on a web page no longer run together.
+- **A reason for every difference.** Where the tally's two numbers differ, the lines under them say why, each with its count, and the word count is the same one the studio shows.
+- **Codes keep their hyphens.** Tidying turned any two numbers joined by a hyphen into a range with a dash, so a code like VIE-04-10, a date or an ISBN was changed. Now only a real range of two numbers gets the dash.
 - **Two more kinds of file.** Import reads OpenDocument (`.odt`) and a web page, alone or zipped with its pictures, which is what Google Docs gives you when you download a page.
 - **EPUBs come in as books.** An EPUB from another tool used to break into a chapter per sub-heading and lose its footnotes. It now keeps its own chapters, its sections inside them, its front and back pages, and its notes.
 - **Footnotes follow their words.** Notes link in a web page and in a text file that lists them, Markdown notes work under any name, and a note marked inside a table is linked like any other.
@@ -30,7 +32,8 @@ to make well.
 - **An opening plate, whole or filling the page.** Under Opening plate there is a Fit choice: fill the page, cropped to its shape, or show the whole picture inside the margins. A plate you already set stays as it was.
 
 **The site**
-- **Beuk Weekly has a shelf.** Five issues are on the School's newsstand, the newest first. Every issue has a bar to the one before, the one after and the full list, so no issue is more than a press away.
+- **Beuk Weekly has a stand.** Every issue is on one page as a small front page, the newest large in the middle. Press one to read it. Each issue has a bar to the one before, the one after and back to the stand.
+- **Courses shows courses.** The School's first page is the courses and nothing else; the Weekly has its own tab.
 - A missing page now says so in Beuk's own voice, and every page names the version at its foot.
 
 ## 2026-11-14 — Imports that keep their cover and stay out of your way
