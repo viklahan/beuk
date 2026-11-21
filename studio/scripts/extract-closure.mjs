@@ -518,6 +518,8 @@ export const PRINT_VARS = ['printUnlink', 'sidewaysPrintPages', 'buildPrintHtml'
 export const CLOUD_ROOTS = ['apiFetch', 'apiFetchReal', 'shelfPics', 'picPackForShelf', 'picHydrate', 'picLearnDesk', 'shelfGetBook', 'cloudProbe',
   'cloudNoteUnreachable', 'cloudGoLocal', 'noteBookEdited', 'cloudAutosaveTick', 'cloudQueueTick', 'cloudSaveNow', 'cloudSaveRun', 'setSyncStatus',
   'cloudSaveOwner', 'cloudSettleStatus', 'renderSyncLine', 'renderCloudChrome', 'renderAccountButton', 'cloudLoadStreak', 'cloudHeartbeat', 'cloudLoadShelf',
+  // BEUK:shelfremove: a book removed from the shelf (the list's Remove button; its busy record, which tests reset)
+  'cloudRemoveBook', 'shelfRemove',
   'renderShelfList', 'deskHoldsUnshelvedWork', 'shelfGuardPutDeskOnShelf', 'cloudOpenBook', 'cloudAfterSignIn', 'cloudBringBook', 'setAuthMode', 'openAuth',
   'closeAuth', 'cloudAuthErrorText', 'cloudAuthSubmit', 'cloudSignOut', 'cloudEnsureLinked', 'acctAuthModeHook', 'acctForgotSubmit', 'acctSay',
   'acctChangePassword', 'acctSignOutEverywhere', 'portalTakeFreshSignIn', 'portalNote', 'portalRender', 'portalRefresh', 'portalResend', 'billingDate',

@@ -8534,6 +8534,25 @@
       };
       Object.keys(SHELFGUARD_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], SHELFGUARD_STRINGS[code]); });
       /* ==== /BEUK:shelfguard ==== */
+      /* ==== BEUK:shelfremove ==== — removing a book from the shelf: its control, its confirm and its toasts, all 13 packs
+         (the 12 beside English are drafts for V's sign-off) */
+      const SHELFREMOVE_STRINGS = {
+        "en": { "shelf.removeBtn": "Remove", "shelf.removeAria": "Remove “{title}” from your shelf", "shelf.removeTitle": "Remove this book from your shelf?", "shelf.removeBody": "“{title}” will be removed from your shelf for good. It cannot be brought back from the shelf.", "shelf.removeBodyDesk": "“{title}” will be removed from your shelf for good. It cannot be brought back from the shelf. It is also the book open in the studio: that copy stays on this device only, and is not saved to your shelf again unless you bring it there.", "shelf.removeYes": "Remove it for good", "shelf.removeKeep": "Keep it", "toast.shelfRemoved": "“{title}” was removed from your shelf", "toast.shelfRemovedDesk": "“{title}” was removed from your shelf — the book open here is now saved on this device only", "toast.shelfRemoveFail": "“{title}” was not removed: the shelf could not be reached. Nothing has changed.", "toast.shelfRemoveFailWhy": "“{title}” was not removed. The shelf answered: {reason}. Nothing has changed." },
+        "es": { "shelf.removeBtn": "Quitar", "shelf.removeAria": "Quitar «{title}» de tu estantería", "shelf.removeTitle": "¿Quitar este libro de tu estantería?", "shelf.removeBody": "«{title}» se quitará de tu estantería para siempre. No se podrá recuperar desde la estantería.", "shelf.removeBodyDesk": "«{title}» se quitará de tu estantería para siempre. No se podrá recuperar desde la estantería. También es el libro abierto en el estudio: esa copia se queda solo en este dispositivo y no volverá a guardarse en tu estantería a menos que la lleves allí.", "shelf.removeYes": "Quitarlo para siempre", "shelf.removeKeep": "Conservarlo", "toast.shelfRemoved": "«{title}» se quitó de tu estantería", "toast.shelfRemovedDesk": "«{title}» se quitó de tu estantería: el libro abierto aquí queda guardado solo en este dispositivo", "toast.shelfRemoveFail": "«{title}» no se quitó: no se pudo contactar con la estantería. No ha cambiado nada.", "toast.shelfRemoveFailWhy": "«{title}» no se quitó. La estantería respondió: {reason}. No ha cambiado nada." },
+        "fr": { "shelf.removeBtn": "Retirer", "shelf.removeAria": "Retirer « {title} » de votre étagère", "shelf.removeTitle": "Retirer ce livre de votre étagère ?", "shelf.removeBody": "« {title} » sera retiré de votre étagère pour de bon. Il ne pourra pas être récupéré depuis l'étagère.", "shelf.removeBodyDesk": "« {title} » sera retiré de votre étagère pour de bon. Il ne pourra pas être récupéré depuis l'étagère. C'est aussi le livre ouvert dans le studio : cette copie reste sur cet appareil seulement et ne sera plus enregistrée sur votre étagère, sauf si vous l'y apportez.", "shelf.removeYes": "Le retirer pour de bon", "shelf.removeKeep": "Le garder", "toast.shelfRemoved": "« {title} » a été retiré de votre étagère", "toast.shelfRemovedDesk": "« {title} » a été retiré de votre étagère — le livre ouvert ici n'est plus enregistré que sur cet appareil", "toast.shelfRemoveFail": "« {title} » n'a pas été retiré : l'étagère est injoignable. Rien n'a changé.", "toast.shelfRemoveFailWhy": "« {title} » n'a pas été retiré. L'étagère a répondu : {reason}. Rien n'a changé." },
+        "de": { "shelf.removeBtn": "Entfernen", "shelf.removeAria": "„{title}“ aus Ihrem Regal entfernen", "shelf.removeTitle": "Dieses Buch aus Ihrem Regal entfernen?", "shelf.removeBody": "„{title}“ wird endgültig aus Ihrem Regal entfernt. Aus dem Regal lässt es sich nicht zurückholen.", "shelf.removeBodyDesk": "„{title}“ wird endgültig aus Ihrem Regal entfernt. Aus dem Regal lässt es sich nicht zurückholen. Es ist auch das im Studio geöffnete Buch: Diese Kopie bleibt nur auf diesem Gerät und wird nicht wieder in Ihr Regal gespeichert, es sei denn, Sie bringen es dorthin.", "shelf.removeYes": "Endgültig entfernen", "shelf.removeKeep": "Behalten", "toast.shelfRemoved": "„{title}“ wurde aus Ihrem Regal entfernt", "toast.shelfRemovedDesk": "„{title}“ wurde aus Ihrem Regal entfernt — das hier geöffnete Buch ist jetzt nur auf diesem Gerät gespeichert", "toast.shelfRemoveFail": "„{title}“ wurde nicht entfernt: Das Regal war nicht erreichbar. Nichts hat sich geändert.", "toast.shelfRemoveFailWhy": "„{title}“ wurde nicht entfernt. Das Regal antwortete: {reason}. Nichts hat sich geändert." },
+        "it": { "shelf.removeBtn": "Rimuovi", "shelf.removeAria": "Rimuovi «{title}» dalla tua libreria", "shelf.removeTitle": "Rimuovere questo libro dalla tua libreria?", "shelf.removeBody": "«{title}» sarà rimosso dalla tua libreria per sempre. Non potrà essere recuperato dalla libreria.", "shelf.removeBodyDesk": "«{title}» sarà rimosso dalla tua libreria per sempre. Non potrà essere recuperato dalla libreria. È anche il libro aperto nello studio: quella copia resta solo su questo dispositivo e non verrà più salvata nella tua libreria, a meno che non ce la porti tu.", "shelf.removeYes": "Rimuovilo per sempre", "shelf.removeKeep": "Tienilo", "toast.shelfRemoved": "«{title}» è stato rimosso dalla tua libreria", "toast.shelfRemovedDesk": "«{title}» è stato rimosso dalla tua libreria: il libro aperto qui ora è salvato solo su questo dispositivo", "toast.shelfRemoveFail": "«{title}» non è stato rimosso: la libreria non era raggiungibile. Non è cambiato nulla.", "toast.shelfRemoveFailWhy": "«{title}» non è stato rimosso. La libreria ha risposto: {reason}. Non è cambiato nulla." },
+        "pt": { "shelf.removeBtn": "Remover", "shelf.removeAria": "Remover «{title}» da sua estante", "shelf.removeTitle": "Remover este livro da sua estante?", "shelf.removeBody": "«{title}» será removido da sua estante de vez. Não poderá ser recuperado a partir da estante.", "shelf.removeBodyDesk": "«{title}» será removido da sua estante de vez. Não poderá ser recuperado a partir da estante. É também o livro aberto no estúdio: essa cópia fica só neste dispositivo e não volta a ser guardada na sua estante, a menos que o leve para lá.", "shelf.removeYes": "Removê-lo de vez", "shelf.removeKeep": "Mantê-lo", "toast.shelfRemoved": "«{title}» foi removido da sua estante", "toast.shelfRemovedDesk": "«{title}» foi removido da sua estante — o livro aberto aqui fica agora guardado só neste dispositivo", "toast.shelfRemoveFail": "«{title}» não foi removido: não foi possível contactar a estante. Nada mudou.", "toast.shelfRemoveFailWhy": "«{title}» não foi removido. A estante respondeu: {reason}. Nada mudou." },
+        "nl": { "shelf.removeBtn": "Verwijderen", "shelf.removeAria": "“{title}” van uw boekenplank verwijderen", "shelf.removeTitle": "Dit boek van uw boekenplank verwijderen?", "shelf.removeBody": "“{title}” wordt voorgoed van uw boekenplank verwijderd. Het kan niet vanaf de boekenplank worden teruggehaald.", "shelf.removeBodyDesk": "“{title}” wordt voorgoed van uw boekenplank verwijderd. Het kan niet vanaf de boekenplank worden teruggehaald. Het is ook het boek dat in de studio open staat: die kopie blijft alleen op dit apparaat en wordt niet opnieuw op uw boekenplank opgeslagen, tenzij u het daarheen brengt.", "shelf.removeYes": "Voorgoed verwijderen", "shelf.removeKeep": "Houden", "toast.shelfRemoved": "“{title}” is van uw boekenplank verwijderd", "toast.shelfRemovedDesk": "“{title}” is van uw boekenplank verwijderd — het boek dat hier open staat, is nu alleen op dit apparaat opgeslagen", "toast.shelfRemoveFail": "“{title}” is niet verwijderd: de boekenplank was niet bereikbaar. Er is niets veranderd.", "toast.shelfRemoveFailWhy": "“{title}” is niet verwijderd. De boekenplank antwoordde: {reason}. Er is niets veranderd." },
+        "pl": { "shelf.removeBtn": "Usuń", "shelf.removeAria": "Usuń „{title}” z twojej półki", "shelf.removeTitle": "Usunąć tę książkę z twojej półki?", "shelf.removeBody": "„{title}” zostanie usunięta z twojej półki na dobre. Nie da się jej przywrócić z półki.", "shelf.removeBodyDesk": "„{title}” zostanie usunięta z twojej półki na dobre. Nie da się jej przywrócić z półki. To także książka otwarta w studiu: ta kopia zostaje tylko na tym urządzeniu i nie będzie ponownie zapisywana na twojej półce, chyba że ją tam przyniesiesz.", "shelf.removeYes": "Usuń na dobre", "shelf.removeKeep": "Zostaw", "toast.shelfRemoved": "„{title}” została usunięta z twojej półki", "toast.shelfRemovedDesk": "„{title}” została usunięta z twojej półki — książka otwarta tutaj jest teraz zapisana tylko na tym urządzeniu", "toast.shelfRemoveFail": "„{title}” nie została usunięta: półka była nieosiągalna. Nic się nie zmieniło.", "toast.shelfRemoveFailWhy": "„{title}” nie została usunięta. Półka odpowiedziała: {reason}. Nic się nie zmieniło." },
+        "ru": { "shelf.removeBtn": "Убрать", "shelf.removeAria": "Убрать «{title}» с вашей полки", "shelf.removeTitle": "Убрать эту книгу с вашей полки?", "shelf.removeBody": "«{title}» будет убрана с вашей полки навсегда. Вернуть её с полки будет нельзя.", "shelf.removeBodyDesk": "«{title}» будет убрана с вашей полки навсегда. Вернуть её с полки будет нельзя. Это также книга, открытая в студии: эта копия останется только на этом устройстве и не будет снова сохраняться на вашу полку, пока вы сами не принесёте её туда.", "shelf.removeYes": "Убрать навсегда", "shelf.removeKeep": "Оставить", "toast.shelfRemoved": "«{title}» убрана с вашей полки", "toast.shelfRemovedDesk": "«{title}» убрана с вашей полки — открытая здесь книга теперь сохранена только на этом устройстве", "toast.shelfRemoveFail": "«{title}» не убрана: полка недоступна. Ничего не изменилось.", "toast.shelfRemoveFailWhy": "«{title}» не убрана. Полка ответила: {reason}. Ничего не изменилось." },
+        "tr": { "shelf.removeBtn": "Kaldır", "shelf.removeAria": "“{title}” kitabını rafınızdan kaldır", "shelf.removeTitle": "Bu kitap rafınızdan kaldırılsın mı?", "shelf.removeBody": "“{title}” rafınızdan kalıcı olarak kaldırılacak. Raftan geri getirilemez.", "shelf.removeBodyDesk": "“{title}” rafınızdan kalıcı olarak kaldırılacak. Raftan geri getirilemez. Bu aynı zamanda stüdyoda açık olan kitap: o kopya yalnızca bu cihazda kalır ve siz oraya getirmedikçe rafınıza yeniden kaydedilmez.", "shelf.removeYes": "Kalıcı olarak kaldır", "shelf.removeKeep": "Kalsın", "toast.shelfRemoved": "“{title}” rafınızdan kaldırıldı", "toast.shelfRemovedDesk": "“{title}” rafınızdan kaldırıldı — burada açık olan kitap artık yalnızca bu cihazda kayıtlı", "toast.shelfRemoveFail": "“{title}” kaldırılmadı: rafa ulaşılamadı. Hiçbir şey değişmedi.", "toast.shelfRemoveFailWhy": "“{title}” kaldırılmadı. Raf şu yanıtı verdi: {reason}. Hiçbir şey değişmedi." },
+        "ar": { "shelf.removeBtn": "إزالة", "shelf.removeAria": "إزالة «{title}» من رفّك", "shelf.removeTitle": "إزالة هذا الكتاب من رفّك؟", "shelf.removeBody": "سيُزال «{title}» من رفّك نهائيًا. لا يمكن استرجاعه من الرف.", "shelf.removeBodyDesk": "سيُزال «{title}» من رفّك نهائيًا. لا يمكن استرجاعه من الرف. وهو أيضًا الكتاب المفتوح في الاستوديو: تبقى تلك النسخة على هذا الجهاز فقط، ولن تُحفظ على رفّك مجددًا إلا إذا جلبته إليه.", "shelf.removeYes": "أزِله نهائيًا", "shelf.removeKeep": "أبقِه", "toast.shelfRemoved": "أُزيل «{title}» من رفّك", "toast.shelfRemovedDesk": "أُزيل «{title}» من رفّك — الكتاب المفتوح هنا محفوظ الآن على هذا الجهاز فقط", "toast.shelfRemoveFail": "لم يُزَل «{title}»: تعذّر الوصول إلى الرف. لم يتغيّر شيء.", "toast.shelfRemoveFailWhy": "لم يُزَل «{title}». أجاب الرف: {reason}. لم يتغيّر شيء." },
+        "ja": { "shelf.removeBtn": "削除", "shelf.removeAria": "「{title}」を本棚から削除", "shelf.removeTitle": "この本を本棚から削除しますか？", "shelf.removeBody": "「{title}」は本棚から完全に削除されます。本棚から元に戻すことはできません。", "shelf.removeBodyDesk": "「{title}」は本棚から完全に削除されます。本棚から元に戻すことはできません。これはスタジオで開いている本でもあります。その写しはこのデバイスにだけ残り、ご自分で本棚に持ってこないかぎり、本棚にはもう保存されません。", "shelf.removeYes": "完全に削除する", "shelf.removeKeep": "残す", "toast.shelfRemoved": "「{title}」を本棚から削除しました", "toast.shelfRemovedDesk": "「{title}」を本棚から削除しました — ここで開いている本は、このデバイスにのみ保存されています", "toast.shelfRemoveFail": "「{title}」は削除されませんでした：本棚に接続できませんでした。何も変わっていません。", "toast.shelfRemoveFailWhy": "「{title}」は削除されませんでした。本棚の応答：{reason}。何も変わっていません。" },
+        "zh-Hans": { "shelf.removeBtn": "移除", "shelf.removeAria": "把《{title}》从你的书架移除", "shelf.removeTitle": "把这本书从你的书架移除？", "shelf.removeBody": "《{title}》将从你的书架永久移除，无法再从书架找回。", "shelf.removeBodyDesk": "《{title}》将从你的书架永久移除，无法再从书架找回。它也是工作室中正打开的那本书：那份副本只留在这台设备上，除非你把它带回书架，否则不会再保存到书架。", "shelf.removeYes": "永久移除", "shelf.removeKeep": "保留", "toast.shelfRemoved": "《{title}》已从你的书架移除", "toast.shelfRemovedDesk": "《{title}》已从你的书架移除——此处打开的书现在只保存在这台设备上", "toast.shelfRemoveFail": "《{title}》未被移除：无法连接书架。没有任何更改。", "toast.shelfRemoveFailWhy": "《{title}》未被移除。书架的回应：{reason}。没有任何更改。" }
+      };
+      Object.keys(SHELFREMOVE_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], SHELFREMOVE_STRINGS[code]); });
+      /* ==== /BEUK:shelfremove ==== */
       /* ==== BEUK:legal ==== — the links to /privacy and /terms, all 13 packs */
       const LEGAL_STRINGS = {
         "en": { "legal.authLine": "How your account and books are looked after:", "legal.settingsLine": "How Beuk handles your data, and the ground rules:", "legal.privacy": "Privacy", "legal.terms": "Terms" },
@@ -54691,6 +54710,8 @@
       async function cloudSaveRun() {
         if (!cloud.user || !cloud.available || !cloudDirty) { cloudSettleStatus(); return; } /* BEUK:savesync */
         if (cloud.linkState === "declined") return;
+        /* BEUK:shelfremove — this book's removal from the shelf is out: no save of it overlaps (cloudRemoveBook comes back to it) */
+        if (shelfRemove.sending && shelfRemove.sending === cloud.linkedId) { cloudSettleStatus(); return; }
         /* BEUK:local — while the conflict notice is open the writer is
            choosing; a background save would only re-send the stale
            revision. The choice itself saves (resolveConflict). */
@@ -54925,11 +54946,74 @@
           const when = m.updatedAt ? fmtDateIntl(new Date(m.updatedAt)) : "";
           const isCurrent = m.id === cloud.linkedId;
           return '<div class="shelf-row' + (isCurrent ? " current" : "") + '"><div class="sh-main"><div class="sh-title">' + esc(m.title || "Untitled Book") + '</div><div class="sh-meta">' + (isCurrent ? t("shelf.openInStudio") : "") + t("shelf.lastTended", { date: when }) + '</div></div>' +
-            (isCurrent ? '<span class="tb-btn" style="pointer-events:none; opacity:.65;">' + t("shelf.openBtn") + '</span>' : '<button class="tb-btn" type="button" data-open-book="' + esc(m.id) + '"><i data-lucide="book-open"></i>' + t("shelf.openBtn") + '</button>') + "</div>";
+            (isCurrent ? '<span class="tb-btn" style="pointer-events:none; opacity:.65;">' + t("shelf.openBtn") + '</span>' : '<button class="tb-btn" type="button" data-open-book="' + esc(m.id) + '"><i data-lucide="book-open"></i>' + t("shelf.openBtn") + '</button>') +
+            /* BEUK:shelfremove — every book can be removed from the shelf; the button is named by its book, and all of them rest while one removal is being asked or sent */
+            '<button class="tb-btn" type="button" data-remove-book="' + esc(m.id) + '" aria-label="' + esc(t("shelf.removeAria", { title: m.title || t("misc.untitledBook") })) + '"' + (shelfRemove.busy ? " disabled" : "") + '><i data-lucide="trash-2"></i>' + esc(t("shelf.removeBtn")) + '</button>' + "</div>";
         }).join("");
         list.querySelectorAll("[data-open-book]").forEach((b) => b.addEventListener("click", () => cloudOpenBook(b.getAttribute("data-open-book"))));
+        list.querySelectorAll("[data-remove-book]").forEach((b) => b.addEventListener("click", () => cloudRemoveBook(b.getAttribute("data-remove-book")))); /* BEUK:shelfremove */
         icons();
       }
+      /* ==== BEUK:shelfremove ==== — a book leaves the shelf for good (V, 2026-11-20: no trash for now), behind the calm
+         confirm. Only the shelf copy goes: DELETE /api/manuscripts/:id (its pictures go with it, server side). 204, or 404
+         (already gone), takes the row out of the list; any other answer, or no answer, changes nothing here and says so.
+         The book open on the desk is never touched on this device. If it is the one removed, the desk lets go of the
+         shelf copy and stands "declined" (the state "Not now" leaves): nothing saves it to the shelf again until the
+         writer brings it there (the shelf panel's "Bring it to my shelf"), and the status line says it is saved on this
+         device. shelfRemove.busy holds the book being asked about or sent, so a second click sends nothing;
+         shelfRemove.sending holds it while the DELETE is out, so no save of that book overlaps the removal (a PUT
+         answered 404 would put the book straight back, cloudSaveRun's "re-create it"). */
+      var shelfRemove = { busy: null, sending: null }; /* var: callable before this line runs */
+      async function cloudRemoveBook(id) {
+        if (!cloud.user || !id || shelfRemove.busy) return false;
+        const m = cloud.shelf.find((x) => x && x.id === id);
+        if (!m) return false;
+        shelfRemove.busy = id;
+        const title = m.title || t("misc.untitledBook");
+        const isDesk = () => cloud.linkedId === id;
+        let removed = false;
+        try {
+          const ok = await cloudConfirm({
+            title: t("shelf.removeTitle"),
+            body: t(isDesk() ? "shelf.removeBodyDesk" : "shelf.removeBody", { title: title }),
+            yes: t("shelf.removeYes"), no: t("shelf.removeKeep"), defaultNo: true
+          });
+          if (ok !== true) return false;
+          if (!cloud.user) return false; /* signed out while the question stood */
+          shelfRemove.sending = id;
+          renderShelfList(); /* the buttons rest while the answer is on its way */
+          /* a save of this book already on its way lands first; none starts while the removal is out */
+          if (isDesk() && cloudSaveInFlight) { try { await cloudSaveInFlight; } catch (e) {} }
+          const res = await apiFetch("/api/manuscripts/" + encodeURIComponent(id), { method: "DELETE" });
+          removed = !!res && (!res.__status || res.__status === 404);
+          if (!removed) {
+            toast(res && res.__error ? t("toast.shelfRemoveFailWhy", { title: title, reason: res.__error }) : t("toast.shelfRemoveFail", { title: title }), "alert-triangle");
+            return false;
+          }
+          const wasDesk = isDesk();
+          if (wasDesk) {
+            cloud.linkedId = null; cloud.linkState = "declined";
+            cloud.baseRevision = null; cloud.baseUpdatedAt = null; cloud.shelfUpdatedAt = null;
+            cloud.pendingSyncs = 0;
+            if (cloud.conflict) { cloud.conflict = null; const mc = $("modalConflict"); if (mc) mc.classList.remove("open"); } /* there is no shelf copy left to choose against */
+            clearTimeout(cloudSaveTimer); cloudSaveTimer = null;
+            setSyncStatus("local");
+            if (typeof localWriteLinkNow === "function") localWriteLinkNow(); /* the device knows now, not 120 ms later */
+          }
+          cloud.shelf = cloud.shelf.filter((x) => !(x && x.id === id));
+          toast(t(wasDesk ? "toast.shelfRemovedDesk" : "toast.shelfRemoved", { title: title }), "trash-2");
+          return true;
+        } finally {
+          const wasSending = shelfRemove.sending === id;
+          shelfRemove.busy = null; shelfRemove.sending = null;
+          renderShelfList();
+          /* the list is held steady while a bulk import runs (BEUK:bulkquiet): a removed book's row still leaves */
+          if (removed && bulkBusy) { const list = $("shelfList"); if (list) Array.from(list.querySelectorAll("[data-remove-book]")).forEach((b) => { if (b.getAttribute("data-remove-book") === id) { const row = b.closest(".shelf-row"); if (row) row.remove(); } }); }
+          /* the removal did not happen: writing held back while it was out comes due again */
+          if (wasSending && !removed && cloud.user && cloudDirty) cloudAutosaveTick();
+        }
+      }
+      /* ==== /BEUK:shelfremove ==== */
       /* ==== BEUK:shelfguard ==== */
       /* True when the desk holds a book that exists nowhere else: not an
          empty desk, not the untouched sample (it reloads exactly), and

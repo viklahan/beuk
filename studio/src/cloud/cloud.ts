@@ -320,9 +320,17 @@ export function storedLink(bookId: string | null): Link | null {
 let linkBook: string | null = null;
 /** 1.0's `local` as the lifted code reads it: signed out on this device, and the link this device last stored. */
 const local: { signedOut: boolean; restoredLink: Link | null } = { signedOut: false, restoredLink: null };
+/** BEUK:shelfremove — false from the page's start until its boot (bootCloud) has taken this device's stored link for the
+ *  account that is signed in. The page starts "unlinked"; the account can be known before the boot has answered (the
+ *  earlier waves' probe, pictures/stock.ts probeCloud, sets cloudFacts.user when it wins the race in a real browser),
+ *  and a write then (the writer lock's grant in lead(), a link pause coming due) put that starting "unlinked" over the
+ *  link the device stored: a book kept off the shelf ("declined") went back on the shelf with the next edit. */
+let linkTaken = false;
 function writeLink(): void {
   linkTimer = undefined;
   const cm = loadedCloud;
+  // the stored link stands until this page's boot has taken it (signed out, the snapshot is the stored link itself)
+  if (booting && !linkTaken && cloudFacts.user) return;
   // the book the link fields describe: the arriving one while its generation opens (1.0 sets the link right after
   // its applyBookDoc), else the desk's
   const id = arriving ? arriving.bookId : linkBook;
@@ -708,6 +716,7 @@ export function bootCloud(): Promise<void> {
       const door = () => studioDoor(cm.api as never, cloudFacts, work, () => document.getElementById('btnAccount')?.click());
       const up = await cm.api.cloudProbe();
       if (!up) {
+        linkTaken = true;
         cm.api.cloudGoLocal();
         door();
         return;
@@ -721,6 +730,12 @@ export function bootCloud(): Promise<void> {
         knownUser = userId();
         cm.api.renderCloudChrome();
         if (leader.is) {
+          // BEUK:shelfremove — a book this account keeps off the shelf on this device (removed from the shelf while it was
+          // on the desk, or "Not now") is still kept off after a reload: without this the page starts "unlinked" and the
+          // next edit puts the book on the shelf unasked. The same link a book change or a follower tab takes (takeLink).
+          const kept = storedLink(linkBook);
+          if (kept && kept.linkState === 'declined' && !kept.linkedId && kept.userId === userId() && !cloudFacts.linkedId) cloudFacts.linkState = 'declined';
+          linkTaken = true;
           work = Promise.resolve(cm.api.cloudAfterSignIn());
           try {
             await work;
@@ -730,14 +745,23 @@ export function bootCloud(): Promise<void> {
           }
         } else {
           takeLink(storedLink(linkBook));
+          linkTaken = true;
           void cm.api.cloudLoadShelf();
         }
-      } else covRun((c) => {
-        if (c.api.bibleAuthSignedOut(me)) c.api.bibleSeriesForget('*');
-        c.api.bibleSeriesRefresh(true);
-      });
+      } else {
+        linkTaken = true;
+        covRun((c) => {
+          if (c.api.bibleAuthSignedOut(me)) c.api.bibleSeriesForget('*');
+          c.api.bibleSeriesRefresh(true);
+        });
+      }
       door();
     })();
+    // a boot that failed on the way holds no write back for the rest of the page's life
+    const mine = booting;
+    void mine.then(() => undefined, () => undefined).then(() => {
+      if (booting === mine) linkTaken = true;
+    });
     cloudBootHook.p = booting;
   }
   return booting;
@@ -850,6 +874,7 @@ export function cloudReset(): void {
   leader.book = null;
   leader.release = null;
   booting = null;
+  linkTaken = false;
   cloudBootHook.p = null;
   clearTimeout(linkTimer); // review M4
   knownUser = null;
@@ -860,6 +885,8 @@ export function cloudReset(): void {
     loadedCloud.vars.cloudSaveTimer = null;
     loadedCloud.vars.cloudRetryTimer = null;
     loadedCloud.vars.cloudDirty = false;
+    // BEUK:shelfremove: no removal is being asked or sent on a fresh page
+    Object.assign(loadedCloud.api.shelfRemove as Rec, { busy: null, sending: null });
     // wave 7b: 1.0's pwa record, beta record and error-report counts, as a fresh page has them
     loadedCloud.vars.beukErrCount = 0;
     for (const k of Object.keys(loadedCloud.api.beukErrSeen as Rec)) delete (loadedCloud.api.beukErrSeen as Rec)[k];
