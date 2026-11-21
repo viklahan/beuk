@@ -3301,6 +3301,20 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
+    id: 'import.tally.reasons-sum',
+    title:
+      "A tally row whose figures differ says why in countable reasons that sum to the difference (a chapter-number line joined to its heading, the book's own page break, a covered cell kept empty), and what is found nowhere is shown as not explained",
+    kind: 'client-only',
+    reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
+  },
+  {
+    id: 'import.tally.studio-count',
+    title:
+      "The import tally counts words by the studio's own rule and shows the studio's count as itself, with its parts summing exactly; a language counted by characters is counted so on both sides",
+    kind: 'client-only',
+    reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
+  },
+  {
     id: 'import.html.quote-attribution',
     title: "A web page's quotation keeps every word: its paragraphs, the attribution in a <footer> or <cite>, and words set loose beside them",
     kind: 'client-only',

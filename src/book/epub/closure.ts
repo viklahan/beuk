@@ -61,7 +61,7 @@ export const EPUB_CLOSURE: readonly string[] = [
   'chapterOpeningHtml', 'clampNum', 'colourContrast', 'colourForDark', 'colourHex', 'colourLum',
   'columnsHanging', 'containerIndent', 'containerKind', 'containerPassThrough', 'containerStanzas',
   'contentBlocksToHtml', 'copyrightPageParas', 'copyrightRightsParas', 'countWords', 'countWordsFresh',
-  'countWordsRaw', 'countWordsShort', 'curlify', 'defaultCoverRecipe', 'defaultHeaderDesign',
+  'countWordsClean', 'countWordsRaw', 'countWordsShort', 'curlify', 'defaultCoverRecipe', 'defaultHeaderDesign',
   'displayFaceRules', 'displayFontData', 'displayFontOf', 'displayFontOfl', 'displayFontsFor',
   'docxRedactRun', 'docxRedactedPlainRuns', 'docxRun', 'emptyOut', 'ensureDisplayFonts', 'ensureScriptFonts',
   'epubApplyManifestProperties', 'epubAttr', 'epubCssHasRemote', 'epubDetectProps', 'epubFiles', 'epubFonts',
@@ -92,7 +92,7 @@ export const EPUB_CLOSURE: readonly string[] = [
   'tableCellShort', 'tableHasHeader', 'tableNumericCols', 'tableParts', 'tableRowCells', 'textsItems',
   'themeFlourishImages', 'tocHeadingOf', 'tocTree', 'transcriptItems', 'trimSize', 'uiLangState',
   'uiPluralCategory', 'uiPluralRulesCache', 'uid', 'unredactForReading', 'uploadedFontByFamily',
-  'uploadedFonts', 'usedDisplayFonts', 'usedUploadedFonts', 'verseParts', 'wrapDefaults', 'xhtmlDoc',
+  'uploadedFonts', 'usedDisplayFonts', 'usedUploadedFonts', 'verseParts', 'wordsOfClean', 'wrapDefaults', 'xhtmlDoc',
 ];
 
 /** The book's arrival, run inside the context on the book readBook opened:
