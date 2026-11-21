@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { performance } from 'node:perf_hooks';
-import type { Node } from 'prosemirror-model';
+import { Fragment, Slice, type Node } from 'prosemirror-model';
 import * as Y from 'yjs';
 import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
 import { fixturePath } from './book-fixtures.js';
@@ -191,6 +191,27 @@ test('convert: nesting and edge syntax survive, and the common nestings are mode
   // a picture line stands alone even inside a run of lines
   assert.deepEqual(types(toDoc('a\n![p](img:x)\nb')), ['paragraph', 'image', 'paragraph']);
   assert.deepEqual(types(toDoc('x\n\n***\n\ny')), ['paragraph', 'sceneBreak', 'paragraph']);
+});
+
+/* BEUK:table (docs/TABLE_BLOCK_DESIGN.md, slice 1) — until the editor has table nodes, a "::: table" block is one
+   verbatim rawBlock: its bars, its escaped bar, its redaction and its spacing come back byte for byte, also after
+   the paragraph beside it is edited. */
+test('convert: a "::: table" block is one raw block and survives an edit beside it byte for byte', () => {
+  const table = '::: table header\nTable 3. Tonnage by port, 1921\n| Port | Ships | Tonnage |\n|Leith|14|  9,200  |\n| H. Lindholm | **Absent** \\| on leave | ||Vance|| |\n\n| Hull | 22 |\n:::';
+  const text = 'Before the table.\n\n' + table + '\n\nAfter it.[^8]\n\n[^8]: Foundry Sheet IV.';
+  const doc = toDoc(text);
+  assert.deepEqual(types(doc), ['paragraph', 'rawBlock', 'paragraph', 'footnoteDef']);
+  assert.equal(doc.child(1).textContent, table);
+  assert.equal(toText(doc), text);
+  // type into the first paragraph (position 1 is its start), as the editor would
+  const edited = doc.replace(1, 1, new Slice(Fragment.from(S.text('Typed. ')), 0, 0));
+  const out = toText(edited);
+  assert.equal(out, 'Typed. ' + text);
+  assert.equal(edited.child(1).textContent, table);
+  // and through Yjs, as the stored book goes
+  const ydoc = new Y.Doc();
+  prosemirrorToYXmlFragment(edited, ydoc.getXmlFragment('t'));
+  assert.equal(toText(yXmlFragmentToProseMirrorRootNode(ydoc.getXmlFragment('t'), S)), out);
 });
 
 /* ---- step 5 wave 2a (B6): headings, quotes and lists are nodes ---- */

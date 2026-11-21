@@ -4282,6 +4282,94 @@ entries are. Narration reads the entries, never the fences. Toolbar:
 Columns and Hanging indent, in all 13 languages. Self-checks:
 `chapter.hanging`, `chapter.columns`, `import.docx.backmatter` (async).
 
+## Containers: table (BEUK:table)
+
+Design: `docs/TABLE_BLOCK_DESIGN.md`. Slice 1 (render) is built; import,
+a real Word table, editor nodes and Store-ready limits are later slices.
+
+```
+::: table header
+Table 3. Tonnage by port, 1921
+| Port | Ships | Tonnage |
+| Leith | 14 | 9,200 |
+| Hull | 22 | 15,750 |
+:::
+```
+
+- **Rows** (`tableRowCells`): a line that starts with `|` is a row. Cells
+  split on each unescaped bar, the bar at the line's end is optional,
+  cells are trimmed, `\|` is a bar in the words. A redaction (`||x||`) is
+  read first, so its bars are never cell edges, and a line that opens
+  with one is not a row. Short rows are padded with empty cells at render.
+  A Markdown rule row (`| --- | --- |`) is not part of the syntax: by the
+  beautifier's rules its dashes become em dashes and it would set as a
+  row of dashes (read from the code, not run).
+- **Other lines** (`tableParts`): lines before the first row are the
+  caption (several run together as one line; a picture, a scene break or
+  a note's definition there is set as a block ahead of the table). Every
+  line after the first row that is not a row is set as an ordinary block
+  after the table, in order. Every row line belongs to the one table. A
+  fence with no row at all sets its lines as paragraphs.
+- **Header**: only `::: table header` makes the first row the header row.
+- **Markup**, on every surface (preview, print, EPUB):
+  `div.tbl > table > caption / thead th[scope=col] / tbody td`. Three
+  additions to the design's markup: `class="num"` on the cells of a
+  column of figures; `tbl-w1` / `tbl-w2` / `tbl-w3` on the `div` for
+  five, seven and nine columns and more (cell type 0.84 / 0.77 / 0.7em;
+  four columns and fewer 0.92em; the caption always 0.92em); and
+  `class="nb"` on a short cell (one to ten characters, `tableCellShort`)
+  of a table of up to four columns, which is never broken. Without it one
+  long remark squeezes a column of dates until every date breaks (seen in
+  a printed page: "11 / March").
+- **Figures** (`TABLE_NUM_RE`, `tableNumericCols`): a column is set to the
+  line's end (right; left in a right-to-left book) when at least one body
+  cell is a figure and every other body cell is a figure or says nothing
+  (empty, a lone dash, only a redaction). A figure is digits in groups
+  joined by `.` or `,`, or by a space or apostrophe before three digits;
+  an optional sign; an optional currency sign before or after; an optional
+  `%` or `‰`; optionally in (brackets). Emphasis marks and note references
+  are not read for it. `12 kg`, `1921–22` and `06:12` are words. The
+  header row is never read for it; with no `header`, the first row is a
+  body row and its words keep its columns from being figures.
+- **CSS** (`buildBookCss`): full measure, collapsed borders, a rule above
+  and below the table and under the header row, no upright rules, caption
+  above in italic, cells from the line's start with logical padding, rows
+  never split (`break-inside: avoid`), caption and `thead` kept with the
+  next row (`break-after: avoid`). No sideways scroll (the design asked
+  for one in the preview): a scrolling box cannot break between pages and
+  no e-reader scrolls one, so a body word too long for its cell breaks
+  (`overflow-wrap: anywhere`), a figure never does (`td.num` is `nowrap`)
+  and a header word is kept whole up to eight columns (`th` is
+  `break-word`). Measured in the 2.0 preview, an eight-column table
+  stays inside the narrowest measures (334px two-up tablet, 353px phone)
+  with its header words whole and long body words broken
+  ("Unremarkabl/e"). A table with more or longer unbreakable cells than
+  the measure holds will run past it; nothing prevents that yet. In a
+  right-to-left book a figure cell is `unicode-bidi: plaintext`, so
+  "+4%" is not set "4%+".
+- **Words**: a bar is never a word or part of one (`countWordsRaw`: once
+  redactions are out, every bar and the backslash escaping it is a space,
+  the one rule for a fence's rows and for the plain `cell | cell` rows an
+  import keeps); the caption and cells are. Narration and read aloud
+  (`spokenContainerText`) say the caption as a paragraph, then each row as
+  a paragraph of its cells joined with `; `, empty cells passed over.
+- **Markdown**: the fence exports as written (`keepLines`).
+- **Word**: for now the caption and each row are `Normal` paragraphs, a
+  row's cells joined with ` | ` (empty cells dropped, as the import
+  report's undo writes them), the header row in bold. A real `w:tbl` is
+  slice 3, with the Word import that can read one back.
+- **2.0 editor**: a table is a verbatim `rawBlock` (`container:table`)
+  until slice 4.
+- **Print**: the studio's print file, printed to PDF by a bare headless
+  Chromium (2026-11-20, a 70-row table over five 6 x 9 pages), repeats the
+  header row at the head of every continued page and splits no row. Not
+  established: the same through the production renderer
+  (`deploy/renderer`), which runs its own passes after Chromium, and a
+  table taller than a page in a section with page-foot notes (design
+  decision 1).
+
+Self-check: `chapter.table`.
+
 Notes at the foot of the page and columns: the print renderer
 (`deploy/renderer/footnotes.mjs`) knows a `.columns` block. Its entries
 are units like any paragraph; their lines are told apart by column (a line
