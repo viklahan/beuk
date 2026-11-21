@@ -3287,6 +3287,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The title-page reader (BEUK:titlepage) and every importer run in the studio; the server never sees the file.',
   },
   {
+    id: 'import.tally.every-word',
+    title:
+      "The import tally counts the file by a reading of its own and the book the import made: for a small file of each kind the file's words are exactly the book's plus each named bucket set aside, and a dropped paragraph leaves exactly its words unaccounted for, with a warning",
+    kind: 'client-only',
+    reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
+  },
+  {
     id: 'import.tables.kept-as-rows',
     title:
       "A table's words stay in the book as plain rows where it stood: cells joined by a bar with empty and merged-over cells kept in their columns, marks and a note's mark kept in their cell, a nested table after its parent and said once, reported as kept, the bars not counted as words, and out again on undo",
