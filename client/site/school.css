@@ -143,6 +143,19 @@
 @font-face{font-family:"Beuk Weekly Plus";font-style:italic;font-weight:100 900;font-display:swap;src:url(/assets/fonts/oldstandardtt/oldstandardtt-latin-italic-400.woff2) format("woff2");unicode-range:U+002B}
 .weekly-band{display:grid;grid-template-columns:auto 1fr;gap:4px 18px;align-items:baseline;margin-top:30px;padding:16px 18px;background:#fdfdfb;color:#111;border:1px solid #111;outline:1px solid #111;outline-offset:3px;text-decoration:none}
 .weekly-band:hover .wb-head{text-decoration:underline}
+/* The stand under the band: how many issues, the newest few by number and headline. */
+.weekly-stand{margin-top:16px;color:#111}
+.weekly-stand .ws-count{margin:0 0 6px;font:500 12px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.04em}
+.weekly-stand ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid #111;border-bottom:1px solid #111}
+.weekly-stand li{min-width:0;border-left:1px solid #bdbdb6}
+.weekly-stand li:first-child{border-left:0}
+.weekly-stand ol a{display:block;height:100%;padding:7px 12px 8px;color:#111;text-decoration:none}
+.weekly-stand li:first-child a{padding-left:0}
+.ws-no{display:block;font:500 11.5px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.ws-head{display:block;font:500 15px/1.15 "Oswald","Arial Narrow",sans-serif;text-transform:uppercase}
+.weekly-stand ol a:hover .ws-head{text-decoration:underline}
+.ws-all{display:inline-block;margin-top:6px;font:500 12px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.04em;color:#111;text-decoration:none;border-bottom:1px solid #111}
+@media(max-width:620px){.weekly-stand ol{grid-template-columns:1fr}.weekly-stand li{border-left:0;border-top:1px dotted #bdbdb6}.weekly-stand li:first-child{border-top:0}.weekly-stand ol a,.weekly-stand li:first-child a{display:grid;grid-template-columns:4.2em minmax(0,1fr);align-items:baseline;gap:8px;padding:6px 0}.ws-no{margin:0}.ws-head{font-size:14px}}
 .wb-mast{font:700 22px/1 "Old Standard TT",Georgia,serif;text-transform:uppercase;letter-spacing:.03em}
 .wb-no{font:500 12px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.04em;justify-self:end}
 .wb-head{grid-column:1/-1;font:600 clamp(24px,3.4vw,36px)/1.02 "Oswald","Arial Narrow",sans-serif;text-transform:uppercase}

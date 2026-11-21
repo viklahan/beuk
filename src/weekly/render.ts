@@ -19,8 +19,10 @@ import type { Issue, Story, StoryBlock, WeeklyContent } from './content.js';
  * An issue that carries a weather reading wears the Beuk lockup in its
  * left ear (the site header's own mark and wordmark) and "The Weather
  * Elsewhere" in its right; one that does not keeps the forecast and late
- * news. Short stories print whole under the lead, then the takeaway box
- * and the Sources foot. Every issue closes on the same imprint.
+ * news. Under the dateline rule, the issue bar: previous, next, "No. n of
+ * N", "All issues" and, on a back issue, the newest. Short stories print
+ * whole under the lead, then the takeaway box, the Sources foot and the
+ * shelf of all issues (#issues). Every issue closes on the same imprint.
  *
  * The printed edition link appears only when that issue's PDF is on the
  * server (<SCHOOL_MEDIA_DIR>/weekly/en/issue-NNN.pdf). Nothing is shown for
@@ -63,7 +65,52 @@ function blocksHtml(blocks: StoryBlock[], dropFirst: boolean): string {
     .join('\n          ');
 }
 
-function masthead(config: Config, issue: Issue): string {
+/**
+ * The issue bar, under the dateline rule: the previous and next issue when
+ * there is one, where this issue stands ("No. 3 of 5"), "All issues" (the
+ * shelf at the foot), and on a back issue the newest one. Numbers come
+ * from the issue folders, never typed.
+ */
+function issueBar(weekly: WeeklyContent, issue: Issue): string {
+  // A single issue has nowhere to go; the dateline already gives its number.
+  if (weekly.issues.length < 2) return '';
+  const newest = weekly.latest!;
+  const prev = weekly.issueByNumber.get(issue.number - 1);
+  const next = weekly.issueByNumber.get(issue.number + 1);
+  const parts = [
+    prev ? `<a class="ib-prev" href="${issueUrl(prev.number)}" rel="prev">‹ No. ${prev.number}</a>` : '',
+    `<span class="ib-pos"><a href="${issueUrl(issue.number)}" aria-current="page">No. ${issue.number}</a> of ${weekly.issues.length}</span>`,
+    '<a class="ib-all" href="#issues">All issues</a>',
+    // On the issue just before the newest, "next" and "newest" are one link, said once.
+    next && next.number !== newest.number ? `<a class="ib-next" href="${issueUrl(next.number)}" rel="next">No. ${next.number} ›</a>` : '',
+    newest.number !== issue.number
+      ? `<a class="ib-new" href="${issueUrl(newest.number)}"${next?.number === newest.number ? ' rel="next"' : ''}>Newest issue: No. ${newest.number} ›</a>`
+      : '',
+  ].filter(Boolean);
+  return `<nav class="issue-bar" aria-label="Beuk Weekly issues">
+          ${parts.join('\n          ')}
+        </nav>`;
+}
+
+/** The shelf at the foot of every issue: all of them, newest first, the one being read marked. */
+function issueShelf(weekly: WeeklyContent, issue: Issue): string {
+  if (weekly.issues.length < 2) return '';
+  const rows = [...weekly.issues]
+    .reverse()
+    .map(
+      (i) =>
+        `<li${i.number === issue.number ? ' class="current"' : ''}><a href="${issueUrl(i.number)}"${i.number === issue.number ? ' aria-current="page"' : ''}><span class="is-no">No. ${i.number}</span><span class="is-week">${esc(weekLabel(i.week))}</span><span class="is-head">${esc(i.banner)}</span></a></li>`,
+    )
+    .join('\n            ');
+  return `<section class="issues" id="issues" aria-labelledby="issues-h">
+          <h2 id="issues-h">All issues</h2>
+          <ol>
+            ${rows}
+          </ol>
+        </section>`;
+}
+
+function masthead(config: Config, weekly: WeeklyContent, issue: Issue): string {
   const pdf = printedEdition(config, issue);
   const wx = issue.weather;
   const left = wx
@@ -86,7 +133,8 @@ function masthead(config: Config, issue: Issue): string {
           ${issue.price ? `<span>${esc(issue.price)}</span>` : ''}
           <span>beuk.studio/school/weekly</span>
           ${pdf ? `<a href="${esc(pdf)}">This issue as a printed PDF</a>` : '<span>Free every week</span>'}
-        </div>${issue.note ? `
+        </div>
+        ${issueBar(weekly, issue)}${issue.note ? `
         <p class="mast-note">${esc(issue.note)}</p>` : ''}`;
 }
 
@@ -133,13 +181,10 @@ export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue)
             </div>`,
     )
     .join('');
-  const earlier = weekly.issues.filter((i) => i.number !== issue.number).reverse();
-  // "Earlier" is only true on the newest issue; an older one lists the later ones too.
-  const earlierLabel = earlier.some((i) => i.number > issue.number) ? 'Other issues' : 'Earlier issues';
   const leadHead = lead.frontHead ?? lead.title;
   const side = issue.front.length + issue.briefs.length + issue.notices.length > 0;
   const body = `        <div class="paper">
-        ${masthead(config, issue)}
+        ${masthead(config, weekly, issue)}
         <a class="banner" href="${esc(storyUrl(lead))}">${esc(issue.banner)}</a>
         <p class="banner-deck">${esc(issue.bannerDeck)}</p>
         <div class="front${side ? '' : ' solo'}">
@@ -173,13 +218,7 @@ export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue)
             ? `<section class="sources" aria-label="Sources">${issue.sourcesHead ? `<h4>${esc(issue.sourcesHead)}</h4>` : ''}<ul>${issue.sources.map((x) => `<li>${x.html}</li>`).join('')}</ul></section>`
             : ''
         }
-        ${
-          earlier.length
-            ? `<section class="earlier" aria-label="${earlierLabel}"><p class="kick">${earlierLabel}</p><ul>${earlier
-                .map((i) => `<li><a href="${issueUrl(i.number)}">No. ${i.number} · ${esc(weekLabel(i.week))} · ${esc(i.banner)}</a></li>`)
-                .join('')}</ul></section>`
-            : ''
-        }
+        ${issueShelf(weekly, issue)}
         <footer class="imprint">
           <span>Printed and published by Beuk</span>
           <span>Free every week</span>

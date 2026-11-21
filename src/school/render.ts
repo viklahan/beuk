@@ -3,7 +3,7 @@ import { getHelpContent } from '../help/content.js';
 import { escapeHtml as esc } from '../warmth/markdown.js';
 import { LEVELS, STAGE_NAMES, type Course, type Lesson, type Level, type SchoolContent, type SchoolSection, type Stage } from './content.js';
 import { mediaUrl, readLessonMedia, type LessonMedia } from './media.js';
-import { getWeeklyContent } from '../weekly/content.js';
+import { getWeeklyContent, type WeeklyContent } from '../weekly/content.js';
 
 /**
  * Beuk School pages (/school, /school/<course>, /school/<course>/<lesson>),
@@ -213,16 +213,34 @@ function sectionBand(ctx: SchoolCtx, s: SchoolSection, i: number): string {
         </section>`;
 }
 
-/** The School home's pointer to this week's paper (nothing while there is no issue). */
-function weeklyBand(): string {
-  const issue = getWeeklyContent().latest;
+const COUNT_WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+/** How many issues the stand shows before it hands over to "All issues". */
+export const STAND_SIZE = 6;
+
+/** The School home's pointer to this week's paper (nothing while there is no issue),
+ *  and under it the stand: how many issues there are, the newest few by number and
+ *  headline, and "All issues" once there are more than it shows. */
+export function weeklyBand(weekly: WeeklyContent = getWeeklyContent()): string {
+  const issue = weekly.latest;
   if (!issue) return '';
-  return `<a class="weekly-band" href="/school/weekly">
+  const band = `<a class="weekly-band" href="/school/weekly">
           <span class="wb-mast">Beuk Weekly</span>
           <span class="wb-no">No. ${issue.number} · out now</span>
           <span class="wb-head">${esc(issue.banner)}</span>
           <span class="wb-deck">${esc(issue.bannerDeck)}</span>
         </a>`;
+  const n = weekly.issues.length;
+  if (n < 2) return band;
+  const shown = [...weekly.issues].reverse().slice(0, STAND_SIZE);
+  const count = `${COUNT_WORDS[n] ?? n} issues on the stand`;
+  return `${band}
+        <nav class="weekly-stand" aria-label="Beuk Weekly issues">
+          <p class="ws-count">${count}</p>
+          <ol>
+            ${shown.map((i) => `<li><a href="/school/weekly/${i.number}"><span class="ws-no">No. ${i.number}</span><span class="ws-head">${esc(i.banner)}</span></a></li>`).join('\n            ')}
+          </ol>${n > shown.length ? `
+          <a class="ws-all" href="/school/weekly#issues">All issues →</a>` : ''}
+        </nav>`;
 }
 
 export function renderSchoolHome(ctx: SchoolCtx): string {
