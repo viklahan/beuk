@@ -138,7 +138,7 @@ stored server-side as a SHA-256 hash.
 | `/api/housekeeping/*` | the admin surface — **404 to everyone who is not a signed-in admin** (see Housekeeping) |
 | `GET /api/health` | `{ok, db}` liveness |
 | `GET /api/status` | public, scrubbed health summary: app, version, build stamp, db up/down, latest Self-checks outcome (see Warmth) |
-| `GET /api/config/public` | public config for pages/clients: support contact (`email`, `name`, `replyPromise` — each `null` until set in `.env`) + Ko-fi jar URL (or `null`) |
+| `GET /api/config/public` | public config for pages/clients: support contact (`email`, `name`, `replyPromise` — each `null` until set in `.env`) + Ko-fi jar URL (or `null`) + `aris: true` only while `ARIS_ENABLED` is on (absent otherwise; the landing page shows its Aris links from it) |
 | `GET /help/` · `/help/<slug>` · `/help/errors` · `/help/errors/<code>` | public, server-rendered Help pages from `content/help/` (see Help & Support); `/help/<old>.html` and `/help/index.html` answer **301** to the new URLs |
 | `GET /help/search?q=` · `POST /help/search` | public, the no-JavaScript search results page (the form posts, so a long pasted message fits) |
 | `GET /api/help/search?q=` · `POST /api/help/search {q}` | public help search → `{q, codes, errors, guides, sections, total, trigram, logId}`; exact codes first, then full text, then trigram; **429** + `Retry-After` past the per-IP limit (30 burst, one more every 2 s); 400 without `q` |

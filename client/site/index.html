@@ -867,12 +867,17 @@
     <script>
       /* BEUK:aris-link — /aris is 404 while Aris is off on this server, and
          this page is a static file that cannot know. The two Aris links ship
-         hidden; they show only once /aris has answered 200. */
+         hidden; they show only once the server's public config
+         (/api/config/public, which always answers 200) says aris: true.
+         The page never asks /aris itself: a 404 there is a console error
+         on every load of a server with Aris off. */
       (function(){
         try {
-          fetch("/aris", { method: "HEAD" }).then(function(r){
-            if (r.ok) document.querySelectorAll("[data-aris]").forEach(function(a){ a.hidden = false; });
-          }).catch(function(){});
+          fetch("/api/config/public", { credentials: "omit" })
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(j){
+              if (j && j.aris === true) document.querySelectorAll("[data-aris]").forEach(function(a){ a.hidden = false; });
+            }).catch(function(){});
         } catch (e) {}
       })();
       (function(){

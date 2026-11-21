@@ -88,8 +88,8 @@ plain static HTML in `client/help/`; the changelog renders
 `CHANGELOG.md` (repo root) and the roadmap renders `docs/roadmap.md`,
 the same source as Housekeeping's Reference. `GET /api/status` is the
 scrubbed public health summary the Help page shows as its status line;
-`GET /api/config/public` exposes only the support contact and the jar
-URL.
+`GET /api/config/public` exposes only the support contact, the jar
+URL, and `aris: true` while Aris is on.
 
 ## Deliberate limits
 
