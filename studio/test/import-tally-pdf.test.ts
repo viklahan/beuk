@@ -230,6 +230,23 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     expect(said).toContain('“DUSK OVER THE SALT” ×2');
   }, 120_000);
 
+  /* A title page (BEUK:titlepage): a PDF sets its lines large, so the reader reads them as headings with no text under
+     them. The book's details take them, as they take a title page's lines set plain in any format, and the tally counts
+     them as the title page's; before, the zone rule filed each as a preface with no text, never kept: the writer's
+     title went nowhere and showed as unaccounted. */
+  it('a title page set large: its lines go to the book\'s details and are counted as the title page\'s, not lost', async () => {
+    const title: [string, number, number, number][] = [['THE SALT ROAD', 120, 420, 26], ['A Novel', 175, 380, 14], ['Ada Wren', 170, 300, 16]];
+    const rep = await importPdf('salt-road-title.pdf', await makePdf([title, ...BOOK])) as unknown as { tally: Tally & { words: { same: boolean } }; items: { kind: string; data: Record<string, unknown> }[] };
+    const ty = rep.tally;
+    expect({ aside: ty.aside, unaccounted: ty.unaccounted, same: ty.words.same }).toEqual({ aside: { headers: 9, pageNumbers: 3, titlePage: 7 }, unaccounted: 0, same: true });
+    expect(rep.items.some((it) => it.kind === 'lifted' && it.data.reason === 'titlepage'), 'the report lists the title page as lifted into the details').toBe(true);
+  }, 120_000);
+  it('a title over a page of its own text (the author and the rights): the title is the title page\'s, the rest stays the book\'s', async () => {
+    const title: [string, number, number, number][] = [['The Salt Road', 120, 420, 26], ['Ada Wren', 170, 360, 14], ['Copyright © 2026 Ada Wren. All rights reserved.', 60, 120, 9]];
+    const ty = (await importPdf('salt-road-rights.pdf', await makePdf([title, ...BOOK]))).tally as Tally & { words: { same: boolean } };
+    expect({ aside: ty.aside, unaccounted: ty.unaccounted, same: ty.words.same }).toEqual({ aside: { headers: 9, pageNumbers: 3, titlePage: 3 }, unaccounted: 0, same: true });
+  }, 120_000);
+
   it('a locked PDF is counted as the open file holds it, once its password is given', async () => {
     const m = make(env());
     const locked = (await m.api.lockPdfBytes(await makePdf(BOOK), 'lantern')) as Uint8Array;

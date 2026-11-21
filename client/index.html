@@ -39043,6 +39043,23 @@
           it.cls = "matter"; it.matter = { kind: "back", type: "appendix", title };
         });
         const isBodyItem = (it) => it.cls === "chapter" || it.cls === "part" || (it.cls === "matter" && it.matter.kind === "body");
+        /* BEUK:titlepage — a title page set as headings ("# THE SALT ROAD: A Novel", "# Ada Wren": a PDF's title page,
+           its lines set large): the book opens on headings with no text under them, which the zone rule above filed as
+           prefaces. With no text a preface is never kept, so the writer's title went nowhere. Those opening headings are
+           the title page's lines, read by the one rule every format shares, as lines set plain are; what follows them (a
+           heading with its text) stays as it was. Lines the title-page rule does not take stay the book's text. */
+        {
+          const fb = items.findIndex(isBodyItem);
+          const asHead = (it) => it.cls === "matter" && it.matter.kind === "front" && it.matter.type === "preface" && !it.bodyText && /^#{1,2}\s+/.test(String(it.raw || "").trim());
+          let k = 0;
+          while (k < items.length && k < fb && ((items[k].cls === "lead" && !items[k].bodyText && !items[k].titleHead) || asHead(items[k]))) k++;
+          const run = items.slice(0, k);
+          if (run.some(asHead)) {
+            const lines = run.filter(asHead).map((it) => String(it.raw).trim().replace(/^#{1,2}\s+/, ""));
+            run.forEach((it) => { it.cls = "skip"; });
+            items[0] = { bodyText: lines.join("\n\n"), cls: "lead" };
+          }
+        }
         /* BEUK:importmeta — the manuscript's own title page is the
            book's credit: read it, lift it out of the text, and record
            the lift for the import report (undo puts it back). */
