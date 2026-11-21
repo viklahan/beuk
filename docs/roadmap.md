@@ -45,7 +45,7 @@ In the order they will be built.
 - **Co-authoring with AI.** Writing alongside an AI that knows your
   Covenant and your Notebook, with every suggestion yours to take or
   leave. Needs the AI key above first.
-- **Beuk Weekly, every week.** The School's newspaper (issue No. 1 is
+- **Beuk Weekly, every week.** The School's newspaper (five issues are
   out) published weekly, with news, articles, author notices, contests
   and things to do around the site. Drafted with help; a person reads
   and approves every issue, and nothing goes out without that.
