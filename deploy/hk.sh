@@ -25,6 +25,11 @@
 # removed on exit. The account must already be admin:
 #   docker compose exec app node dist/admin-cli.js grant you@example.com
 #
+# On a box served through Cloudflare Tunnel the script calls the public
+# address (see CURL_OPTS below); a call that runs longer than Cloudflare
+# allows a request to take ends with an error from the edge although the
+# action may still finish on the box — check with "backups" afterwards.
+#
 # Testing only: HK_PASSWORD supplies the password non-interactively and
 # HK_INSECURE=1 accepts a self-signed certificate (a rehearsal box with
 # Caddy's internal CA). Neither belongs on the production box.
@@ -57,8 +62,24 @@ cleanup() {
   curl -s -o /dev/null "${CURL_OPTS[@]}" -b "${JAR}" -X POST "${BASE}/api/auth/logout" || true
   rm -f "${JAR}" "${BODY}"
 }
-# Talk to this machine's Caddy whatever DNS currently says.
-CURL_OPTS=(--silent --show-error --max-time 900 --resolve "${DOMAIN}:443:127.0.0.1")
+# Talk to this machine's Caddy whatever DNS currently says — unless the box
+# is served through Cloudflare Tunnel (BEUK:tunnel: CLOUDFLARED_DIR is set,
+# as deploy/install.sh reads it). There TLS ends at Cloudflare's edge and
+# Caddy on the box speaks plain HTTP only, so nothing answers
+# https://DOMAIN on 127.0.0.1:443 (curl: "TLS connect error … alert
+# internal error", seen on the production box 2026-11-20). On such a box
+# the call goes out by the public address and comes back in through the
+# tunnel. HK_VIA=public or HK_VIA=local overrides the choice.
+TUNNEL_DIR="${CLOUDFLARED_DIR:-}"
+[ -n "${TUNNEL_DIR}" ] || TUNNEL_DIR="$(grep '^CLOUDFLARED_DIR=' .env 2>/dev/null | tail -n 1 | cut -d= -f2- || true)"
+VIA="${HK_VIA:-}"
+[ -n "${VIA}" ] || { [ -n "${TUNNEL_DIR}" ] && VIA=public || VIA=local; }
+CURL_OPTS=(--silent --show-error --max-time 900)
+case "${VIA}" in
+  local)  CURL_OPTS+=(--resolve "${DOMAIN}:443:127.0.0.1") ;;
+  public) echo "hk: this box is served through Cloudflare Tunnel — calling ${BASE} by its public address" >&2 ;;
+  *)      echo "HK_VIA must be 'local' or 'public' (got '${VIA}')" >&2; exit 2 ;;
+esac
 [ "${HK_INSECURE:-0}" = "1" ] && CURL_OPTS+=(--insecure)
 trap cleanup EXIT
 
