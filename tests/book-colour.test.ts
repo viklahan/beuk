@@ -52,7 +52,9 @@ test('the contrast guard uses the WCAG thresholds: 3:1 for the accent (large tex
 test('every named accent passes 3:1 on white and on every named tint; every tint keeps black text at 4.5:1', () => {
   const accents = swatches('COLOUR_ACCENTS');
   const tints = swatches('COLOUR_TINTS');
-  assert.equal(accents.length, 10);
+  assert.equal(accents.length, 11);
+  // the Ramp's amber (Rain on Calder Street's drop cap and title ink), between Oxblood and Brass; Brass unchanged
+  assert.deepEqual(accents.slice(2, 5), [{ id: 'oxblood', hex: '#7a1f2b' }, { id: 'amber', hex: '#8a5a12' }, { id: 'brass', hex: '#8a6417' }]);
   assert.equal(tints.length, 4);
   for (const a of accents) for (const p of ['#ffffff', ...tints.map((x) => x.hex)]) assert.ok(contrast(a.hex, p) >= 3, `${a.id} ${a.hex} on ${p}: ${contrast(a.hex, p).toFixed(2)}`);
   for (const x of tints) assert.ok(contrast(x.hex, '#000000') >= 4.5, `${x.id} with black text`);
@@ -101,7 +103,7 @@ test('new studio strings exist in all 13 languages, with their placeholders, and
   const langs = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'ru', 'tr', 'ar', 'ja', 'zh-Hans'];
   const keys = ['fonts.displayGroup', 'df.fetchFail', 'colour.h', 'colour.sub', 'colour.accent', 'colour.none', 'colour.custom', 'colour.tint', 'colour.customTint',
     'colour.tintNote', 'colour.printNote', 'colour.refusedAccent', 'colour.refusedTint', 'colour.refusedTintAccent', 'colour.okAccent', 'colour.okTint', 'colour.cleared', 'colour.tintCleared',
-    ...['ember', 'tomato', 'oxblood', 'brass', 'paddy', 'seaglass', 'azure', 'ink', 'fig', 'slate'].map((k) => `colour.sw.${k}`),
+    ...['ember', 'tomato', 'oxblood', 'amber', 'brass', 'paddy', 'seaglass', 'azure', 'ink', 'fig', 'slate'].map((k) => `colour.sw.${k}`),
     ...['cream', 'sky', 'blush', 'sage'].map((k) => `colour.tw.${k}`)];
   const en: Record<string, string> = {};
   for (const lang of langs) {

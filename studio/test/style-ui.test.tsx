@@ -136,7 +136,14 @@ describe('the Style tab in the studio', { timeout: 60_000 }, () => {
     expect($('valSize').textContent).toBe((doc.theme as Rec).fontSize + ' px');
     expect(document.querySelectorAll('#ornamentGrid [data-orn]').length).toBe(13);
     expect($('myThemeGrid').textContent).toContain(t('themes.empty'));
-    expect(document.querySelectorAll('#colourAccentRow [data-colour-kind="accent"]').length).toBe(11);
+    expect(document.querySelectorAll('#colourAccentRow [data-colour-kind="accent"]').length).toBe(12);
+    // the Ramp's amber (Rain on Calder Street's ink), offered in both rows, between Oxblood and Brass
+    for (const r of ['#colourAccentRow', '#colourDropRow']) {
+      const hexes = Array.from(document.querySelectorAll(r + ' [data-colour]')).map((b) => b.getAttribute('data-colour'));
+      expect(hexes.indexOf('#8a5a12'), r).toBe(hexes.indexOf('#7a1f2b') + 1);
+      expect(hexes.indexOf('#8a6417'), r).toBe(hexes.indexOf('#8a5a12') + 1);
+      expect(document.querySelector(r + ' [data-colour="#8a5a12"]')!.getAttribute('aria-label'), r).toBe(t('colour.sw.amber'));
+    }
     // browse: hover every preset, open the creator, move its controls (the draft only), Start from a preset, Close
     for (const b of cards) fireEvent.mouseOver(b);
     await click($('btnNewTheme'));
@@ -293,7 +300,7 @@ describe('the Style tab in the studio', { timeout: 60_000 }, () => {
     const plainKeys = Object.keys(await exported());
     // the row: Same as the accent, then the accent's ten swatches; the custom colour beside it
     const row = () => Array.from(document.querySelectorAll('#colourDropRow [data-colour-kind="dropCap"]'));
-    expect(row().length).toBe(11);
+    expect(row().length).toBe(12);
     expect(row()[0]!.getAttribute('data-colour')).toBe('');
     expect(row()[0]!.getAttribute('aria-label')).toBe(t('colour.dropCapSame'));
     expect(row()[0]!.getAttribute('aria-pressed')).toBe('true');
