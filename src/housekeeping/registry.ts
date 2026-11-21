@@ -3309,6 +3309,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The zip is opened and the Markdown read (BEUK:mdimport) in the studio; the server never sees either.',
   },
   {
+    id: 'import.report.names-epub-and-pdf',
+    title: "An EPUB import's report lines say EPUB file and a PDF import's say PDF file, never Word file",
+    kind: 'client-only',
+    reason: 'The import report (BEUK:importreport) is written in the studio; the server never sees an import.',
+  },
+  {
     id: 'import.report.names-the-file',
     title:
       "The import report names the kind of file that was imported (never a Word file for Markdown, text or OpenDocument), and the summary's count of things left out is the list's",
