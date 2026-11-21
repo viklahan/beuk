@@ -21297,7 +21297,11 @@
       }
       function countWordsRaw(text, langCode) {
         const clean = String(text || "").replace(/\|\|(?=[^|\s])[^|\n]*?[^|\s]\|\|/g, " ") /* BEUK:documents — a redaction's words are never read: not words */
-          .replace(/(^|[ \t])\|(?=[ \t]|$)/gm, "$1") /* BEUK:tablerows — the bar between two cells of a table kept as plain rows is no word */
+          /* BEUK:tablerows + BEUK:table — a bar is never a word and never part of one, in either shape a table takes: the
+             plain rows an import keeps ("cell | cell") and a "::: table" fence's rows ("| cell | cell |", "|cell|cell",
+             an escaped "\|" in a cell's words). Once the redactions above are gone, every bar left — with the backslash
+             that escapes it — is a space: "| Leith | 14 |" is two words, "a|b" two, "b \| c" two. */
+          .replace(/\\?\|/g, " ")
           .replace(/^[ \t]*:::[ \t]+insert(?:[ \t]+(\S[^\n]*?))?[ \t]*$/gim, (m0, title) => " " + (title || "") + " ") /* an insert's title is set on the page: words */
           .replace(/^[ \t]*:::(?:[ \t]+[A-Za-z][^\n]*)?[ \t]*$/gm, " ") /* container markers ("::: verse", ":::") are markup, not words */
           /* an image marker is not words, but its caption is read */
@@ -29374,8 +29378,154 @@
             const body = columnsHanging(seg) ? hangingDocx(seg, cx, "ColumnsHanging") : cx.blocks(seg.text, { style: "Columns" });
             return [cx.sectionBreak(1)].concat(body, [cx.sectionBreak(2)]);
           }
+        },
+        /* BEUK:table — Table: "::: table" (or "::: table header", its
+           first row the header row), a row per line that starts with
+           "|", its cells between the bars (tableRowCells). The lines
+           before the first row are the caption, set above; any other
+           line after the rows is set as an ordinary block after the
+           table, so nothing a writer typed is dropped. Every surface
+           sets a real table: div.tbl > table > caption / thead
+           th[scope=col] / tbody td. A column whose body cells are all
+           figures is set to the line's end (class "num",
+           tableNumericCols); a table of five, seven or nine columns
+           and more steps its type down (tbl-w1, tbl-w2, tbl-w3). A cell
+           is one line of inline text, read by the same code as prose
+           (emphasis, a link, a note reference, a redaction). Word: no
+           real table yet — a paragraph per row, its cells joined with
+           " | " (docs/TABLE_BLOCK_DESIGN.md, slice 3). */
+        table: {
+          keepLines: true, lineNotes: true,
+          html(seg, cx) {
+            const tb = tableParts(seg);
+            if (!tb.rows.length) return cx.blocks(seg.text);
+            const num = tableNumericCols(tb);
+            /* "nb": a short cell (tableCellShort) of a table of up to four columns is never broken — a figure cell is whole already */
+            const cell = (tag, c, i) => {
+              const cls = (num[i] ? ["num"] : []).concat(tb.cols <= 4 && tableCellShort(c) && !(num[i] && tag === "td") ? ["nb"] : []);
+              return "<" + tag + (tag === "th" ? ' scope="col"' : "") + (cls.length ? ' class="' + cls.join(" ") + '"' : "") + ">" + tableCellHtml(c, cx) + "</" + tag + ">";
+            };
+            const row = (tag, r) => "<tr>" + Array.from({ length: tb.cols }, (x, i) => cell(tag, r[i] == null ? "" : r[i], i)).join("") + "</tr>";
+            const step = tb.cols >= 9 ? " tbl-w3" : tb.cols >= 7 ? " tbl-w2" : tb.cols >= 5 ? " tbl-w1" : "";
+            /* in reading order, so the first reference to a note owns its back-link */
+            const pre = tb.pre.length ? cx.blocks(tb.pre.join("\n\n")) : "";
+            const caption = tb.caption ? "<caption>" + tableCellHtml(tb.caption, cx) + "</caption>" : "";
+            const head = tb.header ? "<thead>" + row("th", tb.header) + "</thead>" : "";
+            const body = tb.body.length ? "<tbody>" + tb.body.map((r) => row("td", r)).join("") + "</tbody>" : "";
+            const after = tb.after.trim() ? cx.blocks(tb.after) : "";
+            return (pre ? pre + "\n" : "") + '<div class="tbl' + step + '"><table>' + [caption, head, body].filter(Boolean).join("\n") + "</table></div>" + (after ? "\n" + after : "");
+          },
+          docx(seg, cx) {
+            const tb = tableParts(seg);
+            if (!tb.rows.length) return cx.blocks(seg.text);
+            const unbar = (xml) => xml.replace(//g, "|");
+            const line = (r, inh) => unbar(r.filter(Boolean).map((c) => cx.runs(c, inh)).join(cx.run(" | ")));
+            return (tb.pre.length ? cx.blocks(tb.pre.join("\n\n")) : [])
+              .concat(tb.caption ? [cx.para("Normal", unbar(cx.runs(tb.caption)))] : [])
+              .concat(tb.rows.filter((r) => r.some(Boolean)).map((r) => cx.para("Normal", line(r, r === tb.header ? { b: true } : undefined))))
+              .concat(tb.after.trim() ? cx.blocks(tb.after) : []);
+          }
         }
       };
+      /* ---- BEUK:table ----
+         One row line -> its cells, or null when the line is no row. A
+         row starts with "|" (after any indent); cells are split on each
+         bar that is not escaped; a bar at the line's end is optional;
+         cells are trimmed; "\|" is a bar in the words (held as U+E060
+         until the cell is set, so it can never be read as a cell's edge
+         or as half of a redaction). A redaction ("||words||") is read
+         first, as inlineMd reads it, so its bars are never cell edges:
+         a line that opens with one is no row. */
+      const TABLE_BAR_RE = //g;
+      function tableRowCells(line) {
+        const held = [];
+        let s = String(line == null ? "" : line).trim();
+        if (s.indexOf("||") !== -1) s = s.replace(new RegExp(REDACT_RE.source, "g"), (m0) => { held.push(m0); return "" + (held.length - 1) + ""; });
+        if (s[0] !== "|") return null;
+        s = s.slice(1).replace(/\\\|/g, "").replace(/\|[ \t]*$/, "");
+        return s.split("|").map((c) => c.trim().replace(/(\d+)/g, (m0, i) => held[+i]));
+      }
+      const tableHasHeader = (seg) => /(^|\s)header(\s|$)/i.test(String(seg.arg || ""));
+      /* A table container's lines -> { caption, pre, header, body, rows,
+         cols, after }. Every row line is a row of the one table, blank
+         lines between rows are nothing. Before the first row: a picture,
+         a scene break or a note's definition on its own line is set as a
+         block ahead of the table (pre), every other line is the caption
+         (several lines run together as one). After the first row: every
+         line that is no row is kept, in order, for the blocks after the
+         table. The header row is the first row, only when the fence
+         says "header". */
+      function tableParts(seg) {
+        const caption = [], pre = [], rows = [], after = [];
+        seg.lines.forEach((raw) => {
+          const cells = tableRowCells(raw);
+          if (cells) { rows.push(cells); return; }
+          if (rows.length) { after.push(raw); return; }
+          const l = String(raw).trim();
+          if (!l) return;
+          if (containerPassThrough([l])) pre.push(l); else caption.push(l);
+        });
+        const header = rows.length && tableHasHeader(seg) ? rows[0] : null;
+        return { caption: caption.join(" "), pre, header, body: header ? rows.slice(1) : rows, rows,
+          cols: rows.reduce((n, r) => Math.max(n, r.length), 0), after: after.join("\n") };
+      }
+      /* What counts as a figure (decision 5: a column of figures is set
+         to the line's end with no syntax). The cell's words with its
+         emphasis marks and note references taken off must be: digits,
+         in groups joined by "." or "," (thousands, a decimal) or by a
+         space or an apostrophe before three digits; an optional sign
+         before them (+, a hyphen, a minus or an en dash); an optional
+         currency sign before or after; an optional % or per-mille sign
+         after; all of it optionally in (accounting brackets). Nothing
+         else: "12 kg", "1921–22", "06:12" and "n/a" are words. An empty
+         cell, a lone dash and a cell that is only a redaction say
+         nothing either way. */
+      const TABLE_NUM_RE = /^\(?[+\-−–]?[  ]?\p{Sc}?[  ]?[+\-−–]?\d+(?:[.,]\d+|[   '’]\d{3})*[   ]?(?:%|‰|\p{Sc})?\)?$/u;
+      const tableCellBare = (c) => String(c == null ? "" : c).replace(new RegExp(REDACT_RE.source, "g"), "").replace(/\[\^?\d{1,3}\]/g, "").replace(/\*+/g, "").trim();
+      /* -> [true|false] per column: true when at least one body cell is
+         a figure and every other body cell is a figure or says nothing.
+         The header row is never read for it. */
+      function tableNumericCols(tb) {
+        return Array.from({ length: tb.cols }, (x, i) => {
+          let figures = 0;
+          const ok = tb.body.every((r) => {
+            const b = tableCellBare(r[i]);
+            if (!b || /^[—–−-]$/.test(b)) return true;
+            if (!TABLE_NUM_RE.test(b)) return false;
+            figures++; return true;
+          });
+          return ok && figures > 0;
+        });
+      }
+      /* A short cell: one to ten characters of words ("11 March",
+         "Leith", "Dues (£)"). A browser shares a table's width out by
+         how long each column's longest cell is, so one long remark
+         squeezes a column of dates until each date breaks; a short cell
+         kept on one line holds its column open. Only in tables of up to
+         four columns: four cells of ten characters still fit a phone,
+         more columns would not. */
+      const tableCellShort = (c) => { const n = [...tableCellBare(c)].length; return n > 0 && n <= 10; };
+      /* A cell (or the caption) as HTML: the prose inline code, then each
+         held "\|" put back as a bar. */
+      const tableCellHtml = (c, cx) => cx.inline(c).replace(TABLE_BAR_RE, "|");
+      /* Every reader of a section's words that is not the typesetter
+         (narration, read aloud) meets a table's rows as
+         text: each row line inside a "::: table" fence is rewritten by
+         fn(cells); every other line is left as it is. */
+      const TABLE_OPEN_RE = /^[ \t]*:::[ \t]+table(?:[ \t].*)?$/i;
+      function mapTableRows(text, fn) {
+        const s = String(text == null ? "" : text);
+        if (s.indexOf(":::") === -1 || !/:::[ \t]+table/i.test(s)) return s;
+        let inTable = false;
+        return s.split("\n").map((l) => {
+          if (CONTAINER_OPEN_RE.test(l)) { inTable = TABLE_OPEN_RE.test(l); return l; }
+          if (CONTAINER_CLOSE_RE.test(l)) { inTable = false; return l; }
+          if (!inTable) return l;
+          const cells = tableRowCells(l);
+          return cells ? fn(cells) : l;
+        }).join("\n");
+      }
+      /* ---- /BEUK:table ---- */
       /* BEUK:documents — a card too tall to stand on one page. A
          turned card can only be kept whole on a page: one taller than
          the page is broken across pages, and a turned box cut at a
@@ -29496,11 +29646,18 @@
          read aloud): each redaction as the book's word for "redacted"
          (or `said`), and an insert's title as a line of its own ahead
          of the card's words. The fences themselves stay for the caller
-         to strip. */
+         to strip. BEUK:table — a table is read row by row: each row a
+         paragraph of its own, its cells in order with "; " between
+         them (a comma would run into "9,200"), an empty cell passed
+         over, the bars never said; the caption is the paragraph before
+         the first row. */
       function spokenContainerText(text, said) {
         const sayWord = said != null ? said : (typeof t === "function" ? t("tool.redactSpoken") : "redacted");
         let out = unredactForReading(text, sayWord);
-        if (out.indexOf(":::") !== -1) out = out.replace(/^([ \t]*:::[ \t]+insert)[ \t]+(\S[^\n]*?)[ \t]*$/gim, "$1\n\n$2\n\n");
+        if (out.indexOf(":::") !== -1) {
+          out = out.replace(/^([ \t]*:::[ \t]+insert)[ \t]+(\S[^\n]*?)[ \t]*$/gim, "$1\n\n$2\n\n");
+          out = mapTableRows(out, (cells) => "\n" + cells.filter(Boolean).join("; ").replace(TABLE_BAR_RE, "|") + "\n");
+        }
         return out;
       }
       const unredactForReading = (text, said) => String(text == null ? "" : text).replace(new RegExp(REDACT_RE.source, "g"), " " + (said == null ? "redacted" : said) + " ");
@@ -30755,6 +30912,49 @@
           S + ".columns > :first-child, " + S + ".hanging > :first-child { margin-top: 0; }",
           S + ".hanging + p, " + S + ".columns + p { text-indent: 0; }",
           ...(scope ? [S + ".columns { columns: 2 13em; -webkit-columns: 2 13em; column-gap: 1.6em; column-fill: balance; }"] : []),
+          /* BEUK:table — a table as a book sets one: as wide as its
+             words need, never under half the measure (so a caption is
+             not squeezed into a narrow table's width) and never over
+             it, centred as a figure is;
+             a rule above and below and one under the header row, no
+             upright rules and no boxes; the caption above, in italic;
+             cells set from the line's start, ragged, never indented,
+             their words on lining, even-width figures; a column of
+             figures (.num) set to the line's end, each figure whole on
+             its line. Padding is logical (the physical value first for
+             readers without logical properties), so a right-to-left
+             book mirrors by its direction alone. A row is never split
+             between pages; the caption and the header row stay with
+             the row after them. A cell breaks at its spaces first,
+             then hyphenates as the book's prose does (the hyphens the
+             book sets are inherited; a caption and a header never
+             hyphenate), and only a string with neither is broken where
+             it must be, rather than run off the page or screen (there
+             is no sideways scroll: a scrolling box cannot be broken
+             between pages, and no e-reader scrolls one); a figure and
+             a short cell (.nb) never break. Tables of five, seven and
+             nine columns and more step their type down. */
+          S + ".tbl { margin: 1.15em 0; text-indent: 0; }",
+          S + ".tbl table { width: auto; min-width: 50%; max-width: 100%; margin: 0 auto; border-collapse: collapse; border-spacing: 0; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; font-size: 0.92em; line-height: 1.35; text-indent: 0; font-variant-numeric: lining-nums tabular-nums; }",
+          S + ".tbl caption { caption-side: top; padding: 0 0 0.5em 0; font-style: italic; line-height: 1.35; text-align: left; text-align: start; text-indent: 0; hyphens: manual; -webkit-hyphens: manual; page-break-after: avoid; break-after: avoid; }",
+          S + ".tbl caption em, " + S + ".tbl caption i { font-style: normal; }",
+          S + ".tbl th, " + S + ".tbl td { padding: 0.34em 1.5em 0.34em 0; padding-inline-start: 0; padding-inline-end: 1.5em; border: 0; vertical-align: top; text-align: left; text-align: start; text-indent: 0; font-weight: inherit; overflow-wrap: anywhere; }",
+          S + ".tbl thead th { vertical-align: bottom; font-weight: 600; border-bottom: 0.75px solid currentColor; }",
+          S + ".tbl .num { text-align: right; text-align: end; }",
+          S + ".tbl td.num, " + S + ".tbl .nb { white-space: nowrap; }",
+          /* a header word is kept whole (the column is never narrower
+             than its longest header word) up to eight columns; past
+             that nothing is promised but that it all stays on the page */
+          S + ".tbl th { overflow-wrap: break-word; hyphens: manual; -webkit-hyphens: manual; }",
+          /* the steps are set on the cells (of the table's 0.92em), so
+             the caption keeps its size: 0.84, 0.77 and 0.7 of the text */
+          S + ".tbl.tbl-w1 th, " + S + ".tbl.tbl-w1 td { font-size: 0.913em; padding-inline-end: 1em; }",
+          S + ".tbl.tbl-w2 th, " + S + ".tbl.tbl-w2 td { font-size: 0.837em; padding-inline-end: 0.55em; }",
+          S + ".tbl.tbl-w3 th, " + S + ".tbl.tbl-w3 td { font-size: 0.761em; padding-inline-end: 0.45em; overflow-wrap: anywhere; }",
+          S + ".tbl th:last-child, " + S + ".tbl td:last-child { padding-right: 0; padding-inline-end: 0; }",
+          S + ".tbl tr { page-break-inside: avoid; break-inside: avoid; }",
+          S + ".tbl thead { page-break-after: avoid; break-after: avoid; }",
+          S + ".tbl + p { text-indent: 0; }",
           S + ".chapter-opening { text-align: center; margin: 2.2em 0 1.6em 0; page-break-after: avoid; }",
           S + ".chapter-number { font-family: " + headFf + "; font-size: 0.78em; letter-spacing: 0.32em; text-transform: uppercase; text-indent: 0; margin: 0 0 0.9em 0; opacity: 0.75; }",
           S + ".chapter-title { font-family: " + headFf + "; font-weight: 600; font-size: 1.85em; line-height: 1.2; margin: 0; text-align: center; }",
@@ -30938,7 +31138,17 @@
             ...MARGIN_INKS.map((k, i) => S + ".mnote.mn-ink-" + (i + 1) + " { border-left-style: none; border-right-style: " + k.rule + ";" + (k.rule === "double" ? " border-right-width: 3px;" : k.rule === "dotted" ? " border-right-width: 2px;" : "") + " }"),
             /* Back matter reads from the right: hanging entries flush right
                (their turn-over hung at the right, by the logical padding). */
-            S + ".hanging, " + S + ".hanging p.hg, " + S + ".columns, " + S + ".columns p { text-align: right; }");
+            S + ".hanging, " + S + ".hanging p.hg, " + S + ".columns, " + S + ".columns p { text-align: right; }",
+            /* BEUK:table — a table reads from the right (its columns run
+               right to left by the direction alone): cells flush right,
+               their gap on the left, a column of figures at the line's
+               end, the left, each figure read left to right by itself
+               (plaintext), so "+4%" is never set "4%+". The physical
+               values are for readers without logical properties. */
+            S + ".tbl caption, " + S + ".tbl th, " + S + ".tbl td { text-align: right; text-align: start; }",
+            S + ".tbl th, " + S + ".tbl td { padding-right: 0; padding-left: 1.5em; padding-inline-start: 0; padding-inline-end: 1.5em; }",
+            S + ".tbl th:last-child, " + S + ".tbl td:last-child { padding-left: 0; padding-inline-end: 0; }",
+            S + ".tbl .num { text-align: left; unicode-bidi: plaintext; }");
         }
         /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
            book wears a display face or a colour. */
@@ -63774,6 +63984,136 @@
             }
           } },
         /* ==== /BEUK:layout ==== */
+        /* ==== BEUK:table ==== */
+        { id: "chapter.table", feature: "chapter", name: "Table: \"::: table\" (\"header\": the first row heads the columns) sets a row per \"|\" line as a real table — caption above, header cells, a rule above, below and under the header, no boxes — in the preview, print and the EPUB (validates), right to left too; cells split on unescaped bars, \"\\|\" a bar in the words, a redaction read first, short rows padded, nothing dropped; a column of figures set to the line's end; a note reference in a cell links; the beautifier leaves it alone; Markdown keeps the fence; Word a paragraph per row; bars are never words, narration reads row by row",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const t1 = "::: table header\nTable 3. Tonnage by port, 1921\n| Port | Ships | Tonnage |\n| Leith | 14 | 9,200 |\n| Hull | 22 | 15,750 |\n:::";
+              const t2 = "::: table header\n| Witness | Statement |\n| Marta Kováč | Confirmed the *chain-line* spacing[^8] |\n| H. Lindholm | **Absent** \\| on leave |\n:::\n\n[^8]: Foundry Sheet IV.";
+              const src = "Before.\n\n" + t1 + "\n\nBetween.\n\n" + t2;
+              const s = mkSection("body", "chapter", "Ledger", { number: "1", content: src });
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { language: "en", title: "The Ledger", author: "A. Writer" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              const sec = state.sections.find((x) => x.type === "chapter");
+              const set = (text) => contentBlocksToHtml(text, sec, false, true, true);
+              /* 1. the parser and escaping */
+              const cellsOf = (l) => { const c = tableRowCells(l); return c ? c.map((x) => x.replace(/\uE060/g, "<BAR>")).join("¦") : null; };
+              [["| a | b |", "a¦b"], ["|a|b", "a¦b"], ["  | a |  b  |  ", "a¦b"], ["| a | | c |", "a¦¦c"], ["| a \\| b | c |", "a <BAR> b¦c"], ["|", ""], ["| ||Hale|| | x |", "||Hale||¦x"],
+                ["| a ||two words|| b | c", "a ||two words|| b¦c"], ["||Hale|| said | nothing", null], ["Port | Ships", null], ["\\| a | b", null], ["", null]].forEach((c) => {
+                if (cellsOf(c[0]) !== c[1]) bad.push("row " + JSON.stringify(c[0]) + " read as " + JSON.stringify(cellsOf(c[0])));
+              });
+              const html = set(sec.content);
+              const want1 = '<div class="tbl"><table><caption>Table 3. Tonnage by port, 1921</caption>\n' +
+                '<thead><tr><th scope="col" class="nb">Port</th><th scope="col" class="num nb">Ships</th><th scope="col" class="num nb">Tonnage</th></tr></thead>\n' +
+                '<tbody><tr><td class="nb">Leith</td><td class="num">14</td><td class="num">9,200</td></tr><tr><td class="nb">Hull</td><td class="num">22</td><td class="num">15,750</td></tr></tbody></table></div>';
+              if (!html.includes(want1)) bad.push("the first table did not set: " + JSON.stringify(html.slice(0, 700)));
+              if (!html.includes("<td><strong>Absent</strong> | on leave</td>")) bad.push("an escaped bar is not a bar in the words");
+              if (/:::|\uE060|<p>\|/.test(html) || (html.match(/\|/g) || []).length !== 1) bad.push("a fence, a held bar or a cell edge reached the page");
+              /* a note reference in a cell links to its note, and back */
+              if (!html.includes('<td>Confirmed the <em>chain-line</em> spacing<a class="noteref" epub:type="noteref" id="s1-fnref8" href="#s1-fn8"><sup class="endnote-ref">[8]</sup></a></td>') ||
+                !html.includes('<p class="endnote" id="s1-fn8" epub:type="endnote"><a class="note-back" href="#s1-fnref8"')) bad.push("the note reference in a cell does not link: " + JSON.stringify(html.slice(-600)));
+              /* a redaction, short rows, no header, strays, a caption with marks, a note defined inside the fence */
+              const odd = set("::: table\n*Sightings*, by ||Marlowe||\n| ||Vance|| | \\|\\|kept\\|\\| | 3 |\n| b |\n\n| c | d | 4 | e |\nA line after the rows.[^2]\n[^2]: Kept.\n:::");
+              if (!/<caption><em>Sightings<\/em>, by <span class="redact"/.test(odd) || /Marlowe|Vance/.test(odd)) bad.push("caption / redaction: " + JSON.stringify(odd.slice(0, 300)));
+              if (!odd.includes('<td class="nb">||kept||</td>')) bad.push("escaped bars were read as a redaction");
+              if (/<thead>|<th/.test(odd)) bad.push("a header row without \"header\"");
+              const rowTds = (odd.match(/<tr>.*?<\/tr>/g) || []).map((r) => (r.match(/<td/g) || []).length).join(",");
+              if (rowTds !== "4,4,4") bad.push("short rows are not padded: " + rowTds);
+              if (!/<\/table><\/div>\n<p>A line after the rows\.<a class="noteref"/.test(odd) || !odd.includes('id="s1-fn2"')) bad.push("a line after the rows was dropped or its note lost: " + JSON.stringify(odd.slice(-400)));
+              if (set("::: table\nNo rows here.\n\nOnly words.\n:::") !== "<p>No rows here.</p>\n<p>Only words.</p>") bad.push("a table with no rows did not set as its paragraphs");
+              /* 2. figures: what is one, and which columns are set to the end */
+              const isNum = (v) => TABLE_NUM_RE.test(tableCellBare(v));
+              const numBad = ["9,200", "15,750", "14", "-5", "−5", "+3", "$1,200.50", "€ 12,50", "12,50 €", "12%", "4.5 %", "(1,234)", "1 234 567", "1’234", "**22**", "9,200[^3]", "1.234.567,89"].filter((v) => !isNum(v))
+                .concat(["12 kg", "1921–22", "06:12", "n/a", "Leith", "", "—", "3rd", "1,", "No. 4"].filter((v) => isNum(v)));
+              if (numBad.length) bad.push("figures misread: " + JSON.stringify(numBad));
+              const colsOf = (text) => tableNumericCols(tableParts(parseContainers(text)[0])).map((b) => b ? 1 : 0).join("");
+              if (colsOf("::: table header\n| Port | Ships | Due | Note |\n| Leith | 14 | | 12 kg |\n| Hull | — | £3.50 | 7 |\n| Wick |") !== "0110") bad.push("numeric columns: " + colsOf("::: table header\n| Port | Ships | Due | Note |\n| Leith | 14 | | 12 kg |\n| Hull | — | £3.50 | 7 |\n| Wick |"));
+              if (colsOf("::: table\n| Port | Ships |\n| Leith | 14 |") !== "00") bad.push("a first row that is no header was not read as a body row");
+              if (colsOf("::: table header\n| Port | Ships |\n| | |") !== "00") bad.push("an empty column was set as figures");
+              /* 3. the beautifier leaves a table as it is; Markdown writes the fence back */
+              [t1, t2, src].forEach((x, i) => { if (beautifyText(x) !== x) bad.push("the beautifier changed table " + (i + 1) + ": " + JSON.stringify(beautifyText(x))); });
+              if (beautifyText(beautifyText(src)) !== beautifyText(src)) bad.push("the beautifier is not stable on a table");
+              if (contentToMarkdown(src) !== src) bad.push("Markdown export: " + JSON.stringify(contentToMarkdown(src)));
+              /* 4. computed: rules and no boxes, figures at the line's end, nothing past the measure, rows kept whole, right to left */
+              const wide = "::: table header\n| Port | Ships | Tonnage | Crew | Coal | Days | Losses | Remarks |\n| Leith | 14 | 9,200 | 311 | 1,040 | 22 | 0 | Unremarkable crossing |\n| Kirkcudbright | 2 | 1,150 | 40 | 96 | 31 | 1 | Delayed by weather at the bar |\n:::";
+              const dated = "::: table header\n| Date | Vessel | Tonnage |\n| 11 March | Vessel number 18, held two tides at the bar and entered under tow with her cargo shifted to starboard | 1,666 |\n:::";
+              const probe = (css, cls, dir, w) => {
+                const st = document.createElement("style"); st.textContent = css; document.body.appendChild(st);
+                const d = document.createElement("div"); d.className = cls; d.dir = dir; d.style.cssText = "position:absolute;left:-9999px;top:0;width:" + w + "px";
+                d.innerHTML = set(t1) + set(wide) + set(dated); document.body.appendChild(d);
+                try {
+                  const tb = d.querySelector("table"), cs = (el) => getComputedStyle(el);
+                  const tds = tb.querySelectorAll("tbody tr:first-child td"), th = tb.querySelector("th");
+                  const box = (el) => el.getBoundingClientRect();
+                  const words = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+                  const px = (v) => parseFloat(v) || 0;
+                  const n = tds[2], nb = box(n), nw = words(n), fb = box(tds[0]), fw = words(tds[0]);
+                  const wideTb = d.querySelectorAll("table")[1];
+                  return {
+                    rules: px(cs(tb).borderTopWidth) > 0 && px(cs(tb).borderBottomWidth) > 0 && px(cs(th).borderBottomWidth) > 0,
+                    boxes: [tb, th, tds[0], tds[1]].some((el) => px(cs(el).borderLeftWidth) > 0 || px(cs(el).borderRightWidth) > 0) || px(cs(tds[0]).borderBottomWidth) > 0,
+                    captionAbove: box(tb.querySelector("caption")).bottom <= box(th).top + 1,
+                    headBold: +cs(th).fontWeight >= 600 && +cs(tds[0]).fontWeight < 600,
+                    numAtRight: Math.abs(nb.right - px(cs(n).paddingRight) - nw.right) < 1.5 && nw.left - nb.left > 4,
+                    numAtLeft: Math.abs(nw.left - (nb.left + px(cs(n).paddingLeft))) < 1.5 && nb.right - nw.right > 4,
+                    firstAtLeft: Math.abs(fw.left - (fb.left + px(cs(tds[0]).paddingLeft))) < 1.5,
+                    firstAtRight: Math.abs(fb.right - px(cs(tds[0]).paddingRight) - fw.right) < 1.5,
+                    firstColOnRight: fb.left > box(tds[1]).left,
+                    fits: box(wideTb).right <= box(d).right + 1 && box(wideTb).left >= box(d).left - 1 && Array.prototype.every.call(wideTb.querySelectorAll("th, td"), (c) => words(c).right <= box(c).right + 1 && words(c).left >= box(c).left - 1),
+                    stepped: px(cs(wideTb.querySelector("td")).fontSize) < px(cs(tds[0]).fontSize) && cs(wideTb.querySelector("caption") || wideTb).fontSize === cs(tb).fontSize,
+                    headWords: Array.prototype.every.call(wideTb.querySelectorAll("th"), (c) => { const r = document.createRange(); r.selectNodeContents(c); return r.getClientRects().length <= (c.textContent.trim().split(/\s+/).length); }),
+                    whole: cs(tb.querySelector("tbody tr")).breakInside + "/" + cs(tb.querySelector("thead")).breakAfter + "/" + cs(tb.querySelector("caption")).breakAfter,
+                    shortWhole: (() => { const c = d.querySelectorAll("table")[2].querySelector("tbody td"), r = document.createRange(); r.selectNodeContents(c); return c.textContent === "11 March" && r.getClientRects().length === 1 && box(d.querySelectorAll("table")[2]).right <= box(d).right + 1; })(),
+                    centred: box(tb).width < box(d).width - 8 && box(tb).width >= box(d).width / 2 - 1 && Math.abs((box(tb).left - box(d).left) - (box(d).right - box(tb).right)) < 1.5,
+                    longFull: Math.abs(box(d.querySelectorAll("table")[2]).width - box(d).width) < 1.5,
+                    hyph: cs(tds[0]).hyphens + "/" + cs(th).hyphens + "/" + cs(tds[0]).overflowWrap,
+                    indent: px(cs(tds[0]).textIndent)
+                  };
+                } finally { d.remove(); st.remove(); }
+              };
+              const ltr = probe(buildBookCss(".sc-tb-v"), "sc-tb-v", "ltr", 420);
+              if (!ltr.rules || ltr.boxes || !ltr.captionAbove || !ltr.headBold || ltr.indent) bad.push("preview: rules " + ltr.rules + ", boxes " + ltr.boxes + ", caption above " + ltr.captionAbove + ", header bold " + ltr.headBold + ", indent " + ltr.indent);
+              if (!ltr.numAtRight || !ltr.firstAtLeft || ltr.firstColOnRight) bad.push("preview: figures are not at the line's end (right) with words at its start");
+              if (!ltr.fits || !ltr.stepped || !ltr.headWords) bad.push("preview: an eight-column table runs past a 420px measure (" + ltr.fits + "), its type is not stepped down with the caption kept (" + ltr.stepped + ") or a header word is broken (" + ltr.headWords + ")");
+              if (!ltr.centred || !ltr.longFull) bad.push("preview: a short table is not centred at its own width (at least half the measure): " + ltr.centred + "; a table with a long cell does not take the full measure: " + ltr.longFull);
+              if (ltr.hyph !== (state.theme.hyphens ? "auto" : "manual") + "/manual/anywhere") bad.push("a cell does not hyphenate as the book does, with a break anywhere only as the last resort: " + ltr.hyph);
+              if (!ltr.shortWhole) bad.push("preview: a short cell beside a long one is broken over two lines, or the table runs past the measure");
+              if (ltr.whole !== "avoid/avoid/avoid") bad.push("a row may split, or the header or caption may part from its row: " + ltr.whole);
+              /* 330px: under the narrowest measure the preview sets (334px, the two-up tablet; a phone 353px) */
+              const phone = probe(buildBookCss(".sc-tb-n"), "sc-tb-n", "ltr", 330);
+              if (!phone.fits || !phone.shortWhole) bad.push("at a 330px measure: eight columns inside it " + phone.fits + ", a short cell whole and its table inside it " + phone.shortWhole);
+              state.meta.language = "ar";
+              try {
+                const rtl = probe(buildBookCss(".sc-tb-r"), "sc-tb-r", "rtl", 420);
+                if (!rtl.firstColOnRight || !rtl.firstAtRight || !rtl.numAtLeft || !rtl.fits || rtl.boxes) bad.push("right-to-left: first column on the right " + rtl.firstColOnRight + ", words flush right " + rtl.firstAtRight + ", figures at the left " + rtl.numAtLeft + ", fits " + rtl.fits);
+              } finally { state.meta.language = "en"; }
+              /* 5. every surface carries it */
+              const ph = buildPrintHtml();
+              if (!ph.includes(want1) || !ph.includes(".tbl tr { page-break-inside: avoid; break-inside: avoid; }") || !ph.includes(".tbl thead { page-break-after: avoid; break-after: avoid; }")) bad.push("the print file carries no table or not its break rules");
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes(want1) && String(f.content).includes("<td><strong>Absent</strong> | on leave</td>"))) bad.push("the EPUB chapter carries no table");
+              if (!files.some((f) => /blitz\.css$/.test(f.path) && String(f.content).includes(".tbl .num { text-align: right; text-align: end; }"))) bad.push("the EPUB stylesheet does not set the table");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              /* Word: no real table yet (slice 3) — a paragraph per row, every word kept, the fence and the held bar nowhere */
+              const paras = docxContentParas(src);
+              const wText = paras.map((p) => (p.match(/<w:t[^>]*>[^<]*<\/w:t>/g) || []).map((x) => x.replace(/<[^>]+>/g, "")).join("")).filter(Boolean);
+              const wWant = ["Before.", "Table 3. Tonnage by port, 1921", "Port | Ships | Tonnage", "Leith | 14 | 9,200", "Hull | 22 | 15,750", "Between.", "Witness | Statement"];
+              if (wText.slice(0, 7).join("\n") !== wWant.join("\n") || !wText.some((x) => /^H\. Lindholm \| Absent \| on leave$/.test(x)) || !wText.some((x) => /^Marta Kováč \| Confirmed the chain-line spacing/.test(x)) || /:::|\uE060/.test(paras.join(""))) bad.push("Word paragraphs: " + JSON.stringify(wText));
+              /* 6. counts and the readers */
+              const wc = [countWords(t1), countWords(t2), countWords("::: table\n| a | ||hidden words|| | b \\| c |\n:::")];
+              if (wc.join(",") !== "15,16,3") bad.push("word counts " + wc.join(",") + " (want 15,16,3)");
+              const acx = acxSectionLines(sec).map((l) => l.text);
+              if (!["Table 3. Tonnage by port, 1921", "Port; Ships; Tonnage", "Leith; 14; 9,200", "Hull; 22; 15,750", "Witness; Statement"].every((x) => acx.includes(x)) || !acx.some((x) => /^H\. Lindholm; \*\*Absent\*\* \| on leave$/.test(x)) || /:::/.test(acx.join("\n"))) bad.push("narration: " + JSON.stringify(acx));
+              const ra = raCleanText(t1);
+              if (/\||:::/.test(ra) || !/Leith; 14; 9,200/.test(ra) || !/\n\s*\n\s*Hull; 22; 15,750/.test(ra)) bad.push("read aloud: " + JSON.stringify(ra));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "computed: a rule above, below and under the header, no boxes, caption above, header bold; a short table centred at its own width, a long one the full measure; cells hyphenate as the book does; figures at the line's end and words at its start, mirrored right to left; eight columns inside a 420px and a 330px measure, type stepped down, header words whole; a short cell beside a long one kept on one line; rows whole, header and caption kept with the next row; print file and EPUB carry the table (validator errors 0); a note reference in a cell links both ways; escaped bars, redactions, short rows and stray lines read as written; the beautifier and the Markdown export leave the fence unchanged; Word: a paragraph per row; counts 15 / 16 / 3; narration and read aloud say each row as \"cell; cell\"");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        /* ==== /BEUK:table ==== */
         { id: "chapter.captions", feature: "chapter", name: "Image captions: ![alt](img:id \"Caption\") sets the caption under the picture as a figcaption (inline emphasis kept, the alt still the alt; straight or curled quotes, parentheses inside) in the preview, print and EPUB (validates); caption words count, the marker does not; the Word export puts a Caption paragraph under the image's place; the Insert Image dialog and the section's image card write the caption; a Word file's Caption-styled paragraph after a picture comes in as its caption",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));

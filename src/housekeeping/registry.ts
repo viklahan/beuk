@@ -2345,6 +2345,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The turned block is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
   },
   {
+    id: 'chapter.table',
+    title: 'Table: "::: table" / "::: table header" sets a row per "|" line as a real table (caption above, header cells, horizontal rules only, a column of figures at the line\'s end) in the preview, print and EPUB, mirrored right to left; bars are never words, narration reads row by row, and Word gets a paragraph per row',
+    kind: 'client-only',
+    reason: 'The table is typeset by the studio renderer and measured in a real browser, and the EPUB and Word files are built in the browser.',
+  },
+  {
     id: 'chapter.hanging',
     title: 'Hanging: "::: hanging" sets one entry per line with its turn-over hung (bibliography, chronology, index) in preview, print, the Print Interior View and EPUB, mirrored right to left, and as Hanging paragraphs in Word',
     kind: 'client-only',
