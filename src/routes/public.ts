@@ -14,7 +14,8 @@ import { collectSecrets, scrubValue } from '../housekeeping/scrub.js';
  *
  * GET /api/config/public — the public configuration the static pages
  * and the web client may know: support contact + whether a Ko-fi tip
- * jar exists (and where it points). Nothing else is exposed here.
+ * jar exists (and where it points), and `aris: true` while ARIS_ENABLED
+ * is on (the key is absent otherwise). Nothing else is exposed here.
  */
 
 export function statusRoutes(db: Db, config: Config): Router {
@@ -93,6 +94,11 @@ export function publicConfigRoutes(config: Config): Router {
         replyPromise: config.supportReplyPromise,
       },
       kofiUrl: config.kofiUrl,
+      // Only while Aris is on: the landing page (a static file) shows its
+      // Aris links from this, instead of asking /aris and logging a 404.
+      // Off, the key is absent, so this answer is what it always was and
+      // names no switched-off feature.
+      ...(config.arisEnabled ? { aris: true } : {}),
     });
   });
 

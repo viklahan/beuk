@@ -1,23 +1,23 @@
 ---
 slug: import-a-manuscript
 title: Import a manuscript
-blurb: Bring a book in from Word, Markdown, plain text, RTF, PDF or EPUB — and see what Beuk tidies on the way in.
+blurb: Bring a book in from Word, OpenDocument, a web page, Markdown, plain text, RTF, PDF or EPUB — and see what Beuk tidies on the way in.
 group: write
 audience: [new]
-updated: 2026-11-15
-readMinutes: 3
+updated: 2026-11-20
+readMinutes: 4
 related: [typeset-a-chapter, add-a-cover]
 ---
 
-What you're doing: bringing a finished (or nearly finished) book into Beuk so it can be typeset. Beuk accepts Word documents (`.docx`), Markdown (`.md`), plain text (`.txt`), Rich Text (`.rtf`, which Scrivener, TextEdit and LibreOffice also write), PDF (`.pdf`), and EPUB (`.epub`), so a book you only have as an ebook can come back in too (an EPUB under DRM cannot be read). An EPUB that declares a cover brings it along as the book's cover.
+What you're doing: bringing a finished (or nearly finished) book into Beuk so it can be typeset. Beuk accepts Word documents (`.docx`), Markdown (`.md`), plain text (`.txt`), Rich Text (`.rtf`, which Scrivener, TextEdit and LibreOffice also write), OpenDocument (`.odt`, which LibreOffice and Google Docs write), a web page (`.html`, on its own or zipped with its pictures, as Google Docs downloads it), PDF (`.pdf`), and EPUB (`.epub`), so a book you only have as an ebook can come back in too (an EPUB under DRM cannot be read). An EPUB that declares a cover brings it along as the book's cover.
 
 New to the studio? [Show the quick tour](/studio#tour): four short steps that point out Import, the page and its preview, Typography Studio, and Export. You can skip it at any step. In the studio it is also under the sample story, as **Show the quick tour**.
 
 ## Steps
 
-1. Open the studio and choose **Import**.
+1. Open the studio and choose **Import Document**.
 2. Pick your file. A `.docx` from Word or Google Docs works best if you have one — headings, italics, and blockquotes survive the trip. A zip holding one manuscript works too.
-3. Beuk reads the file and lays the book out in its three tiers: **Front Matter** (title page, copyright, dedication…), **Body** (prologue, chapters, epilogue), and **Back Matter** (acknowledgments, About the Author, Also By).
+3. Beuk reads the file and lays the book out in its three tiers: **Front Matter** (title page, copyright, dedication…), **Body** (prologue, chapters, epilogue), and **Back Matter** (acknowledgments, About the Author, Also By). The import report then opens on a summary, **Your book is in.**, with how many words Beuk read, the chapters and pages it found, and what it did. **Open my book** takes you to the book; **Every change, one by one** lists each change the import made, with **Undo this** beside those that can be undone on their own.
 4. Walk the section list on the left. Anything the importer guessed wrong — a chapter it read as front matter, say — can be moved; nothing is locked.
 5. Fill in the book's details (title, subtitle, author, ISBN if you have one) in Project Settings. You can do this later, but exports carry them. Beuk starts you off from the document: a title page in the manuscript (the title, a subtitle, a "by …" line) becomes the book's title, subtitle and author, lifted out of the text; with nothing like a title page, the cleaned file name is used. The import report says where each detail came from.
 6. An import replaces the book on the desk. If the desk already holds a book, Beuk first says what will be cleared and that History keeps a copy; **Keep** leaves the book exactly as it was. The typography you chose stays. A book on your shelf is never overwritten: the import becomes a new book of its own.

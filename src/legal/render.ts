@@ -213,7 +213,13 @@ export async function readLegalDoc(page: LegalPage): Promise<LegalDoc> {
   return parseLegalSource(source);
 }
 
+/** One sentence each for search results and link previews, in the pages' own opening words (content/legal/). */
+const LEGAL_DESCRIPTIONS: Record<LegalPage, string> = {
+  privacy: 'What Beuk keeps, where it keeps it, who else sees any of it, and what you can do about it.',
+  terms: 'The ground rules for using Beuk at beuk.studio.',
+};
+
 export async function renderLegalPage(page: LegalPage, config: Config): Promise<string> {
   const doc = await readLegalDoc(page);
-  return pageChrome(config, doc.title, renderLegalBody(page, doc, config), { titleSuffix: 'Beuk' });
+  return pageChrome(config, doc.title, renderLegalBody(page, doc, config), { titleSuffix: 'Beuk', description: LEGAL_DESCRIPTIONS[page] });
 }

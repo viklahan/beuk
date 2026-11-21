@@ -200,15 +200,33 @@ test('the landing top bar is site links only: the tour bar beneath it is the way
   assert.match(html, /data-scene="9" aria-label="10 of 12 — Take the helm/);
 });
 
-test('the landing links Aris only where Aris answers: hidden in the markup, shown after /aris says 200', () => {
+test('the landing links Aris only where Aris is on: hidden in the markup, shown when the public config says so', async () => {
   const html = read('client', 'site', 'index.html');
   // /aris is 404 while ARIS_ENABLED is off, and this page is a static file
-  // that cannot know. Both links ship hidden; the page asks, then shows them.
+  // that cannot know. Both links ship hidden; the page asks the server's
+  // public config, then shows them.
   assert.match(html, /<a class="nl" href="\/aris" data-aris hidden>Aris<\/a>/);
   assert.match(html, /<a href="\/aris" data-aris hidden>Aris<\/a>/);
   assert.equal((html.match(/href="\/aris"/g) ?? []).length, 2);
-  assert.match(html, /fetch\("\/aris", \{ method: "HEAD" \}\)/);
-  assert.match(html, /if \(r\.ok\) [\s\S]{0,120}querySelectorAll\("\[data-aris\]"\)[\s\S]{0,80}hidden = false/);
+  // It never asks /aris itself: with Aris off that request is a 404, and a
+  // 404 is a console error on every load (site audit, 2026-11-20).
+  assert.doesNotMatch(html, /fetch\(\s*["']\/aris/);
+  assert.match(html, /fetch\("\/api\/config\/public", \{ credentials: "omit" \}\)/);
+  assert.match(html, /if \(j && j\.aris === true\) [\s\S]{0,120}querySelectorAll\("\[data-aris\]"\)[\s\S]{0,80}hidden = false/);
+  // What the page reads: aris: true only while Aris is on. Off, the key is
+  // absent, and the answer is still a 200 (nothing for the console to log).
+  for (const [overrides, want] of [[{}, undefined], [{ arisEnabled: true, arisKeySecret: 'test-secret' }, true]] as const) {
+    const server = await startTestServer(await createTestDb(), undefined, overrides);
+    try {
+      const res = await fetch(`${server.base}/api/config/public`);
+      assert.equal(res.status, 200);
+      const body = (await res.json()) as Record<string, unknown>;
+      assert.equal(body.aris, want);
+      assert.equal('aris' in body, want === true);
+    } finally {
+      await server.close();
+    }
+  }
 });
 
 test("the site pages' numbers are the studio's", () => {

@@ -161,6 +161,10 @@ footer{border-top:1px solid var(--line);margin-top:48px}
 .foot-in nav a{color:var(--ink);font-weight:700;font-size:14px;text-decoration:none}
 .foot-in nav a:hover{color:var(--accent)}
 .footline{text-align:center;color:#8d8168;font-size:12.5px;padding:22px 16px 38px}
+/* Which Beuk this is, once, closing the footer's last line on every page that loads this sheet (the site pages and the
+   School): the footline's own quiet text, no link, no badge. The landing page does not load this sheet and carries the
+   words in its own footline; the server-rendered pages take them from BRAND_VERSION (src/warmth/pages.ts). */
+.footline::after{content:" Beuk 2.0."}
 
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}

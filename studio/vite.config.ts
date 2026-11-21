@@ -124,8 +124,8 @@ function zenMedia(): Plugin {
   };
 }
 
-/** 1.0's tab icon (client/index.html <link rel="icon">). */
-export const ICON_FILE = '/assets/logo.webp';
+/** The tab icon: the same file the landing page and every other page name (client/site/index.html <link rel="icon">). */
+export const ICON_FILE = '/assets/icon-192.png';
 
 /** 1.0's first-paint faces (client/index.html <head>) and their stylesheet. */
 export const FONT_FILES = [

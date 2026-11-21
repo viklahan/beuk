@@ -27,6 +27,8 @@ import { escapeHtml, renderMarkdown } from './markdown.js';
  *                              { live: true } (V's D4: the tip jar stays
  *                              only until paid plans are live); any other
  *                              answer, or none, leaves the jar showing.
+ *   <!--BEUK_VERSION-->        the footer's quiet "Beuk 2.0" (BRAND_VERSION
+ *                              below), after the footer links.
  *
  * The Changelog and Roadmap pages are rendered from their Markdown
  * sources (CHANGELOG.md at the repo root, docs/roadmap.md — the same
@@ -39,6 +41,18 @@ import { escapeHtml, renderMarkdown } from './markdown.js';
  *  carry the same two strings; tests/branding.test.ts keeps them equal. */
 export const BRAND_SUBLINE = 'beuk.studio';
 export const BRAND_FOOTNOTE = 'Beuk — a typesetting studio for writers, at beuk.studio.';
+/** Which Beuk this is, said once, quietly, in the footer (V, 2026-11-20).
+ *  Plain text in the footer's own muted style: no link, no badge. The
+ *  server-rendered pages (Help, the warmth pages, the account page) and
+ *  the static warmth pages (their <!--BEUK_VERSION--> slot) all read this
+ *  one string. The marketing pages and the School are static markup on
+ *  client/site/site.css, which carries the same words for them. */
+export const BRAND_VERSION = 'Beuk 2.0';
+/** The tab icon, the same file on every page: the landing page's
+ *  (client/site/index.html). Help, the warmth pages and the account page
+ *  take it from here; the static pages carry the same two lines. */
+export const SITE_ICON_HTML =
+  '<link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png" />\n    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />';
 
 export function repoRoot(): string {
   // src/warmth (tsx dev) and dist/warmth (compiled) both sit two levels
@@ -110,7 +124,9 @@ export function fillSlots(html: string, config: Config): string {
     .split('<!--BEUK_KOFI_JAR-->')
     .join(kofiJarHtml(config))
     .split('<!--BEUK_BILLING_GATE-->')
-    .join(billingGateHtml(config));
+    .join(billingGateHtml(config))
+    .split('<!--BEUK_VERSION-->')
+    .join(footVersionHtml());
 }
 
 /** Read a static page from client/ (guarding against path escapes) and
@@ -179,12 +195,18 @@ export function siteNavHtml(opts: { signedIn?: boolean; current?: string } = {})
 export function siteFootLinksHtml(): string {
   return SITE_FOOT_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join(' · ');
 }
+/** " · Beuk 2.0", closing a warmth footer's row of links. The spaces do
+ *  not break, so a narrow row wraps before the words, never inside them
+ *  and never leaving the dot to start a line. */
+export function footVersionHtml(): string {
+  return `&nbsp;· ${escapeHtml(BRAND_VERSION).replace(/ /g, '&nbsp;')}`;
+}
 
 export function pageChrome(
   config: Config,
   title: string,
   bodyHtml: string,
-  opts: { titleSuffix?: string } = {},
+  opts: { titleSuffix?: string; description?: string } = {},
 ): string {
   return `<!doctype html>
 <html lang="en">
@@ -192,6 +214,7 @@ export function pageChrome(
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(title)} — ${escapeHtml(opts.titleSuffix ?? 'Beuk Help')}</title>
+    ${opts.description ? `<meta name="description" content="${escapeHtml(opts.description)}" />\n    ` : ''}${SITE_ICON_HTML}
     <!-- BEUK:fonts — self-hosted (no request to Google); Literata, Latin, preloaded -->
     <link rel="preload" href="/assets/fonts/literata/literata-latin-normal-400_500_600_700.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/assets/fonts/fonts.css" />
@@ -214,11 +237,29 @@ ${bodyHtml}
     <footer class="site-foot">
 ${kofiJarHtml(config)}
       <p class="foot-note">${escapeHtml(BRAND_FOOTNOTE)}</p>
-      <p class="foot-links">${siteFootLinksHtml()}</p>
+      <p class="foot-links">${siteFootLinksHtml()}${footVersionHtml()}</p>
     </footer>
   </body>
 </html>
 `;
+}
+
+/**
+ * The site's "page not found", for a reader who asked for a page at an
+ * address the app does not answer (src/app.ts sends it, status 404). It
+ * says nothing about the address: a page that is switched off on this
+ * server (/support without KOFI_URL, /aris without ARIS_ENABLED) gets
+ * exactly what an address that never existed gets.
+ */
+export function renderNotFoundPage(config: Config): string {
+  return pageChrome(
+    config,
+    'Page not found',
+    `      <h1>That page isn't on the shelf</h1>
+      <p class="lede">There is nothing at this address. It may have moved, or the link may have been mistyped.</p>
+      <p><a href="${SITE_HOME_HREF}">Back to the front page</a> · <a href="/studio">Open the studio</a></p>`,
+    { titleSuffix: 'Beuk' },
+  );
 }
 
 /** Render a Markdown document (Changelog / Roadmap) as a full page. */
