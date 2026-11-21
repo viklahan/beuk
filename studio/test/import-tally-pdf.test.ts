@@ -56,7 +56,8 @@ async function makePdf(pages: [string, number, number, number][][]): Promise<Uin
   }
   return doc.save();
 }
-type Tally = { counted: boolean; file: number; book: number; aside: Record<string, number>; unaccounted: number; pdf?: { raw: number; joins: Record<string, number> } };
+type Words = { same: boolean; fileOnly: [string, number][]; bookOnly: [string, number, string][]; caseOnly: number };
+type Tally = { counted: boolean; file: number; book: number; aside: Record<string, number>; unaccounted: number; pdf?: { raw: number; joins: Record<string, number> }; words: Words };
 let lastModule: { api: Api } | null = null;
 async function importPdf(name: string, bytes: Uint8Array): Promise<{ tally: Tally }> {
   document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
@@ -105,6 +106,7 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     const ty = rep.tally;
     expect(ty.counted, 'the PDF is counted from its text').toBe(true);
     expect({ raw: ty.pdf && ty.pdf.raw, joins: ty.pdf && ty.pdf.joins, file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted }).toEqual({ raw: 48, joins: { pdfRejoined: 1 }, file: 47, book: 35, aside: { headers: 9, pageNumbers: 3 }, unaccounted: 0 });
+    expect(ty.words, 'word for word the book’s').toMatchObject({ same: true, fileOnly: [], bookOnly: [], caseOnly: 0 });
     // the card's sentence stays true arithmetic (47 − 35 = 12 set aside); the full tally shows the pieces' 48 and the join
     lastModule!.api.irRenderReport();
     expect(document.body.textContent || '').toContain(t('ir.tally.cardOk', { file: '47', book: '35', aside: '12' }));
@@ -128,6 +130,7 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     const ty = (await importPdf('salt-road-pieces.pdf', await doc.save())).tally;
     expect({ raw: ty.pdf && ty.pdf.raw, joins: ty.pdf && ty.pdf.joins, file: ty.file, book: ty.book, unaccounted: ty.unaccounted })
       .toEqual({ raw: 49, joins: { pdfRejoined: 1, pdfPieced: 1 }, file: 47, book: 35, unaccounted: 0 });
+    expect(ty.words, 'word for word the book’s').toMatchObject({ same: true, fileOnly: [], bookOnly: [] });
   }, 120_000);
 
   /* A PDF marks no lists: a note's printed number ("7.") is a word of the file before and after the reader joins its
@@ -160,6 +163,31 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
       .toEqual({ raw: 54, joins: { pdfRejoined: 1 }, file: 53, book: 40, aside: { headers: 9, pageNumbers: 3, listMarks: 1 }, unaccounted: 0, same: true });
   }, 120_000);
 
+  /* Two real words set with too narrow a space between them ("caravan" and "left", 1pt apart at 11pt): pdf.js gives
+     two pieces, the reader joins them as one word, and both sides then hold "caravanleft", so the word comparison
+     cannot see it. The join step names every join it makes, pieces and the word they made, so the writer sees the
+     glue; it does not guess which joins were meant (that "cara" + "van" is one word and "caravan" + "left" two). */
+  it('two real words glued by a narrow space are named among the joins, beside a true join', async () => {
+    const doc = await pdfLib.PDFDocument.create();
+    const font = (await doc.embedFont(pdfLib.StandardFonts.Helvetica)) as { widthOfTextAtSize: (s: string, n: number) => number };
+    const italic = await doc.embedFont(pdfLib.StandardFonts.HelveticaOblique);
+    BOOK.forEach((lines, k) => {
+      const pg = doc.addPage([420, 595]);
+      lines.forEach(([s, x, y, size]) => {
+        if (k === 0 && s === 'The caravan left at dawn and the trans-') { pg.drawText('The caravan', { x, y, size, font }); pg.drawText('left at dawn and the trans-', { x: x + font.widthOfTextAtSize('The caravan', size) + 1, y, size, font: italic }); return; }
+        if (k === 1 && s === 'The pans lay white under the sun.') { pg.drawText('The cara', { x, y, size, font }); pg.drawText('van lay white under the sun.', { x: x + font.widthOfTextAtSize('The cara', size), y, size, font: italic }); return; }
+        pg.drawText(s, { x, y, size, font });
+      });
+    });
+    const rep = await importPdf('salt-road-glued.pdf', await doc.save());
+    const ty = rep.tally as Tally & { pdf: { pieced: { from: string[]; to: string; n: number }[] }; words: { same: boolean } };
+    expect({ joins: ty.pdf.joins, unaccounted: ty.unaccounted, same: ty.words.same }).toEqual({ joins: { pdfRejoined: 1, pdfPieced: 2 }, unaccounted: 0, same: true });
+    expect(ty.pdf.pieced).toEqual(expect.arrayContaining([{ from: ['caravan', 'left'], to: 'caravanleft', n: 1 }, { from: ['cara', 'van'], to: 'caravan', n: 1 }]));
+    const el = document.createElement('div');
+    el.innerHTML = String(lastModule!.api.irTallyHtmlOf(rep));
+    expect((el.textContent || '').replace(/\s+/g, ' ')).toContain('“caravan” + “left” → “caravanleft”');
+  }, 120_000);
+
   it('a step the reader takes that the tally is not told of shows as unaccounted, never hidden: a line dropped after the count is 2 words unaccounted', async () => {
     document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
     const m = make(env());
@@ -175,6 +203,7 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     const rep = m.api.importPdfExtracted('salt-road.pdf', ext);
     const ty = m.api.irTallyWrite(rep, src) as Tally;
     expect({ file: ty.file, unaccounted: ty.unaccounted }).toEqual({ file: 49, unaccounted: 2 });
+    expect(ty.words, 'the two words named, in the file only').toMatchObject({ same: false, fileOnly: [['fell', 1], ['night', 1]], bookOnly: [] });
   }, 120_000);
 
   it('a PDF with no text layer (a scanned page) is refused as scanned: nothing is counted, nothing claimed', async () => {
@@ -275,5 +304,6 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     const rep = await importPdf('salt-road-locked.pdf', locked);
     const ty = rep.tally;
     expect({ raw: ty.pdf && ty.pdf.raw, file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted }).toEqual({ raw: 48, file: 47, book: 35, aside: { headers: 9, pageNumbers: 3 }, unaccounted: 0 });
+    expect(ty.words, 'word for word the book’s').toMatchObject({ same: true, fileOnly: [], bookOnly: [] });
   }, 120_000);
 });
