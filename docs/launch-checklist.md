@@ -310,13 +310,24 @@ On a phone and a laptop, signed out and signed in:
 
 ## 11. Deploy a new version, and roll back
 
-Deploy:
+Deploy (in the box's deploy directory: `/opt/beuk` in this list, wherever
+the checkout really lives on yours):
 
 ```sh
 cd /opt/beuk
 ./deploy/hk.sh <your-email> backup before-<new-sha>
 git pull
 ./deploy/install.sh
+```
+
+On a box served through Cloudflare Tunnel, `hk.sh` calls the public
+address (no TLS ends on the box). If it cannot make the backup, a plain
+database dump is a restore point for the database (not for the exported
+files):
+
+```sh
+docker exec <db-container> sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > ~/backups/before-<new-sha>.sql.gz
+gzip -t ~/backups/before-<new-sha>.sql.gz
 ```
 
 Roll back to a previous commit:
