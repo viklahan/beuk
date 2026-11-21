@@ -8,6 +8,7 @@ import { useLocale } from '../i18n/LocaleProvider';
 import { useConfirm } from '../shell/Dialog';
 import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
+import { useStartFirstBook } from './startFirst';
 import {
   deskEmpty, deskIsUntouchedSample, emptyAfterSample, ensureSamplePictures, fillSamplePictures, newBookArrival,
   preRenameArrival, sampleArrival, sampleLoaded, samplePicsMissing, sampleSigOf, setSampleRecord, staleSweep, sweepFor,
@@ -36,6 +37,7 @@ export function SampleBar({ openHistory }: { openHistory?: () => void } = {}) {
   const stats = useStats();
   const toast = useToast();
   const confirm = useConfirm();
+  const startFirst = useStartFirstBook();
   const [c, setC] = useState<Closure | null>(() => closureIfLoaded());
   const [busy, setBusy] = useState(false);
   const warned = useRef(false);
@@ -116,8 +118,6 @@ export function SampleBar({ openHistory }: { openHistory?: () => void } = {}) {
 
   if (!c) return null;
   const loaded = sampleLoaded(ydoc);
-  // the button follows the counts (1.0's renderNewBookButton runs from updateStats); with no book open the desk is empty
-  const empty = !ydoc || (stats ? stats.emptyDesk : true);
   const live = stats?.words ?? 0;
   // 1.0's sampleShippedWords is the sample counted as the stats count the desk; 1.0 ships that count as SAMPLE_WORDS
   // (test/sample.test.tsx holds them equal), so the button states it without loading the sample's text (wave 1c)
@@ -177,7 +177,7 @@ export function SampleBar({ openHistory }: { openHistory?: () => void } = {}) {
   /** 1.0's startNewBook → startNewBookNow. */
   const startNew = async () => {
     const from = ydoc;
-    if (!from) return;
+    if (!from) return void (await startFirst()); // a first visit: there is no book yet, so this opens the first one
     if (sampleLoaded(from)) return remove();
     if (deskEmpty(c, from)) return toast(t('newbook.already'), 'File');
     const ok = await confirm({ title: t('newbook.confirmTitle'), body: t('newbook.confirmBody'), yes: t('newbook.yes'), no: t('newbook.no') });
@@ -208,12 +208,13 @@ export function SampleBar({ openHistory }: { openHistory?: () => void } = {}) {
       <p className="sample-note" id="sampleNote">
         {loaded ? t('side.sampleNoteLoaded', { n: fmtNum(live, lang), count: live }) : t('side.sampleNoteLoad')}
       </p>
-      {/* BEUK:newbook — only when there is a book of one's own to clear: the sample keeps its own Remove */}
-      {!loaded && !empty && (
-        <button type="button" className="tour-again" id="btnNewBook" title={t('newbook.title')} onClick={run(startNew)}>
-          {t('newbook.btn')}
-        </button>
-      )}
+      {/* BEUK:newbook — always there (V, 2026-11-21): a writer should never have to hunt for the way to a fresh desk.
+          startNew decides what the press means: with no book on this device it opens the first one, over the sample
+          it removes the sample, on an empty book it says the desk is ready, and over a book of one's own it asks
+          first and keeps that book in History. */}
+      <button type="button" className="tour-again" id="btnNewBook" title={t('newbook.title')} onClick={run(startNew)}>
+        {t('newbook.btn')}
+      </button>
       {/* BEUK:tour — the replay link; tour/tour.ts starts it (1.0's tourInit listens on #btnTourAgain). The space is
           1.0's: its two links are inline-blocks with a line break between them in the markup */}
       {' '}
