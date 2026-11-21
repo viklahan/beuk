@@ -8,6 +8,8 @@ to make well.
 
 **The studio**
 - **One studio.** The new studio is the only one now, at the same address. A book you were writing on this device comes with you, once, and stays linked to its copy on your shelf.
+- **Start a new book, any time.** Start a new book is on the desk whether a book is open or not. On a first visit you can also press the page where it says Start writing, and type.
+- **Rename your book where you see it.** Press the book's name in the top bar and type. Enter keeps the new name; Escape leaves the old one.
 - **Remove a book from your shelf.** Each book on your shelf has a Remove button. It asks first, and it removes that book for good; the copy on your desk stays where it is.
 
 **Import**
@@ -18,7 +20,7 @@ to make well.
 - **Two more kinds of file.** Import reads OpenDocument (`.odt`) and a web page, alone or zipped with its pictures, which is what Google Docs gives you when you download a page.
 - **EPUBs come in as books.** An EPUB from another tool used to break into a chapter per sub-heading and lose its footnotes. It now keeps its own chapters, its sections inside them, its front and back pages, and its notes.
 - **Footnotes follow their words.** Notes link in a web page and in a text file that lists them, Markdown notes work under any name, and a note marked inside a table is linked like any other.
-- **Tables keep their words.** A table used to be left out and listed in the report. Its rows now stay in the book where the table stood, one line each.
+- **Tables come in as tables.** A table in your manuscript used to be left out and listed in the report. It now arrives as a table, where it stood, with its header row when your file marks one and the notes inside its cells still linked. A table inside a table is placed after it, and the report says where it stood. The report can turn any table back into plain lines.
 - **Markdown reads clean.** Tables, backticks and HTML tags no longer sit raw in your prose, and a zipped Markdown file brings its pictures.
 - **Lists inside lists** come in as lines of their own, in order, none run together.
 - **A title page is a title page.** Its lines go to your book's details. They are no longer filed as a Copyright page or a Dedication your book doesn't have.
@@ -28,7 +30,7 @@ to make well.
 - **An opening plate, whole or filling the page.** Under Opening plate there is a Fit choice: fill the page, cropped to its shape, or show the whole picture inside the margins. A plate you already set stays as it was.
 
 **The site**
-- **Beuk Weekly has a shelf.** Five issues are on the School's newsstand, the newest first.
+- **Beuk Weekly has a shelf.** Five issues are on the School's newsstand, the newest first. Every issue has a bar to the one before, the one after and the full list, so no issue is more than a press away.
 - A missing page now says so in Beuk's own voice, and every page names the version at its foot.
 
 ## 2026-11-14 — Imports that keep their cover and stay out of your way
