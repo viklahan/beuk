@@ -212,6 +212,14 @@ const ADDED_2026_11_15: [string, string, string][] = [
   ["typeset-a-chapter", "sprig, a hairline rule, and more. Check it on devices. Flip the", "sprig, a hairline rule, and more. Book colour: one accent colour for chapter titles and numbers, rules, ornaments, drop caps and the title page, and an optional page tint for screens and EPUB. Print keeps the accent and ignores the tint, and a contrast guard refuses a colour that would be hard to read. Check it on devices. Flip the"],
   ["typeset-a-chapter", "one should read well on all. The preview keeps your place. As", "one should read well on all. Hardcover opens a 3D hardback on the book's real print spreads, and e-ink devices with black-and-white screens are shown in greyscale, as those screens show the book. The preview keeps your place. As"],
 ];
+// 2026-11-20 (site audit): the Import button's own label ("side.import": "Import Document"); OpenDocument and web-page
+// manuscripts (BEUK:docsimport, BULK_MANUSCRIPT_EXT: 058caf6); the report opens on the summary card (BEUK:importcard:
+// af0af97). Applied after the additions above.
+const ADDED_2026_11_20: [string, string, string][] = [
+  ["import-a-manuscript", "which Scrivener, TextEdit and LibreOffice also write), PDF ( .pdf ),", "which Scrivener, TextEdit and LibreOffice also write), OpenDocument ( .odt , which LibreOffice and Google Docs write), a web page ( .html , on its own or zipped with its pictures, as Google Docs downloads it), PDF ( .pdf ),"],
+  ["import-a-manuscript", "Open the studio and choose Import . Pick your file.", "Open the studio and choose Import Document . Pick your file."],
+  ["import-a-manuscript", "(acknowledgments, About the Author, Also By). Walk the section list", "(acknowledgments, About the Author, Also By). The import report then opens on a summary, Your book is in. , with how many words Beuk read, the chapters and pages it found, and what it did. Open my book takes you to the book; Every change, one by one lists each change the import made, with Undo this beside those that can be undone on their own. Walk the section list"],
+];
 
 test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 pages), with the two edits the spec asks for and the 2026-10-26 additions', async () => {
   const db = await createTestDb();
@@ -247,7 +255,7 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
       }
       // 2026-10-26: the features added since H1 (removing a picture, the preview keeping its place,
       // the title read from the manuscript, Split at cursor, the Cover Maker), each added in place.
-      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15]) if (s === slug) {
+      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15, ...ADDED_2026_11_20]) if (s === slug) {
         assert.ok(expected.includes(from), `${slug}: the addition's anchor is in the fixture`);
         expected = expected.replace(from, to);
       }
