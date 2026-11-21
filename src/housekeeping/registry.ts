@@ -3364,6 +3364,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
+    id: 'import.pictures.title-and-description',
+    title:
+      "A picture's title and description are both kept, as 'title — description', from OpenDocument, RTF and Word, and the report says so",
+    kind: 'client-only',
+    reason: 'The readers (BEUK:docsimport, BEUK:rtfimport, the Word import) run in the studio; the server never sees the file.',
+  },
+  {
     id: 'import.html.quote-attribution',
     title: "A web page's quotation keeps every word: its paragraphs, the attribution in a <footer> or <cite>, and words set loose beside them",
     kind: 'client-only',
