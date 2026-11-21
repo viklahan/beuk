@@ -3267,6 +3267,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Every reader (BEUK:nestedlists) and the import report run in the studio; the server never sees the file.',
   },
   {
+    id: 'import.txt.appendix-dash-and-notes',
+    title:
+      "A plain-text book: no dash left in a chapter's title, a line naming an appendix opens it (a Word file's plain paragraph too), a block the file calls FOOTNOTES or NOTES gives its entries as notes, and a bracketed number with no entry stays text and is reported",
+    kind: 'client-only',
+    reason: 'The text reader (BEUK:txtnotes, BEUK:importzones) and the import report run in the studio; the server never sees the file.',
+  },
+  {
     id: 'import.tables.kept-as-rows',
     title:
       "A table's words stay in the book as plain rows where it stood: cells joined by a bar with empty and merged-over cells kept in their columns, marks and a note's mark kept in their cell, a nested table after its parent and said once, reported as kept, the bars not counted as words, and out again on undo",
