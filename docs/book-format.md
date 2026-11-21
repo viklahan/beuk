@@ -46,7 +46,7 @@ Reading a book that was already read changes nothing and fires no step except th
 | `meta` | object | no | `bookMetaDefaults`; `bookId` is minted | CI:20519, CI:50215 |
 | `theme` | object | no | `PRESETS[0].theme` | CI:50234 |
 | `activePreset` | string or null | no | `"classic"` if the theme was missing, else null | CI:50244 |
-| `colour` | `{accent, tint, printBlack?}` | yes | absent | CI:19425, CI:50246 |
+| `colour` | `{accent, tint, dropCap?, printBlack?}` | yes | absent | CI:19425, CI:50246 |
 | `outline` | `{tags, filters, threads?, fields?}` | yes | absent | CI:32974, CI:50259 |
 | `sections` | array of section | no | the empty scaffold | CI:50099, CI:50255 |
 | `activeId` | section id | no | first chapter, else first section | CI:50250 |
@@ -93,7 +93,7 @@ Every object is open: a key the schema does not know survives a read. Strings in
 |---|---|---|
 | `meta` | `title`, `subtitle`, `author`, `publisher`, `isbn`, `language`, `langSource`, `langGuess`, `year`, `rights`, `description`, `a11ySummary`, `bookId`. Optional: `series`, `seriesNumber`, `legacyBookIds`, `titleSource`, `subtitleSource`, `authorSource`, `castHidden`, `rightsMode`, `ccLicence`, `firstPublished`, `editionHolder`. | CI:20519, CI:20976 |
 | `theme` | `bodyFont`, `headFont`, `fontSize`, `lineHeight`, `paraMode`, `indentDepth`, `headerStyle`, `dropDepth`, `smallCapsWords`, `ornament`, `justify`, `hyphens`. Optional: `headingFlourish`, `headingFlourishPos`, `header` (`number`, `title`, `subtitle`, each `{font, size, align, casing, above, below}`). | CI:19226, CI:19620 |
-| `colour` | `accent`, `tint`, optional `printBlack` | CI:19425 |
+| `colour` | `accent`, `tint`, optional `dropCap` (the drop cap's own colour, written only when chosen), optional `printBlack` | CI:19425 |
 | section | `id`, `kind`, `type`, `title`, `subtitle`, `number`, `content`, `dropCap`, `smallCaps`, `included`, `plateId`, `plateAlt`, `backdropId`, `backdropStrength`, `htLine1`, `htLine2`, `tocHeading`, `scenes`. Optional, present only when set: `plateFit` (`fill` or `whole`: the opening plate covers its page, cropped to its shape, or is shown whole inside the margins; absent reads as `fill`, so a book saved before the field looks as it did). Outline fields, each present only when set: `synopsis`, `status`, `tags`, `pov`, `threads`, `custom`. | CI:50099, CI:32939 |
 | scene | `at`, `imageId`, `name`, `caption`, `alt` | CI:50122 |
 | image | `id`, `name`, `mediaType`, `data`. Optional: `ext`, `credit {name, url}`. | CI:34535, CI:35061 |

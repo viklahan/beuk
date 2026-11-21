@@ -1103,6 +1103,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The print interior HTML is assembled in the client from the book state (asserted by window.runBeukSelfChecks()); the server converts it as it arrives.',
   },
+  /* BEUK:dropcapcolour — the drop cap's own colour */
+  {
+    id: 'colour.dropcap.own-colour',
+    title: 'A drop cap colour of its own reaches the preview, zen, EPUB and print after the accent (black titles when there is none), is lifted to 3:1 on the dark studio surfaces, goes black with print in black ink, is held to the same 3:1 guard, rides with the book, and absent changes no byte',
+    kind: 'client-only',
+    reason: 'Every surface’s CSS and the book document are generated in the client from the book state (asserted by window.runBeukSelfChecks()); tests/book-colour.test.ts runs the server’s EPUB build on a book with one.',
+  },
   {
     id: 'themes.library.count-shelves-shape',
     title: 'Theme library: 15 themes across six genre shelves, all references resolve',

@@ -285,6 +285,60 @@ describe('the Style tab in the studio', { timeout: 60_000 }, () => {
     expect(css('')).toBe(plain);
   });
 
+  it('the drop cap colour: beside the accent, Same as the accent by default, a swatch, the guard, its own colour on the dark phone, print in black ink, back to the accent', async () => {
+    const doc = LANTERN();
+    await studioWith(doc);
+    await openTab();
+    const plain = css('');
+    const plainKeys = Object.keys(await exported());
+    // the row: Same as the accent, then the accent's ten swatches; the custom colour beside it
+    const row = () => Array.from(document.querySelectorAll('#colourDropRow [data-colour-kind="dropCap"]'));
+    expect(row().length).toBe(11);
+    expect(row()[0]!.getAttribute('data-colour')).toBe('');
+    expect(row()[0]!.getAttribute('aria-label')).toBe(t('colour.dropCapSame'));
+    expect(row()[0]!.getAttribute('aria-pressed')).toBe('true');
+    expect(row().slice(1).map((b) => b.getAttribute('data-colour'))).toEqual(c.api.COLOUR_ACCENTS.map((a) => a.hex));
+    expect($('colourDropLab').textContent).toBe(t('colour.dropCap'));
+    expect(document.querySelector('label[for="colourDropCustom"]')!.textContent).toBe(t('colour.customDropCap'));
+    expect($('colourPrintBlack').disabled).toBe(true);
+    // a swatch: the drop cap alone, the titles stay black
+    await click(document.querySelector('#colourDropRow [data-colour="#8a6417"]'));
+    let out = await exported();
+    expect(out.colour).toEqual({ accent: '', tint: '', dropCap: '#8a6417' });
+    expect($('colourMsg').textContent).toBe(t('colour.okDropCap', { hex: '#8a6417', ratio: c.api.bookColourCheck('dropCap', '#8a6417', { accent: '', tint: '' }).params.ratio as string }));
+    expect(document.querySelector('#colourDropRow [aria-pressed="true"]')!.getAttribute('data-colour')).toBe('#8a6417');
+    expect(css('')).toContain('.dropcap { color: #8a6417; }');
+    expect(css('.fc-page')).toContain('.fc-page .dropcap { color: #8a6417; }');
+    expect(css('')).not.toMatch(/\.chapter-title[^{]*\{ color: /);
+    // the guard: a bright gold is refused with its numbers, the book unchanged
+    await change($('colourDropCustom'), '#ffd700');
+    expect($('colourMsg').classList.contains('warn')).toBe(true);
+    expect($('colourMsg').textContent).toBe(t('colour.refusedDropCap', { hex: '#ffd700', ratio: '1.40' }));
+    expect((await exported()).colour).toEqual({ accent: '', tint: '', dropCap: '#8a6417' });
+    // with a dark accent lightened on the phone's black, the drop cap keeps its own colour there too
+    await click(document.querySelector('#colourAccentRow [data-colour="#1f3a64"]'));
+    const pv = css('.fc-page');
+    const iAcc = pv.indexOf('.frame-phone .fc-page .chapter-number, '), iDrop = pv.indexOf('.frame-phone .fc-page .dropcap { color: ');
+    expect(iAcc).toBeGreaterThan(-1);
+    expect(iDrop).toBeGreaterThan(iAcc);
+    await click(document.querySelector('#colourAccentRow [data-colour=""]'));
+    // print in black ink with the drop cap colour alone
+    expect($('colourPrintBlack').disabled).toBe(false);
+    await act(async () => {
+      $('colourPrintBlack').checked = true;
+      $('colourPrintBlack').dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    out = await exported();
+    expect(out.colour).toEqual({ accent: '', tint: '', dropCap: '#8a6417', printBlack: true });
+    expect(readBook(out).book.colour).toEqual(out.colour);
+    // Same as the accent: no key, the same CSS bytes
+    await click(document.querySelector('#colourDropRow [data-colour=""]'));
+    out = await exported();
+    expect('colour' in out).toBe(false);
+    expect(Object.keys(out)).toEqual(plainKeys);
+    expect(css('')).toBe(plain);
+  });
+
   it('flourishes: an SVG and a PNG join the library and the ornament choices, a bad file is refused, the heading flourish and its placement, removal falls back (flourish.ornament, flourish.heading)', async () => {
     await studioWith(LANTERN());
     await openTab();

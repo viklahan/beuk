@@ -598,11 +598,11 @@ export type ClosureApi = {
   defaultHeaderDesign: (theme: unknown) => Record<string, unknown>;
   COLOUR_ACCENTS: { id: string; hex: string }[];
   COLOUR_TINTS: { id: string; hex: string }[];
-  bookColour: () => { accent: string; tint: string; printBlack?: boolean };
+  bookColour: () => { accent: string; tint: string; dropCap?: string; printBlack?: boolean };
   bookColourSet: () => boolean;
-  bookColourNormalize: (c: unknown) => { accent: string; tint: string; printBlack?: boolean };
+  bookColourNormalize: (c: unknown) => { accent: string; tint: string; dropCap?: string; printBlack?: boolean };
   bookColourCheck: (kind: string, hex: string, base?: unknown) => { ok: boolean; key: string; params: Record<string, unknown>; next?: Record<string, unknown> };
-  setBookColour: (kind: string, hex: string) => { ok: boolean; key: string };
+  setBookColour: (kind: string, hex: string) => { ok: boolean; key: string; params: Record<string, unknown> };
   setBookPrintBlack: (on: boolean) => boolean;
   renderBookColour: () => void;
   initBookColour: () => void;

@@ -152,7 +152,7 @@ const Theme = obj({
   header: obj({ number: HeaderElement, title: HeaderElement, subtitle: HeaderElement }).optional(),
 });
 
-const Colour = obj({ accent: str, tint: str, printBlack: bool.optional() }); // CI:19425
+const Colour = obj({ accent: str, tint: str, dropCap: str.optional(), printBlack: bool.optional() }); // CI:19425; dropCap: BEUK:dropcapcolour, written only when chosen
 
 /* ---- sections (CI:50099-50116, 50122, 32939) ---- */
 
