@@ -7,7 +7,7 @@
 .weekly{--paper:#fdfdfb;--news:#111111;--news2:#333333;--hair:#bdbdb6;--newsmute:#5c5c57;
   --mast:"Old Standard TT","Century Schoolbook",Georgia,serif;
   --gothic:"Oswald","Arial Narrow",sans-serif;
-  --deckf:"Playfair Display",Georgia,serif;
+  --deckf:"Beuk Weekly Plus","Playfair Display",Georgia,serif; /* the "+" alone: school.css */
   --text:"Old Standard TT","Times New Roman",serif}
 .weekly main{background:var(--paper)}
 .paper{color:var(--news);font:17px/1.5 var(--text);padding:26px 0 30px}

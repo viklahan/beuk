@@ -67,10 +67,22 @@ test('weekly content: each news issue has its lead, its short stories in order, 
     assert.ok(issue.sources.length >= 3);
     assert.ok(issue.sources.every((x) => /^<a href="https:\/\/[^"]+">[^<]+<\/a>$/.test(x.html)), 'every source is a link');
     assert.ok(issue.sources.some((x) => /weather/i.test(x.text)), 'the weather reading is cited');
-    // Every page a story links is in the issue's sources.
+    // Every outside page a story links is in the issue's sources; a link into the paper itself must lead to a story that is there.
     const listed = new Set(issue.sources.map((x) => /href="([^"]+)"/.exec(x.html)![1]));
-    for (const s of issue.storyBySlug.values()) for (const b of s.blocks) if (b.kind !== 'sub') for (const m of b.html.matchAll(/href="([^"]+)"/g)) assert.ok(listed.has(m[1]), `${s.slug}: ${m[1]} is in the sources`);
+    for (const s of issue.storyBySlug.values()) {
+      for (const b of s.blocks) {
+        if (b.kind === 'sub') continue;
+        for (const m of b.html.matchAll(/href="([^"]+)"/g)) {
+          const own = /^\/school\/weekly\/(\d+)\/([a-z0-9-]+)$/.exec(m[1]);
+          if (own) assert.ok(w.issueByNumber.get(Number(own[1]))?.storyBySlug.get(own[2])?.hasPage, `${s.slug}: ${m[1]} is a story with a page`);
+          else assert.ok(listed.has(m[1]), `${s.slug}: ${m[1]} is in the sources`);
+        }
+      }
+    }
   }
+  // No. 5's Kobo story points back at No. 4's Book Report story, the "deep dive" it names.
+  const flags = w.issueByNumber.get(5)!.storyBySlug.get('three-more-flags')!;
+  assert.ok(flags.blocks.some((b) => b.kind === 'p' && b.html.includes('<a href="/school/weekly/4/year-of-the-niche">last week\'s deep dive</a>')));
 });
 
 test('weekly content: a weather reading without a source is a problem; an icon is plain shapes or it is refused', () => {
