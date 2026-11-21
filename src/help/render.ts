@@ -1,6 +1,6 @@
 import type { Config } from '../config.js';
 import { escapeHtml as esc } from '../warmth/markdown.js';
-import { BRAND_FOOTNOTE, BRAND_SUBLINE, billingGateHtml, kofiJarHtml, supportBlocks, supportNavHtml, SITE_FOOT_LINKS } from '../warmth/pages.js';
+import { BRAND_FOOTNOTE, BRAND_SUBLINE, BRAND_VERSION, billingGateHtml, kofiJarHtml, supportBlocks, supportNavHtml, SITE_FOOT_LINKS, SITE_ICON_HTML } from '../warmth/pages.js';
 import { helpAssetUrl } from './assets.js';
 import {
   ERROR_CATEGORIES,
@@ -200,6 +200,8 @@ export function chrome(
   footLinks.push('<a href="/help/#founders">Founders\' Shelf</a>');
   // The full site link set (same as every other page), so Help never strands a reader.
   for (const [href, label] of SITE_FOOT_LINKS) footLinks.push(`<a href="${href}">${label}</a>`);
+  // Which Beuk this is: plain text closing the row, in the footer's own muted colour.
+  footLinks.push(`<span>${esc(BRAND_VERSION)}</span>`);
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -210,7 +212,7 @@ export function chrome(
     ${opts.description ? `<meta name="description" content="${esc(opts.description)}" />` : ''}
     ${linkPreviewTags(config, opts.title, opts.description)}
     <script src="${helpAssetUrl('theme.js')}"></script>
-    <link rel="icon" href="/assets/logo.webp" />
+    ${SITE_ICON_HTML}
     ${HELP_FONT_PRELOADS.map((u) => `<link rel="preload" href="${u}" as="font" type="font/woff2" crossorigin />`).join('\n    ')}
     <link rel="stylesheet" href="${FONTS_HREF}" />
     <link rel="stylesheet" href="${FONTS_HELP_HREF}" />

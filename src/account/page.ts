@@ -3,7 +3,7 @@ import type { Config } from '../config.js';
 import type { TwoStepStatus } from '../twostep/store.js';
 import { humanDate, humanDateTimeUtc } from '../help/render-util.js';
 import { escapeHtml as esc } from '../warmth/markdown.js';
-import { BRAND_FOOTNOTE, BRAND_SUBLINE, SITE_HOME_HREF, siteNavHtml, siteFootLinksHtml } from '../warmth/pages.js';
+import { BRAND_FOOTNOTE, BRAND_SUBLINE, SITE_HOME_HREF, SITE_ICON_HTML, footVersionHtml, siteNavHtml, siteFootLinksHtml } from '../warmth/pages.js';
 import type { AccountOverview } from './data.js';
 import type { AccountPlan } from './plan.js';
 
@@ -45,6 +45,7 @@ export function portalChrome(config: Config, title: string, body: string, opts: 
     <meta name="robots" content="noindex" />
     <meta name="referrer" content="no-referrer" />
     <title>${esc(title)} — Beuk</title>
+    ${SITE_ICON_HTML}
     <link rel="preload" href="/assets/fonts/literata/literata-latin-normal-400_500_600_700.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/assets/fonts/fonts.css" />
     <link rel="stylesheet" href="/assets/fonts/fonts-help.css" />
@@ -64,7 +65,7 @@ ${body}
     </main>
     <footer class="site-foot">
       <p class="foot-note">${esc(BRAND_FOOTNOTE)}</p>
-      <p class="foot-links">${supportFootLink(config)}${siteFootLinksHtml()}</p>
+      <p class="foot-links">${supportFootLink(config)}${siteFootLinksHtml()}${footVersionHtml()}</p>
     </footer>
     ${opts.script ? '<script src="/account/account.js" defer></script>' : ''}
   </body>
