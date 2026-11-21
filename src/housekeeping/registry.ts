@@ -3192,6 +3192,76 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The web-page reader (BEUK:docsimport) runs in the studio on the page and the pictures beside it; the server never sees them.',
   },
   {
+    id: 'import.headlevels.depth-is-relative',
+    title:
+      'One book whatever levels its headings skip: a web page of h1 chapters and h3 sections comes in as the Word file of Heading 1 and Heading 2 does, a title over second-level chapters keeps their third-level sections inside them (web page and markdown), and a deeper heading is reported with the level the file gave it',
+    kind: 'client-only',
+    reason: 'The readers and the heading rule (BEUK:headlevels) run in the studio; the server never sees an import.',
+  },
+  {
+    id: 'import.headlevels.skipped-level-every-reader',
+    title:
+      'One small book of Heading 1 chapters and Heading 3 sections, with no Heading 2, comes out the same from Word-shaped HTML, RTF, a web page and markdown: each Heading 3 a sub-heading inside its chapter, none demoted',
+    kind: 'client-only',
+    reason: 'The readers and the heading rule (BEUK:headlevels) run in the studio; the server never sees an import.',
+  },
+  {
+    id: 'import.html.footnotes',
+    title:
+      "A web page's footnotes become Beuk notes however the page marks them (doc-noteref, a fn-ref link to an aside, a raised link to a paragraph that links back), numbered in order of first reference; a raised number that links nowhere is no note; a missing note and an unreferenced one are reported",
+    kind: 'client-only',
+    reason: 'The web-page reader (BEUK:docsimport) runs in the studio on the page; the server never sees it.',
+  },
+  {
+    id: 'import.html.details-and-formatting',
+    title:
+      "A web page's author and title are read from its own details, and its struck-through, super/subscript, underlined, small-capital and typewriter passages keep their words and are each counted, every line naming a web page",
+    kind: 'client-only',
+    reason: 'The web-page reader (BEUK:docsimport) and the import report run in the studio; the server never sees the page.',
+  },
+  {
+    id: 'import.odt.formatting-reported',
+    title:
+      "An OpenDocument file's struck-through, super/subscript, underlined, small-capital and fixed-pitch passages keep their words and are each counted in the report, as from the OpenDocument file",
+    kind: 'client-only',
+    reason: 'The OpenDocument reader (BEUK:docsimport) opens the file in the studio; the server never sees the .odt.',
+  },
+  {
+    id: 'import.report.smallcaps-and-typewriter',
+    title:
+      "Small capitals and a typewriter font are counted and listed for a Word file (from its package) and an RTF file (its \\scaps and fixed-pitch fonts), and not at all when the file's own body font is fixed-pitch",
+    kind: 'client-only',
+    reason: 'The Word package scan, the RTF reader and the import report run in the studio; the server never sees the file.',
+  },
+  {
+    id: 'import.md.footnote-labels',
+    title:
+      'Markdown footnotes under any label become Beuk notes, numbered in order of first reference and set in the section of their reference; a reference without a note and a note without a reference are reported; a file already numbered is left as typed',
+    kind: 'client-only',
+    reason: 'The Markdown reader (BEUK:mdimport) and the import report run in the studio; the server never sees the file.',
+  },
+  {
+    id: 'import.md.tables-and-markup',
+    title:
+      'A Markdown file leaves no raw markup in the prose: pipe and HTML tables are left out and reported with their rows (back on undo), and code, strike-through and inline HTML keep their words while what Beuk has no mark for is counted',
+    kind: 'client-only',
+    reason: 'The Markdown reader (BEUK:mdimport) and the import report run in the studio; the server never sees the file.',
+  },
+  {
+    id: 'import.md.zip-pictures',
+    title:
+      "A zip of one Markdown file brings its pictures (links resolved against the zip's paths, any case, either slash), a missing picture stays its link and is counted, and the YAML gives the ISBN, publisher and year",
+    kind: 'client-only',
+    reason: 'The zip is opened and the Markdown read (BEUK:mdimport) in the studio; the server never sees either.',
+  },
+  {
+    id: 'import.report.names-the-file',
+    title:
+      "The import report names the kind of file that was imported (never a Word file for Markdown, text or OpenDocument), and the summary's count of things left out is the list's",
+    kind: 'client-only',
+    reason: 'The import report (BEUK:importreport, BEUK:importcard) is drawn in the studio; the server never sees an import.',
+  },
+  {
     id: 'import.report.docx-honest',
     title:
       'Import report (Word): tables are reported as left out (words back on undo), footnotes link as notes, images land in the library with alt text, demoted headings, comments, tracked changes, headers, lists and converter warnings are all listed',
