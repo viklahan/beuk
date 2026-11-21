@@ -14,6 +14,9 @@ import { renderIssue, renderStory, renderWeeklyEmpty } from '../weekly/render.js
  *   GET /school/weekly/<n>             issue n
  *   GET /school/weekly/<n>/<story>     a story with a page of its own
  *   GET /school/weekly/<n>/img/<file>  a picture from issue n's folder
+ * An issue that was renumbered says so (issue.md `formerly`): a story's
+ * address under the old number leads to it under the new one, unless the
+ * issue now holding that number has a story of the same name.
  */
 const IMAGE_TYPES: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
 
@@ -54,7 +57,12 @@ export function weeklyRoutes(config: Config): Router {
     const w = getWeeklyContent();
     const issue = /^\d{1,4}$/.test(req.params.n) ? w.issueByNumber.get(Number(req.params.n)) : undefined;
     const story = issue?.storyBySlug.get(req.params.story);
-    if (!issue || !story || !story.hasPage) return notFound(res, 'There is no story at that address.');
+    if (!issue || !story || !story.hasPage) {
+      const n = /^\d{1,4}$/.test(req.params.n) ? Number(req.params.n) : NaN;
+      const moved = w.issues.find((i) => i.formerly === n && i.storyBySlug.get(req.params.story)?.hasPage);
+      if (moved) return res.redirect(301, `/school/weekly/${moved.number}/${req.params.story}`);
+      return notFound(res, 'There is no story at that address.');
+    }
     return send(res, renderStory(config, issue, story));
   });
 

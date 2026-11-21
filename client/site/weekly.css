@@ -100,3 +100,45 @@
 .paper .earlier{padding:10px 0 0}
 /* school.css gives School pull quotes an amber rule on the left; the paper's are ruled above and below. */
 .paper .pull{border-left:0;padding-left:0}
+
+/* A news issue (2026-11-20): the Beuk lockup and "The Weather Elsewhere"
+   in the ears, short stories printed whole under the lead, each with its
+   "Why it matters", then the takeaway box and the Sources foot. */
+.logo-ear{display:flex;flex-direction:column;align-items:center;justify-content:center;align-self:stretch}
+.logo-ear .mark{color:var(--news);margin-bottom:5px}
+.logo-ear .word{font-family:var(--book);font-weight:700;font-size:30px;line-height:1;letter-spacing:-.01em}
+.logo-ear .sub{font:800 9px var(--ui);letter-spacing:.3em;text-transform:uppercase;margin-top:5px}
+.ear.wx svg{display:block;margin:2px auto 4px;color:var(--news)}
+.ear.wx svg g:not([fill="none"]){fill:var(--paper)}
+.ear.wx .wx-note{display:block;font-style:italic;font-size:11.5px;color:var(--newsmute);margin-top:2px}
+/* On a narrow screen the School issue's ears fold away; a news issue keeps both, side by side under the title. */
+@media(max-width:820px){.mast.news{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.mast.news > div:nth-child(2){grid-column:1 / -1;order:-1}.mast.news .ear{display:block}.mast.news .logo-ear{display:flex}}
+.paper .mast-note{border-bottom:1px solid var(--hair);padding:5px 0;text-align:center;font:italic 14px var(--text);color:var(--newsmute)}
+.front.solo{grid-template-columns:minmax(0,1fr)}
+.front.solo .cols{column-count:3}
+@media(max-width:900px){.front.solo .cols{column-count:2}}
+@media(max-width:640px){.front.solo .cols{column-count:1}}
+.why{break-inside:avoid;border-left:2px solid var(--news);padding:2px 0 2px 12px;margin:10px 0 .9em;font-style:italic;font-size:.94em;line-height:1.5;color:var(--news2);text-align:left;text-indent:0;hyphens:manual}
+.why b{display:block;font:800 10.5px var(--ui);letter-spacing:.18em;text-transform:uppercase;font-style:normal;color:var(--news);margin-bottom:2px}
+.shorts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:3px double var(--news);margin-top:22px}
+.shorts .story{padding:16px 0 18px;margin:0;border-bottom:1px solid var(--hair);min-width:0}
+.shorts .story:nth-child(odd){padding-right:17px;border-right:1px solid var(--hair)}
+.shorts .story:nth-child(even){padding-left:17px}
+.shorts .story:last-child,.shorts .story:nth-last-child(2):nth-child(odd){border-bottom:0}
+.shorts .story > p:not(.kick){font-size:15.5px;line-height:1.5;text-align:justify;hyphens:auto;margin-bottom:.7em}
+.shorts .story .why{margin-bottom:0}
+@media(max-width:760px){.shorts{grid-template-columns:minmax(0,1fr)}.shorts .story:nth-child(n){padding:16px 0 18px;border-right:0;border-bottom:1px solid var(--hair)}.shorts .story:last-child{border-bottom:0}.shorts .story > p:not(.kick){text-align:left}}
+.takeaway{border:2px solid var(--news);margin-top:26px;position:relative}
+.paper .takeaway{padding:16px 18px 18px}
+.takeaway::before{content:"";position:absolute;inset:3px;border:1px solid var(--news);pointer-events:none}
+.takeaway h3{font:600 clamp(21px,2.6vw,28px)/1.08 var(--gothic);text-transform:uppercase;letter-spacing:.01em;text-align:center;margin-bottom:4px}
+.takeaway .sub{font:italic 14.5px var(--text);text-align:center;color:var(--news2);margin-bottom:10px}
+.takeaway ol{list-style:none;margin:0;padding:0;counter-reset:tk}
+.takeaway li{counter-increment:tk;display:flex;gap:12px;padding:8px 0;border-top:1px dotted var(--hair);font-size:15.5px;line-height:1.5}
+.takeaway li::before{content:counter(tk,upper-roman) ".";font:600 15px var(--gothic);min-width:34px;text-align:right}
+.sources{border-top:3px double var(--news);margin-top:26px}
+.paper .sources{padding:10px 0 0}
+.sources h4{font:800 10.5px var(--ui);letter-spacing:.2em;text-transform:uppercase;text-align:center;margin-bottom:8px}
+.sources ul{list-style:none;margin:0;padding:0;column-count:2;column-gap:30px;font-size:13.5px;line-height:1.5;color:var(--news2)}
+.sources li{break-inside:avoid;padding:2px 0;overflow-wrap:anywhere}
+@media(max-width:640px){.sources ul{column-count:1}}

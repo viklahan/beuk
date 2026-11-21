@@ -4520,10 +4520,31 @@ School home shows the latest issue as a band.
 - **An issue** is a folder, `content/weekly/en/NNN/`: `issue.md` (volume,
   week, banner + bannerDeck, the lead story's slug, the two ears) and one
   Markdown file per story with its `place` — `lead`, `front`, `brief`,
-  `fold` or `notice`. Pictures sit in the same folder and are served at
+  `fold`, `notice`, `short` or `takeaway`. Pictures sit in the same folder and are served at
   `/school/weekly/<n>/img/<file>`. Format: `src/weekly/content.ts`.
+- **A news issue** (2026-11-20) adds to the same folder format: stories
+  with `place: short` print whole on the front page under the lead, links
+  included, and have a page of their own; a paragraph beginning `:: ` is a
+  "Why it matters" box; one `place: takeaway` story is the numbered box
+  that closes the issue; `issue.md`'s body is the Sources foot (a `## `
+  heading, then `- ` lines). `weatherPlace` / `weatherReading` /
+  `weatherNote` / `weatherIcon` put the Beuk lockup in the left ear and
+  "The Weather Elsewhere" in the right. A reading is a real observation,
+  cited in the sources: `checkWeeklyContent` refuses a weather ear with no
+  sources, and the icon (an `.svg` in the folder) is set into the page only
+  after `inkSvg` finds nothing in it but plain shapes. An issue without a
+  reading keeps its forecast and late news. Optional `tagline`, `price`
+  and `note` set the line under the masthead, a dateline entry and the
+  line under the dateline.
+- **The shelf** runs in date order: No. 1 (19 Oct 2026), No. 2 (26 Oct),
+  No. 3 (the School issue, week of 2 Nov, first published as No. 1), No. 4
+  (9 Nov), No. 5 (16 Nov). A renumbered issue says `formerly: <n>`; its
+  stories' addresses under the old number redirect (301) to the new ones.
+  The next issue is the next folder; `/school/weekly` and the School
+  home's band follow the highest number without being told.
 - **Pages:** `/school/weekly` (latest), `/school/weekly/<n>`,
-  `/school/weekly/<n>/<story>`. Briefs and notices have no page of their own.
+  `/school/weekly/<n>/<story>`. Briefs, notices and takeaways have no page
+  of their own. Every issue closes on the same imprint.
 - **Printed edition:** the dateline links "This issue as a printed PDF"
   only when `<SCHOOL_MEDIA_DIR>/weekly/en/issue-NNN.pdf` is on the box.
   Producing that PDF with Beuk's own renderer is not built yet.
