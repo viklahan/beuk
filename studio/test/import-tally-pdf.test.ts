@@ -153,6 +153,53 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     await expect(importPdf('scan.pdf', await doc.save())).rejects.toThrow(t('pdf.scanned', { n: 1 }));
   }, 120_000);
 
+  /* Running heads (BEUK:importtally, gap B). Text repeated at a page's edge is not enough to make a running line: a
+     line of the story can repeat there (a book whose memos open with the same FROM and TO, a paragraph that closes
+     several pages the same way). What parts a running line from the story is the space around it: in the Meridian
+     PDFs every true head and page number stands 1.8 leads or more from the text, every line of the story taken for
+     one sat one line (1.0 to 1.1 leads) from the line beside it. */
+  const reportText = () => { lastModule!.api.irRenderReport(); return (document.body.textContent || '').replace(/\s+/g, ' '); };
+  it('a line of the story that repeats at the edge of several pages stays in the book: memo lines set smaller at the top, a paragraph\'s close at the foot', async () => {
+    const memo = (n: number): [string, number, number, number][] => [['FROM: THE GRAZ DESK', 60, 560, 8.5], ['TO: THE NORTHBRIDGE ARCHIVE', 60, 548, 8.5], ['RE: shipment ' + n + ' of the copper plates', 60, 536, 8.5]];
+    const body = (from: number, lines: string[]): [string, number, number, number][] => lines.map((s, i) => [s, 60, from - i * 16, 11] as [string, number, number, number]);
+    const filler = (k: number) => Array.from({ length: 24 }, (_, i) => 'Line ' + (i + 1) + ' of page ' + k + ' tells of the road.');
+    /* three pages: a memo, then text down to the foot, closing on the same two lines of the story */
+    const full = (k: number) => [...memo(k), ...body(470, filler(k)), ...body(470 - 24 * 16, ['Following the audit, the clerk reviewed the', 'ledger that every station had kept.'])];
+    /* four short pages (a chapter's last page, and so on): the text ends high */
+    const short = (k: number) => body(470, filler(k).slice(0, 8));
+    const first: [string, number, number, number][] = [['Chapter 1: The Memos', 60, 480, 20], ...body(430, filler(0).slice(0, 8))];
+    const ty = (await importPdf('memos.pdf', await makePdf([first, full(1), short(2), full(3), short(4), full(5), short(6), short(7)]))).tally as Tally & { words: { same: boolean; fileOnly: unknown[] } };
+    expect({ aside: ty.aside, unaccounted: ty.unaccounted, same: ty.words.same, fileOnly: ty.words.fileOnly, bookOnly: (ty.words as unknown as Rec).bookOnly }).toEqual({ aside: {}, unaccounted: 0, same: true, fileOnly: [], bookOnly: [] });
+    expect(ty.file).toBe(ty.book);
+  }, 120_000);
+
+  it('a true running head and page numbers are set aside, and the report lists each line with the pages that carried it', async () => {
+    const rep = await importPdf('salt-road.pdf', await makePdf(BOOK));
+    expect(rep.tally.aside).toEqual({ headers: 9, pageNumbers: 3 });
+    const said = reportText();
+    expect(said).toContain('“THE SALT ROAD” ×3');
+    expect(said).toContain('1, 2, 3… ×3');
+  }, 120_000);
+
+  it('a running head that is the chapter\'s title changes with the chapter: each is set aside within its chapter and listed', async () => {
+    const head = (s: string): [string, number, number, number] => [s, 180, 560, 8];
+    const text = (k: number, n: number) => Array.from({ length: n }, (_, i) => ['Line ' + (i + 1) + ' on page ' + k + ' of the long road.', 60, 430 - i * 16, 11] as [string, number, number, number]);
+    const pages = [
+      [['Chapter 1: Dawn', 60, 480, 20], ...text(1, 10), ['1', 205, 30, 9]],
+      [head('DAWN ON THE PANS'), ...text(2, 20), ['2', 205, 30, 9]],
+      [head('DAWN ON THE PANS'), ...text(3, 20), ['3', 205, 30, 9]],
+      [['Chapter 2: Dusk', 60, 480, 20], ...text(4, 10), ['4', 205, 30, 9]],
+      [head('DUSK OVER THE SALT'), ...text(5, 20), ['5', 205, 30, 9]],
+      [head('DUSK OVER THE SALT'), ...text(6, 20), ['6', 205, 30, 9]],
+    ] as [string, number, number, number][][];
+    const rep = await importPdf('two-chapters.pdf', await makePdf(pages));
+    const ty = rep.tally as Tally & { words: { same: boolean } };
+    expect({ aside: ty.aside, unaccounted: ty.unaccounted, same: ty.words.same }).toEqual({ aside: { headers: 16, pageNumbers: 6 }, unaccounted: 0, same: true });
+    const said = reportText();
+    expect(said).toContain('“DAWN ON THE PANS” ×2');
+    expect(said).toContain('“DUSK OVER THE SALT” ×2');
+  }, 120_000);
+
   it('a locked PDF is counted as the open file holds it, once its password is given', async () => {
     const m = make(env());
     const locked = (await m.api.lockPdfBytes(await makePdf(BOOK), 'lantern')) as Uint8Array;

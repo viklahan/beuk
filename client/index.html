@@ -46100,29 +46100,39 @@
           const cand = outs.filter((l) => fixed(l) || pageNumRe.test(l.text.trim()));
           if (!cand.length) return;
           const ls = []; p.cols.forEach((c) => c.forEach((l) => ls.push(l)));
-          cand.forEach((l) => {
+          /* BEUK:importtally — judged from the text outward, so a line is
+             measured against the nearest line that stays: a head stacked
+             over a page number stands apart from the text, and a line of
+             the story beside another repeated one does not. */
+          cand.sort((a, b) => (a.y < p.h / 2 ? b.y - a.y : a.y - b.y)).forEach((l) => {
             const top = l.y < p.h / 2;
             /* The nearest line toward the text that is not itself a
                running line. */
-            const inward = ls.filter((o) => cand.indexOf(o) < 0 && (top ? o.y > l.y : o.y < l.y));
+            const inward = ls.filter((o) => o !== l && o.drop !== "head" && (top ? o.y > l.y : o.y < l.y));
             const gap = inward.length ? Math.min.apply(null, inward.map((o) => Math.abs(o.y - l.y))) : 1e9;
             const myLead = lead * Math.max(l.size, body) / body;
             const outside = !banded || (top ? l.y < bandTop - lead * 0.25 : l.y > bandBot + lead * 0.25);
-            /* Set in the text's own size, it must stand apart from the
-               text; set smaller, its fixed place is enough. */
+            /* Whatever its size, it must stand apart from the text: a line
+               one line from its neighbour (a memo's FROM and TO set small,
+               the close of a paragraph that repeats) is the story's, however
+               often its words repeat in that place. Measured on the Meridian
+               PDFs: every true head and page number stood 1.8 leads or more
+               from the text, every such line of the story 1.0 to 1.1. Set in
+               the text's own size, it must also stand outside the text's band. */
             const bodySize = l.size >= body * 0.9;
-            if (bodySize && (gap <= myLead * 1.3 || !outside)) return;
+            if (gap <= myLead * 1.3 || (bodySize && !outside)) return;
             l.drop = "head"; st.heads++; st.headPages.add(p.n);
             const isNum = pageNumRe.test(l.text.trim());
             irAside(isNum ? "pageNumbers" : "headers", l.text); /* BEUK:importtally */
             const tk = isNum ? "#" : runKey(l.text);
-            if (!headTexts.has(tk)) headTexts.set(tk, { text: isNum ? "1, 2, 3…" : "“" + l.text.replace(/\s+/g, " ").trim() + "”", n: 0 });
-            headTexts.get(tk).n++;
+            if (!headTexts.has(tk)) headTexts.set(tk, { text: isNum ? "1, 2, 3…" : "“" + l.text.replace(/\s+/g, " ").trim() + "”", pages: new Set() });
+            headTexts.get(tk).pages.add(p.n);
           });
         });
-        /* What was left out, each distinct line with its count, so a line
-           of the story taken for a running head shows. */
-        st.headSample = Array.from(headTexts.values()).sort((a, b) => b.n - a.n).map((e) => e.text + " ×" + e.n).join(" · ");
+        /* What was left out, each distinct line with the number of pages
+           that carried it, so a line of the story taken for a running head
+           shows — all of them, never cut short. */
+        st.headSample = Array.from(headTexts.values()).sort((a, b) => b.pages.size - a.pages.size).map((e) => e.text + " ×" + e.pages.size).join(" · ");
         /* 4. Headings. */
         /* BEUK:chapfix — a number in words may be hyphenated ("CHAPTER TWENTY-ONE") */
         const labelRe = /^(?:chapter|part|book|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)\s+[\p{L}\p{N}]+(?:[-‐–][\p{L}\p{N}]+)*\.?$/iu;
@@ -46743,7 +46753,7 @@
         if (st.joined || st.kept) add({ kind: "pdfHyphens", group: "structure", data: { n: st.joined, kept: st.kept } });
         if (st.columns.length) add({ kind: "pdfColumns", group: "structure", before: pdfPageList(st.columns), data: { n: st.columns.length } });
         if (st.rtlPages.length) add({ kind: "pdfRtl", group: "structure", before: pdfPageList(st.rtlPages), data: { n: st.rtlPages.length } });
-        if (st.heads) add({ kind: "pdfHeads", group: "dropped", before: irClip(st.headSample, 320), data: { n: st.headPages } });
+        if (st.heads) add({ kind: "pdfHeads", group: "dropped", before: st.headSample, data: { n: st.headPages } }); /* every line, unclipped: what was left out of the writer's pages is listed whole */
         if (st.noText.length) add({ kind: "pdfNoText", group: "dropped", before: pdfPageList(st.noText), data: { n: st.noText.length } });
         /* Glyphs with no letter behind them: a few are noise; many mean
            the text layer itself cannot be trusted. */
