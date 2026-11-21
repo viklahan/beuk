@@ -3315,6 +3315,41 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
+    id: 'import.rtf.utf8-in-ansi',
+    title:
+      "An RTF that declares Windows-1252 but writes UTF-8 bytes raw is read as UTF-8 there and the report says so; a true Windows-1252 file stays Windows-1252",
+    kind: 'client-only',
+    reason: "The RTF reader (BEUK:rtfimport) runs in the studio; the server never sees the file.",
+  },
+  {
+    id: 'import.html.flex-row-boxes',
+    title:
+      "A web page's row its own stylesheet lays out as boxes (display: flex or grid) is read box by box, as an EPUB's is, never as one word",
+    kind: 'client-only',
+    reason: "The web-page reader (BEUK:docsimport) runs in the studio; the server never sees the file.",
+  },
+  {
+    id: 'import.typography.codes-keep-hyphens',
+    title:
+      "The typographic pass sets an en dash in a range of two numbers only: codes, dates and ISBNs keep their hyphens",
+    kind: 'client-only',
+    reason: "The typographic pass (beautifyText) runs in the studio; the server never sees the import.",
+  },
+  {
+    id: 'import.txt.heading-frames',
+    title:
+      "A text file's typed rules framing a chapter's heading are the heading's frame: taken out and reported, never left as a line of rule characters or a scene break",
+    kind: 'client-only',
+    reason: 'The text reader (BEUK:mdimport) runs in the studio; the server never sees the file.',
+  },
+  {
+    id: 'import.tally.rtf-rows',
+    title:
+      "The import tally reads an RTF's headings (its style sheet's heading styles, its outline levels) and its tables, as it reads a Word file's",
+    kind: 'client-only',
+    reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
+  },
+  {
     id: 'import.html.quote-attribution',
     title: "A web page's quotation keeps every word: its paragraphs, the attribution in a <footer> or <cite>, and words set loose beside them",
     kind: 'client-only',
