@@ -294,6 +294,12 @@ export function emptyAfterSample(c: Closure, ydoc: Y.Doc): Rec {
   return withHistory(c, asOpened(canonicalOrder(c.api.buildEmptyBook())), history);
 }
 
+/** The first book of a desk that has none (a first visit): 1.0's empty book, as Start a new book leaves it, with no
+ *  History because there is nothing behind it. */
+export function firstBookArrival(c: Closure): Rec {
+  return withHistory(c, asOpened(canonicalOrder(c.api.buildEmptyBook())), []);
+}
+
 /** 1.0's startNewBookNow, as a book document: a NAMED snapshot "Before starting a new book" (newbook.snap), then the empty
  *  book with the History kept. */
 export function newBookArrival(c: Closure, ydoc: Y.Doc, snapName: string): { doc: Rec; snap: HistoryEntry } {

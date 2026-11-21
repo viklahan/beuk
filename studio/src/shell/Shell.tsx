@@ -29,6 +29,7 @@ import { PrintModals } from '../print/PrintModals';
 import { IMPORT_BUILT_EVENT, IMPORT_SLOT, ImportHost, importBuilt } from '../import/ImportHost';
 import { exportEnv } from '../closure/index';
 import { Icon } from './Icon';
+import { BookTitle } from './BookTitle';
 import { LocalPill } from '../book/LocalPill';
 import { CLOUD_SLOTS, CloudHost, CloudSlot } from '../cloud/CloudHost';
 import { onAuthChange } from '../cloud/cloud';
@@ -184,9 +185,7 @@ export function Shell() {
         </div>
         <div className="brand-div" aria-hidden="true" />
         <div className="book-id">
-          <div className="book-title" id="projectTitleDisplay">
-            {bk.title || t('misc.untitledBook')}
-          </div>
+          <BookTitle />
           <div className="book-author" id="projectAuthorDisplay">
             {bk.author}
           </div>

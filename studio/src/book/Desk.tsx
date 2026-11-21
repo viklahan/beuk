@@ -6,6 +6,7 @@ import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
 import { useBook } from './BookProvider';
 import { SecTypeControl } from '../structure/StructureUi';
+import { useStartFirstBook } from '../sample/startFirst';
 
 /* The writing desk (the centre pane's page).
    - Empty desk: 1.0's "Open a backup…" button, and the page takes a
@@ -29,6 +30,19 @@ export function Desk() {
   const bk = useBook();
   const input = useRef<HTMLInputElement>(null);
   const [dropping, setDropping] = useState(false);
+  const startFirst = useStartFirstBook();
+  /** The first book, then the cursor in its first chapter (the editor mounts a moment after the book opens). */
+  const startWriting = async () => {
+    if (!(await startFirst())) return;
+    for (let i = 0; i < 40; i++) {
+      // the writer has already gone somewhere else (the book's name, a menu): leave the cursor where they put it
+      const at = document.activeElement;
+      if (at && at !== document.body && at.id !== 'btnStartWriting') return;
+      const ed = document.querySelector<HTMLElement>('#manuscript [contenteditable="true"]');
+      if (ed) return ed.focus();
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  };
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
@@ -51,7 +65,14 @@ export function Desk() {
     return (
       <div className={'ms-page desk-empty' + (dropping ? ' drop-on' : '')} id="manuscript" dir="ltr" lang="en" {...dragProps}>
         <p className="ms-placeholder" lang={lang}>
-          {t('editor.placeholder')}
+          {bk.phase === 'empty' ? (
+            // a first visit: the invitation is the way in. Pressing it opens the first book and puts the cursor in it
+            <button type="button" className="ms-start" id="btnStartWriting" onClick={() => void startWriting()}>
+              {t('editor.placeholder')}
+            </button>
+          ) : (
+            t('editor.placeholder')
+          )}
         </p>
         {bk.phase === 'empty' && (
           <div className="desk-actions" lang={lang}>

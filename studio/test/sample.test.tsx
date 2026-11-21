@@ -295,11 +295,91 @@ const title = () => document.getElementById('projectTitleDisplay')!.textContent;
 const words = () => document.getElementById('statWords')!.textContent;
 
 describe('the sample bar in the studio', () => {
+  it("a first visit: the page’s own invitation opens the first book, and the name in the top bar renames it", async () => {
+    await studio();
+    await waitFor(() => expect(document.getElementById('btnStartWriting')).not.toBeNull(), { timeout: 10_000 });
+    await act(async () => {
+      fireEvent.click(document.getElementById('btnStartWriting')!);
+    });
+    await waitFor(() => expect(document.querySelector('.desk-empty')).toBeNull(), { timeout: 20_000 });
+    expect(title()).toBe(E['misc.untitledBook']);
+    // the first chapter's editor is on the page, with the cursor in it: the writer can type at once
+    await waitFor(() => expect(document.querySelector('#manuscript [contenteditable="true"]')).not.toBeNull(), { timeout: 20_000 });
+    await waitFor(() => expect(document.activeElement && document.activeElement.closest('#manuscript')).not.toBeNull(), { timeout: 10_000 });
+    // the name is a button; pressed, it is a field labelled as Project Settings labels it
+    const name = document.getElementById('projectTitleDisplay')!;
+    expect(name.tagName).toBe('BUTTON');
+    await act(async () => {
+      fireEvent.click(name);
+    });
+    await waitFor(() => expect(document.getElementById('projectTitleInput')).not.toBeNull(), { timeout: 10_000 });
+    const field = document.getElementById('projectTitleInput') as HTMLInputElement;
+    expect(field.getAttribute('aria-label')).toBe(E['set.bookTitle']);
+    expect(field.value).toBe('');
+    await act(async () => {
+      fireEvent.change(field, { target: { value: '  The Quiet Harbour  ' } });
+    });
+    await act(async () => {
+      fireEvent.blur(document.getElementById('projectTitleInput')!);
+    });
+    await waitFor(() => expect(title()).toBe('The Quiet Harbour'));
+    let out = await exported();
+    expect((out.meta as Rec).title).toBe('The Quiet Harbour');
+    expect((out.meta as Rec).titleSource).toBe('writer');
+    // Escape leaves the name as it was
+    await act(async () => {
+      fireEvent.click(document.getElementById('projectTitleDisplay')!);
+    });
+    await waitFor(() => expect(document.getElementById('projectTitleInput')).not.toBeNull(), { timeout: 10_000 });
+    const again = document.getElementById('projectTitleInput') as HTMLInputElement;
+    expect(again.value).toBe('The Quiet Harbour');
+    await act(async () => {
+      fireEvent.change(again, { target: { value: 'Thrown Away' } });
+    });
+    await act(async () => {
+      fireEvent.keyDown(document.getElementById('projectTitleInput')!, { key: 'Escape' });
+    });
+    await waitFor(() => expect(document.getElementById('projectTitleInput')).toBeNull());
+    expect(title()).toBe('The Quiet Harbour');
+    // an emptied name is nobody's: the placeholder shows and the writer's mark goes
+    await act(async () => {
+      fireEvent.click(document.getElementById('projectTitleDisplay')!);
+    });
+    await waitFor(() => expect(document.getElementById('projectTitleInput')).not.toBeNull(), { timeout: 10_000 });
+    const third = document.getElementById('projectTitleInput') as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(third, { target: { value: '' } });
+    });
+    await act(async () => {
+      fireEvent.blur(document.getElementById('projectTitleInput')!);
+    });
+    await waitFor(() => expect(title()).toBe(E['misc.untitledBook']));
+    out = await exported();
+    expect((out.meta as Rec).titleSource).toBeUndefined();
+  }, 120_000);
+
   it('sample.toggle.empty-to-sample-to-empty, idempotent load, Remove leaves nothing (device half)', async () => {
     await studio();
     // the empty desk: Load says the bundled count, and lands without asking
     expect(btn().textContent).toBe(E['side.sampleLoad']!.replace('{n}', c.api.SAMPLE_WORDS.toLocaleString('en')));
-    expect(document.getElementById('btnNewBook')).toBeNull();
+    // Start a new book is always there. A first visit has no book on the device: the page invites and cannot be typed on
+    expect(document.getElementById('btnNewBook')).not.toBeNull();
+    expect(document.querySelector('.desk-empty')).not.toBeNull();
+    expect(document.getElementById('btnStartWriting')!.textContent).toBe(E['editor.placeholder']);
+    // pressing it opens the first book, without asking
+    await act(async () => {
+      fireEvent.click(document.getElementById('btnNewBook')!);
+    });
+    await waitFor(() => expect(document.querySelector('.desk-empty')).toBeNull(), { timeout: 20_000 });
+    expect(document.getElementById('modalConfirm')).toBeNull();
+    expect(document.getElementById('btnStartWriting')).toBeNull();
+    // pressed again over that empty book, it changes nothing and says the desk is ready
+    await act(async () => {
+      fireEvent.click(document.getElementById('btnNewBook')!);
+    });
+    await waitFor(() => expect(document.getElementById('toasts')!.textContent).toContain(E['newbook.already']), { timeout: 10_000 });
+    expect(document.getElementById('modalConfirm')).toBeNull(); // nothing to ask about
+    expect(btn().textContent).toBe(E['side.sampleLoad']!.replace('{n}', c.api.SAMPLE_WORDS.toLocaleString('en'))); // and nothing changed
     await act(async () => {
       fireEvent.click(btn());
     });
@@ -309,7 +389,7 @@ describe('the sample bar in the studio', () => {
     expect(btn().textContent).toBe(E['side.sampleRemove']);
     expect(document.getElementById('sampleNote')!.textContent).toBe(E['side.sampleNoteLoaded']!.replace('{n}', c.api.SAMPLE_WORDS.toLocaleString('en')));
     expect(document.getElementById('toasts')!.textContent).toContain('Sample story loaded');
-    expect(document.getElementById('btnNewBook')).toBeNull(); // the sample keeps its own Remove
+    expect(document.getElementById('btnNewBook')).not.toBeNull(); // there over the sample too: pressing it removes the sample
     expect(sampleRecord(openYdoc())?.sig).toBeTruthy(); // the record lives in the book's own Y.Doc
     expect(Object.keys(localStorage).some((k) => k.includes('sample'))).toBe(false);
     // the pictures arrive and fill in; the sample stays untouched
@@ -451,8 +531,9 @@ describe('the sample bar in the studio', () => {
     await act(async () => {
       fireEvent.click(document.getElementById('btnConfirmYes')!);
     });
-    await waitFor(() => expect(document.getElementById('btnNewBook')).not.toBeNull(), { timeout: 20_000 });
-    expect(btn().textContent).toContain('Load the sample story'); // a backup over the sample: the sample flag goes (1.0)
+    // a backup over the sample: the sample flag goes (1.0). New book is always there now, so the bar's own label is the signal
+    await waitFor(() => expect(btn().textContent).toContain('Load the sample story'), { timeout: 20_000 });
+    expect(document.getElementById('btnNewBook')).not.toBeNull();
     await act(async () => {
       fireEvent.click(document.getElementById('btnNewBook')!);
     });
@@ -468,6 +549,6 @@ describe('the sample bar in the studio', () => {
     await waitFor(() => expect(words()).toBe('0'));
     const out = await exported();
     expect((out.history as Rec[])[0]!.name).toBe(E['newbook.snap']);
-    expect(document.getElementById('btnNewBook')).toBeNull(); // an empty desk has nothing to clear
+    expect(document.getElementById('btnNewBook')).not.toBeNull(); // still there on the empty desk
   }, 120_000);
 });

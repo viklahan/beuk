@@ -41,6 +41,22 @@ input, select, textarea { font-family: inherit; color: var(--ink); }
   font-family: "EB Garamond", Georgia, serif; font-size: 19px; font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.15;
 }
+/* the name is also the way to change it (src/shell/BookTitle.tsx): a plain button until pressed, then a field */
+#topbar .book-title-btn {
+  display: flex; align-items: center; gap: 7px; max-width: 100%; min-width: 0;
+  border: 0; background: none; color: inherit; padding: 0; margin: 0; text-align: start; cursor: text; border-radius: 4px;
+}
+#topbar .book-title-btn .book-title-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#topbar .book-title-btn svg { flex: 0 0 auto; width: 14px; height: 14px; color: var(--muted); opacity: .55; transition: opacity .15s; }
+#topbar .book-title-btn:hover svg, #topbar .book-title-btn:focus-visible svg { opacity: 1; }
+#topbar .book-title-btn:hover .book-title-text { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; }
+#topbar .book-title-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+#topbar .book-title-input {
+  display: block; width: 100%; max-width: 34em; box-sizing: border-box;
+  border: 1px solid var(--line-2); border-radius: 6px; background: var(--panel-2); color: var(--ink);
+  padding: 2px 8px; margin: -3px 0 -3px -9px; overflow: visible; text-overflow: clip;
+}
+#topbar .book-title-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 #topbar .book-author { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #topbar .book-author:empty { display: none; }
 .tb-btn {
@@ -191,6 +207,13 @@ body.zen .pane-fold { display: none; }
   font-family: "EB Garamond", Georgia, serif; font-size: 19px; line-height: 1.6; color: var(--ink);
 }
 .ms-page .ms-placeholder { color: var(--muted); font-style: italic; margin: 0; }
+/* a first visit: "Start writing…" is a button that opens the first book (src/sample/startFirst.ts) */
+.ms-page .ms-start {
+  display: block; width: 100%; min-height: 7em; border: 0; background: none; padding: 0; margin: 0;
+  font: inherit; color: inherit; font-style: inherit; text-align: start; vertical-align: top; cursor: text; border-radius: 4px;
+}
+.ms-page .ms-start:hover { color: var(--ink); }
+.ms-page .ms-start:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 /* The empty desk: 1.0's "Open a backup…" button; the page takes a dropped backup file. */
 .desk-actions { margin-block-start: 22px; font-family: var(--ui-font, inherit); }
 .desk-actions .tb-btn { font-family: inherit; }
