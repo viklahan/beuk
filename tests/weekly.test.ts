@@ -3,9 +3,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { getSchoolContent } from '../src/school/content.js';
-import { STAND_SIZE, weeklyBand } from '../src/school/render.js';
 import { checkWeeklyContent, inkSvg, loadWeeklyContent, parseStory, type Issue, type WeeklyContent } from '../src/weekly/content.js';
-import { renderIssue, weekLabel } from '../src/weekly/render.js';
+import { renderIssue, renderStand, TILE_INSIDE, weekLabel } from '../src/weekly/render.js';
 import { escapeHtml } from '../src/warmth/markdown.js';
 import { createTestDb, startTestServer } from './helpers.js';
 
@@ -120,10 +119,10 @@ test('weekly pages: front page, a story, a picture; briefs have no page; unknown
   const db = await createTestDb();
   const s = await startTestServer(db);
   try {
-    const front = await getPage(s.base, '/school/weekly');
+    // /school/weekly is the stand (V, 2026-11-21); the latest issue, No. 5 today, is at its own number.
+    const front = await getPage(s.base, '/school/weekly/5');
     assert.equal(front.status, 200);
     assert.match(front.html, /<h1>Beuk Weekly<\/h1>/);
-    // /school/weekly is the latest issue: No. 5 today.
     assert.match(front.html, /class="banner" href="\/school\/weekly\/5\/royalty-math">Amazon Rewires the Royalty Math<\/a>/);
     assert.match(front.html, /<span>Vol\. I · No\. 5<\/span>/);
     assert.match(front.html, /Week of 16 November 2026/);
@@ -198,17 +197,19 @@ test('weekly pages: front page, a story, a picture; briefs have no page; unknown
       assert.match(html, /<footer class="imprint">\s*<span>Printed and published by Beuk<\/span>\s*<span>Free every week<\/span>\s*<span>Printed on recycled electrons<\/span>\s*<\/footer>/);
     }
 
-    // The School home points at this week's paper; the courses tab is current there.
+    // Courses shows courses only (V, 2026-11-21): the Weekly is its own tab, and nothing of it stands on the School home.
     const school = await getPage(s.base, '/school');
-    assert.match(school.html, /class="weekly-band" href="\/school\/weekly"/);
-    assert.match(school.html, /<span class="wb-no">No\. 5 · out now<\/span>\s*<span class="wb-head">Amazon Rewires the Royalty Math<\/span>/, 'the band follows the latest issue');
     assert.match(school.html, /<a href="\/school" aria-current="page">Courses<\/a>/);
+    assert.match(school.html, /<a href="\/school\/weekly">Beuk Weekly<\/a>/, 'the tab is the way to the paper');
+    const schoolMain = school.html.slice(school.html.indexOf('<main'), school.html.indexOf('</main>'));
+    assert.ok(!schoolMain.includes('/school/weekly'), 'no Weekly band, stand or link among the courses');
+    assert.ok(!/weekly-band|weekly-stand|fonts-weekly/.test(school.html), 'and none of its styles or faces are loaded there');
 
     // A printed edition on the server turns the link on.
     const dir = path.join(s.config.schoolMediaDir, 'weekly', 'en');
     mkdirSync(dir, { recursive: true });
     writeFileSync(path.join(dir, 'issue-005.pdf'), '%PDF-1.7');
-    assert.match((await getPage(s.base, '/school/weekly')).html, /href="\/school\/media\/weekly\/en\/issue-005\.pdf">This issue as a printed PDF/);
+    assert.match((await getPage(s.base, '/school/weekly/5')).html, /href="\/school\/media\/weekly\/en\/issue-005\.pdf">This issue as a printed PDF/);
     assert.ok(!(await getPage(s.base, '/school/weekly/3')).html.includes('printed PDF'), 'one issue\'s PDF is not another\'s');
 
     const xml = await (await fetch(`${s.base}/sitemap.xml`)).text();
@@ -237,15 +238,15 @@ test('weekly navigation: every issue page has the issue bar under the dateline a
   const db = await createTestDb();
   const s = await startTestServer(db);
   try {
-    for (const path of ['/school/weekly', ...w.issues.map((i) => `/school/weekly/${i.number}`)]) {
+    for (const path of w.issues.map((i) => `/school/weekly/${i.number}`)) {
       const html = (await getPage(s.base, path)).html;
-      const n = path === '/school/weekly' ? newest : Number(path.split('/').pop());
+      const n = Number(path.split('/').pop());
       // The bar sits right after the dateline, before the banner.
       assert.match(html, /<\/div>\s*<nav class="issue-bar" aria-label="Beuk Weekly issues">/, `${path}: the bar follows the dateline`);
       assert.ok(html.indexOf('class="issue-bar"') < html.indexOf('class="banner"'), `${path}: the bar is above the banner`);
       const bar = between(html, '<nav class="issue-bar"', '</nav>');
       assert.ok(bar.includes(`<span class="ib-pos"><a href="/school/weekly/${n}" aria-current="page">No. ${n}</a> of ${total}</span>`), `${path}: No. ${n} of ${total}, current`);
-      assert.ok(bar.includes('<a class="ib-all" href="#issues">All issues</a>'));
+      assert.ok(bar.includes('<a class="ib-all" href="/school/weekly">All issues</a>'), `${path}: "All issues" is the stand`);
       assert.equal(bar.includes('rel="prev"'), n > 1, `${path}: a previous link exactly when there is an earlier issue`);
       if (n > 1) assert.ok(bar.includes(`<a class="ib-prev" href="/school/weekly/${n - 1}" rel="prev">‹ No. ${n - 1}</a>`));
       assert.equal(bar.includes('rel="next"'), n < newest, `${path}: a next link exactly when there is a later issue`);
@@ -274,7 +275,7 @@ test('weekly navigation: every issue page has the issue bar under the dateline a
   }
 });
 
-test('weekly navigation degrades: one issue has no bar and no shelf; seven issues fill the shelf and the School stand hands over to "All issues"', async () => {
+test('weekly navigation degrades: one issue has no bar and no shelf and stands alone on the stand; seven issues fill the shelf and the stand', async () => {
   const { testConfig } = await import('./helpers.js');
   const config = testConfig();
   const w = loadWeeklyContent('en');
@@ -285,9 +286,10 @@ test('weekly navigation degrades: one issue has no bar and no shelf; seven issue
   assert.match(page, /<span>Vol\. I · No\. 1<\/span>/, 'the dateline still gives the number');
   assert.ok(!page.includes('issue-bar'), 'a single issue has nowhere to go: no bar');
   assert.ok(!page.includes('id="issues"'), 'and no shelf of one');
-  const soloBand = weeklyBand(solo);
-  assert.match(soloBand, /class="weekly-band" href="\/school\/weekly"/);
-  assert.ok(!soloBand.includes('weekly-stand'), 'the School home shows the band alone');
+  const soloStand = renderStand(config, solo);
+  assert.equal(soloStand.split('<li class="tile').length - 1, 1, 'one issue, one tile');
+  assert.match(soloStand, /<li class="tile latest">\s*<a href="\/school\/weekly\/1">/, 'and it is the large one');
+  assert.match(soloStand, /<span>One issue on the stand<\/span>/);
 
   // Seven issues: the five real ones and two more, renumbered copies.
   const seven = shelfOf([...w.issues, { ...w.issueByNumber.get(4)!, number: 6 }, { ...w.issueByNumber.get(5)!, number: 7 }]);
@@ -298,12 +300,54 @@ test('weekly navigation degrades: one issue has no bar and no shelf; seven issue
   assert.ok(bar.includes('href="/school/weekly/5" rel="next">No. 5 ›<'));
   assert.ok(bar.includes('<a class="ib-new" href="/school/weekly/7">Newest issue: No. 7 ›</a>'));
   assert.equal(between(four, '<section class="issues"', '</section>').split('<li').length - 1, 7, 'the shelf at the foot lists all seven');
-  const band = weeklyBand(seven);
-  const stand = between(band, '<nav class="weekly-stand"', '</nav>');
-  assert.match(stand, /<p class="ws-count">Seven issues on the stand<\/p>/);
-  assert.deepEqual([...stand.matchAll(/<li><a href="\/school\/weekly\/(\d+)">/g)].map((m) => Number(m[1])), [7, 6, 5, 4, 3, 2].slice(0, STAND_SIZE), 'the newest few');
-  assert.match(stand, /<a class="ws-all" href="\/school\/weekly#issues">All issues →<\/a>/, 'the rest are one click away');
-  assert.ok(!weeklyBand(w).includes('ws-all'), 'with every issue on the stand, no "All issues" there');
+  const stand = between(renderStand(config, seven), '<ol class="stand"', '</ol>');
+  assert.deepEqual([...stand.matchAll(/<li class="tile(?: latest)?">\s*<a href="\/school\/weekly\/(\d+)">/g)].map((m) => Number(m[1])), [7, 6, 5, 4, 3, 2, 1], 'every issue has a tile, newest first: none is left for another page');
+  assert.match(renderStand(config, seven), /<span>Seven issues on the stand<\/span>/);
+});
+
+/* The stand (V, 2026-11-21): "Have all the weeklies on weekly page … displayed in a tile. The latest edition should be
+   in a bigger tile in the center, rest of the editions in small, when each clicks open into full article." */
+test('the stand: /school/weekly shows every issue as a tile, the newest first and large, each tile one link to its issue, all of it from the issue files', async () => {
+  const w = loadWeeklyContent('en');
+  const newest = w.latest!;
+  const db = await createTestDb();
+  const s = await startTestServer(db);
+  try {
+    const page = await getPage(s.base, '/school/weekly');
+    assert.equal(page.status, 200);
+    assert.equal(page.html.split('<h1>').length - 1, 1);
+    assert.match(page.html, /<h1>Beuk Weekly<\/h1>/);
+    assert.match(page.html, /<a href="\/school\/weekly" aria-current="page">Beuk Weekly<\/a>/, 'the Beuk Weekly tab is current');
+    assert.match(page.html, /<span>Five issues on the stand<\/span>/);
+    assert.ok(!page.html.includes('class="banner"') && !page.html.includes('issue-bar'), 'it is the stand, not an issue');
+
+    const stand = between(page.html, '<ol class="stand"', '</ol>');
+    const tiles = stand.split('<li class="tile').slice(1);
+    assert.equal(tiles.length, w.issues.length, 'a tile for every issue');
+    const order = tiles.map((t) => Number(/<a href="\/school\/weekly\/(\d+)">/.exec(t)![1]));
+    assert.deepEqual(order, w.issues.map((i) => i.number).reverse(), 'newest first');
+    assert.deepEqual(tiles.map((t) => t.startsWith(' latest">')), order.map((n) => n === newest.number), 'only the newest is the large tile, and it comes first');
+    for (const t of tiles) {
+      const n = Number(/<a href="\/school\/weekly\/(\d+)">/.exec(t)![1]);
+      const i = w.issueByNumber.get(n)!;
+      assert.equal(t.split('<a ').length - 1, 1, `No. ${n}: the tile is one link`);
+      assert.equal(t.split('</a>').length - 1, 1);
+      assert.ok(t.includes(`<span>No. ${n}${n === newest.number ? ' · Latest issue' : ''}</span><span>${weekLabel(i.week)}</span>`), `No. ${n}: its number and week`);
+      assert.ok(t.includes(`<h2 class="t-banner">${escapeHtml(i.banner)}</h2>`), `No. ${n}: its banner headline`);
+      assert.ok(t.includes(`<p class="t-deck">${escapeHtml(i.bannerDeck)}</p>`), `No. ${n}: its deck`);
+      const opening = i.lead.blocks.find((b) => b.kind === 'p');
+      if (opening && opening.kind === 'p') assert.ok(t.includes(`<p class="t-lead">${escapeHtml(opening.text)}</p>`), `No. ${n}: the lead's opening`);
+      assert.equal(t.includes('class="t-inside"'), n === newest.number, `No. ${n}: the other headlines only on the large tile`);
+      assert.equal(t.includes(`<span class="t-open">Read No. ${n}</span>`), n === newest.number);
+    }
+    const inside = [...newest.front, ...newest.shorts, ...newest.fold].slice(0, TILE_INSIDE);
+    assert.ok(inside.length > 0, 'the newest issue has other stories to name');
+    assert.ok(tiles[0].includes(`<ul>${inside.map((x) => `<li>${escapeHtml(x.title)}</li>`).join('')}</ul>`), 'their titles, in the issue\'s own order');
+    // every tile's issue opens
+    for (const n of order) assert.equal((await getPage(s.base, `/school/weekly/${n}`)).status, 200);
+  } finally {
+    await s.close();
+  }
 });
 
 test('weekly.css only uses the weights fonts-weekly.css ships (no faked bold)', () => {

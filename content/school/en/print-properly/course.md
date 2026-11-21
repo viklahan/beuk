@@ -1,6 +1,7 @@
 ---
 title: Print, properly
 blurb: From manuscript to a paperback interior a printer will take: trim, margins, running heads, bleed, and the file you upload.
+cover: /site/school/print-properly.webp
 order: 2
 stages: [ship]
 setup: sample

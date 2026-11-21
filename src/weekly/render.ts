@@ -11,7 +11,7 @@ import type { Issue, Story, StoryBlock, WeeklyContent } from './content.js';
  * after the 1920s broadsheets chosen on 2026-10-28. Styles:
  * client/site/weekly.css; faces: /assets/fonts/fonts-weekly.css.
  *
- *   /school/weekly                    the latest issue's front page
+ *   /school/weekly                    the stand: every issue as a front-page tile
  *   /school/weekly/<n>                issue n's front page
  *   /school/weekly/<n>/<story>        one story
  *   /school/weekly/<n>/img/<file>     a picture from the issue's folder
@@ -20,7 +20,7 @@ import type { Issue, Story, StoryBlock, WeeklyContent } from './content.js';
  * left ear (the site header's own mark and wordmark) and "The Weather
  * Elsewhere" in its right; one that does not keeps the forecast and late
  * news. Under the dateline rule, the issue bar: previous, next, "No. n of
- * N", "All issues" and, on a back issue, the newest. Short stories print
+ * N", "All issues" (the stand) and, on a back issue, the newest. Short stories print
  * whole under the lead, then the takeaway box, the Sources foot and the
  * shelf of all issues (#issues). Every issue closes on the same imprint.
  *
@@ -68,7 +68,7 @@ function blocksHtml(blocks: StoryBlock[], dropFirst: boolean): string {
 /**
  * The issue bar, under the dateline rule: the previous and next issue when
  * there is one, where this issue stands ("No. 3 of 5"), "All issues" (the
- * shelf at the foot), and on a back issue the newest one. Numbers come
+ * stand, /school/weekly), and on a back issue the newest one. Numbers come
  * from the issue folders, never typed.
  */
 function issueBar(weekly: WeeklyContent, issue: Issue): string {
@@ -80,7 +80,7 @@ function issueBar(weekly: WeeklyContent, issue: Issue): string {
   const parts = [
     prev ? `<a class="ib-prev" href="${issueUrl(prev.number)}" rel="prev">‹ No. ${prev.number}</a>` : '',
     `<span class="ib-pos"><a href="${issueUrl(issue.number)}" aria-current="page">No. ${issue.number}</a> of ${weekly.issues.length}</span>`,
-    '<a class="ib-all" href="#issues">All issues</a>',
+    '<a class="ib-all" href="/school/weekly">All issues</a>',
     // On the issue just before the newest, "next" and "newest" are one link, said once.
     next && next.number !== newest.number ? `<a class="ib-next" href="${issueUrl(next.number)}" rel="next">No. ${next.number} ›</a>` : '',
     newest.number !== issue.number
@@ -229,6 +229,85 @@ export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue)
     title: `Beuk Weekly, No. ${issue.number} — ${issue.banner}`,
     description: `${issue.banner}. ${issue.bannerDeck}. Beuk Weekly, ${weekLabel(issue.week)}.`,
     path: issueUrl(issue.number),
+    body,
+    tab: 'weekly',
+    css: CSS,
+    bodyClass: 'weekly',
+  });
+}
+
+const COUNT_WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+/** How many other headlines the newest issue's tile names. */
+export const TILE_INSIDE = 4;
+
+/**
+ * One issue on the stand, as a small front page: the nameplate, the number
+ * and week, the banner headline and its deck. The whole tile is one link to
+ * the issue, then the lead's opening paragraph for as far as the tile runs.
+ * The newest issue's tile is the large one: it also carries the lead's
+ * picture when the issue has one and the other headlines of the issue.
+ * Everything comes from the issue files.
+ */
+function standTile(issue: Issue, latest: boolean): string {
+  const lead = issue.lead;
+  const opening = lead.blocks.find((b) => b.kind === 'p');
+  const inside = [...issue.front, ...issue.shorts, ...issue.fold].slice(0, TILE_INSIDE);
+  const pic = lead.image ? `
+              <img class="t-pic" src="${esc(imageUrl(lead))}" alt="" loading="lazy" />` : '';
+  const more = latest
+    ? `${inside.length ? `
+              <div class="t-inside"><p>Also in this issue</p><ul>${inside.map((s) => `<li>${esc(s.title)}</li>`).join('')}</ul></div>` : ''}
+              <span class="t-open">Read No. ${issue.number}</span>`
+    : '';
+  return `<li class="tile${latest ? ' latest' : ''}">
+            <a href="${issueUrl(issue.number)}">
+              <span class="t-plate">Beuk Weekly</span>
+              <span class="t-date"><span>No. ${issue.number}${latest ? ' · Latest issue' : ''}</span><span>${esc(weekLabel(issue.week))}</span></span>
+              <h2 class="t-banner">${esc(issue.banner)}</h2>
+              <p class="t-deck">${esc(issue.bannerDeck)}</p>${latest && lead.image ? pic : ''}${opening && opening.kind === 'p' ? `
+              <p class="t-lead">${esc(opening.text)}</p>` : ''}${more}
+            </a>
+          </li>`;
+}
+
+/**
+ * The stand (/school/weekly): every issue as a tile, newest first. The
+ * newest is the large tile in the middle; the back issues are small tiles
+ * round it and, once there are more than four of them, in rows beneath.
+ * Each tile opens its issue.
+ */
+export function renderStand(config: Config, weekly: WeeklyContent): string {
+  const newest = weekly.latest!;
+  const back = [...weekly.issues].reverse().filter((i) => i.number !== newest.number);
+  const n = weekly.issues.length;
+  const count = `${COUNT_WORDS[n] ?? n} ${n === 1 ? 'issue' : 'issues'}`;
+  const body = `        <div class="paper">
+        <header class="mast">
+          <div></div>
+          <div>
+            <h1>Beuk Weekly</h1>
+            <p class="mast-tag">${esc(newest.tagline ?? 'And Complete Self-Publishing News')}</p>
+          </div>
+          <div></div>
+        </header>
+        <div class="dateline">
+          <span>${count} on the stand</span>
+          <span>Newest first</span>
+          <span>Free every week</span>
+        </div>
+        <ol class="stand" aria-label="Every issue of Beuk Weekly, newest first">
+          ${[standTile(newest, true), ...back.map((i) => standTile(i, false))].join('\n          ')}
+        </ol>
+        <footer class="imprint">
+          <span>Printed and published by Beuk</span>
+          <span>Free every week</span>
+          <span>Printed on recycled electrons</span>
+        </footer>
+        </div>`;
+  return schoolPage(config, {
+    title: 'Beuk Weekly — every issue',
+    description: `Beuk Weekly, the School’s newspaper for writers who publish their own books. ${count}; the newest: ${newest.banner}.`,
+    path: '/school/weekly',
     body,
     tab: 'weekly',
     css: CSS,
