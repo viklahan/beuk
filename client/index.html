@@ -2977,7 +2977,8 @@
             <button class="side-btn" id="btnImport" data-i18n="side.import" data-i18n-title="side.importTitle" title="Import a manuscript: Word (.docx), Markdown (.md), plain text (.txt), RTF (.rtf), OpenDocument (.odt), a web page (.html), EPUB (.epub) or PDF (.pdf)"><i data-lucide="file-up"></i>Import Document</button>
             <button class="side-btn" id="btnSettings2" data-i18n="side.settings"><i data-lucide="sliders-horizontal"></i>Project Settings</button>
           </div>
-          <p id="bulkHint" style="display:none; padding:0 16px 4px; margin:0; font-size:11.5px; color:var(--muted); line-height:1.5;" data-i18n="bulk.hint">Bringing a whole library? Bulk import lives on your shelf — sign in to use it.</p>
+          <!-- 12px under the hint: the quick tour's ring round the button below reaches 11px above it (4px + its 7px halo) and was painted over the hint's last line -->
+          <p id="bulkHint" style="display:none; padding:0 16px 12px; margin:0; font-size:11.5px; color:var(--muted); line-height:1.5;" data-i18n="bulk.hint">Bringing a whole library? Bulk import lives on your shelf — sign in to use it.</p>
           <div id="importSummary" class="import-summary" style="display:none;">
             <div class="is-head"><span data-i18n="import.recognised">Recognised in your manuscript</span><button type="button" class="is-close" id="btnImportSummaryClose" aria-label="Close"><i data-lucide="x"></i></button></div>
             <p class="is-line" id="importSummaryText"></p>
