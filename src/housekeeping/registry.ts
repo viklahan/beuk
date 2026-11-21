@@ -3260,6 +3260,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The Markdown reader (BEUK:mdimport) and the import report run in the studio; the server never sees the file.',
   },
   {
+    id: 'import.lists.nested-every-format',
+    title:
+      'A list set inside a list item comes in the same from a Word file, a web page, an OpenDocument file, RTF, Markdown and plain text: every item a line of its own, in order, none fused or said twice, and one report line saying how many were nested',
+    kind: 'client-only',
+    reason: 'Every reader (BEUK:nestedlists) and the import report run in the studio; the server never sees the file.',
+  },
+  {
     id: 'import.tables.kept-as-rows',
     title:
       "A table's words stay in the book as plain rows where it stood: cells joined by a bar with empty and merged-over cells kept in their columns, marks and a note's mark kept in their cell, a nested table after its parent and said once, reported as kept, the bars not counted as words, and out again on undo",
