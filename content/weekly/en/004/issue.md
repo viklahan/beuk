@@ -6,7 +6,7 @@ bannerDeck: A nine-percent quarter built on audiobooks and backlist — the two 
 lead: what-harpercollins-told-indies
 tagline: The indie publisher's broadsheet
 price: Price: one honest sentence
-note: Set by the Beuk Correspondent; every claim below traces to a fetched source.
+note: Set at the Beuk Desk; every claim below traces to a fetched source.
 weatherPlace: Alice Springs, Australia
 weatherReading: Night storm, then 34 °C
 weatherNote: observed Nov. 9

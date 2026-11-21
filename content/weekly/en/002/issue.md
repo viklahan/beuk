@@ -6,7 +6,7 @@ bannerDeck: Kobo switches on three more countries — subscription growth an aut
 lead: wide-side-widening
 tagline: The indie publisher's broadsheet
 price: Price: one honest sentence
-note: Set by the Beuk Correspondent; every claim below traces to a fetched source.
+note: Set at the Beuk Desk; every claim below traces to a fetched source.
 weatherPlace: Hobart, Tasmania
 weatherReading: Showers, 15 °C
 weatherNote: observed Oct. 26

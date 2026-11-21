@@ -6,7 +6,7 @@ bannerDeck: Ad reports lose their per-page royalty estimates as the Kindle+ tran
 lead: royalty-math
 tagline: The indie publisher's broadsheet
 price: Price: one honest sentence
-note: Set by the Beuk Correspondent; every claim below traces to a fetched source.
+note: Set at the Beuk Desk; every claim below traces to a fetched source.
 weatherPlace: Luang Prabang, Laos
 weatherReading: Scattered clouds, 33 °C
 weatherNote: at press time

@@ -6,7 +6,7 @@ bannerDeck: Amazon folds audiobooks into its subscription, renames the whole thi
 lead: kindle-plus
 tagline: The indie publisher's broadsheet
 price: Price: one honest sentence
-note: Set by the Beuk Correspondent; every claim below traces to a fetched source.
+note: Set at the Beuk Desk; every claim below traces to a fetched source.
 weatherPlace: Darwin, Australia
 weatherReading: Fine and hot, 34 °C
 weatherNote: observed Oct. 19

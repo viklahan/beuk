@@ -1,7 +1,7 @@
 ---
 title: Amazon Rewires the Royalty Math
 section: The Platform Desk
-byline: the Beuk Correspondent
+byline: The Beuk Desk
 deck: Ad reports lose their per-page royalty estimates as the Kindle+ transition keeps authors guessing at their own income
 ---
 On November 11, Amazon quietly updated its Ads support pages with one flat sentence: “Estimated KENP royalties metrics are no longer available in Reporting.” The metric, which since 2020 estimated royalties from every page read after an ad click, is gone, [PPC Land reported](https://ppc.land/amazon-ads-drops-page-based-royalty-estimates-from-kindle-authors-reports/) the next day. In its place: estimated Kindle Unlimited royalties computed from “qualified borrows” — downloads where a reader read enough pages to qualify. How many pages is enough? Amazon does not say.

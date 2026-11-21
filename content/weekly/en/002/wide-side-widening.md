@@ -1,7 +1,7 @@
 ---
 title: The Wide Side Keeps Widening
 section: The Wide World
-byline: the Beuk Correspondent
+byline: The Beuk Desk
 deck: Kobo switches on three more countries — subscription growth an author can actually count, in a week when the biggest store's arithmetic stayed hidden
 ---
 Rakuten Kobo switched on Kobo Plus in Estonia, Lithuania and Slovenia on October 28: €9.99 a month for Read (“millions of e-books”) or Listen (“hundreds of thousands of audiobooks”), €12.99 for both, with a commitment-free 14-day trial, on the Kobo apps and every Kobo e-reader, [Good e-Reader reports](https://goodereader.com/blog/kobo-ereader-news/kobo-plus-is-now-available-in-estonia-lithuania-and-slovenia). The launch date comes via [Inkfluence AI's roundup](https://www.inkfluenceai.com/blog/self-publishing-news-november-2026), which also notes audiobooks joined the French Kobo Plus tier two weeks earlier, on October 15.

@@ -1,7 +1,7 @@
 ---
 title: What HarperCollins Just Told Every Indie
 section: Money & Margins
-byline: the Beuk Correspondent
+byline: The Beuk Desk
 deck: A nine-percent quarter built on audiobooks and backlist — the two levers that don't need a corporation to pull
 ---
 HarperCollins opened its fiscal 2027 with revenue up 9 percent to $582 million and EBITDA up 29 percent to $79 million, according to Publishers Weekly figures carried in [Publishing Perspectives' November 9 roundup](https://publishingperspectives.com/2026/11/around-the-book-world-monday-november-9-2026/). Digital sales grew 6 percent; audiobook revenue grew 13 percent, which parent News Corp credited to its Spotify partnership.

@@ -1,7 +1,7 @@
 ---
 title: The Plus Where Unlimited Used to Be
 section: The Platform Desk
-byline: the Beuk Correspondent
+byline: The Beuk Desk
 deck: Amazon folds audiobooks into its subscription, renames the whole thing Kindle+, and leaves the price of a listened page unspoken
 ---
 On October 22, Amazon announced that Kindle Unlimited is now Kindle+, and that KDP audiobooks ride along: United States subscribers can read an ebook or listen to its audiobook at no extra cost, [Written Word Media reported](https://www.writtenwordmedia.com/kindle-plus-for-authors/) the same day. For readers little else moves — still $11.99 a month, still twenty titles out at a time, [per Indie Author Magazine's weekly roundup](https://indieauthormagazine.com/acxs-old-payment-model-ends-this-year-this-weeks-publishing-news/). Product pages were re-badged within hours; the old tagline, “Unlimited reading. Over 5 million titles,” now reads “Over 5 million eBooks and audiobooks.”

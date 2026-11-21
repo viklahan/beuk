@@ -50,7 +50,7 @@ test('weekly content: each news issue has its lead, its short stories in order, 
     const issue = w.issueByNumber.get(Number(n))!;
     assert.equal(issue.week, want.week);
     assert.equal(issue.lead.slug, want.lead);
-    assert.equal(issue.lead.byline, 'the Beuk Correspondent');
+    assert.equal(issue.lead.byline, 'The Beuk Desk');
     assert.deepEqual(issue.shorts.map((s) => s.slug), want.shorts);
     for (const s of [issue.lead, ...issue.shorts]) {
       assert.ok(s.hasPage, `${s.slug} has a page`);
