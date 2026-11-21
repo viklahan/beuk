@@ -3350,6 +3350,20 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
+    id: 'import.tally.word-for-word',
+    title:
+      "The import tally compares the file's words with the book's, not only their number: a word changed in the import is named and the card warns",
+    kind: 'client-only',
+    reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
+  },
+  {
+    id: 'import.tally.mangled-letter',
+    title:
+      'A letter changed inside a word (a look-alike letter, an accent) is named by the import tally in any format, though the count is unchanged',
+    kind: 'client-only',
+    reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
+  },
+  {
     id: 'import.html.quote-attribution',
     title: "A web page's quotation keeps every word: its paragraphs, the attribution in a <footer> or <cite>, and words set loose beside them",
     kind: 'client-only',

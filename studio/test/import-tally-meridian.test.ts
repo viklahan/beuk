@@ -64,7 +64,7 @@ describe.skipIf(!present)('the import tally reconciles the Meridian stress book 
     // a buffer of this page's own kind (the test page's ArrayBuffer is the one JSZip knows; Node's Buffer is another realm's)
     const buf = () => { const ab = new ArrayBuffer(bytes.length); new Uint8Array(ab).set(bytes); return ab; };
     const file = { name, arrayBuffer: async () => buf(), text: async () => new TextDecoder('utf-8').decode(bytes) };
-    const run = (await m.api.readImportFile(file)) as () => { tally?: { counted: boolean; file: number; book: number; aside: Record<string, number>; unaccounted: number }; items: unknown[] };
+    const run = (await m.api.readImportFile(file)) as () => { tally?: { counted: boolean; file: number; book: number; aside: Record<string, number>; unaccounted: number; words?: { same: boolean; fileOnlyN: number; bookOnlyN: number; caseOnly: number } }; items: unknown[] };
     const rep = run();
     const ty = rep.tally!;
     expect(ty, 'the import wrote no tally').toBeTruthy();
@@ -86,5 +86,7 @@ describe.skipIf(!present)('the import tally reconciles the Meridian stress book 
     expect(ty.counted).toBe(true);
     expect(ty.file).toBe(ty.book + aside + ty.unaccounted);
     expect(ty.unaccounted, `${kind}: words unaccounted for`).toBe(0);
+    // and the words themselves (BEUK:importtally, word for word): every word of the file is in the book, counts only in the message
+    expect({ same: ty.words?.same, fileOnly: ty.words?.fileOnlyN, bookOnly: ty.words?.bookOnlyN }, `${kind}: words of the file not in the book as written`).toEqual({ same: true, fileOnly: 0, bookOnly: 0 });
   }, 600_000);
 });
