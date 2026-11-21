@@ -217,6 +217,12 @@ export type ClosureApi = {
   editorBlocks: (val: string) => { start: number; end: number; text: string }[];
   SCENE_BREAK_BLOCK_RE: RegExp;
   BACKDROP_STRENGTHS: string[];
+  /** BEUK:platefit — 'fill' and 'whole'. */
+  PLATE_FITS: string[];
+  /** The fit a section's plate is typeset with: its stored choice, 'fill' when it has none. */
+  plateFitOf: (section: unknown) => 'fill' | 'whole';
+  /** The fit a newly chosen picture is given, by its pixel size against the trim (`trimId`, else state.printTrim). */
+  plateFitFor: (img: unknown, trimId?: string) => 'fill' | 'whole';
   fmtBytes: (n: number) => string;
   pickerImages: () => BookImage[];
   isFlourishImage: (im: unknown) => boolean;

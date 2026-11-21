@@ -2411,6 +2411,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The setting, the print document, the store check and the Print Interior View are built in the studio; the renderer half (page sizes per side, TrimBox/BleedBox, art covering the bleed) is covered by tests/print-bleed.test.ts.',
   },
   {
+    id: 'plate.fit.choice',
+    title: 'Plate fit, the choice: a section without the field reads as Fill the page and is saved without it; fill / whole kept through a save and a reload; a newly chosen picture gets whole when filling the page would cut more than a tenth of it; the Fit row shows only while a plate is set',
+    kind: 'client-only',
+    reason: 'The fit rule reads the picture bytes and the trim in the studio, and the Fit row is part of the client editor; the stored field is also read by tests/book-read.test.ts.',
+  },
+  {
+    id: 'plate.fit.surfaces',
+    title: 'Plate fit, every surface: fill typeset as before; a whole plate fitted, never cropped, in the preview, the EPUB plate page, the print file and the Print Interior View',
+    kind: 'client-only',
+    reason: 'The preview, the EPUB, the print file and the Print Interior View are built in the studio; that the renderer leaves a whole plate in its page is covered by tests/print-spreads.test.ts.',
+  },
+  {
     id: 'chapter.backdrop.spread',
     title: 'Spread backdrop: a plated chapter faces its plate across the gutter, the art at full strength there and fading before the words',
     kind: 'client-only',

@@ -69,6 +69,7 @@ const flat = (d: Rec): Record<string, Spec> =>
 
 /* Enums 1.0 enforces on load. */
 const BACKDROP_STRENGTHS = ['whisper', 'soft', 'strong', 'spread'] as const; // BACKDROP_STRENGTHS, CI:29412; normalizeSection, CI:50109
+const PLATE_FITS = ['fill', 'whole'] as const; // PLATE_FITS (BEUK:platefit); normalizeSection keeps plateFit only from this list
 const OL_STATUSES = ['todo', 'draft', 'revised', 'final'] as const; // OL_STATUSES, CI:32919; olSectionFields keeps status only from this list
 const HISTORY_AUTO = ['import', 'sample', 'restore', 'conflict', 'bookid', 'backup', 'sampleupdate', 'chapterop', 'imgremove'] as const; // normalizeHistory, CI:32192
 const STORE_IDS = ['kdp', 'ingramspark'] as const; // STORE_IDS, CI:49074
@@ -282,6 +283,8 @@ function coerceEnums(b: Rec, out: Out): void {
     if (!isRec(s)) return;
     // normalizeSection, CI:50109: backdropStrength outside BACKDROP_STRENGTHS -> "whisper"
     if (has(s, 'backdropStrength')) normalize(s, `sections[${i}]`, { backdropStrength: { t: BACKDROP_STRENGTHS, def: 'whisper' } }, out);
+    // normalizeSection (BEUK:platefit): plateFit kept only if in PLATE_FITS, else dropped (the plate then fills its page)
+    if (has(s, 'plateFit')) normalize(s, `sections[${i}]`, { plateFit: { t: PLATE_FITS } }, out);
     // olSectionFields: status kept only if in OL_STATUSES, else dropped
     if (has(s, 'status')) normalize(s, `sections[${i}]`, { status: { t: OL_STATUSES } }, out);
   });

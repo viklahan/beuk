@@ -116,3 +116,28 @@ test('print spreads: a spread whose picture cannot be embedded keeps its own pic
   const plan = spreads.planSections(webp);
   assert.equal((await spreads.stampable(plan)).size, 0);
 });
+
+/* BEUK:platefit — a plate the writer shows whole stays in its page, inside
+   the margins: the studio marks its figure `plate-page plate-whole`, which
+   PLATE_RE (an exact `class="plate-page"`) does not read, so nothing is
+   drawn edge to edge for it. Its backdrop is still stamped, and the
+   stand-down rule that then hides the section's in-page plate is answered
+   in the studio's own stylesheet (client/index.html buildPrintHtml:
+   `#ps-N .plate-page.plate-whole img { visibility: visible !important }`). */
+test('print spreads: a plate shown whole is not drawn edge to edge; its backdrop still is', async () => {
+  const whole = DOC.replace('<figure class="plate-page">', '<figure class="plate-page plate-whole">');
+  assert.notEqual(whole, DOC);
+  const plan = spreads.planSections(whole);
+  assert.equal(plan[2].spread, true);
+  assert.equal(plan[2].plate, null, 'a whole plate is left in the page');
+  assert.equal(plan[2].layer, JPEG, 'its backdrop is still read');
+  assert.equal(plan[2].start, 'verso', 'it still opens on a verso');
+  const stamped = await spreads.stampable(plan);
+  assert.deepEqual([...stamped], ['ps-2']);
+  // the stand-down rule the studio's own rule must outrank: one id, one class, one element
+  assert.ok(spreads.stampCss(stamped).startsWith('#ps-2 .plate-page img { visibility: hidden !important; }'));
+  // a section with a whole plate and no backdrop has nothing to stamp, so nothing is stood down
+  const bare = whole.replace(/<div class="bd-layer[^>]*><\/div>/, '');
+  assert.notEqual(bare, whole);
+  assert.deepEqual([...(await spreads.stampable(spreads.planSections(bare)))], []);
+});

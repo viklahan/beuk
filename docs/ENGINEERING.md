@@ -950,6 +950,27 @@ pdf-lib 1.17.1, tested in `tests/print-spreads.test.ts` without a browser):
    centred like the plate so the halves meet at the gutter — over the
    whole facing recto.
 
+**Plate fit** (BEUK:platefit, `section.plateFit`, present only when set).
+A plate either fills its page, cropped to the page's shape (`fill`: the
+behaviour above, and what a section without the field keeps, so no book
+saved before the field changes its look), or is shown whole (`whole`:
+fitted inside the page's margins, centred, never cropped). The studio
+chooses for the writer only when a picture is chosen as a plate
+(`plateFitFor`): whole when filling the page would cut more than a tenth
+of the picture, by its pixel size against the book's trim, and whole when
+its size cannot be read. The Fit row beside the plate picker changes it.
+A whole plate's figure is `plate-page plate-whole`: the book stylesheet
+fits it (`object-fit: contain`) in the same page-area box; the renderer
+reads only an exact `<figure class="plate-page"` and so draws nothing
+edge to edge for it; and because the renderer's stand-down rule would
+hide it when the section's backdrop is stamped, the print file carries
+`#ps-N .plate-page.plate-whole img { visibility: visible !important }`
+for each such section. The Print Interior View sets it in the margin box
+(`piv-plate-whole`); the EPUB's plate page is `plate-full plate-whole`,
+the picture held inside the screen both ways; Zen always showed a plate
+whole and is unchanged. A whole plate is not art to the page edge, so it
+no longer prompts the bleed suggestion.
+
 The **Spread** backdrop strength (`spread`, beside Whisper/Soft/Strong)
 is a true double-page spread: full strength across the gutter, thinning
 to a trace by the inner margin and gone 1.2 in past it

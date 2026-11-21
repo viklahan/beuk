@@ -368,6 +368,76 @@ describe('pictures in the studio (A6–A8)', { timeout: 60_000 }, () => {
     expect((b.sections as Rec[])[0]!.plateId).toBe(up.id);
   });
 
+  /* BEUK:platefit — the Fit row (1.0's plate.fit.choice, its control half): shown only while a plate is set; a newly
+     chosen picture gets its fit by 1.0's rule against the BOOK's trim (a square picture is shown whole on a 6 × 9 page
+     and fills an 8 × 8 one); the writer's own choice is written; a section without the key reads as Fill the page. */
+  it('plate.fit.choice: the Fit row shows with a plate, stores whole or fill for a newly chosen picture, and writes the choice', async () => {
+    // a PNG's first bytes stating a size: all 1.0's rule reads (the library shows it as "missing": never decoded here)
+    const sized = (w: number, h: number) => btoa(String.fromCharCode(137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, (w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255,
+      (h >>> 24) & 255, (h >>> 16) & 255, (h >>> 8) & 255, h & 255, 8, 2, 0, 0, 0, 0, 0, 0, 0));
+    const book = BOOK() as Rec;
+    book.printTrim = '6x9';
+    book.images = [...(book.images as Rec[]), im('fitsq', 'Square.png', sized(900, 900)), im('fitpage', 'Page.png', sized(600, 900))];
+    await openStudio(book);
+    const plate = $('chPlate') as unknown as HTMLSelectElement;
+    const fit = $('chPlateFit') as unknown as HTMLSelectElement;
+    expect($('plateFitRow').style.display).toBe('none');
+    expect([...fit.options].map((o) => [o.value, o.textContent])).toEqual([['fill', E['editor.plateFitFill']], ['whole', E['editor.plateFitWhole']]]);
+    expect($('plateFitRow').textContent).toContain(E['editor.plateFit']);
+    expect($('plateFitRow').textContent).toContain(E['editor.plateFitDesc']);
+    const s1 = async () => ((await exported()).sections as Rec[])[0]!;
+    expect('plateFit' in (await s1())).toBe(false);
+    await act(async () => {
+      fireEvent.change(plate, { target: { value: 'fitsq' } });
+    });
+    expect($('plateFitRow').style.display).toBe('');
+    expect(fit.value).toBe('whole');
+    expect([(await s1()).plateId, (await s1()).plateFit]).toEqual(['fitsq', 'whole']);
+    await act(async () => {
+      fireEvent.change(plate, { target: { value: 'fitpage' } });
+    });
+    expect(fit.value).toBe('fill');
+    expect((await s1()).plateFit).toBe('fill');
+    await act(async () => {
+      fireEvent.change(fit, { target: { value: 'whole' } });
+    });
+    expect(fit.value).toBe('whole');
+    expect((await s1()).plateFit).toBe('whole');
+    await act(async () => {
+      fireEvent.change(fit, { target: { value: 'fill' } });
+    });
+    expect((await s1()).plateFit).toBe('fill');
+    // "No plate": the row goes, the choice stays with the section as its alt text does
+    await act(async () => {
+      fireEvent.change(plate, { target: { value: '' } });
+    });
+    expect($('plateFitRow').style.display).toBe('none');
+    expect((await s1()).plateId).toBe(null);
+  });
+
+  it('plate.fit.choice: the rule reads the trim of the book, and a stored section without the key reads as Fill the page', async () => {
+    const sized = (w: number, h: number) => btoa(String.fromCharCode(137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, (w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255,
+      (h >>> 24) & 255, (h >>> 16) & 255, (h >>> 8) & 255, h & 255, 8, 2, 0, 0, 0, 0, 0, 0, 0));
+    const book = BOOK() as Rec;
+    book.printTrim = '8x8';
+    book.images = [...(book.images as Rec[]), im('fitsq', 'Square.png', sized(900, 900)), im('fitpage', 'Page.png', sized(600, 900))];
+    Object.assign((book.sections as Rec[])[0]!, { plateId: 'fitpage', plateAlt: 'A stored plate' }); // stored before the field: no plateFit
+    await openStudio(book);
+    const fit = $('chPlateFit') as unknown as HTMLSelectElement;
+    expect($('plateFitRow').style.display).toBe('');
+    expect(fit.value).toBe('fill');
+    expect('plateFit' in ((await exported()).sections as Rec[])[0]!).toBe(false);
+    await act(async () => {
+      fireEvent.change($('chPlate'), { target: { value: 'fitsq' } });
+    });
+    expect(fit.value).toBe('fill'); // a square picture on a square page
+    await act(async () => {
+      fireEvent.change($('chPlate'), { target: { value: 'fitpage' } });
+    });
+    expect(fit.value).toBe('whole'); // a 2:3 picture on a square page
+    expect(((await exported()).sections as Rec[])[0]!.plateFit).toBe('whole');
+  });
+
   it('scene.images.place: the bar names the break; library attach with name and caption; another break its own; upload attach; replace; remove; the text never changes', async () => {
     await openStudio(BOOK());
     const original = text();

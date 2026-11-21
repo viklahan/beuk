@@ -257,6 +257,25 @@ test('read: a strict-enum violation takes the 1.0 value, raw in preserved, warni
   }
 });
 
+/* BEUK:platefit — section.plateFit: present only when set, "fill" or "whole"; anything else is dropped
+   (the plate then fills its page, as before the field existed), and a book without it is read untouched. */
+test('read: section.plateFit is kept when fill or whole, dropped with a bad-enum warning otherwise, never added', () => {
+  const b = real();
+  assert.ok(b.sections.length >= 3);
+  assert.ok(b.sections.every((x: Record<string, unknown>) => !('plateFit' in x)), 'the stored fixture predates the field');
+  b.sections[0].plateFit = 'whole';
+  b.sections[1].plateFit = 'fill';
+  b.sections[2].plateFit = 'cover';
+  const r = readBook(b);
+  assert.equal((r.book.sections[0] as Record<string, unknown>).plateFit, 'whole');
+  assert.equal((r.book.sections[1] as Record<string, unknown>).plateFit, 'fill');
+  assert.equal('plateFit' in r.book.sections[2]!, false);
+  assert.deepEqual(r.preserved.find((p) => p.path === 'sections[2].plateFit'), { path: 'sections[2].plateFit', raw: 'cover', used: undefined });
+  assert.ok(r.warnings.some((w) => w.code === 'bad-enum' && w.path === 'sections[2].plateFit'));
+  const untouched = readBook(real());
+  assert.ok(untouched.book.sections.every((x) => !('plateFit' in x)), 'a book without the field gains none');
+});
+
 test('read: an unknown top-level key is kept and reported', () => {
   const b = real();
   b.futureThing = { a: 1 };
