@@ -3294,6 +3294,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
+    id: 'import.tally.no-false-alarm',
+    title:
+      "The import tally raises no false alarm: a list Word numbers itself, an RTF list with written-out numbers, a page break switched off and rules of underscores (one lifted with the title page) each reconcile to zero; more words in the book than in the file are said as such, never as words lost",
+    kind: 'client-only',
+    reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
+  },
+  {
     id: 'import.html.quote-attribution',
     title: "A web page's quotation keeps every word: its paragraphs, the attribution in a <footer> or <cite>, and words set loose beside them",
     kind: 'client-only',
