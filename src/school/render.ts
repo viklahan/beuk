@@ -23,7 +23,8 @@ export interface SchoolCtx {
 
 const LANG = 'en';
 
-const MARK = `<svg class="mark" width="26" height="31" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="currentColor"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="currentColor"/><circle cx="27" cy="35" r="6" fill="#f8f4e9"/></svg>`;
+/** The Beuk mark as the site's top bar draws it (the Weekly's logo ear wears it too). */
+export const MARK = `<svg class="mark" width="26" height="31" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="currentColor"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="currentColor"/><circle cx="27" cy="35" r="6" fill="#f8f4e9"/></svg>`;
 
 /** "4:05" from seconds. */
 export function clock(seconds: number): string {
