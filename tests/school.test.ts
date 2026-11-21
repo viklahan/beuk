@@ -4,6 +4,9 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { readZip } from '../src/housekeeping/packages.js';
 import { checkSchoolContent, loadSchoolContent, parseLesson, parseSections, parseShots } from '../src/school/content.js';
+import { STAND_SIZE } from '../src/school/render.js';
+import { escapeHtml } from '../src/warmth/markdown.js';
+import { loadWeeklyContent } from '../src/weekly/content.js';
 import { Client, createTestDb, registerUser, startTestServer } from './helpers.js';
 
 /* Beuk School (V, 2026-10-28): free, at /school, English first, media from
@@ -82,6 +85,28 @@ test('school pages: home, course and lesson render in the site shell; Read works
 
     assert.equal((await getPage(s.base, '/school/no-such-course')).status, 404);
     assert.equal((await getPage(s.base, '/school/maiden-voyage/no-such-lesson')).status, 404);
+  } finally {
+    await s.close();
+  }
+});
+
+test('school home: under the Weekly band, the stand says how many issues there are and links each, newest first, headlines from the issue files', async () => {
+  const w = loadWeeklyContent('en');
+  const db = await createTestDb();
+  const s = await startTestServer(db);
+  try {
+    const html = (await getPage(s.base, '/school')).html;
+    assert.match(html, /<\/a>\s*<nav class="weekly-stand" aria-label="Beuk Weekly issues">/, 'the stand sits right under the band');
+    const stand = html.slice(html.indexOf('<nav class="weekly-stand"'), html.indexOf('</nav>', html.indexOf('<nav class="weekly-stand"')));
+    assert.ok(w.issues.length >= 2 && w.issues.length <= STAND_SIZE, 'today every issue fits on the stand');
+    assert.match(stand, /<p class="ws-count">Five issues on the stand<\/p>/);
+    const tiles = [...stand.matchAll(/<li><a href="\/school\/weekly\/(\d+)"><span class="ws-no">No\. (\d+)<\/span><span class="ws-head">([^<]+)<\/span><\/a><\/li>/g)];
+    assert.deepEqual(tiles.map((m) => Number(m[1])), w.issues.map((i) => i.number).reverse(), '/school links every issue, newest first');
+    for (const m of tiles) {
+      assert.equal(m[2], m[1]);
+      assert.equal(m[3], escapeHtml(w.issueByNumber.get(Number(m[1]))!.banner));
+    }
+    assert.ok(!stand.includes('ws-all'), 'nothing hidden, so no "All issues" link');
   } finally {
     await s.close();
   }

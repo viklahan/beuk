@@ -27,6 +27,13 @@
 @media(max-width:820px){.mast{grid-template-columns:1fr}.ear{display:none}.mast h1{white-space:normal}}
 .dateline{display:flex;justify-content:space-between;gap:6px 18px;flex-wrap:wrap;border-bottom:3px double var(--news);padding:6px 0;font:500 12px var(--mono);letter-spacing:.04em;text-transform:uppercase}
 .dateline a{text-decoration:none;border-bottom:1px solid var(--news)}
+/* The issue bar: one thin line under the dateline rule, in the dateline's own type. */
+.issue-bar{display:flex;justify-content:space-between;align-items:baseline;gap:4px 18px;flex-wrap:wrap;border-bottom:1px solid var(--hair);padding:5px 0;font:500 12px var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.issue-bar a{text-decoration:none;border-bottom:1px solid var(--news)}
+.issue-bar a:hover{background:var(--news);color:var(--paper)}
+.issue-bar .ib-pos a{border-bottom:0}
+.issue-bar .ib-pos a:hover{background:none;color:inherit}
+@media(max-width:640px){.issue-bar{font-size:11px;letter-spacing:.02em;gap:3px 12px}}
 
 .banner{display:block;text-decoration:none;font:600 clamp(36px,7vw,90px)/.98 var(--gothic);text-transform:uppercase;text-align:center;border-bottom:1px solid var(--news);padding:8px 0 6px;text-wrap:balance}
 .banner:hover{text-decoration:underline;text-decoration-thickness:3px}
@@ -72,10 +79,19 @@
 .fold > *:first-child{padding-left:0;border-left:0}
 .fold .story{border-bottom:0;margin-bottom:0}
 @media(max-width:760px){.fold{grid-template-columns:1fr}.fold > *{border-left:0;padding:0 0 14px}}
-.earlier{margin-top:22px;border-top:1px solid var(--news);padding-top:10px}
-.earlier ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
-.earlier a{text-decoration:none;font-size:15px}
-.earlier a:hover{text-decoration:underline}
+/* The shelf (#issues): every issue, newest first, the one being read in reverse type. */
+.issues{border-top:3px double var(--news);margin-top:26px;scroll-margin-top:16px}
+.paper .issues{padding:10px 0 0}
+.issues h2{font:800 10.5px var(--ui);letter-spacing:.2em;text-transform:uppercase;text-align:center;margin-bottom:6px}
+.issues ol{list-style:none;margin:0;padding:0}
+.issues li{border-top:1px dotted var(--hair)}
+.issues li:first-child{border-top:0}
+.issues a{display:grid;grid-template-columns:5.5em 15em minmax(0,1fr);align-items:baseline;gap:2px 16px;padding:7px 0;text-decoration:none}
+.issues .is-no,.issues .is-week{font:500 12px var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.issues .is-head{font:600 17px/1.15 var(--gothic);text-transform:uppercase;letter-spacing:.01em}
+.issues a:hover .is-head{text-decoration:underline}
+.issues .current .is-no{justify-self:start;background:var(--news);color:var(--paper);padding:1px 6px}
+@media(max-width:640px){.issues a{grid-template-columns:auto minmax(0,1fr)}.issues .is-head{grid-column:1 / -1}}
 .imprint{margin-top:26px;border-top:1px solid var(--news);padding-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 18px;font:500 11.5px var(--mono);color:var(--newsmute);text-transform:uppercase;letter-spacing:.04em}
 
 /* a story */
@@ -97,7 +113,6 @@
 /* site.css pads every <section> for the landing bands; the paper's sections are columns. */
 .paper section{padding:0}
 .paper .fold{padding:14px 0 0}
-.paper .earlier{padding:10px 0 0}
 /* school.css gives School pull quotes an amber rule on the left; the paper's are ruled above and below. */
 .paper .pull{border-left:0;padding-left:0}
 
