@@ -72884,6 +72884,12 @@
         } });
       /* BEUK:localpics — the research policy check awaits a fetch: it belongs with the checks that are awaited (in SELF_CHECKS its Promise read as a failure) */
       { const i = SELF_CHECKS.findIndex((c) => c.id === "notebook.research.csp"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); }
+      /* …and so does every import check that awaits (a zip opened, an .odt or a web page read): written beside the
+         import's other checks, each is run with the checks that are awaited, where its answer can be read */
+      for (let i = SELF_CHECKS.length - 1; i >= 0; i--) {
+        const c = SELF_CHECKS[i];
+        if (c.feature === "import" && c.run && c.run.constructor && c.run.constructor.name === "AsyncFunction") SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]);
+      }
       /* ==== /BEUK:localpics — self-check ==== */
       /* ==== BEUK:appup ==== — the pages the app server renders answer.
          Caddy serves the studio and the static site from ./client itself,
