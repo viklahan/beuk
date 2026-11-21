@@ -247,6 +247,28 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     expect({ aside: ty.aside, unaccounted: ty.unaccounted, same: ty.words.same }).toEqual({ aside: { headers: 9, pageNumbers: 3, titlePage: 3 }, unaccounted: 0, same: true });
   }, 120_000);
 
+  /* What the title-page rule must never take: a heading that is a page of the book, not its title. None of these is
+     moved to the book's details, whatever else the import does with it. */
+  const details = (rep: { items: { kind: string; data: Record<string, unknown>; after?: string }[] }) => ({
+    lifted: rep.items.filter((it) => it.kind === 'lifted' && it.data.reason === 'titlepage').length,
+    title: (rep.items.find((it) => it.kind === 'meta' && it.data.field === 'title') || { after: '' }).after,
+  });
+  const big = (s: string, y: number): [string, number, number, number] => [s, 60, y, 20];
+  const prose = (k: number): [string, number, number, number][] => [['The caravan left at dawn and the pans lay white on day ' + k + '.', 60, 430, 11]];
+  type Rep = { items: { kind: string; data: Record<string, unknown>; after?: string }[] };
+  for (const [name, pages, not] of [
+    ['a first chapter with no text under it, before chapters with text', [[big('Chapter One', 480)], [big('Chapter Two', 480), ...prose(2)], [big('Chapter Three', 480), ...prose(3)]], ['Chapter One']],
+    ['an outline: five headings and no prose', [[big('The Road', 520), big('The Pans', 470), big('The Salt', 420), big('The Wind', 370), big('The Dusk', 320)]], ['The Road', 'The Pans']],
+    ['"Part One" with nothing under it, before Chapter 1', [[big('Part One', 480)], ...BOOK], ['Part One']],
+    ['an author\'s note heading with nothing under it, before the chapters', [[big('Author\'s Note', 480)], ...BOOK], ['Author\'s Note', 'Author’s Note']],
+  ] as [string, [string, number, number, number][][], string[]][]) {
+    it('never a title page: ' + name, async () => {
+      const d = details((await importPdf('not-a-title.pdf', await makePdf(pages))) as unknown as Rep);
+      expect(d.lifted, 'nothing lifted as the title page').toBe(0);
+      for (const h of not) expect(d.title, 'the title is not "' + h + '"').not.toBe(h);
+    }, 120_000);
+  }
+
   it('a locked PDF is counted as the open file holds it, once its password is given', async () => {
     const m = make(env());
     const locked = (await m.api.lockPdfBytes(await makePdf(BOOK), 'lantern')) as Uint8Array;

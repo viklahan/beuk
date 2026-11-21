@@ -39047,12 +39047,17 @@
            its lines set large): the book opens on headings with no text under them, which the zone rule above filed as
            prefaces. With no text a preface is never kept, so the writer's title went nowhere. Those opening headings are
            the title page's lines, read by the one rule every format shares, as lines set plain are; what follows them (a
-           heading with its text) stays as it was. Lines the title-page rule does not take stay the book's text. */
+           heading with its text) stays as it was. Lines the title-page rule does not take stay the book's text.
+           A PDF only: there a heading is the reader's guess from the size of the type, and a title page is set large; a
+           heading the writer marked as one (Word, markdown, any other format) is never read as a title page's line. And
+           never a heading named as a front page of its own (an author's note, a preface, a dedication…): that is a page
+           of the book, not its title. */
         {
           const fb = items.findIndex(isBodyItem);
-          const asHead = (it) => it.cls === "matter" && it.matter.kind === "front" && it.matter.type === "preface" && !it.bodyText && /^#{1,2}\s+/.test(String(it.raw || "").trim());
+          const frontName = (it) => /^(?:(?:a|an|the)\s+)?(?:(?:author|translator|editor|writer)(?:['’]s|s['’]?)?\s+)?(?:note|notes|preface|foreword|introduction|prologue|epilogue|afterword|interlude|acknowledg(?:e)?ments?|dedication|epigraph|contents|table of contents)\b/i.test(String(it.raw || "").trim().replace(/^#{1,2}\s+/, ""));
+          const asHead = (it) => it.cls === "matter" && it.matter.kind === "front" && it.matter.type === "preface" && !it.bodyText && /^#{1,2}\s+/.test(String(it.raw || "").trim()) && !frontName(it);
           let k = 0;
-          while (k < items.length && k < fb && ((items[k].cls === "lead" && !items[k].bodyText && !items[k].titleHead) || asHead(items[k]))) k++;
+          if (IR_REC && IR_REC.format === "pdf") while (k < items.length && k < fb && ((items[k].cls === "lead" && !items[k].bodyText && !items[k].titleHead) || asHead(items[k]))) k++;
           const run = items.slice(0, k);
           if (run.some(asHead)) {
             const lines = run.filter(asHead).map((it) => String(it.raw).trim().replace(/^#{1,2}\s+/, ""));
