@@ -5,12 +5,12 @@ import type { Config } from '../config.js';
 import { getSchoolContent } from '../school/content.js';
 import { renderSchoolNotFound } from '../school/render.js';
 import { getWeeklyContent } from '../weekly/content.js';
-import { renderIssue, renderStory, renderWeeklyEmpty } from '../weekly/render.js';
+import { renderIssue, renderStand, renderStory, renderWeeklyEmpty } from '../weekly/render.js';
 
 /**
  * Beuk Weekly (src/weekly/*): the School's newspaper. Mounted before the
  * School's own pages so /school/weekly is never read as a course slug.
- *   GET /school/weekly                 the latest issue
+ *   GET /school/weekly                 the stand: every issue as a tile, the newest large
  *   GET /school/weekly/<n>             issue n
  *   GET /school/weekly/<n>/<story>     a story with a page of its own
  *   GET /school/weekly/<n>/img/<file>  a picture from issue n's folder
@@ -31,7 +31,7 @@ export function weeklyRoutes(config: Config): Router {
   router.get('/school/weekly', (req, res) => {
     if (req.path.endsWith('/')) return res.redirect(301, '/school/weekly');
     const w = getWeeklyContent();
-    return send(res, w.latest ? renderIssue(config, w, w.latest) : renderWeeklyEmpty(config));
+    return send(res, w.latest ? renderStand(config, w) : renderWeeklyEmpty(config));
   });
 
   router.get('/school/weekly/:n', (req, res) => {
