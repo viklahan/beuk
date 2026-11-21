@@ -42865,8 +42865,9 @@
             let from = "text";
             if (via === "fallback") from = "fallback";
             else if (/^#{1,2}\s+/.test(heading)) {
-              if (ir.format === "docx" || ir.format === "rtf" || ir.format === "odt" || ir.format === "html" || ir.format === "epub") { const lv = headingLevelOf(heading); from = lv === 2 ? "h2" : (lv > 2 ? "text" : "h1"); } /* BEUK:epubimport — an EPUB page's heading; BEUK:headlevels — a deeper heading that opens a chapter is named by its line */
+              if (ir.format === "docx" || ir.format === "rtf" || ir.format === "odt" || ir.format === "html" || ir.format === "epub") from = headingLevelOf(heading) === 2 ? "h2" : "h1"; /* BEUK:epubimport — an EPUB page's heading */
               else from = /^##\s/.test(heading) ? "md2" : "md1";
+              if (from === "h1" && headingLevelOf(heading) > 2) from = "text"; /* BEUK:headlevels — a deeper heading that opens a chapter (a file whose levels start lower) is named by its line, never called Heading 1 */
             }
             const idx = state.sections.indexOf(sec);
             let prevBody = null;
