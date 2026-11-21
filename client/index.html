@@ -40688,8 +40688,17 @@
               return;
             }
             if (tag === "blockquote") {
-              const ps = Array.prototype.filter.call(c.children, (k) => /^(p|div)$/i.test(k.tagName));
-              const lines = (ps.length ? ps : [c]).map((p) => trimBr(inline(p, { b: false, i: false }))).filter(inked);
+              /* every word of the quotation: each paragraph a line, its attribution (<footer>, <cite>, <figcaption>) a line, and
+                 whatever stands loose between them a line too — found by the import tally (BEUK:importtally): only the <p>
+                 and <div> children were read, so "— Name" in a <footer> was lost */
+              const lines = [];
+              let loose = [];
+              const flushLoose = () => { if (!loose.length) return; const v = trimBr(inline({ childNodes: loose }, { b: false, i: false })); loose = []; if (inked(v)) lines.push(v); };
+              Array.prototype.forEach.call(c.childNodes, (k) => {
+                if (k.nodeType === 1 && /^(p|div|footer|cite|figcaption|header)$/i.test(k.tagName)) { flushLoose(); const v = trimBr(inline(k, { b: false, i: false })); if (inked(v)) lines.push(v); }
+                else if (k.nodeType === 1 || k.nodeType === 3) loose.push(k);
+              });
+              flushLoose();
               if (lines.length) html.push("<blockquote>" + lines.map((v) => "<p>" + v + "</p>").join("") + "</blockquote>");
               return;
             }
@@ -70024,6 +70033,22 @@
               const src = await irTallySource("epub", epubCheckRead.bytes);
               irCheckRun(() => judge("EPUB", irTallyWrite(importEpubRead("the-salt-road.epub", rd), src), 24, 17, { noteMarks: 2, pages: 5 })); }
             return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "text, Markdown, web page, RTF, Word, OpenDocument and EPUB: the file's words are the book's plus each named bucket, none unaccounted for; a dropped paragraph leaves its four words unaccounted for and the card warns");
+          } },
+        { id: "import.html.quote-attribution", feature: "import", name: "A web page's quotation keeps every word: its paragraphs, the attribution set in a <footer> or a <cite> (read as the quotation's attribution, as a Word file's is), and words that stand loose beside them — a loss the import tally found, where only the quotation's <p> and <div> were read",
+          async run() {
+            const page = '<html><body><h1>Chapter 1: Dawn</h1><p>Before.</p><blockquote><p>“Nothing vanishes from a print room.”</p><footer>— Marginalia, <cite>Folio I.3</cite></footer></blockquote>' +
+              "<blockquote>Loose words first.<p>Then a paragraph.</p></blockquote><h1>Chapter 2: Noon</h1><p>The pans lay white.</p></body></html>";
+            IR_ASIDE = {};
+            const src = await irTallySource("html", page), rd = await htmlRead(page, []);
+            return irCheckRun(() => {
+              const rep = importDocxConverted("fixture.html", rd.html, rd.messages, rd.scan, rd.identity, null, "html");
+              const ty = irTallyWrite(rep, src);
+              const c1 = (state.sections.find((s) => s.type === "chapter" && s.title === "Dawn") || {}).content || "";
+              const blocks = irBlocks(c1);
+              const NL = String.fromCharCode(10);
+              const quoteOk = blocks.indexOf("> “Nothing vanishes from a print room.”" + NL + "> — Marginalia, Folio I.3") !== -1 && blocks.indexOf("> Loose words first." + NL + "> Then a paragraph.") !== -1;
+              return scVerdict(quoteOk && !!ty && ty.unaccounted === 0, "the attribution and the loose words are in the quotation (" + quoteOk + "), the tally finds no word unaccounted for (" + (ty ? ty.unaccounted : "-") + ") · " + JSON.stringify(blocks.slice(1, 3)));
+            });
           } },
         { id: "import.md.zip-pictures", feature: "import", name: "A zip of one Markdown file brings its pictures, as a zipped web page does: each link is resolved against the zip's own paths whatever its case or the direction of its slashes (and a zip that names its folders with a backslash), the picture lands in the library under its file name with its alt text and caption, one that is not in the zip stays the link it was and is counted; and the file's YAML gives the ISBN, the publisher and the year",
           async run() {

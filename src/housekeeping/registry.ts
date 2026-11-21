@@ -3294,6 +3294,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
+    id: 'import.html.quote-attribution',
+    title: "A web page's quotation keeps every word: its paragraphs, the attribution in a <footer> or <cite>, and words set loose beside them",
+    kind: 'client-only',
+    reason: 'The web-page reader (BEUK:docsimport) runs in the studio; the server never sees the file.',
+  },
+  {
     id: 'import.tables.kept-as-rows',
     title:
       "A table's words stay in the book as plain rows where it stood: cells joined by a bar with empty and merged-over cells kept in their columns, marks and a note's mark kept in their cell, a nested table after its parent and said once, reported as kept, the bars not counted as words, and out again on undo",
