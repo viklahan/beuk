@@ -14,9 +14,9 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
-const IDS = ['sample.roundtrip.epub', 'import.epub.reads-any-epub'];
+const IDS = ['sample.roundtrip.epub', 'import.epub.reads-any-epub', 'import.epub.structure-by-headings', 'import.epub.notes-by-id', 'import.epub.lists-captions-paragraphs', 'import.epub.credit-says-where'];
 
-test('epub import: both self-checks exist and are registered client-only with a reason', async () => {
+test('epub import: its self-checks exist and are registered client-only with a reason', async () => {
   const html = await clientHtml();
   for (const id of IDS) {
     assert.ok(html.includes(`{ id: "${id}"`), id);
