@@ -5300,9 +5300,14 @@ import).
   hyphenation leaves many words for the writer (a 75,000-word novel set
   with the browser's hyphenation left 82 of its 828 line-end hyphens,
   measured 2026-11-22), so the import card
-  states how many are still as the import left them (`ir.card.didHyphens`,
-  with a button that opens the list at them, their group opened), and the
-  "Join all of these" line is listed before the words it joins.
+  states how many are still as the import left them (`ir.card.didHyphens`:
+  a calm row at the foot of the verdict panel, which never puts the card in
+  its "differs" state, with a button that opens the full account at them,
+  under "For you to look at", their fold opened), and the "Join all of
+  these" line is listed before the words it joins. A hyphen the writer has
+  joined is taken off the card's "in your book" figure and named in a row
+  of its own ("Hyphens you joined since the import"), so the arithmetic
+  stays true.
 - **Headings.** A line set clearly larger than the body type (×1.22), a
   short bold line standing alone, or a "Chapter …" label over a larger
   title, merged into one `# Chapter One: Title` heading. A contents page is
