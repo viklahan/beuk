@@ -13,6 +13,7 @@ import { buildTestModule } from '../scripts/extract-closure.mjs';
 import { ORACLE_STUBS } from './import-oracle';
 import { loadMammoth } from './vendor';
 import markup from '../src/generated/import-markup.json';
+import { MERIDIAN_INVENTORY, type Inventory } from './import-tally-meridian.inventory';
 
 /* The import tally (BEUK:importtally) on a real book: the Meridian Ledger stress book, one manuscript in seven formats
    and two PDFs, each read by 1.0's own readImportFile (the text 2.0 lifts) and tallied in CHARACTERS (V, 2026-11-22:
@@ -105,7 +106,7 @@ describe.skipIf(!present)('the import tally of the Meridian stress book, in char
       const diff = last.diff!;
       const aside = Object.values(ty.aside).reduce((a, n) => a + n, 0);
       const side = (l: Diff) => l.map(([c, n]) => [name(c), n] as [string, number]);
-      const got = { file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, fileOnly: side(diff.fileOnly), bookOnly: side(diff.bookOnly),
+      const got: Inventory = { file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, fileOnly: side(diff.fileOnly), bookOnly: side(diff.bookOnly),
         ...(ty.pdf ? { pdf: { raw: ty.pdf.raw, joins: ty.pdf.joins, rejoined: ty.pdf.rejoined.reduce((a, e) => a + e.n, 0) } } : {}) };
       if (OUT) {
         mkdirSync(OUT, { recursive: true });
@@ -120,6 +121,8 @@ describe.skipIf(!present)('the import tally of the Meridian stress book, in char
       const sum = (l: Diff) => l.reduce((a, x) => a + x[1], 0);
       expect(sum(diff.fileOnly) - sum(diff.bookOnly), kind + ': the differing characters sum to the unaccounted figure').toBe(ty.unaccounted);
       expect({ fileOnlyN: ty.chars.fileOnlyN, bookOnlyN: ty.chars.bookOnlyN, same: ty.chars.same }).toEqual({ fileOnlyN: sum(diff.fileOnly), bookOnlyN: sum(diff.bookOnly), same: !diff.fileOnly.length && !diff.bookOnly.length });
+      // the inventory: everything the import still changes in this file, exactly
+      expect(got, kind + ': the measurement is not the pinned inventory (import-tally-meridian.inventory.ts): the import now changes something else, or no longer changes something').toEqual(MERIDIAN_INVENTORY[kind]);
     }, 600_000);
   }
 });
