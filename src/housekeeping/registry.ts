@@ -3177,7 +3177,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.report.txt-records-and-undo',
     title:
-      'Import report (text): chapter splits, a spaced * * * scene break and smartened quotes are recorded; one chapter split undoes back into its neighbour, typography and break undos restore the original, and Undo the whole import restores the prior book',
+      'Import report (text): chapter splits and a spaced * * * scene break are recorded, and the quotes, dashes and dots stay as typed (no typography change is listed); one chapter split undoes back into its neighbour, the break undo restores the original, and Undo the whole import restores the prior book',
     kind: 'client-only',
     reason: 'The import pipeline, the report and its undos all run in the studio against the book in the browser.',
   },
@@ -3296,14 +3296,14 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.tally.every-word',
     title:
-      "The import tally counts the file by a reading of its own and the book the import made: for a small file of each kind the file's words are exactly the book's plus each named bucket set aside, and a dropped paragraph leaves exactly its words unaccounted for, with a warning",
+      "The import tally counts the file by a reading of its own and the book the import made: for a small file of each kind the file's characters are exactly the book's plus each named row set aside, and a dropped paragraph leaves exactly its characters unaccounted for, with a warning",
     kind: 'client-only',
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
     id: 'import.tally.no-false-alarm',
     title:
-      "The import tally raises no false alarm: a list Word numbers itself, an RTF list with written-out numbers, a page break switched off and rules of underscores (one lifted with the title page) each reconcile to zero; more words in the book than in the file are said as such, never as words lost",
+      "The import tally raises no false alarm: a list Word numbers itself, an RTF list with written-out numbers, a page break switched off and rules of underscores (one lifted with the title page) each reconcile to zero; more characters in the book than in the file are said as such, never as characters lost",
     kind: 'client-only',
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
@@ -3315,9 +3315,9 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
-    id: 'import.tally.studio-count',
+    id: 'import.tally.characters',
     title:
-      "The import tally counts words by the studio's own rule and shows the studio's count as itself, with its parts summing exactly; a language counted by characters is counted so on both sides",
+      "The import tally counts characters by one rule for every format and language: every code point that is not whitespace, on both sides, nothing folded; Beuk's marks on neither, and the file's marks said",
     kind: 'client-only',
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
@@ -3343,6 +3343,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: "The typographic pass (beautifyText) runs in the studio; the server never sees the import.",
   },
   {
+    id: 'import.asgiven.no-tidying',
+    title:
+      "The import stores what the file gives: straight quotes, \"--\", \"...\" and hyphens stay as typed, no typography change is listed, a typed break is still the book's own, and Polish still tidies",
+    kind: 'client-only',
+    reason: "The import and structureText run in the studio; the server never sees the import.",
+  },
+  {
     id: 'import.txt.heading-frames',
     title:
       "A text file's typed rules framing a chapter's heading are the heading's frame: taken out and reported, never left as a line of rule characters or a scene break",
@@ -3359,7 +3366,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.tally.word-for-word',
     title:
-      "The import tally compares the file's words with the book's, not only their number: a word changed in the import is named and the card warns",
+      "The import tally compares the file's characters with the book's, not only their number: a letter changed in the import is named on both sides with its word, and the card warns",
     kind: 'client-only',
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },

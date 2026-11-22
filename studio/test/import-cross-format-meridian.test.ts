@@ -14,7 +14,9 @@ import markup from '../src/generated/import-markup.json';
 
 /* The same book from every format (BEUK:importtally, gap 3). The Meridian Ledger stress book is one manuscript in seven
    formats; each is imported by 1.0's own readImportFile and the book's words are read as the tally reads them (the
-   studio's own rule, irTallyTokens over irTallyBook's text). The rich formats must give the same book word for word as
+   studio's own rule, irTallyWordsOf over irTallyBook's text; a word here has a letter or a digit in it, so a sign
+   standing alone is none, as this test has always counted). The tally itself now counts characters: its figures
+   below are characters, and the whole inventory of what differs is import-tally-meridian.test.ts's. The rich formats must give the same book word for word as
    the Word file, so that a reader that drops, repeats, glues or mis-decodes words in one format shows up here as a
    difference from the others. What differs for a reason that is the file's own is allowed by name, with its count:
 
@@ -77,7 +79,7 @@ describe.skipIf(!present)('the same book from every format: the Meridian stress 
     loadMammoth();
     const epub = readFileSync(path.join(import.meta.dirname, '..', '..', 'src', 'book', 'epub', 'closure.ts'), 'utf8');
     const stubs = ORACLE_STUBS.filter((n) => !['applySampleBookSync', 'irOpenReport', 'bibleBookArrived', 'markWritingActivity', 'noteBookEdited'].includes(n));
-    const roots = ['applyBookDoc', 'buildEmptyBook', 'readImportFile', 'irTallyTokens', 'irTallyLast'];
+    const roots = ['applyBookDoc', 'buildEmptyBook', 'readImportFile', 'irTallyWordsOf', 'irTallyLast'];
     const out = await buildTestModule(HTML, epub, { roots, supplied: [...new Set([...stubs, 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf'])], what: 'import-cross-format', fileReaders: ['bulkFileToData', 'samplePicB64'], prefix: 'IMPORT_CROSS', fn: 'createImportCross', title: "1.0's import, the same book from every format (tests only)" });
     const code = (out.code as string).replace(/^export (const|function) /gm, '$1 ') + '\nreturn createImportCross(env);';
     make = (e: Rec) => new Function('env', code)(e) as { api: Api };
@@ -90,7 +92,7 @@ describe.skipIf(!present)('the same book from every format: the Meridian stress 
       const file = { name, arrayBuffer: async () => buf(), text: async () => new TextDecoder('utf-8').decode(bytes) };
       const rep = ((await m.api.readImportFile(file)) as () => { tally: { file: number; aside: Record<string, number>; unaccounted: number } })();
       const last = m.api.irTallyLast() as { book: { text: string } };
-      reads[kind] = { book: m.api.irTallyTokens(last.book.text) as string[], file: rep.tally.file, aside: rep.tally.aside, unaccounted: rep.tally.unaccounted };
+      reads[kind] = { book: (m.api.irTallyWordsOf(last.book.text) as string[]).filter((w) => /[\p{L}\p{N}]/u.test(w)), file: rep.tally.file, aside: rep.tally.aside, unaccounted: rep.tally.unaccounted };
     }
   }, 600_000);
 
@@ -113,14 +115,17 @@ describe.skipIf(!present)('the same book from every format: the Meridian stress 
   });
 
   it('txt: a rendering of the book, its differences each the file\'s own and counted', () => {
-    expect(reads.txt.unaccounted).toBe(0);
-    expect(reads.docx.unaccounted).toBe(0);
-    expect(reads.txt.file - reads.docx.file, 'the text file holds fewer words than the Word file').toBe(-287);
-    expect(reads.txt.aside.noteMarks, 'note numbers typed as words, set aside').toBe(229);
-    expect(reads.txt.aside.labels, 'notes labels typed, set aside').toBe(13);
-    expect(reads.docx.aside.headers, 'the Word file\'s running headers, set aside').toBe(12);
-    const asideDiff = Object.values(reads.txt.aside).reduce((a, n) => a + n, 0) - Object.values(reads.docx.aside).reduce((a, n) => a + n, 0);
-    expect(asideDiff).toBe(229 + 13 - 12);
+    // The tally counts characters now. What is unaccounted for in each file, character by character, is the pinned
+    // inventory of import-tally-meridian.test.ts: 12 in the text file (the dash after each of its 12 chapters' numbers),
+    // and 2 more in the Word file's book than in its file (the colons the import joins its two appendix headings with).
+    expect(reads.txt.unaccounted).toBe(12);
+    expect(reads.docx.unaccounted).toBe(-2);
+    expect(reads.txt.file - reads.docx.file, 'the text file holds more characters than the Word file (its typed rules, labels and note numbers)').toBe(17182);
+    expect(reads.txt.aside.noteMarks, 'note numbers typed in the text, set aside (characters)').toBe(484);
+    expect(reads.txt.aside.labels, 'notes labels typed, set aside (characters)').toBe(988);
+    expect(reads.docx.aside.headers, 'the Word file\'s running headers, set aside (characters)').toBe(78);
+    // The book's words, as this test has always counted them: 517 fewer than the Word file's book (the file holds 287
+    // fewer, and 229 typed note numbers and 13 label words are set aside where the Word file's 12 header words are).
     expect(reads.txt.book.length - reads.docx.book.length).toBe(-287 - (229 + 13 - 12));
   });
 });

@@ -1,0 +1,47 @@
+{
+  "about": "Every page self-check that does not pass under tools/page-selfchecks/run.mjs (headless Chromium, client/ served statically, the sample book on the desk, 1920x1080), with the reason as far as it is known. An entry is a red that is stated, never a pass. 'verified' says what was actually checked; where it says 'not verified', nobody has confirmed the reason. An entry marked 'sometimes' has been seen to pass on one run and not on the next.",
+  "measured": "2026-11-22, three runs of 494 checks: 487 or 488 passed each time",
+  "checks": [
+    {
+      "id": "infra.app.answers",
+      "why": "The harness serves client/ statically; there is no app server to answer /api/health, /help and the other pages. The check's own message says so.",
+      "verified": "Read from the check's message, three runs. Not run against a real server here."
+    },
+    {
+      "id": "pwa.installable",
+      "why": "Its service-worker conditions (the versioned shell cached with the studio in it; the served worker's bytes) do not hold under the static host.",
+      "verified": "Not verified on the real server or in an installed window."
+    },
+    {
+      "id": "fullscreen.controls",
+      "why": "Expects the wording for a browser with element full screen; headless Chromium does not report one.",
+      "verified": "Not verified in a real window."
+    },
+    {
+      "id": "fullscreen.fill-window",
+      "why": "Its fill-the-window steps do not complete in headless Chromium.",
+      "verified": "Not verified in a real window. Fails at 1280x720 and at 1920x1080."
+    },
+    {
+      "id": "chapter.margin",
+      "why": "Its print-view case, a paragraph moved on with its margin notes, did not occur at this window size, so that part went unexercised. The check reports that as not passing rather than assume it.",
+      "verified": "Not verified at any size where the case occurs."
+    },
+    {
+      "id": "sample.spreadbleed",
+      "why": "The sample book's Epilogue has no painting yet: 16 of its 17 body sections carry their pair.",
+      "verified": "Observed, three runs. It is the sample's content, not code."
+    },
+    {
+      "id": "zen.sound.buffer-loop",
+      "sometimes": true,
+      "why": "Reads the sound's volume while it is still fading in: 0.424 of 0.7 on the runs that did not pass, 0.7 of 0.7 on the one that did. The outcome follows how fast the machine ran the check.",
+      "verified": "Seen not passing on two of three runs and passing on one. Whether the check should wait for the fade to end was not decided."
+    }
+  ],
+  "alsoSeen": [
+    "At 1280x720 three more do not pass, all of them measuring the old studio page's own layout: zen.calm.manuscript-only (the text box runs under the bottom controls), editor.toolbar.layout (the toolbar wraps to four rows with a group split across them) and zen.controls.no-overlap. At 1920x1080 all three passed on three runs. Whether the 2.0 studio has the same layout at that size was not checked.",
+    "zen.sound.files-decode did not pass when the sound files were served as application/octet-stream and passed on three runs when served as audio/mpeg, as this runner serves them.",
+    "With no book on the desk about twenty more do not pass: they build an EPUB from the open book and the validator rightly asks for a title and an author. The runner loads the sample book first for that reason."
+  ]
+}
