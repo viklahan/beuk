@@ -254,20 +254,38 @@ describe('the import tally counts and compares characters, exactly', () => {
     expect(reportSaid(rep)).toContain('4 characters of your file are marks Beuk reads as markup, not as text');
   }, 120_000);
 
-  it('a PDF: a hyphen taken off where a word was rejoined at a line\'s end is a character removed, in a named row, and each one is listed', async () => {
+  /* A PDF's hyphen at a line's end (BEUK:hyphensgiven; every case of the rule is import-pdf-hyphens.test.ts's). The page
+     does not say whose hyphen it is. Where the book's own text does not either ("transport" stands nowhere else), the
+     hyphen is the page's and stays: no character is removed, nothing is counted. Where the book writes the word whole
+     without it elsewhere, it is taken off: a character removed, in a named row, each one listed. */
+  async function hyphenPdf(second: string) {
     const doc = await pdfLib.PDFDocument.create();
     const font = await doc.embedFont(pdfLib.StandardFonts.Helvetica);
-    const lines: [string, string[]][] = [['Chapter 1', ['The caravan left at dawn and the trans-', 'port reached the pans by noon.']], ['Chapter 2', [LAST]]];
+    const lines: [string, string[]][] = [['Chapter 1', ['The caravan left at dawn and the trans-', 'port reached the pans by noon.']], ['Chapter 2', [second]]];
     for (const [h, body] of lines) {
       const pg = doc.addPage([420, 595]);
       pg.drawText(h, { x: 60, y: 480, size: 20, font });
       body.forEach((s, i) => pg.drawText(s, { x: 60, y: 430 - i * 16, size: 11, font }));
     }
-    const { rep, all } = await importFile('hyphen.pdf', await doc.save());
+    const raw = count('Chapter 1') + count(lines[0][1][0]) + count(lines[0][1][1]) + count('Chapter 2') + count(second);
+    return { raw, ...(await importFile('hyphen.pdf', await doc.save())) };
+  }
+  it('a PDF: a hyphen at a line\'s end that the book\'s own text does not settle stays in the book as the page shows it: no character is removed, no row is counted, and the word is listed for the writer', async () => {
+    const { rep, all, raw } = await hyphenPdf(LAST);
+    expect(all).toContain('the trans-port reached');
+    const ty = tallyOf(rep);
+    // the book: the file's characters less the word "Chapter" of the two headings (7 each: the heading's own label, a row of its own)
+    expect({ raw: ty.pdf!.raw, joins: ty.pdf!.joins, file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ raw, joins: {}, file: raw, book: raw - 14, aside: { headingMarks: 14 }, unaccounted: 0, same: true });
+    expect(ty.pdf!.rejoined).toEqual([]);
+    expect(rep.items.filter((it) => it.kind === 'pdfHyphenAsk').map((it) => it.data)).toMatchObject([{ kept: 'trans-port', offered: 'transport', why: 'neither', n: 1 }]);
+    const said = reportSaid(rep);
+    expect(said).not.toContain(t('ir.tally.j.pdfRejoined'));
+    expect(said).not.toContain('Each hyphen taken off at a line’s end');
+  }, 120_000);
+  it('a PDF: a hyphen taken off where the book writes the word whole elsewhere is a character removed, in a named row, and each one is listed', async () => {
+    const { rep, all, raw } = await hyphenPdf('The transport lay white.');
     expect(all).toContain('the transport reached');
     const ty = tallyOf(rep);
-    const raw = count('Chapter 1') + count(lines[0][1][0]) + count(lines[0][1][1]) + count('Chapter 2') + count(LAST);
-    // the book: the file's characters less the word "Chapter" of the two headings (7 each: the heading's own label, a row of its own)
     expect({ raw: ty.pdf!.raw, joins: ty.pdf!.joins, file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ raw, joins: { pdfRejoined: 1 }, file: raw - 1, book: raw - 1 - 14, aside: { headingMarks: 14 }, unaccounted: 0, same: true });
     expect(ty.pdf!.rejoined).toEqual([{ from: ['trans-', 'port'], to: 'transport', n: 1 }]);
     const said = reportSaid(rep);

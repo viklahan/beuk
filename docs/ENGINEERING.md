@@ -5274,9 +5274,16 @@ import).
   above closed a sentence; a
   paragraph runs on over a page or column break. A gap of about three lines
   between body lines is a scene break (`***`), except above a chapter's
-  drop cap. Line-end hyphens (`-`, U+2010 from `hyphens: auto`, soft
-  hyphens) are removed when the joined word reads as one word, and kept
-  when the hyphenated word appears elsewhere in the text.
+  drop cap. A hyphen at a line's end (`-`, or U+2010 from `hyphens: auto`)
+  is settled by the PDF's own text, read on every line of every page,
+  capitals aside, once the whole flow has been read (BEUK:hyphensgiven): it
+  is kept when the hyphenated word stands whole elsewhere, taken off when
+  only the joined word does, and where neither stands elsewhere, or both
+  do, the page's own characters stay and the report lists the word with
+  both readings (`pdfHyphenAsk`, with "Join it" and, for two or more,
+  "Join all of these"). The two halves at a line's end are never counted as
+  the word standing whole. A soft hyphen (U+00AD) is always taken off. Only
+  a hyphen actually taken off is counted in the tally's `pdfRejoined` row.
 - **Headings.** A line set clearly larger than the body type (×1.22), a
   short bold line standing alone, or a "Chapter …" label over a larger
   title, merged into one `# Chapter One: Title` heading. A contents page is
