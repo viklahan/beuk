@@ -1896,7 +1896,12 @@ JSZip — no server call.
   postal address, phone, email — single-spaced; empty fields are left
   out, never filled in), the approximate word count top right
   ("about 85,000 words"), the title in capitals halfway down, the
-  subtitle if the book has one, and "by" + byline. The byline is a pen
+  subtitle if the book has one, and "by" + byline. The capitals are a
+  look: the file holds the title as the book stores it, in a run whose
+  own property is all capitals (`<w:caps/>`); its letters are never
+  rewritten. The header's title is set the same way, and the dialog's
+  preview shows the stored title through `.ms-caps`
+  (`text-transform: uppercase`). The byline is a pen
   name typed in the dialog, else the book's author. The contact block,
   pen name, header surname and page choices ride in the book file
   (`serializeBook().manuscript`); a book without them starts empty.

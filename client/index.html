@@ -2641,6 +2641,7 @@
       .ms-tp-count { white-space: nowrap; }
       .ms-tp-mid { position: absolute; left: 11.8%; right: 11.8%; top: 50%; text-align: center; line-height: 2.1; }
       .ms-tp-title { overflow-wrap: anywhere; }
+      .ms-caps { text-transform: uppercase; } /* BEUK:asgiven — the title shown in capitals as the manuscript prints it: a look; the text is the stored title */
       @media (max-width: 640px) { .ms-grid3 { grid-template-columns: 1fr; } .ms-grid label:has(textarea) { grid-row: auto; } }
       /* ==== /BEUK:manuscript ==== */
       /* ==== BEUK:outline ==== — Cards and List over the book's own sections: synopsis, status, tags, saved filters */
@@ -52844,7 +52845,8 @@
          Housekeeping checks assert on exactly what downloads. */
       function docxRun(text, opts) {
         opts = opts || {};
-        const rPr = (opts.b || opts.i || opts.sup || opts.link || opts.sc) ? "<w:rPr>" + (opts.link ? '<w:rStyle w:val="Hyperlink"/>' : "") + (opts.b ? "<w:b/>" : "") + (opts.i ? "<w:i/>" : "") + (opts.sc ? "<w:smallCaps/>" : "") + (opts.sup ? '<w:vertAlign w:val="superscript"/>' : "") + "</w:rPr>" : "";
+        /* BEUK:asgiven — opts.caps: the run is SHOWN in capitals (Word's all-capitals character property, w:caps); its text stays the letters it was given. In w:rPr's own order: rStyle, b, i, caps, smallCaps, vertAlign. */
+        const rPr = (opts.b || opts.i || opts.sup || opts.link || opts.sc || opts.caps) ? "<w:rPr>" + (opts.link ? '<w:rStyle w:val="Hyperlink"/>' : "") + (opts.b ? "<w:b/>" : "") + (opts.i ? "<w:i/>" : "") + (opts.caps ? "<w:caps/>" : "") + (opts.sc ? "<w:smallCaps/>" : "") + (opts.sup ? '<w:vertAlign w:val="superscript"/>' : "") + "</w:rPr>" : "";
         return "<w:r>" + rPr + '<w:t xml:space="preserve">' + esc(text) + "</w:t></w:r>";
       }
       /* The hyperlinks of the document being built (buildDocxFiles
@@ -53310,7 +53312,6 @@
       function msDocumentXml(plan) {
         const m = state.meta;
         const pg = MS_PAPER[state.manuscript.paper];
-        const lang = bookLang();
         /* ---- title page ---- */
         const tp = [];
         const contact = plan.contact;
@@ -53319,9 +53320,11 @@
         /* the title halfway down the page: half the page height, less the
            top margin and the single-spaced contact block above it */
         const before = Math.max(480, Math.round(pg.h / 2 - MS_MARGIN - Math.max(1, contact.length) * 276 - 240));
-        let title = String(m.title || "Untitled").trim();
-        try { title = title.toLocaleUpperCase(lang); } catch (e) { title = title.toUpperCase(); }
-        tp.push({ style: "Title", runs: docxRun(title, {}), extra: '<w:spacing w:before="' + before + '"/>' });
+        /* BEUK:asgiven (V, 2026-11-22: "Changing the writer's letters is not allowed; showing them in capitals is a look")
+           — the title is written as the book stores it, in a run set in all capitals (w:caps): Word shows capitals, and
+           the text in the file is still the writer's. (Before, the title's own letters were rewritten in capitals.) */
+        const title = String(m.title || "Untitled").trim();
+        tp.push({ style: "Title", runs: docxRun(title, { caps: true }), extra: '<w:spacing w:before="' + before + '"/>' });
         if (String(m.subtitle || "").trim()) tp.push({ style: "MsByline", runs: docxRun(m.subtitle.trim(), {}) });
         if (msByline()) tp.push({ style: "MsByline", runs: docxRun("by " + msByline(), {}) });
         tp[tp.length - 1].extra = (tp[tp.length - 1].extra || "") + "<w:sectPr>" + msPageProps(false) + "</w:sectPr>";
@@ -53350,11 +53353,13 @@
           parts.join("\n") + "\n<w:sectPr>" + msPageProps(true) + "</w:sectPr></w:body></w:document>";
       }
       function msHeaderXml() {
-        let title = String(state.meta.title || "Untitled").trim();
-        try { title = title.toLocaleUpperCase(bookLang()); } catch (e) { title = title.toUpperCase(); }
-        const lead = [msSurname(), title].filter(Boolean).join(" / ") + " / ";
+        /* BEUK:asgiven — "Surname / TITLE / page": the title as the book stores it, in a run of its own set in all
+           capitals (w:caps), so the capitals are a look and the letters are the writer's. The surname is the writer's
+           as typed (or the by-line's last word): it was never set in capitals, and is not now. */
+        const title = String(state.meta.title || "Untitled").trim();
+        const surname = msSurname();
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-          '<w:p><w:pPr><w:pStyle w:val="Header"/></w:pPr>' + docxRun(lead, {}) +
+          '<w:p><w:pPr><w:pStyle w:val="Header"/></w:pPr>' + (surname ? docxRun(surname + " / ", {}) : "") + docxRun(title, { caps: true }) + docxRun(" / ", {}) +
           '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:hdr>';
       }
       function msStylesXml() {
@@ -53481,17 +53486,20 @@
         const ms = state.manuscript;
         let h = "";
         /* the title page as it will print, in the manuscript's own words */
-        let title = String(state.meta.title || "Untitled").trim();
-        try { title = title.toLocaleUpperCase(bookLang()); } catch (e) { title = title.toUpperCase(); }
+        /* BEUK:asgiven — this is a picture of the page as it will print, so the title is shown in capitals; shown, not
+           rewritten: the words on the page are the stored title, set in capitals by the stylesheet (.ms-caps), in the
+           book's language so the capitals are that language's */
+        const title = String(state.meta.title || "Untitled").trim();
+        const caps = (s) => '<span class="ms-caps" lang="' + esc(bookLang()) + '">' + esc(s) + "</span>";
         h += '<h3 class="acx-h">' + esc(t("ms.previewH")) + "</h3>";
         h += '<div class="ms-tp' + (ms.font === "courier" ? " ms-courier" : "") + (ms.paper === "a4" ? " ms-a4" : "") + '" id="msTitlePage" dir="ltr" aria-label="' + esc(t("ms.previewH")) + '">' +
           '<div class="ms-tp-top"><div class="ms-tp-contact">' + (plan.contact.length ? plan.contact.map((l) => "<div>" + esc(l) + "</div>").join("") : "") + "</div>" +
           '<div class="ms-tp-count">' + esc(msWordsLine(plan)) + "</div></div>" +
-          '<div class="ms-tp-mid"><div class="ms-tp-title">' + esc(title) + "</div>" +
+          '<div class="ms-tp-mid"><div class="ms-tp-title">' + caps(title) + "</div>" +
           (String(state.meta.subtitle || "").trim() ? "<div>" + esc(state.meta.subtitle.trim()) + "</div>" : "") +
           (msByline() ? "<div>by " + esc(msByline()) + "</div>" : "") + "</div>" +
           "</div>";
-        h += '<p class="acx-math" id="msHeaderLine" dir="ltr">' + esc([msSurname(), title].filter(Boolean).join(" / ") + " / 1") + "</p>";
+        h += '<p class="acx-math" id="msHeaderLine" dir="ltr">' + (msSurname() ? esc(msSurname() + " / ") : "") + caps(title) + esc(" / 1") + "</p>";
         h += '<p class="acx-note">' + esc(t("ms.headNote")) + "</p>";
         h += '<h3 class="acx-h">' + esc(t("ms.countH")) + "</h3>";
         h += '<p class="acx-math" id="msCount">' + esc(t(plan.unit === "characters" ? "ms.countChars" : "ms.count", { rounded: fmtNum(plan.rounded), exact: fmtNum(plan.words), sections: fmtNum(plan.body.length) })) + "</p>";
@@ -53593,7 +53601,7 @@
         };
         const docOf = (files) => (files.find((f) => f.path === "word/document.xml") || {}).content || "";
         return [
-          { id: "export.manuscript", feature: "export", name: "Submission manuscript: the Word file has a title page (contact block, rounded word count, title in capitals, by-line), a Surname / TITLE / page header from the text's first page, 12 pt double-spaced type with half-inch indents on one-inch margins, each chapter on a new page, \"#\" scene breaks, END after the last chapter, the writer's italics kept (or underlined when chosen), and none of the book's typesetting, front or back matter or pictures",
+          { id: "export.manuscript", feature: "export", name: "Submission manuscript: the Word file has a title page (contact block, rounded word count, the title as the book stores it and shown in capitals by its run's own all-capitals property — never its letters rewritten —, by-line), a Surname / title / page header (the title shown in capitals the same way) from the text's first page, 12 pt double-spaced type with half-inch indents on one-inch margins, each chapter on a new page, \"#\" scene breaks, END after the last chapter, the writer's italics kept (or underlined when chosen), and none of the book's typesetting, front or back matter or pictures",
             run() {
               return withMsFixture(() => {
                 const bad = [];
@@ -53606,7 +53614,9 @@
                 const has = (s, what) => { if (doc.indexOf(s) === -1) bad.push("no " + what); };
                 ["Margaret Quillon", "12 Harbour Row", "Portsalt PS1 2AB", "+44 1234 567890", "mq@example.com"].forEach((s) => has(s, "contact line " + s));
                 has('<w:r><w:tab/></w:r><w:r><w:t xml:space="preserve">about 100 words</w:t></w:r>', "word count at the right of the first line");
-                has(">THE TIDE LEDGER<", "title in capitals");
+                /* BEUK:asgiven — the title as the book stores it, in a run set in all capitals (w:caps): shown in capitals, its letters not rewritten anywhere in the file */
+                has('<w:r><w:rPr><w:caps/></w:rPr><w:t xml:space="preserve">The Tide Ledger</w:t></w:r>', "title as the book stores it, in a run set in all capitals");
+                files.forEach((f) => { if (typeof f.content === "string" && f.content.indexOf("THE TIDE LEDGER") !== -1) bad.push("the title's letters are rewritten in capitals in " + f.path); });
                 has(">by Mara Quill<", "by-line");
                 if (/Mara Quill lives/.test(doc)) bad.push("about-the-author leaked");
                 ["For the keepers", "All rights reserved", "Typeset with Beuk", "* * *", "[Image:", "The quay at dusk", "Cormorant", "w:shd", "w:pBdr", "w:color", 'w:cols w:num="2"', "secret"].forEach((s) => { if (doc.indexOf(s) !== -1 || (s === "Cormorant" && sty.indexOf(s) !== -1)) bad.push("leaked: " + s); });
@@ -53628,7 +53638,7 @@
                 if (sty.indexOf('w:ascii="Times New Roman"') === -1) bad.push("not Times New Roman");
                 if (!/<w:sectPr><w:headerReference w:type="default" r:id="rIdMsHeader"\/><w:pgSz w:w="12240" w:h="15840"\/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"[^>]*\/><w:pgNumType w:start="1"\/><\/w:sectPr><\/w:body>/.test(doc)) bad.push("the text's section: no header, US Letter, 1 in margins or page 1 start");
                 if (!/<w:sectPr><w:pgSz w:w="12240" w:h="15840"\/><w:pgMar[^>]*\/><\/w:sectPr><\/w:pPr><w:r><w:t xml:space="preserve">by Mara Quill/.test(doc)) bad.push("the title page is not its own section without a header");
-                if (hdr.indexOf(">Quill / THE TIDE LEDGER / <") === -1 || hdr.indexOf(" PAGE ") === -1) bad.push("header is not Surname / TITLE / page");
+                if (hdr.indexOf('<w:r><w:t xml:space="preserve">Quill / </w:t></w:r><w:r><w:rPr><w:caps/></w:rPr><w:t xml:space="preserve">The Tide Ledger</w:t></w:r><w:r><w:t xml:space="preserve"> / </w:t></w:r>') === -1 || hdr.indexOf(" PAGE ") === -1) bad.push("header is not Surname / the title as stored, set in all capitals / page");
                 if (rels.indexOf('Target="header1.xml"') === -1 || ct.indexOf("/word/header1.xml") === -1) bad.push("header part not wired");
                 /* underline instead of italics; A4; Courier */
                 state.manuscript = msNormalize(Object.assign({}, state.manuscript, { italics: "underline", paper: "a4", font: "courier" }));
@@ -53636,7 +53646,7 @@
                 if (d2.indexOf('<w:u w:val="single"/></w:rPr><w:t xml:space="preserve">first light') === -1 || /<w:i\/><\/w:rPr><w:t xml:space="preserve">first light/.test(d2)) bad.push("underline option does not replace italics");
                 if (d2.indexOf('<w:pgSz w:w="11906" w:h="16838"/>') === -1) bad.push("A4 not applied");
                 if (s2.indexOf('w:ascii="Courier New"') === -1) bad.push("Courier option not applied");
-                return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "title page, contact block, about 100 words, header Quill / THE TIDE LEDGER / page, 12 pt double-spaced (480), 1 in margins, chapters on new pages, # breaks, END, italics kept/underlined, nothing typeset leaks");
+                return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "title page, contact block, about 100 words, the title as stored (The Tide Ledger) in a run set in all capitals on the title page and in the header Quill / title / page, 12 pt double-spaced (480), 1 in margins, chapters on new pages, # breaks, END, italics kept/underlined, nothing typeset leaks");
               });
             } },
           { id: "export.manuscript.contact-persists", feature: "export", name: "Submission manuscript: the contact block, pen name and page choices ride in the book file (serializeBook → applyBookDoc) and a book without them starts empty — nothing is filled in",
@@ -53703,10 +53713,11 @@
                 if (c1.indexOf("████") === -1) bad.push("the redaction did not stay blacked out");
                 /* the Word import reads a verse stanza's line breaks as spaces (as it does for Beuk's own Word export): its words come back in order */
                 if (!/The tide runs east,\s+the tide runs west\./.test(c1)) bad.push("the verse's words did not come back");
-                if (/Margaret Quillon|about 100 words|THE TIDE LEDGER/.test(chs.map((s) => s.content).join("\n"))) bad.push("the title page came in as prose");
+                if (/Margaret Quillon|about 100 words|The Tide Ledger/i.test(chs.map((s) => s.content).join("\n"))) bad.push("the title page came in as prose"); /* BEUK:asgiven — the file holds the title as stored now (set in capitals by w:caps), so that is what would stand in the prose */
                 const end = chs[chs.length - 1] ? String(chs[chs.length - 1].content || "") : "";
                 if (!/She left at dawn\./.test(end)) bad.push("the last chapter's text is missing");
-                if (String(state.meta.title).toLowerCase() !== "the tide ledger" || state.meta.author !== "Mara Quill") bad.push("credit came back as " + JSON.stringify([state.meta.title, state.meta.author]));
+                /* BEUK:asgiven — the title must come back in the writer's own letters, exactly: no part of the manuscript holds it in capitals now (this was compared in small letters before) */
+                if (state.meta.title !== "The Tide Ledger" || state.meta.author !== "Mara Quill") bad.push("credit came back as " + JSON.stringify([state.meta.title, state.meta.author]));
                 return scVerdict(bad.length === 0, (bad.length ? bad.join("; ") + " — " : "") + "chapters: " + titles + "; chapter 1: " + JSON.stringify(c1.slice(0, 260)) + "; last: " + JSON.stringify(end.slice(-60)));
               });
             } }

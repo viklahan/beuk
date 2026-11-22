@@ -279,7 +279,9 @@ describe("1.0's submission manuscript self-checks (export.manuscript*, 3 of 4; t
     const has = (s: string, what: string) => { if (doc.indexOf(s) === -1) bad.push('no ' + what); };
     ['Margaret Quillon', '12 Harbour Row', 'Portsalt PS1 2AB', '+44 1234 567890', 'mq@example.com'].forEach((s) => has(s, 'contact line ' + s));
     has('<w:r><w:tab/></w:r><w:r><w:t xml:space="preserve">about 100 words</w:t></w:r>', 'word count at the right of the first line');
-    has('>THE TIDE LEDGER<', 'title in capitals');
+    // restated 2026-11-22 (the owner: capitals are a look, the letters are the writer's): was has('>THE TIDE LEDGER<', 'title in capitals')
+    has('<w:r><w:rPr><w:caps/></w:rPr><w:t xml:space="preserve">The Tide Ledger</w:t></w:r>', 'title as the book stores it, in a run set in all capitals');
+    files.forEach((f) => { if (typeof f.content === 'string' && f.content.indexOf('THE TIDE LEDGER') !== -1) bad.push("the title's letters are rewritten in capitals in " + f.path); });
     has('>by Mara Quill<', 'by-line');
     if (/Mara Quill lives/.test(doc)) bad.push('about-the-author leaked');
     ['For the keepers', 'All rights reserved', 'Typeset with Beuk', '* * *', '[Image:', 'The quay at dusk', 'Cormorant', 'w:shd', 'w:pBdr', 'w:color', 'w:cols w:num="2"', 'secret'].forEach((s) => { if (doc.indexOf(s) !== -1 || (s === 'Cormorant' && sty.indexOf(s) !== -1)) bad.push('leaked: ' + s); });
@@ -301,7 +303,8 @@ describe("1.0's submission manuscript self-checks (export.manuscript*, 3 of 4; t
     if (sty.indexOf('w:ascii="Times New Roman"') === -1) bad.push('not Times New Roman');
     if (!/<w:sectPr><w:headerReference w:type="default" r:id="rIdMsHeader"\/><w:pgSz w:w="12240" w:h="15840"\/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"[^>]*\/><w:pgNumType w:start="1"\/><\/w:sectPr><\/w:body>/.test(doc)) bad.push("the text's section");
     if (!/<w:sectPr><w:pgSz w:w="12240" w:h="15840"\/><w:pgMar[^>]*\/><\/w:sectPr><\/w:pPr><w:r><w:t xml:space="preserve">by Mara Quill/.test(doc)) bad.push('the title page is not its own section without a header');
-    if (hdr.indexOf('>Quill / THE TIDE LEDGER / <') === -1 || hdr.indexOf(' PAGE ') === -1) bad.push('header is not Surname / TITLE / page');
+    // restated 2026-11-22: was hdr.indexOf('>Quill / THE TIDE LEDGER / <')
+    if (hdr.indexOf('<w:r><w:t xml:space="preserve">Quill / </w:t></w:r><w:r><w:rPr><w:caps/></w:rPr><w:t xml:space="preserve">The Tide Ledger</w:t></w:r><w:r><w:t xml:space="preserve"> / </w:t></w:r>') === -1 || hdr.indexOf(' PAGE ') === -1) bad.push('header is not Surname / the title as stored, set in all capitals / page');
     if (rels.indexOf('Target="header1.xml"') === -1 || ct.indexOf('/word/header1.xml') === -1) bad.push('header part not wired');
     st.manuscript = a.msNormalize(Object.assign({}, st.manuscript, { italics: 'underline', paper: 'a4', font: 'courier' }));
     const f2 = a.msFiles(), d2 = docOf(f2), s2 = scText(f2, 'word/styles.xml');
@@ -309,6 +312,45 @@ describe("1.0's submission manuscript self-checks (export.manuscript*, 3 of 4; t
     if (d2.indexOf('<w:pgSz w:w="11906" w:h="16838"/>') === -1) bad.push('A4 not applied');
     if (s2.indexOf('w:ascii="Courier New"') === -1) bad.push('Courier option not applied');
     expect(bad).toEqual([]);
+  });
+
+  /* The owner, 2026-11-22: "Changing the writer's letters is not allowed; showing them in capitals is a look. Write the
+     title as the book stores it and set Word's all-capitals character property on the run (<w:caps/>), so Word shows
+     capitals and the text is still the writer's." Before, the manuscript wrote the title's own letters in capitals
+     ("THE SALT ROAD OF ÆTHEL") on the title page and in the running header. */
+  it('the manuscript writes the title as the book stores it, in a run set in all capitals (w:caps): no part of the file holds the title in other letters', () => {
+    const TITLE = 'The Salt Road of Æthel', UPPER = 'THE SALT ROAD OF ÆTHEL';
+    const st = msFixture();
+    (st.meta as Rec).title = TITLE;
+    const files = c.api.msFiles();
+    const runs = (xml: string) => Array.from(xml.matchAll(/<w:r>(<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t[^>]*>([\s\S]*?)<\/w:t><\/w:r>/g)).map((m) => ({ rPr: m[1] || '', text: m[2] || '' }));
+    for (const p of ['word/document.xml', 'word/header1.xml']) {
+      const all = runs(scText(files, p));
+      // every <w:t> where the title appears: the title exactly as stored, and nothing else in that run
+      const withTitle = all.filter((r) => r.text.toLocaleUpperCase('en').indexOf(UPPER) !== -1);
+      expect(withTitle.map((r) => r.text), p).toEqual([TITLE]);
+      // each such run carries w:caps, and no other property
+      expect(withTitle.map((r) => r.rPr), p).toEqual(['<w:rPr><w:caps/></w:rPr>']);
+    }
+    // no part of the package holds the upper-cased title
+    for (const f of files) if (typeof f.content === 'string') expect(f.content.indexOf(UPPER), f.path).toBe(-1);
+    // the header is still Surname / title / page: the surname as typed, the title in its own run
+    expect(scText(files, 'word/header1.xml')).toContain('<w:r><w:t xml:space="preserve">Quill / </w:t></w:r><w:r><w:rPr><w:caps/></w:rPr><w:t xml:space="preserve">' + TITLE + '</w:t></w:r><w:r><w:t xml:space="preserve"> / </w:t></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r>');
+    // a typed surname is written as typed: it was never set in capitals, and is not now
+    st.manuscript = c.api.msNormalize(Object.assign({}, st.manuscript, { surname: 'de la Mare' }));
+    expect(scText(c.api.msFiles(), 'word/header1.xml')).toContain('<w:r><w:t xml:space="preserve">de la Mare / </w:t></w:r><w:r><w:rPr><w:caps/></w:rPr>');
+    // w:caps stands where w:rPr's own order puts it: after bold and italic, before small capitals and a raised mark
+    const api = c.api as unknown as { docxRun: (text: string, opts: Rec) => string; msSummaryHtml: () => string };
+    expect(api.docxRun('x', { b: true, i: true, caps: true, sc: true, sup: true })).toBe('<w:r><w:rPr><w:b/><w:i/><w:caps/><w:smallCaps/><w:vertAlign w:val="superscript"/></w:rPr><w:t xml:space="preserve">x</w:t></w:r>');
+    expect(api.docxRun('x', {})).toBe('<w:r><w:t xml:space="preserve">x</w:t></w:r>');
+    // the dialog's picture of the page as it will print: the stored title, shown in capitals by the stylesheet (in the book's language), in both places
+    const box = document.createElement('div');
+    box.innerHTML = api.msSummaryHtml();
+    expect(Array.from(box.querySelectorAll('.ms-caps')).map((e) => [e.textContent, e.getAttribute('lang')])).toEqual([[TITLE, 'en'], [TITLE, 'en']]);
+    expect(box.querySelector('#msTitlePage .ms-tp-title')!.textContent).toBe(TITLE);
+    expect(box.querySelector('#msHeaderLine')!.textContent).toBe('de la Mare / ' + TITLE + ' / 1');
+    expect(box.innerHTML.indexOf(UPPER)).toBe(-1);
+    expect(readFileSync(REPO + 'studio/src/generated/export.css', 'utf8')).toContain('.ms-caps { text-transform: uppercase; }');
   });
 
   it('export.manuscript.contact-persists', () => {
