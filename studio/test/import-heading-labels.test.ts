@@ -261,15 +261,13 @@ describe('a heading\'s number is stored in the letters the file wrote it in (BEU
   }, 120_000);
 });
 
-describe('a named page\'s name is not a label: the book stores its own name for the page, and what that changes is in no row', () => {
-  it('a text file, "PROLOGUE" and "Acknowledgements": stored "Prologue" and "Acknowledgments" (the book\'s names for those pages) — the row takes nothing of either, and every character that differs is listed', async () => {
-    /* This pins what the import does today so that it cannot move unseen. It is a known change of the writer's characters, not a pass mark for it.
-       In the file: PROLOGUE 8 + 24; the two chapters' 63; Acknowledgements 16 + 24: 135.
-       In the book: Prologue 8 + 24; 47; Acknowledgments 15 + 24: 118. The row: the two chapters' 16, nothing of the pages. 135 - 118 - 16 = 1: the "e" of "Acknowledgements".
-       What differs: PROLOGUE against Prologue, R O L O G U E against r o l o g u e; the "e" the book's "Acknowledgments" lacks leaves the file one "e" more, so "e" stands on neither side. */
+describe('a named page\'s name is the heading as the writer typed it (BEUK:namesgiven): the book stores that, so nothing differs', () => {
+  it('a text file, "PROLOGUE" and "Acknowledgements": stored "PROLOGUE" and "Acknowledgements" (they were stored under the book\'s own names for those pages, "Prologue" and "Acknowledgments") — the row takes nothing of either and no character differs', async () => {
+    /* In the file: PROLOGUE 8 + 24; the two chapters' 63; Acknowledgements 16 + 24: 135.
+       In the book: PROLOGUE 8 + 24; 47; Acknowledgements 16 + 24: 119. The row: the two chapters' 16, nothing of the pages. 119 + 16 = 135.
+       (Before: the book held "Prologue" and "Acknowledgments", 118; one "e" was unaccounted for, and O E G L R U of the file stood against o g l r u of the book.) */
     const g = await importFile('labels-pages.txt', null, 'PROLOGUE\n\n' + GLOSS + '\n\nCHAPTER 1 — DAWN\n\n' + ONE + '\n\nCHAPTER 2 — DUSK\n\n' + TWO + '\n\nAcknowledgements\n\n' + GLOSS + '\n');
-    expect(pages(g)).toEqual([{ type: 'prologue', title: 'Prologue' }, { type: 'acknowledgments', title: 'Acknowledgments' }]);
-    expect(figures(g)).toEqual({ file: 135, book: 118, aside: { headingMarks: 16 }, unaccounted: 1, same: false,
-      fileOnly: [['O', 2], ['E', 1], ['G', 1], ['L', 1], ['R', 1], ['U', 1]], bookOnly: [['o', 2], ['g', 1], ['l', 1], ['r', 1], ['u', 1]] });
+    expect(pages(g)).toEqual([{ type: 'prologue', title: 'PROLOGUE' }, { type: 'acknowledgments', title: 'Acknowledgements' }]);
+    expect(figures(g)).toEqual(clean(135, 119, { headingMarks: 16 }));
   }, 120_000);
 });

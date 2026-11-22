@@ -39099,7 +39099,11 @@
           /* "Also by Daniel Reyes" carries the author's name in the
              heading itself; the type is the same. */
           const matter = MATTER_HEADINGS[n] || (n.indexOf("also by") === 0 ? { kind: "back", type: "alsoby", title: "Also by the Author" } : null);
-          if (matter) return { bodyText, cls: "matter", matter, raw: seg.heading };
+          /* BEUK:namesgiven — the heading says what KIND of page this is; its title is the heading as the writer typed it
+             ("Acknowledgements", "PROLOGUE", "Also by Ada Wren"). The book's own name for the type ("Acknowledgments",
+             "Prologue", "Also by the Author") used to be stored in its place: letters the writer never typed, and a
+             name of theirs lost. */
+          if (matter) return { bodyText, cls: "matter", matter: Object.assign({}, matter, { title: String(seg.heading).trim().replace(/^#{1,2}\s+/, "").trim() || matter.title }), raw: seg.heading };
           /* BEUK:importzones — an appendix named on a line of its own is read as the heading it is: the zone rule below
              files it (and joins "Appendix A" to the name set under it); see the two passes after that rule */
           if (isAppendixLine(seg.heading)) return { bodyText, cls: "chapter", head: { number: "", title: seg.heading.trim() }, raw: seg.heading.trim(), appendixLine: true };
@@ -39406,26 +39410,31 @@
          year and publisher out of it. */
       function placeMatterPieces(sections, pieces, kind, sink) {
         const claimed = new Set();
+        /* BEUK:namesgiven — a page the file opened with a heading of its own takes that heading as its title, also where
+           it takes a seat the empty book already had (the seat's own name, "Acknowledgments", is Beuk's word for the
+           type, not the writer's "Acknowledgements"). A page found by its shape has no heading: the seat's name stays. */
+        const named = (sec, p) => { const v = p && p._ir && p._ir.via === "heading" ? String(p.title || "").trim() : ""; if (sec && v) sec.title = v; };
         (pieces || []).forEach((p) => {
           const content = structureText((p.body || []).join("\n")); /* BEUK:asgiven — as the file gives it */
           /* BEUK:importtally — a page the file names with nothing under it yet (a dedication not yet written) is that
              page, empty: its empty seat, or a seat of its own */
           if (!content) {
             const seat = sections.find((s) => s.type === p.type && !String(s.content || "").trim() && !claimed.has(s.id));
-            if (seat) { claimed.add(seat.id); p._placed = { id: seat.id, mode: "filled", content: "" }; return; }
+            if (seat) { claimed.add(seat.id); named(seat, p); p._placed = { id: seat.id, mode: "filled", content: "" }; return; }
           }
           if (p.type === "copyright" && content) {
             let target = sections.find((s) => s.type === "copyright");
             let mode = "appended";
             if (!target) { target = mkSection(kind, "copyright", "Copyright"); sections.push(target); mode = "created"; }
             else if (!String(target.content || "").trim()) mode = "filled";
+            if (mode !== "appended") named(target, p);
             target.content = String(target.content || "").trim() ? target.content + "\n\n" + content : content;
             p._placed = { id: target.id, mode, content };
             sink.copyrightTexts.push(content);
             return;
           }
           const slot = content ? sections.find((s) => s.type === p.type && !String(s.content || "").trim()) : null;
-          if (slot) { slot.content = content; p._placed = { id: slot.id, mode: "filled", content }; return; }
+          if (slot) { slot.content = content; named(slot, p); p._placed = { id: slot.id, mode: "filled", content }; return; }
           const fresh = mkSection(kind, p.type, p.title || p.type);
           fresh.content = content;
           p._placed = { id: fresh.id, mode: "created", content };
