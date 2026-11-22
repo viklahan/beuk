@@ -141,6 +141,32 @@ describe('a heading with nothing under it is kept as the writer wrote it: a chap
     expect(ch.map((s) => [s.title, s.content.trim() === ''])).toEqual([['Dawn', true], ['Noon', true], ['Dawn', false], ['Noon', false]]);
     expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.words.same }).toEqual({ unaccounted: 0, same: true });
   }, 120_000);
+  /* A contents list typed as headings with no "Contents" heading above it (the owner's rule, 2026-11-21): three lines
+     or more in a row, each with nothing under it, each the same heading as a later chapter that has text, in the same
+     order, nothing else in the run: that run is the typed contents, set aside, counted under contents and listed in the
+     report. Anything short of it stays as it is (chapters with no text). */
+  const chap = (n: number, t: string): [('h' | 'p'), string][] => [['h', 'Chapter ' + n + ': ' + t], ['p', 'The caravan went on at ' + t.toLowerCase() + '.']];
+  const typed = (lines: string[]) => md([...lines.map((l) => ['h', l] as ['h', string]), ...chap(1, 'Dawn'), ...chap(2, 'Noon'), ...chap(3, 'Dusk')]);
+  it('three typed contents lines, each a later chapter\'s heading in the same order, are the contents: set aside and counted', async () => {
+    const { rep, secs } = await importFile('typed-contents.md', null, typed(['Chapter 1: Dawn', 'Chapter 2: Noon', 'Chapter 3: Dusk']));
+    expect(secs.filter((s) => s.type === 'chapter').map((s) => s.title)).toEqual(['Dawn', 'Noon', 'Dusk']);
+    expect(rep.items.some((it) => it.kind === 'toc' && /Chapter 1: Dawn/.test(String(it.before || ''))), 'listed in the report').toBe(true);
+    expect(rep.tally.aside.contents, "three words a line: Chapter, its number, its title").toBe(9);
+    expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.words.same }).toEqual({ unaccounted: 0, same: true });
+  }, 120_000);
+  for (const [what, lines] of [
+    ['one line matches no chapter', ['Chapter 1: Dawn', 'Chapter 2: Noon', 'Chapter 4: Night']],
+    ['the same lines in another order', ['Chapter 2: Noon', 'Chapter 1: Dawn', 'Chapter 3: Dusk']],
+  ] as [string, string[]][]) {
+    it('not the contents (' + what + '): kept as chapters with no text', async () => {
+      const { rep, secs } = await importFile('near-miss.md', null, typed(lines));
+      const ch = secs.filter((s) => s.type === 'chapter');
+      expect(ch.length).toBe(6);
+      expect(ch.slice(0, 3).every((s) => s.content.trim() === '')).toBe(true);
+      expect(rep.tally.aside.contents || 0).toBe(0);
+      expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.words.same }).toEqual({ unaccounted: 0, same: true });
+    }, 120_000);
+  }
   for (const [what, blocks, check, pdfCheck] of CASES) {
     for (const fmt of ['md', 'docx', 'pdf'] as const) {
       it(fmt + ': ' + what, async () => {

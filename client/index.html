@@ -38949,6 +38949,32 @@
             items[k].cls = "skip";
           }
         });
+        /* BEUK:importtally — a contents list typed as headings, with no "Contents" heading above it (the owner's rule,
+           2026-11-21): three lines or more in a row, each a chapter heading with nothing under it, each the same heading
+           (as normHeading reads it) as a later chapter heading that has text, in the same order, and nothing else in the
+           run. That run is the typed contents: set aside, counted as the contents page's words, listed in the report.
+           Anything short of it stays as the writer's chapters with no text. */
+        for (let i = 0; i < items.length; i++) {
+          if (!(items[i].cls === "chapter" && !items[i].bodyText)) continue;
+          let j = i;
+          while (j < items.length && items[j].cls === "chapter" && !items[j].bodyText) j++;
+          const run = items.slice(i, j);
+          if (run.length >= 3) {
+            let at = j, ok = true;
+            for (const it of run) {
+              const key = normHeading(it.raw);
+              let k = at;
+              while (k < items.length && !(items[k].cls === "chapter" && items[k].bodyText && normHeading(items[k].raw) === key)) k++;
+              if (k >= items.length) { ok = false; break; }
+              at = k + 1;
+            }
+            if (ok) {
+              irNote({ kind: "toc-dropped", text: run.map((it) => String(it.raw || "").replace(/^#{1,2}\s+/, "")).join("\n"), heading: "" });
+              run.forEach((it) => { it.cls = "skip"; });
+            }
+          }
+          i = j - 1;
+        }
         /* BEUK:pdffront — "CHAPTER TWENTY-ONE" on a line of its own, then
            the chapter's title as its heading: one chapter, numbered. A number
            set in capitals takes the book's other numbers' case. */
