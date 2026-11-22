@@ -4447,18 +4447,23 @@
     <!-- ==== BEUK:importreport ==== -->
     <div class="modal-back" id="modalImportReport" style="z-index:68;">
       <div class="modal wide ir-modal" role="dialog" aria-modal="true" aria-labelledby="irH">
-        <h2 id="irH"><i data-lucide="list-checks"></i><span data-i18n="ir.title">Here's what we changed</span></h2>
-        <p class="m-sub" id="irSub"></p>
+        <div class="ir-head">
+          <h2 id="irH"><span>Your book is in.</span></h2>
+          <p class="ir-file" id="irFile"></p>
+          <button class="ir-link ir-back" id="btnIrBack" type="button" data-i18n="ir.card.back">Back to the summary</button>
+        </div>
+        <p class="m-sub ir-intro" id="irSub"></p>
         <div id="irBody"></div>
         <p class="ir-warn-line" id="irUndoAllNote" style="display:none;"></p>
+        <!-- BEUK:importcard: "Open my book" is #btnIrClose on the card (the old Close) and #btnIrKeep on the full account (the old Keep all); Dismiss report is the account's quiet text button. The title and the two "Open my book" buttons take their words from irRenderReport (they change when something differs), so they carry no data-i18n. -->
         <div class="modal-actions ir-actions">
-          <button class="tb-btn ir-linkbtn" id="btnIrEvery" type="button"></button>
-          <button class="tb-btn ir-linkbtn" id="btnIrBack" type="button" data-i18n="ir.card.back">Back to the summary</button>
-          <button class="tb-btn" id="btnIrDismiss" type="button" data-i18n="ir.dismiss">Dismiss report</button>
-          <button class="tb-btn" id="btnIrUndoAll" type="button" data-i18n="ir.undoAll">Undo the whole import</button>
-          <button class="tb-btn" id="btnIrClose" type="button" data-i18n="ir.close">Close</button>
-          <button class="tb-btn primary" id="btnIrKeep" type="button" data-i18n="ir.keepAll">Keep all</button>
-          <button class="tb-btn primary" id="btnIrOpenBook" type="button" data-i18n="ir.card.open">Open my book</button>
+          <button class="ir-link" id="btnIrUndoAll" type="button" data-i18n="ir.acc.undo">Undo this import</button>
+          <button class="ir-link" id="btnIrDismiss" type="button" data-i18n="ir.dismiss">Dismiss report</button>
+          <span class="ir-space"></span>
+          <button class="ir-btn" id="btnIrEvery" type="button" data-i18n="ir.acc.see">See the full account</button>
+          <button class="ir-btn ir-back" id="btnIrBackFoot" type="button" data-irback="1" data-i18n="ir.card.back">Back to the summary</button>
+          <button class="ir-btn primary" id="btnIrClose" type="button">Open my book</button>
+          <button class="ir-btn primary" id="btnIrKeep" type="button">Open my book</button>
         </div>
       </div>
     </div>
@@ -40018,7 +40023,12 @@
         renderSidebar(); syncEditor(); renderPreview(); updateStats(); refreshExportTree();
         const found = importFoundList(pieces);
         renderImportSummary(found);
-        toast(t("import.imported", { name: sourceName }) + (found.length ? " — " + found.join(" · ") : ""), "file-check-2");
+        /* BEUK:importcard — the "Imported …" toast is not raised over the import's own card, which says the same and has
+           its buttons where the toast would sit: an import that is writing a report (irBegin) holds the words until
+           irFinish has opened the card, and raises them only where no card opened. What was recognised stays in the
+           summary under the Import button either way. */
+        const imported = t("import.imported", { name: sourceName }) + (found.length ? " — " + found.join(" · ") : "");
+        if (IR_REC) IR_REC.imported = imported; else toast(imported, "file-check-2");
       }
       /* A .docx declares its own credit in docProps/core.xml:
          dc:title and dc:creator are the book's title and its author,
@@ -43487,7 +43497,7 @@
         IR_REC = ir;
         return ir;
       }
-      function irAbort() { IR_REC = null; }
+      function irAbort() { const held = IR_REC && IR_REC.imported; IR_REC = null; if (held) toast(held, "file-check-2"); /* BEUK:importcard — no card will open: the held "Imported …" is said */ }
       /* The synchronous halves of handleImportFile, after its file
          reads: one for a converted .docx, one for Markdown/text. */
       /* BEUK:docsimport — `format` is "odt" or "html" when the Word-shaped HTML came from
@@ -45705,7 +45715,11 @@
         noteBookEdited();
         renderSidebar(); syncEditor(); renderPreview(); updateStats(); refreshExportTree();
         irSyncReopen();
+        /* BEUK:importcard — the lines this import set aside, kept in memory for its own report (never stored with the book): "Show the lines" reads them */
+        irAsideLines = IR_TALLY_LAST && state.importReport.tally ? { key: state.importReport.at + " " + state.importReport.file, aside: IR_TALLY_LAST.aside || {}, steps: IR_TALLY_LAST.steps || [] } : null;
         irOpenReport();
+        /* the "Imported …" toast (replaceBodyChapters held it): not over the open card; said where no card opened */
+        if (ir.imported) { const card = $("modalImportReport"); if (!card || !card.classList.contains("open")) toast(ir.imported, "file-check-2"); }
         return state.importReport;
       }
       function normalizeImportReport(r) {
@@ -46006,7 +46020,6 @@
       }
 
       /* ---- The report, on screen ---- */
-      const IR_GROUPS = ["dropped", "structure", "matter", "breaks", "typography", "notes", "book"];
       function irItemLabel(it) {
         const d = it.data || {};
         switch (it.kind) {
@@ -46280,80 +46293,234 @@
         return html;
       }
       /* ==== /BEUK:importcard ==== */
+      /* ---- The full account: the same report, part by part ---- */
+      const irSetText = (s) => String(s == null ? "" : s).replace(/^#{1,6}\s+/, ""); /* a heading is shown as set text, never as its markup */
+      /* One item of the report as a row: what it says, where, its text before and after, and its button where it has
+         one. Where an item cannot be undone on its own, nothing is said of it. */
+      function irItemRow(it, o) {
+        o = o || {};
+        const join = it.kind === "pdfHyphenAsk" || it.kind === "pdfHyphenAskAll", joinAll = it.kind === "pdfHyphenAskAll"; /* BEUK:hyphensgiven — a word the writer joins is said as a join, not as an undo */
+        const asBlock = it.kind === "table" && it.data && it.data.kept && it.data.fence; /* BEUK:tableimport */
+        let h = '<div class="ir-item ' + esc(it.state) + (o.cls ? " " + o.cls : "") + '" data-irid="' + esc(it.id) + '">';
+        if (o.main) h += o.main;
+        else {
+          h += '<div class="ir-imain"><div class="ir-line">' + esc(irItemLabel(it)) + "</div>";
+          if (it.where && it.where.label) h += '<div class="ir-where">' + esc(t("ir.where", { where: it.where.label })) + "</div>";
+          if (it.before || it.after) {
+            h += '<div class="ir-ba">';
+            if (it.before) h += '<div><span class="ir-tag">' + esc(t("ir.before")) + '</span><span class="ir-set">' + esc(irSetText(it.before)) + "</span></div>";
+            if (it.after) h += '<div><span class="ir-tag">' + esc(t("ir.after")) + '</span><span class="ir-set">' + esc(irSetText(it.after)) + "</span></div>";
+            h += "</div>";
+          }
+          if (it.state !== "undone" && it.reversible && IR_HINT[it.kind]) h += '<div class="ir-hint">' + esc(t("ir.hint." + (asBlock ? "tableBlock" : it.kind === "table" && it.data && it.data.kept ? "tableKept" : IR_HINT[it.kind]))) + "</div>";
+          h += "</div>";
+        }
+        h += '<div class="ir-act">' + (o.act || "");
+        if (it.state === "undone") h += '<span class="ir-done">' + esc(join ? (joinAll ? t("ir.joinedAll") : t("ir.joinedIt", { value: irClip(it.data.offered, 60) })) : (it.kind === "metaKept" || it.kind === "glued") ? t("ir.usedValue", { value: irClip(it.data.offered, 60) }) : t("ir.undone")) + (it.partial ? " — " + esc(t(join ? "ir.joinedPartly" : "ir.partly", { done: it.partial.done, total: it.partial.total })) : "") + "</span>";
+        else if (it.reversible) {
+          h += '<button type="button" class="ir-btn ir-undo" data-irundo="' + esc(it.id) + '">' + esc(join ? (joinAll ? t("ir.joinAll") : t("ir.joinIt", { value: irClip(it.data.offered, 40) })) : (it.kind === "metaKept" || it.kind === "glued") ? t("ir.useValue", { value: irClip(it.data.offered, 40) }) : asBlock ? t("ir.tablePlain") : t("ir.undoThis")) + "</button>";
+          if (it.lastFail) h += '<span class="ir-fail">' + esc(t(join ? "ir.joinFailed" : "ir.failed", { reason: t("ir.why." + it.lastFail) })) + "</span>";
+        }
+        return h + "</div></div>";
+      }
+      /* Rows of a part: six or fewer stand as they are; of more, the first three, and the rest behind "Show all N" (a
+         fold the reader has opened stays open when the account is drawn again: irRenderReport). */
+      function irFold(id, rows, open) {
+        if (rows.length <= IR_FOLD_OVER) return rows.join("");
+        return rows.slice(0, IR_FOLD_SHOWN).join("") + '<details class="ir-fold" id="ir-f-' + id + '" data-irshut="1"' + (open.has("ir-f-" + id) ? " open" : "") + "><summary>" + esc(t("ir.card.showAll", { n: rows.length })) + "</summary>" + rows.slice(IR_FOLD_SHOWN).join("") + "</details>";
+      }
+      /* The count: only the counts that differ (file, book, why), then the counts that are the same, each with its
+         figure; the characters that differ right after the table; and the whole tally, row by row, behind them. */
+      function irCountHtml(rep, v, open) {
+        const ty = v.ty;
+        if (!ty) return "";
+        const num = (n) => esc(fmtNum(n));
+        const rows = [{ key: "words", file: ty.counted ? ty.file : null, book: ty.book - v.joined, chars: true }].concat(ty.rows || []);
+        const differ = rows.filter((r) => r.file !== r.book), same = rows.filter((r) => r.file === r.book);
+        let h = "";
+        if (differ.length) {
+          h += '<div class="ir-table ir-ctable"><div class="ir-trow head"><span>' + esc(t("ir.acc.differ")) + '</span><span class="num">' + esc(t("ir.tally.file")) + '</span><span class="num">' + esc(t("ir.tally.book")) + "</span><span>" + esc(t("ir.acc.why")) + "</span></div>";
+          differ.forEach((r) => {
+            let why;
+            if (r.chars) {
+              why = !ty.counted ? [t("ir.tally.notCountedWhy")] : (v.aside + v.joined ? [irSay("ir.acc.asideN", v.aside + v.joined)] : []).concat(v.joined ? [t("ir.card.joined", { n: v.joined }) + ": " + fmtNum(v.joined)] : [],
+                [ty.unaccounted > 0 ? irSay("ir.tally.cardWarn", ty.unaccounted) : ty.unaccounted < 0 ? irSay("ir.tally.cardMore", -ty.unaccounted) : t("ir.acc.noneUn")]);
+            } else why = (Array.isArray(r.why) ? r.why : []).map(irTallyWhyLine);
+            h += '<div class="ir-trow' + (r.chars ? " strong" : "") + (!r.chars && irRowUnexplained(r) ? " gold" : "") + '"><span class="ir-tname">' + esc(t("ir.tally.r." + r.key)) + '</span><span class="num">' + (r.file == null ? esc(t("ir.tally.notCounted")) : num(r.file)) + '</span><span class="num book">' + num(r.book) + '</span><span class="ir-twhy">' + why.map((y) => "<span>" + esc(y) + "</span>").join("") + "</span></div>";
+          });
+          h += "</div>";
+        }
+        if (ty.counted && ty.chars && !ty.chars.same) h += irDiffGridHtml(ty.chars, IR_TALLY_SHOWN);
+        if (same.length) {
+          h += '<div class="ir-same"><div class="ir-samehead">' + irMark("tick", 20) + "<p>" + esc(irSay("ir.acc.same", same.length)) + '</p></div><div class="ir-samegrid">' +
+            same.map((r) => "<div><span>" + esc(t("ir.tally.r." + r.key)) + "</span><span>" + num(r.book) + "</span></div>").join("") + "</div></div>";
+        }
+        /* the words the studio counts in the pages that hold text, as the old card said them */
+        const words = irCardWords(), empty = !words ? state.sections.filter((s) => s.kind === "body" && s.type === "chapter").length : 0;
+        h += '<p class="ir-pnote">' + esc(empty ? t("ir.card.ledeEmpty", { n: empty }) : irSay("ir.acc.words", words)) + "</p>";
+        /* the whole tally as it was written: every row, every reason, the set-aside rows and a PDF's own arithmetic */
+        h += irTallyHtmlOf(rep).replace(' id="ir-g-tally" open>', ' id="ir-g-tally" data-irshut="1"' + (open.has("ir-g-tally") ? " open" : "") + ">");
+        return h;
+      }
+      /* For you to look at: what the book cannot settle or show on its own, each in its own words. Never a heading
+         that says the writer's content was left out: every one of these is in the book. */
+      function irLookHtml(rep, v, items, open) {
+        let h = "";
+        const block = (head, why, rows, id, it) => '<div class="ir-ask' + (it ? " ir-item " + esc(it.state) + '" data-irid="' + esc(it.id) : "") + '"><div class="ir-askhead">' + irMark("info", 20) + "<p><b>" + esc(head) + "</b>" + (why ? " " + esc(why) : "") + "</p></div>" + (rows.length ? '<div class="ir-table">' + irFold(id, rows, open) + "</div>" : "") + "</div>";
+        const of = (kinds) => items.filter((it) => kinds.indexOf(it.kind) !== -1);
+        const pics = of(["mdImage"]);
+        pics.forEach((it) => { const n = Number(it.data && it.data.n) || 0; h += block(irSay("ir.card.pics", n), t("ir.acc.picsWhy"), [], "pics", it); });
+        /* a note the file defines and nothing marks: named by the writer's own label, with its text, kept where it stood */
+        const notes = of(["noteOrphan"]);
+        if (notes.length) h += block(irSay("ir.card.notes", notes.length), t("ir.acc.notesWhy"), notes.map((it) => irItemRow(it, { main: '<div class="ir-imain ir-note"><span class="ir-notelabel">' + esc(String(it.data && it.data.n != null ? it.data.n : "")) + '</span><span class="ir-set">' + esc(it.before || "") + "</span>" +
+          (it.where && it.where.label ? '<div class="ir-where">' + esc(t("ir.where", { where: it.where.label })) + "</div>" : "") + "</div>" })), "notes");
+        /* BEUK:hyphensgiven — the words a PDF's line-end hyphen leaves for the writer: the line that joins them all first, then each word */
+        const hy = of(["pdfHyphenAskAll", "pdfHyphenAsk"]);
+        if (hy.length) {
+          const all = hy.filter((it) => it.kind === "pdfHyphenAskAll"), each = hy.filter((it) => it.kind === "pdfHyphenAsk");
+          h += '<div class="ir-ask"><div class="ir-table">' + all.map((it) => irItemRow(it)).join("") + irFold("hyph", each.map((it) => irItemRow(it)), open) + "</div></div>";
+        }
+        const rest = items.filter((it) => pics.indexOf(it) === -1 && notes.indexOf(it) === -1 && hy.indexOf(it) === -1);
+        if (rest.length) h += '<div class="ir-table">' + irFold("look", rest.map((it) => irItemRow(it)), open) + "</div>";
+        return h;
+      }
+      /* Set aside: one row per kind the tally counted, in characters, with its lines where they are still in memory
+         (the report just written: the lines are never stored with the book); then the report's own lines of what
+         was set aside, each with its button where it has one. */
+      function irAsideHtml(rep, v, items, open) {
+        const ty = v.ty, mem = irAsideLines && irAsideLines.key === rep.at + " " + rep.file ? irAsideLines : null;
+        const linesOf = (k) => {
+          if (!mem) return [];
+          const out = String((mem.aside && mem.aside[k]) || "").split("\n").map((l) => l.trim()).filter(Boolean);
+          (mem.steps || []).forEach((s) => { if (s && s.bucket === k && s.pure && s.n > 0) out.push("“" + String(s.before).trim() + "” → “" + String(s.after).trim() + "”"); });
+          return out;
+        };
+        let h = "";
+        const rows = [];
+        if (v.counted) Object.keys(ty.aside || {}).forEach((k) => {
+          const lines = linesOf(k), shown = irLinesOpen.has(k);
+          let r = '<div class="ir-arow"><span class="ir-vn gold">' + esc(fmtNum(ty.aside[k])) + '</span><span class="ir-atext">' + esc(t("ir.tally.b." + k)) + "</span>" +
+            (lines.length ? '<button type="button" class="ir-btn" data-irlines="' + esc(k) + '" aria-expanded="' + (shown ? "true" : "false") + '">' + esc(t(shown ? "ir.acc.hideLines" : "ir.acc.showLines")) + "</button>" : "") + "</div>";
+          if (lines.length && shown) r += '<div class="ir-lines">' + lines.slice(0, IR_LINES_SHOWN).map((l) => "<p>" + esc(l) + "</p>").join("") + (lines.length > IR_LINES_SHOWN ? "<p><i>" + esc(t("ir.tally.wf.more", { n: fmtNum(lines.length - IR_LINES_SHOWN) })) + "</i></p>" : "") + "</div>";
+          rows.push(r);
+        });
+        if (v.counted && v.joined) rows.push('<div class="ir-arow"><span class="ir-vn gold">' + esc(fmtNum(v.joined)) + '</span><span class="ir-atext">' + esc(t("ir.card.joined", { n: v.joined })) + "</span></div>");
+        if (rows.length) h += '<div class="ir-table">' + rows.join("") + "</div>";
+        if (items.length) h += '<div class="ir-table">' + irFold("aside", items.map((it) => irItemRow(it)), open) + "</div>";
+        return h;
+      }
+      function irLooksHtml(rep, items, open) {
+        const looks = irLooksOf({ items });
+        const rows = [];
+        looks.forEach((l) => l.items.forEach((it) => {
+          const d = it.data || {}, n = it.kind === "emphasis" ? (Number(d.em) || 0) + (Number(d.strong) || 0) : (Number(d.n) || 0), named = IR_LOOK_NAMED.indexOf(it.kind) !== -1;
+          rows.push('<div class="ir-item ir-lrow ' + esc(it.state) + '" data-irid="' + esc(it.id) + '"><span class="ir-vn">' + esc(fmtNum(n)) + '</span><span class="ir-lname">' + esc(named ? t("ir.look." + it.kind) : irItemLabel(it)) + '</span><span class="ir-lis">' + esc(named ? t("ir.look." + it.kind + ".is") : "") + "</span></div>");
+        }));
+        return '<p class="ir-plede">' + esc(t("ir.acc.looksLede")) + '</p><div class="ir-table">' + irFold("looks", rows, open) + "</div>";
+      }
+      /* Where Beuk filed your pages: what came from the file's own chapter headings in a sentence, then a row for each
+         page Beuk chose a place for, with "Change" (it opens the page, where its type is changed) and its undo where it
+         has one; then the report's own lines of the chapters and headings. */
+      function irFiledHtml(rep, items, open) {
+        const sec = (id) => state.sections.find((s) => s.id === id) || null;
+        const chapters = items.filter((it) => it.kind === "chapter" && it.data && it.data.from !== "fallback").length;
+        const subs = state.sections.filter((s) => s.kind === "body").reduce((a, s) => a + irBlocks(String(s.content || "")).filter((b) => /^# \S/.test(b)).length, 0);
+        const pages = items.filter((it) => it.kind === "matter"), rest = items.filter((it) => it.kind !== "matter");
+        const say = (chapters ? [irSay("ir.acc.filedChapters", chapters)] : []).concat(subs ? [t("ir.card.didSubs", { n: subs })] : [], pages.length ? [irSay("ir.acc.filedPages", pages.length)] : []);
+        let h = say.length ? '<p class="ir-plede">' + esc(say.join(" ")) + "</p>" : "";
+        const zone = { front: "ir.acc.zone.front", body: "ir.acc.zone.body", back: "ir.acc.zone.back" };
+        const via = (it) => { const d = it.data || {}; return d.via === "heading" ? t("ir.acc.via.heading") : d.via === "chapter-head" ? t("ir.acc.via.chapterHead", { chapter: d.chapterLabel || (it.where && it.where.label) || "" }) : t("ir.acc.via.shape"); };
+        const pageRows = pages.map((it) => {
+          const s = it.where && it.where.secId ? sec(it.where.secId) : null, d = it.data || {};
+          const main = '<div class="ir-imain ir-filed"><span class="ir-set">' + esc(s ? (s.title || t("import.type." + s.type)) : irSetText(d.heading || (it.where && it.where.label) || t("import.type." + d.type))) + '</span><span class="ir-fas">' +
+            esc(s ? t("ir.acc.filedAs", { type: t("import.type." + s.type), zone: t(zone[s.kind] || zone.body) }) : t("import.type." + d.type)) + "<small>" + esc(via(it)) + "</small></span></div>";
+          return irItemRow(it, { main, act: s && it.state !== "undone" ? '<button type="button" class="ir-btn" data-irsec="' + esc(s.id) + '">' + esc(t("ir.acc.change")) + "</button>" : "" });
+        });
+        if (pageRows.length) h += '<div class="ir-table">' + irFold("pages", pageRows, open) + "</div>";
+        if (rest.length) h += '<div class="ir-table">' + irFold("filed", rest.map((it) => irItemRow(it)), open) + "</div>";
+        return h;
+      }
+      /* Book details Beuk read from your file: the field, its value as set text, where it was found, and "Undo this" */
+      function irBookHtml(rep, items, open) {
+        const rows = items.map((it) => {
+          const d = it.data || {};
+          if (it.kind !== "meta" || d.cleared) return irItemRow(it);
+          const found = d.via ? (d.via === "filename" && d.stripped ? t("im.via.filenameStripped", { tokens: d.stripped }) : t("im.via." + d.via)) : "";
+          return irItemRow(it, { main: '<div class="ir-imain ir-meta"><span class="ir-mfield">' + esc(t("ir.f." + d.field)) + '</span><span class="ir-set">' + esc(it.after) + (found ? "<small>" + esc(found) + "</small>" : "") + "</span></div>" });
+        });
+        return '<div class="ir-table">' + irFold("book", rows, open) + "</div>";
+      }
+      function irAccountHtml(rep, v, open) {
+        const by = {};
+        IR_PARTS.forEach((p) => { by[p] = []; });
+        rep.items.forEach((it) => { by[irPartOf(it)].push(it); });
+        const looks = irLooksOf({ items: by.looks });
+        const asideN = v.counted ? v.aside + v.joined : 0;
+        const parts = [];
+        const part = (id, chip, chipN, head, body) => { if (body) parts.push({ id, chip, chipN, head, body }); };
+        part("count", t("ir.acc.h.count"), "", t("ir.acc.h.count"), irCountHtml(rep, v, open));
+        part("look", t("ir.acc.h.look"), by.look.length ? fmtNum(v.pics + by.look.filter((it) => it.kind !== "mdImage" && it.kind !== "pdfHyphenAskAll").length) : "", t("ir.acc.h.look"), by.look.length ? irLookHtml(rep, v, by.look, open) : "");
+        part("aside", t("ir.acc.h.aside"), asideN ? irSay("ir.acc.nChars", asideN) : by.aside.length ? fmtNum(by.aside.length) : "", t("ir.acc.h.aside") + (asideN ? ": " + irSay("ir.acc.nChars", asideN) : ""), asideN || by.aside.length ? irAsideHtml(rep, v, by.aside, open) : "");
+        part("looks", t("ir.acc.c.looks"), fmtNum(looks.length), t("ir.acc.h.looks"), by.looks.length ? irLooksHtml(rep, by.looks, open) : "");
+        part("typography", t("ir.g.typography"), fmtNum(by.typography.length), t("ir.g.typography"), by.typography.length ? '<div class="ir-table">' + irFold("typography", by.typography.map((it) => irItemRow(it)), open) + "</div>" : "");
+        part("filed", t("ir.acc.c.filed"), "", t("ir.acc.h.filed"), by.filed.length ? irFiledHtml(rep, by.filed, open) : "");
+        part("notes", t("ir.acc.h.notes"), fmtNum(by.notes.length), t("ir.acc.h.notes"), by.notes.length ? '<div class="ir-table">' + irFold("notes", by.notes.map((it) => irItemRow(it)), open) + "</div>" : "");
+        part("book", t("ir.acc.c.book"), fmtNum(by.book.length), t("ir.acc.h.book"), by.book.length ? irBookHtml(rep, by.book, open) : "");
+        let html = '<div class="ir-chips">' + parts.map((p) => '<a class="ir-chip" href="#ir-g-' + p.id + '">' + esc(p.chip) + (p.chipN ? " <span>" + esc(p.chipN) + "</span>" : "") + "</a>").join("") + "</div>";
+        if (!rep.items.some((it) => it.group === "dropped")) html += '<p class="ir-clean">' + esc(t("ir.noneDropped", { list: rep.checked.map((c) => t("ir.c." + c)).join(", ") })) + "</p>";
+        if (rep.format === "docx" && !rep.scanOk) html += '<p class="ir-warn-line">' + esc(t("ir.scanFailed")) + "</p>";
+        parts.forEach((p) => { html += '<div class="ir-part" id="ir-g-' + p.id + '"><h3 class="ir-ph">' + esc(p.head) + "</h3>" + p.body + "</div>"; });
+        return html;
+      }
       function irRenderReport() {
         const body = $("irBody");
         if (!body) return;
         const rep = state.importReport;
         if (!rep) { body.innerHTML = ""; return; }
         const card = irView === "card";
+        const v = irVerdict(rep);
         const modal = $("modalImportReport");
-        if (modal) { const box = modal.querySelector(".ir-modal"); if (box) box.classList.toggle("ir-card-view", card); }
+        if (modal) { const box = modal.querySelector(".ir-modal"); if (box) { box.classList.toggle("ir-card-view", card); box.classList.toggle("ir-differs", v.state === "differs"); } }
         const headText = document.querySelector("#irH span");
-        if (headText) headText.textContent = t(card ? "ir.card.title" : "ir.title");
-        const every = $("btnIrEvery");
-        if (every) every.textContent = t("ir.card.every", { n: rep.items.length });
-        /* BEUK:importtally — a book whose only words are headings (an outline, chapters not yet written): the studio counts
-           pages with text, so it would say "read 0 words" of a file with words in it; the card says what Beuk found */
-        const cardWords = card ? irCardWords() : 0, emptyChapters = card && !cardWords ? state.sections.filter((s) => s.kind === "body" && s.type === "chapter").length : 0;
-        $("irSub").textContent = card ? (emptyChapters ? t("ir.card.ledeEmpty", { n: emptyChapters }) : t("ir.card.lede", { words: fmtNum(cardWords) })) : t("ir.sub", { file: rep.file, when: fmtDateIntl(new Date(rep.at)) });
-        const by = {};
-        IR_GROUPS.forEach((g) => { by[g] = []; });
-        rep.items.forEach((it) => { (by[it.group] || (by[it.group] = [])).push(it); });
-        let html = '<div class="ir-card">' + irCardHtml(rep) + '</div><div class="ir-list"><div class="ir-chips">';
-        IR_GROUPS.forEach((g) => {
-          if (!by[g].length) return;
-          html += '<a class="ir-chip' + (g === "dropped" ? " warn" : "") + '" href="#ir-g-' + g + '"><b>' + by[g].length + "</b> " + esc(t("ir.g." + g)) + "</a>";
-        });
-        html += "</div>";
-        if (!by.dropped.length) {
-          html += '<p class="ir-clean">' + esc(t("ir.noneDropped", { list: rep.checked.map((c) => t("ir.c." + c)).join(", ") })) + "</p>";
-        }
-        if (rep.format === "docx" && !rep.scanOk) html += '<p class="ir-warn-line">' + esc(t("ir.scanFailed")) + "</p>";
-        /* BEUK:hyphensgiven — a group the reader has open stays open when the list is drawn again: joining one word of a
-           long list (or undoing one item) drew it afresh with every group of more than six shut, and the list closed
-           under the reader's hand after each press. */
-        const irBodyNow = $("irBody");
+        if (headText) headText.textContent = card ? irCardTitle(v) : t("ir.acc.title");
+        const file = $("irFile");
+        if (file) file.textContent = card ? rep.file : t("ir.acc.file", { file: rep.file, when: fmtDateIntl(new Date(rep.at)) });
+        /* BEUK:asgiven — the import tidies nothing, and the account says so in its opening lines, naming the writer's own
+           button for it (a report saved before this, whose import did tidy, lists its typography changes instead) */
+        const sub = $("irSub");
+        if (sub) sub.textContent = card ? "" : [t("ir.acc.intro")].concat(rep.items.some((it) => it.group === "typography") ? [] : [t("ir.acc.asGiven", { button: t("tool.autoFormat") })], [t("ir.acc.introParts")]).join(" ");
+        /* the card's primary action says the book is opened as it is, when something differs */
+        ["btnIrClose", "btnIrKeep"].forEach((id) => { const b = $(id); if (b) b.textContent = t(v.state === "differs" ? "ir.card.openAsIs" : "ir.card.open"); });
+        /* BEUK:hyphensgiven — a fold the reader has open stays open when the account is drawn again: joining one word of a
+           long list (or undoing one item) drew it afresh with every long list shut, and the list closed under the
+           reader's hand after each press. */
         const repKey = rep.at + " " + rep.file; /* the report by what it says of itself, not by the object: the 2.0 studio writes the book and reads it back after every press, and the report comes back a new object */
-        const openNow = new Set(irBodyNow && irDrawnRep === repKey ? Array.from(irBodyNow.querySelectorAll("details.ir-group")).filter((d) => d.open && Number((d.querySelector(".ir-gcount") || {}).textContent) > 6).map((d) => d.id) : []); /* this report's own groups only, and only one drawn shut that the reader opened: a short group that has grown past six is not one */
+        const openNow = new Set(irDrawnRep === repKey ? Array.from(body.querySelectorAll("details[data-irshut]")).filter((d) => d.open).map((d) => d.id) : []); /* this report's own folds only, and only one drawn shut that the reader opened */
+        if (irDrawnRep !== repKey) irLinesOpen = new Set();
         irDrawnRep = repKey;
-        IR_GROUPS.forEach((g) => {
-          const list = by[g];
-          if (!list.length) return;
-          html += '<details class="ir-group' + (g === "dropped" ? " warn" : "") + '" id="ir-g-' + g + '"' + (g === "dropped" || list.length <= 6 || openNow.has("ir-g-" + g) ? " open" : "") + '><summary><span class="ir-gname">' + esc(t("ir.g." + g)) + '</span><span class="ir-gcount">' + list.length + "</span></summary>";
-          list.forEach((it) => {
-            html += '<div class="ir-item ' + esc(it.state) + '" data-irid="' + esc(it.id) + '">';
-            html += '<div class="ir-line">' + esc(irItemLabel(it)) + "</div>";
-            if (it.where && it.where.label) html += '<div class="ir-where">' + esc(t("ir.where", { where: it.where.label })) + "</div>";
-            if (it.before || it.after) {
-              html += '<div class="ir-ba">';
-              if (it.before) html += '<div><span class="ir-tag">' + esc(t("ir.before")) + "</span><code>" + esc(it.before) + "</code></div>";
-              if (it.after) html += '<div><span class="ir-tag">' + esc(t("ir.after")) + "</span><code>" + esc(it.after) + "</code></div>";
-              html += "</div>";
-            }
-            html += '<div class="ir-act">';
-            const join = it.kind === "pdfHyphenAsk" || it.kind === "pdfHyphenAskAll", joinAll = it.kind === "pdfHyphenAskAll"; /* BEUK:hyphensgiven — a word the writer joins is said as a join, not as an undo */
-            if (it.state === "undone") html += '<span class="ir-done">' + esc(join ? (joinAll ? t("ir.joinedAll") : t("ir.joinedIt", { value: irClip(it.data.offered, 60) })) : (it.kind === "metaKept" || it.kind === "glued") ? t("ir.usedValue", { value: irClip(it.data.offered, 60) }) : t("ir.undone")) + (it.partial ? " — " + esc(t(join ? "ir.joinedPartly" : "ir.partly", { done: it.partial.done, total: it.partial.total })) : "") + "</span>";
-            else if (it.reversible) {
-              const asBlock = it.kind === "table" && it.data && it.data.kept && it.data.fence; /* BEUK:tableimport */
-              html += '<button type="button" class="tb-btn ir-undo" data-irundo="' + esc(it.id) + '">' + esc(join ? (joinAll ? t("ir.joinAll") : t("ir.joinIt", { value: irClip(it.data.offered, 40) })) : (it.kind === "metaKept" || it.kind === "glued") ? t("ir.useValue", { value: irClip(it.data.offered, 40) }) : asBlock ? t("ir.tablePlain") : t("ir.undoThis")) + "</button>";
-              if (IR_HINT[it.kind]) html += '<span class="ir-hint">' + esc(t("ir.hint." + (asBlock ? "tableBlock" : it.kind === "table" && it.data && it.data.kept ? "tableKept" : IR_HINT[it.kind]))) + "</span>";
-              if (it.lastFail) html += '<span class="ir-fail">' + esc(t(join ? "ir.joinFailed" : "ir.failed", { reason: t("ir.why." + it.lastFail) })) + "</span>";
-            } else html += '<span class="ir-na">' + esc(t("ir.noUndo", { reason: t("ir.why." + (it.why || "source")) })) + "</span>";
-            html += "</div></div>";
-          });
-          html += "</details>";
-        });
-        html += irTallyHtmlOf(rep); /* BEUK:importtally */
-        body.innerHTML = html + "</div>";
+        body.innerHTML = '<div class="ir-card">' + irCardHtml(rep, v) + '</div><div class="ir-list">' + irAccountHtml(rep, v, openNow) + "</div>";
         const av = irUndoAllAvailability();
         const ua = $("btnIrUndoAll");
         if (ua) { ua.disabled = !av.ok; ua.title = av.ok ? "" : t("ir.why." + av.why); }
         const na = $("irUndoAllNote");
         if (na) { na.textContent = av.ok ? "" : t("ir.undoAllNA", { reason: t("ir.why." + av.why) }); na.style.display = av.ok ? "none" : ""; }
       }
+      /* To a part of the full account (and a row of it, its fold opened) */
+      function irGoTo(partId, rowId, foldId) {
+        irView = "list"; irRenderReport(); icons();
+        const body = $("irBody");
+        const row = rowId && body ? Array.from(body.querySelectorAll("[data-irid]")).find((r) => r.getAttribute("data-irid") === rowId) : null;
+        const fold = foldId ? $("ir-f-" + foldId) : row ? row.closest("details") : null;
+        if (fold) fold.open = true;
+        const to = row || (partId ? $("ir-g-" + partId) : null);
+        const box = body && body.closest ? body.closest(".ir-modal") : null;
+        if (to && to.scrollIntoView) to.scrollIntoView({ block: "start" });
+        else if (box) box.scrollTop = 0;
+      }
       function irOpenReport() {
         if (!state.importReport) return;
         irView = "card"; irCardAll = false; /* BEUK:importcard — it always opens on the book */
+        irLinesOpen = new Set();
         irRenderReport();
         const m = $("modalImportReport");
         if (m) m.classList.add("open");
@@ -46377,24 +46544,34 @@
           if (state.importReport) { state.importReport.kept = true; noteBookEdited(); }
           irCloseReport();
         });
+        /* BEUK:importcard — "Open my book" is the old Close on the card (it closes the report) and the old Keep all on the
+           full account (it records that the report was kept, and closes); the card's own steps: to the full account and
+           back, to a part of it, a page's section */
         $("btnIrClose").addEventListener("click", irCloseReport);
-        /* BEUK:importcard — the card's own steps: into the book, to the changes one by one and back, a label's section */
-        $("btnIrOpenBook").addEventListener("click", irCloseReport);
-        $("btnIrEvery").addEventListener("click", () => { irView = "list"; irRenderReport(); icons(); });
-        $("btnIrBack").addEventListener("click", () => { irView = "card"; irRenderReport(); icons(); });
+        $("btnIrEvery").addEventListener("click", () => irGoTo("", "", ""));
+        const toCard = () => { irView = "card"; irRenderReport(); icons(); const box = m.querySelector(".ir-modal"); if (box) box.scrollTop = 0; };
+        $("btnIrBack").addEventListener("click", toCard);
         $("irBody").addEventListener("click", (ev) => {
-          const el = ev.target && ev.target.closest ? ev.target.closest("[data-irsec], [data-irmore], [data-irlist], [data-irtally], [data-irhyph]") : null;
+          const el = ev.target && ev.target.closest ? ev.target.closest("[data-irsec], [data-irmore], [data-irlist], [data-irtally], [data-irhyph], [data-irpart], [data-irlines]") : null;
           if (!el) return;
           if (el.hasAttribute("data-irmore")) { irCardAll = !irCardAll; irRenderReport(); return; }
-          if (el.hasAttribute("data-irlist")) { irView = "list"; irRenderReport(); icons(); return; }
-          if (el.hasAttribute("data-irtally")) { irView = "list"; irRenderReport(); icons(); const sec = $("ir-g-tally"); if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: "start" }); return; }
+          if (el.hasAttribute("data-irlist")) { irGoTo("", "", ""); return; }
+          if (el.hasAttribute("data-irtally")) { irGoTo("count", "", ""); return; }
+          if (el.hasAttribute("data-irpart")) { irGoTo(el.getAttribute("data-irpart"), "", ""); return; }
+          if (el.hasAttribute("data-irlines")) {
+            /* a set-aside row's own lines, shown and hidden again; the button keeps the focus it had */
+            const k = el.getAttribute("data-irlines");
+            if (irLinesOpen.has(k)) irLinesOpen.delete(k); else irLinesOpen.add(k);
+            irRenderReport();
+            const again = Array.from($("irBody").querySelectorAll("[data-irlines]")).find((b) => b.getAttribute("data-irlines") === k);
+            if (again && again.focus) again.focus();
+            return;
+          }
           if (el.hasAttribute("data-irhyph")) {
-            /* BEUK:hyphensgiven — to the words left for the writer: the list, their group opened (a long group is shut), at the line that joins them all, or at the one word */
-            irView = "list"; irRenderReport(); icons();
+            /* BEUK:hyphensgiven — to the words left for the writer: the full account, their fold opened (a long list is shut), at the line that joins them all, or at the one word */
             const its = state.importReport ? state.importReport.items : [];
             const to = its.find((x) => x.kind === "pdfHyphenAskAll" && x.state === "applied") || its.find((x) => x.kind === "pdfHyphenAsk" && x.state === "applied");
-            const row = to ? Array.from($("irBody").querySelectorAll("[data-irid]")).find((r) => r.getAttribute("data-irid") === to.id) : null;
-            if (row) { const grp = row.closest("details"); if (grp) grp.open = true; if (row.scrollIntoView) row.scrollIntoView({ block: "start" }); }
+            irGoTo("look", to ? to.id : "", "hyph");
             return;
           }
           const id = el.getAttribute("data-irsec");
@@ -46404,6 +46581,7 @@
         });
         m.addEventListener("click", (e) => {
           if (e.target === m) { irCloseReport(); return; }
+          if (e.target.closest && e.target.closest("[data-irback]")) { toCard(); return; }
           const b = e.target.closest && e.target.closest("[data-irundo]");
           if (b) irUndoItem(b.getAttribute("data-irundo"));
         });
