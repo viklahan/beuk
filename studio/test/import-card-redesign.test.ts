@@ -95,7 +95,7 @@ beforeAll(async () => {
   const epubClosure = readFileSync(path.join(import.meta.dirname, '..', '..', 'src', 'book', 'epub', 'closure.ts'), 'utf8');
   const stubs = ORACLE_STUBS.filter((n) => !['applySampleBookSync', 'irOpenReport', 'bibleBookArrived', 'markWritingActivity', 'noteBookEdited', 'pdfLoadLib'].includes(n));
   const out = await buildTestModule(HTML, epubClosure, { roots: ['applyBookDoc', 'buildEmptyBook', 'snapshotBookDoc', 'serializeBook', 'readImportFile', 'pdfExtract', 'importPdfExtracted', 'irTallyPdf', 'irTallyWrite', 'irRenderReport', 'irOpenReport', 'initImportReport', 'irUndoItem', 'irTallyHtmlOf'],
-    supplied: [...new Set([...stubs, 'pdfLoadLib', 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf', 'selectSection', 'toast'])], what: 'import-card-redesign', fileReaders: ['bulkFileToData', 'samplePicB64'], prefix: 'IMPORT_CARD_REDESIGN', fn: 'createImportCard', title: "1.0's import card and full account (tests only)" });
+    supplied: [...new Set([...stubs, 'pdfLoadLib', 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf', 'selectSection'])], what: 'import-card-redesign', fileReaders: ['bulkFileToData', 'samplePicB64'], prefix: 'IMPORT_CARD_REDESIGN', fn: 'createImportCard', title: "1.0's import card and full account (tests only)" });
   const code = (out.code as string).replace(/^export (const|function) /gm, '$1 ') + '\nreturn createImportCard(env);';
   make = (e: Rec) => new Function('env', code)(e) as { api: Api };
 }, 180_000);

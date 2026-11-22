@@ -2484,7 +2484,7 @@
       /* ==== BEUK:importreport ==== */
       .ir-reopen { margin: 0 14px 12px; }
       .ir-reopen .side-btn { width: 100%; }
-      .ir-modal { max-width: 944px; padding: 34px 40px 28px; color: var(--ink); }
+      .ir-modal.modal.wide { max-width: 944px; padding: 34px 40px 28px; color: var(--ink); } /* over .modal.wide, in either studio */
       /* BEUK:importcard — the report opens on the card (the verdict, the book Beuk found, the looks not carried); the full account is a step behind it.
          The studio's own variables only, so both themes hold; logical properties, for a right-to-left interface; at 560px and under the card stacks. */
       .ir-card-view .ir-list, .ir-modal:not(.ir-card-view) .ir-card { display: none; }
@@ -2558,7 +2558,7 @@
       .ir-link { font: inherit; font-size: 14px; color: var(--muted); background: none; border: 0; padding: 12px 0; min-height: 44px; text-decoration: underline; cursor: pointer; }
       .ir-link:disabled { opacity: .6; cursor: default; }
       .ir-head .ir-link { font-size: 14.5px; color: var(--accent); padding: 0; min-height: 0; }
-      .ir-actions { align-items: center; flex-wrap: wrap; gap: 10px 16px; margin-top: 26px; }
+      .ir-modal .ir-actions { align-items: center; flex-wrap: wrap; gap: 10px 16px; margin-top: 26px; }
       .ir-modal:not(.ir-card-view) .ir-actions { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 18px; }
       .ir-space { flex: 1 1 auto; }
       .ir-actions .ir-btn { min-height: 44px; padding: 0 20px; font-size: 15px; font-weight: 600; }
@@ -2657,7 +2657,8 @@
       .ir-tally-part small, .ir-tally-sum small { display: block; font-size: 13px; color: var(--muted); margin-top: 1px; }
       .ir-act .ir-btn { white-space: normal; }
       @media (max-width: 560px) {
-        .ir-modal { padding: 26px 20px 22px; }
+        .modal-back:has(> .ir-modal) { padding: 0; align-items: stretch; } /* the report fills a phone's screen */
+        .ir-modal.modal.wide { display: flex; flex-direction: column; padding: 26px 20px 22px; max-height: 100dvh; border: 0; border-radius: 0; }
         .ir-head { flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 22px; }
         .ir-head #irH { font-size: 28px; }
         .ir-head .ir-link { min-height: 44px; }
@@ -2688,7 +2689,8 @@
         .ir-seelist { padding-block: 12px; margin-block: -12px; }
         .ir-looks { padding-top: 16px; }
         .ir-btn { min-height: 44px; }
-        .ir-actions { flex-direction: column-reverse; align-items: stretch; gap: 8px; margin-top: 22px; }
+        .ir-modal .ir-actions { flex-direction: column-reverse; align-items: stretch; gap: 8px; margin-top: auto; padding-top: 22px; }
+        .ir-modal:not(.ir-card-view) .ir-actions { margin-top: 30px; }
         .ir-actions .ir-btn { min-height: 48px; font-size: 15.5px; }
         .ir-actions .ir-btn.primary { font-size: 16px; }
         .ir-actions .ir-link { align-self: center; }

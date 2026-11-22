@@ -40,7 +40,7 @@ const KEPT = ['ir.card.title', 'ir.card.zoneFront', 'ir.card.zoneBody', 'ir.card
   'ir.card.didHyphens', 'ir.card.didHyphensPlural', 'ir.card.seeWords', 'ir.card.open', 'ir.card.back', 'ir.card.ledeEmpty', 'ir.card.ledeEmptyPlural'];
 
 /** the report's stylesheet: from its opening rule to the end of its block */
-const cssOf = (html: string) => html.slice(html.indexOf('.ir-modal { max-width: 944px;'), html.indexOf('/* ==== /BEUK:importreport ==== */'));
+const cssOf = (html: string) => html.slice(html.indexOf('.ir-modal.modal.wide { max-width: 944px;'), html.indexOf('/* ==== /BEUK:importreport ==== */'));
 
 test('import card: the self-check exists in the client and is registered client-only with a reason', async () => {
   const html = await clientHtml();
@@ -101,7 +101,8 @@ test('import card: the old controls are folded into the new ones, and 2.0 lifts 
   const css = cssOf(html);
   const selectors = [...css.matchAll(/^\s{6,8}([^{}\n/@]+)\{/gm)].map((m) => m[1].trim());
   assert.ok(selectors.length >= 150, `the report's rules found: ${selectors.length}`);
-  for (const sel of selectors) assert.match(sel, /^\.ir-/, sel);
+  /* one rule is the backdrop's, on a phone, where the report fills the screen: it names the report's own box */
+  for (const sel of selectors) assert.match(sel, /^\.ir-|^\.modal-back:has\(> \.ir-modal\)$/, sel);
 });
 
 test('import card: the look — the studio\'s own variables, logical properties, gold and never red for a difference, no capitals', async () => {
@@ -127,7 +128,7 @@ test('import card: at 560px and under the arithmetic stacks, chapter rows drop t
   for (const rule of [
     '.ir-figs { grid-template-columns: minmax(0, 1fr);', '.ir-figrow { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto;', '.ir-fig { display: contents; }', '.ir-sign.none { display: block; }',
     '.ir-rs { display: none; }', '.ir-row { grid-template-columns: 26px minmax(0, 1fr) auto;',
-    '.ir-actions { flex-direction: column-reverse; align-items: stretch;',
+    '.ir-modal .ir-actions { flex-direction: column-reverse; align-items: stretch;',
     '.ir-btn { min-height: 44px; }', '.ir-page { min-height: 44px; }', '.ir-more { min-height: 44px;', '.ir-chip { min-height: 44px; }', '.ir-actions .ir-btn { min-height: 48px;',
   ]) assert.ok(phone.includes(rule), rule);
   assert.match(phone, /\.ir-row \{[^}]*min-height: 44px;/);
