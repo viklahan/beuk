@@ -46353,7 +46353,10 @@
          figure; the characters that differ right after the table; and the whole tally, row by row, behind them. */
       function irCountHtml(rep, v, open) {
         const ty = v.ty;
-        if (!ty) return "";
+        /* the words the studio counts in the pages that hold text, as the old card said them: said with or without a tally */
+        const words = irCardWords(), empty = !words ? state.sections.filter((s) => s.kind === "body" && s.type === "chapter").length : 0;
+        const wordsNote = '<p class="ir-pnote">' + esc(empty ? t("ir.card.ledeEmpty", { n: empty }) : irSay("ir.acc.words", words)) + "</p>";
+        if (!ty) return wordsNote;
         const num = (n) => esc(fmtNum(n));
         const rows = [{ key: "words", file: ty.counted ? ty.file : null, book: ty.book - v.joined, chars: true }].concat(ty.rows || []);
         const differ = rows.filter((r) => r.file !== r.book), same = rows.filter((r) => r.file === r.book);
@@ -46375,9 +46378,7 @@
           h += '<div class="ir-same"><div class="ir-samehead">' + irMark("tick", 20) + "<p>" + esc(irSay("ir.acc.same", same.length)) + '</p></div><div class="ir-samegrid">' +
             same.map((r) => "<div><span>" + esc(t("ir.tally.r." + r.key)) + "</span><span>" + num(r.book) + "</span></div>").join("") + "</div></div>";
         }
-        /* the words the studio counts in the pages that hold text, as the old card said them */
-        const words = irCardWords(), empty = !words ? state.sections.filter((s) => s.kind === "body" && s.type === "chapter").length : 0;
-        h += '<p class="ir-pnote">' + esc(empty ? t("ir.card.ledeEmpty", { n: empty }) : irSay("ir.acc.words", words)) + "</p>";
+        h += wordsNote;
         /* the whole tally as it was written: every row, every reason, the set-aside rows and a PDF's own arithmetic */
         h += irTallyHtmlOf(rep).replace(' id="ir-g-tally" open>', ' id="ir-g-tally" data-irshut="1"' + (open.has("ir-g-tally") ? " open" : "") + ">");
         return h;
@@ -46506,9 +46507,10 @@
         const file = $("irFile");
         if (file) file.textContent = card ? rep.file : t("ir.acc.file", { file: rep.file, when: fmtDateIntl(new Date(rep.at)) });
         /* BEUK:asgiven — the import tidies nothing, and the account says so in its opening lines, naming the writer's own
-           button for it (a report saved before this, whose import did tidy, lists its typography changes instead) */
+           button for it (a report saved before this, whose import did tidy, lists its typography changes instead). They are
+           the account's: the stylesheet keeps them off the card. */
         const sub = $("irSub");
-        if (sub) sub.textContent = card ? "" : [t("ir.acc.intro")].concat(rep.items.some((it) => it.group === "typography") ? [] : [t("ir.acc.asGiven", { button: t("tool.autoFormat") })], [t("ir.acc.introParts")]).join(" ");
+        if (sub) sub.textContent = [t("ir.acc.intro")].concat(rep.items.some((it) => it.group === "typography") ? [] : [t("ir.acc.asGiven", { button: t("tool.autoFormat") })], [t("ir.acc.introParts")]).join(" ");
         /* the card's primary action says the book is opened as it is, when something differs */
         ["btnIrClose", "btnIrKeep"].forEach((id) => { const b = $(id); if (b) b.textContent = t(v.state === "differs" ? "ir.card.openAsIs" : "ir.card.open"); });
         /* BEUK:hyphensgiven — a fold the reader has open stays open when the account is drawn again: joining one word of a
@@ -71502,27 +71504,44 @@
             });
           } },
         /* BEUK:importcard */
-        { id: "import.card.opens-on-the-book", feature: "import", name: "The import report opens on the book that came in: how many chapters, sections and pages, each chapter with the sections inside it, three plain lines of what Beuk did (one saying whether anything was left out); the changes one by one are a step behind it and a step back, and a label opens its section",
-          run() {
+        { id: "import.card.opens-on-the-book", feature: "import", name: "The import report opens on a card that answers first: the verdict panel (the sentence, the three figures, a row for each kind set aside, what is unaccounted for), then the book Beuk found under one heading that carries its counts, each chapter with the sections inside it; nothing on it is red; the full account is a step behind it with every item of the report as one row, its parts in order and none empty, and a step back; a page opens its section",
+          async run() {
+            const md = ["# Chapter 1: The Harbour", "Dawn broke over the water.", "## Morning", "Fog on the quay.", "## Noon", "The tide turned.", "# Chapter 2: The Crossing", "Rain came sideways.", "# Acknowledgments", "Thanks to the harbour."].join("\n\n");
+            IR_ASIDE = {}; const src = await irTallySource("md", md);
             return irCheckRun(() => {
-              const md = ["# Chapter 1: The Harbour", "Dawn broke over the water.", "## Morning", "Fog on the quay.", "## Noon", "The tide turned.", "# Chapter 2: The Crossing", "Rain came sideways.", "# Acknowledgments", "Thanks to the harbour."].join("\n\n");
-              importPlainManuscript("fixture.md", md);
+              const ty = irTallyWrite(importPlainManuscript("fixture.md", md), src);
               irOpenReport();
               const m = $("modalImportReport"), box = m.querySelector(".ir-modal"), body = $("irBody");
               const shown = (id) => getComputedStyle($(id)).display !== "none";
-              const stats = Array.prototype.map.call(body.querySelectorAll(".ir-stat b"), (b) => b.textContent).join(",");
-              const rows = Array.prototype.map.call(body.querySelectorAll(".ir-row"), (r) => r.querySelector(".ir-rn").textContent + ":" + r.querySelector(".ir-rt").firstChild.textContent + ":" + (r.querySelector(".ir-rt em") ? r.querySelector(".ir-rt em").textContent : "")).join(" | ");
-              const cardOk = m.classList.contains("open") && box.classList.contains("ir-card-view") && stats === "2,2,1" && rows === "1:The Harbour:" + t("ir.card.sectionsIn", { n: 2 }) + " | 2:The Crossing:" &&
-                /Acknowledgments/.test(body.querySelector(".ir-pages") ? body.querySelector(".ir-pages").textContent : "") && body.querySelectorAll(".ir-didline").length === 3 /* BEUK:asgiven — the card also says the text is as the file gave it */ && body.textContent.indexOf(t("ir.card.didAsGiven").split("{button}")[0]) !== -1 && !body.querySelector(".ir-didline.warn") &&
-                shown("btnIrOpenBook") && shown("btnIrEvery") && !shown("btnIrKeep") && getComputedStyle(body.querySelector(".ir-list")).display === "none";
+              const text = (sel) => { const e = body.querySelector(sel); return e ? e.textContent : ""; };
+              /* the verdict: first on the card, its sentence, the three figures (file = book + set aside), a row a kind and the unaccounted row */
+              const panel = body.querySelector(".ir-verdict"), asideN = ty ? Object.keys(ty.aside).reduce((a, k) => a + ty.aside[k], 0) : -1;
+              const figs = ["file", "book", "aside"].map((k) => text(".ir-fig." + k + " b")).join(" ");
+              const verdictOk = !!ty && ty.counted && ty.unaccounted === 0 && !!panel && panel.classList.contains("clear") && body.querySelector(".ir-card").firstElementChild === panel && text(".ir-vhead p") === t("ir.tally.wf.same") &&
+                figs === [ty.file, ty.book, asideN].map(fmtNum).join(" ") && ty.file === ty.book + asideN && body.querySelectorAll(".ir-vrows .ir-vn").length === Object.keys(ty.aside).length + 1 && $("irH").textContent === t("ir.card.title") && $("irFile").textContent === "fixture.md" && !shown("irSub");
+              /* the book Beuk found */
+              const head = text(".ir-fhead h3"), wantHead = t("ir.card.foundHead", { list: irList([irSay("ir.card.nChapters", 2), irSay("ir.card.nSections", 2), irSay("ir.card.nPages", 1)], "unit") });
+              const rows = Array.prototype.map.call(body.querySelectorAll(".ir-row"), (r) => r.querySelector(".ir-rn").textContent + ":" + r.querySelector(".ir-rt").textContent + ":" + r.querySelector(".ir-rs").textContent).join(" | ");
+              const cardOk = m.classList.contains("open") && box.classList.contains("ir-card-view") && head === wantHead && rows === "1:The Harbour:" + t("ir.card.sectionsIn", { n: 2 }) + " | 2:The Crossing:" &&
+                /Acknowledgments/.test(text(".ir-pages")) && !body.querySelector(".ir-stat, .ir-didline, .ir-kicker") &&
+                shown("btnIrClose") && shown("btnIrEvery") && shown("btnIrUndoAll") && !shown("btnIrKeep") && !shown("btnIrDismiss") && !shown("btnIrBack") && getComputedStyle(body.querySelector(".ir-list")).display === "none";
+              /* never red: the panel's rule and its mark are not painted in the studio's red */
+              const probe = document.createElement("span"); probe.style.color = "var(--bad)"; body.appendChild(probe);
+              const red = getComputedStyle(probe).color; probe.remove();
+              const calmOk = !!panel && getComputedStyle(panel).borderTopColor !== red && getComputedStyle(panel.querySelector(".ir-mark")).color !== red && !body.querySelector(".ir-card [class*='warn']");
               $("btnIrEvery").click();
-              const listOk = !box.classList.contains("ir-card-view") && getComputedStyle(body.querySelector(".ir-list")).display !== "none" && body.querySelectorAll(".ir-list .ir-item").length === state.importReport.items.length && shown("btnIrKeep") && !shown("btnIrOpenBook");
+              const ids = Array.prototype.map.call(body.querySelectorAll(".ir-list [data-irid]"), (r) => r.getAttribute("data-irid"));
+              const parts = Array.prototype.map.call(body.querySelectorAll(".ir-list .ir-part"), (p) => p.id.replace("ir-g-", ""));
+              const listOk = !box.classList.contains("ir-card-view") && getComputedStyle(body.querySelector(".ir-list")).display !== "none" && $("irH").textContent === t("ir.acc.title") &&
+                ids.length === state.importReport.items.length && new Set(ids).size === ids.length && state.importReport.items.every((it) => ids.indexOf(it.id) !== -1) &&
+                parts.length > 0 && parts.join(",") === IR_PARTS.filter((p) => parts.indexOf(p) !== -1).join(",") && Array.prototype.every.call(body.querySelectorAll(".ir-list .ir-part"), (p) => p.children.length > 1) && body.querySelectorAll(".ir-list .ir-chip").length === parts.length &&
+                shown("btnIrKeep") && shown("btnIrDismiss") && shown("btnIrBack") && shown("btnIrUndoAll") && !shown("btnIrClose") && !shown("btnIrEvery");
               $("btnIrBack").click();
               const backOk = box.classList.contains("ir-card-view");
               const ch2 = state.sections.find((s) => s.type === "chapter" && s.title === "The Crossing");
               body.querySelectorAll(".ir-row")[1].click();
               const openOk = !m.classList.contains("open") && !!ch2 && state.activeId === ch2.id;
-              return scVerdict(cardOk && listOk && backOk && openOk, "the card (" + cardOk + ": " + stats + " · " + rows + "), every change one step behind (" + listOk + "), and back (" + backOk + "), a label opens its section (" + openOk + ")");
+              return scVerdict(verdictOk && cardOk && calmOk && listOk && backOk && openOk, "the verdict (" + verdictOk + ": " + figs + "), the book found (" + cardOk + ": " + head + " · " + rows + "), no red (" + calmOk + "), the full account one step behind (" + listOk + ": " + parts.join(",") + ", " + ids.length + " rows of " + (state.importReport ? state.importReport.items.length : "-") + " items), and back (" + backOk + "), a page opens its section (" + openOk + ")");
             });
           } },
         /* BEUK:docsimport */
@@ -72119,8 +72138,10 @@
               if (!notes || notes.data.found !== 3 || notes.data.mapped !== 3 || notes.data.orphans !== 0) bad.push("notes " + JSON.stringify(notes && notes.data));
               if (marks.length !== 1 || marks[0].data.n !== 1 || marks[0].group !== "dropped" || marks[0].why !== "sourceTxt" || irItemLabel(marks[0]) !== t("ir.k.txtMarks", { n: 1 })) bad.push("the stray mark is not reported: " + JSON.stringify(marks.map((i) => i.data)));
               irOpenReport();
-              const body = $("irBody"), warn = body ? body.querySelector(".ir-didline.warn p") : null;
-              if (!warn || Number((/\d+/.exec(warn.textContent) || [""])[0]) !== items.filter((i) => i.group === "dropped").length) bad.push("the card does not count what the list shows as left out");
+              /* BEUK:importcard — the card says how many more lines the full account has for the writer, and the stray mark is one of them, under "For you to look at" */
+              const body = $("irBody"), more = body ? body.querySelector(".ir-vcalm [data-irlist]") : null, look = body ? body.querySelector("#ir-g-look") : null;
+              if (!more || Number((/\d+/.exec(more.parentNode.textContent) || [""])[0]) !== items.filter((i) => i.group === "dropped").length) bad.push("the card does not count the lines the full account has for the writer");
+              if (!look || !marks[0] || !Array.prototype.some.call(look.querySelectorAll("[data-irid]"), (r) => r.getAttribute("data-irid") === marks[0].id)) bad.push("the stray mark does not stand under For you to look at");
             });
             /* marks, and no block that says what they are: nothing is guessed, and it is said */
             irCheckRun(() => {
@@ -72203,7 +72224,8 @@
                 judge("web page", irTallyWrite(rep, src), 71, 47, { contents: 8, headingMarks: 16 });
                 irRenderReport();
                 const said = $("irBody") ? $("irBody").textContent : "";
-                if (said.indexOf(t("ir.tally.cardOk", { file: fmtNum(71), book: fmtNum(47), aside: fmtNum(24) })) === -1 || said.indexOf(t("ir.tally.b.contents")) === -1) bad.push("the card and the report do not say the web page's tally");
+                const figs = ["file", "book", "aside"].map((k) => { const e = $("irBody") ? $("irBody").querySelector(".ir-fig." + k + " b") : null; return e ? e.textContent : ""; }).join(" "); /* BEUK:importcard — the card's three figures */
+                if (figs !== [71, 47, 24].map(fmtNum).join(" ") || !$("irBody").querySelector(".ir-verdict.clear") || said.indexOf(t("ir.tally.wf.same")) === -1 || said.indexOf(t("ir.tally.b.contents")) === -1) bad.push("the card and the report do not say the web page's tally: " + figs);
               }); }
             /* the same page with one more paragraph, and a reader step that drops it: its 15 characters are unaccounted for, and said */
             { const longer = page.replace("</body>", "<p>And the wind rose.</p></body>");
@@ -72213,7 +72235,7 @@
                 const ty = irTallyWrite(importDocxConverted("fixture.html", lossy, rd.messages, rd.scan, rd.identity, null, "html"), src);
                 irRenderReport();
                 const said = $("irBody") ? $("irBody").textContent : "";
-                if (lossy === rd.html || !ty || ty.unaccounted !== 15 || said.indexOf(t("ir.tally.cardWarn", { n: 15 })) === -1 || /Every character is accounted for/.test(said)) bad.push("a dropped paragraph: unaccounted " + (ty ? ty.unaccounted : "-") + ", not 15 with the warning");
+                if (lossy === rd.html || !ty || ty.unaccounted !== 15 || said.indexOf(t("ir.tally.cardWarn", { n: 15 })) === -1 || !$("irBody").querySelector(".ir-verdict.differs") || $("irBody").querySelector(".ir-verdict.clear")) bad.push("a dropped paragraph: unaccounted " + (ty ? ty.unaccounted : "-") + ", not 15 with the warning");
               }); }
             /* RTF: a running head of 11 characters and a hidden word of 6 beside the book's 47, and the two headings' labels and colons, 16 */
             { const raw = "{~rtf1~ansi{~stylesheet{~s0 Normal;}{~s1 heading 1;}}{~header~pard Running head~par}~pard~s1 Chapter 1: Dawn~par~pard~s0 The caravan left{~v  secret} at dawn.~par~pard~s1 Chapter 2: Noon~par~pard~s0 The pans lay white.~par}".split("~").join(B);
@@ -72515,7 +72537,7 @@
                 if (!w || w.same !== false || JSON.stringify(w.fileOnly) !== JSON.stringify([["v", 1, ["caravan"]]]) || JSON.stringify(w.bookOnly) !== JSON.stringify([["b", 1, ["caraban"]]])) bad.push("the changed character is not named: " + JSON.stringify(w));
                 irView = "card"; irRenderReport();
                 const said = $("irBody") ? $("irBody").textContent : "";
-                if (/Every character is accounted for/.test(said)) bad.push("the card says every character is accounted for when a letter was changed");
+                if ($("irBody").querySelector(".ir-verdict.clear") || said.indexOf(t("ir.tally.wf.same")) !== -1) bad.push("the card says every character of the file is in the book when a letter was changed"); /* BEUK:importcard — the verdict panel is not the clear one */
                 if (said.indexOf(t("ir.tally.cardWords", { n: 1 })) === -1) bad.push("the card does not say a character is not in the book as written");
                 if (said.indexOf(t("ir.card.didNone")) !== -1) bad.push("the card says nothing was left out above characters that differ");
               }); }
@@ -72657,7 +72679,7 @@
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
             }
           } },
-        { id: "import.report.names-the-file", feature: "import", name: "The report names the file that was imported and counts as its summary does: a Markdown or text import's lines say Markdown or text file, never Word file; a heading set in the book's style is said to have been bold \"in the file\" unless the file was a Word file; an OpenDocument file's picture is not named a Word image; and the number of things the summary says were left out is the number the list shows",
+        { id: "import.report.names-the-file", feature: "import", name: "The report names the file that was imported and counts as its summary does: a Markdown or text import's lines say Markdown or text file, never Word file; a heading set in the book's style is said to have been bold \"in the file\" unless the file was a Word file; an OpenDocument file's picture is not named a Word image; and the number of looks the card says the book does not carry is the number the full account lists",
           run() {
             return irCheckRun(() => {
               const P2 = String.fromCharCode(10, 10);
@@ -72677,12 +72699,16 @@
               const wordOk = !!wfh && irItemLabel(wfh) === t("ir.k.fmtHeading", { n: 1 }) && !!wimg && wimg.data.name === "word-image-1.png";
               irOpenReport();
               const body = $("irBody");
-              const chip = body.querySelector(".ir-chip.warn b"), warn = body.querySelector(".ir-didline.warn p");
-              const listed = (wrep ? wrep.items : []).filter((i) => i.group === "dropped").length;
-              const inCard = warn ? Number((/\d+/.exec(warn.textContent) || [""])[0]) : -1;
-              const countOk = listed === 1 && !!chip && Number(chip.textContent) === listed && inCard === listed && body.querySelectorAll(".ir-didline").length === 3 && body.textContent.indexOf(t("ir.card.didAsGiven", { button: t("tool.autoFormat") })) !== -1; /* BEUK:asgiven — the third line: the text is as the file gave it */
+              /* BEUK:importcard — the Word file's struck-through word and its bold heading are two looks the book does not carry: the card's heading counts them, and the full account's "Looks" part and its link show the same number */
+              const head = body.querySelector(".ir-looks h3");
+              const inCard = head ? Number((/\d+/.exec(head.textContent) || [""])[0]) : -1;
+              irView = "list"; irRenderReport();
+              const chip = Array.prototype.find.call(body.querySelectorAll(".ir-chip"), (a) => a.getAttribute("href") === "#ir-g-looks");
+              const listed = body.querySelectorAll("#ir-g-looks .ir-lrow").length;
+              const countOk = (wrep ? wrep.items : []).filter((i) => i.group === "dropped").length === 1 && listed === 2 && !!chip && !!chip.querySelector("span") && Number(chip.querySelector("span").textContent) === listed && inCard === listed &&
+                $("irSub").textContent.indexOf(t("ir.acc.asGiven", { button: t("tool.autoFormat") })) !== -1; /* BEUK:asgiven — the account's opening lines: none of the characters was changed */
               return scVerdict(mdOk && txtOk && odtOk && wordOk && countOk, "Markdown: a heading bold in the file, lines from the Markdown file (" + mdOk + "), text file (" + txtOk + "), OpenDocument: no Word in any line, odt-image (" + odtOk +
-                "), Word keeps its own words (" + wordOk + "), the summary's count is the list's (" + countOk + ": " + inCard + " / " + (chip ? chip.textContent : "-") + " / " + listed + ")");
+                "), Word keeps its own words (" + wordOk + "), the card's count of looks is the full account's (" + countOk + ": " + inCard + " / " + (chip ? chip.textContent : "-") + " / " + listed + ")");
             });
           } },
         { id: "import.report.names-epub-and-pdf", feature: "import", name: "An EPUB import's report lines say EPUB file and a PDF import's say PDF file, never Word file: a line that cannot be undone on its own names the file it came from",

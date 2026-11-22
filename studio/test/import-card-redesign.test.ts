@@ -111,7 +111,8 @@ describe('the card: the verdict panel first', () => {
     expect(boxClass().contains('ir-differs')).toBe(false);
     expect(txt($('irH'))).toBe('Your book is in.');
     expect(txt($('irFile'))).toBe('breaks.txt');
-    expect(txt($('irSub')), 'no "Beuk read N words" sentence on the card').toBe('');
+    expect(txt($('irSub')) + txt(card()), 'no "Beuk read N words" sentence').not.toContain('Beuk read');
+    expect($('irSub').classList.contains('ir-intro'), 'the account\'s opening lines are kept off the card by the stylesheet (.ir-card-view .ir-intro)').toBe(true);
     const panel = q('.ir-verdict', card())!;
     expect(card().firstElementChild, 'the verdict panel is the first thing on the card').toBe(panel);
     expect(panel.classList.contains('clear')).toBe(true);
