@@ -216,15 +216,22 @@ describe("1.0's box-set and Word self-checks (feature boxset-docx, 7)", () => {
   });
 });
 
-describe('1.0 finding: a volume with more than one Part', () => {
-  it("1.0's boxSetPlan names every Part of a volume Text/volNN-part.xhtml: the sample (three Parts) as Book One gives three package files on one path, and the validator says so", () => {
+/* This was pinned on 2026-11-03 as "1.0 finding": boxSetPlan named every Part of a volume Text/volNN-part.xhtml, so the
+   sample (three Parts) as Book One gave three package files on one path and the validator said so. A finding pinned is
+   a defect kept: one page was written over another. Fixed on 2026-11-22 (the type names the first, a counter the rest,
+   as a single book's plan does); the test now holds the fix. */
+describe('a volume with more than one Part: each Part has a file of its own', () => {
+  it('the sample (three Parts) as Book One gives three Part files on three paths, each id declared once, and the validator has no error', () => {
     const st = on(sampleBook());
     expect((st.sections as Rec[]).filter((s) => s.type === 'part' && c.api.inBook(s)).length).toBe(3);
     st.boxSetVolumes = [secondTide()];
     const files = c.api.boxSetFiles('generic');
-    expect(files.filter((f) => f.path === 'OEBPS/Text/vol01-part.xhtml').length).toBe(3);
-    const errs = c.api.validateEpubPackage(files).results.filter((r) => r.level === 'error').map((r) => r.detail);
-    expect(errs.some((d) => /sec-vol01-part.*declared 3 times/.test(d))).toBe(true);
+    const parts = files.map((f) => f.path).filter((p) => /^OEBPS\/Text\/vol01-part(_\d+)?\.xhtml$/.test(p));
+    expect(parts).toEqual(['OEBPS/Text/vol01-part.xhtml', 'OEBPS/Text/vol01-part_2.xhtml', 'OEBPS/Text/vol01-part_3.xhtml']);
+    const paths = files.map((f) => f.path);
+    expect(new Set(paths).size, 'no two package files share a path').toBe(paths.length);
+    const errs = c.api.validateEpubPackage(files).results.filter((r) => r.level === 'error').map((r) => r.id + ' ' + r.detail);
+    expect(errs).toEqual([]);
   });
 });
 
