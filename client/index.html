@@ -38775,25 +38775,44 @@
         if (!b || wordCountOf(b) > 80) return false;
         return /^[“"‘'*]/.test(b) || /^>\s/.test(b);
       };
-      const isAttributionBlock = (block) => {
-        const b = String(block || "").trim().replace(/^\*{1,3}(?=\S)([^*]*\S)\*{1,3}$/, "$1"); /* *— Rumi* reads as — Rumi */
+      /* BEUK:epigraphmarked — an attribution is one the file marks: a short
+         line that opens on a dash and does not end a sentence ("— Rumi",
+         "-- Oscar Wilde, Lady Windermere's Fan", "— T. S."). A line of
+         dialogue set with a dash ("— Gone, said the pilot.") ends one, and
+         a rule ("---") is no attribution. A doubtful line is left where the
+         writer put it: a missed epigraph stays in its chapter as typed, a
+         false one takes the story's opening out of it. */
+      const attributionLine = (block) => String(block || "").trim().replace(/^\*{1,3}(?=\S)([^*]*\S)\*{1,3}$/, "$1"); /* *— Rumi* reads as — Rumi */
+      const isMarkedAttribution = (block) => {
+        const b = attributionLine(block);
         if (!b || b.indexOf("\n") !== -1 || wordCountOf(b) > 10) return false;
-        if (/^(—|–|-)\s*\S/.test(b)) return true;
+        if (!/^(?:—|–|―|-{1,2})\s*[^\s—–―-]/.test(b)) return false;
+        const end = b.replace(/["”'’*_)\]]+$/, "");
+        if (/[!?…]$/.test(end)) return false;
+        return !/\.$/.test(end) || /[A-Z]\.$/.test(end);
+      };
+      /* A bare name under a quotation. It is read as an attribution only in
+         the pages before the first chapter, and only when they hold no prose
+         (frontZonePieces): never at a chapter's head, where a line of
+         dialogue answered by a short paragraph has this same shape. */
+      const isBareAttribution = (block) => {
+        const b = attributionLine(block);
+        if (!b || b.indexOf("\n") !== -1 || wordCountOf(b) > 10) return false;
         if (/[.!?]$/.test(b) && !/[A-Z]\.$/.test(b)) return false;
         return /^[A-Z]/.test(b) && !/\s(the|a|an|was|were|had|has|said|went|came)\s/i.test(b);
       };
-      /* A quotation with its attribution, standing at the head of a
+      /* A quotation with its marked attribution, standing at the head of a
          block run: returns { epigraph, rest } or null. The rest must
          keep real prose — a chapter that is only a quotation stays
          a chapter. */
       function carveEpigraph(blocks) {
         if (!blocks || blocks.length < 2 || !isQuoteBlock(blocks[0])) return null;
-        if (blocks.length >= 3 && isAttributionBlock(blocks[1])) {
+        if (blocks.length >= 3 && isMarkedAttribution(blocks[1])) {
           const rest = blocks.slice(2);
           return rest.length ? { epigraph: [blocks[0], blocks[1]], rest } : null;
         }
         const lines = blocks[0].split("\n");
-        if (lines.length >= 2 && isAttributionBlock(lines[lines.length - 1])) {
+        if (lines.length >= 2 && isMarkedAttribution(lines[lines.length - 1])) {
           const rest = blocks.slice(1);
           return rest.length ? { epigraph: [blocks[0]], rest } : null;
         }
@@ -38865,11 +38884,19 @@
             if (rest[i].ord < copyright.ord && b.split("\n").map((l) => l.trim()).filter(Boolean).every(furniture)) { irNote({ kind: "lifted", reason: "furniture", text: rest[i].block }); rest.splice(i, 1); }
           }
         }
+        /* BEUK:epigraphmarked — an epigraph stands before the prose begins: a
+           marked one is found when no prose stands ahead of it, so no line is
+           lifted from inside the text (a file with no headings hands its
+           whole story to this loop). A quotation over a bare name is read as
+           one only when the book has chapters and these pages hold no prose
+           at all: then the choice is between two names for one short page. */
+        const wordsIn = (list) => list.reduce((n, r) => n + wordCountOf(r.block), 0);
         for (let i = 0; i < rest.length; i++) {
           if (!isQuoteBlock(rest[i].block)) continue;
-          let consumed = 0;
-          if (i + 1 < rest.length && isAttributionBlock(rest[i + 1].block)) consumed = 2;
-          else { const lines = rest[i].block.split("\n"); if (lines.length >= 2 && isAttributionBlock(lines[lines.length - 1])) consumed = 1; }
+          const pairBy = (test) => { if (i + 1 < rest.length && test(rest[i + 1].block)) return 2; const lines = rest[i].block.split("\n"); return lines.length >= 2 && test(lines[lines.length - 1]) ? 1 : 0; };
+          const ahead = wordsIn(rest.slice(0, i));
+          let consumed = ahead <= 60 ? pairBy(isMarkedAttribution) : 0;
+          if (!consumed && !bodyless) { const n = pairBy(isBareAttribution); if (n && ahead + wordsIn(rest.slice(i + n)) <= 60) consumed = n; }
           if (consumed) {
             pieces.push({ kind: "front", type: "epigraph", title: "Epigraph", bodyText: rest.slice(i, i + consumed).map((r) => r.block).join("\n\n"), ord: rest[i].ord });
             rest.splice(i, consumed);
