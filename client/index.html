@@ -47645,14 +47645,22 @@
               const k = hyKey(w);
               if (k) stands.set(k, (stands.get(k) || 0) + 1);
             });
-            const sp = String(l.text || "").split(/\s+/).filter(Boolean);
-            sp.forEach((w, q) => {
-              if (q < sp.length - 1 && /[\p{L}\p{N}][-\u2010—–]$/u.test(w) && /^[\p{L}\p{N}]/u.test(sp[q + 1])) bump(opens, openKey(w));
-              if (/[\p{L}\p{N}][—–][\p{L}\p{N}]/u.test(w)) bump(pairs, hyKey(w));
-            });
-            ["—", "–"].forEach((d) => {
-              bump(dashClosed, d, (String(l.text || "").match(new RegExp("[\\p{L}\\p{N}]" + d + "(?=[\\p{L}\\p{N}])", "gu")) || []).length);
-              bump(dashOpen, d, (String(l.text || "").match(new RegExp("[\\p{L}\\p{N}]" + d + "\\s+(?=[\\p{L}\\p{N}])", "gu")) || []).length);
+            /* A piece set open is a piece, a space and a word in one run of text. On a line of two or more cells (a
+               table's row, two columns side by side) the end of one cell and the start of the next are not that: a cell
+               ending on "VIE-" (its code turned onto the cell's next line) beside a cell opening "Vienna" read as
+               "VIE-" set open, and every "VIE-04-10" broken at a line's end came in "VIE- 04-10". So each cell is read
+               on its own. */
+            const pieces = l.cells && l.cells.length >= 2 ? l.cells : [String(l.text || "")];
+            pieces.forEach((piece) => {
+              const sp = String(piece || "").split(/\s+/).filter(Boolean);
+              sp.forEach((w, q) => {
+                if (q < sp.length - 1 && /[\p{L}\p{N}][-\u2010—–]$/u.test(w) && /^[\p{L}\p{N}]/u.test(sp[q + 1])) bump(opens, openKey(w));
+                if (/[\p{L}\p{N}][—–][\p{L}\p{N}]/u.test(w)) bump(pairs, hyKey(w));
+              });
+              ["—", "–"].forEach((d) => {
+                bump(dashClosed, d, (String(piece || "").match(new RegExp("[\\p{L}\\p{N}]" + d + "(?=[\\p{L}\\p{N}])", "gu")) || []).length);
+                bump(dashOpen, d, (String(piece || "").match(new RegExp("[\\p{L}\\p{N}]" + d + "\\s+(?=[\\p{L}\\p{N}])", "gu")) || []).length);
+              });
             });
           });
           const core = (w) => String(w).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");

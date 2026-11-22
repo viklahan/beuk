@@ -50,6 +50,26 @@ describe('a hyphen left open at a line\'s end ("pre-" before "and post-war")', (
     expect(asked(g)).toEqual([['pre-and', 'preand', 'neither']]);
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
+
+  /* Found in a real browser on the Meridian test book (2026-11-22): nine codes that the hyphen rule keeps whole
+     ("VIE-04-10") came in "VIE- 04-10" again. The "set open elsewhere" evidence was read from the whole line of a
+     table's row, where a cell that ends on "VIE-" (its code turned onto the cell's next line) stands beside the next
+     cell's first word: two cells side by side are not a piece set open with a space and a word after it. */
+  it('a table cell that ends on the piece, beside the next cell, is not the piece set open: the code stays whole and is listed as before', async () => {
+    const g = await importFile('open-cells.pdf', await pdf([
+      ...pg('One', ['The clerk filed the sheet under the station code VIE-', '04-10 with the others that came in that year.']),
+      { page: true }, { text: 'Chapter Two', size: 20, gap: 40 },
+      { text: 'Station', size: 11, gap: 0 }, { text: 'Office', size: 11, x: 320, gap: 15 },
+      { text: 'Old code VIE-', size: 11, gap: 0 }, { text: 'Vienna harbour office', size: 11, x: 320, gap: 15 },
+      { text: '04-10', size: 11, gap: 0 }, { text: 'and its annexe', size: 11, x: 320, gap: 15 },
+      { text: 'Old code GRZ-', size: 11, gap: 0 }, { text: 'Graz siding office', size: 11, x: 320, gap: 15 },
+      { text: '02-17', size: 11, gap: 0 }, { text: 'and its yard', size: 11, x: 320, gap: 24 },
+      ...Array.from({ length: 8 }, () => ({ text: FILL + '.', size: 11, gap: 15 })),
+    ]), '');
+    expect(first(g, 0)).toContain('station code VIE-04-10 with the others');
+    expect(item(g, 'pdfHyphenOpen')).toEqual([]);
+    expect(asked(g).filter((a) => /VIE/.test(String(a[0])))).toEqual([['VIE-04-10', 'VIE04-10', 'neither']]);
+  }, 120_000);
 });
 
 describe('a dash at a line\'s end straight after a letter or a digit ("1914–" before "1918")', () => {
