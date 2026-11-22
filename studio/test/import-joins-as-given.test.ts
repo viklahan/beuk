@@ -257,7 +257,8 @@ describe('two lines of the file read as one heading are joined with no character
     /* the third line (the author, set as a heading line too) has no "by": the shared title-page rule reads no author from it, and it is lifted with the title page (counted in that row) */
     expect({ title: g.meta.title, subtitle: g.meta.subtitle }).toEqual({ title: 'The Salt Road', subtitle: 'A Field Ledger' });
     expect(chapters(g)).toEqual([{ number: '1', title: 'Chapter 1', content: ONE }, { number: '2', title: 'Chapter 2', content: TWO }]);
-    expect({ aside: g.tally.aside, ...reconciled(g) }).toEqual({ aside: { titlePage: 30 }, ...CLEAN }); // "The Salt Road" 11 + "A Field Ledger" 12 + "Ada Wren" 7
+    // the title page: "The Salt Road" 11 + "A Field Ledger" 12 + "Ada Wren" 7; and each chapter's heading is its label and nothing else ("Chapter 1"): the word "Chapter", 7, is the heading's own label, twice
+    expect({ aside: g.tally.aside, ...reconciled(g) }).toEqual({ aside: { titlePage: 30, headingMarks: 14 }, ...CLEAN });
   }, 120_000);
 
   it('no mark of the import\'s own join is left anywhere in a book: not in a title, a subtitle, a page\'s text or the book\'s details', async () => {

@@ -206,12 +206,13 @@ describe('the import tally counts and compares characters, exactly', () => {
     expect(reportSaid(rep)).toContain('Every character of your file is in your book.');
   }, 120_000);
 
-  it('a text file is counted by hand: the characters of its four lines, none set aside', async () => {
+  it('a text file is counted by hand: the characters of its four lines; the word "Chapter" of its two headings is each heading\'s own label, set aside, and nothing else is', async () => {
     const { rep } = await importFile('as-given.txt', null, TXT);
     const ty = tallyOf(rep);
     const want = count('Chapter 1') + count(LINE) + count('Chapter 2') + count(LAST);
     expect(want).toBe(105); // 8 + 73 + 8 + 16
-    expect({ file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, marks: ty.marks }).toEqual({ file: 105, book: 105, aside: {}, unaccounted: 0, marks: 0 });
+    // in the book: the two numbers and the two lines, 1 + 73 + 1 + 16 = 91; the row: "Chapter" 7, twice
+    expect({ file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, marks: ty.marks }).toEqual({ file: 105, book: 91, aside: { headingMarks: 14 }, unaccounted: 0, marks: 0 });
   }, 120_000);
 
   it('a character changed on the way in is named, with its count on each side and the words it stands in: the count alone would not show it', async () => {
@@ -241,7 +242,8 @@ describe('the import tally counts and compares characters, exactly', () => {
     const { rep, secs } = await importFile('breaks.txt', null, 'Chapter 1\n\nBefore the break.\n\n---\n\nAfter the break.\n\nChapter 2\n\n' + LAST + '\n');
     expect(secs.find((s) => s.type === 'chapter' && s.number === '1')!.content).toBe('Before the break.\n\n***\n\nAfter the break.');
     const ty = tallyOf(rep);
-    expect({ aside: ty.aside, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ aside: { sceneBreaks: 3 }, unaccounted: 0, same: true });
+    // and the word "Chapter" of the two headings "Chapter 1" and "Chapter 2", each heading's own label: 7, twice
+    expect({ aside: ty.aside, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ aside: { sceneBreaks: 3, headingMarks: 14 }, unaccounted: 0, same: true });
     expect(reportSaid(rep)).toContain(t('ir.tally.b.sceneBreaks') + '3');
   }, 120_000);
 
@@ -265,7 +267,8 @@ describe('the import tally counts and compares characters, exactly', () => {
     expect(all).toContain('the transport reached');
     const ty = tallyOf(rep);
     const raw = count('Chapter 1') + count(lines[0][1][0]) + count(lines[0][1][1]) + count('Chapter 2') + count(LAST);
-    expect({ raw: ty.pdf!.raw, joins: ty.pdf!.joins, file: ty.file, book: ty.book, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ raw, joins: { pdfRejoined: 1 }, file: raw - 1, book: raw - 1, unaccounted: 0, same: true });
+    // the book: the file's characters less the word "Chapter" of the two headings (7 each: the heading's own label, a row of its own)
+    expect({ raw: ty.pdf!.raw, joins: ty.pdf!.joins, file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ raw, joins: { pdfRejoined: 1 }, file: raw - 1, book: raw - 1 - 14, aside: { headingMarks: 14 }, unaccounted: 0, same: true });
     expect(ty.pdf!.rejoined).toEqual([{ from: ['trans-', 'port'], to: 'transport', n: 1 }]);
     const said = reportSaid(rep);
     expect(said).toContain(t('ir.tally.j.pdfRejoined') + '− 1');

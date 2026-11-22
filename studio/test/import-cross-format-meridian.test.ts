@@ -128,9 +128,13 @@ describe.skipIf(!present)('the same book from every format: the Meridian stress 
 
   it('txt: a rendering of the book, its differences each the file\'s own and counted', () => {
     // The tally counts characters now. What is unaccounted for in each file, character by character, is the pinned
-    // inventory of import-tally-meridian.test.ts: 12 in the text file (the dash after each of its 12 chapters' numbers),
+    // inventory of import-tally-meridian.test.ts: none in the text file (its 12 headings "CHAPTER I — …": the word and the dash
+    // are each heading's own label and mark, counted in the headingMarks row as the Markdown file's "Chapter" and colon are;
+    // they were a difference of capitals and 12 dashes unaccounted for while the book's side counted Beuk's own "Chapter I"),
     // and none in the Word file (its two appendix headings are joined to their names with a space, no colon of the import's).
-    expect(reads.txt.unaccounted).toBe(12);
+    expect(reads.txt.unaccounted).toBe(0);
+    expect(reads.txt.aside.headingMarks, 'the text file\'s 12 headings: "CHAPTER" 7 and the dash 1, each').toBe(96);
+    expect(reads.docx.aside.headingMarks, 'the Word file\'s 12 label lines "Chapter I" over the heading: "Chapter" 7, each').toBe(84);
     expect(reads.docx.unaccounted).toBe(0);
     expect(reads.txt.file - reads.docx.file, 'the text file holds more characters than the Word file (its typed rules, labels and note numbers)').toBe(17182);
     expect(reads.txt.aside.noteMarks, 'note numbers typed in the text, set aside (characters)').toBe(484);
