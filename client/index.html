@@ -62168,13 +62168,27 @@
               });
               state.printTrim = "6x9";
               const html = buildPrintHtml();
-              const colo = state.sections.find((s) => s.type === "colophon");
-              const coloIx = state.sections.filter((s) => s.included && s.type !== "cover").indexOf(colo);
+              /* The page the rule names (buildPrintHtml): the colophon when it is in the book, the copyright page when it
+                 is not, the last page when neither is. An empty page is not in the book (BEUK:starters), and this
+                 fixture's colophon is empty: the check counted every included page, looked for a colophon the print
+                 file no longer held, and failed on a book that was set right (found 2026-11-22). Both cases are held now. */
+              const inPrint = state.sections.filter((s) => inBook(s) && s.type !== "cover");
+              const colo = inPrint.find((s) => s.type === "colophon") || inPrint.find((s) => s.type === "copyright") || inPrint[inPrint.length - 1];
+              const coloIx = inPrint.indexOf(colo);
               const secChunks = html.split('<section class="print-sec');
-              const lineOk = html.includes('<p class="lp-edition">' + t("print.lpEdition") + "</p>") &&
+              let lineOk = html.includes('<p class="lp-edition">' + t("print.lpEdition") + "</p>") &&
                 html.includes('body { font-size: 18pt; }') && coloIx >= 0 &&
                 (secChunks[coloIx + 1] || "").includes('<p class="lp-edition">') &&
                 secChunks.every((c, i) => i === 0 || i === coloIx + 1 || !c.includes("lp-edition"));
+              const coloSec = state.sections.find((s) => s.type === "colophon");
+              if (coloSec) {
+                const keepColo = coloSec.content;
+                coloSec.content = "Set in a face cut for small sizes.";
+                const chunks2 = buildPrintHtml().split('<section class="print-sec');
+                const at2 = state.sections.filter((s) => inBook(s) && s.type !== "cover").indexOf(coloSec);
+                lineOk = lineOk && at2 >= 0 && (chunks2[at2 + 1] || "").includes('<p class="lp-edition">') && chunks2.slice(1).filter((c) => c.includes("lp-edition")).length === 1; /* chunk 0 is the stylesheet, which names the class */
+                coloSec.content = keepColo;
+              }
               pivEnsureStyle();
               const styleEl = $("pivBookStyle");
               const viewOk = !!styleEl && styleEl.textContent.includes("font-size: 18pt") && styleEl.textContent.includes("line-height: 1.6") && styleEl.textContent.includes(".piv-book { font-size: 18pt; }");
@@ -69604,12 +69618,18 @@
               const jumped = insertMatter("titlepage");
               const tpAfter = state.sections.filter((s) => s.type === "titlepage").length;
               const singletonOk = tpBefore === 1 && tpAfter === 1 && !!jumped && state.activeId === jumped.id;
-              /* Contents and EPUB navigation name the new pages. */
+              /* Contents and EPUB navigation name the new pages, once they have words. An empty page is not in the book
+                 (BEUK:starters): the check added three empty pages and looked for them in the contents, so it failed on
+                 a book that was set right (found 2026-11-22). Both halves are held now: empty, they are not named; with
+                 words, they are. */
+              const navEmpty = scText(epubFiles("generic"), "OEBPS/nav.xhtml");
+              const emptyOut = navEmpty.indexOf("Foreword") === -1 && navEmpty.indexOf("Preface") === -1 && navEmpty.indexOf("Call to Action") === -1;
+              fw.content = "A word before."; pf.content = "How this book came about."; cta.content = "Read the next one.";
               const tocSec = state.sections.find((s) => s.type === "toc");
               const tocHtml = tocSec ? frontBackHtml(tocSec, false, false) : "";
               const files = epubFiles("generic");
               const nav = scText(files, "OEBPS/nav.xhtml");
-              const reflectOk = tocHtml.indexOf("Foreword") !== -1 && tocHtml.indexOf("Call to Action") !== -1 &&
+              const reflectOk = emptyOut && tocHtml.indexOf("Foreword") !== -1 && tocHtml.indexOf("Call to Action") !== -1 &&
                 nav.indexOf("Foreword") !== -1 && nav.indexOf("Preface") !== -1 && nav.indexOf("Call to Action") !== -1;
               return scVerdict(tiersOk && orderOk && editableOk && singletonOk && reflectOk,
                 "tiers/types ok (" + tiersOk + "), canonical order ok (" + orderOk + "), foreword opens in the text editor (" + editableOk + "), singleton title page jumped not duplicated (" + singletonOk + "), contents + nav reflect insertions (" + reflectOk + ")");

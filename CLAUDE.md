@@ -30,6 +30,22 @@ everywhere: a skip states its reason; fake-green is forbidden.
   Linux 1017 / 1012 / 0 / 5. Compare failures against this before claiming a
   regression.
 
+## The page's own self-checks — neither suite runs them
+
+`client/index.html` carries about 500 self-checks. The suites re-express some
+of them; the rest run only in a browser, so they can fail unseen (on
+2026-11-22 a first full run found 36 failing on main, one of them a real
+defect in box-set export). After any change to `client/index.html`, run
+
+    node tools/page-selfchecks/run.mjs
+
+(needs `PLAYWRIGHT_CORE` and optionally `CHROMIUM`, as the header says). It
+passes only when the result is exactly what
+`tools/page-selfchecks/known-not-passing.json` says. That ledger is not a
+pass list: each entry is a red, stated with its reason and with what was and
+was not verified. A new failure is fixed or explained there; never add an
+entry to get a green.
+
 ## Completeness guards — reds by design
 
 Adding a table or page trips self-checks until it is classified:
