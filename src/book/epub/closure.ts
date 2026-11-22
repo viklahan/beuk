@@ -72,7 +72,7 @@ export const EPUB_CLOSURE: readonly string[] = [
   'holdContainerIndents', 'holdRawContainers', 'imIsPlaceholderTitle', 'imMetaValue', 'imRealTitle',
   'imageById', 'imageFigure', 'imageFileName', 'imageTokensIn', 'inBook', 'inCss', 'inlineMd', 'insertIsLong',
   'isContainerMarkLine', 'isRtlLang', 'labelFaceOf', 'langPack', 'layoutStyled', 'letterRoles', 'listItemsOf',
-  'logIsDark', 'logLineDir', 'logLineHtml', 'logLines', 'lucideKey', 'marginColumnRules', 'marginInkCache',
+  'logIsDark', 'logLineDir', 'logLineHtml', 'logLines', 'looseListBlocks', 'lucideKey', 'marginColumnRules', 'marginInkCache',
   'marginInkOf', 'marginNamesCache', 'marginNamesOf', 'marginNoteHtml', 'marginNoteParas', 'mdLinkRe',
   'normalizeCoverRecipe', 'normalizeCustomFont', 'normalizeHeaderDesign', 'normalizeHeaderElement',
   'normalizeScenes', 'normalizeSection', 'normalizeWrap', 'normalizeWrapBack', 'normalizeWrapBg',

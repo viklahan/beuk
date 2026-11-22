@@ -214,7 +214,7 @@ describe('two lines of the file read as one heading are joined with no character
       [['CHAPTER 3', 14], ['The Pans', 20], [GLOSS, 11]],
     ]), '');
     expect(chapters(g)).toEqual([{ number: '1', title: 'The Muster', content: ONE }, { number: '2', title: 'The Return', content: TWO }, { number: '3', title: 'The Pans', content: GLOSS }]);
-    expect(g.written.filter((s) => s.type === 'part').map((s) => ({ number: s.number, title: s.title, subtitle: s.subtitle || '' }))).toEqual([{ number: 'One', title: 'Ebb', subtitle: '' }]);
+    expect(g.written.filter((s) => s.type === 'part').map((s) => ({ number: s.number, title: s.title, subtitle: s.subtitle || '' }))).toEqual([{ number: 'ONE', title: 'Ebb', subtitle: '' }]); /* BEUK:casegiven — the number as the page has it (the PDF reader re-set its label line "Part One") */
     expect(colons(g)).toEqual([]);
   }, 120_000);
 
@@ -226,7 +226,7 @@ describe('two lines of the file read as one heading are joined with no character
       [['Chapitre 3', 14], ['Les Salines', 20], [GLOSS, 11]],
     ]), '');
     expect(colons(g)).toEqual([]);
-    expect(g.written.filter((s) => s.type === 'part').map((s) => ({ title: s.title, subtitle: s.subtitle || '' }))).toEqual([{ title: 'Book One', subtitle: 'Departures' }]);
+    expect(g.written.filter((s) => s.type === 'part').map((s) => ({ title: s.title, subtitle: s.subtitle || '' }))).toEqual([{ title: 'BOOK ONE', subtitle: 'Departures' }]); /* BEUK:casegiven — the label line as the page has it (the PDF reader re-set it "Book One") */
     expect(g.written.filter((s) => s.type === 'chapter').map((s) => ({ title: s.title, subtitle: s.subtitle || '', content: s.content }))).toEqual([
       { title: 'Chapitre 1', subtitle: 'Le Depart', content: ONE }, { title: 'Chapitre 2', subtitle: 'Le Retour', content: TWO }, { title: 'Chapitre 3', subtitle: 'Les Salines', content: GLOSS },
     ]);
