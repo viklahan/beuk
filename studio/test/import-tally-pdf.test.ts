@@ -266,6 +266,53 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     expect(all).toContain('Mediterranean routing stamp: ' + word);
   }, 120_000);
 
+  /* Headings (C), as measured on the Meridian PDFs: a heading set larger than the text and wrapped onto two lines is one
+     heading (16 there were lost); a bold line at the text's own size, in a book whose headings are set larger, is bold
+     text, not a heading (5 there were made). A two-line bold caption at the text's size is no heading. */
+  async function headed(extra: (pg: { drawText: (s: string, o: Rec) => void }, f: Rec) => void): Promise<string> {
+    const doc = await pdfLib.PDFDocument.create();
+    const font = await doc.embedFont(pdfLib.StandardFonts.Helvetica);
+    const bold = await doc.embedFont(pdfLib.StandardFonts.HelveticaBold);
+    const prose = (pg: { drawText: (s: string, o: Rec) => void }, from: number, n: number, k: number) => { for (let i = 0; i < n; i++) pg.drawText('Line ' + (i + 1) + ' of the ledger on page ' + k + ' tells of the road.', { x: 60, y: from - i * 16, size: 11, font }); };
+    for (let k = 1; k <= 3; k++) {
+      const pg = doc.addPage([420, 595]);
+      pg.drawText('Chapter ' + k + ': The Road', { x: 60, y: 540, size: 20, font });
+      prose(pg, 500, 6, k);
+      if (k === 2) extra(pg, { font, bold });
+      else prose(pg, 380, 6, k);
+    }
+    await importPdf('salt-road-heads.pdf', await doc.save());
+    return (lastModule!.api.snapshotBookDoc() as { sections: { content: string }[] }).sections.map((x) => x.content).join('\n');
+  }
+  it('a heading set larger than the text (13 against 11, as the Meridian PDFs set 12.2 against 10) and wrapped onto two lines is one heading', async () => {
+    const all = await headed((pg, f) => {
+      pg.drawText('I.4 Custodial Handoff & Alleyway', { x: 60, y: 380, size: 13, font: f.bold });
+      pg.drawText('Surveillance', { x: 60, y: 363, size: 13, font: f.bold });
+      for (let i = 0; i < 5; i++) pg.drawText('Text under the heading, line ' + (i + 1) + ', goes on.', { x: 60, y: 330 - i * 16, size: 11, font: f.font });
+    });
+    expect(all).toMatch(/^#+ I\.4 Custodial Handoff & Alleyway Surveillance$/m);
+  }, 120_000);
+  it('a two-line bold caption at the text\'s own size is not a heading', async () => {
+    const all = await headed((pg, f) => {
+      pg.drawText('Table 1.1 — Vienna, First District Chronology,', { x: 60, y: 380, size: 11, font: f.bold });
+      pg.drawText('Transit and Bearing Reconciliation', { x: 60, y: 364, size: 11, font: f.bold });
+      for (let i = 0; i < 5; i++) pg.drawText('Text under the caption, line ' + (i + 1) + ', goes on.', { x: 60, y: 330 - i * 16, size: 11, font: f.font });
+    });
+    expect(all).not.toMatch(/^#+ .*Vienna/m);
+    expect(all).toContain('Transit and Bearing Reconciliation');
+  }, 120_000);
+  it('a bold line at the text\'s own size, in a book whose headings are set larger, is bold text, not a heading', async () => {
+    const all = await headed((pg, f) => {
+      pg.drawText('A Sub-Heading Set Larger', { x: 60, y: 384, size: 14, font: f.bold });
+      for (let i = 0; i < 3; i++) pg.drawText('Text under the sub-heading, line ' + (i + 1) + ', goes on.', { x: 60, y: 356 - i * 16, size: 11, font: f.font });
+      pg.drawText('Operational Verification Hierarchy', { x: 60, y: 290, size: 11, font: f.bold });
+      for (let i = 0; i < 3; i++) pg.drawText('Text under the label, line ' + (i + 1) + ', goes on.', { x: 60, y: 260 - i * 16, size: 11, font: f.font });
+    });
+    expect(all).toMatch(/^#+ A Sub-Heading Set Larger$/m);
+    expect(all).not.toMatch(/^#+ .*Operational Verification Hierarchy/m);
+    expect(all).toContain('Operational Verification Hierarchy');
+  }, 120_000);
+
   it('a step the reader takes that the tally is not told of shows as unaccounted, never hidden: a line dropped after the count is 2 words unaccounted', async () => {
     document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
     const m = make(env());
