@@ -126,6 +126,20 @@ describe('a heading with nothing under it is kept as the writer wrote it: a chap
     const card = (document.body.textContent || '').replace(/\s+/g, ' ');
     expect(card).toContain('outline.md5chapters');
     for (const [n, h] of [[1, 'The Road'], [5, 'The Dusk']] as [number, string][]) expect(card).toContain(n + h + '0');
+    /* the card's sentence says what Beuk found, never "read 0 words" of a file with words in it; the studio's own count
+       (pages with text) stays what it is */
+    expect(card).toContain('Beuk found 5 chapters in your file, with no text under them yet.');
+    expect(card).not.toContain('Beuk read 0 words');
+  }, 120_000);
+  /* Not decided (no rule guessed in): a contents list typed as headings, with no "Contents" heading above it. TODAY each
+     of its lines comes in as a chapter with no text, before the chapters themselves, which then appear twice; every word
+     is kept and counted. This test shows that, so a change to it is seen; what the book should do is the owner's call. */
+  it('today: a contents list typed as headings, with no "Contents" above it, comes in as chapters with no text, before the chapters', async () => {
+    const text = md([['h', 'Chapter 1: Dawn'], ['h', 'Chapter 2: Noon'], ['h', 'Chapter 1: Dawn'], ['p', 'The caravan left at dawn.'], ['h', 'Chapter 2: Noon'], ['p', 'The pans lay white.']]);
+    const { rep, secs } = await importFile('contents-as-headings.md', null, text);
+    const ch = secs.filter((s) => s.type === 'chapter');
+    expect(ch.map((s) => [s.title, s.content.trim() === ''])).toEqual([['Dawn', true], ['Noon', true], ['Dawn', false], ['Noon', false]]);
+    expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.words.same }).toEqual({ unaccounted: 0, same: true });
   }, 120_000);
   for (const [what, blocks, check, pdfCheck] of CASES) {
     for (const fmt of ['md', 'docx', 'pdf'] as const) {
