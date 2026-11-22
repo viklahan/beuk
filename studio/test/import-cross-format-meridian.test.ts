@@ -20,11 +20,16 @@ import markup from '../src/generated/import-markup.json';
    the Word file, so that a reader that drops, repeats, glues or mis-decodes words in one format shows up here as a
    difference from the others. What differs for a reason that is the file's own is allowed by name, with its count:
 
-   - Markdown and EPUB: "Front Matter:" (2 words). Their source sets it in the heading ("## Front Matter: Editorial
-     Brief & Chronology"); the Word, RTF, OpenDocument and web-page files set it as a kicker line above the heading
-     ("Front Matter" over "Editorial Brief & Chronology"), which the import lifts with the title page's lines (set
-     aside, counted by the tally). Same words, two shapes of source, two outcomes: reported to the owner as a
-     possible import change, not made here.
+   - Markdown and EPUB: "Front Matter" (2 words). The Markdown file sets it in the heading with a colon of its own
+     ("## Front Matter: Editorial Brief & Chronology": the book's words "Front" and "Matter:"); the EPUB sets it as a
+     label element before the heading, which the import reads with the heading and joins with a space ("Front" and
+     "Matter": no colon of the import's, BEUK:joinsgiven); the Word, RTF, OpenDocument and web-page files set it as a
+     kicker line above the heading ("Front Matter" over "Editorial Brief & Chronology"), which the import lifts with
+     the title page's lines (set aside, counted by the tally). Same words, three shapes of source, two outcomes:
+     reported to the owner as a possible import change, not made here.
+   - Markdown: "A:" and "B:". Its two appendix headings are typed with a colon ("## Appendix A: Master Chronology …"),
+     which the book keeps; every other format sets "Appendix A" on a line of its own over the name, and the import
+     joins the two with a space, so its book reads "A" and "B". Two words differ in their colon, none in number.
    - Markdown: 48 words in capitals (the first four of each of the 12 chapters, "BEFORE THE MORNING TRAM") where the
      other formats set small capitals; Markdown has no small capitals, so the file types them as capitals. Compared
      without case, they are the same words.
@@ -102,24 +107,35 @@ describe.skipIf(!present)('the same book from every format: the Meridian stress 
     expect(reads[kind].book.length).toBe(reads.docx.book.length);
   });
 
-  it.each(['md', 'epub'])('%s: the Word file\'s book and the heading\'s "Front Matter:" (the source sets it in the heading), nothing else', (kind) => {
-    const d = less(reads[kind].book, reads.docx.book, true);
-    expect(show(d), `${kind}: words that differ from the Word file's book (case aside)`).toBe('front +1, matter: +1');
-    expect(reads[kind].book.length - reads.docx.book.length).toBe(2);
+  it('md: the Word file\'s book, the heading\'s "Front Matter:" and the colon the file types after "Appendix A" and "Appendix B", nothing else', () => {
+    const d = less(reads.md.book, reads.docx.book, true);
+    // "a" and "b" are the Word book's "Appendix A" and "Appendix B" (joined to their names with a space); "a:" and "b:" the Markdown file's own
+    expect(show(d), 'md: words that differ from the Word file\'s book (case aside)').toBe('a -1, a: +1, b -1, b: +1, front +1, matter: +1');
+    expect(reads.md.book.length - reads.docx.book.length).toBe(2);
+  });
+
+  it('epub: the Word file\'s book and the label "Front Matter" (a label element before the heading, read with it and joined with a space), nothing else', () => {
+    const d = less(reads.epub.book, reads.docx.book, true);
+    expect(show(d), 'epub: words that differ from the Word file\'s book (case aside)').toBe('front +1, matter +1');
+    expect(reads.epub.book.length - reads.docx.book.length).toBe(2);
   });
 
   it('md: the only other difference is case — 48 words typed in capitals where the other formats set small capitals (the first four words of each of the 12 chapters)', () => {
     const exact = less(reads.md.book, reads.docx.book, false);
     const more = [...exact.values()].filter((n) => n > 0).reduce((a, n) => a + n, 0);
-    expect(more - 2).toBe(48); // less "Front" and "Matter:"
+    expect(more - 4).toBe(48); // less "Front", "Matter:", "A:" and "B:"
   });
 
   it('txt: a rendering of the book, its differences each the file\'s own and counted', () => {
     // The tally counts characters now. What is unaccounted for in each file, character by character, is the pinned
-    // inventory of import-tally-meridian.test.ts: 12 in the text file (the dash after each of its 12 chapters' numbers),
-    // and 2 more in the Word file's book than in its file (the colons the import joins its two appendix headings with).
-    expect(reads.txt.unaccounted).toBe(12);
-    expect(reads.docx.unaccounted).toBe(-2);
+    // inventory of import-tally-meridian.test.ts: none in the text file (its 12 headings "CHAPTER I — …": the word and the dash
+    // are each heading's own label and mark, counted in the headingMarks row as the Markdown file's "Chapter" and colon are;
+    // they were a difference of capitals and 12 dashes unaccounted for while the book's side counted Beuk's own "Chapter I"),
+    // and none in the Word file (its two appendix headings are joined to their names with a space, no colon of the import's).
+    expect(reads.txt.unaccounted).toBe(0);
+    expect(reads.txt.aside.headingMarks, 'the text file\'s 12 headings: "CHAPTER" 7 and the dash 1, each').toBe(96);
+    expect(reads.docx.aside.headingMarks, 'the Word file\'s 12 label lines "Chapter I" over the heading: "Chapter" 7, each').toBe(84);
+    expect(reads.docx.unaccounted).toBe(0);
     expect(reads.txt.file - reads.docx.file, 'the text file holds more characters than the Word file (its typed rules, labels and note numbers)').toBe(17182);
     expect(reads.txt.aside.noteMarks, 'note numbers typed in the text, set aside (characters)').toBe(484);
     expect(reads.txt.aside.labels, 'notes labels typed, set aside (characters)').toBe(988);

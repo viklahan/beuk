@@ -224,7 +224,8 @@ test('rtf: the import report names the RTF file, not a Word file, in all 13 loca
     }
   }
   // Later formats (EPUB) join the same condition; RTF must stay in it.
-  assert.match(html, /if \(ir\.format === "docx" \|\| ir\.format === "rtf"(?: \|\| ir\.format === "\w+")*\) from = headingLevelOf\(heading\)/);
+  // (the argument is the heading as the import made it, `made`, since joins stopped adding a colon of their own: 712b496)
+  assert.match(html, /if \(ir\.format === "docx" \|\| ir\.format === "rtf"(?: \|\| ir\.format === "\w+")*\) from = headingLevelOf\(made\)/);
 });
 
 test('rtf: every studio file picker and the bulk reader take .rtf', async () => {

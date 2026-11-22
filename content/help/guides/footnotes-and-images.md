@@ -4,8 +4,8 @@ title: Footnotes, endnotes & images
 blurb: Notes that link both ways, pictures that sit properly, and words for readers who can't see them.
 group: write
 audience: [new, hand-edit]
-updated: 2026-11-15
-readMinutes: 4
+updated: 2026-11-22
+readMinutes: 5
 related: [check-your-book, typeset-a-chapter]
 ---
 
@@ -50,7 +50,7 @@ Every button in the editor simply types a small mark for you. If you ever write 
 8. `||words||` — redacted: readers see bars in place of the words, never the words themselves.
 9. An image sits on its own line, placed by **Insert Image** from the book's library.
 
-And one thing needs no mark at all: Auto-Format. Straight quotes become smart quotes, double hyphens become em-dashes, three dots become an ellipsis — the preview and the exported EPUB always use the polished text.
+And one thing has no mark at all: the **Auto-Format** button in the editor. Press it and, in the section you have open, straight quotes become smart quotes, double hyphens become em-dashes and three dots become an ellipsis. Nothing else makes that change for you: the preview, the EPUB, the print interior and the Word and Markdown files set your quotes, hyphens and dots as they stand in the editor.
 
 ## Troubleshooting
 

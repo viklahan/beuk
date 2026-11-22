@@ -129,7 +129,13 @@ describe('the submission manuscript and the ACX script in the studio (F5, F6)', 
     expect([isOpen('modalExport'), isOpen('modalManuscript')]).toEqual([false, true]);
     expect($('msH').textContent).toBe(t('ms.title'));
     expect(($('msLegal') as HTMLInputElement).value).toBe('');
-    expect($('msTitlePage').textContent).toContain(String((book('real/lantern-coast-book-one').meta as Rec).title).toLocaleUpperCase('en'));
+    // restated 2026-11-22 (the owner: "Changing the writer's letters is not allowed; showing them in capitals is a look"):
+    // was toContain(title.toLocaleUpperCase('en')). The page holds the stored title; the stylesheet shows it in capitals.
+    const stored = String((book('real/lantern-coast-book-one').meta as Rec).title).trim();
+    const shown = $('msTitlePage').querySelector('.ms-tp-title .ms-caps') as HTMLElement;
+    expect(shown.textContent).toBe(stored);
+    expect($('msHeaderLine').querySelector('.ms-caps')!.textContent).toBe(stored);
+    if (stored !== stored.toLocaleUpperCase('en')) expect($('msSummary').textContent).not.toContain(stored.toLocaleUpperCase('en'));
     await act(async () => void fireEvent.keyDown(document, { key: 'Escape' }));
     expect(isOpen('modalManuscript')).toBe(false);
     await openExport();

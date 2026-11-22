@@ -1896,7 +1896,12 @@ JSZip — no server call.
   postal address, phone, email — single-spaced; empty fields are left
   out, never filled in), the approximate word count top right
   ("about 85,000 words"), the title in capitals halfway down, the
-  subtitle if the book has one, and "by" + byline. The byline is a pen
+  subtitle if the book has one, and "by" + byline. The capitals are a
+  look: the file holds the title as the book stores it, in a run whose
+  own property is all capitals (`<w:caps/>`); its letters are never
+  rewritten. The header's title is set the same way, and the dialog's
+  preview shows the stored title through `.ms-caps`
+  (`text-transform: uppercase`). The byline is a pen
   name typed in the dialog, else the book's author. The contact block,
   pen name, header surname and page choices ride in the book file
   (`serializeBook().manuscript`); a book without them starts empty.
@@ -5274,9 +5279,30 @@ import).
   above closed a sentence; a
   paragraph runs on over a page or column break. A gap of about three lines
   between body lines is a scene break (`***`), except above a chapter's
-  drop cap. Line-end hyphens (`-`, U+2010 from `hyphens: auto`, soft
-  hyphens) are removed when the joined word reads as one word, and kept
-  when the hyphenated word appears elsewhere in the text.
+  drop cap. A hyphen at a line's end (`-`, or U+2010 from `hyphens: auto`)
+  is settled by the PDF's own text, read on every line of every page,
+  capitals aside, once the whole flow has been read (BEUK:hyphensgiven): it
+  is kept when the hyphenated word stands whole elsewhere, taken off when
+  only the joined word does, and where neither stands elsewhere, or both
+  do, the page's own characters stay and the report lists the word with
+  both readings (`pdfHyphenAsk`, with "Join it" and, for two or more,
+  "Join all of these"). The two halves at a line's end are never counted as
+  the word standing whole. A soft hyphen (U+00AD) is always taken off. Only
+  a hyphen actually taken off is counted in the tally's `pdfRejoined` row.
+  The rule takes a hyphen that stands straight after a letter or a digit
+  where the next line opens on a letter or a digit, so a code, a measure or
+  a range broken at its hyphen (`VIE-` + `04-10`, `5-` + `unit`, `12-` +
+  `15`) closes up with no space added, like any word. It does not take a
+  hyphen the page sets apart with a space before it, nor a next line that
+  opens on a dash, a minus sign, a quotation mark or a bracket: those two
+  lines are closed with a space, as lines are. (An em or en dash straight
+  after a letter closes up to the next line, as it did.) A book set with
+  hyphenation leaves many words for the writer (a 75,000-word novel set
+  with the browser's hyphenation left 82 of its 828 line-end hyphens,
+  measured 2026-11-22), so the import card
+  states how many are still as the import left them (`ir.card.didHyphens`,
+  with a button that opens the list at them, their group opened), and the
+  "Join all of these" line is listed before the words it joins.
 - **Headings.** A line set clearly larger than the body type (×1.22), a
   short bold line standing alone, or a "Chapter …" label over a larger
   title, merged into one `# Chapter One: Title` heading. A contents page is

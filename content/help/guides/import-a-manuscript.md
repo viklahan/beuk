@@ -4,7 +4,7 @@ title: Import a manuscript
 blurb: Bring a book in from Word, OpenDocument, a web page, Markdown, plain text, RTF, PDF or EPUB — and see what Beuk tidies on the way in.
 group: write
 audience: [new]
-updated: 2026-11-20
+updated: 2026-11-22
 readMinutes: 4
 related: [typeset-a-chapter, add-a-cover]
 ---
@@ -26,7 +26,7 @@ New to the studio? [Show the quick tour](/studio#tour): four short steps that po
 
 ### What Beuk tidies on the way in
 
-The importer has a smart sanitizer. Straight quotes become proper curly quotes, double hyphens become em dashes, three dots become an ellipsis, and the invisible clutter Word tucks into documents (Mso styles, stray spans, XML declarations) is stripped away — while real formatting (paragraphs, emphasis, headings, scene breaks) is kept.
+Not your quotes, dashes or dots. Beuk keeps them as your file gives them: straight quotes stay straight, a double hyphen stays a double hyphen, and three dots stay three dots. What it tidies is what sits around the words. A run of spaces between words becomes one space, extra blank lines are taken out, and the hidden styling a word processor stores with the text (fonts, colours, style names) is left behind, while real formatting (paragraphs, emphasis, headings, scene breaks) is kept. If you want curly quotes, em dashes and ellipses, press **Auto-Format** in the editor. It changes the section you have open, and only when you press it.
 
 ## Troubleshooting
 

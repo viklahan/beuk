@@ -17,9 +17,9 @@ const ID = 'import.card.opens-on-the-book';
 
 const KEYS = ['ir.card.title', 'ir.card.kicker', 'ir.card.lede', 'ir.card.chapters', 'ir.card.chaptersPlural', 'ir.card.sections', 'ir.card.sectionsPlural', 'ir.card.pages', 'ir.card.pagesPlural',
   'ir.card.found', 'ir.card.foundHint', 'ir.card.zoneFront', 'ir.card.zoneBody', 'ir.card.zoneBack', 'ir.card.sectionsIn', 'ir.card.sectionsInPlural', 'ir.card.showAll', 'ir.card.showFewer', 'ir.card.did',
-  'ir.card.didSubs', 'ir.card.didSubsPlural', 'ir.card.didHeads', 'ir.card.didHeadsPlural', 'ir.card.didNone', 'ir.card.didLost', 'ir.card.didLostPlural', 'ir.card.see', 'ir.card.open', 'ir.card.every', 'ir.card.back'];
+  'ir.card.didSubs', 'ir.card.didSubsPlural', 'ir.card.didHeads', 'ir.card.didHeadsPlural', 'ir.card.didNone', 'ir.card.didLost', 'ir.card.didLostPlural', 'ir.card.didHyphens', 'ir.card.didHyphensPlural', 'ir.card.seeWords', 'ir.card.see', 'ir.card.open', 'ir.card.every', 'ir.card.back'];
 const HOLDS: Record<string, string> = { 'ir.card.kicker': '{file}', 'ir.card.lede': '{words}', 'ir.card.sectionsIn': '{n}', 'ir.card.sectionsInPlural': '{n}', 'ir.card.showAll': '{n}', 'ir.card.didSubs': '{n}', 'ir.card.didSubsPlural': '{n}',
-  'ir.card.didHeads': '{n}', 'ir.card.didHeadsPlural': '{n}', 'ir.card.didLost': '{n}', 'ir.card.didLostPlural': '{n}', 'ir.card.every': '{n}' };
+  'ir.card.didHeads': '{n}', 'ir.card.didHeadsPlural': '{n}', 'ir.card.didLost': '{n}', 'ir.card.didLostPlural': '{n}', 'ir.card.didHyphens': '{n}', 'ir.card.didHyphensPlural': '{n}', 'ir.card.every': '{n}' };
 
 test('import card: the self-check exists in the client and is registered client-only with a reason', async () => {
   const html = await clientHtml();
@@ -45,6 +45,9 @@ test('import card: the report opens on the card, and the changes one by one stay
   assert.match(card[1], /state\.sections\.filter\(/);
   assert.match(card[1], /const lost = rep\.items\.filter\(\(it\) => it\.group === "dropped" && it\.kind !== "fmtHeading"\)\.length;/);
   assert.match(card[1], /lost \? line\(t\("ir\.card\.didLost", \{ n: lost \}\), true,/);
+  /* BEUK:hyphensgiven — and how many words a PDF's line-end hyphens leave for the writer, each still as the import left it */
+  assert.ok(card[1].includes('const hyLeft = rep.items.filter((it) => it.kind === "pdfHyphenAsk" && it.state === "applied").length;'), 'the card counts the words left for the writer');
+  assert.ok(card[1].includes('if (hyLeft) html += line(t("ir.card.didHyphens", { n: hyLeft }), true,'), 'and says so only when there are some');
   /* every value drawn into the card is escaped */
   assert.doesNotMatch(card[1].replace(/esc\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/g, ''), /\+ (?:s\.title|rep\.file|pageName\(s\)) \+/);
 });
