@@ -30513,6 +30513,48 @@
            writer's: each surface now sets each item's own. */
         return { ordered, items, start: ordered ? parseInt(lines[0].match(LIST_NUMBER)[1], 10) : 1, marks, nums: ordered ? marks.map((m) => parseInt(m, 10)) : [] };
       }
+      /* ==== BEUK:looselists ==== A list whose items the writer parted with blank lines (Markdown's "loose" list; a
+         plain-text file's items each on a paragraph of their own) is stored exactly as typed, blank lines and all. A
+         block is what stands between two blank lines, so each such item was a block of its own: a lone "* item" is
+         prose by the rule above (it takes two items to make a bulleted list), and a lone "2. item" a list of one. The
+         writer's list was set as paragraphs that open on an asterisk, and as so many one-item lists.
+         The reading belongs where the book reads a list, not in the stored text: this takes a section's blocks and
+         gives them back with each run of two or more blocks that open on a list's mark of one kind (a number; or
+         "*" or "•") read as ONE block, its items on consecutive lines, which listItemsOf then reads as the list it
+         is. Every surface that reads blocks asks it (the page, the Word export, the tally's count of list items);
+         the Markdown export writes the stored blocks, as typed.
+         One shape more, from plain text: a block of text lines whose LAST line alone opens on a list's mark, with the
+         next block opening on a mark of the same kind ("…and it ran so:" / " * a lantern", then " * a coil of rope").
+         The text itself says what that line is: the list goes on straight after it. It is read as the first item
+         of that list, and the lines over it as the paragraph they are. Where no such block follows, the line stays a
+         line of its paragraph: nothing is guessed.
+         NOT read so, on purpose: blocks that open on "- ". A hyphen and a space also open a line of dialogue in
+         manuscripts typed that way, one paragraph a speech; whether a run of those is a list is the writer's to say,
+         not something the text settles. They stay as they were (two or more "- " lines in ONE block are a list,
+         as before). */
+      function looseListBlocks(blocks) {
+        const kindOf = (b) => { const first = String(b).split("\n")[0]; return LIST_NUMBER.test(first) ? "n" : /^[*•]\s+/.test(first) && /[^\s*•]/.test(first) ? "b" : ""; }; /* a line that is only marks ("* * *") is a break the writer typed, never an item */
+        const out = [];
+        for (let i = 0; i < blocks.length; i++) {
+          let head = String(blocks[i]), k = kindOf(head), lead = null;
+          if (!k) {
+            const lines = head.split("\n"), last = lines.length > 1 ? lines[lines.length - 1].trim() : "";
+            const lk = last ? kindOf(last) : "";
+            if (lk && i + 1 < blocks.length && kindOf(blocks[i + 1]) === lk && !lines.slice(0, -1).some((l) => kindOf(l.trim()))) { lead = lines.slice(0, -1).join("\n"); head = last; k = lk; }
+          }
+          if (!k) { out.push(blocks[i]); continue; }
+          const run = [head];
+          let j = i + 1;
+          while (j < blocks.length && kindOf(blocks[j]) === k) run.push(String(blocks[j++]));
+          const merged = run.join("\n");
+          if (run.length < 2 || !listItemsOf(merged.split("\n"))) { out.push(blocks[i]); continue; }
+          if (lead != null) out.push(lead);
+          out.push(merged);
+          i = j - 1;
+        }
+        return out;
+      }
+      /* ==== /BEUK:looselists ==== */
       /* Quote attribution: in a ">" blockquote of two or more lines, a
          last line that opens with a dash ("> — Name", or "> -- Name" as
          typed: each surface sets the dash the writer wrote,
@@ -30672,7 +30714,7 @@
           }
           emitText(block);
         };
-        const runBlocks = (txt) => txt.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).forEach(emitBlock);
+        const runBlocks = (txt) => looseListBlocks(txt.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean)).forEach(emitBlock); /* BEUK:looselists */
         /* A container's content renders through the same block
            machinery (notes, images, breaks, lists) into its own
            wrapper; the kind decides the wrapper. */
@@ -42980,7 +43022,7 @@
           } else if (s.type === "part") { const num = String(s.number || ""), stored = (num ? num + " " : "") + (s.title || ""); push(cleanOf(stored)); irTallyItem(R, "headings", (num ? "Part " + num + " " : "") + (s.title || "")); if (headingOf.has(s.id)) heads.push([headingOf.get(s.id), stored, num]); }
           else if (named.has(s.id)) { pages++; push(cleanOf(s.title || "")); irTallyItem(R, "headings", s.title || ""); if (headingOf.has(s.id)) heads.push([headingOf.get(s.id), s.title || "", ""]); }
           if (s.subtitle) push(cleanOf(s.subtitle));
-          irBlocks(c).forEach((b) => {
+          looseListBlocks(irBlocks(c).map((b) => b.trim()).filter(Boolean)).forEach((b) => { /* BEUK:looselists — a list is counted as the book reads it */
             const v = b.trim();
             if (!v) return;
             const img = parseImageLine(v);
@@ -53256,7 +53298,7 @@
         };
         const blocksOf = (txt, opts) => {
           const into = [];
-          String(txt || "").split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).forEach((b) => emitBlock(b, opts, into));
+          looseListBlocks(String(txt || "").split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean)).forEach((b) => emitBlock(b, opts, into)); /* BEUK:looselists */
           return into;
         };
         /* Containers export through their kind's docx(): paragraphs
