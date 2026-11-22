@@ -444,8 +444,8 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     const ty = rep.tally;
     /* "THE SALT ROAD" 11, "A Novel" 6, "Ada Wren" 7 */
     expect({ aside: ty.aside, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ aside: { headers: 33, pageNumbers: 3, titlePage: 24, headingMarks: 3 }, unaccounted: 0, same: true });
-    // the report shows the title page as the import set it, the subtitle joined on with a colon; the tally counts the file's own lines
-    expect(rep.items.filter((it) => it.kind === 'lifted').map((it) => it.data.text)).toEqual(['THE SALT ROAD: A Novel' + String.fromCharCode(10) + 'Ada Wren']);
+    // the report shows the title page as the file gave it: the title and the line set under it with a space between them, no colon of the import's (BEUK:joinsgiven); the tally counts the file's own lines
+    expect(rep.items.filter((it) => it.kind === 'lifted').map((it) => it.data.text)).toEqual(['THE SALT ROAD A Novel' + String.fromCharCode(10) + 'Ada Wren']);
     expect(rep.items.some((it) => it.kind === 'lifted' && it.data.reason === 'titlepage'), 'the report lists the title page as lifted into the details').toBe(true);
   }, 120_000);
   it('a title over a page of its own text (the author and the rights): the title is the title page\'s, the rest stays the book\'s', async () => {

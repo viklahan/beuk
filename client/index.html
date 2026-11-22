@@ -38706,6 +38706,51 @@
         return { number, title: title || "Untitled Chapter" };
       }
       const wordCountOf = (text) => { const s = String(text || "").trim(); return s ? s.split(/\s+/).filter(Boolean).length : 0; };
+      /* ==== BEUK:joinsgiven ==== (the owner, 2026-11-22: "KEEP WHAT THE WRITER GIVES US.") Where a reader takes two
+         lines of the file for one heading (an EPUB's label element before its heading, a PDF's label line over a
+         title, its heading lines of two sizes, two headings that spell one bookmark) the import used to write ": "
+         between them, a colon the writer never wrote, and where the heading stayed whole that colon was stored in
+         the book ("Appendix A: Field Glossary" from "Appendix A" over "Field Glossary").
+         The place is now marked with IR_JOIN: a colon, which the parser's own rules read as what parts a number from
+         its title, a Part from its name or a title from what stands under it, followed by a run of three spaces no
+         text sets (IR_JOIN_SP: U+205F U+2006 U+205F, white space to every rule that reads "\s"), which says the
+         colon is the import's own. A bare number the reader takes for a chapter's ("3" over "The Muster") is marked
+         the same way: IR_JOIN_WORD is the word "Chapter" the reader puts before it, with that run after it.
+         What the rules part is parted as it always was ("Chapter 1" over "The Muster": number 1, titled The Muster;
+         "PART ONE" over "Ebb": Part One, Ebb), and neither the colon nor the word is then anywhere in the book.
+         Whatever still stands whole is given back as the file gave it (irJoinGiven): the lines with one space
+         between them, the import's colon and its word gone. Which form the book holds is measured from what each
+         surface sets: a page of the book's body sets a subtitle under its title on every surface
+         (chapterOpeningHtml, partDividerHtml, sectionToMarkdown, the Word exports), so there the first line is the
+         title and what stood under it the subtitle (irJoinTitled); a front or back page sets its title alone
+         (frontBackHtml's default case), so there, and in a sub-heading, the lines are one title, a space between. */
+      const IR_JOIN_SP = String.fromCharCode(0x205F, 0x2006, 0x205F);
+      const IR_JOIN = ":" + IR_JOIN_SP;
+      const IR_JOIN_WORD = "Chapter" + IR_JOIN_SP;
+      /* white space run by run, the join's own run left standing */
+      const IR_JOIN_SPACES = new RegExp("[^\\S" + String.fromCharCode(0x205F, 0x2006) + "]+", "g");
+      const irJoinGiven = (text) => { const s = String(text == null ? "" : text); return s.indexOf(IR_JOIN_SP) === -1 ? s : s.split(IR_JOIN_WORD).join("").split(IR_JOIN).join(" ").split(IR_JOIN_SP).join(" "); };
+      /* A page as the parse made it ({ kind, title, body: [lines] }): a title that still holds a join is set as the
+         file gave it. In the body, with an import being recorded and no subtitle of its own under the heading, the
+         first line is the title and the rest the subtitle (handed on as the "SUBT" placeholder irFinish resolves);
+         anywhere else one title, a space between. Its text likewise holds no join. */
+      function irJoinTitled(p) {
+        if (!p) return p;
+        const title = String(p.title == null ? "" : p.title), at = title.indexOf(IR_JOIN);
+        if (at !== -1) {
+          const first = irJoinGiven(title.slice(0, at)).trim(), rest = irJoinGiven(title.slice(at + IR_JOIN.length)).trim();
+          const subRe = new RegExp("^" + irSent("SUBT", "\\d+") + "$");
+          if ((!p.kind || p.kind === "body") && IR_REC && first && rest && !(p.body || []).some((l) => subRe.test(String(l).trim()))) {
+            IR_REC.subtitles = IR_REC.subtitles || [];
+            IR_REC.subtitles.push(rest);
+            p.title = first;
+            p.body = [irSent("SUBT", IR_REC.subtitles.length - 1), ""].concat(p.body || []);
+          } else p.title = [first, rest].filter(Boolean).join(" ");
+        } else if (title.indexOf(IR_JOIN_SP) !== -1) p.title = irJoinGiven(title).trim();
+        if (p.body && p.body.some((l) => String(l).indexOf(IR_JOIN_SP) !== -1)) p.body = p.body.map((l) => irJoinGiven(l));
+        return p;
+      }
+      /* ==== /BEUK:joinsgiven ==== */
       /* A copyright page announces itself by its furniture, heading
          or no heading: an ISBN line, the © line, the rights formula. */
       function isCopyrightBlock(block) {
@@ -39132,7 +39177,7 @@
               let host = null;
               for (let k = ii - 1; k >= firstN && !host; k--) if (items[k].cls === "chapter") host = items[k];
               if (!host) return;
-              const sub = headOf(it);
+              const sub = irJoinGiven(headOf(it)); /* BEUK:joinsgiven — a sub-heading is never parted: its lines as the file gave them */
               let line = "# " + sub;
               if (IR_REC) { IR_REC.subs = IR_REC.subs || []; IR_REC.subs.push(sub); line = irSent("SUB", IR_REC.subs.length - 1); }
               host.bodyText = [host.bodyText, line, it.bodyText].filter(Boolean).join("\n\n");
@@ -39164,10 +39209,10 @@
             }
             const teaser = /^(sneak peek|coming soon|excerpt|preview|a preview|first look|read on|bonus)\b/i.test(head);
             let backTitle = head;
-            /* BEUK:pdffront — "APPENDIX A" with its name on the next line: one title. */
+            /* BEUK:pdffront — "APPENDIX A" with its name on the next line: one title. BEUK:joinsgiven — the two lines with a space between them, no colon of the import's (a back page sets its title alone: frontBackHtml). */
             if (/^appendix(?:\s+[\p{L}\d]{1,4})?$/iu.test(head) && it.bodyText) {
               const lines = it.bodyText.split("\n"), first = (lines[0] || "").replace(/^[*_]+|[*_]+$/g, "").trim();
-              if (first && wordCountOf(first) <= 8 && !/[.!?:;,]$/.test(first)) { backTitle = head + ": " + first; it.bodyText = lines.slice(1).join("\n").trim(); }
+              if (first && wordCountOf(first) <= 8 && !/[.!?:;,]$/.test(first)) { backTitle = head + " " + first; it.bodyText = lines.slice(1).join("\n").trim(); }
             }
             it.cls = "matter"; it.matter = { kind: "back", type: teaser ? "cta" : "appendix", title: backTitle };
           });
@@ -39178,7 +39223,7 @@
           if (!it.appendixLine || it.cls !== "chapter") return;
           const next = items[ii + 1];
           let title = it.raw;
-          if (!it.bodyText && next && next.cls === "chapter" && !next.head.number && !next.appendixLine && next.bodyText) { title = it.raw + ": " + String(next.raw || "").replace(/^#{1,2}\s+/, "").trim(); it.bodyText = next.bodyText; next.cls = "skip"; }
+          if (!it.bodyText && next && next.cls === "chapter" && !next.head.number && !next.appendixLine && next.bodyText) { title = it.raw + " " + String(next.raw || "").replace(/^#{1,2}\s+/, "").trim(); it.bodyText = next.bodyText; next.cls = "skip"; } /* BEUK:joinsgiven — a space, no colon of the import's */
           it.cls = "matter"; it.matter = { kind: "back", type: "appendix", title };
         });
         const isBodyItem = (it) => it.cls === "chapter" || it.cls === "part" || (it.cls === "matter" && it.matter.kind === "body");
@@ -39296,6 +39341,7 @@
           titleRuns.forEach((r) => { if (!tp.subtitle && r.subtitle) tp.subtitle = r.subtitle; if (!tp.author && r.author) tp.author = r.author; if (!tp.publisher && r.publisher) tp.publisher = r.publisher; });
           tp.imprint = titleRuns.map((r) => r.text).join("\n");
         }
+        kept.forEach(irJoinTitled); /* BEUK:joinsgiven — what no rule above parted is set as the file gave it */
         return kept;
       }
       /* What the parse found, in the book's own order — the calm
@@ -39659,10 +39705,22 @@
         const fn = imCleanFileName(sourceName);
         const pick = (list) => list.find((x) => x.value) || { value: "", via: "" };
         const tpAuthor = { value: tp ? tp.author : "", via: "titlepage" };
+        /* BEUK:joinsgiven — a title read from several lines of the file (a PDF's title page set large: the title over a
+           smaller line): the first line is the title, and the line under it the subtitle where the title-page rule
+           every format shares reads it as one (imTitlePageRun); no colon of the import's. The lines themselves were
+           lifted with the title page and are in the report. */
+        const parted = (v) => {
+          const s = String(v || "").trim();
+          if (s.indexOf(IR_JOIN) === -1) return [irJoinGiven(s).trim(), ""];
+          const lines = s.split(IR_JOIN).map((l) => irJoinGiven(l).trim()).filter(Boolean);
+          const run = lines.length > 1 ? imTitlePageRun(lines, { title: lines[0], author: "", subtitle: "" }, "", { whole: true, near: true }) : null;
+          return [lines[0] || "", run ? String(run.subtitle || "") : ""];
+        };
+        const idT = parted(identity.title), tpT = parted(tp ? tp.title : "");
         const metaAuthor = { value: declaredAuthor, via };
         return {
-          title: pick([{ value: String(identity.title || "").trim(), via }, { value: tp ? tp.title : "", via: "titlepage" }, { value: fn.value, via: "filename", stripped: fn.stripped }]),
-          subtitle: pick([{ value: String(identity.subtitle || "").trim(), via }, { value: tp ? tp.subtitle : "", via: "titlepage" }]),
+          title: pick([{ value: idT[0], via }, { value: tpT[0], via: "titlepage" }, { value: fn.value, via: "filename", stripped: fn.stripped }]),
+          subtitle: pick([{ value: String(identity.subtitle || "").trim(), via }, { value: irJoinGiven(tp ? tp.subtitle : "").trim(), via: "titlepage" }, { value: idT[0] ? idT[1] : "", via }, { value: !idT[0] && tpT[0] ? tpT[1] : "", via: "titlepage" }]),
           author: pick(via === "docx" ? [tpAuthor, metaAuthor] : [metaAuthor, tpAuthor])
         };
       }
@@ -42170,11 +42228,12 @@
          tally's own rule when the tally is written. A note's printed number is handed over so: stated bare ("1") it
          would be a word, where the same "1. " at the head of the note's line in the file is a list's marker and none. */
       function irAsideDelta(bucket, before, after) { if (!IR_ASIDE || before === after) return; (IR_ASIDE["\u0000delta"] = IR_ASIDE["\u0000delta"] || []).push([bucket, String(before || ""), String(after || "")]); }
-      /* A heading the import puts together itself (a PDF's title over its subtitle, joined with a colon of its own): the
-         text it made, and the lines as the file gave them. Where such a heading is later set aside (lifted with the
-         title page, left out with a typed contents list), irTallyWrite counts the file's own lines for it, never the
-         import's joined form: a colon the file never had is not set aside. (Where the joined heading stays in the
-         book, the colon is in the book and not in the file, and the comparison says so.) */
+      /* A heading the import puts together itself (a PDF's title over its subtitle, an EPUB's label before its heading,
+         joined with a mark of its own: IR_JOIN): the text it made, and the lines as the file gave them. Where such a
+         heading is later set aside (lifted with the title page, left out with a typed contents list), irTallyWrite
+         counts the file's own lines for it, never the import's joined form: a colon the file never had is not set
+         aside. (Where the heading stays in the book it is stored as the file gave it, BEUK:joinsgiven: no colon of
+         the import's is in the book, and any that were would show in the comparison.) */
       function irAsideJoined(made, given) { if (!IR_ASIDE || !made || made === given) return; const k = String.fromCharCode(0) + "joined"; (IR_ASIDE[k] = IR_ASIDE[k] || []).push([String(made), String(given)]); }
       /* The text of a page's markup with a break at every block, so two cells or two paragraphs are never one word. */
       const IR_TALLY_BLOCK = /^(?:p|div|li|ul|ol|dl|dt|dd|table|thead|tbody|tfoot|tr|td|th|caption|h[1-6]|blockquote|section|article|aside|header|footer|nav|main|figure|figcaption|pre|hr|br|address|details|summary|body|html)$/;
@@ -42674,6 +42733,8 @@
            heading as the book counts it: what irTallyWrite measures the heading's own punctuation from (headingMarks) */
         const headingOf = new Map(), heads = [];
         items.forEach((it) => { if ((it.kind === "chapter" || it.kind === "matter") && it.data && it.data.heading && it.where && it.where.secId) headingOf.set(it.where.secId, String(it.data.heading)); });
+        /* BEUK:joinsgiven — a chapter whose number the file set alone on a line ("3" over "The Muster") */
+        const bare = new Set(items.filter((it) => it.kind === "chapter" && it.data && it.data.bare && it.where && it.where.secId).map((it) => it.where.secId));
         /* a line the book sets as a list's item: the number or bullet that opens it, which is not counted in the book
            (countWordsClean's last rule, matched on the line as the book holds it) */
         const listNums = [];
@@ -42690,7 +42751,7 @@
             /* the chapter's number ("Chapter I") is counted with the book's characters only where the file has it (irTallyLabels) */
             const label = s.number && !/^chapter\b/i.test(String(s.title || "")) ? "Chapter " + s.number : "";
             /* a chapter Beuk names itself (the file's text had no heading: it takes the file's name) is Beuk's name, not the writer's */
-            if (!fallback.has(s.id)) { push(cleanOf(s.title || "")); labels.push({ label, title: s.title || "", heading: headingOf.get(s.id) || "" }); }
+            if (!fallback.has(s.id)) { push(cleanOf(s.title || "")); labels.push({ label, title: s.title || "", heading: headingOf.get(s.id) || "", bare: bare.has(s.id) ? String(s.number || "") : "" }); }
           } else if (s.type === "part") { const h = (s.number ? "Part " + s.number + " " : "") + (s.title || ""); push(cleanOf(h)); irTallyItem(R, "headings", h); if (headingOf.has(s.id)) heads.push([headingOf.get(s.id), h]); }
           else if (named.has(s.id)) { pages++; push(cleanOf(s.title || "")); irTallyItem(R, "headings", s.title || ""); if (headingOf.has(s.id)) heads.push([headingOf.get(s.id), s.title || ""]); }
           if (s.subtitle) push(cleanOf(s.subtitle));
@@ -42816,6 +42877,7 @@
         /* a heading the import put together itself, where it was then set aside: counted as the file's own lines (irAsideJoined), the latest join first */
         const joined = aside[String.fromCharCode(0) + "joined"] || [];
         if (joined.length) IR_TALLY_BUCKETS.forEach((b) => { if (aside[b]) joined.slice().reverse().forEach((j) => { aside[b] = String(aside[b]).split(j[0]).join(j[1]); }); });
+        IR_TALLY_BUCKETS.forEach((b) => { if (aside[b]) aside[b] = irJoinGiven(aside[b]); }); /* BEUK:joinsgiven — and no mark of the import's own join is counted among what was set aside */
         /* each row: the text handed over to it, and what each pure step of its own took off */
         /* A heading the book sets itself: the punctuation the file wrote between a chapter's number and its title
            ("Chapter 1: Dawn", "PART ONE — EBB") is not in the book, which sets its own. Measured as any step is — the
@@ -42897,6 +42959,8 @@
         if (F && F.items) Object.keys(F.items).forEach((r) => (F.items[r] || []).forEach((k) => all.push(k)));
         const NUM = /^(?:\d{1,3}|[ivxlc]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty)$/;
         (book.labels || []).forEach((c) => {
+          /* BEUK:joinsgiven — the number stood alone on a line of the file and the reader took it for this chapter's: the number is the file's and is counted, the word "Chapter" the book sets before it is not */
+          if (c.bare) { book.text += "\n" + countWordsClean(c.bare, true); if (c.heading) book.heads.push([c.heading, c.bare + " " + c.title]); irTallyItem(book.rows, "headings", c.bare + " " + c.title); return; }
           const k = irTallyKey(c.label), num = k.split(" ").pop(), tl = irTallyKey(c.title).split(" ").slice(0, 3).join(" ");
           /* a line of the file whose first word names it (Chapter, Chapitre, Kapitel) and whose second is this number, alone or before the title */
           const has = !!k && all.some((x) => { const w = x.split(" "); if (w.length < 2 || !(w[1] === num || NUM.test(w[1]))) return false; return w.length === 2 || x.slice(w[0].length + w[1].length + 2).indexOf(tl) === 0; });
@@ -42906,7 +42970,7 @@
         });
       }
       /* A heading the book sets as the file's heading with the line before it joined on ("Chapter I" over "The Ledger" is
-         the book's "Chapter I The Ledger"; "Front Matter" over "Editorial Brief" its "Front Matter: Editorial Brief") is
+         the book's "Chapter I The Ledger"; "Front Matter" over "Editorial Brief" its "Front Matter Editorial Brief") is
          one and the same heading: the pair is matched, and the line joined to it is a part of the book's heading
          (headingParts), where the file's paragraph of it is found. */
       function irTallyPairHeadings(FI, BI) {
@@ -43468,9 +43532,9 @@
               const hi = kids.findIndex((k) => /^h[1-6]$/.test(epubTag(k)));
               const pre = hi > 0 ? kids.slice(0, hi).filter((k) => /\S/.test(k.textContent)) : [];
               if (pre.length === 1 && /^(p|div|span)$/.test(epubTag(pre[0])) && !pre[0].querySelector("img") && !own(pre[0])) {
-                const lab = epubNoMarks(irTextBr(pre[0]), null).replace(/\s+/g, " ").trim().replace(/[\s.:—–-]+$/, "");
+                const labRaw = epubNoMarks(irTextBr(pre[0]), null).replace(/\s+/g, " ").trim(), lab = labRaw.replace(/[\s.:—–-]+$/, "");
                 /* a label that names a page of its own ("Prologue", "Dedication") is left to the shared reader, as before */
-                if (lab && lab.length <= 60 && wordCountOf(lab) <= 6 && !/[!?;,…]$/.test(lab) && !MATTER_HEADINGS[normHeading(lab)]) { labels.set(kids[hi], lab); pre[0].parentNode.removeChild(pre[0]); }
+                if (lab && lab.length <= 60 && wordCountOf(lab) <= 6 && !/[!?;,…]$/.test(lab) && !MATTER_HEADINGS[normHeading(lab)]) { labels.set(kids[hi], { lab, raw: labRaw }); pre[0].parentNode.removeChild(pre[0]); }
               }
               walk(c);
               return;
@@ -43480,8 +43544,17 @@
               let h = epubNoMarks(t, null).replace(/\s+/g, " ").trim(); /* a note's mark in a heading is not one of its words */
               if (h && inNotes) irAside("labels", h);
               if (!h || inNotes) return;
-              const lab = labels.get(c);
-              if (lab) h = (/^(?:\d{1,3}|(?=[IVXLC])C{0,3}(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))$/.test(lab) ? "Chapter " + lab : lab) + ": " + h;
+              const lb = labels.get(c);
+              if (lb) {
+                /* BEUK:joinsgiven — the label and the heading are two lines of the file. Where the label ends in a
+                   mark of its own ("Appendix A:", "Chapter I —") that mark stands between them, as the file has it;
+                   where it has none the place is marked as the import's own (IR_JOIN), and a bare number is named a
+                   chapter's with the import's own word (IR_JOIN_WORD): neither is stored in the book. */
+                const sep = lb.raw.slice(lb.lab.length);
+                const made = (/^(?:\d{1,3}|(?=[IVXLC])C{0,3}(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))$/.test(lb.lab) ? IR_JOIN_WORD + lb.lab : lb.lab) + (sep ? sep + " " : IR_JOIN) + h;
+                irAsideJoined(made, lb.raw + "\n" + h); /* BEUK:importtally — the heading as made here, and its lines as the page has them */
+                h = made;
+              }
               if (ctx.heads) { ctx.heads.push({ level: Number(tag.slice(1)), text: h, rank: 0, role: "" }); out.push(irSent("EH", ctx.heads.length - 1)); }
               else out.push((tag === "h1" || tag === "h2" ? "# " : "## ") + h);
               return;
@@ -43745,8 +43818,8 @@
           const h = ir.epubHeads[Number(m[2])];
           if (!byHeadings || !h.role) return (h.level <= 2 ? "# " : "## ") + h.text;
           if (h.role === "chapter") { ir.headings.push({ level: h.rank, key: irLoose(h.text) }); return "# " + h.text; }
-          if (h.role === "sub2") { ir.epubSub2.push(h.text); return irSent("SUBB", ir.epubSub2.length - 1); }
-          ir.subs.push(h.text);
+          if (h.role === "sub2") { ir.epubSub2.push(irJoinGiven(h.text)); return irSent("SUBB", ir.epubSub2.length - 1); } /* BEUK:joinsgiven — a sub-heading is never parted */
+          ir.subs.push(irJoinGiven(h.text));
           return irSent("SUB", ir.subs.length - 1);
         });
         /* 5. The sections. Pages that say what they are become that
@@ -43790,7 +43863,7 @@
             if (kindType.type === "epigraph" && bodySeen) kind = "body";
             if (kind === "body") bodySeen = true;
             const ttl = kindType.kind === "body" ? (title || (kindType.type === "chapter" ? "" : kindType.type.charAt(0).toUpperCase() + kindType.type.slice(1))) : (title || kindType.title);
-            pieces.push({ kind, type: kindType.type, title: ttl, number, body: withPlates(blocks.join("\n\n").split("\n")), _ir: { via: "heading", heading: "# " + (title || ttl) } });
+            pieces.push(irJoinTitled({ kind, type: kindType.type, title: ttl, number, body: withPlates(blocks.join("\n\n").split("\n")), _ir: { via: "heading", heading: "# " + (title || ttl) } })); /* BEUK:joinsgiven */
             return;
           }
           /* a page that says nothing about itself: read by its headings */
@@ -45006,6 +45079,10 @@
           else { tb.fence = irTableFence(tb, ir.lang); tb.lines = irTableLines(tb.rows, ir.lang); tb.blocks = [tb.fence.join("\n")]; }
           return tb.blocks;
         };
+        /* 0. BEUK:joinsgiven — the import's own join mark reaches no page: whatever still holds one is set as the file gave it */
+        state.sections.forEach((s) => { ["title", "subtitle", "content"].forEach((k) => { if (typeof s[k] === "string" && s[k].indexOf(IR_JOIN_SP) !== -1) s[k] = irJoinGiven(s[k]); }); });
+        Object.keys(state.meta || {}).forEach((k) => { if (typeof state.meta[k] === "string" && state.meta[k].indexOf(IR_JOIN_SP) !== -1) state.meta[k] = irJoinGiven(state.meta[k]); });
+        ["subs", "subtitles", "epubSub2"].forEach((k) => { if (Array.isArray(ir[k])) ir[k] = ir[k].map((v) => (typeof v === "string" ? irJoinGiven(v) : v)); });
         /* 1. Placeholders → real text, remembering where each landed. */
         state.sections.forEach((s) => {
           const c = String(s.content || "");
@@ -45107,21 +45184,21 @@
           const sec = p._placed ? secById(p._placed.id) : null;
           if (!sec) return;
           const via = (p._ir && p._ir.via) || "";
-          const heading = (p._ir && p._ir.heading) || "";
+          const made = (p._ir && p._ir.heading) || "", heading = irJoinGiven(made); /* BEUK:joinsgiven — the report and the tally hold the heading as the file gave it */
           if (type === "chapter") {
             let from = "text";
             if (via === "fallback") from = "fallback";
             else if (/^#{1,2}\s+/.test(heading)) {
-              if (ir.format === "docx" || ir.format === "rtf" || ir.format === "odt" || ir.format === "html" || ir.format === "epub") from = headingLevelOf(heading) === 2 ? "h2" : "h1"; /* BEUK:epubimport — an EPUB page's heading */
+              if (ir.format === "docx" || ir.format === "rtf" || ir.format === "odt" || ir.format === "html" || ir.format === "epub") from = headingLevelOf(made) === 2 ? "h2" : "h1"; /* BEUK:epubimport — an EPUB page's heading */
               else from = /^##\s/.test(heading) ? "md2" : "md1";
-              if (from === "h1" && headingLevelOf(heading) > 2) from = "text"; /* BEUK:headlevels — a deeper heading that opens a chapter (a file whose levels start lower) is named by its line, never called Heading 1 */
+              if (from === "h1" && headingLevelOf(made) > 2) from = "text"; /* BEUK:headlevels — a deeper heading that opens a chapter (a file whose levels start lower) is named by its line, never called Heading 1 */
             }
             const idx = state.sections.indexOf(sec);
             let prevBody = null;
             for (let i = idx - 1; i >= 0; i--) if (state.sections[i].kind === "body") { prevBody = state.sections[i]; break; }
             const rec = { kind: "chapter", group: "structure", where: { secId: sec.id, label: secName(sec) },
               before: heading ? irClip(heading.replace(/^#{1,2}\s+/, ""), 90) : "", after: irClip(secName(sec), 90),
-              data: { from, heading, title: sec.title, number: sec.number } };
+              data: Object.assign({ from, heading, title: sec.title, number: sec.number }, made.indexOf(IR_JOIN_WORD) !== -1 ? { bare: true } : {}) }; /* bare: the file set this chapter's number alone on a line ("3"); the word "Chapter" before it was the reader's */
             if (via === "fallback") { rec.reversible = false; rec.why = "fallback"; }
             else if (!prevBody || !importIds.has(prevBody.id)) { rec.reversible = false; rec.why = "first"; }
             else rec.reversible = true;
@@ -45142,9 +45219,10 @@
           add(rec);
         });
         ir.notes.forEach((nt) => {
-          if (nt.kind === "lifted") add({ kind: "lifted", group: "matter", where: { secId: null, label: "" }, before: irClip(nt.text, 140), after: "", reversible: !!firstBodyId, why: firstBodyId ? "" : "gone", data: { reason: nt.reason, text: nt.text } });
-          else if (nt.kind === "toc-dropped") add({ kind: "toc", group: "dropped", where: { secId: null, label: "" }, before: irClip(nt.text, 160), after: "", reversible: false, why: "toc", data: {} });
-          else if (nt.kind === "empty-heading") add({ kind: "emptyHeading", group: "dropped", where: { secId: null, label: "" }, before: irClip(nt.text, 90), after: "", reversible: false, why: "emptyHeading", data: { text: nt.text } });
+          const given = irJoinGiven(nt.text); /* BEUK:joinsgiven — as the file gave it (the undo puts these lines back) */
+          if (nt.kind === "lifted") add({ kind: "lifted", group: "matter", where: { secId: null, label: "" }, before: irClip(given, 140), after: "", reversible: !!firstBodyId, why: firstBodyId ? "" : "gone", data: { reason: nt.reason, text: given } });
+          else if (nt.kind === "toc-dropped") add({ kind: "toc", group: "dropped", where: { secId: null, label: "" }, before: irClip(given, 160), after: "", reversible: false, why: "toc", data: {} });
+          else if (nt.kind === "empty-heading") add({ kind: "emptyHeading", group: "dropped", where: { secId: null, label: "" }, before: irClip(given, 90), after: "", reversible: false, why: "emptyHeading", data: { text: given } });
         });
         ir.demoted.forEach((d) => {
           const k = irLoose(d.text);
@@ -46840,8 +46918,9 @@
                   else if (parts.length && Math.abs(g.size - group[group.indexOf(g) - 1].size) < 0.6 && !/[:.]$/.test(parts[parts.length - 1])) parts[parts.length - 1] += " " + tx;
                   else parts.push(tx);
                 });
-                let text = parts.join(": ");
-                if (label) text = (numRe.test(label) ? "Chapter " + label.replace(/\.$/, "") : label) + (text ? ": " + text : "");
+                /* BEUK:joinsgiven — lines of two sizes, and a label over them, are lines of the page: each join is marked as the import's own (IR_JOIN; IR_JOIN_WORD before a bare number), and none of it is stored in the book */
+                let text = parts.join(IR_JOIN);
+                if (label) text = (numRe.test(label) ? IR_JOIN_WORD + label.replace(/\.$/, "") : label) + (text ? IR_JOIN + text : "");
                 irAsideJoined(text, group.map((g) => g.text.trim()).join("\n")); /* BEUK:importtally — the heading as made here, and its lines as the page has them */
                 flush();
                 const hb = { kind: "h", text, page: p.n, size: Math.max.apply(null, group.map((g) => g.size)) };
@@ -46850,15 +46929,15 @@
                    spell one bookmark ("PART ONE" + "SEPTEMBER" = "Part ONE:
                    September") are that one heading. */
                 if (lastB && lastB.kind === "h" && lastB.page === p.n && markFull.has(p.n) && markFull.get(p.n).has(markKey(lastB.text + " " + text))) {
-                  irAsideJoined(lastB.text + ": " + text, lastB.text + "\n" + text); /* BEUK:importtally */
-                  lastB.text += ": " + text;
+                  irAsideJoined(lastB.text + IR_JOIN + text, lastB.text + "\n" + text); /* BEUK:importtally */
+                  lastB.text += IR_JOIN + text; /* BEUK:joinsgiven */
                   sinceHead = 0;
                   prevLine = null;
                   continue;
                 }
                 /* The same title on two pages running is a half-title
                    page before the title page: keep the later one. */
-                if (lastB && lastB.kind === "h" && headKey(lastB.text) === headKey(text) && lastB.page < p.n) { st.halfTitle = lastB.text; blocks.pop(); }
+                if (lastB && lastB.kind === "h" && headKey(lastB.text) === headKey(text) && lastB.page < p.n) { st.halfTitle = irJoinGiven(lastB.text); blocks.pop(); }
                 blocks.push(hb);
                 sinceHead = 0;
                 if (pendingPlate) { blocks.push(pendingPlate); pendingPlate = null; }
@@ -47099,9 +47178,9 @@
           const parts = [];
           ir.subs = []; ir.subtitles = [];
           lay.blocks.forEach((b) => {
-            if (b.kind === "h") parts.push("# " + b.text.replace(/\s+/g, " ").trim());
+            if (b.kind === "h") parts.push("# " + b.text.replace(IR_JOIN_SPACES, " ").trim()); /* BEUK:joinsgiven — the join's own mark is kept for the parser */
             /* BEUK:pdfback */
-            else if (b.kind === "sub") { ir.subs.push(b.text.replace(/\s+/g, " ").trim()); parts.push(irSent("SUB", ir.subs.length - 1)); }
+            else if (b.kind === "sub") { ir.subs.push(irJoinGiven(b.text).replace(/\s+/g, " ").trim()); parts.push(irSent("SUB", ir.subs.length - 1)); }
             else if (b.kind === "subtitle") { ir.subtitles.push(b.text); parts.push(irSent("SUBT", ir.subtitles.length - 1)); }
             else if (b.kind === "raw") parts.push(b.md);
             else if (b.kind === "p") parts.push(b.md);
@@ -60336,10 +60415,10 @@
             };
             const heads = (lay) => lay.blocks.filter((b) => b.kind === "h").map((b) => b.text);
             const marked = heads(book(true)), plain = heads(book(false));
-            const want = ["Part One: MOSCOW", "Part Two: SEPTEMBER", "Tuesday, September 8, 2026", "Thursday, September 10, 2026"];
+            const want = ["Part One" + IR_JOIN + "MOSCOW", "Part Two" + IR_JOIN + "SEPTEMBER", "Tuesday, September 8, 2026", "Thursday, September 10, 2026"]; /* BEUK:joinsgiven — the label and the name are two lines of the page: the join is marked as the import's own (IR_JOIN), never a colon stored in the book */
             const missing = want.filter((h) => marked.indexOf(h) === -1);
-            const ok = !missing.length && marked.length === want.length && marked.indexOf("Evening") === -1 && plain.indexOf("Part One: MOSCOW") !== -1;
-            return scVerdict(ok, "with bookmarks: " + marked.join(" | ") + (missing.length ? " (missing: " + missing.join(" | ") + ")" : "") + "; without: " + plain.join(" | "));
+            const ok = !missing.length && marked.length === want.length && marked.indexOf("Evening") === -1 && plain.indexOf("Part One" + IR_JOIN + "MOSCOW") !== -1;
+            return scVerdict(ok, "with bookmarks: " + marked.map(irJoinGiven).join(" | ") + (missing.length ? " (missing: " + missing.map(irJoinGiven).join(" | ") + ")" : "") + "; without: " + plain.map(irJoinGiven).join(" | "));
           } },
         /* ---- BEUK:pdfback: a PDF Beuk printed comes back as the book it was ---- */
         { id: "pdf.beuk-print-back", feature: "import", name: "A PDF set the way Beuk prints: a chapter's italic subtitle under its title is its subtitle, a smaller heading in the middle of a chapter stays a sub-heading in that chapter, the notes printed under NOTES at a chapter's end come back as its footnotes with their raised marks, a monospace log is a log (never a table left out), and text turned sideways or upside down is kept in a container of its kind",
@@ -60426,7 +60505,7 @@
                 secs.filter((x) => x.type === "dedication" && String(x.content || "").trim()).length === 1 && !secs.some((x) => /Volume One of/.test(String(x.content || "")) && x.type !== "copyright");
               const setOnCopyright = !!cr && /Set in 1983/.test(cr.content || "") && !body.some((x) => /Set in 1983/.test(String(x.content || "")));
               const appx = secs.find((x) => x.type === "appendix");
-              const appxOk = !!appx && appx.title === "APPENDIX A: Tradecraft Glossary";
+              const appxOk = !!appx && appx.title === "APPENDIX A Tradecraft Glossary"; /* BEUK:joinsgiven — the two lines, a space between: no colon of the import's */
               const ok = shape === "One:THE RED ARROW | Twenty-One:THE BOOKSELLER" && capOk && !spacedLeft.length && !!note && /\bwire\b/.test(note.content || "") &&
                 !!cr && /2026/.test(cr.content || "") && /10 9 8 7/.test(cr.content || "") && noFurniturePages &&
                 state.meta.title === "THE MOSCOW DEAD DROP" && state.meta.author === "Gis" + E.toLowerCase() + "le Torres" && setOnCopyright && appxOk && logoOk;
@@ -60582,10 +60661,10 @@
                 const noHand = !layHeads.some((h) => /Nathaniel|God help|PAID|Elias|Saul|socket/.test(h));
                 const kept = layHeads.some((h) => /The Ship’s Articles/.test(h));
                 /* the label is read where it stands, not left for the parser to find in a paragraph */
-                const labels = layHeads.indexOf("Chapter Twenty-One: No Quarter") !== -1 && layHeads.indexOf("Chapter Twenty-Two: The Creek") !== -1;
+                const labels = layHeads.indexOf("Chapter Twenty-One" + IR_JOIN + "No Quarter") !== -1 && layHeads.indexOf("Chapter Twenty-Two" + IR_JOIN + "The Creek") !== -1; /* BEUK:joinsgiven — the label and the title, the join marked as the import's own */
                 const dialogue = !one("I’ve ever — “Zib!”") && one("“Zib!” the captain called");
                 const ok = exact && labels && entries && noHand && kept && dialogue;
-                return scVerdict(ok, "chapters [" + list.join(" | ") + "] (want " + want.join(" | ") + "); headings found [" + layHeads.join(" | ") + "], hyphenated labels on their titles (" + labels + "); ledger entries whole, one paragraph each, over the page turn too (" + entries +
+                return scVerdict(ok, "chapters [" + list.join(" | ") + "] (want " + want.join(" | ") + "); headings found [" + layHeads.map(irJoinGiven).join(" | ") + "], hyphenated labels on their titles (" + labels + "); ledger entries whole, one paragraph each, over the page turn too (" + entries +
                   "); no hand-set line a heading (" + noHand + "); The Ship’s Articles still a heading (" + kept + "); interrupted dialogue kept apart (" + dialogue + ")");
               } finally { window.toast = origToast; }
             });
@@ -71205,7 +71284,7 @@
             irCheckRun(() => {
               importDocxConverted("fixture.docx", "<h1>Chapter 1: Dawn</h1><p>The caravan left.</p><h1>Chapter 2: Noon</h1><p>The pans lay white.</p><p>Appendix A</p><h1>Tide Tables</h1><p>The tables.</p>", [], { comments: 0, ins: 0, del: 0, textboxes: 0, headers: 0, scanned: true }, {}, null);
               const back = state.sections.filter((s) => s.kind === "back" && /\S/.test(String(s.content || ""))), c2 = state.sections.find((s) => s.type === "chapter" && s.title === "Noon");
-              if (back.length !== 1 || back[0].type !== "appendix" || back[0].title !== "Appendix A: Tide Tables" || back[0].content.trim() !== "The tables." || !c2 || /Appendix/.test(c2.content)) bad.push("Word appendix " + JSON.stringify(back.map((s) => s.title + " / " + s.content)) + " / " + (c2 ? c2.content : ""));
+              if (back.length !== 1 || back[0].type !== "appendix" || back[0].title !== "Appendix A Tide Tables" || back[0].content.trim() !== "The tables." || !c2 || /Appendix/.test(c2.content)) bad.push("Word appendix " + JSON.stringify(back.map((s) => s.title + " / " + s.content)) + " / " + (c2 ? c2.content : ""));
             });
             return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "titles without the dash, the appendix a page of its own (a Word file's too), three notes linked chapter by chapter, the stray mark kept as text and reported, the card counting it");
           } },
@@ -76111,8 +76190,8 @@
               const front = secs.filter((s) => s.kind === "front" && /soundings/.test(s.content)), back = secs.filter((s) => s.kind === "back" && /fathoms at the bar/.test(s.content));
               const bad = [];
               if (shape !== "chapter I:The Harbour | chapter II:The Crossing | chapter III:The Far Shore") bad.push("the body came back as " + shape);
-              if (front.length !== 1 || front[0].title !== "Front Matter: A Note on the Charts" || !/^# How the soundings were taken$/m.test(front[0].content)) bad.push("front matter: " + JSON.stringify(front.map((s) => s.type + ":" + s.title)));
-              if (back.length !== 1 || back[0].type !== "appendix" || back[0].title !== "Appendix A: Tables of Depth" || !/^# A\.1 Fathoms$/m.test(back[0].content)) bad.push("back matter: " + JSON.stringify(back.map((s) => s.type + ":" + s.title)));
+              if (front.length !== 1 || front[0].title !== "Front Matter A Note on the Charts" || !/^# How the soundings were taken$/m.test(front[0].content)) bad.push("front matter: " + JSON.stringify(front.map((s) => s.type + ":" + s.title)));
+              if (back.length !== 1 || back[0].type !== "appendix" || back[0].title !== "Appendix A Tables of Depth" || !/^# A\.1 Fathoms$/m.test(back[0].content)) bad.push("back matter: " + JSON.stringify(back.map((s) => s.type + ":" + s.title)));
               if (!/^Monday, before light\n\n/.test(C(0)) || !/^# I\.1 The Quay$/m.test(C(0)) || !/^# I\.2 The Customs Shed$/m.test(C(0))) bad.push("chapter I lost a sub-heading or its date line: " + JSON.stringify(C(0).slice(0, 120)));
               if (!/^# II\.1 The Deck$/m.test(C(1)) || !/^# II\.2 The Engine Room$/m.test(C(1)) || !/engine room was loud/.test(C(1))) bad.push("the chapter cut in two files is not one chapter");
               if (!/^# III\.1 The Landing$/m.test(C(2)) || !/^## A finer point$/m.test(C(2))) bad.push("chapter III's h3 and h4 are not its sub-headings");
