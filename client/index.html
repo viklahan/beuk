@@ -46745,7 +46745,8 @@
         });
         /* 6. The text flow: headings, paragraphs, breaks, pictures, tables. */
         /* BEUK:hyphensgiven — a hyphen at a line's end. The page does not say whose it is (the writer's "one-time", or the
-           typesetter's break of "transport"); the book's own text often does. Each one is noted as its two lines close
+           typesetter's break of "transport"; "VIE-04-10", whose hyphens are all the writer's); the book's own text often
+           does. Each one — a hyphen straight after a letter or digit, the next line opening on one — is noted as its two lines close
            up (hyEnds) and settled once every line has been read (after the flow, below) by what stands whole elsewhere
            in the PDF's text. hyToks: a text's words, parted at spaces and at dashes. hyKey: a word as it is looked for:
            capitals aside, either hyphen ("-" or U+2010) the same, the marks around it left off. */
@@ -46854,9 +46855,13 @@
           const rejoin = (joinedEnd) => irAsideDelta("pdfRejoined", endWord + "\n" + startWord, joinedEnd + startWord);
           /* a soft hyphen is the typesetter's by definition: taken off, whatever stands elsewhere */
           if (/\u00ad$/.test(lt)) { last.t = lt.slice(0, -1); st.joined++; rejoin(endWord.slice(0, -1)); if (hyLast) hyLast.hyEnd = true; line.hyStart = true; }
-          else if (/\p{L}[-\u2010]$/u.test(lt) && /^\p{L}/u.test(nt)) {
+          else if (/[\p{L}\p{N}][-\u2010]$/u.test(lt) && /^[\p{L}\p{N}]/u.test(nt)) {
             /* BEUK:hyphensgiven — "-" or U+2010 (the hyphen a browser's hyphens: auto sets, and one a writer may type): the two
-               lines close up, and the hyphen stays where it is until the whole text has been read (settled after the flow) */
+               lines close up, and the hyphen stays where it is until the whole text has been read (settled after the flow).
+               A word's character either side, letter or digit alike: "VIE-" + "04-10", "GRZ-02-" + "REF-17", "5-" + "unit"
+               and "12-" + "15" are a writer's code, measure and range broken at the hyphen, and the plain rule below would
+               put a space of Beuk's own inside each ("VIE- 04-10"). Not this rule: a hyphen the page sets apart with a
+               space before it ("sun -"), and a next line that opens on a dash or a minus sign ("-5", "- time"). */
             hyEnds.push({ runs: para.runs, run: last, at: lt.length - 1 });
             if (hyLast) hyLast.hyEnd = true;
             line.hyStart = true;

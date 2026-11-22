@@ -282,4 +282,92 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     expect(kept.all).toContain('the trans' + HY + 'port reached');
     expect({ joins: kept.tally.pdf.joins, asks: kept.asks.length, same: kept.tally.chars.same }).toEqual({ joins: {}, asks: 0, same: true });
   }, 120_000);
+
+  /* The rule does not ask what kind of character stands either side of the hyphen, so long as it is a word's: a letter
+     or a digit. Before, it asked for a letter before the hyphen and a letter to open the next line; any other line-end
+     hyphen fell to the plain rule for two lines and got a space of Beuk's own after it, inside the writer's own code:
+     "VIE-" + "04-10" was stored "VIE- 04-10", "GRZ-02-" + "REF-17" was "GRZ-02- REF-17", "5-" + "unit" was "5- unit". */
+  const CODE = ['Marta entered the confirmation code VIE-', '04-10 into the ledger that night.'];
+
+  it('a code broken at its hyphen before a digit ("VIE-" + "04-10"), whole elsewhere in the PDF: closed up with no space of Beuk\'s, the hyphen kept, nothing left for the writer', async () => {
+    const g = await importPdf(book(CODE, ['The code VIE-04-10 was struck out at noon.']));
+    expect(g.all).toContain('confirmation code VIE-04-10 into the ledger');
+    expect(g.all).not.toContain('VIE- 04');
+    expect({ joins: g.tally.pdf.joins, rejoined: g.tally.pdf.rejoined, unaccounted: g.tally.unaccounted, same: g.tally.chars.same }).toEqual({ joins: {}, rejoined: [], unaccounted: 0, same: true });
+    expect(g.tally.file).toBe(g.tally.pdf.raw);
+    expect(g.asks).toEqual([]);
+    expect(g.items.find((it) => it.kind === 'pdfHyphens')!.data).toEqual({ n: 0, kept: 1 });
+  }, 120_000);
+
+  it('the same code standing nowhere else: the hyphen is kept and no space is added (only the line break goes), and it is listed for the writer like any other; "Join it" takes that one hyphen out', async () => {
+    const g = await importPdf(book(CODE, ['The pans lay white under the sun.']));
+    expect(g.all).toContain('confirmation code VIE-04-10 into the ledger');
+    expect(g.all).not.toContain('VIE- 04');
+    expect({ joins: g.tally.pdf.joins, rejoined: g.tally.pdf.rejoined, unaccounted: g.tally.unaccounted, same: g.tally.chars.same }).toEqual({ joins: {}, rejoined: [], unaccounted: 0, same: true });
+    expect(g.tally.file).toBe(g.tally.pdf.raw);
+    expect(g.asks.map((it) => ({ group: it.group, state: it.state, reversible: it.reversible, data: it.data }))).toMatchObject([{ group: 'structure', state: 'applied', reversible: true, data: { kept: 'VIE-04-10', offered: 'VIE04-10', why: 'neither', n: 1 } }]);
+    const said = reportSaid(g);
+    expect(said).toContain('A line of the PDF ends on the hyphen of “VIE-04-10”, and the word stands nowhere else in it to say whose hyphen that is. Your book keeps it as the page shows it: “VIE-04-10”. The other reading is “VIE04-10”.');
+    expect(said).toContain('Join it: “VIE04-10”');
+    expect(g.api.irUndoItem(g.asks[0].id)).toMatchObject({ ok: true });
+    expect(textOf(g.api)).toContain('confirmation code VIE04-10 into the ledger');
+  }, 120_000);
+
+  it('the same code where only the form without that hyphen stands elsewhere ("VIE04-10"): taken off, counted in the row and listed, as for any word', async () => {
+    const g = await importPdf(book(CODE, ['The code VIE04-10 was struck out at noon.']));
+    expect(g.all).toContain('confirmation code VIE04-10 into the ledger');
+    expect({ joins: g.tally.pdf.joins, rejoined: g.tally.pdf.rejoined, unaccounted: g.tally.unaccounted, same: g.tally.chars.same }).toEqual({ joins: { pdfRejoined: 1 }, rejoined: [{ from: ['VIE-', '04-10'], to: 'VIE04-10', n: 1 }], unaccounted: 0, same: true });
+    expect(g.tally.file).toBe(g.tally.pdf.raw - 1);
+    expect(g.asks).toEqual([]);
+  }, 120_000);
+
+  it('a digit before the hyphen and a letter after ("GRZ-02-" + "REF-17", "5-" + "unit"): the same rule, and no space of Beuk\'s', async () => {
+    const kept = await importPdf(book(['Lindholm entered it under the index GRZ-02-', 'REF-17 and marked the page.'], ['The index GRZ-02-REF-17 was struck out at noon.']));
+    expect(kept.all).toContain('the index GRZ-02-REF-17 and marked');
+    expect({ joins: kept.tally.pdf.joins, asks: kept.asks.length, same: kept.tally.chars.same }).toEqual({ joins: {}, asks: 0, same: true });
+    const listed = await importPdf(book(['The message was transmitted that night via 5-', 'unit Baudot wire to the annex.'], ['The pans lay white under the sun.']));
+    expect(listed.all).toContain('that night via 5-unit Baudot wire');
+    expect(listed.all).not.toContain('5- unit');
+    expect(listed.tally.pdf.joins).toEqual({});
+    expect(listed.asks.map((it) => it.data)).toMatchObject([{ kept: '5-unit', offered: '5unit', why: 'neither', n: 1 }]);
+  }, 120_000);
+
+  it('a digit either side ("pages 12-" + "15"): the hyphen is the page\'s and stays, no space is added, and where the PDF does not settle it the range is listed like any other', async () => {
+    const g = await importPdf(book(['The entry is in the second ledger, pages 12-', '15 of the bound volume.'], ['The pans lay white under the sun.']));
+    expect(g.all).toContain('ledger, pages 12-15 of the bound volume');
+    expect(g.all).not.toContain('12- 15');
+    expect({ joins: g.tally.pdf.joins, same: g.tally.chars.same }).toEqual({ joins: {}, same: true });
+    expect(g.asks.map((it) => it.data)).toMatchObject([{ kept: '12-15', offered: '1215', why: 'neither', n: 1 }]);
+    const settled = await importPdf(book(['The entry is in the second ledger, pages 12-', '15 of the bound volume.'], ['See pages 12-15 again.']));
+    expect(settled.all).toContain('ledger, pages 12-15 of the bound volume');
+    expect({ joins: settled.tally.pdf.joins, asks: settled.asks.length }).toEqual({ joins: {}, asks: 0 });
+  }, 120_000);
+
+  it('a dash the page sets apart is not a word\'s hyphen: a line that ends on a spaced hyphen keeps the space the page shows before it and is closed with a space after it, before a letter or a digit, and nothing is listed', async () => {
+    const word = await importPdf(book(['The pans lay white under the morning sun -', 'and the wind rose over the salt.'], ['The clerk kept the ledger.']));
+    expect(word.all).toContain('morning sun - and the wind rose');
+    expect({ joins: word.tally.pdf.joins, asks: word.asks.length }).toEqual({ joins: {}, asks: 0 });
+    expect(word.items.some((it) => it.kind === 'pdfHyphens')).toBe(false);
+    const digit = await importPdf(book(['The clerk at the gate counted from 12 -', '15 carts in every caravan that week.'], ['The clerk kept the ledger.']));
+    expect(digit.all).toContain('counted from 12 - 15 carts');
+    expect({ joins: digit.tally.pdf.joins, asks: digit.asks.length }).toEqual({ joins: {}, asks: 0 });
+  }, 120_000);
+
+  it('a long dash at a line\'s end is not this rule either: after a letter it closes up to the next line as it did, and nothing is listed', async () => {
+    const em = await importPdf(book(['The wind rose over the salt and the pans—', 'and fell again before the noon bell.'], ['The clerk kept the ledger.']));
+    expect(em.all).toContain('the pans—and fell again');
+    expect({ joins: em.tally.pdf.joins, asks: em.asks.length }).toEqual({ joins: {}, asks: 0 });
+    const en = await importPdf(book(['The wind rose over the salt and the pans–', 'and fell again before the noon bell.'], ['The clerk kept the ledger.']));
+    expect(en.all).toContain('the pans–and fell again');
+    expect({ joins: en.tally.pdf.joins, asks: en.asks.length }).toEqual({ joins: {}, asks: 0 });
+  }, 120_000);
+
+  it('a minus sign or a dash that OPENS the next line is no second half of a word: the two lines are closed with a space, as the page parts them', async () => {
+    const minus = await importPdf(book(['By dawn the glass at the gate had fallen to', '-5 and the pans were white with frost.'], ['The clerk kept the ledger.']));
+    expect(minus.all).toContain('had fallen to -5 and the pans');
+    expect({ joins: minus.tally.pdf.joins, asks: minus.asks.length }).toEqual({ joins: {}, asks: 0 });
+    const dash = await importPdf(book(['The clerk kept the code and wrote down one-', '- time, he said, and no other - in the ledger.'], ['The pans lay white under the sun.']));
+    expect(dash.all).toContain('wrote down one- - time, he said');
+    expect({ joins: dash.tally.pdf.joins, asks: dash.asks.length }).toEqual({ joins: {}, asks: 0 });
+  }, 120_000);
 });

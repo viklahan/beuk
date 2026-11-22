@@ -1,7 +1,8 @@
 /* The Meridian Ledger stress book through the import, measured in characters on 2026-11-22 (import-tally-meridian.test.ts
    reads this; re-measured the same day after the import stopped joining two lines of the file with a colon of its own, and
    again after a heading's own label was counted one way in every format, and again after a PDF's hyphen at a line's end
-   was settled by the book's own text). For each file: the characters in the file, in the book, set aside by row, unaccounted for; and EVERY
+   was settled by the book's own text, and again after that rule took a hyphen beside a digit: no figure moved, a space is
+   not a character). For each file: the characters in the file, in the book, set aside by row, unaccounted for; and EVERY
    character that still differs, by code point, with its count on its side. A character listed here is one the import
    still changes, drops or adds in this book. It is pinned so the list cannot move unseen. It is not a pass mark.
 
@@ -43,12 +44,19 @@ export const MERIDIAN_INVENTORY: Record<string, Inventory> = {
   /* nothing differs. The row: the label element "Chapter I" before each of the 12 headings, the word's 84 (the book was 316867: 316867 - 84 = 316783).
      (a label element before a heading, "Front Matter", "Appendix A", "Appendix B", is joined to it with a space: no colon of the import's) */
   epub: { file: 317580, book: 316783, aside: { noteMarks: 376, listMarks: 104, headingMarks: 84, pages: 233 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
-  /* nothing differs, and no hyphen is taken off at a line's end (BEUK:hyphensgiven). 106 lines end on a hyphen that the next line's
-     word continues. For 101 the hyphenated word stands whole elsewhere in the PDF and the joined word nowhere, so the hyphen is kept
-     ("Cross-checked" 24 times, "old-style" 20, "one-time" 18, "multi-volume" 14, "ink-plate" 9, "ninety-minute" 6, "Mont-Blanc" 5,
-     "sealing-wax" 2, "wax-sealed", "dual-key" and "linen-backed" once each). For 5 neither form stands elsewhere: the hyphen stays as
-     the page shows it and the report lists the word for the writer ("fifty-thousand-plus-word", "ink-ledger", "vector-to-raster",
-     "small-image", "twenty-two"). None is joined: the joined form of none of them stands in the PDF.
+  /* nothing differs, and no hyphen is taken off at a line's end (BEUK:hyphensgiven). 135 lines end on a hyphen, straight after a
+     letter or a digit, that the next line's word continues: 106 with a letter either side, 12 with a digit after ("VIE-" + "04-10")
+     and 17 with a digit before ("5-" + "unit", "GRZ-02-" + "REF-17"). For 103 the hyphenated word stands whole elsewhere in the PDF
+     and the joined word nowhere, so the hyphen is kept ("Cross-checked" 24 times, "old-style" 20, "one-time" 18, "multi-volume" 14,
+     "ink-plate" 9, "ninety-minute" 6, "Mont-Blanc" 5, "sealing-wax" 2, "wax-sealed", "dual-key", "linen-backed", "UTF-16" and
+     "11-point" once each). For 32 neither form stands elsewhere: the hyphen stays as the page shows it, no space is added, and the
+     report lists 21 words for the writer ("fifty-thousand-plus-word", "ink-ledger", "vector-to-raster", "small-image", "twenty-two";
+     "5-unit" 12 times; the codes "VIE-04-10", "VIE-04-43", "VIE-04-52", "VIE-04-61", "GVA-06-23", "GVA-06-32", "GVA-06-41" and
+     "GVA-06-50"; the indices "GRZ-02-REF-17", "VCE-01-REF-17", "GTH-09-REF-17", "ZRH-03-REF-17", "BSL-08-REF-17", "INN-10-REF-17"
+     and "BER-12-REF-17", once each). None is joined: the joined form of none of them stands in the PDF.
+     (The 29 with a digit beside the hyphen were not the rule's at first: it asked for a letter either side, and those two lines were
+     closed with a space of the import's own, "VIE- 04-10", "5- unit", "GRZ-02- REF-17", where the Word file's book has none. A space
+     is whitespace and not a character of this tally, so no figure here moved when the 29 spaces went: measured before and after.)
      (Before, the reader looked for the two forms among each line's words less its first and its last, and took 56 of these hyphens off,
      each one the writer's: "Cross-" + "checked" 24 times, "one-" + "time" 18, "ink-" + "plate" 9, and the five above. The file was
      319746 and the book 318558: each is 56 more now.)

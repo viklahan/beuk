@@ -5284,6 +5284,14 @@ import).
   "Join all of these"). The two halves at a line's end are never counted as
   the word standing whole. A soft hyphen (U+00AD) is always taken off. Only
   a hyphen actually taken off is counted in the tally's `pdfRejoined` row.
+  The rule takes a hyphen that stands straight after a letter or a digit
+  where the next line opens on a letter or a digit, so a code, a measure or
+  a range broken at its hyphen (`VIE-` + `04-10`, `5-` + `unit`, `12-` +
+  `15`) closes up with no space added, like any word. It does not take a
+  hyphen the page sets apart with a space before it, nor a next line that
+  opens on a dash, a minus sign, a quotation mark or a bracket: those two
+  lines are closed with a space, as lines are. (An em or en dash straight
+  after a letter closes up to the next line, as it did.)
 - **Headings.** A line set clearly larger than the body type (×1.22), a
   short bold line standing alone, or a "Chapter …" label over a larger
   title, merged into one `# Chapter One: Title` heading. A contents page is
