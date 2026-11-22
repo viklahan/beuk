@@ -42,7 +42,7 @@
   {
    "path": "OEBPS/Text/epigraph.xhtml",
    "binary": false,
-   "sha256": "adac370207884f54d454dff315c5d82a764bb4aea5e0f07b5766ee073fe66322"
+   "sha256": "b271cbdc4549275375319e262c29fb2203b49b47e1283b96dac25ab758e8b732"
   },
   {
    "path": "OEBPS/Text/plate_01.xhtml",
@@ -72,7 +72,7 @@
   {
    "path": "OEBPS/Text/prologue.xhtml",
    "binary": false,
-   "sha256": "3930a6dd16c7499865e91c80872c987c759112537e1a23543bf4a459c770a4b6"
+   "sha256": "20a8f927998a952fd43ac960d58e9d1893eeab83abd8b5311f6a3cc4efc99bca"
   },
   {
    "path": "OEBPS/Text/plate_03.xhtml",
@@ -82,7 +82,7 @@
   {
    "path": "OEBPS/Text/chapter_01.xhtml",
    "binary": false,
-   "sha256": "69edd45c99f3751a5db4ae02d8271f1919fdecdeae1a9d92a08607cf880b84f3"
+   "sha256": "25ae5021990376c5c76466a82a49f500fda359c2aff62d7a954958293ee27f8a"
   },
   {
    "path": "OEBPS/Text/plate_04.xhtml",
@@ -92,7 +92,7 @@
   {
    "path": "OEBPS/Text/chapter_02.xhtml",
    "binary": false,
-   "sha256": "1df0426ac02f07c12f150d837165f5531a6c6f34e45142484ec450c3856da1cd"
+   "sha256": "e70c0c27b48f2e0c567df11c21109b120c35b01db4a0bef40eb8a958a831100a"
   },
   {
    "path": "OEBPS/Text/plate_05.xhtml",
@@ -102,7 +102,7 @@
   {
    "path": "OEBPS/Text/chapter_03.xhtml",
    "binary": false,
-   "sha256": "bfda8778ee8bd6ca821ab880a8a952984cef129adc7f53f9e3987d6860baf009"
+   "sha256": "7fa643bea6fb7d6ac7f868622046093d2444d8684cd45d3789285a5cc863fdcc"
   },
   {
    "path": "OEBPS/Text/plate_06.xhtml",
@@ -112,7 +112,7 @@
   {
    "path": "OEBPS/Text/chapter_04.xhtml",
    "binary": false,
-   "sha256": "0b78f24a811291d22e2f6bae3a99e2b8cab7fd89b1bbb08249fbbc3a857df72d"
+   "sha256": "a905235ad3630aea5810aa4010631cf4cbc52e795a5a7fc6a2be4b1ce4c426c4"
   },
   {
    "path": "OEBPS/Text/alsoby.xhtml",
