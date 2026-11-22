@@ -52432,9 +52432,16 @@
           if (vol.cover) plan.push({ volIdx: vi, volume: vol, kind: "cover", file: "Text/" + vp + "-cover.xhtml", id: "sec-" + vp + "-cover", label: "Cover" });
           plan.push({ volIdx: vi, volume: vol, kind: "titlepage", file: "Text/" + vp + "-titlepage.xhtml", id: "sec-" + vp + "-titlepage", label: "Title Page" });
           let chN = 0;
+          const usedFiles = {};
           (vol.sections || []).filter(inBook).forEach((s) => {
             if (["cover", "titlepage", "toc", "halftitle"].includes(s.type)) return;
-            const file = s.type === "chapter" ? "Text/" + vp + "-chapter_" + String(++chN).padStart(2, "0") + ".xhtml" : "Text/" + vp + "-" + s.type + ".xhtml";
+            let file = s.type === "chapter" ? "Text/" + vp + "-chapter_" + String(++chN).padStart(2, "0") + ".xhtml" : "Text/" + vp + "-" + s.type + ".xhtml";
+            /* Two pieces of one type in a volume (three Parts, two appendices) each get their own file, as a single book's
+               plan gives them (epubPlan): the type names the first, a counter the rest. Without it they shared one path
+               and one manifest id: an invalid package, and one page written over another (found 2026-11-22 by the page's
+               own check boxset.volumes.whole-books, run with the sample book, which has three Parts, on the desk). */
+            if (usedFiles[file]) file = file.replace(/\.xhtml$/, "_" + (++usedFiles[file]) + ".xhtml");
+            else usedFiles[file] = 1;
             plan.push({ volIdx: vi, volume: vol, kind: "section", section: s, file, id: "sec-" + file.replace("Text/", "").replace(/\.xhtml$/, ""), label: sectionLabel(s) });
           });
         });
@@ -62394,13 +62401,27 @@
               });
               state.printTrim = "6x9";
               const html = buildPrintHtml();
-              const colo = state.sections.find((s) => s.type === "colophon");
-              const coloIx = state.sections.filter((s) => s.included && s.type !== "cover").indexOf(colo);
+              /* The page the rule names (buildPrintHtml): the colophon when it is in the book, the copyright page when it
+                 is not, the last page when neither is. An empty page is not in the book (BEUK:starters), and this
+                 fixture's colophon is empty: the check counted every included page, looked for a colophon the print
+                 file no longer held, and failed on a book that was set right (found 2026-11-22). Both cases are held now. */
+              const inPrint = state.sections.filter((s) => inBook(s) && s.type !== "cover");
+              const colo = inPrint.find((s) => s.type === "colophon") || inPrint.find((s) => s.type === "copyright") || inPrint[inPrint.length - 1];
+              const coloIx = inPrint.indexOf(colo);
               const secChunks = html.split('<section class="print-sec');
-              const lineOk = html.includes('<p class="lp-edition">' + t("print.lpEdition") + "</p>") &&
+              let lineOk = html.includes('<p class="lp-edition">' + t("print.lpEdition") + "</p>") &&
                 html.includes('body { font-size: 18pt; }') && coloIx >= 0 &&
                 (secChunks[coloIx + 1] || "").includes('<p class="lp-edition">') &&
                 secChunks.every((c, i) => i === 0 || i === coloIx + 1 || !c.includes("lp-edition"));
+              const coloSec = state.sections.find((s) => s.type === "colophon");
+              if (coloSec) {
+                const keepColo = coloSec.content;
+                coloSec.content = "Set in a face cut for small sizes.";
+                const chunks2 = buildPrintHtml().split('<section class="print-sec');
+                const at2 = state.sections.filter((s) => inBook(s) && s.type !== "cover").indexOf(coloSec);
+                lineOk = lineOk && at2 >= 0 && (chunks2[at2 + 1] || "").includes('<p class="lp-edition">') && chunks2.slice(1).filter((c) => c.includes("lp-edition")).length === 1; /* chunk 0 is the stylesheet, which names the class */
+                coloSec.content = keepColo;
+              }
               pivEnsureStyle();
               const styleEl = $("pivBookStyle");
               const viewOk = !!styleEl && styleEl.textContent.includes("font-size: 18pt") && styleEl.textContent.includes("line-height: 1.6") && styleEl.textContent.includes(".piv-book { font-size: 18pt; }");
@@ -69830,12 +69851,18 @@
               const jumped = insertMatter("titlepage");
               const tpAfter = state.sections.filter((s) => s.type === "titlepage").length;
               const singletonOk = tpBefore === 1 && tpAfter === 1 && !!jumped && state.activeId === jumped.id;
-              /* Contents and EPUB navigation name the new pages. */
+              /* Contents and EPUB navigation name the new pages, once they have words. An empty page is not in the book
+                 (BEUK:starters): the check added three empty pages and looked for them in the contents, so it failed on
+                 a book that was set right (found 2026-11-22). Both halves are held now: empty, they are not named; with
+                 words, they are. */
+              const navEmpty = scText(epubFiles("generic"), "OEBPS/nav.xhtml");
+              const emptyOut = navEmpty.indexOf("Foreword") === -1 && navEmpty.indexOf("Preface") === -1 && navEmpty.indexOf("Call to Action") === -1;
+              fw.content = "A word before."; pf.content = "How this book came about."; cta.content = "Read the next one.";
               const tocSec = state.sections.find((s) => s.type === "toc");
               const tocHtml = tocSec ? frontBackHtml(tocSec, false, false) : "";
               const files = epubFiles("generic");
               const nav = scText(files, "OEBPS/nav.xhtml");
-              const reflectOk = tocHtml.indexOf("Foreword") !== -1 && tocHtml.indexOf("Call to Action") !== -1 &&
+              const reflectOk = emptyOut && tocHtml.indexOf("Foreword") !== -1 && tocHtml.indexOf("Call to Action") !== -1 &&
                 nav.indexOf("Foreword") !== -1 && nav.indexOf("Preface") !== -1 && nav.indexOf("Call to Action") !== -1;
               return scVerdict(tiersOk && orderOk && editableOk && singletonOk && reflectOk,
                 "tiers/types ok (" + tiersOk + "), canonical order ok (" + orderOk + "), foreword opens in the text editor (" + editableOk + "), singleton title page jumped not duplicated (" + singletonOk + "), contents + nav reflect insertions (" + reflectOk + ")");
@@ -70821,7 +70848,7 @@
               const stats = Array.prototype.map.call(body.querySelectorAll(".ir-stat b"), (b) => b.textContent).join(",");
               const rows = Array.prototype.map.call(body.querySelectorAll(".ir-row"), (r) => r.querySelector(".ir-rn").textContent + ":" + r.querySelector(".ir-rt").firstChild.textContent + ":" + (r.querySelector(".ir-rt em") ? r.querySelector(".ir-rt em").textContent : "")).join(" | ");
               const cardOk = m.classList.contains("open") && box.classList.contains("ir-card-view") && stats === "2,2,1" && rows === "1:The Harbour:" + t("ir.card.sectionsIn", { n: 2 }) + " | 2:The Crossing:" &&
-                /Acknowledgments/.test(body.querySelector(".ir-pages") ? body.querySelector(".ir-pages").textContent : "") && body.querySelectorAll(".ir-didline").length === 3 && body.querySelectorAll(".ir-didline")[2].textContent.indexOf(t("ir.card.didAsGiven", { button: t("tool.autoFormat") })) !== -1 && !body.querySelector(".ir-didline.warn") && /* BEUK:asgiven — the third line: the text is as the file gave it */
+                /Acknowledgments/.test(body.querySelector(".ir-pages") ? body.querySelector(".ir-pages").textContent : "") && body.querySelectorAll(".ir-didline").length === 3 /* BEUK:asgiven — the card also says the text is as the file gave it */ && body.textContent.indexOf(t("ir.card.didAsGiven").split("{button}")[0]) !== -1 && !body.querySelector(".ir-didline.warn") &&
                 shown("btnIrOpenBook") && shown("btnIrEvery") && !shown("btnIrKeep") && getComputedStyle(body.querySelector(".ir-list")).display === "none";
               $("btnIrEvery").click();
               const listOk = !box.classList.contains("ir-card-view") && getComputedStyle(body.querySelector(".ir-list")).display !== "none" && body.querySelectorAll(".ir-list .ir-item").length === state.importReport.items.length && shown("btnIrKeep") && !shown("btnIrOpenBook");
@@ -76500,8 +76527,11 @@
               need.forEach((n) => { if (n[0].indexOf(n[1]) === -1) bad.push("missing: " + n[1].slice(0, 50)); });
               const all = state.sections.map((s) => s.content || "").join("\n");
               if (/FIXTURE|F I X T U R E|^\s*[123]\s*$/m.test(all)) bad.push("a running head or page number reached the text");
-              if (!tbl || tbl.group !== "notes" || !tbl.data.kept || irBlocks(all).map((b) => b.trim()).indexOf("Low | 0.4 m") === -1) bad.push("the table's words are not in the book as plain rows");
               const heads = items.find((i) => i.kind === "pdfHeads"), tbl = items.find((i) => i.kind === "table"), img = items.find((i) => i.kind === "image");
+              /* this line stood above the one that declares `tbl` from 2026-11-20 (e0927ac) to 2026-11-22: the check threw before it tested anything */
+              /* since tables come in as tables (2026-11-21) the report names the block it set: that block stands in the book, its rows whole */
+              if (!tbl || tbl.group !== "notes" || !tbl.data.kept || (tbl.data.lines || []).indexOf("Low | 0.4 m") === -1 ||
+                (tbl.data.fence ? all.indexOf(tbl.data.block) === -1 || tbl.data.block.indexOf("| Low | 0.4 m |") === -1 : irBlocks(all).map((b) => b.trim()).indexOf("Low | 0.4 m") === -1)) bad.push("the table's words are not in the book where the report says they are");
               if (!heads || heads.data.n !== 3) bad.push("running heads reported on " + (heads ? heads.data.n : 0) + " pages, not 3");
               if (!tbl || tbl.data.rows.length !== 3 || tbl.data.rows[1].join("|") !== "Low|0.4 m") bad.push("table not reported as 3 rows");
               const im = img && state.images.find((x) => x.id === img.data.imgId);
