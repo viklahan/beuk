@@ -2527,6 +2527,7 @@
       .ir-vcalm .ir-mark { margin-top: 2px; }
       .ir-vnote { margin: 0; font-size: 13px; color: var(--muted); }
       .ir-vact { display: flex; flex-wrap: wrap; gap: 10px; }
+      .ir-vact .ir-btn { min-height: 44px; padding: 0 20px; font-size: 15px; font-weight: 600; }
       .ir-diffgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 70px; gap: 8px 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 15px; color: var(--ink); }
       .ir-dh { font-size: 13px; color: var(--muted); }
       .ir-dc { font-family: Georgia, "Times New Roman", serif; overflow-wrap: anywhere; }
@@ -2558,7 +2559,7 @@
       .ir-link { font: inherit; font-size: 14px; color: var(--muted); background: none; border: 0; padding: 12px 0; min-height: 44px; text-decoration: underline; cursor: pointer; }
       .ir-link:disabled { opacity: .6; cursor: default; }
       .ir-head .ir-link { font-size: 14.5px; color: var(--accent); padding: 0; min-height: 0; }
-      .ir-modal .ir-actions { align-items: center; flex-wrap: wrap; gap: 10px 16px; margin-top: 26px; }
+      .ir-modal .ir-actions { align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
       .ir-modal:not(.ir-card-view) .ir-actions { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 18px; }
       .ir-space { flex: 1 1 auto; }
       .ir-actions .ir-btn { min-height: 44px; padding: 0 20px; font-size: 15px; font-weight: 600; }
@@ -2571,6 +2572,7 @@
       .ir-chip { display: inline-flex; align-items: center; min-height: 36px; border: 1px solid var(--line-2); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--ink); background: var(--panel); text-decoration: none; }
       .ir-chip:hover { border-color: var(--accent); }
       .ir-chip span { font-family: var(--mono-font); font-size: 12.5px; color: var(--muted); margin-inline-start: 8px; }
+      .ir-chip.aside span { color: var(--gold-ink); }
       .ir-clean { font-size: 14px; color: var(--ink-2); margin: 0; line-height: 1.5; }
       .ir-warn-line { font-size: 14px; color: var(--bad); margin: 8px 0 0; line-height: 1.5; }
       .ir-part { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 14px; }
@@ -46489,7 +46491,7 @@
         part("filed", t("ir.acc.c.filed"), "", t("ir.acc.h.filed"), by.filed.length ? irFiledHtml(rep, by.filed, open) : "");
         part("notes", t("ir.acc.h.notes"), fmtNum(by.notes.length), t("ir.acc.h.notes"), by.notes.length ? '<div class="ir-table">' + irFold("notes", by.notes.map((it) => irItemRow(it)), open) + "</div>" : "");
         part("book", t("ir.acc.c.book"), fmtNum(by.book.length), t("ir.acc.h.book"), by.book.length ? irBookHtml(rep, by.book, open) : "");
-        let html = '<div class="ir-chips">' + parts.map((p) => '<a class="ir-chip" href="#ir-g-' + p.id + '">' + esc(p.chip) + (p.chipN ? " <span>" + esc(p.chipN) + "</span>" : "") + "</a>").join("") + "</div>";
+        let html = '<div class="ir-chips">' + parts.map((p) => '<a class="ir-chip' + (p.id === "aside" ? " aside" : "") + '" href="#ir-g-' + p.id + '">' + esc(p.chip) + (p.chipN ? " <span>" + esc(p.chipN) + "</span>" : "") + "</a>").join("") + "</div>";
         if (!rep.items.some((it) => it.group === "dropped")) html += '<p class="ir-clean">' + esc(t("ir.noneDropped", { list: rep.checked.map((c) => t("ir.c." + c)).join(", ") })) + "</p>";
         if (rep.format === "docx" && !rep.scanOk) html += '<p class="ir-warn-line">' + esc(t("ir.scanFailed")) + "</p>";
         parts.forEach((p) => { html += '<div class="ir-part" id="ir-g-' + p.id + '"><h3 class="ir-ph">' + esc(p.head) + "</h3>" + p.body + "</div>"; });
