@@ -52199,9 +52199,16 @@
           if (vol.cover) plan.push({ volIdx: vi, volume: vol, kind: "cover", file: "Text/" + vp + "-cover.xhtml", id: "sec-" + vp + "-cover", label: "Cover" });
           plan.push({ volIdx: vi, volume: vol, kind: "titlepage", file: "Text/" + vp + "-titlepage.xhtml", id: "sec-" + vp + "-titlepage", label: "Title Page" });
           let chN = 0;
+          const usedFiles = {};
           (vol.sections || []).filter(inBook).forEach((s) => {
             if (["cover", "titlepage", "toc", "halftitle"].includes(s.type)) return;
-            const file = s.type === "chapter" ? "Text/" + vp + "-chapter_" + String(++chN).padStart(2, "0") + ".xhtml" : "Text/" + vp + "-" + s.type + ".xhtml";
+            let file = s.type === "chapter" ? "Text/" + vp + "-chapter_" + String(++chN).padStart(2, "0") + ".xhtml" : "Text/" + vp + "-" + s.type + ".xhtml";
+            /* Two pieces of one type in a volume (three Parts, two appendices) each get their own file, as a single book's
+               plan gives them (epubPlan): the type names the first, a counter the rest. Without it they shared one path
+               and one manifest id: an invalid package, and one page written over another (found 2026-11-22 by the page's
+               own check boxset.volumes.whole-books, run with the sample book, which has three Parts, on the desk). */
+            if (usedFiles[file]) file = file.replace(/\.xhtml$/, "_" + (++usedFiles[file]) + ".xhtml");
+            else usedFiles[file] = 1;
             plan.push({ volIdx: vi, volume: vol, kind: "section", section: s, file, id: "sec-" + file.replace("Text/", "").replace(/\.xhtml$/, ""), label: sectionLabel(s) });
           });
         });
@@ -64372,7 +64379,7 @@
               if (bt.indexOf("\n    the tide is full\n") === -1) bad.push("the beautifier folded the indent: " + JSON.stringify(bt));
               const s = mkSection("body", "chapter", "Verse", { number: "1", content: src, dropCap: true });
               const html = contentBlocksToHtml(s.content, s, true, true, true);
-              const want = '<div class="verse"><p class="stanza"><span class="vl">The <em>sea</em> is calm tonight,</span><br/><span class="vl">' + NB.repeat(4) + 'the tide is full</span><br/><span class="vl">—and the moon</span></p><p class="stanza"><span class="vl">A second stanza</span></p></div>';
+              const want = '<div class="verse"><p class="stanza"><span class="vl">The <em>sea</em> is calm tonight,</span><br/><span class="vl">' + NB.repeat(4) + 'the tide is full</span><br/><span class="vl">--and the moon</span></p><p class="stanza"><span class="vl">A second stanza</span></p></div>';
               if (html.indexOf(want) !== 0) bad.push("the verse did not set: " + JSON.stringify(html.slice(0, 400)));
               if (!/<p class="first[^"]*">/.test(html.slice(want.length))) bad.push("the prose after the verse is not the opening paragraph");
               const css = buildBookCss("");
@@ -64496,7 +64503,7 @@
               const want = '<div class="texts"><p class="tx-meta">Tuesday, 9:41 pm</p>' +
                 '<div class="tx tx-sent tx-first"><p class="tx-who">Ana</p><p class="tx-b">are you up?</p></div>' +
                 '<div class="tx tx-sent"><p class="tx-b">the <em>lights</em> are on</p></div>' +
-                '<div class="tx tx-recv tx-first"><p class="tx-who">Ben</p><p class="tx-b">no — asleep</p></div>' +
+                '<div class="tx tx-recv tx-first"><p class="tx-who">Ben</p><p class="tx-b">no -- asleep</p></div>' +
                 '<div class="tx tx-recv tx-gap"><p class="tx-b">go home</p></div></div>';
               if (!html.includes(want)) bad.push("the texts did not set: " + JSON.stringify(html));
               if (/:::|texts Ana/.test(html)) bad.push("a fence line reached the page");
@@ -64966,7 +64973,7 @@
               const src = "Before.\n\n::: transcript\nDET. RUIZ: Where were you on the night of the -- ninth?\nHALE: At home.\n[The witness looks at his hands.]\n\nRUIZ: Alone?\nHALE: With my *sister*.\n10:42 pm, she left.\n:::\n\nAfter.";
               const s = mkSection("body", "chapter", "Transcript", { number: "1", content: src });
               const html = contentBlocksToHtml(s.content, s, false, true, true);
-              const want = '<div class="transcript"><p class="tr-turn"><span class="tr-who">DET. RUIZ:</span> Where were you on the night of the — ninth?</p>' +
+              const want = '<div class="transcript"><p class="tr-turn"><span class="tr-who">DET. RUIZ:</span> Where were you on the night of the -- ninth?</p>' +
                 '<p class="tr-turn"><span class="tr-who">HALE:</span> At home.</p><p class="tr-dir">[The witness looks at his hands.]</p>' +
                 '<p class="tr-turn tr-gap"><span class="tr-who">RUIZ:</span> Alone?</p><p class="tr-turn"><span class="tr-who">HALE:</span> With my <em>sister</em>.<br/>10:42 pm, she left.</p></div>';
               if (!html.includes(want)) bad.push("the transcript did not set: " + JSON.stringify(html));
@@ -70588,7 +70595,7 @@
               const stats = Array.prototype.map.call(body.querySelectorAll(".ir-stat b"), (b) => b.textContent).join(",");
               const rows = Array.prototype.map.call(body.querySelectorAll(".ir-row"), (r) => r.querySelector(".ir-rn").textContent + ":" + r.querySelector(".ir-rt").firstChild.textContent + ":" + (r.querySelector(".ir-rt em") ? r.querySelector(".ir-rt em").textContent : "")).join(" | ");
               const cardOk = m.classList.contains("open") && box.classList.contains("ir-card-view") && stats === "2,2,1" && rows === "1:The Harbour:" + t("ir.card.sectionsIn", { n: 2 }) + " | 2:The Crossing:" &&
-                /Acknowledgments/.test(body.querySelector(".ir-pages") ? body.querySelector(".ir-pages").textContent : "") && body.querySelectorAll(".ir-didline").length === 2 && !body.querySelector(".ir-didline.warn") &&
+                /Acknowledgments/.test(body.querySelector(".ir-pages") ? body.querySelector(".ir-pages").textContent : "") && body.querySelectorAll(".ir-didline").length === 3 /* BEUK:asgiven — the card also says the text is as the file gave it */ && body.textContent.indexOf(t("ir.card.didAsGiven").split("{button}")[0]) !== -1 && !body.querySelector(".ir-didline.warn") &&
                 shown("btnIrOpenBook") && shown("btnIrEvery") && !shown("btnIrKeep") && getComputedStyle(body.querySelector(".ir-list")).display === "none";
               $("btnIrEvery").click();
               const listOk = !box.classList.contains("ir-card-view") && getComputedStyle(body.querySelector(".ir-list")).display !== "none" && body.querySelectorAll(".ir-list .ir-item").length === state.importReport.items.length && shown("btnIrKeep") && !shown("btnIrOpenBook");
@@ -76267,8 +76274,11 @@
               need.forEach((n) => { if (n[0].indexOf(n[1]) === -1) bad.push("missing: " + n[1].slice(0, 50)); });
               const all = state.sections.map((s) => s.content || "").join("\n");
               if (/FIXTURE|F I X T U R E|^\s*[123]\s*$/m.test(all)) bad.push("a running head or page number reached the text");
-              if (!tbl || tbl.group !== "notes" || !tbl.data.kept || irBlocks(all).map((b) => b.trim()).indexOf("Low | 0.4 m") === -1) bad.push("the table's words are not in the book as plain rows");
               const heads = items.find((i) => i.kind === "pdfHeads"), tbl = items.find((i) => i.kind === "table"), img = items.find((i) => i.kind === "image");
+              /* this line stood above the one that declares `tbl` from 2026-11-20 (e0927ac) to 2026-11-22: the check threw before it tested anything */
+              /* since tables come in as tables (2026-11-21) the report names the block it set: that block stands in the book, its rows whole */
+              if (!tbl || tbl.group !== "notes" || !tbl.data.kept || (tbl.data.lines || []).indexOf("Low | 0.4 m") === -1 ||
+                (tbl.data.fence ? all.indexOf(tbl.data.block) === -1 || tbl.data.block.indexOf("| Low | 0.4 m |") === -1 : irBlocks(all).map((b) => b.trim()).indexOf("Low | 0.4 m") === -1)) bad.push("the table's words are not in the book where the report says they are");
               if (!heads || heads.data.n !== 3) bad.push("running heads reported on " + (heads ? heads.data.n : 0) + " pages, not 3");
               if (!tbl || tbl.data.rows.length !== 3 || tbl.data.rows[1].join("|") !== "Low|0.4 m") bad.push("table not reported as 3 rows");
               const im = img && state.images.find((x) => x.id === img.data.imgId);
