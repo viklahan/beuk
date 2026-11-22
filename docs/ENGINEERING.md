@@ -5291,7 +5291,13 @@ import).
   hyphen the page sets apart with a space before it, nor a next line that
   opens on a dash, a minus sign, a quotation mark or a bracket: those two
   lines are closed with a space, as lines are. (An em or en dash straight
-  after a letter closes up to the next line, as it did.)
+  after a letter closes up to the next line, as it did.) A book set with
+  hyphenation leaves many words for the writer (a 75,000-word novel set
+  with the browser's hyphenation left 82 of its 828 line-end hyphens,
+  measured 2026-11-22), so the import card
+  states how many are still as the import left them (`ir.card.didHyphens`,
+  with a button that opens the list at them, their group opened), and the
+  "Join all of these" line is listed before the words it joins.
 - **Headings.** A line set clearly larger than the body type (×1.22), a
   short bold line standing alone, or a "Chapter …" label over a larger
   title, merged into one `# Chapter One: Title` heading. A contents page is

@@ -114,7 +114,7 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     g.pdfjsLib = await import(/* @vite-ignore */ pathToFileURL(path.join(VENDOR, 'pdf.min.mjs')).href);
     const epub = readFileSync(path.join(import.meta.dirname, '..', '..', 'src', 'book', 'epub', 'closure.ts'), 'utf8');
     const stubs = ORACLE_STUBS.filter((n) => !['applySampleBookSync', 'irOpenReport', 'bibleBookArrived', 'markWritingActivity', 'noteBookEdited', 'pdfLoadLib'].includes(n));
-    const out = await buildTestModule(HTML, epub, { roots: ['applyBookDoc', 'buildEmptyBook', 'snapshotBookDoc', 'readImportFile', 'pdfExtract', 'importPdfExtracted', 'irTallyPdf', 'irTallyWrite', 'irRenderReport', 'irTallyHtmlOf', 'irUndoItem', 'serializeBook'], supplied: [...new Set([...stubs, 'pdfLoadLib', 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf'])], what: 'import-pdf-hyphens', fileReaders: ['bulkFileToData', 'samplePicB64'], prefix: 'IMPORT_PDF_HYPHENS', fn: 'createImportPdfHyphens', title: "1.0's PDF import, a hyphen at a line's end (tests only)" });
+    const out = await buildTestModule(HTML, epub, { roots: ['applyBookDoc', 'buildEmptyBook', 'snapshotBookDoc', 'readImportFile', 'pdfExtract', 'importPdfExtracted', 'irTallyPdf', 'irTallyWrite', 'irRenderReport', 'irTallyHtmlOf', 'irUndoItem', 'serializeBook', 'initImportReport'], supplied: [...new Set([...stubs, 'pdfLoadLib', 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf'])], what: 'import-pdf-hyphens', fileReaders: ['bulkFileToData', 'samplePicB64'], prefix: 'IMPORT_PDF_HYPHENS', fn: 'createImportPdfHyphens', title: "1.0's PDF import, a hyphen at a line's end (tests only)" });
     const code = (out.code as string).replace(/^export (const|function) /gm, '$1 ') + '\nreturn createImportPdfHyphens(env);';
     make = (e: Rec) => new Function('env', code)(e) as { api: Api };
   }, 180_000);
@@ -369,5 +369,51 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     const dash = await importPdf(book(['The clerk kept the code and wrote down one-', '- time, he said, and no other - in the ledger.'], ['The pans lay white under the sun.']));
     expect(dash.all).toContain('wrote down one- - time, he said');
     expect({ joins: dash.tally.pdf.joins, asks: dash.asks.length }).toEqual({ joins: {}, asks: 0 });
+  }, 120_000);
+
+  /* A long list stays usable. A book set with hyphenation leaves many words for the writer (measured: a 75,000-word
+     novel set justified with the browser's own hyphenation left 82 of its 828 line-end hyphens), and the report opens
+     on the card, with a group of more than six lines shut: so the card states the number plainly and its button goes
+     to the words, and the line that joins them all stands before them, not after the last. */
+  const cardSaid = (g: Got) => { g.api.irRenderReport(); return (document.querySelector('.ir-card')!.textContent || '').replace(/\s+/g, ' '); };
+  const MANY = ['The clerk kept in one chest the salt-', 'pan ledger and beside it the cart-', 'wheel tally and under them the day-', 'book of the old customs-', 'house and the plans of the rope-',
+    'walk and the deeds of the tide-', 'mill and a receipt for lamp-', 'oil and the keys of the gate-', 'house on their iron ring'];
+
+  it('the card states how many words are left for the writer, many or one, and no longer counts a word the writer has joined; a PDF that leaves none says nothing of it', async () => {
+    const two = await importPdf(book([...BROKEN, 'The clerk wrote it in the day-', 'book before the lamp went out.'], ['The pans lay white under the sun.']));
+    expect(cardSaid(two)).toContain('2 words end a line of the PDF on a hyphen its text does not settle. Your book keeps each as the page shows it, and they are listed for you to look at. See the words');
+    expect(two.api.irUndoItem(two.asks[0].id)).toMatchObject({ ok: true });
+    expect(cardSaid(two)).toContain('1 word ends a line of the PDF on a hyphen its text does not settle. Your book keeps it as the page shows it, and it is listed for you to look at. See the words');
+    expect(two.api.irUndoItem(two.asks[1].id)).toMatchObject({ ok: true });
+    expect(cardSaid(two)).not.toContain('a line of the PDF on a hyphen');
+    const none = await importPdf(book(['The clerk kept the code and the one-', 'time pad lay beside the ledger.'], ['A one-time code was set that night.']));
+    expect(cardSaid(none)).not.toContain('a line of the PDF on a hyphen');
+  }, 120_000);
+
+  it('eight words left: "Join all of these" stands before the words it joins and says their number; the card\'s button opens the list at it, the shut group opened; and it joins every one', async () => {
+    const g = await importPdf(book(MANY, ['The pans lay white under the sun.']));
+    const words = ['salt-pan', 'cart-wheel', 'day-book', 'customs-house', 'rope-walk', 'tide-mill', 'lamp-oil', 'gate-house'];
+    expect(g.asks.map((it) => [it.data.kept, it.data.n])).toEqual(words.map((w) => [w, 1]));
+    expect(g.items.filter((it) => /^pdfHyphenAsk/.test(it.kind)).map((it) => it.kind), 'the line that joins them all comes first').toEqual(['pdfHyphenAskAll', ...words.map(() => 'pdfHyphenAsk')]);
+    const every = g.items.find((it) => it.kind === 'pdfHyphenAskAll')!;
+    expect(every.data).toEqual({ n: 8 });
+    expect(cardSaid(g)).toContain('8 words end a line of the PDF on a hyphen its text does not settle.');
+    g.api.initImportReport();
+    g.api.irRenderReport();
+    const modal = () => document.querySelector('.ir-modal')!;
+    const group = () => document.getElementById('ir-g-structure') as HTMLDetailsElement;
+    const row = (id: string) => Array.from(document.querySelectorAll('#irBody [data-irid]')).find((r) => r.getAttribute('data-irid') === id) as HTMLElement;
+    expect(modal().classList.contains('ir-card-view'), 'the report opens on the card').toBe(true);
+    expect(group().open, 'a group of more than six lines opens shut').toBe(false);
+    (document.querySelector('.ir-card [data-irhyph]') as HTMLElement).click();
+    expect(modal().classList.contains('ir-card-view'), 'the button goes to the list').toBe(false);
+    expect(group().open, 'and opens the group the words are in').toBe(true);
+    expect((row(every.id).textContent || '').replace(/\s+/g, ' ')).toContain('Words that end a line of the PDF on a hyphen its text does not settle: 8. Each is listed here, kept as the page shows it.');
+    expect(row(every.id).compareDocumentPosition(row(g.asks[0].id)) & 4, 'it stands before the first word (4: the word follows it)').toBe(4);
+    (row(every.id).querySelector('[data-irundo]') as HTMLElement).click();
+    const all = textOf(g.api);
+    for (const w of words) { expect(all).toContain(w.replace('-', '')); expect(all).not.toContain(w); }
+    expect(g.asks.map((it) => it.state)).toEqual(words.map(() => 'undone'));
+    expect(cardSaid(g)).not.toContain('a line of the PDF on a hyphen');
   }, 120_000);
 });
