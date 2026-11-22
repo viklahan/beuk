@@ -43935,16 +43935,25 @@
           if (d) { if (!d.n) d.n = ++seq; r.n = d.n; }
           else { if (!lone.has(r.label)) lone.set(r.label, ++seq); r.n = lone.get(r.label); }
         });
-        defs.forEach((d) => { if (!d.n) d.n = ++seq; });
+        /* BEUK:notesstood (V, 2026-11-22) — a definition no reference points to is given no number and is not lifted
+           away: it stays where the file wrote it. Its place is held by a block of its own (irSent "NOTE", the note's
+           index in ir.docNotes), and irFinish sets its text there as a paragraph of that section. (Before, it was
+           numbered after every other note, found no section holding that number, and was set at the end of the last
+           chapter as "[110] …".) */
+        const linked = defs.filter((d) => d.n), stood = defs.filter((d) => !d.n);
+        const stoodAt = new Map();
+        stood.forEach((d, k) => stoodAt.set(d.from, linked.length + k));
         const queue = refs.slice();
         fence = false;
         const out = lines.map((line, i) => {
+          if (stoodAt.has(i)) return "\n" + irSent("NOTE", stoodAt.get(i)) + "\n";
           if (taken.has(i)) return "";
           if (/^\s*(```|~~~)/.test(line)) { fence = !fence; return line; }
           if (fence) return line;
           return line.replace(REF(), () => "[^" + queue.shift().n + "]");
         });
-        ir.docNotes = defs.map((d) => ({ id: "md-note-" + d.n, n: String(d.n), text: d.text }));
+        ir.docNotes = linked.map((d) => ({ id: "md-note-" + d.n, n: String(d.n), text: d.text }))
+          .concat(stood.map((d) => ({ id: "md-note-" + d.label, n: "", label: d.label, text: d.text, stood: true, secId: null })));
         ir.refCount = refs.length;
         ir.notesLifted = true;
         return out.join("\n");
@@ -45005,6 +45014,7 @@
             const n = Number(m[2]);
             if (m[1] === "SB" && ir.breaks[n]) { ir.breaks[n].secId = s.id; marks.push({ rec: ir.breaks[n], at: out.length }); out.push("***"); }
             else if (m[1] === "SUB" && ir.subs && ir.subs[n] != null) out.push("# " + ir.subs[n]); /* BEUK:wordback */
+            else if (m[1] === "NOTE" && ir.docNotes[n] && ir.docNotes[n].stood) { ir.docNotes[n].secId = s.id; out.push(ir.docNotes[n].plain); } /* BEUK:notesstood — an unmarked note's text, where its definition stood */
             else if (m[1] === "SUBT" && ir.subtitles && ir.subtitles[n] != null) { if (!s.subtitle) s.subtitle = ir.subtitles[n]; }
             else if (m[1] === "IMG" && ir.images[n]) {
               const rec = ir.images[n];
@@ -45021,7 +45031,9 @@
           s.content = out.filter((b, i) => b.trim() || i === 0).join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
         });
         const resolveText = (str) => String(str || "").replace(/SB\d+/g, "***").replace(/SUB(\d+)/g, (m, n) => (ir.subs && ir.subs[n] != null ? "# " + ir.subs[n] : "")).replace(/TBL(\d+)/g, (m, n) => (ir.tables[n] && ir.tables[n].blocks ? ir.tables[n].blocks.join("\n\n") : "")).replace(/\n?[A-Z]+\d+\n?/g, "");
-        (pieces || []).forEach((p) => { if (p._placed) p._placed.content = resolveText(p._placed.content); });
+        /* BEUK:notesstood — and in the record of what each piece placed (the report's undo matches the page by it) */
+        const resolveStood = (str) => String(str || "").replace(new RegExp(irSent("NOTE", "(\\d+)"), "g"), (m0, k) => (ir.docNotes[k] && ir.docNotes[k].stood ? ir.docNotes[k].plain : m0));
+        (pieces || []).forEach((p) => { if (p._placed) p._placed.content = resolveText(resolveStood(p._placed.content)); });
         const importIds = new Set();
         (pieces || []).forEach((p) => { if (p._placed) importIds.add(p._placed.id); });
         const importSecs = state.sections.filter((s) => importIds.has(s.id));
@@ -45029,6 +45041,15 @@
         /* 2. Footnotes: each note joins the section holding its reference. */
         const noteStats = { found: ir.docNotes.length, refs: ir.refCount, mapped: 0, orphanNotes: [], orphanRefs: [] };
         ir.docNotes.forEach((nt) => {
+          /* BEUK:notesstood — a note the file never marks is in the book already, where its definition stood (step 1),
+             under no number: the report names it by the writer's own label and that section. Where its place was not
+             in any section's text (the import set that block aside), it is kept at the end of the last section rather
+             than lost, still under no number. */
+          if (nt.stood) {
+            if (!nt.secId) { const end = bodySecs[bodySecs.length - 1] || importSecs[importSecs.length - 1]; if (end) { end.content = String(end.content || "").trim() + "\n\n" + nt.plain; nt.secId = end.id; } }
+            noteStats.orphanNotes.push({ n: nt.label, text: nt.plain, secId: nt.secId });
+            return;
+          }
           const re = nt.n ? new RegExp("\\[\\^" + nt.n + "\\](?!:)") : null;
           const host = re ? state.sections.find((s) => re.test(String(s.content || ""))) : null;
           if (host) {
