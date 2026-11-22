@@ -43949,7 +43949,11 @@
             const nt = notes[f[1]];
             if (!nt || nt.refd || !nt.text) return gone;
             ir.epubNoteOrphans.push({ n: nt.n || "?", text: nt.text, piece: p });
-            return "[" + (nt.n || "?") + "] " + nt.text;
+            /* BEUK:notesstood — a note nothing in the book marks, which has no number either, stands where its block stood as
+               a paragraph of its own text: it was written "[?] …", a "?" that is in no file (and one character more in the
+               book than in the file, by the tally's count). The report still names it "?", having no name of the file's
+               to give it. A note that has the number its lost reference gave it keeps that number as it did. */
+            return nt.n ? "[" + nt.n + "] " + nt.text : nt.text;
           });
           let body = lines.join("\n").split(gone).map((x, k, a) => (k === 0 ? x.replace(/\n+$/, "") : k === a.length - 1 ? x.replace(/^\n+/, "") : x.replace(/^\n+|\n+$/g, ""))).filter((x, k, a) => x !== "" || a.length === 1).join("\n\n");
           const defs = order.filter((k) => !notes[k].missing && notes[k].text).map((k) => "[^" + num.get(k) + "]: " + notes[k].text);
