@@ -40924,8 +40924,18 @@
            to the reference. Nothing else is one: a raised number that links nowhere stays a raised number.
            Each note leaves the page where it stood and comes back in the shape Mammoth gives a Word file's notes,
            numbered by Beuk in the order of first reference, so the Word walk links it. A reference the page calls
-           a note whose text cannot be found keeps its mark and is reported; a note no reference points at keeps
-           its text and is reported. */
+           a note whose text cannot be found keeps its mark and is reported.
+           BEUK:notesstood (V, 2026-11-22: "We do not change anything from what the writer gives us" — where the
+           words sit matters too) — a note no reference reaches is given no number and is not handed on after the
+           others: it stays where the page wrote it. Every note's block leaves a place-holder where it stood (a
+           <beuk-note>, which no reading of the page takes for words); once the references are numbered, the place
+           of a note that has no number is set as a paragraph of its text (<p data-ir-stood="what the page calls
+           it">), and the Word walk hands it on as a note that stood (irSent "NOTE"), which irFinish sets in the
+           section it stands in and reports by that name. (Before, it was handed on after every other note, found
+           no mark in any chapter, and was set at the end of the last chapter as "[?] …".) */
+        const NOTE_AT = String.fromCharCode(3), NOTE_TO = String.fromCharCode(4), RUN_AT = String.fromCharCode(5), RUN_MID = String.fromCharCode(6), RUN_TO = String.fromCharCode(7);
+        const notePlace = (el) => (el && el.nodeType === 1 && el.tagName.toLowerCase() === "beuk-note" ? Number(el.getAttribute("data-k")) : -1);
+        const noteToken = (k, tag, at) => NOTE_AT + k + (tag ? ";" + tag + ";" + at : "") + NOTE_TO;
         const idAt = new Map();
         doc.querySelectorAll("[id], a[name]").forEach((el) => { const k = el.getAttribute("id") || el.getAttribute("name"); if (k && !idAt.has(k)) idAt.set(k, el); });
         const tokens = (el, attr) => String((el && el.getAttribute && el.getAttribute(attr)) || "").toLowerCase().split(/\s+/).filter(Boolean);
@@ -40939,7 +40949,8 @@
         const noteBlock = (el) => { for (let n = el; n && n !== doc.body; n = n.parentElement) { const tg = n.tagName.toLowerCase(); if (NOTE_BLOCK.test(tg)) return n; if (/^(td|th|table|body)$/.test(tg)) return null; } return null; };
         const inBox = (el) => [el.parentElement, el.parentElement && el.parentElement.parentElement].some((p) => !!p && p !== doc.body && (typed(p, BOX_TYPE) || classed(p, BOX_CLASS)));
         const noteRecs = [], recOf = new Map(), noteAt = new Map();
-        const recFor = (el) => { let r = recOf.get(el); if (!r) { r = { el, mark: "", back: new Set(), html: null, n: 0 }; recOf.set(el, r); noteRecs.push(r); r.k = noteRecs.length - 1; } return r; };
+        /* BEUK:notesstood — refd: a reference of the page points at it; label: the number the page prints at its head, where the page sets one as a mark; shown: the number its list draws beside it; placed: its text was set where its block stood */
+        const recFor = (el) => { let r = recOf.get(el); if (!r) { r = { el, mark: "", back: new Set(), html: null, n: 0, refd: false, label: "", shown: "", placed: false }; recOf.set(el, r); noteRecs.push(r); r.k = noteRecs.length - 1; } return r; };
         Array.prototype.forEach.call(doc.body.querySelectorAll('a[href^="#"]'), (a) => {
           let frag = String(a.getAttribute("href") || "").slice(1);
           try { frag = decodeURIComponent(frag); } catch (e) { /* as written */ }
@@ -40963,12 +40974,13 @@
           if (taken) {
             const rec = recFor(block);
             if (!rec.mark) rec.mark = mark;
+            rec.refd = true;
             back.forEach((b) => rec.back.add(b));
             noteAt.set(a, rec);
-            irAside("noteMarks", mark);
+            if (!(a.closest && a.closest("nav"))) irAside("noteMarks", mark); /* a mark standing in a <nav> is set aside with the nav's own text (contents), once */
           } else if (said) {
             /* called a note, and no note text to be found: the mark stays, and the report says so */
-            const rec = { el: null, mark, back: new Set(), html: null, n: 0 };
+            const rec = { el: null, mark, back: new Set(), html: null, n: 0, refd: true, label: "", shown: "", placed: false };
             noteRecs.push(rec); rec.k = noteRecs.length - 1;
             noteAt.set(a, rec);
           }
@@ -41034,6 +41046,18 @@
           }
           return null;
         };
+        /* BEUK:notesstood — the number a list draws beside its item is nowhere in the page's text: it is read here, before
+           any note leaves its list (a plain numbered list only: one that counts down, in letters, or by an item's own
+           value is not worked out, and such a note is named by its id) */
+        noteRecs.forEach((rec) => {
+          const B = rec.el, L = B ? B.parentElement : null;
+          if (!B || !L || B.tagName.toLowerCase() !== "li" || L.tagName.toLowerCase() !== "ol") return;
+          if (L.hasAttribute("reversed") || (L.getAttribute("type") && L.getAttribute("type") !== "1")) return;
+          const lis = Array.prototype.filter.call(L.children, (k) => k.tagName.toLowerCase() === "li");
+          if (lis.some((k) => k.hasAttribute("value"))) return;
+          const from = parseInt(L.getAttribute("start") || "1", 10);
+          rec.shown = String((isNaN(from) ? 1 : from) + lis.indexOf(B));
+        });
         const emptied = new Set();
         noteRecs.forEach((rec) => {
           const B = rec.el;
@@ -41052,15 +41076,42 @@
             else lead.nodeValue = lead.nodeValue.replace(new RegExp("^\\s*(?:[\\[(]" + esc + "[\\])][.:]?|" + esc + "[.:)])\\s+"), "");
           }
           if (lead && leadWas !== lead.nodeValue) irAsideDelta("noteMarks", textWas, irTallyDomText(B, null));
+          /* BEUK:notesstood — a note no reference points at has no mark to tell its own number by. What the page itself
+             sets as a mark is one: a number (or * † ‡ § ¶) standing first and alone in a <sup> or in a link into the
+             page, with a space after it; and a typed "2. " / "[2] " / "2) " that the note's own id ends in (id="fn2").
+             That is the file's markup: it is set aside, counted with every note's number, and the report names the
+             note by it. Any other opening may be the note's own words, and stays. */
+          if (!rec.refd) {
+            const first = firstInk(B);
+            const opens = first ? flat(first.nodeValue) : "";
+            let top = null, set = false;
+            for (let n = first ? first.parentNode : null; n && n !== B && flat(n.textContent) === opens; n = n.parentNode) {
+              top = n;
+              if (n.tagName.toLowerCase() === "sup" || (n.tagName.toLowerCase() === "a" && /^#/.test(String(n.getAttribute("href") || "")))) set = true;
+            }
+            const alone = /^[\[(]?(\d{1,3}|[*†‡§¶])[\])]?[.:)]?$/.exec(opens);
+            const apart = !!top && (!top.nextSibling || top.nextSibling.nodeType !== 3 || /^\s/.test(top.nextSibling.nodeValue));
+            const tie = /(\d{1,3})$/.exec(String(B.getAttribute("id") || ""));
+            const typedNo = first ? /^\s*(?:[\[(](\d{1,3})[\])][.:]?|(\d{1,3})[.:)])(?:\s+|\s*$)/.exec(first.nodeValue) : null;
+            const was = irTallyDomText(B, null);
+            if (top && set && alone && apart) { top.parentNode.removeChild(top); rec.label = alone[1]; }
+            else if (tie && typedNo && Number(typedNo[1] || typedNo[2]) === Number(tie[1])) { first.nodeValue = first.nodeValue.slice(typedNo[0].length); rec.label = String(typedNo[1] || typedNo[2]); }
+            irAsideDelta("noteMarks", was, irTallyDomText(B, null));
+          }
           rec.html = trimBr(inline(B, { b: false, i: false })).trim();
           if (B.parentElement) emptied.add(B.parentElement);
-          B.parentNode.removeChild(B);
+          /* BEUK:notesstood — the note leaves; its place stays (a note a reference reaches needs none: its place-holder is dropped once the notes are numbered) */
+          const place = doc.createElement("beuk-note");
+          place.setAttribute("data-k", String(rec.k));
+          B.parentNode.replaceChild(place, B);
         });
         /* a notes list or section left with nothing in it goes too: its rule is no scene break */
         emptied.forEach((p) => {
           for (let n = p, hop = 0; n && n !== doc.body && n.parentNode && hop < 3; hop++) {
             const up = n.parentElement;
             if (/\S/.test(n.textContent || "") || n.querySelector("img")) break;
+            /* BEUK:notesstood — the places of its notes stay where the emptied list or section stood, in their order */
+            Array.prototype.slice.call(n.querySelectorAll("beuk-note")).forEach((place) => n.parentNode.insertBefore(place, n));
             n.parentNode.removeChild(n);
             n = up;
           }
@@ -41069,13 +41120,15 @@
            item left nested inside it (the walk sets every item as a line of its own, in order, and counts the nested
            ones) — never the item's words with its children's run into them, and no child said twice. A bullet the page
            draws itself (an aria-hidden glyph that opens the item) is the list's mark, not a word. */
-        const listHtml = (list) => {
+        const listHtml = (list, nested) => {
           const tag = list.tagName.toLowerCase();
           const items = [];
           Array.prototype.forEach.call(list.children, (li) => {
             const lt = li.tagName.toLowerCase();
+            /* BEUK:notesstood — the place of a note that stood among this list's items (a list inside an item has no place between blocks to give it) */
+            if (notePlace(li) >= 0) { if (!nested) items.push({ note: notePlace(li) }); return; }
             /* a list set straight inside a list (no item around it) belongs under the item before it */
-            if (lt === "ul" || lt === "ol") { const v = listHtml(li); if (v) { if (items.length) items[items.length - 1].sub += v; else items.push({ own: "", sub: v }); } return; }
+            if (lt === "ul" || lt === "ol") { const v = listHtml(li, true); if (v) { if (items.length) items[items.length - 1].sub += v; else items.push({ own: "", sub: v }); } return; }
             if (lt !== "li") return;
             let first = li.firstChild;
             while (first && first.nodeType !== 1 && !/\S/.test(first.textContent)) first = first.nextSibling;
@@ -41083,11 +41136,20 @@
             const subs = [];
             if (glyph) irAsideDelta("listMarks", irTallyDomText(li, null), irTallyDomText(li, (n) => n === glyph)); /* BEUK:importtally — the drawn bullet is a character of the file: measured as it is left out */
             const own = trimBr(inline(li, { b: false, i: false, lists: subs, skip: glyph }));
-            items.push({ own: inked(own) ? own : "", sub: subs.map(listHtml).join("") });
+            items.push({ own: inked(own) ? own : "", sub: subs.map((s) => listHtml(s, true)).join("") });
           });
-          const lis = items.filter((it) => it.own || it.sub).map((it) => "<li>" + it.own + it.sub + "</li>");
           const start = tag === "ol" ? parseInt(list.getAttribute("start") || "", 10) : NaN;
-          return lis.length ? "<" + tag + (start > 1 ? ' start="' + start + '"' : "") + ">" + lis.join("") + "</" + tag + ">" : "";
+          /* BEUK:notesstood — a note's place between two items carries what the list must open again with after it (its
+             tag, and the number its next item is: the list's numbers run on as they would have with the note gone) */
+          let lis = "", count = 0;
+          items.forEach((it) => {
+            if (it.note != null) { lis += noteToken(it.note, tag, tag === "ol" ? (start > 1 ? start : 1) + count : 1); return; }
+            if (!(it.own || it.sub)) return;
+            lis += "<li>" + it.own + it.sub + "</li>";
+            count++;
+          });
+          if (!count) return items.filter((it) => it.note != null).map((it) => noteToken(it.note)).join("");
+          return "<" + tag + (start > 1 ? ' start="' + start + '"' : "") + ">" + lis + "</" + tag + ">";
         };
         /* BEUK:tablerows — a table as the plain <table> a Word file gives: its own rows and cells (a header cell is a
            cell), the columns or rows a cell is merged across handed on for the walk to keep its columns by, and a table
@@ -41112,10 +41174,11 @@
           const html = (inked(capText) ? "<caption>" + capText + "</caption>" : "") + (head.length ? "<thead>" + head.join("") + "</thead>" : "") + (body.length ? "<tbody>" + body.join("") + "</tbody>" : "");
           return { caption: "", table: head.length || body.length ? "<table>" + html + "</table>" : "" };
         };
-        const html = [];
+        const html = [], runFmt = [];
         const blocks = (parent) => {
           Array.prototype.forEach.call(parent.children, (c) => {
             const tag = c.tagName.toLowerCase();
+            if (notePlace(c) >= 0) { html.push(noteToken(notePlace(c))); return; } /* BEUK:notesstood — where a note's block stood, between the blocks around it */
             if (tag === "nav") irAside("contents", irTallyDomText(c, null));
             if (/^(script|style|head|title|meta|link|nav)$/.test(tag)) return;
             if (/^h[1-6]$/.test(tag)) { const v = trimBr(inline(c, { b: false, i: false, head: true })); if (inked(v)) html.push({ level: Number(tag.slice(1)), v }); return; }
@@ -41125,7 +41188,7 @@
               if (inked(v)) html.push("<p>" + v + "</p>");
               return;
             }
-            if (tag === "ul" || tag === "ol") { const v = listHtml(c); if (v) html.push(v); return; }
+            if (tag === "ul" || tag === "ol") { const v = listHtml(c, false); if (v) html.push(v); return; }
             if (tag === "table") {
               /* BEUK:tableimport — a table's caption goes with it, as the table block's caption */
               const tb = tableHtml(c, false);
@@ -41156,6 +41219,7 @@
             if (tag === "img") { const wrap = doc.createElement("span"); wrap.appendChild(c.cloneNode(true)); const v = inline(wrap, { b: false, i: false }); if (v) html.push("<p>" + v + "</p>"); return; }
             if (isRow(c)) {
               Array.prototype.forEach.call(c.childNodes, (k) => {
+                if (notePlace(k) >= 0) { blocks({ children: [k] }); return; } /* BEUK:notesstood */
                 if (!/\S/.test(k.textContent || "")) return;
                 if (k.nodeType === 1 && /^(p|div|h[1-6]|ul|ol|table|blockquote|section|article|hr|pre)$/i.test(k.tagName)) { blocks({ children: [k] }); return; }
                 const box = doc.createElement("span");
@@ -41168,6 +41232,16 @@
             }
             if (c.children.length && Array.prototype.some.call(c.children, (k) => /^(p|div|h[1-6]|ul|ol|table|blockquote|section|article|hr|pre)$/i.test(k.tagName))) { blocks(c); return; }
             const g = fmt(c, { b: false, i: false });
+            /* BEUK:notesstood — a box read as one paragraph, with a note's place among its own children: its words are
+               handed on in the runs the places part them into, and set as one paragraph or as several once it is known
+               which of those notes stay (a note a reference reaches leaves the paragraph whole, as before) */
+            if (Array.prototype.some.call(c.childNodes, (k) => notePlace(k) >= 0)) {
+              let run = [], runs = "";
+              Array.prototype.forEach.call(c.childNodes, (k) => { if (notePlace(k) < 0) { run.push(k); return; } runs += inline({ childNodes: run }, g) + noteToken(notePlace(k)); run = []; });
+              runFmt.push(g);
+              html.push(RUN_AT + (runFmt.length - 1) + RUN_MID + runs + inline({ childNodes: run }, g) + RUN_TO);
+              return;
+            }
             const v = docsWrapNew(trimBr(inline(c, g)), g, {});
             if (inked(v)) html.push("<p>" + v + "</p>");
           });
@@ -41179,14 +41253,40 @@
         /* Beuk numbers the notes itself, in the order their references stand */
         let seq = 0;
         const number = (h) => String(h).replace(/\u0001(\d+)\u0002/g, (m, k) => { const rec = noteRecs[Number(k)]; if (!rec) return ""; if (!rec.n) rec.n = ++seq; return docsNoteRef(rec.n); });
-        const out = number(pieces.join(""));
-        const lis = [], listed = new Set();
+        let out = number(pieces.join(""));
+        const lis = [], listed = new Set(), read = new Set();
         for (let more = true; more;) {
           more = false;
-          noteRecs.filter((r) => r.n && r.html != null && !listed.has(r)).sort((a, b) => a.n - b.n).forEach((r) => { listed.add(r); lis.push(docsNoteLi(r.n, number(r.html))); more = true; });
+          noteRecs.filter((r) => r.n && r.html != null && !listed.has(r)).sort((a, b) => a.n - b.n).forEach((r) => { listed.add(r); if (!read.has(r)) { read.add(r); r.html = number(r.html); } lis.push(docsNoteLi(r.n, r.html)); more = true; });
+          /* BEUK:notesstood — a note no reference has reached stays in the text, so a reference standing inside it is a reference of the text like any other */
+          if (!more) { const r = noteRecs.filter((x) => !x.n && x.html != null && !read.has(x))[0]; if (r) { read.add(r); r.html = number(r.html); more = true; } }
         }
-        /* a note no reference points at: its text is kept, and the walk reports it */
-        noteRecs.filter((r) => !r.n && r.html != null).forEach((r) => { r.n = ++seq; lis.push(docsNoteLi(r.n, number(r.html))); });
+        /* BEUK:notesstood — a note no reference reaches: Beuk gives it no number. It is set where its block stood, as
+           its text, named by what the page calls it: the number the page prints at its head or its reference shows,
+           else the number its list draws beside it, else its id ("?" where the page gives it none of these). A
+           place-holder of a note that was numbered is dropped. A note whose place the reading passed over (it stood
+           inside a list's item, a table's cell, a quotation or a heading, which are each read as one line) is kept at
+           the end of the text, still under no number. */
+        const stays = (k) => { const r = noteRecs[Number(k)]; return !!r && !r.n && r.html != null; };
+        const called = (r) => r.label || r.mark.replace(/^[\[(]+|[\])]+$/g, "") || r.shown || String(r.el.getAttribute("id") || "") || "?";
+        const stoodP = (k) => { const r = noteRecs[Number(k)]; r.placed = true; return '<p data-ir-stood="' + docsEsc(called(r)) + '">' + r.html + "</p>"; };
+        out = out.replace(new RegExp(RUN_AT + "(\\d+)" + RUN_MID + "([^" + RUN_TO + "]*)" + RUN_TO, "g"), (m, gi, inner) => {
+          const g = runFmt[Number(gi)];
+          let acc = "", res = "";
+          const flush = () => { const v = docsWrapNew(trimBr(acc), g, {}); acc = ""; if (inked(v)) res += "<p>" + v + "</p>"; };
+          inner.split(new RegExp("(" + NOTE_AT + "\\d+" + NOTE_TO + ")")).forEach((seg) => {
+            const at = new RegExp("^" + NOTE_AT + "(\\d+)" + NOTE_TO + "$").exec(seg);
+            if (!at) { acc += seg; return; }
+            if (stays(at[1])) { flush(); res += stoodP(at[1]); }
+          });
+          flush();
+          return res;
+        });
+        out = out.replace(new RegExp(NOTE_AT + "(\\d+)(?:;(ol|ul);(\\d+))?" + NOTE_TO, "g"), (m, k, tag, at) => {
+          if (!stays(k)) return "";
+          return tag ? "</" + tag + ">" + stoodP(k) + "<" + tag + (Number(at) > 1 ? ' start="' + at + '"' : "") + ">" : stoodP(k);
+        }).replace(/<(ol|ul)(?: start="\d+")?><\/\1>/g, "");
+        noteRecs.forEach((r) => { if (!r.n && r.html != null && !r.placed) out += stoodP(r.k); });
         const messages = [];
         if (counts.picturesLost) messages.push({ type: "warning", message: counts.picturesLost + " picture" + (counts.picturesLost === 1 ? " was" : "s were") + " left out: only JPG and PNG pictures that came with the page can be imported." });
         return { html: out + (lis.length ? "<ol>" + lis.join("") + "</ol>" : ""), messages, scan: { scanned: true, comments: 0, ins: 0, del: 0, textboxes: 0, headers: 0 },
@@ -44723,6 +44823,15 @@
           if (node.nodeType === 3) { flushAlign(); push(node.textContent); return; }
           if (node.nodeType !== 1) return;
           const tag = node.tagName.toLowerCase();
+          /* BEUK:notesstood — a web page's note that no reference reaches, standing where its block stood (htmlRead): it is
+             a note that stood, as a Markdown file's is (irMdNotes) — its place held by a block of its own, which irFinish
+             sets as a paragraph of the section it lands in, under no number, and reports by what the page calls it */
+          if (tag === "p" && node.hasAttribute("data-ir-stood")) {
+            flushAlign();
+            ir.docNotes.push({ id: "note-stood-" + ir.docNotes.length, n: "", label: node.getAttribute("data-ir-stood"), text: carry(irRunsToMd(irInlineRuns(node, ir), ir, false)), stood: true, secId: null });
+            parts.push(irSent("NOTE", ir.docNotes.length - 1));
+            return;
+          }
           if (tag === "p" && !node.querySelector("img")) {
             const v = node.textContent.replace(/\s+/g, " ").trim();
             const capRec = v && !alignRun ? captionFor(v) : null;
