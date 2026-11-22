@@ -3380,7 +3380,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.pictures.title-and-description',
     title:
-      "A picture's title and description are both kept, as 'title — description', from OpenDocument, RTF and Word, and the report says so",
+      "A picture's title and description are both kept as the file gave them, the title first and a space between (no dash of Beuk's), from OpenDocument, RTF and Word, and the report says so",
     kind: 'client-only',
     reason: 'The readers (BEUK:docsimport, BEUK:rtfimport, the Word import) run in the studio; the server never sees the file.',
   },
