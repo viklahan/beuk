@@ -10,6 +10,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { loadEpubClosure } from '../src/book/epub/closure.js';
+import { epubState } from '../src/book/epub/state.js';
+import { readBook } from '../src/book/read.js';
 import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -49,7 +52,9 @@ test('the contrast guard uses the WCAG thresholds: 3:1 for the accent (large tex
 test('every named accent passes 3:1 on white and on every named tint; every tint keeps black text at 4.5:1', () => {
   const accents = swatches('COLOUR_ACCENTS');
   const tints = swatches('COLOUR_TINTS');
-  assert.equal(accents.length, 10);
+  assert.equal(accents.length, 11);
+  // the Ramp's amber (Rain on Calder Street's drop cap and title ink), between Oxblood and Brass; Brass unchanged
+  assert.deepEqual(accents.slice(2, 5), [{ id: 'oxblood', hex: '#7a1f2b' }, { id: 'amber', hex: '#8a5a12' }, { id: 'brass', hex: '#8a6417' }]);
   assert.equal(tints.length, 4);
   for (const a of accents) for (const p of ['#ffffff', ...tints.map((x) => x.hex)]) assert.ok(contrast(a.hex, p) >= 3, `${a.id} ${a.hex} on ${p}: ${contrast(a.hex, p).toFixed(2)}`);
   for (const x of tints) assert.ok(contrast(x.hex, '#000000') >= 4.5, `${x.id} with black text`);
@@ -98,7 +103,7 @@ test('new studio strings exist in all 13 languages, with their placeholders, and
   const langs = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'ru', 'tr', 'ar', 'ja', 'zh-Hans'];
   const keys = ['fonts.displayGroup', 'df.fetchFail', 'colour.h', 'colour.sub', 'colour.accent', 'colour.none', 'colour.custom', 'colour.tint', 'colour.customTint',
     'colour.tintNote', 'colour.printNote', 'colour.refusedAccent', 'colour.refusedTint', 'colour.refusedTintAccent', 'colour.okAccent', 'colour.okTint', 'colour.cleared', 'colour.tintCleared',
-    ...['ember', 'tomato', 'oxblood', 'brass', 'paddy', 'seaglass', 'azure', 'ink', 'fig', 'slate'].map((k) => `colour.sw.${k}`),
+    ...['ember', 'tomato', 'oxblood', 'amber', 'brass', 'paddy', 'seaglass', 'azure', 'ink', 'fig', 'slate'].map((k) => `colour.sw.${k}`),
     ...['cream', 'sky', 'blush', 'sage'].map((k) => `colour.tw.${k}`)];
   const en: Record<string, string> = {};
   for (const lang of langs) {
@@ -151,10 +156,12 @@ test('on the studio dark surfaces the accent is lifted to 3:1; the grounds it me
 });
 
 test('print can set the accent in black ink; the panel says plainly what a coloured accent does in print', () => {
-  assert.ok(html.includes('if (accent && o.printBlack === true) out.printBlack = true;'));
+  // kept with an accent or a drop cap colour of its own (BEUK:dropcapcolour)
+  assert.ok(html.includes('if ((accent || dropCap) && o.printBlack === true) out.printBlack = true;'));
   const fn = /function printColourCss\(S\) \{([\s\S]*?)\n      \}/.exec(html)![1];
-  assert.ok(fn.includes('if (!c.accent || !c.printBlack) return "";'));
-  assert.ok(fn.includes('BOOK_ACCENT_TARGETS.map((x) => S + x).join(", ") + " { color: " + PRINT_INK + "; }'));
+  assert.ok(fn.includes('if (!c.printBlack) return "";'));
+  assert.ok(fn.includes('if (c.accent) return BOOK_ACCENT_TARGETS.map((x) => S + x).join(", ") + " { color: " + PRINT_INK + "; }'));
+  assert.ok(fn.includes('return c.dropCap ? S + ".dropcap { color: " + PRINT_INK + "; }\\n" : "";'));
   // the print interior: after the book CSS and the paper rule, before the solid tints
   const pr = /function buildPrintHtml\(\) \{([\s\S]*?)\n      \}/.exec(html)![1];
   const iBook = pr.indexOf('buildBookCss("")'), iBlack = pr.indexOf('printColourCss("")'), iPress = pr.indexOf('printPressCss()');
@@ -186,8 +193,61 @@ test('the review strings (print in black ink, dark screens) exist in all 13 lang
   }
 });
 
+// BEUK:dropcapcolour — the drop cap's own colour, through the server's EPUB
+// build (the studio's own code, lifted): a book that arrives with one keeps
+// it, with or without an accent; a refused or absent one leaves the CSS as it was.
+const lantern = () => JSON.parse(readFileSync(path.join(ROOT, 'tests', 'fixtures', 'books', 'real', 'lantern-coast-book-one.json'), 'utf8')) as Record<string, unknown>;
+async function blitzOf(book: Record<string, unknown>): Promise<string> {
+  const read = readBook(book);
+  assert.equal(read.status, 'ok');
+  const { files } = await loadEpubClosure(html, path.join(ROOT, 'client')).files(epubState(read.book, 'generic'), { lang: 'en' });
+  const f = files.find((x) => x.path === 'OEBPS/Styles/blitz.css');
+  assert.ok(f, 'blitz.css');
+  return f.content;
+}
+
+test('a drop cap colour of its own reaches the EPUB: alone (black titles), after the accent, and kept by readBook; refused or absent, the CSS is as it was', async () => {
+  const plain = await blitzOf(lantern());
+  assert.ok(!plain.includes('.dropcap { color: '));
+  const alone = lantern();
+  alone.colour = { accent: '', tint: '', dropCap: '#8a6417' };
+  assert.deepEqual(readBook(alone).book.colour, { accent: '', tint: '', dropCap: '#8a6417' }, 'readBook keeps the field');
+  const a = await blitzOf(alone);
+  assert.ok(a.includes('\n.dropcap { color: #8a6417; }'), 'the drop cap rule');
+  assert.ok(!/\.chapter-title[^{]*\{ color: /.test(a), 'the titles stay black');
+  const both = lantern();
+  both.colour = { accent: '#1f62a8', tint: '', dropCap: '#8a6417' };
+  const b = await blitzOf(both);
+  const iAcc = b.indexOf('.dropcap, .part-kicker'), iDrop = b.indexOf('\n.dropcap { color: #8a6417; }');
+  assert.ok(iAcc !== -1 && iDrop > iAcc, 'the drop cap rule comes after the accent rule');
+  // a gold too light for the page (1.40:1 on white) arrives refused: the stylesheet is the plain one
+  const pale = lantern();
+  pale.colour = { accent: '', tint: '', dropCap: '#ffd700' };
+  assert.equal(await blitzOf(pale), plain);
+});
+
+test('the drop cap colour strings exist in all 13 languages, with their placeholders, and no exclamation marks', () => {
+  const langs = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'ru', 'tr', 'ar', 'ja', 'zh-Hans'];
+  const keys = ['colour.dropCap', 'colour.dropCapSame', 'colour.customDropCap', 'colour.dropCapNote', 'colour.refusedDropCap', 'colour.refusedTintDropCap', 'colour.okDropCap',
+    'colour.dropCapCleared', 'colour.clearedKeepDropCap'];
+  let en: Record<string, string> = {};
+  for (const lang of langs) {
+    const target = lang === 'zh-Hans' ? 'UI_STRINGS["zh-Hans"]' : `UI_STRINGS.${lang}`;
+    const blocks = [...html.matchAll(new RegExp(`Object\\.assign\\(${target.replace(/[.[\]"]/g, '\\$&')}, (\\{"colour\\.dropCap"[^\\n]*\\})\\);`, 'g'))];
+    assert.equal(blocks.length, 1, `${lang}: one block`);
+    const d = JSON.parse(blocks[0][1]) as Record<string, string>;
+    assert.deepEqual(Object.keys(d).sort(), [...keys].sort(), `${lang}: every key`);
+    if (lang === 'en') en = d;
+    for (const k of keys) {
+      assert.ok(d[k] && d[k].trim() && !d[k].includes('!'), `${lang} ${k}`);
+      for (const ph of ['{hex}', '{ratio}']) if (en[k]?.includes(ph)) assert.ok(d[k].includes(ph), `${lang} ${k}: ${ph}`);
+      if (lang !== 'en') assert.notEqual(d[k], en[k], `${lang} ${k} is translated`);
+    }
+  }
+});
+
 test('the colour self-checks are in the studio and registered client-only', () => {
-  for (const id of ['colour.accent.reaches-every-output', 'colour.unset.css-identical', 'colour.contrast.guard', 'colour.persists-with-book', 'colour.dark-surfaces.readable', 'colour.print.black-ink-option', 'fonts.display.heading-only', 'fonts.display.preview-and-epub']) {
+  for (const id of ['colour.accent.reaches-every-output', 'colour.unset.css-identical', 'colour.contrast.guard', 'colour.persists-with-book', 'colour.dark-surfaces.readable', 'colour.print.black-ink-option', 'colour.dropcap.own-colour', 'fonts.display.heading-only', 'fonts.display.preview-and-epub']) {
     assert.ok(html.includes(`{ id: "${id}"`), `${id} in the client self-checks`);
     const c = SELF_CHECK_CASES.find((x) => x.id === id);
     assert.ok(c, `${id} registered`);

@@ -71,7 +71,7 @@ export function arriveForExport(c: Closure, book: Rec): State {
   s.activePreset = doc.activePreset || (doc.theme ? null : preset0.id);
   s.bookColour = a.bookColourNormalize(doc.colour);
   const bc = s.bookColour as Rec;
-  if (!bc.accent && !bc.tint) s.bookColour = undefined;
+  if (!bc.accent && !bc.tint && !bc.dropCap) s.bookColour = undefined;
   if (Array.isArray(doc.sections) && doc.sections.length) {
     s.sections = doc.sections.map((x) => a.normalizeSection(x));
     s.activeId = s.sections.some((x) => x.id === doc.activeId) ? doc.activeId : (s.sections.find((x) => x.type === 'chapter') || s.sections[0])!.id;
@@ -322,7 +322,7 @@ function storeArrived(c: Closure, raw: Stored, st: Rec): Rec {
   try {
     const colour = c.api.bookColourNormalize(v('colour'));
     tmp.storeCheck = c.api.normalizeStoreCheck(v('storeCheck'));
-    tmp.bookColour = colour.accent || colour.tint ? colour : undefined;
+    tmp.bookColour = colour.accent || colour.tint || colour.dropCap ? colour : undefined;
     tmp.coverRecipe = v('coverRecipe') ? c.api.normalizeCoverRecipe(structuredClone(v('coverRecipe'))) : null;
     return storeSerialized(c, tmp);
   } finally {

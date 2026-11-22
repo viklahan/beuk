@@ -138,6 +138,41 @@ describe('the Style tab\'s session', () => {
     expect(Object.keys(out)).not.toContain('colour');
     y.destroy();
   });
+
+  it('the drop cap\'s own colour: written only when chosen, black titles with a coloured drop cap, the same 3:1 guard, print in black ink, back to the accent', () => {
+    const doc = fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!.book;
+    const y = onDesk(doc);
+    // no accent, a drop cap in brass: the case the owner asked for
+    const r = styleRun((cc) => cc.api.setBookColour('dropCap', '#8a6417'))!;
+    expect([r.ok, r.key]).toEqual([true, 'colour.okDropCap']);
+    let out = exportBook(y);
+    expect(out.colour).toEqual({ accent: '', tint: '', dropCap: '#8a6417' });
+    expect(readBook(out).book.colour).toEqual(out.colour);
+    const css = styleRun((cc) => cc.api.buildBookCss(''))!;
+    expect(css).toContain('.dropcap { color: #8a6417; }');
+    expect(css).not.toMatch(/\.chapter-title[^{]*\{ color: /);
+    // a bright gold is refused at its own contrast, in the drop cap's own words, and nothing changes
+    const gold = styleRun((cc) => cc.api.setBookColour('dropCap', '#ffd700'))!;
+    expect([gold.ok, gold.key, gold.params.ratio]).toEqual([false, 'colour.refusedDropCap', '1.40']);
+    expect(exportBook(y).colour).toEqual({ accent: '', tint: '', dropCap: '#8a6417' });
+    // a tint that would drop the drop cap under 3:1 is refused
+    const tint = styleRun((cc) => cc.api.bookColourCheck('tint', '#a0a0a0', { accent: '', tint: '', dropCap: '#8a6417' }))!;
+    expect([tint.ok, tint.key]).toEqual([false, 'colour.refusedTintDropCap']);
+    // the accent added keeps the drop cap's own colour, after the accent rule
+    styleRun((cc) => cc.api.setBookColour('accent', '#1f62a8'));
+    const both = styleRun((cc) => cc.api.buildBookCss(''))!;
+    expect(both.indexOf('.dropcap { color: #8a6417; }')).toBeGreaterThan(both.indexOf('{ color: #1f62a8; }'));
+    // print in black ink with the drop cap colour alone: allowed, kept with the book
+    styleRun((cc) => cc.api.setBookColour('accent', ''));
+    expect(styleRun((cc) => cc.api.setBookPrintBlack(true))).toBe(true);
+    out = exportBook(y);
+    expect(out.colour).toEqual({ accent: '', tint: '', dropCap: '#8a6417', printBlack: true });
+    // Same as the accent: the key goes, and with it the print option
+    const back = styleRun((cc) => cc.api.setBookColour('dropCap', ''))!;
+    expect([back.ok, back.key]).toEqual([true, 'colour.dropCapCleared']);
+    expect(Object.keys(exportBook(y))).not.toContain('colour');
+    y.destroy();
+  });
 });
 
 describe('the writer\'s themes (themes.ts, constraint 33)', () => {

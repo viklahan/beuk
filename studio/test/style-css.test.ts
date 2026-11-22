@@ -79,6 +79,8 @@ describe('wave 4a: the theme CSS is 1.0\'s (constraint 31, review focus #2)', ()
         ...custom.map((th, i) => ({ what: 'custom theme ' + i, patch: { theme: th } })),
         { what: 'accent', patch: { bookColour: { accent: '#7a1f2b', tint: '' } } },
         { what: 'accent + tint + print black', patch: { bookColour: { accent: '#1f62a8', tint: '#fbf5e6', printBlack: true } } },
+        { what: 'drop cap colour alone', patch: { bookColour: { accent: '', tint: '', dropCap: '#8a6417' } } },
+        { what: 'dark accent + drop cap colour', patch: { bookColour: { accent: '#1f3a64', tint: '', dropCap: '#8a6417' } } },
         { what: 'display head + header design', patch: { theme: Object.assign({}, c.api.PRESETS[2]!.theme, { headFont: 'Pinyon Script', header: c.api.defaultHeaderDesign(Object.assign({}, c.api.PRESETS[2]!.theme, { headFont: 'Pinyon Script' })) }), bookColour: null } },
       ];
       for (const v of variants) {

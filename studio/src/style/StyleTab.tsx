@@ -293,6 +293,19 @@ export function StyleFrame({ t }: { t: ReturnType<typeof useLocale>['t'] }) {
             </label>
           </div>
         </div>
+        {/* BEUK:dropcapcolour */}
+        <div className="full">
+          <span className="field-lab" id="colourDropLab">
+            {t('colour.dropCap')}
+          </span>
+          <div className="colour-row" id="colourDropRow" role="group" aria-labelledby="colourDropLab" />
+          <div className="colour-custom">
+            <input type="color" id="colourDropCustom" defaultValue="#8a6417" />
+            <label className="field-lab" htmlFor="colourDropCustom">
+              {t('colour.customDropCap')}
+            </label>
+          </div>
+        </div>
         <div className="full">
           <span className="field-lab" id="colourTintLab">
             {t('colour.tint')}
@@ -307,6 +320,7 @@ export function StyleFrame({ t }: { t: ReturnType<typeof useLocale>['t'] }) {
         </div>
       </div>
       <p className="colour-msg" id="colourMsg" role="status" aria-live="polite" />
+      <p className="studio-sub">{t('colour.dropCapNote')}</p>
       <p className="studio-sub">{t('colour.tintNote')}</p>
       <p className="studio-sub">{t('colour.printNote')}</p>
       <div className="colour-custom">

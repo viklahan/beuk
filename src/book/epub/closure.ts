@@ -108,7 +108,7 @@ const ARRIVE = `(s) => {
   if (!s.theme.header) delete s.theme.header;
   s.theme.bodyFont = bodyFaceOf(s.theme.bodyFont);
   s.bookColour = bookColourNormalize(s.bookColour);
-  if (!s.bookColour.accent && !s.bookColour.tint) s.bookColour = undefined;
+  if (!s.bookColour.accent && !s.bookColour.tint && !s.bookColour.dropCap) s.bookColour = undefined;
   s.sections = (Array.isArray(s.sections) ? s.sections : []).map(normalizeSection);
   s.cover = s.cover || null;
   s.fonts = Array.isArray(s.fonts) ? s.fonts.map(normalizeCustomFont).filter(Boolean) : [];
