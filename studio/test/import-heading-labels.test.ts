@@ -23,9 +23,11 @@ import markup from '../src/generated/import-markup.json';
    the title), and the label word and the mark are counted in ONE named row (headingMarks), measured from the heading
    as the file gave it against the heading as stored. It is never a "difference" in one format and a row in another.
 
-   The row takes a label and marks, nothing else. Where storing a heading changed a character that IS stored (a
-   number written in capitals stored in title case), that change is in no row: it stays in the comparison, both
-   sides. And a number Beuk gives a heading that had none is Beuk's: counted on neither side.
+   The row takes a label and marks, nothing else. Where storing a heading changes a character that IS stored, that
+   change is in no row: it stays in the comparison, both sides. (A number written in capitals was once stored in
+   title case, and a named page under the book's own name for it: both are stored as the file wrote them now,
+   BEUK:casegiven and BEUK:namesgiven, and the cases below hold that nothing differs.) And a number Beuk gives a
+   heading that had none is Beuk's: counted on neither side.
 
    Every figure is characters (a code point that is not whitespace), counted by hand in the comment beside it.
    BEUK_LABELS_OUT names a folder to write each import's sections, records and tally into (made-up text only). */
@@ -233,29 +235,29 @@ describe('a Part\'s own label follows the same rule', () => {
   }, 120_000);
 });
 
-describe('a character of a heading that the import changes as it stores it is in no row: it stays in the comparison', () => {
-  it('Markdown, "CHAPTER TWENTY-ONE" on a line of its own over "# No Quarter": the number is stored "Twenty-One" — the label word is the row\'s, the capitals the import changed are listed on both sides', async () => {
+describe('a heading\'s number is stored in the letters the file wrote it in (BEUK:casegiven): nothing of it is re-set, so nothing differs', () => {
+  it('Markdown, "CHAPTER TWENTY-ONE" on a line of its own over "# No Quarter": the number is stored "TWENTY-ONE" as typed (it was re-set "Twenty-One") — the label word is the row\'s and no character differs', async () => {
     /* in the file: CHAPTER 7 + TWENTY-ONE 10 = 17, NoQuarter 9, 21; CHAPTER 7 + TWENTY-TWO 10 = 17, TheCreek 8, 16: 88.
-       In the book: Twenty-One 10 + 9 + 21, Twenty-Two 10 + 8 + 16: 74. The row: CHAPTER 7, twice: 14. 74 + 14 = 88: nothing unaccounted, yet the
-       characters are not the same: TWENTY-ONE against Twenty-One differs in W E N T Y and N E, TWENTY-TWO against Twenty-Two in W E N T Y and W O. */
+       In the book: TWENTY-ONE 10 + 9 + 21, TWENTY-TWO 10 + 8 + 16: 74. The row: CHAPTER 7, twice: 14. 74 + 14 = 88.
+       (Before: the number was stored "Twenty-One" and "Twenty-Two": the same counts, and E N W T Y O of the file stood against e n w t y o of the book.) */
     const g = await importFile('labels-recased.md', null, 'CHAPTER TWENTY-ONE\n\n# No Quarter\n\n' + ONE + '\n\nCHAPTER TWENTY-TWO\n\n# The Creek\n\n' + TWO + '\n');
-    expect(chapters(g)).toEqual([{ number: 'Twenty-One', title: 'No Quarter' }, { number: 'Twenty-Two', title: 'The Creek' }]);
-    expect(figures(g)).toEqual({ file: 88, book: 74, aside: { headingMarks: 14 }, unaccounted: 0, same: false,
-      fileOnly: [['E', 3], ['N', 3], ['W', 3], ['T', 2], ['Y', 2], ['O', 1]], bookOnly: [['e', 3], ['n', 3], ['w', 3], ['t', 2], ['y', 2], ['o', 1]] });
+    expect(chapters(g)).toEqual([{ number: 'TWENTY-ONE', title: 'No Quarter' }, { number: 'TWENTY-TWO', title: 'The Creek' }]);
+    expect(figures(g)).toEqual(clean(88, 74, { headingMarks: 14 }));
   }, 120_000);
 
-  it('a PDF, "PART ONE" set over "Ebb" and "CHAPTER 1" over each chapter\'s title: the PDF reader stores the Part\'s number as "One" — "PART" and "CHAPTER" are the row\'s, N and E are listed against n and e', async () => {
+  it('a PDF, "PART ONE" set over "Ebb" and "CHAPTER 1" over each chapter\'s title: the Part\'s number is stored "ONE" as the page has it (the PDF reader re-set the label line "Part One") — "PART" and "CHAPTER" are the row\'s and no character differs', async () => {
     /* in the file: PARTONE 7 + Ebb 3 = 10; CHAPTER1 8 + TheMuster 9 + 21 = 38; CHAPTER2 8 + TheReturn 9 + 16 = 33; CHAPTER3 8 + ThePans 7 + 24 = 39: 120.
-       In the book: One 3 + Ebb 3 = 6; 1 + 9 + 21 = 31; 1 + 9 + 16 = 26; 1 + 7 + 24 = 32: 95. The row: PART 4 and CHAPTER 7 three times: 25. 95 + 25 = 120. */
+       In the book: ONE 3 + Ebb 3 = 6; 1 + 9 + 21 = 31; 1 + 9 + 16 = 26; 1 + 7 + 24 = 32: 95. The row: PART 4 and CHAPTER 7 three times: 25. 95 + 25 = 120.
+       (Before: stored "One", and N E of the file stood against n e of the book.) */
     const g = await importFile('labels-recased.pdf', await pdf([
       [['PART ONE', 24], ['Ebb', 24]],
       [['CHAPTER 1', 14], ['The Muster', 20], [ONE, 11]],
       [['CHAPTER 2', 14], ['The Return', 20], [TWO, 11]],
       [['CHAPTER 3', 14], ['The Pans', 20], [GLOSS, 11]],
     ]), '');
-    expect(parts(g)).toEqual([{ number: 'One', title: 'Ebb' }]);
+    expect(parts(g)).toEqual([{ number: 'ONE', title: 'Ebb' }]);
     expect(chapters(g)).toEqual([{ number: '1', title: 'The Muster' }, { number: '2', title: 'The Return' }, { number: '3', title: 'The Pans' }]);
-    expect(figures(g)).toEqual({ file: 120, book: 95, aside: { headingMarks: 25 }, unaccounted: 0, same: false, fileOnly: [['E', 1], ['N', 1]], bookOnly: [['e', 1], ['n', 1]] });
+    expect(figures(g)).toEqual(clean(120, 95, { headingMarks: 25 }));
   }, 120_000);
 });
 

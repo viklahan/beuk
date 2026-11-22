@@ -39152,14 +39152,14 @@
           i = j - 1;
         }
         /* BEUK:pdffront — "CHAPTER TWENTY-ONE" on a line of its own, then
-           the chapter's title as its heading: one chapter, numbered. A number
-           set in capitals takes the book's other numbers' case. */
+           the chapter's title as its heading: one chapter, numbered.
+           BEUK:casegiven — the number is stored in the letters the file wrote it in ("TWENTY-ONE", "IV", "Twenty-one"):
+           it used to be set in the case of the book's other numbers ("Twenty-One"), letters the writer never typed. */
         items.forEach((it, ii) => {
           const next = items[ii + 1];
           if (it.cls !== "chapter" || !it.head.number || it.bodyText || it.head.title !== "Chapter " + it.head.number) return;
           if (!next || next.cls !== "chapter" || next.head.number || !/^#{1,2}\s/.test(String(next.raw || "").trim())) return;
-          const n = it.head.number;
-          next.head.number = /\p{Lu}{2}/u.test(n) && !/^[IVXLC]+$/.test(n) ? n.toLowerCase().replace(/(^|-)(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : n;
+          next.head.number = it.head.number;
           next.labelLine = it.raw; /* BEUK:importtally — the label's own line, as the file gave it: the heading's first line, for the tally's measure of what the book does not store (headingMarks) */
           it.cls = "skip";
         });
@@ -46776,7 +46776,6 @@
         /* BEUK:chapfix — a number in words may be hyphenated ("CHAPTER TWENTY-ONE") */
         const labelRe = /^(?:chapter|part|book|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)\s+[\p{L}\p{N}]+(?:[-‐–][\p{L}\p{N}]+)*\.?$/iu;
         const numRe = /^(?:\d{1,3}|[ivxlcdm]{1,7})\.?$/i;
-        const titleCase = (s) => s === s.toUpperCase() && /\p{Lu}/u.test(s) ? s.toLowerCase().replace(/(^|[\s\-‐–])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : s;
         /* BEUK:pdfdiary — a size alone never makes a heading of running
            text: a diary or a letter set larger than the story (13.5 against
            11) is the story's text. In a book of prose, a big line is
@@ -46932,23 +46931,6 @@
         const hyKey = (w) => String(w).toLowerCase().replace(/\u00ad/g, "").replace(/\u2010/g, "-").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
         const italicShare = (() => { let a = 0, b = 0; allLines.forEach((l) => { if (l.drop || l.head) return; l.runs.forEach((r) => { const n = r.t.trim().length; a += n; if (r.i) b += n; }); }); return a ? b / a : 0; })();
         const markItalic = italicShare < 0.6;
-        /* Names: words set capitalised in mid-sentence more often than in
-           lower case across the book. A small-capital opening ("THE FERRY
-           LEFT the harbour") is set back in ordinary case, these names
-           keeping their capital. */
-        const capN = new Map(), lowN = new Map();
-        allLines.forEach((l) => {
-          if (l.drop || l.head) return;
-          const ws = l.text.split(/\s+/);
-          for (let q = 1; q < ws.length; q++) {
-            const w = ws[q].replace(/^[^\p{L}]+|[^\p{L}]+$/gu, "");
-            const k = w.toLowerCase();
-            if (/^\p{Lu}\p{Ll}+$/u.test(w) && !/[.!?:;"“”«»—]$/.test(ws[q - 1])) capN.set(k, (capN.get(k) || 0) + 1);
-            else if (/^\p{Ll}+$/u.test(w)) lowN.set(k, (lowN.get(k) || 0) + 1);
-          }
-        });
-        const names = new Set();
-        capN.forEach((n, k) => { if (n > (lowN.get(k) || 0)) names.add(k); });
         /* The book's margins, per side of the spread (odd and even pages
            mirror) and per reading direction, from all its pages of one
            column: where the body lines start (low end) and end. */
@@ -46988,12 +46970,14 @@
           /* The small capitals that open a chapter or follow a drop cap. */
           if (line.dropCap || (!para && sinceHead === 0)) {
             /* The run of small, all-capital glyphs (letter-spaced type
-               arrives a glyph at a time), cased as one string. */
-            /* True small capitals keep the writer's own capitals at full
-               size ("T" drop cap, "OMAS" small, "R" full, "ILL" small =
-               "Tomas Rill"): small glyphs go back to lower case, full-size
-               ones stay; a name set wholly in small capitals keeps its
-               capital by the names rule. */
+               arrives a glyph at a time), read as one string. */
+            /* BEUK:casegiven — an opening set in small capitals reaches the reader as CAPITAL letters set smaller than
+               the text ("T" at the text's size or a drop cap, "HE PANS LAY" at eight tenths of it): those capitals are
+               the characters the PDF holds, and the book keeps them. They used to be set back in small letters, a
+               word that stood capitalised elsewhere guessed to be a name ("The pans lay"): letters the file does not
+               hold. The opening is counted and its words handed to the report as the PDF has them, so the writer
+               knows which openings came in capitals. The run is still not bold: type set smaller than its line is
+               small capitals, not emphasis. */
             const ks = [];
             let anySmall = false;
             for (let k = line.dropCap ? 1 : 0; k < line.runs.length; k++) {
@@ -47004,21 +46988,9 @@
             }
             const joined = ks.map((k) => line.runs[k].t).join("");
             if (anySmall && /\p{Lu}{2}/u.test(joined.replace(/\s+/g, ""))) {
-              let cased = "";
-              ks.forEach((k) => { const r = line.runs[k]; cased += r.size < body * 0.9 ? r.t.toLowerCase() : r.t; });
-              let first = !line.dropCap;
-              cased = cased.replace(/\p{L}+/gu, (w) => {
-                let v = w;
-                if (v === "i") v = "I";
-                if ((names.has(v.toLowerCase()) || first) && v.charAt(0) === v.charAt(0).toLowerCase()) v = v.charAt(0).toUpperCase() + v.slice(1);
-                first = false;
-                return v;
-              });
-              if (cased.length === joined.length) {
-                let at = 0;
-                ks.forEach((k) => { const n = line.runs[k].t.length; runs[k].t = cased.slice(at, at + n); runs[k].b = false; at += n; });
-                st.smallCaps++;
-              }
+              ks.forEach((k) => { runs[k].b = false; });
+              st.smallCaps++;
+              (st.smallCapsWords = st.smallCapsWords || []).push(((line.dropCap && line.runs.length ? line.runs[0].t : "") + joined).replace(/\s+/g, " ").trim());
             }
           }
           if (!para) { para = { runs: runs.map((r) => Object.assign({}, r)) }; para.runs[0].t = para.runs[0].t.replace(/^\s+/, ""); hyLast = line; return; }
@@ -47185,7 +47157,8 @@
                 let label = "", parts = [];
                 group.forEach((g) => {
                   const tx = g.text.trim();
-                  if (!label && !parts.length && (labelRe.test(tx) || numRe.test(tx)) && group.length > 1) label = titleCase(tx);
+                  /* BEUK:casegiven — the label line as the page has it ("CHAPTER IV", "PART ONE"): its number is the writer's, and was re-set letter by letter ("Chapter Iv", "Part One") before it was read */
+                  if (!label && !parts.length && (labelRe.test(tx) || numRe.test(tx)) && group.length > 1) label = tx;
                   else if (parts.length && Math.abs(g.size - group[group.indexOf(g) - 1].size) < 0.6 && !/[:.]$/.test(parts[parts.length - 1])) parts[parts.length - 1] += " " + tx;
                   else parts.push(tx);
                 });
@@ -47538,7 +47511,8 @@
         rep.items.forEach((it) => { if (!it.reversible && (it.why || "source") === "source") it.why = "sourcePdf"; });
         add({ kind: "pdfLimits", group: "structure", data: {} });
         add({ kind: "pdfStyles", group: "structure", data: { em: st.em, strong: st.strong } });
-        if (st.smallCaps) add({ kind: "pdfSmallCaps", group: "structure", data: { n: st.smallCaps } });
+        /* BEUK:casegiven — every opening the PDF sets in small capitals, with its words as the PDF holds them and the book keeps them: listed whole, never cut short */
+        if (st.smallCaps) add({ kind: "pdfSmallCaps", group: "structure", before: (st.smallCapsWords || []).map((w) => "“" + w + "”").join(" · "), data: { n: st.smallCaps, words: st.smallCapsWords || [] } });
         /* BEUK:gluefix */
         const spacedSplit = Array.from(new Set(st.spacedSplit || [])), spacedUnsure = Array.from(new Set(st.spacedUnsure || []));
         if (spacedSplit.length) add({ kind: "pdfSpaced", group: "structure", before: irClip(spacedSplit.join(" · "), 320), data: { n: spacedSplit.length } });
@@ -47642,7 +47616,7 @@
           "ir.k.pdfLimits": "A PDF stores lines placed on pages, not paragraphs: paragraphs, headings, scene breaks, italic and bold were rebuilt from the layout. Footnotes arrive as plain text where they stood, and drawings made of lines are not imported — read the book through.",
           "ir.k.pdfStyles": "Italic and bold were read from the PDF's font names: {em} italic and {strong} bold passages", "ir.k.pdfNoStyles": "No italic or bold was found — this PDF's font names do not mark any",
           "ir.k.pdfHyphens": "{n} word broken across lines was joined again ({kept} hyphen kept where the word is hyphenated elsewhere)", "ir.k.pdfHyphensPlural": "{n} words broken across lines were joined again ({kept} hyphens kept where the word is hyphenated elsewhere)",
-          "ir.k.pdfSmallCaps": "{n} opening in small capitals was set back in ordinary case (names keep their capital)", "ir.k.pdfSmallCapsPlural": "{n} openings in small capitals were set back in ordinary case (names keep their capital)",
+          "ir.k.pdfSmallCaps": "{n} opening is set in small capitals in the PDF, which holds those letters as capitals: your book keeps them as the PDF has them", "ir.k.pdfSmallCapsPlural": "{n} openings are set in small capitals in the PDF, which holds those letters as capitals: your book keeps them as the PDF has them",
           "ir.k.pdfColumns": "{n} page was set in columns and was read column by column, left first", "ir.k.pdfColumnsPlural": "{n} pages were set in columns and were read column by column, left first",
           "ir.k.pdfHeads": "Running heads and page numbers were left out on {n} page", "ir.k.pdfHeadsPlural": "Running heads and page numbers were left out on {n} pages",
           "ir.k.pdfToc": "The PDF's contents page was left out — Beuk builds its own from your chapters", "ir.k.pdfTocPlural": "The PDF's contents pages ({n}) were left out — Beuk builds its own from your chapters",
@@ -47663,7 +47637,7 @@
           "ir.k.pdfLimits": "Un PDF guarda líneas colocadas en páginas, no párrafos: los párrafos, encabezados, saltos de escena, cursivas y negritas se reconstruyeron a partir de la maquetación. Las notas al pie llegan como texto normal donde estaban y los dibujos hechos con líneas no se importan: revisa el libro entero.",
           "ir.k.pdfStyles": "La cursiva y la negrita se leyeron de los nombres de las fuentes del PDF: {em} pasajes en cursiva y {strong} en negrita", "ir.k.pdfNoStyles": "No se encontró cursiva ni negrita: los nombres de las fuentes de este PDF no marcan ninguna",
           "ir.k.pdfHyphens": "Se volvió a unir {n} palabra partida entre líneas ({kept} guion conservado donde la palabra lleva guion en otro lugar)", "ir.k.pdfHyphensPlural": "Se volvieron a unir {n} palabras partidas entre líneas ({kept} guiones conservados donde la palabra lleva guion en otro lugar)",
-          "ir.k.pdfSmallCaps": "{n} comienzo en versalitas se devolvió a minúsculas normales (los nombres conservan su mayúscula)", "ir.k.pdfSmallCapsPlural": "{n} comienzos en versalitas se devolvieron a minúsculas normales (los nombres conservan su mayúscula)",
+          "ir.k.pdfSmallCaps": "{n} comienzo está compuesto en versalitas en el PDF, que guarda esas letras como mayúsculas: tu libro las conserva tal como las tiene el PDF", "ir.k.pdfSmallCapsPlural": "{n} comienzos están compuestos en versalitas en el PDF, que guarda esas letras como mayúsculas: tu libro las conserva tal como las tiene el PDF",
           "ir.k.pdfColumns": "{n} página estaba en columnas y se leyó columna a columna, empezando por la izquierda", "ir.k.pdfColumnsPlural": "{n} páginas estaban en columnas y se leyeron columna a columna, empezando por la izquierda",
           "ir.k.pdfHeads": "Se omitieron los titulillos y números de página en {n} página", "ir.k.pdfHeadsPlural": "Se omitieron los titulillos y números de página en {n} páginas",
           "ir.k.pdfToc": "Se omitió la página de índice del PDF: Beuk crea el suyo a partir de tus capítulos", "ir.k.pdfTocPlural": "Se omitieron las páginas de índice del PDF ({n}): Beuk crea el suyo a partir de tus capítulos",
@@ -47684,7 +47658,7 @@
           "ir.k.pdfLimits": "Un PDF garde des lignes posées sur des pages, pas des paragraphes : paragraphes, titres, changements de scène, italique et gras ont été reconstruits d’après la mise en page. Les notes arrivent en texte simple à leur place et les dessins faits de traits ne sont pas importés — relisez le livre en entier.",
           "ir.k.pdfStyles": "L’italique et le gras ont été lus d’après les noms des polices du PDF : {em} passages en italique et {strong} en gras", "ir.k.pdfNoStyles": "Aucun italique ni gras trouvé — les noms des polices de ce PDF n’en signalent aucun",
           "ir.k.pdfHyphens": "{n} mot coupé en fin de ligne a été recollé ({kept} trait d’union gardé là où le mot en porte un ailleurs)", "ir.k.pdfHyphensPlural": "{n} mots coupés en fin de ligne ont été recollés ({kept} traits d’union gardés là où le mot en porte un ailleurs)",
-          "ir.k.pdfSmallCaps": "{n} attaque en petites capitales a été remise en casse ordinaire (les noms gardent leur majuscule)", "ir.k.pdfSmallCapsPlural": "{n} attaques en petites capitales ont été remises en casse ordinaire (les noms gardent leur majuscule)",
+          "ir.k.pdfSmallCaps": "{n} attaque est composée en petites capitales dans le PDF, qui contient ces lettres en capitales : votre livre les garde telles que le PDF les a", "ir.k.pdfSmallCapsPlural": "{n} attaques sont composées en petites capitales dans le PDF, qui contient ces lettres en capitales : votre livre les garde telles que le PDF les a",
           "ir.k.pdfColumns": "{n} page était en colonnes et a été lue colonne par colonne, de gauche à droite", "ir.k.pdfColumnsPlural": "{n} pages étaient en colonnes et ont été lues colonne par colonne, de gauche à droite",
           "ir.k.pdfHeads": "Les titres courants et numéros de page ont été écartés sur {n} page", "ir.k.pdfHeadsPlural": "Les titres courants et numéros de page ont été écartés sur {n} pages",
           "ir.k.pdfToc": "La table des matières du PDF a été écartée — Beuk construit la sienne à partir de vos chapitres", "ir.k.pdfTocPlural": "Les pages de table des matières du PDF ({n}) ont été écartées — Beuk construit la sienne à partir de vos chapitres",
@@ -47705,7 +47679,7 @@
           "ir.k.pdfLimits": "Ein PDF speichert auf Seiten platzierte Zeilen, keine Absätze: Absätze, Überschriften, Szenenwechsel, Kursiv und Fett wurden aus dem Satzbild wieder aufgebaut. Fußnoten kommen als normaler Text an ihrer Stelle an, und aus Linien gezeichnete Grafiken werden nicht importiert — lesen Sie das Buch einmal durch.",
           "ir.k.pdfStyles": "Kursiv und Fett wurden aus den Schriftnamen des PDFs gelesen: {em} kursive und {strong} fette Passagen", "ir.k.pdfNoStyles": "Kein Kursiv oder Fett gefunden — die Schriftnamen dieses PDFs kennzeichnen keines",
           "ir.k.pdfHyphens": "{n} über das Zeilenende getrenntes Wort wurde wieder zusammengefügt ({kept} Bindestrich behalten, wo das Wort auch sonst mit Bindestrich steht)", "ir.k.pdfHyphensPlural": "{n} über das Zeilenende getrennte Wörter wurden wieder zusammengefügt ({kept} Bindestriche behalten, wo das Wort auch sonst mit Bindestrich steht)",
-          "ir.k.pdfSmallCaps": "{n} Anfang in Kapitälchen wurde in normale Schreibung zurückgesetzt (Namen behalten ihren Großbuchstaben)", "ir.k.pdfSmallCapsPlural": "{n} Anfänge in Kapitälchen wurden in normale Schreibung zurückgesetzt (Namen behalten ihren Großbuchstaben)",
+          "ir.k.pdfSmallCaps": "{n} Anfang ist im PDF in Kapitälchen gesetzt, und das PDF enthält diese Buchstaben als Großbuchstaben: Ihr Buch behält sie so, wie das PDF sie hat", "ir.k.pdfSmallCapsPlural": "{n} Anfänge sind im PDF in Kapitälchen gesetzt, und das PDF enthält diese Buchstaben als Großbuchstaben: Ihr Buch behält sie so, wie das PDF sie hat",
           "ir.k.pdfColumns": "{n} Seite war mehrspaltig gesetzt und wurde Spalte für Spalte gelesen, links zuerst", "ir.k.pdfColumnsPlural": "{n} Seiten waren mehrspaltig gesetzt und wurden Spalte für Spalte gelesen, links zuerst",
           "ir.k.pdfHeads": "Kolumnentitel und Seitenzahlen wurden auf {n} Seite weggelassen", "ir.k.pdfHeadsPlural": "Kolumnentitel und Seitenzahlen wurden auf {n} Seiten weggelassen",
           "ir.k.pdfToc": "Das Inhaltsverzeichnis des PDFs wurde weggelassen — Beuk erstellt sein eigenes aus Ihren Kapiteln", "ir.k.pdfTocPlural": "Die Inhaltsseiten des PDFs ({n}) wurden weggelassen — Beuk erstellt sein eigenes aus Ihren Kapiteln",
@@ -47726,7 +47700,7 @@
           "ir.k.pdfLimits": "Un PDF conserva righe posate sulle pagine, non paragrafi: paragrafi, titoli, cambi di scena, corsivo e grassetto sono stati ricostruiti dall’impaginazione. Le note arrivano come testo normale dov’erano e i disegni fatti di linee non vengono importati: rileggi tutto il libro.",
           "ir.k.pdfStyles": "Corsivo e grassetto sono stati letti dai nomi dei caratteri del PDF: {em} passaggi in corsivo e {strong} in grassetto", "ir.k.pdfNoStyles": "Nessun corsivo o grassetto trovato: i nomi dei caratteri di questo PDF non ne segnalano",
           "ir.k.pdfHyphens": "{n} parola spezzata tra due righe è stata riunita ({kept} trattino mantenuto dove la parola ha il trattino anche altrove)", "ir.k.pdfHyphensPlural": "{n} parole spezzate tra due righe sono state riunite ({kept} trattini mantenuti dove la parola ha il trattino anche altrove)",
-          "ir.k.pdfSmallCaps": "{n} attacco in maiuscoletto è stato riportato alle lettere normali (i nomi mantengono la maiuscola)", "ir.k.pdfSmallCapsPlural": "{n} attacchi in maiuscoletto sono stati riportati alle lettere normali (i nomi mantengono la maiuscola)",
+          "ir.k.pdfSmallCaps": "{n} attacco è composto in maiuscoletto nel PDF, che contiene quelle lettere come maiuscole: il tuo libro le mantiene come le ha il PDF", "ir.k.pdfSmallCapsPlural": "{n} attacchi sono composti in maiuscoletto nel PDF, che contiene quelle lettere come maiuscole: il tuo libro le mantiene come le ha il PDF",
           "ir.k.pdfColumns": "{n} pagina era in colonne ed è stata letta colonna per colonna, a partire da sinistra", "ir.k.pdfColumnsPlural": "{n} pagine erano in colonne e sono state lette colonna per colonna, a partire da sinistra",
           "ir.k.pdfHeads": "Titoli correnti e numeri di pagina sono stati omessi in {n} pagina", "ir.k.pdfHeadsPlural": "Titoli correnti e numeri di pagina sono stati omessi in {n} pagine",
           "ir.k.pdfToc": "L’indice del PDF è stato omesso: Beuk crea il proprio dai tuoi capitoli", "ir.k.pdfTocPlural": "Le pagine dell’indice del PDF ({n}) sono state omesse: Beuk crea il proprio dai tuoi capitoli",
@@ -47747,7 +47721,7 @@
           "ir.k.pdfLimits": "Um PDF guarda linhas colocadas em páginas, não parágrafos: parágrafos, títulos, mudanças de cena, itálico e negrito foram reconstruídos a partir da paginação. As notas de rodapé chegam como texto simples onde estavam e os desenhos feitos de linhas não são importados — leia o livro todo.",
           "ir.k.pdfStyles": "O itálico e o negrito foram lidos dos nomes das fontes do PDF: {em} passagens em itálico e {strong} a negrito", "ir.k.pdfNoStyles": "Não foi encontrado itálico nem negrito — os nomes das fontes deste PDF não marcam nenhum",
           "ir.k.pdfHyphens": "{n} palavra partida entre linhas foi unida de novo ({kept} hífen mantido onde a palavra tem hífen noutro sítio)", "ir.k.pdfHyphensPlural": "{n} palavras partidas entre linhas foram unidas de novo ({kept} hífenes mantidos onde a palavra tem hífen noutro sítio)",
-          "ir.k.pdfSmallCaps": "{n} início em versaletes foi reposto em letra normal (os nomes mantêm a maiúscula)", "ir.k.pdfSmallCapsPlural": "{n} inícios em versaletes foram repostos em letra normal (os nomes mantêm a maiúscula)",
+          "ir.k.pdfSmallCaps": "{n} início está composto em versaletes no PDF, que guarda essas letras como maiúsculas: o teu livro mantém-nas como o PDF as tem", "ir.k.pdfSmallCapsPlural": "{n} inícios estão compostos em versaletes no PDF, que guarda essas letras como maiúsculas: o teu livro mantém-nas como o PDF as tem",
           "ir.k.pdfColumns": "{n} página estava em colunas e foi lida coluna a coluna, a começar pela esquerda", "ir.k.pdfColumnsPlural": "{n} páginas estavam em colunas e foram lidas coluna a coluna, a começar pela esquerda",
           "ir.k.pdfHeads": "Os cabeçalhos correntes e números de página foram omitidos em {n} página", "ir.k.pdfHeadsPlural": "Os cabeçalhos correntes e números de página foram omitidos em {n} páginas",
           "ir.k.pdfToc": "O índice do PDF foi omitido — o Beuk cria o seu a partir dos seus capítulos", "ir.k.pdfTocPlural": "As páginas de índice do PDF ({n}) foram omitidas — o Beuk cria o seu a partir dos seus capítulos",
@@ -47768,7 +47742,7 @@
           "ir.k.pdfLimits": "Een pdf bewaart regels die op pagina’s staan, geen alinea’s: alinea’s, koppen, scènewisselingen, cursief en vet zijn uit de opmaak opnieuw opgebouwd. Voetnoten komen als gewone tekst op hun plek binnen en tekeningen van lijnen worden niet geïmporteerd — lees het boek helemaal door.",
           "ir.k.pdfStyles": "Cursief en vet zijn gelezen uit de lettertypenamen van de pdf: {em} cursieve en {strong} vette passages", "ir.k.pdfNoStyles": "Geen cursief of vet gevonden — de lettertypenamen van deze pdf geven niets aan",
           "ir.k.pdfHyphens": "{n} over twee regels afgebroken woord is weer aan elkaar gezet ({kept} koppelteken behouden waar het woord elders ook een koppelteken heeft)", "ir.k.pdfHyphensPlural": "{n} over twee regels afgebroken woorden zijn weer aan elkaar gezet ({kept} koppeltekens behouden waar het woord elders ook een koppelteken heeft)",
-          "ir.k.pdfSmallCaps": "{n} opening in kleinkapitalen is teruggezet naar gewone letters (namen houden hun hoofdletter)", "ir.k.pdfSmallCapsPlural": "{n} openingen in kleinkapitalen zijn teruggezet naar gewone letters (namen houden hun hoofdletter)",
+          "ir.k.pdfSmallCaps": "{n} opening is in de pdf in kleinkapitalen gezet, en de pdf bevat die letters als hoofdletters: je boek houdt ze zoals de pdf ze heeft", "ir.k.pdfSmallCapsPlural": "{n} openingen zijn in de pdf in kleinkapitalen gezet, en de pdf bevat die letters als hoofdletters: je boek houdt ze zoals de pdf ze heeft",
           "ir.k.pdfColumns": "{n} pagina stond in kolommen en is kolom voor kolom gelezen, links eerst", "ir.k.pdfColumnsPlural": "{n} pagina’s stonden in kolommen en zijn kolom voor kolom gelezen, links eerst",
           "ir.k.pdfHeads": "Kopregels en paginanummers zijn weggelaten op {n} pagina", "ir.k.pdfHeadsPlural": "Kopregels en paginanummers zijn weggelaten op {n} pagina’s",
           "ir.k.pdfToc": "De inhoudsopgave van de pdf is weggelaten — Beuk maakt zijn eigen uit je hoofdstukken", "ir.k.pdfTocPlural": "De inhoudspagina’s van de pdf ({n}) zijn weggelaten — Beuk maakt zijn eigen uit je hoofdstukken",
@@ -47789,7 +47763,7 @@
           "ir.k.pdfLimits": "PDF przechowuje wiersze rozmieszczone na stronach, nie akapity: akapity, nagłówki, przerwy między scenami, kursywę i pogrubienie odbudowano z układu stron. Przypisy trafiają jako zwykły tekst tam, gdzie stały, a rysunki z linii nie są importowane — przeczytaj całą książkę.",
           "ir.k.pdfStyles": "Kursywę i pogrubienie odczytano z nazw czcionek PDF: fragmenty kursywą: {em}, pogrubione: {strong}", "ir.k.pdfNoStyles": "Nie znaleziono kursywy ani pogrubienia — nazwy czcionek w tym PDF ich nie oznaczają",
           "ir.k.pdfHyphens": "Ponownie złączono słowa przeniesione między wierszami: {n} (zachowane łączniki tam, gdzie słowo ma łącznik także gdzie indziej: {kept})", "ir.k.pdfHyphensPlural": "Ponownie złączono słowa przeniesione między wierszami: {n} (zachowane łączniki tam, gdzie słowo ma łącznik także gdzie indziej: {kept})",
-          "ir.k.pdfSmallCaps": "Początki złożone kapitalikami przywrócone do zwykłej pisowni (nazwy zachowują wielką literę): {n}", "ir.k.pdfSmallCapsPlural": "Początki złożone kapitalikami przywrócone do zwykłej pisowni (nazwy zachowują wielką literę): {n}",
+          "ir.k.pdfSmallCaps": "Początki złożone w pliku PDF kapitalikami, które plik zawiera jako wielkie litery; twoja książka zachowuje je tak, jak ma je PDF: {n}", "ir.k.pdfSmallCapsPlural": "Początki złożone w pliku PDF kapitalikami, które plik zawiera jako wielkie litery; twoja książka zachowuje je tak, jak ma je PDF: {n}",
           "ir.k.pdfColumns": "Strony złożone w kolumnach, czytane kolumna po kolumnie, od lewej: {n}", "ir.k.pdfColumnsPlural": "Strony złożone w kolumnach, czytane kolumna po kolumnie, od lewej: {n}",
           "ir.k.pdfHeads": "Pominięto żywe paginy i numery stron na stronach: {n}", "ir.k.pdfHeadsPlural": "Pominięto żywe paginy i numery stron na stronach: {n}",
           "ir.k.pdfToc": "Pominięto spis treści z PDF — Beuk tworzy własny z twoich rozdziałów", "ir.k.pdfTocPlural": "Pominięto strony spisu treści z PDF ({n}) — Beuk tworzy własny z twoich rozdziałów",
@@ -47810,7 +47784,7 @@
           "ir.k.pdfLimits": "PDF хранит строки, размещённые на страницах, а не абзацы: абзацы, заголовки, смены сцен, курсив и жирный восстановлены по вёрстке. Сноски приходят обычным текстом на своём месте, а рисунки из линий не импортируются — прочитайте книгу целиком.",
           "ir.k.pdfStyles": "Курсив и жирный прочитаны по названиям шрифтов PDF: фрагментов курсивом — {em}, жирным — {strong}", "ir.k.pdfNoStyles": "Курсив и жирный не найдены — названия шрифтов этого PDF их не обозначают",
           "ir.k.pdfHyphens": "Снова соединены слова, разорванные переносом: {n} (дефис сохранён там, где слово пишется через дефис и в других местах: {kept})", "ir.k.pdfHyphensPlural": "Снова соединены слова, разорванные переносом: {n} (дефис сохранён там, где слово пишется через дефис и в других местах: {kept})",
-          "ir.k.pdfSmallCaps": "Начала, набранные капителью, возвращены к обычному написанию (имена сохраняют заглавную букву): {n}", "ir.k.pdfSmallCapsPlural": "Начала, набранные капителью, возвращены к обычному написанию (имена сохраняют заглавную букву): {n}",
+          "ir.k.pdfSmallCaps": "Начала, набранные в PDF капителью, которые PDF хранит как заглавные буквы; в вашей книге они остаются такими, как в PDF: {n}", "ir.k.pdfSmallCapsPlural": "Начала, набранные в PDF капителью, которые PDF хранит как заглавные буквы; в вашей книге они остаются такими, как в PDF: {n}",
           "ir.k.pdfColumns": "Страниц, набранных в колонки и прочитанных по колонкам слева направо: {n}", "ir.k.pdfColumnsPlural": "Страниц, набранных в колонки и прочитанных по колонкам слева направо: {n}",
           "ir.k.pdfHeads": "Колонтитулы и номера страниц пропущены на страницах: {n}", "ir.k.pdfHeadsPlural": "Колонтитулы и номера страниц пропущены на страницах: {n}",
           "ir.k.pdfToc": "Оглавление PDF пропущено — Beuk строит своё по вашим главам", "ir.k.pdfTocPlural": "Страницы оглавления PDF ({n}) пропущены — Beuk строит своё по вашим главам",
@@ -47831,7 +47805,7 @@
           "ir.k.pdfLimits": "Bir PDF paragraf değil, sayfalara yerleştirilmiş satırlar saklar: paragraflar, başlıklar, sahne geçişleri, italik ve kalın sayfa düzeninden yeniden kuruldu. Dipnotlar durdukları yerde düz metin olarak gelir, çizgilerle yapılmış çizimler içe aktarılmaz — kitabı baştan sona okuyun.",
           "ir.k.pdfStyles": "İtalik ve kalın, PDF'nin yazı tipi adlarından okundu: {em} italik ve {strong} kalın bölüm", "ir.k.pdfNoStyles": "İtalik ya da kalın bulunamadı — bu PDF'nin yazı tipi adları hiçbirini belirtmiyor",
           "ir.k.pdfHyphens": "Satır sonunda bölünmüş {n} kelime yeniden birleştirildi (kelimenin başka yerde de tireyle yazıldığı {kept} yerde tire korundu)", "ir.k.pdfHyphensPlural": "Satır sonunda bölünmüş {n} kelime yeniden birleştirildi (kelimenin başka yerde de tireyle yazıldığı {kept} yerde tire korundu)",
-          "ir.k.pdfSmallCaps": "Küçük büyük harfle dizilmiş {n} açılış normal yazıma döndürüldü (adlar büyük harfini korur)", "ir.k.pdfSmallCapsPlural": "Küçük büyük harfle dizilmiş {n} açılış normal yazıma döndürüldü (adlar büyük harfini korur)",
+          "ir.k.pdfSmallCaps": "PDF’te küçük büyük harfle dizilmiş {n} açılış var ve PDF bu harfleri büyük harf olarak tutuyor: kitabınız onları PDF’teki gibi tutuyor", "ir.k.pdfSmallCapsPlural": "PDF’te küçük büyük harfle dizilmiş {n} açılış var ve PDF bu harfleri büyük harf olarak tutuyor: kitabınız onları PDF’teki gibi tutuyor",
           "ir.k.pdfColumns": "{n} sayfa sütunlu dizilmişti ve soldan başlayarak sütun sütun okundu", "ir.k.pdfColumnsPlural": "{n} sayfa sütunlu dizilmişti ve soldan başlayarak sütun sütun okundu",
           "ir.k.pdfHeads": "{n} sayfada sayfa başlıkları ve sayfa numaraları dışarıda bırakıldı", "ir.k.pdfHeadsPlural": "{n} sayfada sayfa başlıkları ve sayfa numaraları dışarıda bırakıldı",
           "ir.k.pdfToc": "PDF'nin içindekiler sayfası dışarıda bırakıldı — Beuk kendi içindekilerini bölümlerinizden oluşturur", "ir.k.pdfTocPlural": "PDF'nin içindekiler sayfaları ({n}) dışarıda bırakıldı — Beuk kendi içindekilerini bölümlerinizden oluşturur",
@@ -47852,7 +47826,7 @@
           "ir.k.pdfLimits": "يحفظ ملف PDF أسطرًا موضوعة على الصفحات لا فقرات: أُعيد بناء الفقرات والعناوين وفواصل المشاهد والمائل والعريض من التخطيط. تصل الحواشي نصًا عاديًا في مواضعها، ولا تُستورد الرسوم المصنوعة من خطوط — اقرأ الكتاب كاملًا.",
           "ir.k.pdfStyles": "قُرئ المائل والعريض من أسماء خطوط ملف PDF: مقاطع مائلة: {em}، ومقاطع عريضة: {strong}", "ir.k.pdfNoStyles": "لم يُعثر على مائل أو عريض — أسماء خطوط ملف PDF هذا لا تشير إلى أيٍّ منهما",
           "ir.k.pdfHyphens": "أُعيد وصل كلمات مقسومة بين الأسطر: {n} (أُبقيت الشرطة حيث تُكتب الكلمة بشرطة في موضع آخر: {kept})", "ir.k.pdfHyphensPlural": "أُعيد وصل كلمات مقسومة بين الأسطر: {n} (أُبقيت الشرطة حيث تُكتب الكلمة بشرطة في موضع آخر: {kept})",
-          "ir.k.pdfSmallCaps": "افتتاحيات بأحرف كبيرة صغيرة أُعيدت إلى الكتابة العادية (تحتفظ الأسماء بحرفها الكبير): {n}", "ir.k.pdfSmallCapsPlural": "افتتاحيات بأحرف كبيرة صغيرة أُعيدت إلى الكتابة العادية (تحتفظ الأسماء بحرفها الكبير): {n}",
+          "ir.k.pdfSmallCaps": "افتتاحيات مضبوطة في ملف PDF بأحرف كبيرة صغيرة، والملف يحفظ هذه الحروف حروفًا كبيرة؛ يُبقيها كتابك كما هي في الملف: {n}", "ir.k.pdfSmallCapsPlural": "افتتاحيات مضبوطة في ملف PDF بأحرف كبيرة صغيرة، والملف يحفظ هذه الحروف حروفًا كبيرة؛ يُبقيها كتابك كما هي في الملف: {n}",
           "ir.k.pdfColumns": "صفحات مصفوفة في أعمدة قُرئت عمودًا عمودًا بدءًا من اليسار: {n}", "ir.k.pdfColumnsPlural": "صفحات مصفوفة في أعمدة قُرئت عمودًا عمودًا بدءًا من اليسار: {n}",
           "ir.k.pdfHeads": "حُذفت ترويسات الصفحات وأرقامها في صفحات عددها: {n}", "ir.k.pdfHeadsPlural": "حُذفت ترويسات الصفحات وأرقامها في صفحات عددها: {n}",
           "ir.k.pdfToc": "حُذفت صفحة المحتويات في ملف PDF — يبني Beuk فهرسه من فصولك", "ir.k.pdfTocPlural": "حُذفت صفحات المحتويات في ملف PDF ({n}) — يبني Beuk فهرسه من فصولك",
@@ -47873,7 +47847,7 @@
           "ir.k.pdfLimits": "PDF が持つのはページに置かれた行で、段落ではありません。段落・見出し・場面転換・斜体・太字はレイアウトから組み立て直しました。脚注は元の位置に普通の文として入り、線で描かれた図は読み込まれません。本全体を読み返してください。",
           "ir.k.pdfStyles": "斜体と太字は PDF のフォント名から読み取りました：斜体 {em} 箇所、太字 {strong} 箇所", "ir.k.pdfNoStyles": "斜体も太字も見つかりませんでした。この PDF のフォント名はどちらも示していません",
           "ir.k.pdfHyphens": "行をまたいで分かれた語 {n} 個をつなぎ直しました（ほかの箇所でもハイフン付きの語はハイフンを {kept} 個残しました）", "ir.k.pdfHyphensPlural": "行をまたいで分かれた語 {n} 個をつなぎ直しました（ほかの箇所でもハイフン付きの語はハイフンを {kept} 個残しました）",
-          "ir.k.pdfSmallCaps": "スモールキャップスの書き出し {n} か所を通常の大文字・小文字に戻しました（人名などは頭文字を大文字のまま）", "ir.k.pdfSmallCapsPlural": "スモールキャップスの書き出し {n} か所を通常の大文字・小文字に戻しました（人名などは頭文字を大文字のまま）",
+          "ir.k.pdfSmallCaps": "PDF でスモールキャップスに組まれた書き出しが {n} か所あり、PDF はその文字を大文字として持っています。本では PDF のとおりに残しています", "ir.k.pdfSmallCapsPlural": "PDF でスモールキャップスに組まれた書き出しが {n} か所あり、PDF はその文字を大文字として持っています。本では PDF のとおりに残しています",
           "ir.k.pdfColumns": "段組みのページ {n} ページを、左の段から順に読みました", "ir.k.pdfColumnsPlural": "段組みのページ {n} ページを、左の段から順に読みました",
           "ir.k.pdfHeads": "{n} ページの柱とページ番号を除きました", "ir.k.pdfHeadsPlural": "{n} ページの柱とページ番号を除きました",
           "ir.k.pdfToc": "PDF の目次ページを除きました。Beuk は章から目次を作ります", "ir.k.pdfTocPlural": "PDF の目次ページ（{n} ページ）を除きました。Beuk は章から目次を作ります",
@@ -47894,7 +47868,7 @@
           "ir.k.pdfLimits": "PDF 保存的是放在页面上的行，而不是段落：段落、标题、场景分隔、斜体和粗体都是根据版面重建的。脚注以普通文字留在原处，用线条画成的图不会导入——请通读全书。",
           "ir.k.pdfStyles": "斜体和粗体是根据 PDF 的字体名称读取的：斜体 {em} 处，粗体 {strong} 处", "ir.k.pdfNoStyles": "未发现斜体或粗体——这个 PDF 的字体名称没有标出任何一种",
           "ir.k.pdfHyphens": "重新连接了 {n} 个跨行断开的词（在别处也带连字符的词保留了 {kept} 个连字符）", "ir.k.pdfHyphensPlural": "重新连接了 {n} 个跨行断开的词（在别处也带连字符的词保留了 {kept} 个连字符）",
-          "ir.k.pdfSmallCaps": "已将 {n} 处小型大写字母开头恢复为普通大小写（人名等保留首字母大写）", "ir.k.pdfSmallCapsPlural": "已将 {n} 处小型大写字母开头恢复为普通大小写（人名等保留首字母大写）",
+          "ir.k.pdfSmallCaps": "PDF 中有 {n} 处开头以小型大写字母排版，PDF 将这些字母存为大写字母：你的书按 PDF 原样保留", "ir.k.pdfSmallCapsPlural": "PDF 中有 {n} 处开头以小型大写字母排版，PDF 将这些字母存为大写字母：你的书按 PDF 原样保留",
           "ir.k.pdfColumns": "{n} 页为分栏排版，已按栏从左到右读取", "ir.k.pdfColumnsPlural": "{n} 页为分栏排版，已按栏从左到右读取",
           "ir.k.pdfHeads": "已略去 {n} 页上的页眉和页码", "ir.k.pdfHeadsPlural": "已略去 {n} 页上的页眉和页码",
           "ir.k.pdfToc": "已略去 PDF 的目录页——Beuk 会根据你的章节生成目录", "ir.k.pdfTocPlural": "已略去 PDF 的目录页（{n} 页）——Beuk 会根据你的章节生成目录",
@@ -60768,9 +60742,9 @@
             };
             const heads = (lay) => lay.blocks.filter((b) => b.kind === "h").map((b) => b.text);
             const marked = heads(book(true)), plain = heads(book(false));
-            const want = ["Part One" + IR_JOIN + "MOSCOW", "Part Two" + IR_JOIN + "SEPTEMBER", "Tuesday, September 8, 2026", "Thursday, September 10, 2026"]; /* BEUK:joinsgiven — the label and the name are two lines of the page: the join is marked as the import's own (IR_JOIN), never a colon stored in the book */
+            const want = ["PART ONE" + IR_JOIN + "MOSCOW", "PART TWO" + IR_JOIN + "SEPTEMBER", "Tuesday, September 8, 2026", "Thursday, September 10, 2026"]; /* BEUK:casegiven — the label line as the page has it, "PART ONE": it was re-set "Part One". BEUK:joinsgiven — the label and the name are two lines of the page: the join is marked as the import's own (IR_JOIN), never a colon stored in the book */
             const missing = want.filter((h) => marked.indexOf(h) === -1);
-            const ok = !missing.length && marked.length === want.length && marked.indexOf("Evening") === -1 && plain.indexOf("Part One" + IR_JOIN + "MOSCOW") !== -1;
+            const ok = !missing.length && marked.length === want.length && marked.indexOf("Evening") === -1 && plain.indexOf("PART ONE" + IR_JOIN + "MOSCOW") !== -1;
             return scVerdict(ok, "with bookmarks: " + marked.map(irJoinGiven).join(" | ") + (missing.length ? " (missing: " + missing.map(irJoinGiven).join(" | ") + ")" : "") + "; without: " + plain.map(irJoinGiven).join(" | "));
           } },
         /* ---- BEUK:pdfback: a PDF Beuk printed comes back as the book it was ---- */
@@ -60859,7 +60833,8 @@
               const setOnCopyright = !!cr && /Set in 1983/.test(cr.content || "") && !body.some((x) => /Set in 1983/.test(String(x.content || "")));
               const appx = secs.find((x) => x.type === "appendix");
               const appxOk = !!appx && appx.title === "APPENDIX A Tradecraft Glossary"; /* BEUK:joinsgiven — the two lines, a space between: no colon of the import's */
-              const ok = shape === "One:THE RED ARROW | Twenty-One:THE BOOKSELLER" && capOk && !spacedLeft.length && !!note && /\bwire\b/.test(note.content || "") &&
+              /* BEUK:casegiven — the number as the page writes it, "TWENTY-ONE": it was re-set "Twenty-One" */
+              const ok = shape === "One:THE RED ARROW | TWENTY-ONE:THE BOOKSELLER" && capOk && !spacedLeft.length && !!note && /\bwire\b/.test(note.content || "") &&
                 !!cr && /2026/.test(cr.content || "") && /10 9 8 7/.test(cr.content || "") && noFurniturePages &&
                 state.meta.title === "THE MOSCOW DEAD DROP" && state.meta.author === "Gis" + E.toLowerCase() + "le Torres" && setOnCopyright && appxOk && logoOk;
               return scVerdict(ok, "chapters [" + shape + "], drop cap rejoined (" + capOk + "), letter-spaced text left in [" + spacedLeft.join(", ") + "], author's note is front matter (" + !!note + "), copyright page whole (" + !!(cr && /10 9 8 7/.test(cr.content || "")) + "), no title-page furniture pages and one dedication (" + noFurniturePages + "), setting note on the copyright page (" + setOnCopyright + "), series logo is the frontispiece (" + logoOk + "), appendix “" + (appx ? appx.title : "") + "”, title “" + state.meta.title + "”, author “" + state.meta.author + "”");
@@ -60961,7 +60936,7 @@
             });
           } },
         /* ---- BEUK:chapfix: a PDF's chapters are its chapters, and nothing else ---- */
-        { id: "import.chapfix.pdf-ledger-lines", feature: "import", name: "A PDF novel whose chapters open CHAPTER TWENTY-ONE over a 22pt title, with ledger entries set in a hand 13.5pt against 10.5pt text inside them, comes in with exactly its chapters: Twenty-One keeps its hyphenated number (no bare No Quarter), and no ledger line becomes a chapter or a heading — not a sentence wrapped over two lines (sold seventy men for a⏎commission — UNPAID.), not one that opens or ends on a dash, not two short sentences (God help us all. M.F.) — each entry reads as one paragraph, over a page turn too; a short heading-like line in that size stays a heading, and an interrupted line of dialogue (I’ve ever —) never runs into the paragraph after it",
+        { id: "import.chapfix.pdf-ledger-lines", feature: "import", name: "A PDF novel whose chapters open CHAPTER TWENTY-ONE over a 22pt title, with ledger entries set in a hand 13.5pt against 10.5pt text inside them, comes in with exactly its chapters, each number in the capitals the page sets it in: TWENTY-ONE keeps its hyphenated number (no bare No Quarter), and no ledger line becomes a chapter or a heading — not a sentence wrapped over two lines (sold seventy men for a⏎commission — UNPAID.), not one that opens or ends on a dash, not two short sentences (God help us all. M.F.) — each entry reads as one paragraph, over a page turn too; a short heading-like line in that size stays a heading, and an interrupted line of dialogue (I’ve ever —) never runs into the paragraph after it",
           run() {
             return imCheckRun(() => {
               const origToast = window.toast;
@@ -61003,7 +60978,7 @@
                 importPdfExtracted("the-devils-ledger.pdf", ext);
                 const chs = state.sections.filter((x) => x.kind === "body");
                 const list = chs.map((x) => (x.number || "?") + ":" + (x.title || ""));
-                const want = ["One:The Muster", "Twenty-One:No Quarter", "Twenty-Two:The Creek"];
+                const want = ["ONE:The Muster", "TWENTY-ONE:No Quarter", "TWENTY-TWO:The Creek"]; /* BEUK:casegiven — each number as the page writes it, in capitals: they were re-set "One", "Twenty-One", "Twenty-Two" */
                 const exact = list.join(" | ") === want.join(" | ");
                 const all = chs.map((x) => x.content || "").join("\n\n");
                 const paras = all.split(/\n{2,}/).map((p) => p.trim());
@@ -61014,7 +60989,7 @@
                 const noHand = !layHeads.some((h) => /Nathaniel|God help|PAID|Elias|Saul|socket/.test(h));
                 const kept = layHeads.some((h) => /The Ship’s Articles/.test(h));
                 /* the label is read where it stands, not left for the parser to find in a paragraph */
-                const labels = layHeads.indexOf("Chapter Twenty-One" + IR_JOIN + "No Quarter") !== -1 && layHeads.indexOf("Chapter Twenty-Two" + IR_JOIN + "The Creek") !== -1; /* BEUK:joinsgiven — the label and the title, the join marked as the import's own */
+                const labels = layHeads.indexOf("CHAPTER TWENTY-ONE" + IR_JOIN + "No Quarter") !== -1 && layHeads.indexOf("CHAPTER TWENTY-TWO" + IR_JOIN + "The Creek") !== -1; /* BEUK:casegiven — the label line as the page has it */ /* BEUK:joinsgiven — the label and the title, the join marked as the import's own */
                 const dialogue = !one("I’ve ever — “Zib!”") && one("“Zib!” the captain called");
                 const ok = exact && labels && entries && noHand && kept && dialogue;
                 return scVerdict(ok, "chapters [" + list.join(" | ") + "] (want " + want.join(" | ") + "); headings found [" + layHeads.map(irJoinGiven).join(" | ") + "], hyphenated labels on their titles (" + labels + "); ledger entries whole, one paragraph each, over the page turn too (" + entries +
@@ -76712,7 +76687,8 @@
               const rep = res.rep, items = rep.items;
               const chs = state.sections.filter((s) => s.type === "chapter");
               const c1 = chs.find((s) => s.title === "The Harbour"), c2 = chs.find((s) => s.title === "The Light");
-              if (!c1 || !c2 || c1.number !== "One" || c2.number !== "Two") bad.push("chapters: " + chs.map((s) => s.number + "|" + s.title).join(", "));
+              /* BEUK:casegiven — each number as the page writes it in its label line, "CHAPTER ONE": it was re-set "One" */
+              if (!c1 || !c2 || c1.number !== "ONE" || c2.number !== "TWO") bad.push("chapters: " + chs.map((s) => s.number + "|" + s.title).join(", "));
               const t1 = c1 ? c1.content : "", t2 = c2 ? c2.content : "";
               const need = [[t1, "The tide came in over the bar at dawn, and the harbour woke under a sky of slate. The harbour wall was wet with spray."],
                 [t1, "She had *never* trusted the printed chart. It was **wrong**, and she knew it."],
