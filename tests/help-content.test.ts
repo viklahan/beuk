@@ -220,6 +220,15 @@ const ADDED_2026_11_20: [string, string, string][] = [
   ["import-a-manuscript", "Open the studio and choose Import . Pick your file.", "Open the studio and choose Import Document . Pick your file."],
   ["import-a-manuscript", "(acknowledgments, About the Author, Also By). Walk the section list", "(acknowledgments, About the Author, Also By). The import report then opens on a summary, Your book is in. , with how many words Beuk read, the chapters and pages it found, and what it did. Open my book takes you to the book; Every change, one by one lists each change the import made, with Undo this beside those that can be undone on their own. Walk the section list"],
 ];
+// 2026-11-22 (BEUK:asgiven, V: "We do not change anything from what the writer gives us"; 8e1753a, 482cb66): the
+// import stores the text as the file gives it and no surface tidies it, so the two passages that said the importer and
+// the preview and EPUB make quotes curly, "--" a dash and "..." an ellipsis are corrected. That tidying is the writer's
+// own Auto-Format button (btnBeautify, the one caller of beautifyText). Corrections, not additions: each replaces a
+// passage of the pre-H1 copy that is no longer true. Applied after the additions above.
+const CORRECTED_2026_11_22: [string, string, string][] = [
+  ["import-a-manuscript", "The importer has a smart sanitizer. Straight quotes become proper curly quotes, double hyphens become em dashes, three dots become an ellipsis, and the invisible clutter Word tucks into documents (Mso styles, stray spans, XML declarations) is stripped away — while real formatting (paragraphs, emphasis, headings, scene breaks) is kept.", "Not your quotes, dashes or dots. Beuk keeps them as your file gives them: straight quotes stay straight, a double hyphen stays a double hyphen, and three dots stay three dots. What it tidies is what sits around the words. A run of spaces between words becomes one space, extra blank lines are taken out, and the hidden styling a word processor stores with the text (fonts, colours, style names) is left behind, while real formatting (paragraphs, emphasis, headings, scene breaks) is kept. If you want curly quotes, em dashes and ellipses, press Auto-Format in the editor. It changes the section you have open, and only when you press it."],
+  ["footnotes-and-images", "And one thing needs no mark at all: Auto-Format. Straight quotes become smart quotes, double hyphens become em-dashes, three dots become an ellipsis — the preview and the exported EPUB always use the polished text.", "And one thing has no mark at all: the Auto-Format button in the editor. Press it and, in the section you have open, straight quotes become smart quotes, double hyphens become em-dashes and three dots become an ellipsis. Nothing else makes that change for you: the preview, the EPUB, the print interior and the Word and Markdown files set your quotes, hyphens and dots as they stand in the editor."],
+];
 
 test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 pages), with the two edits the spec asks for and the 2026-10-26 additions', async () => {
   const db = await createTestDb();
@@ -255,7 +264,7 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
       }
       // 2026-10-26: the features added since H1 (removing a picture, the preview keeping its place,
       // the title read from the manuscript, Split at cursor, the Cover Maker), each added in place.
-      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15, ...ADDED_2026_11_20]) if (s === slug) {
+      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15, ...ADDED_2026_11_20, ...CORRECTED_2026_11_22]) if (s === slug) {
         assert.ok(expected.includes(from), `${slug}: the addition's anchor is in the fixture`);
         expected = expected.replace(from, to);
       }
