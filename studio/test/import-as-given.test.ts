@@ -124,25 +124,26 @@ const FILES: [string, () => Promise<{ bytes: Uint8Array | null; text: string }>,
   ['as-given.pdf', async () => ({ bytes: await pdf(), text: '' }), [LINE]],
 ];
 
+beforeAll(async () => {
+  loadMammoth();
+  pdfLib = (await import(/* @vite-ignore */ pathToFileURL(path.join(import.meta.dirname, '..', '..', 'node_modules', 'pdf-lib', 'cjs', 'index.js')).href)) as unknown as PdfLib;
+  const g = globalThis as Rec;
+  /* pdf.js loads in a Node environment (as lockcopy-pdf.test.ts loads it); the import's page is a jsdom window set up here */
+  const jsdomModule = 'jsdom'; /* a computed specifier: jsdom ships no types, and the test needs none */
+  const { JSDOM } = (await import(/* @vite-ignore */ jsdomModule)) as unknown as { JSDOM: new (h: string, o?: Rec) => { window: Rec & { document: Document } } };
+  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { pretendToBeVisual: true });
+  for (const k of Object.getOwnPropertyNames(dom.window)) if (!(k in g)) { try { g[k] = dom.window[k]; } catch (e) { /* read-only */ } }
+  g.document = dom.window.document;
+  g.pdfjsWorker = await import(/* @vite-ignore */ pathToFileURL(path.join(VENDOR, 'pdf.worker.min.mjs')).href);
+  g.pdfjsLib = await import(/* @vite-ignore */ pathToFileURL(path.join(VENDOR, 'pdf.min.mjs')).href);
+  const epubClosure = readFileSync(path.join(import.meta.dirname, '..', '..', 'src', 'book', 'epub', 'closure.ts'), 'utf8');
+  const stubs = ORACLE_STUBS.filter((n) => !['applySampleBookSync', 'irOpenReport', 'bibleBookArrived', 'markWritingActivity', 'noteBookEdited', 'pdfLoadLib'].includes(n));
+  const out = await buildTestModule(HTML, epubClosure, { roots: ['applyBookDoc', 'buildEmptyBook', 'snapshotBookDoc', 'readImportFile', 'pdfExtract', 'importPdfExtracted', 'irTallyPdf', 'irTallyWrite', 'irRenderReport', 'irTallyHtmlOf', 'irTallyLast', 'beautifyText'], supplied: [...new Set([...stubs, 'pdfLoadLib', 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf'])], what: 'import-as-given', fileReaders: ['bulkFileToData', 'samplePicB64'], prefix: 'IMPORT_AS_GIVEN', fn: 'createImportAsGiven', title: "1.0's import, storing the file's characters as given (tests only)" });
+  const code = (out.code as string).replace(/^export (const|function) /gm, '$1 ') + '\nreturn createImportAsGiven(env);';
+  make = (e: Rec) => new Function('env', code)(e) as { api: Api };
+}, 180_000);
+
 describe('the import stores the writer\'s characters as the file gives them: no quote, dash or ellipsis is changed', () => {
-  beforeAll(async () => {
-    loadMammoth();
-    pdfLib = (await import(/* @vite-ignore */ pathToFileURL(path.join(import.meta.dirname, '..', '..', 'node_modules', 'pdf-lib', 'cjs', 'index.js')).href)) as unknown as PdfLib;
-    const g = globalThis as Rec;
-    /* pdf.js loads in a Node environment (as lockcopy-pdf.test.ts loads it); the import's page is a jsdom window set up here */
-    const jsdomModule = 'jsdom'; /* a computed specifier: jsdom ships no types, and the test needs none */
-    const { JSDOM } = (await import(/* @vite-ignore */ jsdomModule)) as unknown as { JSDOM: new (h: string, o?: Rec) => { window: Rec & { document: Document } } };
-    const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { pretendToBeVisual: true });
-    for (const k of Object.getOwnPropertyNames(dom.window)) if (!(k in g)) { try { g[k] = dom.window[k]; } catch (e) { /* read-only */ } }
-    g.document = dom.window.document;
-    g.pdfjsWorker = await import(/* @vite-ignore */ pathToFileURL(path.join(VENDOR, 'pdf.worker.min.mjs')).href);
-    g.pdfjsLib = await import(/* @vite-ignore */ pathToFileURL(path.join(VENDOR, 'pdf.min.mjs')).href);
-    const epubClosure = readFileSync(path.join(import.meta.dirname, '..', '..', 'src', 'book', 'epub', 'closure.ts'), 'utf8');
-    const stubs = ORACLE_STUBS.filter((n) => !['applySampleBookSync', 'irOpenReport', 'bibleBookArrived', 'markWritingActivity', 'noteBookEdited', 'pdfLoadLib'].includes(n));
-    const out = await buildTestModule(HTML, epubClosure, { roots: ['applyBookDoc', 'buildEmptyBook', 'snapshotBookDoc', 'readImportFile', 'pdfExtract', 'importPdfExtracted', 'irTallyPdf', 'irTallyWrite', 'irRenderReport', 'irTallyHtmlOf', 'beautifyText'], supplied: [...new Set([...stubs, 'pdfLoadLib', 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf'])], what: 'import-as-given', fileReaders: ['bulkFileToData', 'samplePicB64'], prefix: 'IMPORT_AS_GIVEN', fn: 'createImportAsGiven', title: "1.0's import, storing the file's characters as given (tests only)" });
-    const code = (out.code as string).replace(/^export (const|function) /gm, '$1 ') + '\nreturn createImportAsGiven(env);';
-    make = (e: Rec) => new Function('env', code)(e) as { api: Api };
-  }, 180_000);
 
   it.each(FILES)('%s: what the writer typed is in the book as typed', async (name, build, kept) => {
     const f = await build();
@@ -173,5 +174,101 @@ describe('the import stores the writer\'s characters as the file gives them: no 
     const ch1 = secs.find((s) => s.type === 'chapter' && s.number === '1')!;
     expect(ch1.content).toBe('Before the break.\n\n***\n\nAfter the break.');
     expect(rep.items.filter((it) => it.kind === 'break').map((it) => it.before)).toEqual(['* * *']);
+  }, 120_000);
+});
+
+/* Part two of the ruling: "We tally the characters and images and everything and then make sure that its the same."
+   The tally counts and compares CHARACTERS, one rule for every format: a character is a code point that is not
+   whitespace; nothing is folded (a capital is not its small letter, a curly quote is not a straight one). */
+type Diff = [string, number, string[]][];
+type Chars = { same: boolean; fileOnlyN: number; bookOnlyN: number; fileOnly: Diff; bookOnly: Diff };
+type Tally = { v: number; counted: boolean; file: number; book: number; aside: Record<string, number>; unaccounted: number; marks: number; chars: Chars;
+  pdf?: { raw: number; joins: Record<string, number>; rejoined: { from: string[]; to: string; n: number }[] } };
+const tallyOf = (rep: Rep) => rep.tally as unknown as Tally;
+const reportSaid = (rep: Rep) => { const el = document.createElement('div'); el.innerHTML = String(lastModule!.api.irTallyHtmlOf(rep)); return (el.textContent || '').replace(/\s+/g, ' '); };
+const cardSaid = () => { lastModule!.api.irRenderReport(); return (document.body.textContent || '').replace(/\s+/g, ' '); };
+/** the characters of a text as the tally counts them here: every code point that is not whitespace (the fixtures hold none of Beuk's marks) */
+const count = (s: string) => Array.from(s.replace(/\s+/g, '')).length;
+
+describe('the import tally counts and compares characters, exactly', () => {
+  it.each(FILES)('%s: every character of the file is in the book or in a named row, and the characters themselves agree', async (name, build) => {
+    const f = await build();
+    const { rep } = await importFile(name, f.bytes, f.text);
+    const ty = tallyOf(rep);
+    expect(ty, 'the import wrote no tally').toBeTruthy();
+    expect(ty.v).toBe(3);
+    expect(ty.counted).toBe(true);
+    const aside = Object.values(ty.aside).reduce((a, n) => a + n, 0);
+    expect(ty.file, name + ': file = book + set aside + unaccounted').toBe(ty.book + aside + ty.unaccounted);
+    expect({ unaccounted: ty.unaccounted, same: ty.chars.same, fileOnly: ty.chars.fileOnly, bookOnly: ty.chars.bookOnly }, name).toEqual({ unaccounted: 0, same: true, fileOnly: [], bookOnly: [] });
+    // the all-clear, in characters
+    expect(cardSaid()).toContain(t('ir.tally.cardOk', { file: ty.file.toLocaleString('en-US'), book: ty.book.toLocaleString('en-US'), aside: aside.toLocaleString('en-US') }));
+    expect(reportSaid(rep)).toContain('Every character of your file is in your book.');
+  }, 120_000);
+
+  it('a text file is counted by hand: the characters of its four lines, none set aside', async () => {
+    const { rep } = await importFile('as-given.txt', null, TXT);
+    const ty = tallyOf(rep);
+    const want = count('Chapter 1') + count(LINE) + count('Chapter 2') + count(LAST);
+    expect(want).toBe(105); // 8 + 73 + 8 + 16
+    expect({ file: ty.file, book: ty.book, aside: ty.aside, unaccounted: ty.unaccounted, marks: ty.marks }).toEqual({ file: 105, book: 105, aside: {}, unaccounted: 0, marks: 0 });
+  }, 120_000);
+
+  it('a character changed on the way in is named, with its count on each side and the words it stands in: the count alone would not show it', async () => {
+    // the file is counted as the writer wrote it; the reading that reaches the book has its two straight double quotes made curly
+    const { rep } = await importFile('as-given.txt', null, TXT, TXT.replace('"Go,"', '“Go,”'));
+    const ty = tallyOf(rep);
+    expect(ty.unaccounted, 'the counts agree').toBe(0);
+    expect(ty.chars.same).toBe(false);
+    expect(ty.chars.fileOnly).toEqual([['"', 2, ['"Go,"']]]);
+    expect(ty.chars.bookOnly).toEqual([['“', 1, ['“Go,”']], ['”', 1, ['“Go,”']]]);
+    const card = cardSaid();
+    expect(card).not.toContain('Every character is accounted for');
+    expect(card).toContain('2 characters of your file are not in your book as written.');
+    const said = reportSaid(rep);
+    expect(said).toContain('In your file, not in your book: “"” U+0022 ×2 (in “"Go,"”)');
+    expect(said).toContain('In your book, not in your file: ““” U+201C ×1 (in ““Go,””), “”” U+201D ×1 (in ““Go,””)');
+    expect(said).not.toContain('Every character of your file is in your book.');
+  }, 120_000);
+
+  it('a capital is not its small letter: nothing is folded', async () => {
+    const { rep } = await importFile('as-given.txt', null, TXT, TXT.replace('The pans', 'the pans'));
+    const ty = tallyOf(rep);
+    expect({ unaccounted: ty.unaccounted, fileOnly: ty.chars.fileOnly, bookOnly: ty.chars.bookOnly }).toEqual({ unaccounted: 0, fileOnly: [['T', 1, ['The']]], bookOnly: [['t', 1, ['the']]] });
+  }, 120_000);
+
+  it('a scene-break marker the writer typed is counted in a row of its own: "---" is three characters set aside, the book\'s "***" is the book\'s', async () => {
+    const { rep, secs } = await importFile('breaks.txt', null, 'Chapter 1\n\nBefore the break.\n\n---\n\nAfter the break.\n\nChapter 2\n\n' + LAST + '\n');
+    expect(secs.find((s) => s.type === 'chapter' && s.number === '1')!.content).toBe('Before the break.\n\n***\n\nAfter the break.');
+    const ty = tallyOf(rep);
+    expect({ aside: ty.aside, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ aside: { sceneBreaks: 3 }, unaccounted: 0, same: true });
+    expect(reportSaid(rep)).toContain(t('ir.tally.b.sceneBreaks') + '3');
+  }, 120_000);
+
+  it('the marks Beuk reads as its own are not compared, and the tally says how many of the file\'s characters that is', async () => {
+    const { rep } = await importFile('marks.md', null, '# Chapter 1\n\nThe *caravan* left.\n\n# Chapter 2\n\n' + LAST + '\n');
+    const ty = tallyOf(rep);
+    expect({ marks: ty.marks, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ marks: 4, unaccounted: 0, same: true }); // two "#" and two "*"
+    expect(reportSaid(rep)).toContain('4 characters of your file are marks Beuk reads as markup, not as text');
+  }, 120_000);
+
+  it('a PDF: a hyphen taken off where a word was rejoined at a line\'s end is a character removed, in a named row, and each one is listed', async () => {
+    const doc = await pdfLib.PDFDocument.create();
+    const font = await doc.embedFont(pdfLib.StandardFonts.Helvetica);
+    const lines: [string, string[]][] = [['Chapter 1', ['The caravan left at dawn and the trans-', 'port reached the pans by noon.']], ['Chapter 2', [LAST]]];
+    for (const [h, body] of lines) {
+      const pg = doc.addPage([420, 595]);
+      pg.drawText(h, { x: 60, y: 480, size: 20, font });
+      body.forEach((s, i) => pg.drawText(s, { x: 60, y: 430 - i * 16, size: 11, font }));
+    }
+    const { rep, all } = await importFile('hyphen.pdf', await doc.save());
+    expect(all).toContain('the transport reached');
+    const ty = tallyOf(rep);
+    const raw = count('Chapter 1') + count(lines[0][1][0]) + count(lines[0][1][1]) + count('Chapter 2') + count(LAST);
+    expect({ raw: ty.pdf!.raw, joins: ty.pdf!.joins, file: ty.file, book: ty.book, unaccounted: ty.unaccounted, same: ty.chars.same }).toEqual({ raw, joins: { pdfRejoined: 1 }, file: raw - 1, book: raw - 1, unaccounted: 0, same: true });
+    expect(ty.pdf!.rejoined).toEqual([{ from: ['trans-', 'port'], to: 'transport', n: 1 }]);
+    const said = reportSaid(rep);
+    expect(said).toContain(t('ir.tally.j.pdfRejoined') + '− 1');
+    expect(said).toContain('Each hyphen taken off at a line’s end: “trans-” + “port” → “transport”');
   }, 120_000);
 });

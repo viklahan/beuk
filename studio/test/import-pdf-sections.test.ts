@@ -45,7 +45,7 @@ type PdfLib = { PDFDocument: { create: () => Promise<{ addPage: (s: [number, num
 let pdfLib: PdfLib;
 
 type Sec = { type: string; kind?: string; title: string; content: string; number?: string };
-type Tally = { counted: boolean; file: number; book: number; unaccounted: number; words: { same: boolean; fileOnly: unknown[]; bookOnly: unknown[] } };
+type Tally = { counted: boolean; file: number; book: number; unaccounted: number; chars: { same: boolean; fileOnly: unknown[]; bookOnly: unknown[] } };
 type Rep = { tally: Tally };
 async function importPdf(name: string, bytes: Uint8Array): Promise<{ rep: Rep; secs: Sec[] }> {
   document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
@@ -82,7 +82,7 @@ const CHAPTERS: Line[][] = [
   [['sec', 'The Salt'], ['p', 'In the store the salt was weighed and sealed.'], ['p', 'The ledger closed on a figure nobody doubted.']],
 ];
 const titles = (secs: Sec[], kind: string) => secs.filter((s) => s.kind === kind && (s.content || '').trim()).map((s) => s.title);
-const clean = (rep: Rep) => ({ counted: rep.tally.counted, unaccounted: rep.tally.unaccounted, same: rep.tally.words.same });
+const clean = (rep: Rep) => ({ counted: rep.tally.counted, unaccounted: rep.tally.unaccounted, same: rep.tally.chars.same });
 
 describe('a PDF\'s section headings stay inside their chapter, the last chapter\'s too', () => {
   beforeAll(async () => {

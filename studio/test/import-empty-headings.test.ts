@@ -44,7 +44,7 @@ type PdfLib = { PDFDocument: { create: () => Promise<{ addPage: (s: [number, num
 let pdfLib: PdfLib;
 
 type Sec = { type: string; kind?: string; title: string; content: string; number?: string };
-type Tally = { studio: { unexplained: number; emptyHeadings: number }; counted: boolean; file: number; book: number; aside: Record<string, number>; unaccounted: number; words: { same: boolean; fileOnly: unknown[]; bookOnly: unknown[] } };
+type Tally = { counted: boolean; file: number; book: number; aside: Record<string, number>; unaccounted: number; chars: { same: boolean; fileOnly: unknown[]; bookOnly: unknown[] } };
 type Rep = { tally: Tally; items: { kind: string; before?: string; data?: Record<string, unknown> }[] };
 let lastModule: { api: Api } | null = null;
 async function importFile(name: string, bytes: Uint8Array | null, text = ''): Promise<{ rep: Rep; secs: Sec[] }> {
@@ -139,7 +139,7 @@ describe('a heading with nothing under it is kept as the writer wrote it: a chap
     const { rep, secs } = await importFile('contents-as-headings.md', null, text);
     const ch = secs.filter((s) => s.type === 'chapter');
     expect(ch.map((s) => [s.title, s.content.trim() === ''])).toEqual([['Dawn', true], ['Noon', true], ['Dawn', false], ['Noon', false]]);
-    expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.words.same }).toEqual({ unaccounted: 0, same: true });
+    expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.chars.same }).toEqual({ unaccounted: 0, same: true });
   }, 120_000);
   /* A contents list typed as headings with no "Contents" heading above it (the owner's rule, 2026-11-21): three lines
      or more in a row, each with nothing under it, each the same heading as a later chapter that has text, in the same
@@ -151,8 +151,8 @@ describe('a heading with nothing under it is kept as the writer wrote it: a chap
     const { rep, secs } = await importFile('typed-contents.md', null, typed(['Chapter 1: Dawn', 'Chapter 2: Noon', 'Chapter 3: Dusk']));
     expect(secs.filter((s) => s.type === 'chapter').map((s) => s.title)).toEqual(['Dawn', 'Noon', 'Dusk']);
     expect(rep.items.some((it) => it.kind === 'toc' && /Chapter 1: Dawn/.test(String(it.before || ''))), 'listed in the report').toBe(true);
-    expect(rep.tally.aside.contents, "three words a line: Chapter, its number, its title").toBe(9);
-    expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.words.same }).toEqual({ unaccounted: 0, same: true });
+    expect(rep.tally.aside.contents, "13 characters a line (Chapter, its number, the colon, its title), three lines").toBe(39);
+    expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.chars.same }).toEqual({ unaccounted: 0, same: true });
   }, 120_000);
   for (const [what, lines] of [
     ['one line matches no chapter', ['Chapter 1: Dawn', 'Chapter 2: Noon', 'Chapter 4: Night']],
@@ -164,7 +164,7 @@ describe('a heading with nothing under it is kept as the writer wrote it: a chap
       expect(ch.length).toBe(6);
       expect(ch.slice(0, 3).every((s) => s.content.trim() === '')).toBe(true);
       expect(rep.tally.aside.contents || 0).toBe(0);
-      expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.words.same }).toEqual({ unaccounted: 0, same: true });
+      expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.chars.same }).toEqual({ unaccounted: 0, same: true });
     }, 120_000);
   }
   for (const [what, blocks, check, pdfCheck] of CASES) {
@@ -173,7 +173,7 @@ describe('a heading with nothing under it is kept as the writer wrote it: a chap
         const { rep, secs } = fmt === 'md' ? await importFile('book.md', null, md(blocks)) : await importFile('book.' + fmt, fmt === 'docx' ? await docx(blocks) : await pdf(blocks));
         (fmt === 'pdf' && pdfCheck ? pdfCheck : check)(secs, rep);
         const ty = rep.tally;
-        expect({ unaccounted: ty.unaccounted, same: ty.words.same, fileOnly: ty.words.fileOnly, bookOnly: ty.words.bookOnly, studioUnexplained: ty.studio.unexplained }).toEqual({ unaccounted: 0, same: true, fileOnly: [], bookOnly: [], studioUnexplained: 0 });
+        expect({ unaccounted: ty.unaccounted, same: ty.chars.same, fileOnly: ty.chars.fileOnly, bookOnly: ty.chars.bookOnly }).toEqual({ unaccounted: 0, same: true, fileOnly: [], bookOnly: [] });
       }, 120_000);
     }
   }

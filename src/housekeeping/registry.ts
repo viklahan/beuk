@@ -3296,14 +3296,14 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.tally.every-word',
     title:
-      "The import tally counts the file by a reading of its own and the book the import made: for a small file of each kind the file's words are exactly the book's plus each named bucket set aside, and a dropped paragraph leaves exactly its words unaccounted for, with a warning",
+      "The import tally counts the file by a reading of its own and the book the import made: for a small file of each kind the file's characters are exactly the book's plus each named row set aside, and a dropped paragraph leaves exactly its characters unaccounted for, with a warning",
     kind: 'client-only',
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
     id: 'import.tally.no-false-alarm',
     title:
-      "The import tally raises no false alarm: a list Word numbers itself, an RTF list with written-out numbers, a page break switched off and rules of underscores (one lifted with the title page) each reconcile to zero; more words in the book than in the file are said as such, never as words lost",
+      "The import tally raises no false alarm: a list Word numbers itself, an RTF list with written-out numbers, a page break switched off and rules of underscores (one lifted with the title page) each reconcile to zero; more characters in the book than in the file are said as such, never as characters lost",
     kind: 'client-only',
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
@@ -3315,9 +3315,9 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
   {
-    id: 'import.tally.studio-count',
+    id: 'import.tally.characters',
     title:
-      "The import tally counts words by the studio's own rule and shows the studio's count as itself, with its parts summing exactly; a language counted by characters is counted so on both sides",
+      "The import tally counts characters by one rule for every format and language: every code point that is not whitespace, on both sides, nothing folded; Beuk's marks on neither, and the file's marks said",
     kind: 'client-only',
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
@@ -3366,7 +3366,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.tally.word-for-word',
     title:
-      "The import tally compares the file's words with the book's, not only their number: a word changed in the import is named and the card warns",
+      "The import tally compares the file's characters with the book's, not only their number: a letter changed in the import is named on both sides with its word, and the card warns",
     kind: 'client-only',
     reason: 'The tally (BEUK:importtally) is counted and drawn in the studio; the server never sees an import.',
   },
