@@ -47247,8 +47247,14 @@
                 else if (same && gap > myLead * 1.4) fresh = true;
                 else if (Math.abs(l.size - prevLine.size) > body * 0.15) fresh = true;
                 /* An attribution line ("— Name") stands on its own. */
-                else if (/^[—–]\s/.test(l.text) && /[.!?”"’»]$/.test(prevLine.text)) fresh = true;
-                else if (/^[—–]\s/.test(prevLine.text) && prevLine.text.length <= 80) fresh = true;
+                /* BEUK:pdfparas — on what the page shows, not on a count of characters. A line that opens on a dash after a
+                   closed sentence begins a paragraph (an attribution, a speech set with a dash); a quotation mark standing
+                   after a space at the line's end opens a quotation and closes nothing. And the line after a dash-opened
+                   line begins one only where that line stops short of the far margin, as an attribution does: one that
+                   runs to the margin is a line of its paragraph (a sentence's own dash fallen at a line's start, a speech
+                   turned onto a second line), however few characters it has. */
+                else if (/^[—–]\s/.test(l.text) && /(?:[.!?]|\S[”"’»])$/.test(prevLine.text)) fresh = true;
+                else if (/^[—–]\s/.test(prevLine.text) && shortOf(prevLine, colLeft, colRight, colRtl)) fresh = true;
                 else {
                   const inCap = capPage === l.page && l.y <= capUntil;
                   /* Lines centred one under the other (a dedication, a
