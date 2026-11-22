@@ -39923,7 +39923,7 @@
          part of the book and is left out. */
       const RTF_CHARSET_CP = { 77: 10000, 128: 932, 129: 949, 134: 936, 136: 950, 161: 1253, 162: 1254, 163: 1258, 177: 1255, 178: 1256, 186: 1257, 204: 1251, 222: 874, 238: 1250 };
       const RTF_SYMBOLS = { emdash: "—", endash: "–", bullet: "•", lquote: "‘", rquote: "’", ldblquote: "“", rdblquote: "”",
-        emspace: " ", enspace: " ", qmspace: " ", tab: " ", line: " ", zwj: "‍", zwnj: "‌", ltrmark: "", rtlmark: "" };
+        emspace: " ", enspace: " ", qmspace: " ", tab: " ", line: String.fromCharCode(11) /* BEUK:breaksgiven — IR_BR */, zwj: "‍", zwnj: "‌", ltrmark: "", rtlmark: "" };
       /* Destinations whose words are never the book's. */
       const RTF_SKIP = new Set(["colortbl", "listtable", "listoverridetable", "revtbl", "rsidtbl", "generator", "xmlnstbl", "filetbl", "latentstyles",
         "themedata", "colorschememapping", "datastore", "mmathPr", "pgdsctbl", "docvar", "userprops", "template", "xe", "tc", "txe", "rxe", "pn",
@@ -40538,8 +40538,11 @@
                 if (v) parts.push(v);
               }
             } else if (b.kind === "p") {
-              const v = carry(b.runs);
-              if (v) parts.push(b.quote ? "> " + v : v);
+              /* BEUK:breaksgiven — a paragraph's own line breaks (\line) stay line breaks; each line of a quotation a line of it */
+              const kr = irRunsToMd(b.runs, ir, false, true);
+              ir.carried.em += kr.em; ir.carried.strong += kr.strong;
+              const v = kr.md;
+              if (v) parts.push(b.quote ? v.split("\n").map((x) => (x ? "> " + x : ">")).join("\n") : irBrHold(ir, v));
             } else if (b.kind === "list") {
               /* BEUK:listmarksgiven — the number the file wrote out is the number stored, with its "." or ")", and a
                  "-", "*" or "•" it wrote stays that bullet: the marks the book's list reads (LIST_NUMBER, LIST_BULLET).
@@ -42430,6 +42433,21 @@
          that the same paragraph read from the file and from the book is the same key (irTallyWhy pairs them) */
       const irTallyKey = (t, words) => String(t == null ? "" : t).toLowerCase().normalize("NFKC").replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ").slice(0, words || 6).join(" ");
       function irTallyItem(R, row, text) { if (!R.items) R.items = {}; (R.items[row] = R.items[row] || []).push(irTallyKey(text, row === "headings" ? 40 : 6)); }
+      /* BEUK:breaksgiven — a paragraph the writer parted with an empty line (two line breaks together, each handed over
+         here as a vertical tab, the import's own mark of one) is stored as the paragraphs it reads as, the empty line
+         between them the book's own. It is counted so on the file's side too: one paragraph for each part. A single
+         line break parts nothing: the paragraph is one, in the file and in the book. */
+      function irTallyParas(R, text) {
+        const parts = String(text).split(/\x0b\s*\x0b\s*/).filter((v) => /\S/.test(v));
+        (parts.length ? parts : [String(text)]).forEach((v) => { R.paragraphs++; irTallyItem(R, "paragraphs", v); });
+      }
+      /* an element's text with each <br> in it as that mark */
+      function irTallyBrText(e) {
+        let out = "";
+        const walk = (n) => { for (let c = n.firstChild; c; c = c.nextSibling) { if (c.nodeType === 3) out += c.nodeValue; else if (c.nodeType === 1) { if (String(c.localName || "").toLowerCase() === "br") out += "\x0b"; else walk(c); } } };
+        walk(e);
+        return out;
+      }
       /* BEUK:tableimport — a table's cells are counted as the places of its grid on both sides: a cell merged across
          columns or rows is as many places as it covers (the book holds each covered place as an empty cell), and a
          note's number set against a cell's words is no word of the table's (the book's "[^n]" is none either) */
@@ -42452,7 +42470,7 @@
         /* a paragraph's own text: its runs in order, a tab or a line break a space; the paragraphs of a text box inside it are paragraphs of their own */
         const paraText = (p) => {
           let s = "";
-          const walk = (n) => { for (let c = n.firstChild; c; c = c.nextSibling) { if (c.nodeType !== 1) continue; if (wEl(c, "p")) continue; if (wEl(c, "t")) s += c.textContent; else if (wEl(c, "delText")) P.deleted.push(c.textContent); else if (wEl(c, "tab") || wEl(c, "br") || wEl(c, "cr")) s += " "; else if (wEl(c, "noBreakHyphen")) s += "‑"; else if (wEl(c, "instrText")) continue; else walk(c); } };
+          const walk = (n) => { for (let c = n.firstChild; c; c = c.nextSibling) { if (c.nodeType !== 1) continue; if (wEl(c, "p")) continue; if (wEl(c, "t")) s += c.textContent; else if (wEl(c, "delText")) P.deleted.push(c.textContent); else if (wEl(c, "cr") || (wEl(c, "br") && !/^(?:page|column)$/.test(c.getAttributeNS(W, "type") || c.getAttribute("w:type") || ""))) s += "\x0b"; else if (wEl(c, "tab") || wEl(c, "br")) s += " "; else if (wEl(c, "noBreakHyphen")) s += "‑"; else if (wEl(c, "instrText")) continue; else walk(c); } };
           walk(p);
           return s;
         };
@@ -42477,7 +42495,7 @@
           if (kid(ppr, "numPr")) { R.listItems++; irTallyItem(R, "listItems", text); return; }
           if (irTallyOrnament(text)) { R.breaks++; irTallyItem(R, "breaks", text); return; }
           if (quoteStyle.test(style)) { R.quotes++; irTallyItem(R, "quotes", text); return; }
-          R.paragraphs++; irTallyItem(R, "paragraphs", text);
+          irTallyParas(R, text);
         });
         const count = (d, ns, name) => (d ? d.getElementsByTagNameNS(ns, name).length : 0);
         R.pageBreaks = (R.pageBreaks || 0) + Array.prototype.filter.call(doc.getElementsByTagNameNS(W, "br"), (b) => (b.getAttributeNS(W, "type") || b.getAttribute("w:type")) === "page").length;
@@ -42525,7 +42543,7 @@
         /* a paragraph's own text: a note and a comment set inside it are counted apart */
         const paraText = (p) => {
           let s = "";
-          const walk = (n) => { for (let c = n.firstChild; c; c = c.nextSibling) { if (c.nodeType === 3) { s += c.nodeValue; continue; } if (c.nodeType !== 1) continue; if (is(c, T, "note") || is(c, O, "annotation") || is(c, T, "p") || is(c, T, "h")) continue; if (is(c, T, "s")) s += " "; else if (is(c, T, "tab") || is(c, T, "line-break")) s += " "; else walk(c); } };
+          const walk = (n) => { for (let c = n.firstChild; c; c = c.nextSibling) { if (c.nodeType === 3) { s += c.nodeValue; continue; } if (c.nodeType !== 1) continue; if (is(c, T, "note") || is(c, O, "annotation") || is(c, T, "p") || is(c, T, "h")) continue; if (is(c, T, "s")) s += " "; else if (is(c, T, "line-break")) s += "\x0b"; else if (is(c, T, "tab")) s += " "; else walk(c); } };
           walk(p);
           return s;
         };
@@ -42547,7 +42565,7 @@
           if (level) { R.headings[level] = (R.headings[level] || 0) + 1; irTallyItem(R, "headings", text); return; }
           if (within(p, T, "list")) { R.listItems++; irTallyItem(R, "listItems", text); return; }
           if (irTallyOrnament(text)) { R.breaks++; irTallyItem(R, "breaks", text); return; }
-          R.paragraphs++; irTallyItem(R, "paragraphs", text);
+          irTallyParas(R, text);
         });
         const count = (ns, name) => root.getElementsByTagNameNS(ns, name).length;
         R.tables = count(TB, "table"); R.tableRows = count(TB, "table-row"); R.tableCells = count(TB, "table-cell") + count(TB, "covered-table-cell");
@@ -42612,7 +42630,7 @@
           P.body.push(para);
           const level = headOf[curS] || (outline >= 0 && outline < 9 ? outline + 1 : 0);
           if (para.trim() && level && !cell && !inTbl) { R.headings[level] = (R.headings[level] || 0) + 1; irTallyItem(R, "headings", para); para = ""; isList = false; return; }
-          if (para.trim()) { if (cell || inTbl) R.tableWords += irTallyN(para); else if (isList) { R.listItems++; irTallyItem(R, "listItems", para); } else if (irTallyOrnament(para)) { R.breaks++; irTallyItem(R, "breaks", para); } else { R.paragraphs++; irTallyItem(R, "paragraphs", para); } }
+          if (para.trim()) { if (cell || inTbl) R.tableWords += irTallyN(para); else if (isList) { R.listItems++; irTallyItem(R, "listItems", para); } else if (irTallyOrnament(para)) { R.breaks++; irTallyItem(R, "breaks", para); } else irTallyParas(R, para); }
           para = ""; isList = false;
         };
         const n = s.length;
@@ -42669,7 +42687,8 @@
                 case "nestrow": R.tableRows++; break;
                 case "trowd": if (st.dest === "body") rowX = []; break;
                 case "cellx": if (st.dest === "body" && rowX) rowX.push(p || 0); break;
-                case "tab": case "line": case "emspace": case "enspace": case "qmspace": put(" "); break;
+                case "line": put("\x0b"); break; /* BEUK:breaksgiven */
+                case "tab": case "emspace": case "enspace": case "qmspace": put(" "); break;
                 case "emdash": put("—"); break;
                 case "endash": put("–"); break;
                 case "bullet": put("•"); break;
@@ -42731,7 +42750,7 @@
           if (inside(e, /^(?:nav|script|style|svg)$/) || tag === "nav") return;
           const m = /^h([1-6])$/.exec(tag);
           if (m) { if (irTallyN(e.textContent)) { R.headings[m[1]] = (R.headings[m[1]] || 0) + 1; irTallyItem(R, "headings", e.textContent); } return; }
-          if (tag === "p") { if (inside(e, /^(?:table|li|blockquote)$/)) return; if (!e.textContent.trim()) return; if (irTallyOrnament(e.textContent)) { R.breaks++; irTallyItem(R, "breaks", e.textContent); } else { R.paragraphs++; irTallyItem(R, "paragraphs", e.textContent); } return; }
+          if (tag === "p") { if (inside(e, /^(?:table|li|blockquote)$/)) return; if (!e.textContent.trim()) return; if (irTallyOrnament(e.textContent)) { R.breaks++; irTallyItem(R, "breaks", e.textContent); } else irTallyParas(R, irTallyBrText(e)); return; }
           if (tag === "hr") { R.breaks++; irTallyItem(R, "breaks", ""); return; }
           if (tag === "figcaption" || tag === "caption") { irTallyItem(R, "captions", e.textContent); return; }
           if (/^(?:div|section|article|aside|header|footer|main|center|address)$/.test(tag) && !inside(e, /^(?:table|li|blockquote|p|h[1-6])$/)) {
@@ -43637,7 +43656,7 @@
          known); without, it is written as Beuk's own page sets it. */
       function epubBlocks(root, ctx) {
         const ir = ctx.ir, out = [], notes = ctx.notes || [];
-        const md = (el, skipLists) => { const r = irRunsToMd(irInlineRuns(el, ir, !!skipLists), ir, false); ir.carried.em += r.em; ir.carried.strong += r.strong; return r.md; };
+        const md = (el, skipLists, breaks) => { const r = irRunsToMd(irInlineRuns(el, ir, !!skipLists), ir, false, !!breaks); ir.carried.em += r.em; ir.carried.strong += r.strong; return breaks ? irBrHold(ir, r.md) : r.md; };
         const lines = (el) => {
           const segs = [[]];
           el.childNodes.forEach((c) => { if (c.nodeType === 1 && epubTag(c) === "br") segs.push([]); else segs[segs.length - 1].push(c); });
@@ -43676,7 +43695,7 @@
             if (!any) return;
             const w = el.ownerDocument.createElement("span");
             cs.forEach((n) => w.appendChild(n.cloneNode(true)));
-            const t = md(w);
+            const t = md(w, false, true); /* BEUK:breaksgiven */
             if (t) out.push(t);
           };
           Array.prototype.slice.call(el.childNodes).forEach((c) => {
@@ -43853,7 +43872,7 @@
             if (has("align-center") || has("align-right")) { fence(has("align-center") ? "center" : "right", paras(c).join("\n\n")); return; }
             if (tag === "p") {
               if (c.querySelector(".redact")) c.querySelectorAll(".redact").forEach((r) => r.replaceWith(c.ownerDocument.createTextNode("||█████||")));
-              const t = md(c);
+              const t = md(c, false, true); /* BEUK:breaksgiven — a paragraph's own line breaks stay line breaks */
               if (t) out.push(t);
               /* a picture set inside a paragraph is still a picture of the book */
               c.querySelectorAll("img").forEach((img) => image(img, ""));
@@ -44580,6 +44599,38 @@
       /* A web or mail address; a space or parenthesis inside it (Word
          keeps them raw) is percent-encoded by irRunsToMd, not refused. */
       const IR_LINK_OK = /^(?:https?:\/\/|mailto:)\S/i;
+      /* ==== BEUK:breaksgiven ==== (the owner, 2026-11-22: "KEEP WHAT THE WRITER GIVES US.") A line break the writer
+         typed inside a paragraph (Word's Shift+Enter, a web page's or an EPUB's <br>, RTF's \line, OpenDocument's
+         text:line-break) used to come in as a space: "12 Salt Road / Harbour Town / HT1 2AB", three lines of an
+         address, was stored as one line. The book's text holds a line break inside a block as a line break (the
+         editor's own Shift+Enter writes one), so the break is now stored as the writer made it.
+         A reader hands the break on as IR_BR, one vertical tab: white space to every rule that reads "\s", so a
+         reader that keeps no breaks (a heading, a table's cell, a list's item, a caption) closes it up as the space
+         it always was. irRunsToMd, asked to keep breaks, sets each as a line break: one break a new line of the same
+         block; two or more together a blank line, which in the book's text parts two paragraphs, as the empty line
+         between them does on the writer's page. Emphasis is closed before a break and opened again after it; a
+         break inside a link's own words is closed up (a link's words are read on one line).
+         Every rule that reads the import's text line by line (the parser's headings, the scene-break rule) would
+         take a line that stands alone for what its words say: "Chapter 4" on a line of a paragraph "See also /
+         Chapter 4 / Appendix B" is no chapter's heading. A paragraph with such a line is held aside whole and
+         stands in the text as a placeholder ("PARA"), which irFinish sets back as the paragraph it is (irBrHold). */
+      const IR_BR = String.fromCharCode(11);
+      const IR_BR_RUN = new RegExp("\\s*" + IR_BR + "\\s*", "g");
+      const irBrLines = (text) => String(text).replace(/[^\S\x0b]+/g, " ").replace(IR_BR_RUN, (m) => (m.split(IR_BR).length > 2 ? "\n\n" : "\n")).split("\n").map((l) => l.replace(/\s+/g, " ").trim()).join("\n").replace(/^\n+|\n+$/g, "").replace(/\n{3,}/g, "\n\n");
+      const irBrHeadLike = (line) => { const v = String(line).trim(); return !!v && (isSegmentBoundary(v) || /^#{1,6}\s/.test(v) || IR_BREAK_RE.test(v)); };
+      /* a paragraph's text as irRunsToMd kept it: each block of it that has a line a line-reading rule would take for a heading or a scene break is held aside */
+      function irBrHold(ir, md) {
+        const v = String(md || "");
+        if (v.indexOf("\n") === -1 || !ir) return v;
+        return v.split("\n\n").map((b) => {
+          const lines = b.split("\n");
+          if (lines.length < 2 || !lines.some(irBrHeadLike)) return b;
+          ir.paras = ir.paras || [];
+          ir.paras.push(b);
+          return irSent("PARA", ir.paras.length - 1);
+        }).join("\n\n");
+      }
+      /* ==== /BEUK:breaksgiven ==== */
       function irInlineRuns(node, ir, skipLists, noLinks) {
         const runs = [];
         const d = ir.drops;
@@ -44588,7 +44639,7 @@
           if (n.nodeType !== 1) return;
           const tag = n.tagName.toLowerCase();
           if (tag === "img") return;
-          if (tag === "br") { runs.push({ t: " ", i: f.i, b: f.b, href: f.href }); return; }
+          if (tag === "br") { runs.push({ t: IR_BR, i: f.i, b: f.b, href: f.href }); return; } /* BEUK:breaksgiven */
           if (skipLists && (tag === "ul" || tag === "ol")) return;
           let g = f;
           const has = /\S/.test(n.textContent);
@@ -44617,7 +44668,7 @@
       /* Runs -> marked-up text. plainEm drops the italic/bold marks
          (a heading or title-page line takes the book's own style) and
          reports whether there were any. */
-      function irRunsToMd(runs, ir, plainEm) {
+      function irRunsToMd(runs, ir, plainEm, breaks) {
         /* Whitespace carries no formatting: a space between two italic
            words stays inside the italic run. */
         const merged = [];
@@ -44642,6 +44693,8 @@
           const mark = r.i && r.b ? "***" : (r.b ? "**" : "*");
           if (r.i) em++;
           if (r.b) strong++;
+          /* BEUK:breaksgiven — the marks close before a line break and open again after it: a blank line parts two blocks, and a mark is read inside one */
+          if (breaks && r.t.indexOf(IR_BR) !== -1) return r.t.split(IR_BR).map((seg) => { const q = seg.match(/^(\s*)([\s\S]*?)(\s*)$/); return q[2] ? q[1] + mark + q[2] + mark + q[3] : seg; }).join(IR_BR);
           return m[1] + mark + m[2] + mark + m[3];
         };
         let out = "";
@@ -44656,9 +44709,9 @@
           /* The address is percent-safe for the [..](..) form and for
              the italic marks; the words lose any square brackets. */
           const addr = href.replace(/[\s()*<>\[\]]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"));
-          out += m[1] + "[" + m[2].replace(/[\[\]]/g, "") + "](" + addr + ")" + m[3];
+          out += m[1] + "[" + m[2].replace(/[\[\]]/g, "").replace(/\s+/g, " ") + "](" + addr + ")" + m[3];
         }
-        return { md: out.replace(/\s+/g, " ").trim(), hadEm, em, strong };
+        return { md: breaks && out.indexOf(IR_BR) !== -1 ? irBrLines(out) : out.replace(/\s+/g, " ").trim(), hadEm, em, strong };
       }
       function irDocxHtmlToText(html, ir) {
         const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
@@ -44920,7 +44973,7 @@
                 if (!alignRun) alignRun = { kind: al, paras: [] };
                 /* The aligned paragraph keeps its italic, bold and
                    links like any other (the run walk), not just its words. */
-                alignRun.paras.push(carry(irRunsToMd(irInlineRuns(node, ir), ir, false)) || v);
+                alignRun.paras.push(irBrHold(ir, carry(irRunsToMd(irInlineRuns(node, ir), ir, false, true))) || v); /* BEUK:breaksgiven */
                 return;
               }
             }
@@ -44979,7 +45032,7 @@
             /* The lines stay one quote block, so a last "> — Name" line
                is read as the quote's attribution. */
             const ql = [];
-            (paras.length ? paras : [node]).forEach((pn) => { const l = carry(irRunsToMd(irInlineRuns(pn, ir), ir, false)); if (l) ql.push("> " + l); });
+            (paras.length ? paras : [node]).forEach((pn) => { const l = carry(irRunsToMd(irInlineRuns(pn, ir), ir, false, true)); if (l) l.split("\n").forEach((x) => ql.push(x ? "> " + x : ">")); }); /* BEUK:breaksgiven — each line of the quotation a line of it */
             if (ql.length) parts.push(ql.join("\n"));
             pushImages(node);
           }
@@ -45010,7 +45063,9 @@
           } else {
             const plain = txt.replace(/\s+/g, " ").trim();
             const runs = irInlineRuns(node, ir);
-            const r = irRunsToMd(runs, ir, false);
+            const r = irRunsToMd(runs, ir, false, true); /* BEUK:breaksgiven — a paragraph's own line breaks stay line breaks */
+            const lined = r.md.indexOf("\n") !== -1;
+            if (lined) r.md = irBrHold(ir, r.md);
             if (plain && isSegmentBoundary(plain)) {
               /* A bold "Chapter One" paragraph is a heading by its words:
                  it is written plain so the chapter split still finds it. */
@@ -45020,7 +45075,8 @@
               push(pr.md);
             } else {
               if (r.hadEm && r.md && wordCountOf(plain) <= 12) frontLines.push({ at: parts.length, r, plain: irRunsToMd(runs, ir, true).md });
-              push(carry(r));
+              if (lined) { const v = carry(r); if (v) parts.push(v); } /* BEUK:breaksgiven — set down with its line breaks (push closes white space up) */
+              else push(carry(r));
             }
             if (node.querySelector && node.querySelector("img")) pushImages(node);
           }
@@ -45290,12 +45346,13 @@
             const m = b.trim().match(IR_SENT_RE);
             if (!m) {
               /* BEUK:tablerows — a table's placeholder that does not stand alone (inside a quotation, say) still gives its rows */
-              out.push(b.replace(/TBL(\d+)/g, (x, k) => { const tb = ir.tables[k]; if (!tb) return ""; tb.secId = s.id; tb.prev = ""; tb.loose = true; return irTablePlace(tb).join("\n"); }).replace(/[A-Z]+\d+/g, ""));
+              out.push(b.replace(/TBL(\d+)/g, (x, k) => { const tb = ir.tables[k]; if (!tb) return ""; tb.secId = s.id; tb.prev = ""; tb.loose = true; return irTablePlace(tb).join("\n"); }).replace(/PARA(\d+)/g, (x, k) => (ir.paras && ir.paras[k] != null ? ir.paras[k] : "")) /* BEUK:breaksgiven: a held paragraph inside another block (a centred run) */.replace(/[A-Z]+\d+/g, ""));
               return;
             }
             const n = Number(m[2]);
             if (m[1] === "SB" && ir.breaks[n]) { ir.breaks[n].secId = s.id; marks.push({ rec: ir.breaks[n], at: out.length }); out.push("***"); }
             else if (m[1] === "SUB" && ir.subs && ir.subs[n] != null) out.push("# " + ir.subs[n]); /* BEUK:wordback */
+            else if (m[1] === "PARA" && ir.paras && ir.paras[n] != null) out.push(ir.paras[n]); /* BEUK:breaksgiven — a paragraph held aside from the rules that read line by line, back as it was */
             else if (m[1] === "NOTE" && ir.docNotes[n] && ir.docNotes[n].stood) { ir.docNotes[n].secId = s.id; out.push(ir.docNotes[n].plain); } /* BEUK:notesstood — an unmarked note's text, where its definition stood */
             else if (m[1] === "SUBT" && ir.subtitles && ir.subtitles[n] != null) { if (!s.subtitle) s.subtitle = ir.subtitles[n]; }
             else if (m[1] === "IMG" && ir.images[n]) {
@@ -45312,7 +45369,7 @@
           marks.forEach((mk) => { mk.rec.prev = (out[mk.at - 1] || "").trim(); mk.rec.next = (out[mk.at + 1] || "").trim(); });
           s.content = out.filter((b, i) => b.trim() || i === 0).join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
         });
-        const resolveText = (str) => String(str || "").replace(/SB\d+/g, "***").replace(/SUB(\d+)/g, (m, n) => (ir.subs && ir.subs[n] != null ? "# " + ir.subs[n] : "")).replace(/TBL(\d+)/g, (m, n) => (ir.tables[n] && ir.tables[n].blocks ? ir.tables[n].blocks.join("\n\n") : "")).replace(/\n?[A-Z]+\d+\n?/g, "");
+        const resolveText = (str) => String(str || "").replace(/SB\d+/g, "***").replace(/SUB(\d+)/g, (m, n) => (ir.subs && ir.subs[n] != null ? "# " + ir.subs[n] : "")).replace(/PARA(\d+)/g, (m, n) => (ir.paras && ir.paras[n] != null ? ir.paras[n] : "")).replace(/TBL(\d+)/g, (m, n) => (ir.tables[n] && ir.tables[n].blocks ? ir.tables[n].blocks.join("\n\n") : "")).replace(/\n?[A-Z]+\d+\n?/g, "");
         /* BEUK:notesstood — and in the record of what each piece placed (the report's undo matches the page by it) */
         const resolveStood = (str) => String(str || "").replace(new RegExp(irSent("NOTE", "(\\d+)"), "g"), (m0, k) => (ir.docNotes[k] && ir.docNotes[k].stood ? ir.docNotes[k].plain : m0));
         (pieces || []).forEach((p) => { if (p._placed) p._placed.content = resolveText(resolveStood(p._placed.content)); });
