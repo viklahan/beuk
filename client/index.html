@@ -40137,8 +40137,9 @@
             if (level) res.blocks.push({ kind: "h", level, runs, text });
             else if (isList) {
               const ordered = /^(\(?\d+[.)]?|[ivxlc]+[.)]|[a-z][.)])$/i.test(listMark.trim());
-              if (last && last.kind === "list" && last.ordered === ordered) last.items.push(runs);
-              else res.blocks.push({ kind: "list", ordered, items: [runs], nested: 0 });
+              /* BEUK:listmarksgiven — marks: each item's mark as the file wrote it out ({\listtext 5.\tab}), kept with the item for the two writers below */
+              if (last && last.kind === "list" && last.ordered === ordered) { last.items.push(runs); last.marks.push(listMark.trim()); }
+              else res.blocks.push({ kind: "list", ordered, items: [runs], marks: [listMark.trim()], nested: 0 });
               if (para.ilvl > 0) res.blocks[res.blocks.length - 1].nested++;
             } else res.blocks.push({ kind: "p", runs, quote: RTF_QUOTE_STYLE.test(name), cap: /caption/i.test(name) }); /* BEUK:tableimport — cap: the style sheet names it a caption */
           }
@@ -40441,7 +40442,9 @@
           if (b.kind === "h") { if (subs.get(b) === "open") { flushDefs(); out.push("# " + b.text); } else { const v = md(b.runs); take(v); out.push(v); } }
           else if (b.kind === "p") { const v = md(b.runs); if (!v) return; take(v); out.push(b.quote ? "> " + v : v); }
           else if (b.kind === "list") {
-            const lines = b.items.map(md).filter(Boolean).map((l, k) => (b.ordered ? (k + 1) + ". " : "- ") + l);
+            /* BEUK:listmarksgiven — the mark the file wrote out, where the book's list reads it (as importRtfRead sets it) */
+            const lines = [];
+            b.items.forEach((item, k) => { const l = md(item), mk = (b.marks || [])[k] || ""; if (l) lines.push((b.ordered ? (/^\d{1,3}[.)]$/.test(mk) ? mk : (lines.length + 1) + ".") : /^[-*•]$/.test(mk) ? mk : "-") + " " + l); });
             lines.forEach(take);
             if (lines.length) out.push(lines.join("\n"));
           }
@@ -40502,7 +40505,14 @@
               const v = carry(b.runs);
               if (v) parts.push(b.quote ? "> " + v : v);
             } else if (b.kind === "list") {
-              const lines = b.items.map(carry).filter(Boolean).map((l, k) => (b.ordered ? (k + 1) + ". " : "- ") + l);
+              /* BEUK:listmarksgiven — the number the file wrote out is the number stored, with its "." or ")", and a
+                 "-", "*" or "•" it wrote stays that bullet: the marks the book's list reads (LIST_NUMBER, LIST_BULLET).
+                 Until now every list was numbered 1, 2, 3 whatever the file said (a list written 5. 6. 7. came in
+                 1. 2. 3.), unseen by the tally. Any other mark ("a.", "iv.", "◆") the book's list cannot hold: the item
+                 gets the book's own (its place in the list, or "-"), and the mark's characters are counted in the
+                 tally's row (res.aside.listMarks), as they were. */
+              const lines = [];
+              b.items.forEach((item, k) => { const l = carry(item), mk = (b.marks || [])[k] || ""; if (l) lines.push((b.ordered ? (/^\d{1,3}[.)]$/.test(mk) ? mk : (lines.length + 1) + ".") : /^[-*•]$/.test(mk) ? mk : "-") + " " + l); });
               if (!b.ordered && lines.length === 1) lines[0] = lines[0].slice(2); /* one bullet reads as a paragraph */
               if (lines.length) parts.push(lines.join("\n"));
               if (b.nested) ir.nestedList = (ir.nestedList || 0) + b.nested; /* BEUK:nestedlists */
@@ -42241,13 +42251,14 @@
          none runs on from the item above it. Where that list is nested
          (items at more than one depth), indented, drawn with a mark that
          is not Beuk's, or stands straight under a line of text, it is
-         written out as Beuk's own list: every item at the margin, "- "
-         (or numbered on from the first item's number), the line above it
-         a paragraph of its own. A glyph that is the list's mark is not a
-         word. A list already in Beuk's shape is left exactly as typed. */
+         written out as Beuk's own list: every item at the margin, under
+         the mark the writer typed where the book's list reads that mark
+         (BEUK:listmarksgiven, below), the line above it a paragraph of
+         its own. A glyph that is the list's mark is not a word. A list
+         already in Beuk's shape is left exactly as typed. */
       const IR_LIST_GLYPHS = "•◦‣⁃▪▫◆◇▸▹►❧";
       function irFlatLists(text, ir) {
-        const ITEM = new RegExp("^([ \\t]*)(?:([-*+" + IR_LIST_GLYPHS + "])|(\\d{1,3})[.)])[ \\t]+(\\S.*)$");
+        const ITEM = new RegExp("^([ \\t]*)(?:([-*+" + IR_LIST_GLYPHS + "])|(\\d{1,3})([.)]))[ \\t]+(\\S.*)$");
         const depthOf = (ws) => ws.replace(/\t/g, "    ").length;
         const itemOf = (line) => (IR_BREAK_RE.test(line) || /^\s*\[\^?\d{1,3}\]:/.test(line) ? null : ITEM.exec(line));
         return irMdOutsideFences(text, (chunk) => chunk.split(/(\n[ \t]*(?:\n[ \t]*)+)/).map((block, bi) => {
@@ -42259,7 +42270,7 @@
           const items = [];
           for (let i = from; i < lines.length; i++) {
             const m = itemOf(lines[i]);
-            if (m) { items.push({ depth: depthOf(m[1]), glyph: m[2] || "", num: m[3] || "", lines: [m[4].trim()] }); continue; }
+            if (m) { items.push({ depth: depthOf(m[1]), glyph: m[2] || "", num: m[3] || "", close: m[4] || "", lines: [m[5].trim()] }); continue; }
             /* a list that opens mid-block is one only while every line under it is set in from the margin, as its items are */
             if (from > 0 && !/^[ \t]/.test(lines[i])) return block;
             items[items.length - 1].lines.push(lines[i].trim());
@@ -42268,12 +42279,25 @@
           const nested = items.filter((it) => it.depth > base).length;
           const foreign = items.some((it) => it.depth > 0 || (it.glyph && !/[-*•]/.test(it.glyph)));
           if (items.length < 2 || !(nested || foreign || from > 0)) return block;
-          const ordered = !!items[0].num, first = Number(items[0].num) || 1;
           if (nested && ir) ir.nestedList = (ir.nestedList || 0) + nested;
-          const out = items.map((it, k) => (ordered ? (first + k) + ". " : "- ") + it.lines.join("\n"));
+          /* BEUK:listmarksgiven — each item under the mark the writer typed (V, 2026-11-22: "KEEP WHAT THE WRITER GIVES
+             US"), where the book's list reads that mark (LIST_NUMBER: a number with its "." or ")"; LIST_BULLET: "-",
+             "*", "•"). No number is written over and no bracket made a full stop: until now the items were numbered
+             on from the first one in steps of one ("3. 7. 9." came in "3. 4. 5.", "2)" came in "2."), which the tally
+             could not show, a list's mark at the head of a line being counted on neither side. The book's list is of
+             one kind (listItemsOf: in a numbered list a line with no number runs on from the item above it, and a
+             numbered line in a bulleted one makes it no list at all), so a run of numbered items and a run of
+             bulleted ones are each a list of their own, in the order read: a bullet under a numbered item is given
+             no number of Beuk's, and a number under a bullet stays a number. A bullet the book's list has no mark for
+             ("+", "◆") is set as "-", counted below; where its run is that one item, which the book reads as a
+             paragraph and no list, it stays as typed. */
+          const runs = [];
+          items.forEach((it) => { const last = runs[runs.length - 1]; if (last && last.ordered === !!it.num) last.items.push(it); else runs.push({ ordered: !!it.num, items: [it] }); });
+          const markOf = (it, alone) => (it.num ? it.num + it.close : alone || /[-*•]/.test(it.glyph) ? it.glyph : "-") + " ";
+          const out = runs.map((r) => r.items.map((it) => markOf(it, r.items.length === 1) + it.lines.join("\n")).join("\n")).join("\n\n");
           /* BEUK:importtally — a bullet the file typed (◆, ▸, +) is set as the book's own "- ": measured, the block before and after */
-          irAsideDelta("listMarks", lines.slice(from).join("\n"), out.join("\n"));
-          return (from > 0 ? lines.slice(0, from).join("\n") + "\n\n" : "") + out.join("\n");
+          irAsideDelta("listMarks", lines.slice(from).join("\n"), out);
+          return (from > 0 ? lines.slice(0, from).join("\n") + "\n\n" : "") + out;
         }).join(""));
       }
       /* ==== /BEUK:nestedlists ==== */
@@ -71561,7 +71585,9 @@
             irCheckRun(() => {
               const rep = importPlainManuscript("fixture.md", md);
               const got = chapter(), it = (rep ? rep.items : []).filter((i) => i.kind === "nestedList");
-              if (got.indexOf(FLAT) === -1 || got.indexOf(["1. One", "2. under one", "3. Two"].join(NL)) === -1 || got.indexOf("- as" + NL + "- typed") === -1) bad.push("Markdown: the lists came in as " + JSON.stringify(got.slice(1)));
+              /* BEUK:listmarksgiven — a bullet under a numbered item keeps its "-" and the numbered items their numbers, each run a block of its own (it was pinned here as "1. One", "2. under one", "3. Two": the bullet given a number of Beuk's and the writer's "2." written over as "3.") */
+              const one = got.indexOf("1. One");
+              if (got.indexOf(FLAT) === -1 || one === -1 || got[one + 1] !== "- under one" || got[one + 2] !== "2. Two" || got.indexOf("- as" + NL + "- typed") === -1) bad.push("Markdown: the lists came in as " + JSON.stringify(got.slice(1)));
               if (it.length !== 1 || it[0].data.n !== 4) bad.push("Markdown: nested items reported " + JSON.stringify(it.map((i) => i.data)) + ", not 4");
             });
             /* plain text: a list under its label, drawn with glyphs, its lines wrapped */
