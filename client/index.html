@@ -45750,6 +45750,45 @@
         if (/[ﭐ-﷿ﹰ-ﻼ]/.test(s)) s = s.replace(/[ﭐ-﷿ﹰ-ﻼ]+/g, (m) => m.normalize("NFKC"));
         return { s, bad };
       }
+      /* BEUK:importtally — a left-to-right line's pieces (in order of rising x), with each run of right-to-left pieces
+         turned to reading order and set as one piece (see the caller). Arabic digits read with the run; an English
+         number only between right-to-left pieces, or where nothing but it stands before the run on the line. The pieces
+         joined into the run's words are measured as a join (pdfPieced), in reading order, so the tally names them. */
+      function pdfRtlRuns(its) {
+        const isR = (it) => (it.rtl || 0) > 0;
+        const isSp = (it) => !it.s.trim();
+        const isAN = (it) => /^[٠-٩۰-۹]+(?:[.,٫٬][٠-٩۰-۹]+)*$/.test(it.s.trim());
+        const isEN = (it) => /^\d+(?:[.,:/-]\d+)*$/.test(it.s.trim());
+        const strong = (it) => isR(it) || isAN(it);
+        const nextSolid = (k) => { for (let j = k; j < its.length; j++) if (!isSp(its[j])) return its[j]; return null; };
+        const out = [];
+        let i = 0;
+        while (i < its.length) {
+          const it = its[i];
+          const leadEN = isEN(it) && out.every(isSp) && nextSolid(i + 1) && strong(nextSolid(i + 1));
+          if (!strong(it) && !leadEN) { out.push(it); i++; continue; }
+          /* the run: from here over right-to-left pieces, Arabic digits, spaces, and English numbers that stand between them */
+          let j = i, last = i;
+          while (j < its.length) {
+            const o = its[j];
+            if (strong(o)) last = j;
+            else if (isSp(o) || isEN(o)) { const n = nextSolid(j + 1); if (!n || !(strong(n) || (isEN(n) && isEN(o)))) break; }
+            else break;
+            j++;
+          }
+          const run = its.slice(i, last + 1);
+          /* units: a number's digits that stand together keep their order; every other piece is a unit of its own */
+          const units = [];
+          run.forEach((o) => { const u = units[units.length - 1]; if (u && (isEN(o) || isAN(o)) && (isEN(u[u.length - 1]) || isAN(u[u.length - 1])) && !isSp(u[u.length - 1])) u.push(o); else units.push([o]); });
+          const ordered = units.reverse().reduce((a, u) => a.concat(u), []);
+          const text = ordered.map((o) => o.s).join("");
+          const x0 = Math.min.apply(null, run.map((o) => o.x)), x1 = Math.max.apply(null, run.map((o) => o.x + o.w));
+          irAsideDelta("pdfPieced", ordered.map((o) => o.s).join("\n"), text);
+          out.push(Object.assign({}, run.find((o) => !isSp(o)) || run[0], { s: text, x: x0, w: x1 - x0, rtl: run.reduce((a, o) => a + (o.rtl || 0), 0), rtlRun: true }));
+          i = last + 1;
+        }
+        return out;
+      }
       /* BEUK:pdfmarks — the file's own bookmarks: each one's title, its
          depth and the page it opens (1-based), in reading order. A
          bookmark reaches its page directly or through a named
@@ -46037,7 +46076,15 @@
             let rl = 0, letters = 0;
             ln.items.forEach((it) => { rl += it.rtl || 0; letters += (it.s.match(/\p{L}/gu) || []).length; });
             const rtl = rl > 0 && rl * 2 >= letters;
-            const its = ln.items.slice().sort(rtl ? (a, b) => (b.x + b.w) - (a.x + a.w) : (a, b) => a.x - b.x);
+            let its = ln.items.slice().sort(rtl ? (a, b) => (b.x + b.w) - (a.x + a.w) : (a, b) => a.x - b.x);
+            /* BEUK:importtally — right-to-left words inside a left-to-right line. pdf.js gives Arabic glyph by glyph in
+               the order they stand on the page (for a right-to-left word, backwards); Hebrew a word to a piece; a number
+               as one piece in its own order. Each run of right-to-left pieces, with the spaces between them, reads from
+               its right edge: its pieces in reverse order, each piece's own text as it is. A number among them (or Arabic
+               digits beside them) stays as it reads; an English number joins the run only where nothing English stands
+               before it on the line (a right-to-left phrase wrapped onto the line's start). The run then stands as one
+               piece, and the pieces joined into its words are counted as a join, where the reader made it. */
+            if (!rtl && rl > 0) its = pdfRtlRuns(its);
             /* The baseline and size of the line are its body text's: the
                run carrying the most characters (not a drop cap, not a
                superscript). */

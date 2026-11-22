@@ -243,27 +243,60 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     expect(all).toContain('[^7]: The ledger of Berlin was kept by hand.');
   }, 120_000);
 
-  /* Right-to-left words inside a left-to-right line (the Meridian PDFs' "Mediterranean routing stamp: البحرية …"). pdf.js
-     gives such a word glyph by glyph, in the order they stand on the page, left to right: for Arabic or Hebrew that is the
-     word backwards. A line mostly right-to-left the reader turns round; a left-to-right line it reads by x alone, so the
-     book holds the word reversed ("ةيرحبلا"), and the comparison cannot see it, the file's side being read the same way.
-     The pieces are set here as pdf.js gives them (measured on meridian-plain.pdf, page 81: one glyph per piece, x rising),
-     on a page pdf.js has read, since pdf-lib's standard fonts carry no Arabic and the repo ships no font embedder.
-     KNOWN DEFECT, shown and not yet fixed: this test states what the book must hold and is marked as failing until the
-     reader reorders a right-to-left run inside a left-to-right line. */
-  it.fails('KNOWN DEFECT: an Arabic word inside an English line comes in letter by letter in reading order, not reversed', async () => {
+  /* Right-to-left words inside a left-to-right line (the Meridian PDFs' "Mediterranean routing stamp: أرشيف الخرائط
+     البحرية"). pdf.js gives Arabic glyph by glyph, in the order they stand on the page, left to right, which for a
+     right-to-left word is the word backwards; Hebrew it gives a word to a piece, each in reading order; a number, one
+     piece in its own order. A line mostly right-to-left the reader turns round; a left-to-right line it read by x alone,
+     so the book held the Arabic reversed ("ةيرحبلا") and the Hebrew words in the wrong order. Now each run of
+     right-to-left pieces in a left-to-right line, with the spaces between them, is read from its right edge: its pieces
+     in reverse order, each piece's own text as it is, a number among them kept as it reads. The pieces are set here as
+     pdf.js gives them (measured on meridian-plain.pdf, page 81), on a page pdf.js has read, since pdf-lib's standard
+     fonts carry no Arabic or Hebrew and the repo ships no font embedder. */
+  async function rtlLine(pieces: string[]): Promise<{ all: string; ty: Tally }> {
     document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
     const m = make(env());
+    lastModule = m;
     m.api.applyBookDoc(m.api.buildEmptyBook());
     const ext = (await m.api.pdfExtract((globalThis as Rec).pdfjsLib, (await makePdf(BOOK)).slice(), {})) as { pages: { items: Rec[] }[] };
-    const word = 'البحرية', visual = Array.from(word).reverse(); /* left to right on the page: the word's last letter first */
-    const y = (ext.pages[1].items.find((it) => it.s === 'The pans lay white under the sun.') as Rec).y as number;
-    ext.pages[1].items.push({ s: 'Mediterranean routing stamp:', x: 60, y: y + 30, w: 150, size: 11, b: false, i: false, rtl: 0, mono: false });
-    visual.forEach((ch, k) => ext.pages[1].items.push({ s: ch, x: 214 + k * 4, y: y + 30, w: 4, size: 11, b: false, i: false, rtl: 1, mono: false }));
+    const src = Object.assign(m.api.irTallyPdf(ext) as Rec, { kind: 'pdf', counted: true });
+    const y = ((ext.pages[1].items.find((it) => it.s === 'The pans lay white under the sun.') as Rec).y as number) + 30;
+    const RTL = /[֐-ࣿיִ-﷿ﹰ-﻿]/gu;
+    let x = 60;
+    const added: Rec[] = [];
+    for (const s of pieces) {
+      const w = s.trim() ? Math.max(4, s.length * 5) : 2.5;
+      added.push({ s, x, y, w, size: 11, b: false, i: false, rtl: (s.match(RTL) || []).length, mono: false });
+      x += w + (s.trim() ? 0 : 0);
+    }
+    ext.pages[1].items.push(...added);
+    /* the file's side counts the pieces as pdf.js gives them, these included */
+    (src.parts as { body: string[] }).body.push(...pieces);
     await m.api.readImportFile({ name: 'x.txt', arrayBuffer: async () => new ArrayBuffer(0), text: async () => 'Chapter 1\n\nA line.' });
-    m.api.importPdfExtracted('salt-road-rtl.pdf', ext);
+    const rep = m.api.importPdfExtracted('salt-road-rtl.pdf', ext);
+    const ty = m.api.irTallyWrite(rep, src) as Tally;
     const all = (m.api.snapshotBookDoc() as { sections: { content: string }[] }).sections.map((x) => x.content).join('\n');
-    expect(all).toContain('Mediterranean routing stamp: ' + word);
+    return { all, ty };
+  }
+  /* left to right on the page: a right-to-left phrase's glyphs come last letter first */
+  const glyphsOnPage = (phrase: string) => Array.from(phrase).reverse();
+  it('an Arabic phrase inside an English line comes in in reading order, every word of it', async () => {
+    const { all, ty } = await rtlLine(['Mediterranean routing stamp:', ' ', ...glyphsOnPage('أرشيف الخرائط البحرية')]);
+    expect(all).toContain('Mediterranean routing stamp: أرشيف الخرائط البحرية');
+    expect({ unaccounted: ty.unaccounted, same: ty.words.same }).toEqual({ unaccounted: 0, same: true });
+  }, 120_000);
+  it('Hebrew words with a number among them, at the start of an English line: the words in reading order, the number as it reads', async () => {
+    const { all, ty } = await rtlLine(['408', ' ', 'מס׳', ' ', 'ימי', ' ', '(verified bi-directional embedding).']);
+    expect(all).toContain('ימי מס׳ 408 (verified bi-directional embedding).');
+    expect({ unaccounted: ty.unaccounted, same: ty.words.same }).toEqual({ unaccounted: 0, same: true });
+  }, 120_000);
+  it('two separate right-to-left runs in one English line: each read from its own right edge, the English between them in place', async () => {
+    const { all, ty } = await rtlLine(['The stamp of the Mediterranean archive:', ' ', ...glyphsOnPage('الخرائط البحرية'), ' ', 'and the Levant desk countersigned:', ' ', 'מיפוי', ' ', 'תיק', ' ', 'signed by the clerk.']);
+    expect(all).toContain('The stamp of the Mediterranean archive: الخرائط البحرية and the Levant desk countersigned: תיק מיפוי signed by the clerk.');
+    expect({ unaccounted: ty.unaccounted, same: ty.words.same }).toEqual({ unaccounted: 0, same: true });
+  }, 120_000);
+  it('an English number beside a right-to-left word inside an English sentence stays where it reads', async () => {
+    const { all } = await rtlLine(['Page 12', ' ', 'שלום', ' ', 'ends.']);
+    expect(all).toContain('Page 12 שלום ends.');
   }, 120_000);
 
   /* Headings (C), as measured on the Meridian PDFs: a heading set larger than the text and wrapped onto two lines is one
