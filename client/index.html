@@ -46824,7 +46824,7 @@
             for (let q = 1; q < solid.length; q++) gaps.push(gapOf(solid[q - 1], solid[q]));
             const base = spaced ? median(gaps) : 0;
             const runs = [], cells = [[]], pieces = [];
-            let prevEnd = null, prevText = "", prevCap = false, prevSize = 0, mark = false;
+            let prevEnd = null, prevText = "", prevCap = false, prevSize = 0, mark = false, wide = false;
             (spaced ? solid : its).forEach((it) => {
               let s = clean(it.s);
               /* BEUK:pdffront — a run whose own letters are spaced out by the
@@ -46839,6 +46839,9 @@
                    parts table cells. */
                 if (gap > 2.2 * small && s.trim() && prevText.trim()) cells.push([]);
                 else if (!s.trim() && it.w > 2.2 * small && cells[cells.length - 1].length) cells.push([]);
+                /* BEUK:lineendsgiven — a gap, or a space item, wider than the line's own size is no word space: the line
+                   is not plain running text (a narrow column beside the next, set nearer than the cell rule above parts) */
+                if (!spaced && ((gap > small && s.trim() && prevText.trim()) || (!s.trim() && it.w > small))) wide = true;
                 const needSpace = spaced ? gap > base + 0.18 * small : gap > 0.15 * small;
                 if (needSpace && !prevCap && !/\s$/.test(prevText) && !/^\s/.test(s)) s = " " + s;
                 /* Overprinted copies (a "fake bold") are one glyph run. */
@@ -46877,7 +46880,7 @@
             const x1 = Math.max.apply(null, edge.map((it) => it.x + it.w));
             const first = solid[0];
             const dropCap = !!first && first.s.trim().length <= 2 && (first.capSize || first.size) >= size * 1.8 && solid.length > 1;
-            return { y, size, x0, x1, rtl, runs, text, cells: cells.filter((c) => c.length).map((c) => c.join(" ")), dropCap, capSize: dropCap ? (first.capSize || first.size) : 0,
+            return { y, size, x0, x1, rtl, runs, text, wide, cells: cells.filter((c) => c.length).map((c) => c.join(" ")), dropCap, capSize: dropCap ? (first.capSize || first.size) : 0,
               mono: runs.some((r) => r.t.trim()) && runs.every((r) => !r.t.trim() || r.mono) };
           }).filter((l) => l.text);
         };
@@ -47645,12 +47648,13 @@
               const k = hyKey(w);
               if (k) stands.set(k, (stands.get(k) || 0) + 1);
             });
-            /* A piece set open is a piece, a space and a word in one run of text. On a line of two or more cells (a
-               table's row, two columns side by side) the end of one cell and the start of the next are not that: a cell
-               ending on "VIE-" (its code turned onto the cell's next line) beside a cell opening "Vienna" read as
-               "VIE-" set open, and every "VIE-04-10" broken at a line's end came in "VIE- 04-10". So each cell is read
-               on its own. */
-            const pieces = l.cells && l.cells.length >= 2 ? l.cells : [String(l.text || "")];
+            /* A piece set open is a piece, a word space and a word in running text. A table's row is not that: its
+               cells stand side by side, and a narrow column's cell ending on "VIE-" (its code turned onto the cell's
+               next line) can stand nearer the next column's first word than the cell rule parts (21 points, in the
+               Meridian test book), so the two were read as one cell: "VIE-" set open, and every "VIE-04-10" broken at
+               a line's end in the text came in "VIE- 04-10". So only a line of plain running text is evidence: not a
+               table's row, not a line of two or more cells, not a line with a gap wider than its own size (l.wide). */
+            const pieces = l.table || l.inTable || l.wide || (l.cells && l.cells.length >= 2) ? [] : [String(l.text || "")];
             pieces.forEach((piece) => {
               const sp = String(piece || "").split(/\s+/).filter(Boolean);
               sp.forEach((w, q) => {

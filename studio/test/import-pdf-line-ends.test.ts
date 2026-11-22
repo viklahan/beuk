@@ -54,16 +54,23 @@ describe('a hyphen left open at a line\'s end ("pre-" before "and post-war")', (
   /* Found in a real browser on the Meridian test book (2026-11-22): nine codes that the hyphen rule keeps whole
      ("VIE-04-10") came in "VIE- 04-10" again. The "set open elsewhere" evidence was read from the whole line of a
      table's row, where a cell that ends on "VIE-" (its code turned onto the cell's next line) stands beside the next
-     cell's first word: two cells side by side are not a piece set open with a space and a word after it. */
+     cell's first word: two cells side by side are not a piece set open with a space and a word after it. In that
+     book the code's column is so narrow that the reader does not part the two cells (21 points between them), and
+     the rows are too wordy for it to call them a table: what tells is the gap, wider than the line's own size. */
   it('a table cell that ends on the piece, beside the next cell, is not the piece set open: the code stays whole and is listed as before', async () => {
     const g = await importFile('open-cells.pdf', await pdf([
       ...pg('One', ['The clerk filed the sheet under the station code VIE-', '04-10 with the others that came in that year.']),
       { page: true }, { text: 'Chapter Two', size: 20, gap: 40 },
-      { text: 'Station', size: 11, gap: 0 }, { text: 'Office', size: 11, x: 320, gap: 15 },
-      { text: 'Old code VIE-', size: 11, gap: 0 }, { text: 'Vienna harbour office', size: 11, x: 320, gap: 15 },
-      { text: '04-10', size: 11, gap: 0 }, { text: 'and its annexe', size: 11, x: 320, gap: 15 },
-      { text: 'Old code GRZ-', size: 11, gap: 0 }, { text: 'Graz siding office', size: 11, x: 320, gap: 15 },
-      { text: '02-17', size: 11, gap: 0 }, { text: 'and its yard', size: 11, x: 320, gap: 24 },
+      // a table as the Meridian PDF sets one: the code's column so narrow that "VIE-" stands 18 points from the next
+      // column's word (the reader takes the two for one cell), a third column far off, the code turned onto a second line
+      ...[['VIE-', 'Primary', 'Vienna harbour office and its annexe by the old quay wall'], ['04-A', 'Inspection', 'held over until the spring tides had run their course'], ['GRZ-', 'Second', 'Graz siding office and its yard beyond the water tower'], ['02-B', 'Inspection', 'held over until the autumn ledgers had been closed']]
+        .flatMap(([a, b, c]) => [{ text: a, size: 11, gap: 0 }, { text: b, size: 11, x: 100, gap: 0 }, { text: c, size: 11, x: 330, gap: 15 }]),
+      // and two columns side by side that are no table (two lines only): the end of one beside the start of the other
+      { text: 'Old code VIE-', size: 11, gap: 0 }, { text: 'Vienna harbour office', size: 11, x: 330, gap: 15 },
+      { text: 'in the first list', size: 11, gap: 0 }, { text: 'and its annexe', size: 11, x: 330, gap: 24 },
+      // and the narrow column with nothing to its right: one cell to the reader, told only by the gap in it
+      { text: 'VIE-', size: 11, gap: 0 }, { text: 'Primary copy', size: 11, x: 100, gap: 15 },
+      { text: '04-C', size: 11, gap: 0 }, { text: 'Inspection', size: 11, x: 100, gap: 24 },
       ...Array.from({ length: 8 }, () => ({ text: FILL + '.', size: 11, gap: 15 })),
     ]), '');
     expect(first(g, 0)).toContain('station code VIE-04-10 with the others');
