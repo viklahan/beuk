@@ -416,4 +416,25 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     expect(g.asks.map((it) => it.state)).toEqual(words.map(() => 'undone'));
     expect(cardSaid(g)).not.toContain('a line of the PDF on a hyphen');
   }, 120_000);
+
+  /* Found by pressing it in a real browser (2026-11-22): the list is drawn again after every join, and a group of more
+     than six lines was drawn shut each time, so the list closed under the writer's hand after one word. */
+  it('eight words left: joining one word leaves the list open at the others', async () => {
+    const g = await importPdf(book(MANY, ['The pans lay white under the sun.']));
+    g.api.initImportReport();
+    g.api.irRenderReport();
+    const group = () => document.getElementById('ir-g-structure') as HTMLDetailsElement;
+    const row = (id: string) => Array.from(document.querySelectorAll('#irBody [data-irid]')).find((r) => r.getAttribute('data-irid') === id) as HTMLElement;
+    (document.querySelector('.ir-card [data-irhyph]') as HTMLElement).click();
+    expect(group().open, 'the card\'s button opens the group').toBe(true);
+    (row(g.asks[0].id).querySelector('[data-irundo]') as HTMLElement).click();
+    expect(g.asks.map((it) => it.state)).toEqual(['undone', ...g.asks.slice(1).map(() => 'applied')]);
+    expect(group().open, 'the group is still open after one join').toBe(true);
+    expect(row(g.asks[1].id).querySelector('[data-irundo]'), 'the next word\'s button is there to press').not.toBeNull();
+    // a group the reader has not opened is still drawn shut
+    g.api.irRenderReport();
+    group().open = false;
+    (row(g.asks[1].id).querySelector('[data-irundo]') as HTMLElement).click();
+    expect(group().open, 'a group the reader shut stays shut').toBe(false);
+  }, 120_000);
 });
