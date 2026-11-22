@@ -96,7 +96,7 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     g.pdfjsLib = await import(/* @vite-ignore */ pathToFileURL(path.join(VENDOR, 'pdf.min.mjs')).href);
     const epub = readFileSync(path.join(import.meta.dirname, '..', '..', 'src', 'book', 'epub', 'closure.ts'), 'utf8');
     const stubs = ORACLE_STUBS.filter((n) => !['applySampleBookSync', 'irOpenReport', 'bibleBookArrived', 'markWritingActivity', 'noteBookEdited'].includes(n));
-    const out = await buildTestModule(HTML, epub, { roots: ['applyBookDoc', 'buildEmptyBook', 'readImportFile', 'lockPdfBytes', 'pdfExtract', 'importPdfExtracted', 'irTallyPdf', 'irTallyWrite', 'irRenderReport', 'irTallyHtmlOf'], supplied: [...new Set([...stubs, 'importLockAsk', 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf'])], what: 'import-tally-pdf', fileReaders: ['bulkFileToData', 'samplePicB64'], prefix: 'IMPORT_TALLY_PDF', fn: 'createImportTallyPdf', title: "1.0's PDF import with its tally (tests only)" });
+    const out = await buildTestModule(HTML, epub, { roots: ['applyBookDoc', 'buildEmptyBook', 'snapshotBookDoc', 'readImportFile', 'lockPdfBytes', 'pdfExtract', 'importPdfExtracted', 'irTallyPdf', 'irTallyWrite', 'irRenderReport', 'irTallyHtmlOf'], supplied: [...new Set([...stubs, 'importLockAsk', 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf'])], what: 'import-tally-pdf', fileReaders: ['bulkFileToData', 'samplePicB64'], prefix: 'IMPORT_TALLY_PDF', fn: 'createImportTallyPdf', title: "1.0's PDF import with its tally (tests only)" });
     const code = (out.code as string).replace(/^export (const|function) /gm, '$1 ') + '\nreturn createImportTallyPdf(env);';
     make = (e: Rec) => new Function('env', code)(e) as { api: Api };
   }, 180_000);
@@ -186,6 +186,84 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     const el = document.createElement('div');
     el.innerHTML = String(lastModule!.api.irTallyHtmlOf(rep));
     expect((el.textContent || '').replace(/\s+/g, ' ')).toContain('“caravan” + “left” → “caravanleft”');
+  }, 120_000);
+
+  /* A raised mark (a note's number, an exponent) set smaller against the word before it: pdf.js gives it as a piece of
+     its own, raised. Joined to the word it changed what the book says ("Berlin." + "111" → "Berlin.111", "10" + "3" →
+     "103"). It stays its own word: no longer a join, a word of the file and a word of the book. A lowered piece (a
+     chemical formula's subscript) stays joined: H₂O is one word. Measured on the Meridian PDFs: raised marks at 0.83 of
+     the size, baseline 0.39 of the size above; subscripts 0.27 below. */
+  async function marked(base: string, mark: string, rise: number): Promise<Tally & { pdf: { pieced: { from: string[]; to: string }[] } }> {
+    const doc = await pdfLib.PDFDocument.create();
+    const font = (await doc.embedFont(pdfLib.StandardFonts.Helvetica)) as { widthOfTextAtSize: (s: string, n: number) => number };
+    BOOK.forEach((lines, k) => {
+      const pg = doc.addPage([420, 595]);
+      lines.forEach(([s, x, y, size]) => pg.drawText(s, { x, y, size, font }));
+      if (k === 1) {
+        const lead = 'The ledger said ' + base;
+        pg.drawText(lead, { x: 60, y: 380, size: 11, font });
+        pg.drawText(mark, { x: 60 + font.widthOfTextAtSize(lead, 11), y: 380 + rise * 11, size: 11 * 0.8, font });
+        pg.drawText(' and closed.', { x: 60 + font.widthOfTextAtSize(lead, 11) + font.widthOfTextAtSize(mark, 11 * 0.8), y: 380, size: 11, font });
+      }
+    });
+    return (await importPdf('salt-road-mark.pdf', await doc.save())).tally as Tally & { pdf: { pieced: { from: string[]; to: string }[] } };
+  }
+  for (const [what, base, mark, rise, joined] of [
+    ['a raised mark after a word', 'Berlin', '7', 0.39, false],
+    ['a raised mark after a full stop', 'Berlin.', '7', 0.39, false],
+    ['a raised mark after a number ("10" and a raised "3")', '10', '3', 0.39, false],
+    ['a lowered subscript, which stays joined (H₂O)', 'H', '2', -0.27, true],
+  ] as [string, string, string, number, boolean][]) {
+    it(what + (joined ? '' : ': its own word, not a join'), async () => {
+      const ty = await marked(base, mark, rise);
+      const glued = ty.pdf.pieced.some((e) => e.from.join('') === base + mark || e.to === base + mark || e.to.endsWith(base + mark));
+      expect(glued, joined ? 'joined to the piece before it' : 'not joined to the piece before it').toBe(joined);
+      expect({ unaccounted: ty.unaccounted, same: ty.words.same }).toEqual({ unaccounted: 0, same: true });
+    }, 120_000);
+  }
+
+  it('a raised mark whose note the chapter prints under NOTES is still linked against its word: "Berlin.[^7]", no space', async () => {
+    const doc = await pdfLib.PDFDocument.create();
+    const font = (await doc.embedFont(pdfLib.StandardFonts.Helvetica)) as { widthOfTextAtSize: (s: string, n: number) => number };
+    BOOK.forEach((lines, k) => {
+      const pg = doc.addPage([420, 595]);
+      lines.forEach(([s, x, y, size]) => pg.drawText(s, { x, y, size, font }));
+      if (k === 1) {
+        const lead = 'The ledger said Berlin.';
+        pg.drawText(lead, { x: 60, y: 380, size: 11, font });
+        pg.drawText('7', { x: 60 + font.widthOfTextAtSize(lead, 11), y: 380 + 0.39 * 11, size: 11 * 0.8, font });
+        pg.drawText('NOTES', { x: 60, y: 300, size: 9, font });
+        pg.drawText('7 The ledger of Berlin was kept by hand.', { x: 60, y: 286, size: 9, font });
+      }
+    });
+    await importPdf('salt-road-note.pdf', await doc.save());
+    const secs = (lastModule!.api.snapshotBookDoc() as { sections: { content: string }[] }).sections;
+    const all = secs.map((x) => x.content).join('\n');
+    expect(all).toContain('Berlin.[^7]');
+    expect(all).toContain('[^7]: The ledger of Berlin was kept by hand.');
+  }, 120_000);
+
+  /* Right-to-left words inside a left-to-right line (the Meridian PDFs' "Mediterranean routing stamp: البحرية …"). pdf.js
+     gives such a word glyph by glyph, in the order they stand on the page, left to right: for Arabic or Hebrew that is the
+     word backwards. A line mostly right-to-left the reader turns round; a left-to-right line it reads by x alone, so the
+     book holds the word reversed ("ةيرحبلا"), and the comparison cannot see it, the file's side being read the same way.
+     The pieces are set here as pdf.js gives them (measured on meridian-plain.pdf, page 81: one glyph per piece, x rising),
+     on a page pdf.js has read, since pdf-lib's standard fonts carry no Arabic and the repo ships no font embedder.
+     KNOWN DEFECT, shown and not yet fixed: this test states what the book must hold and is marked as failing until the
+     reader reorders a right-to-left run inside a left-to-right line. */
+  it.fails('KNOWN DEFECT: an Arabic word inside an English line comes in letter by letter in reading order, not reversed', async () => {
+    document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
+    const m = make(env());
+    m.api.applyBookDoc(m.api.buildEmptyBook());
+    const ext = (await m.api.pdfExtract((globalThis as Rec).pdfjsLib, (await makePdf(BOOK)).slice(), {})) as { pages: { items: Rec[] }[] };
+    const word = 'البحرية', visual = Array.from(word).reverse(); /* left to right on the page: the word's last letter first */
+    const y = (ext.pages[1].items.find((it) => it.s === 'The pans lay white under the sun.') as Rec).y as number;
+    ext.pages[1].items.push({ s: 'Mediterranean routing stamp:', x: 60, y: y + 30, w: 150, size: 11, b: false, i: false, rtl: 0, mono: false });
+    visual.forEach((ch, k) => ext.pages[1].items.push({ s: ch, x: 214 + k * 4, y: y + 30, w: 4, size: 11, b: false, i: false, rtl: 1, mono: false }));
+    await m.api.readImportFile({ name: 'x.txt', arrayBuffer: async () => new ArrayBuffer(0), text: async () => 'Chapter 1\n\nA line.' });
+    m.api.importPdfExtracted('salt-road-rtl.pdf', ext);
+    const all = (m.api.snapshotBookDoc() as { sections: { content: string }[] }).sections.map((x) => x.content).join('\n');
+    expect(all).toContain('Mediterranean routing stamp: ' + word);
   }, 120_000);
 
   it('a step the reader takes that the tally is not told of shows as unaccounted, never hidden: a line dropped after the count is 2 words unaccounted', async () => {

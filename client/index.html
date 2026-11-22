@@ -46056,7 +46056,7 @@
             for (let q = 1; q < solid.length; q++) gaps.push(gapOf(solid[q - 1], solid[q]));
             const base = spaced ? median(gaps) : 0;
             const runs = [], cells = [[]], pieces = [];
-            let prevEnd = null, prevText = "", prevCap = false;
+            let prevEnd = null, prevText = "", prevCap = false, prevSize = 0, mark = false;
             (spaced ? solid : its).forEach((it) => {
               let s = clean(it.s);
               /* BEUK:pdffront — a run whose own letters are spaced out by the
@@ -46075,8 +46075,15 @@
                 if (needSpace && !prevCap && !/\s$/.test(prevText) && !/^\s/.test(s)) s = " " + s;
                 /* Overprinted copies (a "fake bold") are one glyph run. */
                 if (gap < -0.5 * small && runs.length && runs[runs.length - 1].t.trim() === s.trim()) { irAside("pdfOverprint", it.s); return; }
+                /* BEUK:importtally — a raised mark (a note's number, an exponent): a digit run set at least 15% smaller than
+                   the piece before it, its baseline raised more than a quarter of the line's size, touching that piece. It
+                   is a word of its own, never joined into the word before it ("Berlin." and "111", never "Berlin.111";
+                   "10" and "3", never "103"). A lowered piece (a formula's subscript, H₂O) stays joined. */
+                const rise = size ? (y - it.y) / size : 0;
+                if (!spaced && /^\d{1,3}$/.test(s.trim()) && prevText.trim() && prevSize && it.size <= prevSize * 0.85 && rise > 0.25 && !/\s$/.test(prevText)) { s = " " + s.trim(); mark = true; }
               }
-              runs.push({ t: s, b: it.b, i: it.i, size: it.size, mono: !!it.mono });
+              runs.push({ t: s, b: it.b, i: it.i, size: it.size, mono: !!it.mono, rise: size ? (y - it.y) / size : 0, mark });
+              mark = false; prevSize = it.size;
               pieces.push(it.s);
               if (s.trim()) cells[cells.length - 1].push(s.trim());
               prevEnd = rtl ? Math.min(prevEnd === null ? 1e9 : prevEnd, it.x) : Math.max(prevEnd === null ? -1e9 : prevEnd, it.x + it.w);
@@ -46396,7 +46403,7 @@
         const bottomY = fullPages.length ? median(fullPages) : -1e9; /* no full page: no rule */
         const joinRuns = (line) => {
           /* Bold set smaller than its line is small capitals, not emphasis. */
-          const runs = line.runs.map((r) => ({ t: (!line.mono && !noteMode && /^\s*\d{1,3}\s*$/.test(r.t) && r.size <= line.size * 0.8 && line.runs.some((o) => o !== r && o.t.trim())) ? r.t.replace(/\d{1,3}/, (d) => "" + d + "") : r.t,
+          const runs = line.runs.map((r) => ({ t: (!line.mono && !noteMode && /^\s*\d{1,3}\s*$/.test(r.t) && (r.size <= line.size * 0.8 || r.mark) && line.runs.some((o) => o !== r && o.t.trim())) ? r.t.replace(/\d{1,3}/, (d) => "" + d + "") : r.t,
             b: r.b && r.size >= line.size * 0.9, i: r.i && markItalic })); /* BEUK:pdfback — a raised number in a line of text is a note mark */
           /* A drop cap is ornament, not emphasis. */
           if (line.dropCap && runs.length) { runs[0].b = false; runs[0].i = false; }
@@ -46759,7 +46766,7 @@
         {
           let defs = new Set(), from = 0;
           const settle = (to) => {
-            for (let k = from; k < to; k++) if (blocks[k].kind === "p" && blocks[k].md) blocks[k].md = blocks[k].md.replace(/(\d{1,3})/g, (m, d) => (defs.has(d) ? "[^" + d + "]" : d));
+            for (let k = from; k < to; k++) if (blocks[k].kind === "p" && blocks[k].md) blocks[k].md = blocks[k].md.replace(/( ?)(\d{1,3})/g, (m, sp, d) => (defs.has(d) ? "[^" + d + "]" : sp + d)); /* BEUK:importtally — a raised mark set apart as its own word goes back against its word where it is linked as a note */
           };
           blocks.forEach((b, k) => {
             if (b.kind === "h") { settle(k); defs = new Set(); from = k; }
