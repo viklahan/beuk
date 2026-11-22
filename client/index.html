@@ -46896,6 +46896,57 @@
           const sub = irSubHeadings(marked.map((b) => ({ level: markLevel.get(b.page + " " + markKey(b.text)) > 1 ? 2 : 1, text: b.text })));
           marked.forEach((b, k) => { if (sub[k]) b.kind = "sub"; });
         }
+        /* BEUK:pdfsections — a PDF marks no heading levels; its type sizes do. Every heading was handed on at one level,
+           so the parser could keep a section inside its chapter only between two numbered chapters (BEUK:headlevels):
+           the last chapter's sections it filed as back-matter pages, and most of that chapter's text with them, and a
+           section under an appendix or a front page it made a page of its own.
+           The book says what a chapter is: its numbered chapters ("Chapter 1: …") share one heading size, three or
+           more of them. It says what a section is too: a smaller size at which headings stand inside two or more of
+           those chapters that have a chapter after them (sections of their chapters by the ruling above). Every
+           heading at that size, standing under a heading of the chapters' size and naming no page of its own (a
+           chapter, a part, an appendix, the contents, a matter page), is then a sub-heading of what it stands under:
+           the last chapter's sections with the others, wherever on the page they fall.
+           A size the book never uses inside its chapters shows nothing: such a heading reads as it did (below, and
+           the parser's zone rule). A heading the book's bookmarks name stays as the bookmarks' rule left it. */
+        {
+          const cls = (b) => Math.round(b.size * 2) / 2;
+          const hs = blocks.filter((b) => b.kind === "h" && b.size);
+          /* a chapter's label may stand as a heading of its own above its title ("CHAPTER FOURTEEN", then the title):
+             the chapter's heading is the largest on the page a numbered chapter opens on */
+          const chapHeads = [], chapPages = new Set();
+          hs.forEach((b) => {
+            if (chapPages.has(b.page) || !CHAPTER_NUM_RE.test(String(b.text).trim())) return;
+            chapPages.add(b.page);
+            let top = b;
+            hs.forEach((o) => { if (o.page === b.page && o.size > top.size) top = o; });
+            chapHeads.push(top);
+          });
+          const tally = new Map();
+          chapHeads.forEach((b) => tally.set(cls(b), (tally.get(cls(b)) || 0) + 1));
+          let chapSize = 0, most = 0;
+          tally.forEach((v, k) => { if (v > most) { most = v; chapSize = k; } });
+          if (most >= 3) {
+            const big = (b) => b.size >= chapSize * 0.9;
+            const names = (s) => { const v = String(s).trim(), n = normHeading(v); return !!MATTER_HEADINGS[n] || n.indexOf("also by") === 0 || n === "contents" || n === "table of contents" || isAppendixLine(v) || PART_HEAD_RE.test(v) || CHAPTER_NUM_RE.test(v); };
+            const lastChapter = blocks.lastIndexOf(chapHeads[chapHeads.length - 1]);
+            const under = [];
+            let owner = null, ownerAt = -1;
+            blocks.forEach((b, k) => {
+              if (b.kind !== "h" || !b.size) return;
+              if (big(b)) { owner = b; ownerAt = k; return; }
+              if (!owner || names(b.text)) return;
+              if (markFull.has(b.page) && markFull.get(b.page).has(markKey(b.text))) return;
+              under.push({ b, owner, ownerAt });
+            });
+            const shown = new Map(); /* a size → the chapters, each with a chapter after it, that hold a heading at it */
+            under.forEach((u) => {
+              if (chapHeads.indexOf(u.owner) === -1 || u.ownerAt >= lastChapter) return;
+              if (!shown.has(cls(u.b))) shown.set(cls(u.b), new Set());
+              shown.get(cls(u.b)).add(u.owner);
+            });
+            under.forEach((u) => { const held = shown.get(cls(u.b)); if (held && held.size >= 2) u.b.kind = "sub"; });
+          }
+        }
         /* BEUK:pdfback — in a book whose chapters share one heading size
            (three or more of them), a smaller heading with a chapter's text
            above it on its own page is a sub-heading inside that chapter,
