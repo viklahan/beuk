@@ -22,6 +22,7 @@ to make well.
 - **A PDF is counted too.** The tally now works for a PDF: page numbers, running heads, the title page's lines and a contents page are each named with their count. A line of your story that repeated at a page's edge is no longer taken for a running head and left out.
 - **A chapter you haven't written yet stays.** A heading with nothing under it used to be dropped. It now comes in as an empty chapter or page, and an outline of headings comes in as chapters.
 - **A PDF's note numbers stand apart.** A note's number was glued to the word before it. It is now a word of its own.
+- **A PDF's sections stay in their chapters.** The last chapter's sections used to come in as pages at the back of the book. They now stay inside the chapter, as they do from a Word file.
 - **Arabic and Hebrew inside an English line of a PDF** come in in reading order.
 - **Picture descriptions.** RTF now brings them in, and Word and OpenDocument keep a picture's title beside its description.
 - **Codes keep their hyphens.** Tidying turned any two numbers joined by a hyphen into a range with a dash, so a code like VIE-04-10, a date or an ISBN was changed. Now only a real range of two numbers gets the dash.
