@@ -2484,89 +2484,233 @@
       /* ==== BEUK:importreport ==== */
       .ir-reopen { margin: 0 14px 12px; }
       .ir-reopen .side-btn { width: 100%; }
-      .ir-modal { max-width: 720px; }
-      /* BEUK:importcard — the report opens on the book that came in; the changes one by one are a step behind it */
+      .ir-modal { max-width: 944px; padding: 34px 40px 28px; color: var(--ink); }
+      /* BEUK:importcard — the report opens on the card (the verdict, the book Beuk found, the looks not carried); the full account is a step behind it.
+         The studio's own variables only, so both themes hold; logical properties, for a right-to-left interface; at 560px and under the card stacks. */
       .ir-card-view .ir-list, .ir-modal:not(.ir-card-view) .ir-card { display: none; }
-      .ir-card-view #btnIrDismiss, .ir-card-view #btnIrClose, .ir-card-view #btnIrKeep, .ir-card-view #btnIrBack, .ir-modal:not(.ir-card-view) #btnIrOpenBook, .ir-modal:not(.ir-card-view) #btnIrEvery { display: none; }
-      .ir-card-view #irH { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 27px; letter-spacing: -.01em; }
-      .ir-card-view #irH > i, .ir-card-view #irH > svg { display: none; }
-      .ir-kicker { font-family: var(--mono-font); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; overflow-wrap: anywhere; }
-      .ir-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 9px; margin: 0 0 18px; }
-      .ir-stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; }
-      .ir-stat b { display: block; font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 27px; line-height: 1; color: var(--accent); }
-      .ir-stat span { display: block; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
-      .ir-ch2 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-family: var(--mono-font); font-size: 11.5px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
-      .ir-ch2 i { font-style: normal; font-family: var(--ui-font); text-transform: none; letter-spacing: 0; font-size: 12.5px; margin-inline-start: auto; }
-      .ir-spine { border-inline-start: 2px solid var(--line); margin-inline-start: 5px; padding-inline-start: 16px; display: grid; gap: 14px; margin-bottom: 18px; }
-      .ir-zone { position: relative; }
-      .ir-zone::before { content: ""; position: absolute; inset-inline-start: -22px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--panel-2); border: 2px solid var(--line-2); }
-      .ir-zone.body::before { border-color: var(--accent); background: var(--accent); }
-      .ir-zone small { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-      .ir-pages { display: flex; flex-wrap: wrap; gap: 6px; }
-      .ir-page { font: inherit; font-size: 13px; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink-2); border-radius: 999px; padding: 4px 11px; cursor: pointer; }
-      .ir-rows { display: grid; gap: 4px; }
-      .ir-row { font: inherit; text-align: start; color: var(--ink); display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 10px; border: 1px solid transparent; border-radius: 9px; background: var(--panel); cursor: pointer; }
-      .ir-page:hover, .ir-row:hover, .ir-page:focus-visible, .ir-row:focus-visible { border-color: var(--accent); }
-      .ir-row .ir-rn, .ir-row .ir-rw { font-family: var(--mono-font); font-size: 12px; color: var(--muted); }
-      .ir-row .ir-rn { text-align: end; }
-      .ir-row .ir-rt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .ir-row .ir-rt em { font-style: normal; color: var(--muted); font-size: 12.5px; margin-inline-start: 8px; }
-      .ir-more, .ir-seelist { font: inherit; font-size: 13px; color: var(--accent); background: none; border: 0; padding: 6px 10px; cursor: pointer; text-align: start; }
-      .ir-seelist { padding: 0; text-decoration: underline; }
-      .ir-did { display: grid; gap: 8px; margin-bottom: 4px; }
-      .ir-didline { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 14px; }
-      .ir-didline > span { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; margin-top: 2px; background: var(--accent-soft); color: var(--good); }
-      .ir-didline.warn > span { background: color-mix(in srgb, var(--gold) 22%, transparent); color: var(--gold-ink); }
-      .ir-didline p { margin: 0; }
-      /* BEUK:importtally */
-      .ir-tally { overflow: hidden; }
-      .ir-tally-t { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; margin: 0 0 10px; }
-      .ir-tally-t thead th + th { width: 4.9em; white-space: normal; }
-      .ir-tally-t th, .ir-tally-t td { padding: 6px 10px; border-top: 1px solid var(--line); text-align: start; font-weight: 400; vertical-align: top; }
-      .ir-tally-t thead th { font-size: 11.5px; color: var(--muted); border-top: 0; }
-      .ir-tally-t td, .ir-tally-t thead th + th { text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
-      .ir-tally-t small { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-      .ir-tally-w th, .ir-tally-w td { font-weight: 700; }
-      .ir-tally-sum { margin: 0 13px 10px; border: 1px solid var(--line); border-radius: 9px; font-size: 13px; }
-      .ir-tally-sum > div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 11px; border-top: 1px solid var(--line); }
-      .ir-tally-sum > div:first-child { border-top: 0; }
-      .ir-tally-sum b { font-variant-numeric: tabular-nums; white-space: nowrap; }
-      .ir-tally-un { font-weight: 700; }
-      .ir-tally-un.warn { color: var(--bad); }
-      .ir-tally-note { font-size: 12px; color: var(--muted); margin: 0 13px 10px; line-height: 1.5; }
-      .ir-tally-sum > .ir-tally-part { border-top: 0; padding-top: 0; padding-inline-start: 25px; font-size: 12px; color: var(--muted); }
-      .ir-tally-part b { font-weight: 400; }
-      .ir-tally-note.warn { color: var(--bad); }
-      .ir-tally-part small, .ir-tally-sum small { display: block; font-size: 11.5px; color: var(--muted); margin-top: 1px; }
-      .ir-linkbtn { border: 0 !important; background: none !important; color: var(--muted) !important; font-size: 13px !important; text-decoration: underline; margin-inline-end: auto; }
-      .ir-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
-      .ir-chip { display: inline-flex; gap: 5px; align-items: baseline; font-size: 12px; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; text-decoration: none; }
-      .ir-chip b { color: var(--ink); font-size: 13px; }
-      .ir-chip.warn { border-color: var(--bad); color: var(--bad); }
-      .ir-chip.warn b { color: var(--bad); }
-      .ir-clean { font-size: 12.5px; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; margin: 0 0 12px; line-height: 1.5; }
-      .ir-warn-line { font-size: 12.5px; color: var(--bad); margin: 8px 0; line-height: 1.5; }
-      .ir-group { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); margin: 0 0 9px; }
-      .ir-group.warn { border-color: var(--bad); border-width: 1.5px; }
-      .ir-group > summary { cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 13px; font-weight: 700; font-size: 13px; list-style: none; }
+      .ir-card-view #btnIrDismiss, .ir-card-view #btnIrKeep, .ir-card-view .ir-back, .ir-card-view .ir-intro, .ir-modal:not(.ir-card-view) #btnIrClose, .ir-modal:not(.ir-card-view) #btnIrEvery { display: none; }
+      .ir-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 24px; margin: 0 0 26px; }
+      .ir-modal:not(.ir-card-view) .ir-head { margin-bottom: 14px; }
+      .ir-head #irH { display: block; margin: 0; font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 30px; line-height: 1.2; letter-spacing: -.01em; color: var(--ink); }
+      .ir-file { margin: 0; font-family: var(--mono-font); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+      .ir-modal:not(.ir-card-view) .ir-file { order: 3; flex-basis: 100%; }
+      .ir-modal p.ir-intro { font-size: 15.5px; line-height: 1.5; color: var(--ink-2); max-width: 68ch; margin: 0 0 14px; }
+      .ir-modal button:focus-visible, .ir-modal a:focus-visible, .ir-modal summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+      .ir-card { display: flex; flex-direction: column; gap: 26px; }
+      .ir-verdict { display: flex; flex-direction: column; gap: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px 26px 20px; }
+      .ir-verdict.differs, .ir-verdict.unknown { border: 2px solid var(--gold); gap: 16px; }
+      .ir-vhead { display: flex; align-items: center; gap: 12px; }
+      .ir-vhead p { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 22px; line-height: 1.3; color: var(--ink); }
+      .ir-mark { flex: 0 0 auto; }
+      .ir-mark.ok, .ir-mark.tick { color: var(--good); }
+      .ir-mark.info { color: var(--gold-ink); }
+      .ir-vsay { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+      .ir-figs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 20px; }
+      .ir-figs.one { grid-template-columns: minmax(0, 1fr); }
+      .ir-figrow { display: contents; }
+      .ir-sign { font-family: Georgia, "Times New Roman", serif; font-size: 30px; line-height: 1.5; color: var(--muted); }
+      .ir-sign.none { display: none; }
+      .ir-fig { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+      .ir-fig b { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 40px; line-height: 1; color: var(--ink); }
+      .ir-fig.book b { color: var(--accent); }
+      .ir-fig.aside b { color: var(--gold-ink); }
+      .ir-fig span { font-size: 14px; color: var(--ink-2); }
+      .ir-vrows { display: grid; grid-template-columns: minmax(56px, max-content) minmax(0, 1fr); gap: 6px 12px; border-top: 1px solid var(--line); padding-top: 14px; font-size: 14px; }
+      .ir-vn { font-family: var(--mono-font); text-align: end; color: var(--ink); white-space: nowrap; }
+      .ir-vn.gold { color: var(--gold-ink); }
+      .ir-vt { color: var(--ink-2); }
+      .ir-vn.sum, .ir-vt.sum { color: var(--ink); }
+      .ir-vt.sum { font-weight: 600; }
+      .ir-vn.quiet, .ir-vt.quiet { color: var(--muted); font-size: 13px; }
+      .ir-vcalm { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+      .ir-vcalm p { margin: 0; }
+      .ir-vcalm .ir-mark { margin-top: 2px; }
+      .ir-vnote { margin: 0; font-size: 13px; color: var(--muted); }
+      .ir-vact { display: flex; flex-wrap: wrap; gap: 10px; }
+      .ir-diffgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 70px; gap: 8px 14px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; font-size: 15px; color: var(--ink); }
+      .ir-dh { font-size: 13px; color: var(--muted); }
+      .ir-dc { font-family: Georgia, "Times New Roman", serif; overflow-wrap: anywhere; }
+      .ir-dc small { display: block; font-family: var(--ui-font); font-size: 13px; color: var(--muted); }
+      .ir-dn { font-family: var(--mono-font); font-size: 13.5px; text-align: end; }
+      .ir-dh.ir-dn { font-family: inherit; font-size: 13px; }
+      .ir-found { display: flex; flex-direction: column; gap: 12px; }
+      .ir-fhead { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 20px; }
+      .ir-fhead p { margin: 0; font-size: 13.5px; color: var(--muted); }
+      .ir-h3 { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.35; color: var(--ink); }
+      .ir-spine { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 10px 16px; align-items: start; }
+      .ir-zone { font-size: 13.5px; color: var(--muted); padding-top: 7px; }
+      .ir-pages { display: flex; flex-wrap: wrap; gap: 8px; }
+      .ir-page { font: inherit; font-size: 14px; text-align: start; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+      .ir-page span { color: var(--muted); }
+      .ir-rows { display: flex; flex-direction: column; gap: 4px; }
+      .ir-row { font: inherit; font-size: 14.5px; text-align: start; color: var(--ink); display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; gap: 12px; align-items: baseline; padding: 7px 12px; border: 1px solid transparent; border-radius: 8px; background: var(--panel); cursor: pointer; }
+      .ir-page:hover, .ir-row:hover { border-color: var(--accent); }
+      .ir-rn { font-family: var(--mono-font); font-size: 12.5px; color: var(--muted); text-align: end; }
+      .ir-rt { min-width: 0; overflow-wrap: anywhere; }
+      .ir-rs { font-size: 13px; color: var(--muted); }
+      .ir-rw { font-family: var(--mono-font); font-size: 13px; color: var(--ink-2); min-width: 52px; text-align: end; }
+      .ir-more { align-self: flex-start; font: inherit; font-size: 14px; color: var(--accent); background: none; border: 0; padding: 6px 12px; text-decoration: underline; cursor: pointer; }
+      .ir-seelist { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+      .ir-looks { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 18px; }
+      .ir-looks p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
+      .ir-btn { font: inherit; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 40px; border: 1px solid var(--control-edge); border-radius: 999px; padding: 0 16px; font-size: 14px; background: none; color: var(--ink); cursor: pointer; text-align: center; }
+      .ir-btn:hover { border-color: var(--ink); }
+      .ir-link { font: inherit; font-size: 14px; color: var(--muted); background: none; border: 0; padding: 12px 0; min-height: 44px; text-decoration: underline; cursor: pointer; }
+      .ir-link:disabled { opacity: .6; cursor: default; }
+      .ir-head .ir-link { font-size: 14.5px; color: var(--accent); padding: 0; min-height: 0; }
+      .ir-actions { align-items: center; flex-wrap: wrap; gap: 10px 16px; margin-top: 26px; }
+      .ir-modal:not(.ir-card-view) .ir-actions { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 18px; }
+      .ir-space { flex: 1 1 auto; }
+      .ir-actions .ir-btn { min-height: 44px; padding: 0 20px; font-size: 15px; font-weight: 600; }
+      .ir-actions .ir-btn.primary { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); font-weight: 700; padding: 0 24px; }
+      .ir-actions .ir-btn.primary:hover { filter: brightness(1.08); }
+      .ir-differs .ir-actions .ir-btn.primary { background: none; color: var(--accent); padding: 0 22px; }
+      /* the full account */
+      .ir-list { display: flex; flex-direction: column; gap: 30px; }
+      .ir-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: -6px; }
+      .ir-chip { display: inline-flex; align-items: center; min-height: 36px; border: 1px solid var(--line-2); border-radius: 8px; padding: 0 12px; font-size: 14px; color: var(--ink); background: var(--panel); text-decoration: none; }
+      .ir-chip:hover { border-color: var(--accent); }
+      .ir-chip span { font-family: var(--mono-font); font-size: 12.5px; color: var(--muted); margin-inline-start: 8px; }
+      .ir-clean { font-size: 14px; color: var(--ink-2); margin: 0; line-height: 1.5; }
+      .ir-warn-line { font-size: 14px; color: var(--bad); margin: 8px 0 0; line-height: 1.5; }
+      .ir-part { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 14px; }
+      .ir-ph { margin: 0; font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 22px; line-height: 1.25; color: var(--ink); }
+      .ir-plede { margin: -6px 0 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); max-width: 68ch; }
+      .ir-pnote { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+      .ir-table { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+      .ir-table > * + *, .ir-fold > * + * { border-top: 1px solid var(--line); }
+      .ir-trow { display: grid; grid-template-columns: minmax(0, 1.1fr) 110px 110px minmax(0, 2fr); column-gap: 16px; padding: 12px 18px; font-size: 15px; align-items: baseline; color: var(--ink); }
+      .ir-trow.head { padding: 10px 18px; font-size: 13px; color: var(--muted); background: var(--panel); }
+      .ir-trow .num { font-family: var(--mono-font); text-align: end; overflow-wrap: anywhere; }
+      .ir-trow.head .num { font-family: inherit; }
+      .ir-trow .num.book { color: var(--accent); }
+      .ir-trow.strong .ir-tname { font-weight: 700; }
+      .ir-twhy { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--ink-2); }
+      .ir-trow.gold .ir-twhy { color: var(--gold-ink); }
+      .ir-same { display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px 16px; background: var(--panel); }
+      .ir-samehead { display: flex; align-items: center; gap: 10px; }
+      .ir-samehead p { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+      .ir-samegrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 28px; font-size: 14px; color: var(--ink-2); }
+      .ir-samegrid > div { display: flex; justify-content: space-between; gap: 10px; }
+      .ir-samegrid > div > span + span { font-family: var(--mono-font); }
+      .ir-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: center; padding: 12px 18px; font-size: 15px; color: var(--ink); }
+      .ir-item.undone .ir-line, .ir-item.undone .ir-set { text-decoration: line-through; color: var(--muted); }
+      .ir-imain { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+      .ir-line { overflow-wrap: anywhere; line-height: 1.45; }
+      .ir-where, .ir-hint { font-size: 13px; color: var(--muted); }
+      .ir-ba { display: grid; gap: 3px; margin-top: 3px; }
+      .ir-ba > div { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+      .ir-tag { flex: 0 0 auto; font-size: 13px; color: var(--muted); min-width: 52px; }
+      .ir-set { font-family: Georgia, "Times New Roman", serif; overflow-wrap: anywhere; white-space: pre-wrap; min-width: 0; }
+      .ir-set small, .ir-fas small { display: block; font-family: var(--ui-font); font-size: 13px; color: var(--muted); white-space: normal; }
+      .ir-act { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+      .ir-act:empty { display: none; }
+      .ir-done { font-size: 14px; color: var(--good); font-weight: 600; }
+      .ir-fail { flex-basis: 100%; text-align: end; font-size: 13px; color: var(--bad); }
+      .ir-filed { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); column-gap: 16px; align-items: baseline; }
+      .ir-fas { color: var(--ink-2); }
+      .ir-meta { display: grid; grid-template-columns: 140px minmax(0, 1fr); column-gap: 16px; align-items: baseline; }
+      .ir-mfield { color: var(--muted); }
+      .ir-note { display: grid; grid-template-columns: minmax(48px, max-content) minmax(0, 1fr); column-gap: 16px; align-items: baseline; }
+      .ir-notelabel { font-family: var(--mono-font); font-size: 13.5px; color: var(--gold-ink); text-align: end; }
+      .ir-note .ir-where { grid-column: 2; }
+      .ir-lrow { grid-template-columns: 60px minmax(0, 1fr) minmax(0, 1.2fr); align-items: baseline; padding: 11px 18px; }
+      .ir-lname::first-letter { text-transform: uppercase; }
+      .ir-lis { font-size: 14px; color: var(--muted); }
+      .ir-arow { display: grid; grid-template-columns: 60px minmax(0, 1fr) auto; column-gap: 16px; align-items: center; padding: 12px 18px; font-size: 15px; color: var(--ink); }
+      .ir-lines { padding-block: 10px 12px; padding-inline: 94px 18px; background: var(--panel); font-size: 14px; line-height: 1.5; color: var(--ink-2); max-height: 320px; overflow-y: auto; }
+      .ir-lines p { margin: 0 0 4px; overflow-wrap: anywhere; }
+      .ir-ask { display: flex; flex-direction: column; gap: 10px; padding: 0; }
+      .ir-ask.ir-item { display: flex; }
+      .ir-askhead { display: flex; align-items: flex-start; gap: 10px; }
+      .ir-askhead .ir-mark { margin-top: 1px; }
+      .ir-askhead p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); max-width: 72ch; }
+      .ir-askhead b { color: var(--ink); }
+      .ir-fold > summary { cursor: pointer; list-style: none; display: flex; align-items: center; box-sizing: border-box; min-height: 44px; padding: 0 18px; font-size: 14px; color: var(--accent); text-decoration: underline; }
+      .ir-fold > summary::-webkit-details-marker { display: none; }
+      .ir-fold[open] > summary { display: none; }
+      .ir-fold[open] > summary + * { border-top: 0; }
+      /* BEUK:importtally — the whole tally, row by row, behind the counts (its own fold) */
+      .ir-group { border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); }
+      .ir-group > summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-sizing: border-box; min-height: 44px; padding: 0 18px; font-size: 14px; color: var(--accent); text-decoration: underline; }
       .ir-group > summary::-webkit-details-marker { display: none; }
-      .ir-group.warn > summary { color: var(--bad); }
-      .ir-gcount { font-family: var(--mono-font); font-size: 12px; color: var(--muted); }
-      .ir-item { border-top: 1px solid var(--line); padding: 9px 13px 10px; font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
-      .ir-item.undone .ir-line { text-decoration: line-through; color: var(--muted); }
-      .ir-line { color: var(--ink); overflow-wrap: anywhere; }
-      .ir-where { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-      .ir-ba { display: grid; gap: 3px; margin: 6px 0 0; }
-      .ir-ba > div { display: flex; gap: 7px; align-items: baseline; min-width: 0; }
-      .ir-ba code { font-family: var(--mono-font); font-size: 11.5px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; overflow-wrap: anywhere; white-space: pre-wrap; min-width: 0; }
-      .ir-tag { flex: 0 0 auto; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); min-width: 46px; }
-      .ir-act { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 7px; }
-      .ir-act .tb-btn { padding: 4px 11px; font-size: 12px; }
-      .ir-hint, .ir-na { font-size: 11.5px; color: var(--muted); }
-      .ir-done { font-size: 12px; color: var(--good); font-weight: 600; }
-      .ir-fail { font-size: 11.5px; color: var(--bad); }
-      .ir-actions { flex-wrap: wrap; }
-      @media (max-width: 560px) { .ir-actions .tb-btn { flex: 1 1 45%; } }
+      .ir-gname { font-weight: 400; }
+      .ir-tally { overflow: hidden; }
+      .ir-tally-t { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; margin: 0 0 10px; color: var(--ink); }
+      .ir-tally-t thead th + th { width: 6.5em; white-space: normal; }
+      .ir-tally-t th, .ir-tally-t td { padding: 7px 18px; border-top: 1px solid var(--line); text-align: start; font-weight: 400; vertical-align: top; }
+      .ir-tally-t thead th { font-size: 13px; color: var(--muted); }
+      .ir-tally-t td, .ir-tally-t thead th + th { text-align: end; font-family: var(--mono-font); font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .ir-tally-t thead th + th { font-family: inherit; }
+      .ir-tally-t small { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+      .ir-tally-w th, .ir-tally-w td { font-weight: 700; }
+      .ir-tally-sum { margin: 0 18px 10px; border: 1px solid var(--line); border-radius: 9px; font-size: 14px; color: var(--ink); }
+      .ir-tally-sum > div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 12px; border-top: 1px solid var(--line); }
+      .ir-tally-sum > div:first-child { border-top: 0; }
+      .ir-tally-sum b { font-family: var(--mono-font); font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .ir-tally-un { font-weight: 700; }
+      .ir-tally-un.warn { color: var(--gold-ink); }
+      .ir-tally-note { font-size: 13px; color: var(--muted); margin: 0 18px 10px; line-height: 1.5; }
+      .ir-tally-sum > .ir-tally-part { border-top: 0; padding-top: 0; padding-inline-start: 25px; font-size: 13px; color: var(--muted); }
+      .ir-tally-part b { font-weight: 400; }
+      .ir-tally-note.warn { color: var(--gold-ink); }
+      .ir-tally-part small, .ir-tally-sum small { display: block; font-size: 13px; color: var(--muted); margin-top: 1px; }
+      .ir-act .ir-btn { white-space: normal; }
+      @media (max-width: 560px) {
+        .ir-modal { padding: 26px 20px 22px; }
+        .ir-head { flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 22px; }
+        .ir-head #irH { font-size: 28px; }
+        .ir-head .ir-link { min-height: 44px; }
+        .ir-card { gap: 22px; }
+        .ir-verdict { gap: 14px; padding: 18px 18px 16px; }
+        .ir-vhead { align-items: flex-start; gap: 10px; }
+        .ir-vhead .ir-mark { margin-top: 2px; width: 24px; height: 24px; }
+        .ir-vhead p { font-size: 20px; }
+        .ir-figs { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+        .ir-figrow { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; column-gap: 8px; align-items: baseline; }
+        .ir-fig { display: contents; }
+        .ir-fig b { order: 2; font-size: 26px; }
+        .ir-fig span { order: 1; font-size: 15px; }
+        .ir-fig span::first-letter { text-transform: uppercase; }
+        .ir-sign { font-size: 20px; line-height: 1; }
+        .ir-sign.none { display: block; }
+        .ir-vrows { grid-template-columns: minmax(30px, max-content) minmax(0, 1fr); column-gap: 10px; padding-top: 12px; line-height: 1.4; }
+        .ir-diffgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; column-gap: 10px; }
+        .ir-fhead p { display: none; }
+        .ir-spine { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+        .ir-zone { padding-top: 0; }
+        .ir-pages { flex-direction: column; align-items: flex-start; gap: 6px; }
+        .ir-page { min-height: 44px; }
+        .ir-row { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; min-height: 44px; }
+        .ir-rs { display: none; }
+        .ir-rw { min-width: 0; }
+        .ir-more { min-height: 44px; font-size: 14.5px; padding: 0 12px; }
+        .ir-seelist { padding-block: 12px; margin-block: -12px; }
+        .ir-looks { padding-top: 16px; }
+        .ir-btn { min-height: 44px; }
+        .ir-actions { flex-direction: column-reverse; align-items: stretch; gap: 8px; margin-top: 22px; }
+        .ir-actions .ir-btn { min-height: 48px; font-size: 15.5px; }
+        .ir-actions .ir-btn.primary { font-size: 16px; }
+        .ir-actions .ir-link { align-self: center; }
+        .ir-space { display: none; }
+        .ir-chip { min-height: 44px; }
+        .ir-trow { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: 4px; padding: 12px 14px; }
+        .ir-trow.head span:last-child { display: none; }
+        .ir-twhy { grid-column: 1 / -1; }
+        .ir-samegrid { grid-template-columns: minmax(0, 1fr); }
+        .ir-item { grid-template-columns: minmax(0, 1fr); row-gap: 10px; padding: 12px 14px; }
+        .ir-act { justify-content: flex-start; }
+        .ir-fail { text-align: start; }
+        .ir-lrow { grid-template-columns: minmax(30px, max-content) minmax(0, 1fr); column-gap: 10px; }
+        .ir-lis { grid-column: 2; }
+        .ir-filed, .ir-meta { grid-template-columns: minmax(0, 1fr); row-gap: 3px; }
+        .ir-arow { grid-template-columns: minmax(30px, max-content) minmax(0, 1fr); column-gap: 10px; row-gap: 8px; padding: 12px 14px; }
+        .ir-arow .ir-btn { grid-column: 2; justify-self: start; }
+        .ir-lines { padding-inline: 14px; }
+        .ir-fold > summary, .ir-group > summary { padding: 0 14px; }
+        .ir-tally-t th, .ir-tally-t td { padding: 7px 14px; }
+        .ir-tally-sum, .ir-tally-note { margin-inline: 14px; }
+      }
       /* ==== /BEUK:importreport ==== */
       #secSettings { margin-bottom: 6px; }
       #secSettings .switch-row { border-bottom: 1px solid var(--line); }
@@ -45929,22 +46073,168 @@
       }
       const IR_HINT = { chapter: "chapter", matter: "matter", lifted: "matter", demoted: "demoted", break: "break", typography: "typography", image: "image", table: "table", language: "book", meta: "book" };
       /* ==== BEUK:importcard ==== */
-      /* A writer's first question after an import is "is my book all
-         here?", so the report opens on the book that came in: how much
-         was read, what Beuk found in it (the pages before the story, the
-         chapters with the sections inside them, the pages after), and in
-         three plain lines what it did. Every label opens its section,
-         where a wrong one is changed. The changes one by one, each with
-         its undo, are the same report as ever, a step behind the card.
-         The card is read from the book as it stands, never from a copy. */
-      let irView = "card", irCardAll = false, irDrawnRep = null; /* irDrawnRep: which report the list was last drawn for (BEUK:hyphensgiven) */
+      /* A writer's first question after an import is "is my whole book
+         here?", so the report opens on a card that answers it first: the
+         verdict (the file's characters = the book's + what was set aside,
+         each row named, and what is unaccounted for), then the book Beuk
+         found (the pages before the story, the chapters with the sections
+         inside them, the pages after), then the looks a Beuk book does not
+         carry. Every page opens its section, where a wrong one is changed.
+         The full account, a step behind the card, is the same report as
+         ever, part by part: no item of it is left out (irPartOf gives every
+         item a part, a kind it does not know among them). The card is read
+         from the book as it stands, never from a copy. */
+      let irView = "card", irCardAll = false, irDrawnRep = null; /* irDrawnRep: which report the account was last drawn for (BEUK:hyphensgiven) */
+      let irLinesOpen = new Set(), irAsideLines = null; /* the set-aside rows whose lines are shown; the lines themselves, kept in memory for the report just written (never stored with the book) */
       /* The words the import put in the book: the sections that hold text. A page Beuk builds for
          itself (a title page from the book's details, say) is nothing it read, so it is not counted. */
       function irCardWords() {
         return state.sections.filter((s) => /\S/.test(String(s.content || ""))).reduce((a, s) => a + sectionWords(s), 0);
       }
-      const IR_CARD_ROWS = 6;
-      function irCardHtml(rep) {
+      const IR_CARD_ROWS = 4, IR_FOLD_OVER = 6, IR_FOLD_SHOWN = 3, IR_LINES_SHOWN = 200;
+      /* The parts of the full account, in the order they are shown, and the part each kind of item stands in. A kind
+         that is not named here goes by its group; a group that is not known goes to "Set aside": nothing is dropped. */
+      const IR_PARTS = ["count", "look", "aside", "looks", "typography", "filed", "notes", "book"];
+      const IR_LOOK_KINDS = ["mono", "smallcaps", "strike", "underline", "subsup", "headers", "fmtHeading", "textbox", "lists", "nestedList", "emphasis", "pdfSmallCaps"];
+      const IR_PART_OF = { mdImage: "look", noteOrphan: "look", refOrphan: "look", txtMarks: "look", pdfHyphenAskAll: "look", pdfHyphenAsk: "look",
+        imageDropped: "notes", imageLost: "notes", tablePics: "notes", table: "notes", pdfImagesLost: "notes", pdfBackdrops: "notes", pdfMasks: "notes", pdfDupImages: "notes" };
+      function irPartOf(it) {
+        if (IR_LOOK_KINDS.indexOf(it.kind) !== -1) return "looks";
+        if (IR_PART_OF[it.kind]) return IR_PART_OF[it.kind];
+        switch (it.group) {
+          case "structure": case "matter": return "filed";
+          case "notes": return "notes";
+          case "book": return "book";
+          case "typography": return "typography";
+          default: return "aside";
+        }
+      }
+      /* How many of a row's difference no reason of its own names (irTallyWhy: its "none" reasons, and whatever its
+         reasons do not add up to): 0 when the two figures are the same, or every one of the difference is explained. */
+      function irRowUnexplained(r) {
+        if (!r || r.file === r.book) return 0;
+        const why = Array.isArray(r.why) ? r.why : [];
+        const none = why.filter((y) => y.k === "none").reduce((a, y) => a + (Number(y.n) || 0), 0);
+        const net = why.reduce((a, y) => a + (y.side < 0 ? -1 : 1) * (Number(y.n) || 0), 0);
+        return none + Math.abs((Number(r.file) || 0) - (Number(r.book) || 0) - net);
+      }
+      /* What the card and the account both read off the report: the tally (in characters, or none), what differs
+         (characters; a count with no named reason; pictures the file names and does not hold; notes nothing marks),
+         and the hyphens the writer has joined since. A PDF's words left for the writer are not a difference: the
+         book holds what the page shows. */
+      function irVerdict(rep) {
+        const ty = rep && rep.tally && rep.tally.v === 3 ? rep.tally : null; /* a tally written before the unit was the character (v 2: words) is not read here */
+        const items = (rep && rep.items) || [];
+        const sum = (o) => Object.keys(o || {}).reduce((a, k) => a + (Number(o[k]) || 0), 0);
+        const counted = !!(ty && ty.counted && ty.chars);
+        const diffs = [];
+        if (counted) {
+          if (ty.unaccounted > 0) diffs.push({ what: "chars", key: "ir.tally.cardWarn", n: ty.unaccounted });
+          else if (ty.unaccounted < 0) diffs.push({ what: "chars", key: "ir.tally.cardMore", n: -ty.unaccounted }); /* more characters in the book than counted in the file: never "lost" */
+          else if (!ty.chars.same) diffs.push({ what: "chars", key: "ir.tally.cardWords", n: ty.chars.fileOnlyN || ty.chars.bookOnlyN });
+        }
+        const rows = ((ty && ty.rows) || []).filter((r) => irRowUnexplained(r) > 0);
+        if (rows.length) diffs.push({ what: "counts", n: rows.length, rows });
+        const pics = items.filter((it) => it.kind === "mdImage").reduce((a, it) => a + (Number(it.data && it.data.n) || 0), 0);
+        if (pics) diffs.push({ what: "pics", n: pics });
+        const notes = items.filter((it) => it.kind === "noteOrphan").length;
+        if (notes) diffs.push({ what: "notes", n: notes });
+        /* each place of a listed word whose hyphen the writer took out (IR_UNDO.pdfHyphenAsk marks it done): one character of the book each */
+        const joined = items.filter((it) => it.kind === "pdfHyphenAsk").reduce((a, it) => a + ((it.data && it.data.at) || []).filter((o) => o && o.done).length, 0);
+        const hyLeft = items.filter((it) => it.kind === "pdfHyphenAsk" && it.state === "applied").length;
+        /* what else the old card counted as "left out or not supported", and no line of this card says: each is a line of the account */
+        const said = IR_LOOK_KINDS.concat(["mdImage", "noteOrphan", "pdfHyphenAsk", "pdfHyphenAskAll"]);
+        const more = items.filter((it) => (it.group === "dropped" || irPartOf(it) === "look") && said.indexOf(it.kind) === -1).length;
+        return { ty, counted, state: diffs.length ? "differs" : counted ? "clear" : "unknown", diffs, aside: ty ? sum(ty.aside) : 0, joined, hyLeft, pics, notes, more };
+      }
+      function irCardTitle(v) {
+        if (v.state !== "differs") return t("ir.card.title");
+        const n = v.diffs.reduce((a, d) => a + d.n, 0);
+        const key = v.diffs.length > 1 ? "ir.card.titleThings" : { chars: "ir.card.titleChars", counts: "ir.card.titleCounts", pics: "ir.card.titlePics", notes: "ir.card.titleNotes" }[v.diffs[0].what];
+        return t(key, { count: n, n: fmtNum(n) });
+      }
+      const irSay = (key, n, more) => t(key, Object.assign({ count: n, n: fmtNum(n) }, more || {}));
+      const irSigned = (n) => (n < 0 ? "−" : "") + fmtNum(Math.abs(n));
+      const irMark = (kind, size) => '<svg class="ir-mark ' + kind + '" aria-hidden="true" width="' + (size || 26) + '" height="' + (size || 26) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        (kind === "tick" ? '<path d="m5 12.5 4.5 4.5L19 7.5"></path>' : '<circle cx="12" cy="12" r="10"></circle>' + (kind === "ok" ? '<path d="m8 12.5 2.8 2.8L16.2 9.5"></path>' : '<path d="M12 7.5v5.5"></path><path d="M12 16.5h.01"></path>')) + "</svg>";
+      const irList = (parts, type) => { try { return new Intl.ListFormat(getUiLang(), { style: type === "unit" ? "short" : "long", type: type || "conjunction" }).format(parts); } catch (e) { return parts.join(", "); } };
+      /* A count that differs with no reason of its own, in one sentence: both figures, and what is not explained */
+      function irRowSentence(r) {
+        const none = (Array.isArray(r.why) ? r.why : []).filter((y) => y.k === "none");
+        const net = (Array.isArray(r.why) ? r.why : []).reduce((a, y) => a + (y.side < 0 ? -1 : 1) * (Number(y.n) || 0), 0), gap = r.file - r.book - net;
+        const why = none.map(irTallyWhyLine).concat(gap ? [t(gap > 0 ? "ir.tally.y.noneFile" : "ir.tally.y.noneBook", { n: fmtNum(Math.abs(gap)) })] : []);
+        return t("ir.card.countDiffers", { what: t("ir.tally.r." + r.key), file: fmtNum(r.file), book: fmtNum(r.book), why: irList(why) });
+      }
+      const irDiffSentences = (d) => d.what === "chars" ? [irSay(d.key, d.n)] : d.what === "counts" ? d.rows.map(irRowSentence) : d.what === "pics" ? [irSay("ir.card.pics", d.n)] : [irSay("ir.card.notes", d.n)];
+      /* The characters that differ, side by side: what the file has and the book has not, what the book has and the
+         file has not, and how many times; under each, the first words it stands in. */
+      function irDiffGridHtml(w, shown) {
+        if (!w || (!w.fileOnly.length && !w.bookOnly.length)) return "";
+        const cell = (x) => '<span class="ir-dc">' + esc(irTallyCharName(x[0])) + (x[2] && x[2].length ? "<small>" + esc(t("ir.tally.wf.in", { words: x[2].map((v) => "“" + v + "”").join(", ") })) + "</small>" : "") + "</span>";
+        const times = (x) => '<span class="ir-dn">' + esc(fmtNum(x[1])) + "</span>";
+        const f = w.fileOnly.slice(0, shown), b = w.bookOnly.slice(0, shown);
+        let h = '<div class="ir-diffgrid"><span class="ir-dh">' + esc(t("ir.card.onlyFile")) + '</span><span class="ir-dh">' + esc(t("ir.card.onlyBook")) + '</span><span class="ir-dh ir-dn">' + esc(t("ir.card.times")) + "</span>";
+        f.forEach((x) => { h += cell(x) + "<span></span>" + times(x); });
+        b.forEach((x) => { h += "<span></span>" + cell(x) + times(x); });
+        const left = w.fileOnlyN + w.bookOnlyN - f.concat(b).reduce((a, x) => a + x[1], 0);
+        return h + "</div>" + (left > 0 ? '<p class="ir-vnote">' + esc(t("ir.tally.wf.more", { n: fmtNum(left) })) + "</p>" : "");
+      }
+      /* The verdict panel: the one strong element of the card */
+      function irVerdictHtml(rep, v) {
+        const ty = v.ty;
+        let h = '<div class="ir-verdict ' + v.state + '">';
+        const lines = !ty ? [t("ir.card.noTally")] : !v.counted ? [t("ir.tally.cardNo")] : v.state === "clear" ? [t("ir.tally.wf.same")] : v.diffs.reduce((a, d) => a.concat(irDiffSentences(d)), []);
+        h += '<div class="ir-vhead">' + irMark(v.state === "clear" ? "ok" : "info") + "<p>" + esc(lines[0]) + "</p></div>";
+        lines.slice(1).forEach((l) => { h += '<p class="ir-vsay">' + esc(l) + "</p>"; });
+        if (v.state === "differs") {
+          if (v.pics) h += '<p class="ir-vsay">' + esc(t("ir.acc.picsWhy")) + "</p>";
+          if (v.notes) h += '<p class="ir-vsay">' + esc(t("ir.acc.notesWhy")) + "</p>";
+          if (v.counted && v.diffs.some((d) => d.what === "chars")) h += irDiffGridHtml(ty.chars, 6);
+          /* the characters themselves all agree, and only something else differs: said, as it is on a clean card */
+          else if (v.counted) h += '<p class="ir-vsay">' + esc(t("ir.tally.wf.same")) + "</p>";
+        }
+        if (v.counted) {
+          /* the arithmetic, true as the book stands: a hyphen the writer joined since is one character less in the book, and is named among what is set aside */
+          const fig = (cls, n, key, sign) => '<div class="ir-figrow"><span class="ir-sign' + (sign ? "" : " none") + '" aria-hidden="true">' + esc(sign || "") + '</span><div class="ir-fig ' + cls + '"><b>' + esc(fmtNum(n)) + "</b><span>" + esc(t(key)) + "</span></div></div>";
+          h += '<div class="ir-figs">' + fig("file", ty.file, "ir.card.figFile", "") + fig("book", ty.book - v.joined, "ir.card.figBook", "=") + fig("aside", v.aside + v.joined, "ir.card.figAside", "+") + "</div>";
+          h += '<div class="ir-vrows">';
+          const row = (n, text, cls) => '<span class="ir-vn' + (cls ? " " + cls : "") + '">' + esc(n) + '</span><span class="ir-vt' + (cls ? " " + cls : "") + '">' + esc(text) + "</span>";
+          Object.keys(ty.aside || {}).forEach((k) => { h += row(fmtNum(ty.aside[k]), t("ir.tally.b." + k), "gold"); });
+          if (v.joined) h += row(fmtNum(v.joined), t("ir.card.joined", { n: v.joined }), "gold");
+          h += row(irSigned(ty.unaccounted), t("ir.tally.unaccounted"), "sum");
+          if (ty.pdf) {
+            /* a PDF: its characters piece by piece, and what the reader took off where it joined them, down to "in your file" */
+            h += row(fmtNum(ty.pdf.raw), t("ir.tally.j.raw"), "quiet");
+            IR_TALLY_JOINS.forEach((k) => { if (ty.pdf.joins && ty.pdf.joins[k]) h += row((ty.pdf.joins[k] < 0 ? "+ " : "− ") + fmtNum(Math.abs(ty.pdf.joins[k])), t("ir.tally.j." + k), "quiet"); });
+          }
+          h += "</div>";
+        } else if (ty) {
+          h += '<div class="ir-figs one"><div class="ir-figrow"><span class="ir-sign none" aria-hidden="true"></span><div class="ir-fig book"><b>' + esc(fmtNum(ty.book)) + "</b><span>" + esc(t("ir.card.figBook")) + "</span></div></div></div>";
+        }
+        /* BEUK:hyphensgiven — the words whose line-end hyphen the PDF's own text does not settle, each still as the
+           import left it: a calm line (nothing differs: the book holds what the page shows), and its button opens the
+           account at them. A word the writer has joined is no longer counted; with none left the line is not written. */
+        const calm = (text, extra) => '<div class="ir-vcalm">' + irMark("info", 18) + "<p>" + esc(text) + (extra || "") + "</p></div>";
+        if (v.hyLeft) h += calm(t("ir.card.didHyphens", { n: v.hyLeft }), ' <button type="button" class="ir-seelist" data-irhyph="1">' + esc(t("ir.card.seeWords")) + "</button>");
+        if (v.more) h += calm(irSay("ir.card.more", v.more), ' <button type="button" class="ir-seelist" data-irlist="1">' + esc(t("ir.acc.see")) + "</button>");
+        if (v.state === "differs") h += '<div class="ir-vact"><button type="button" class="ir-btn" data-irpart="' + (v.diffs.some((d) => d.what === "chars" || d.what === "counts") ? "count" : "look") + '">' + esc(t("ir.card.seeThem")) + "</button></div>";
+        return h + "</div>";
+      }
+      /* The looks of the file a Beuk book does not carry: each kind once, with how many (a kind the report lists twice is summed) */
+      function irLooksOf(rep) {
+        const by = new Map();
+        (rep.items || []).forEach((it) => {
+          if (IR_LOOK_KINDS.indexOf(it.kind) === -1) return;
+          const d = it.data || {}, n = it.kind === "emphasis" ? (Number(d.em) || 0) + (Number(d.strong) || 0) : (Number(d.n) || 0);
+          const e = by.get(it.kind) || { kind: it.kind, n: 0, items: [] };
+          e.n += n; e.items.push(it); by.set(it.kind, e);
+        });
+        return Array.from(by.values()).sort((a, b) => b.n - a.n);
+      }
+      const IR_LOOK_NAMED = ["mono", "smallcaps", "strike", "underline", "subsup", "headers", "fmtHeading", "textbox", "lists", "nestedList"];
+      const irLookName = (l) => IR_LOOK_NAMED.indexOf(l.kind) !== -1 ? t("ir.look." + l.kind) : irItemLabel(l.items[0]);
+      function irCardHtml(rep, v) {
+        v = v || irVerdict(rep);
         /* BEUK:importtally — a page counts as found when it has text, or when the file named it with nothing under it yet
            (a chapter not yet written, a dedication still to come): the writer's heading, shown as found */
         const fromFile = new Set((rep.items || []).filter((it) => (it.kind === "matter" || it.kind === "chapter") && it.where && it.where.secId).map((it) => it.where.secId));
@@ -45954,62 +46244,40 @@
         const chapters = body.filter((s) => s.type === "chapter");
         const subsOf = (s) => irBlocks(String(s.content || "")).filter((b) => /^# \S/.test(b)).length;
         const subs = body.reduce((a, s) => a + subsOf(s), 0);
-        const pageName = (s) => s.title || t("import.type." + s.type);
-        const stat = (n, key) => '<div class="ir-stat"><b>' + esc(fmtNum(n)) + "</b><span>" + esc(t(key, { n })) + "</span></div>";
-        let html = '<p class="ir-kicker">' + esc(t("ir.card.kicker", { file: rep.file })) + "</p>";
-        html += '<div class="ir-stats">' + stat(chapters.length, "ir.card.chapters") + (subs ? stat(subs, "ir.card.sections") : "") + (front.length + back.length ? stat(front.length + back.length, "ir.card.pages") : "") + "</div>";
-        html += '<h3 class="ir-ch2">' + esc(t("ir.card.found")) + "<i>" + esc(t("ir.card.foundHint")) + "</i></h3>";
-        const pages = (list) => '<div class="ir-pages">' + list.map((s) => '<button type="button" class="ir-page" data-irsec="' + esc(s.id) + '">' + esc(pageName(s)) + "</button>").join("") + "</div>";
+        const typeName = (s) => t("import.type." + s.type);
+        const pageName = (s) => s.title || typeName(s);
+        let html = irVerdictHtml(rep, v);
+        /* the book Beuk found: one heading that carries the counts, then the three zones */
+        const found = [irSay("ir.card.nChapters", chapters.length)].concat(subs ? [irSay("ir.card.nSections", subs)] : [], front.length + back.length ? [irSay("ir.card.nPages", front.length + back.length)] : []);
+        html += '<div class="ir-found"><div class="ir-fhead"><h3 class="ir-h3">' + esc(t("ir.card.foundHead", { list: irList(found, "unit") })) + "</h3><p>" + esc(t("ir.card.pressHint")) + "</p></div>";
+        /* a page says what it is filed as, where its own name does not already say it */
+        const pages = (list) => '<div class="ir-pages">' + list.map((s) => {
+          const named = !!s.title && s.title.toLowerCase().indexOf(typeName(s).toLowerCase()) === -1;
+          return '<button type="button" class="ir-page" data-irsec="' + esc(s.id) + '">' + esc(pageName(s)) + (named ? " <span>" + esc(t("ir.card.pageAs", { type: typeName(s) })) + "</span>" : "") + "</button>";
+        }).join("") + "</div>";
         html += '<div class="ir-spine">';
-        if (front.length) html += '<div class="ir-zone"><small>' + esc(t("ir.card.zoneFront")) + "</small>" + pages(front) + "</div>";
+        if (front.length) html += '<span class="ir-zone">' + esc(t("ir.card.zoneFront")) + "</span>" + pages(front);
         if (body.length) {
           const shown = irCardAll ? body : body.slice(0, IR_CARD_ROWS);
-          html += '<div class="ir-zone body"><small>' + esc(t("ir.card.zoneBody")) + '</small><div class="ir-rows">';
+          html += '<span class="ir-zone">' + esc(t("ir.card.zoneBody")) + '</span><div class="ir-rows">';
           shown.forEach((s) => {
-            const n = subsOf(s);
-            html += '<button type="button" class="ir-row" data-irsec="' + esc(s.id) + '" title="' + esc(s.type === "chapter" ? (s.title || t("side.untitled")) : pageName(s)) + '"><span class="ir-rn">' + esc(s.type === "chapter" ? (s.number || "") : "") + '</span><span class="ir-rt">' +
-              esc(s.type === "chapter" ? (s.title || t("side.untitled")) : pageName(s)) + (n ? "<em>" + esc(t("ir.card.sectionsIn", { n })) + "</em>" : "") + '</span><span class="ir-rw">' + esc(fmtNum(sectionWords(s))) + "</span></button>";
+            const n = subsOf(s), name = s.type === "chapter" ? (s.title || t("side.untitled")) : pageName(s);
+            html += '<button type="button" class="ir-row" data-irsec="' + esc(s.id) + '" title="' + esc(name) + '"><span class="ir-rn">' + esc(s.type === "chapter" ? (s.number || "") : "") + '</span><span class="ir-rt">' + esc(name) + '</span><span class="ir-rs">' +
+              (n ? esc(t("ir.card.sectionsIn", { n })) : "") + '</span><span class="ir-rw">' + esc(fmtNum(sectionWords(s))) + "</span></button>";
           });
-          html += "</div>";
-          if (body.length > IR_CARD_ROWS) html += '<button type="button" class="ir-more" data-irmore="1">' + esc(irCardAll ? t("ir.card.showFewer") : t("ir.card.showAll", { n: body.length })) + "</button>";
+          if (body.length > IR_CARD_ROWS) html += '<button type="button" class="ir-more" data-irmore="1">' + esc(irCardAll ? t("ir.card.showFewer") : body.length === chapters.length ? irSay("ir.card.showAllChapters", body.length) : t("ir.card.showAll", { n: body.length })) + "</button>";
           html += "</div>";
         }
-        if (back.length) html += '<div class="ir-zone"><small>' + esc(t("ir.card.zoneBack")) + "</small>" + pages(back) + "</div>";
-        html += "</div>";
-        /* what it did: the sub-headings kept in their chapters, the headings set in the book's style, and whether anything was left out */
-        const fh = rep.items.find((it) => it.kind === "fmtHeading");
-        const lost = rep.items.filter((it) => it.group === "dropped" && it.kind !== "fmtHeading").length;
-        const line = (text, warn, extra) => '<div class="ir-didline' + (warn ? " warn" : "") + '"><span>' + (warn ? "!" : "✓") + "</span><p>" + esc(text) + (extra || "") + "</p></div>";
-        html += '<h3 class="ir-ch2">' + esc(t("ir.card.did")) + '</h3><div class="ir-did">';
-        if (subs) html += line(t("ir.card.didSubs", { n: subs }));
-        if (fh && fh.data && fh.data.n) html += line(t("ir.card.didHeads", { n: fh.data.n }));
-        /* "Left nothing out" is never said above a tally that has characters it cannot place, or characters that differ.
-           A tally written before the unit was the character (v 2: words) is not read here: its figures are not characters. */
-        const tallyNow = rep.tally && rep.tally.v === 3 ? rep.tally : null;
-        const tallyOff = !!(tallyNow && tallyNow.counted && (tallyNow.unaccounted !== 0 || !tallyNow.chars || !tallyNow.chars.same));
-        html += lost ? line(t("ir.card.didLost", { n: lost }), true, ' <button type="button" class="ir-seelist" data-irlist="1">' + esc(t("ir.card.see")) + "</button>") : tallyOff ? "" : line(t("ir.card.didNone"));
-        /* BEUK:asgiven — the import tidies nothing, and the card says so, naming the writer's own button for it (a report
-           saved before this, whose import did tidy, lists its typography changes instead) */
-        if (!rep.items.some((it) => it.group === "typography")) html += line(t("ir.card.didAsGiven", { button: t("tool.autoFormat") }));
-        /* BEUK:hyphensgiven — the words whose line-end hyphen the PDF's own text does not settle, each still as the import
-           left it: the card says how many (a 75,000-word novel set with the browser's hyphenation left 82 of its 828
-           line-end hyphens, measured), and its button opens the list at them. Once the writer has joined a word it is no
-           longer counted; with none left the line is not written. */
-        const hyLeft = rep.items.filter((it) => it.kind === "pdfHyphenAsk" && it.state === "applied").length;
-        if (hyLeft) html += line(t("ir.card.didHyphens", { n: hyLeft }), true, ' <button type="button" class="ir-seelist" data-irhyph="1">' + esc(t("ir.card.seeWords")) + "</button>");
-        /* BEUK:importtally — one line: every character accounted for (said only when the counts reconcile to exactly zero
-           AND the characters themselves agree), or what is not */
-        if (tallyNow) {
-          const ty = tallyNow, see = ' <button type="button" class="ir-seelist" data-irtally="1">' + esc(t("ir.tally.see")) + "</button>";
-          const setAside = Object.keys(ty.aside || {}).reduce((a, k) => a + ty.aside[k], 0);
-          const say = (key, n) => t(key, { count: n, n: fmtNum(n) });
-          if (!ty.counted || !ty.chars) html += line(t("ir.tally.cardNo"), true, see);
-          else if (ty.unaccounted > 0) html += line(say("ir.tally.cardWarn", ty.unaccounted), true, see);
-          else if (ty.unaccounted < 0) html += line(say("ir.tally.cardMore", -ty.unaccounted), true, see); /* more characters in the book than counted in the file: never "lost" */
-          else if (!ty.chars.same) html += line(say("ir.tally.cardWords", ty.chars.fileOnlyN || ty.chars.bookOnlyN), true, see);
-          else html += line(t("ir.tally.cardOk", { file: fmtNum(ty.file), book: fmtNum(ty.book), aside: fmtNum(setAside) }), false, see);
+        if (back.length) html += '<span class="ir-zone">' + esc(t("ir.card.zoneBack")) + "</span>" + pages(back);
+        html += "</div></div>";
+        /* looks your book does not carry: one sentence with the counts, and a link to that part of the account; left out when there is none */
+        const looks = irLooksOf(rep);
+        if (looks.length) {
+          html += '<div class="ir-looks"><h3 class="ir-h3">' + esc(irSay("ir.card.looksHead", looks.length)) + "</h3><p>" +
+            esc(t("ir.card.looksLede", { list: irList(looks.map((l) => irLookName(l) + " (" + fmtNum(l.n) + ")")) })) +
+            ' <button type="button" class="ir-seelist" data-irpart="looks">' + esc(t("ir.card.seeEach")) + "</button></p></div>";
         }
-        return html + "</div>";
+        return html;
       }
       /* ==== /BEUK:importcard ==== */
       function irRenderReport() {
