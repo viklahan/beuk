@@ -47149,6 +47149,71 @@
               if (r - q >= 3 && meanLen <= 28) { ls[q].table = ls.slice(q, r).map((l) => l.cells); for (let k = q + 1; k < r; k++) ls[k].inTable = true; q = r - 1; }
               else if (r > q) q = r - 1;
             }
+            /* BEUK:pdfparas — a block set in from the margin in the text's own size (a letter, a quotation, a list item's
+               turned lines). Every line of it starts in from the margin, so "a line that starts in from the margin opens
+               a paragraph" made a paragraph of each line. The page shows more than that:
+                 a line the measure broke: the next line's first word would not have fitted beside it; the text runs on;
+                 a line the writer ended: it stops with room for that word to spare; it ends there.
+               A run of lines sharing one inset is read as such a block only where it shows it is prose: two lines the
+               measure broke with their sentence still open (not counting the one line that sets the block's far edge by
+               being its longest), and more of those than of open lines the writer ended. Verse, an address, a run of
+               one-line paragraphs of dialogue show no such thing and are read as before, a line each.
+               The far edge is the block's own: where its longest line ends (it may be set in on that side too).
+               A list item's turned lines hang under its mark: the first is the item's by that mark and the break of its
+               line, the rest as lines of the block. A line that opens on a list mark is never a line of the block before it.
+               Text read right to left is left as it was: none was measured. */
+            /* A list mark: a bullet, or a shape, sign or ornament set as one (U+25A0 to U+27BF); or, where only the
+               item's turned lines are in question, a middle dot, an asterisk or a number with its point. */
+            const opensOnBullet = (s) => /^\s*[•‣⁃■-➿]\s/u.test(s);
+            const opensOnMark = (s) => opensOnBullet(s) || /^\s*(?:[·*]|\d{1,3}[.)])\s/u.test(s);
+            /* A line that closed its sentence: on a stop, a colon or a closing quotation mark, a bracket after it or not.
+               A bracket alone, or a semicolon, closes nothing. */
+            const closes = (s) => /(?:[.!?:…؟。！？]|["”’»])[)\]]*$/.test(s);
+            /* Did the measure break line a before b: would b's first word not have fitted beside a, before the edge? The
+               word's width is taken from b's own line (its average character) with a space; a raised note number set
+               against the word goes with it. An average cannot know the word's real width to better than about half
+               an em: within that, a line that left its sentence open is read as broken, and a line that closed one is
+               read as ended (what the page shows is two lines). */
+            const firstWord = (b) => { const w = b.text.split(" "); return w[0].length + (w.length > 1 && /^\d{1,3}$/.test(w[1]) && b.runs.some((r) => r.mark && r.t.trim() === w[1]) ? w[1].length : 0); };
+            const broke = (a, b, edge) => edge - a.x1 - ((b.x1 - b.x0) / Math.max(1, b.text.length) * firstWord(b) + b.size * 0.25) < (closes(a.text) ? 0 : b.size * 0.5);
+            const textLine = (x) => !x.head && !x.mono && !x.table && !x.inTable && Math.abs(x.size - body) < 0.6;
+            /* at the text's leading: a gap a fifth taller is a taller gap, and no line is joined across one */
+            const atLeading = (a, b) => b.y > a.y && b.y - a.y <= lead * Math.max(a.size, b.size) / body * 1.2;
+            /* b hangs under a: a opens on a list mark, b starts a little further in, at the text's leading */
+            const hangs = (a, b) => textLine(a) && textLine(b) && Math.abs(a.size - b.size) < 0.3 && opensOnMark(a.text) && !opensOnMark(b.text) &&
+              indentOf(b) - indentOf(a) > body * 0.3 && indentOf(b) - indentOf(a) <= body * 3 && atLeading(a, b);
+            /* The block line q stands in: its far edge, how many of its lines the measure broke with the sentence open
+               and how many open lines the writer ended, and whether that reads as prose. */
+            const setInBlock = (q) => {
+              if (ls[q].setIn) return ls[q].setIn;
+              const beside = (a, b) => textLine(a) && textLine(b) && Math.abs(a.size - b.size) < 0.3 && Math.abs(indentOf(a) - indentOf(b)) <= body * 0.3 &&
+                b.y > a.y && b.y - a.y <= lead * 2.6 && !opensOnMark(b.text);
+              let s = q, e = q;
+              while (s > 0 && beside(ls[s - 1], ls[s])) s--;
+              while (e + 1 < ls.length && beside(ls[e], ls[e + 1])) e++;
+              /* the turned lines of a list item: the item's own first line, above them, is a line of the block's width too */
+              const mark = s > 0 && hangs(ls[s - 1], ls[s]) ? ls[s - 1] : null;
+              const all = (mark ? [mark] : []).concat(ls.slice(s, e + 1));
+              const right = Math.max.apply(null, all.map((x) => x.x1));
+              const atRight = all.filter((x) => x.x1 >= right - 0.5).length;
+              let broken = 0, ended = 0;
+              if (mark && broke(mark, ls[s], right)) broken++;
+              for (let k = s; k < e; k++) {
+                const a = ls[k], b = ls[k + 1];
+                if (!atLeading(a, b) || closes(a.text)) continue;
+                if (broke(a, b, colRight)) broken++;
+                else if (broke(a, b, right)) { if (a.x1 < right - 0.5 || atRight >= 2) broken++; }
+                else ended++;
+              }
+              /* Tables are left as they were: a line of two or more cells is a table's row (a drop cap and its line are
+                 two pieces too, and no table), and the lines straight under a table's rows are a cell's own turned
+                 lines, not a block of the text. */
+              const cells = (x) => !!x.table || !!x.inTable || (x.cells.length >= 2 && !x.dropCap);
+              const ofTable = all.some(cells) || (s > 0 && cells(ls[s - 1]));
+              const blk = { right, broken, ended, ofTable, prose: !ofTable && broken >= 2 && broken > ended };
+              for (let k = s; k <= e; k++) ls[k].setIn = blk;
+              return blk;
+            };
             const takeImg = () => { const fi = imgs.shift(); flush(); if (fi.b) blocks.push(fi.b); prevLine = null; };
             for (let q = 0; q < ls.length; q++) {
               const l = ls[q];
@@ -47272,10 +47337,21 @@
                   const inset = Math.abs(l.size - body) >= 0.6 && Math.abs(l.size - prevLine.size) < 0.3 && !/^\s*(?:[•·▪◦*]|\d{1,3}[.)])\s/u.test(l.text) &&
                     indentOf(prevLine) > body * 0.6 && Math.abs(indentOf(l) - indentOf(prevLine)) <= body * 0.3 &&
                     !shortOf(prevLine, colLeft, colRight, colRtl) && !/[.!?:;"”’»)\]…؟。！？]$/.test(prevLine.text);
-                  if (centred && /[.!?:;"”’»)\]…؟。！？]$/.test(prevLine.text)) fresh = true;
+                  /* BEUK:pdfparas — in the text's own size: a line at the inset of the line above it, in a block that reads
+                     as prose, runs on where the measure broke that line; and the first turned line of a list item runs
+                     on under its mark (the item's own first line, not a line that merely opens on a number). */
+                  let setIn = false;
+                  if (!colRtl && same && bodyish && atLeading(prevLine, l) && indentOf(l) > body * 0.6 && !opensOnMark(l.text)) {
+                    if (Math.abs(l.size - prevLine.size) < 0.3 && Math.abs(indentOf(l) - indentOf(prevLine)) <= body * 0.3) { const blk = setInBlock(q); setIn = blk.prose && broke(prevLine, l, blk.right); }
+                    else if (para.lines === 1 && hangs(prevLine, l)) { const blk = setInBlock(q); setIn = !blk.ofTable && broke(prevLine, l, blk.right); }
+                  }
+                  if (setIn) { /* runs on */ }
+                  else if (centred && /[.!?:;"”’»)\]…؟。！？]$/.test(prevLine.text)) fresh = true;
                   else if (centred || inset) { /* runs on */ }
                   else if (!inCap && indentOf(l) > body * 0.6) fresh = true;
                   else if (shortOf(prevLine, colLeft, colRight, colRtl) && /[.!?:;"”’»)\]…؟。！？]$/.test(prevLine.text)) fresh = true;
+                  /* BEUK:pdfparas — a line that opens on a list mark begins an item: the first one too, under a line that closed nothing */
+                  else if (!colRtl && bodyish && opensOnBullet(l.text)) fresh = true;
                 }
               } else if (!fresh && !prevLine) {
                 /* A new page or column: the paragraph runs on unless this
@@ -47287,15 +47363,33 @@
                   lastIn > body * 0.6 && Math.abs(indentOf(l) - lastIn) <= body * 0.3 &&
                   !shortOf(last, last.colLeft, last.colRight, last.rtl) && !/[.!?:;"”’»)\]…؟。！？]$/.test(last.text) &&
                   !(last.page !== l.page && last.y < bottomY - lead * 1.5);
-                if (insetOn) { /* runs on */ }
+                /* BEUK:pdfparas — and so does a block in the text's own size: its lines at the foot of one page and the
+                   head of the next are one block (the same inset, the page run to its foot), read as prose on what
+                   both show together. Its far edge is taken by its distance from the column's opening edge: the two
+                   pages of a spread do not share their x. */
+                let setInOn = false;
+                if (last && last.size && !colRtl && !last.rtl && Math.abs(l.size - body) < 0.6 && Math.abs(l.size - last.size) < 0.3 && !opensOnMark(l.text) &&
+                    lastIn > body * 0.6 && Math.abs(indentOf(l) - lastIn) <= body * 0.3 && !(last.page !== l.page && last.y < bottomY - lead * 1.5)) {
+                  const blk = setInBlock(q), was = last.setIn;
+                  const far = Math.max(blk.right - colLeft, was ? was.right - last.colLeft : -1e9);
+                  const turned = broke(last, l, last.colLeft + far);
+                  const broken = blk.broken + (was ? was.broken : 0) + (turned && !closes(last.text) ? 1 : 0), ended = blk.ended + (was ? was.ended : 0);
+                  if (!blk.ofTable && !(was && was.ofTable) && (blk.prose || (was && was.prose) || (broken >= 2 && broken > ended))) {
+                    blk.prose = true; blk.right = colLeft + far;
+                    setInOn = turned;
+                  }
+                }
+                if (insetOn || setInOn) { /* runs on */ }
                 else if (indentOf(l) > body * 0.6) fresh = true;
                 /* The last page stopped well short of the foot: its text ended there. */
                 else if (last && last.page !== l.page && last.y < bottomY - lead * 1.5) fresh = true;
                 else if (last && shortOf(last, last.colLeft, last.colRight, last.rtl) && /[.!?:;"”’»)\]…؟。！？]$/.test(last.text)) fresh = true;
+                /* BEUK:pdfparas — a line that opens on a list mark begins an item */
+                else if (!colRtl && Math.abs(l.size - body) < 0.6 && opensOnBullet(l.text)) fresh = true;
               }
               if (fresh) flush();
               joinRuns(l);
-              para.lastLine = { x0: l.x0, x1: l.x1, y: l.y, page: l.page, text: l.text, colLeft, colRight, rtl: colRtl, size: l.size };
+              para.lastLine = { x0: l.x0, x1: l.x1, y: l.y, page: l.page, text: l.text, colLeft, colRight, rtl: colRtl, size: l.size, setIn: !colRtl && textLine(l) && indentOf(l) > body * 0.6 ? setInBlock(q) : null };
               para.lines = (para.lines || 0) + 1;
               if (l.dropCap) { capPage = l.page; capUntil = l.y + l.capSize * 1.05; }
               prevLine = l;
