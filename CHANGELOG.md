@@ -18,6 +18,12 @@ to make well.
 - **Your chapters stay your chapters.** A book that numbers its own chapters keeps exactly those. A heading between two numbered chapters is a section of the chapter before it, not a chapter Beuk made up. A file that jumps from Heading 1 to Heading 3 keeps the Heading 3s as sections.
 - **The same book from any file.** Word, RTF, OpenDocument, a web page, Markdown and EPUB now follow one rule for chapters and sections, so the same manuscript comes in the same way whichever one you exported: word for word from Word, RTF, OpenDocument and a web page. An RTF's dashes no longer arrive as stray characters, and words set side by side on a web page no longer run together.
 - **A reason for every difference.** Where the tally's two numbers differ, the lines under them say why, each with its count, and the word count is the same one the studio shows.
+- **The words themselves are checked.** After an import Beuk compares the words in your file with the words in your book, not only the totals. When they match, the card says "Every word of your file is in your book." When they don't, it says how many differ and the report lists them.
+- **A PDF is counted too.** The tally now works for a PDF: page numbers, running heads, the title page's lines and a contents page are each named with their count. A line of your story that repeated at a page's edge is no longer taken for a running head and left out.
+- **A chapter you haven't written yet stays.** A heading with nothing under it used to be dropped. It now comes in as an empty chapter or page, and an outline of headings comes in as chapters.
+- **A PDF's note numbers stand apart.** A note's number was glued to the word before it. It is now a word of its own.
+- **Arabic and Hebrew inside an English line of a PDF** come in in reading order.
+- **Picture descriptions.** RTF now brings them in, and Word and OpenDocument keep a picture's title beside its description.
 - **Codes keep their hyphens.** Tidying turned any two numbers joined by a hyphen into a range with a dash, so a code like VIE-04-10, a date or an ISBN was changed. Now only a real range of two numbers gets the dash.
 - **Two more kinds of file.** Import reads OpenDocument (`.odt`) and a web page, alone or zipped with its pictures, which is what Google Docs gives you when you download a page.
 - **EPUBs come in as books.** An EPUB from another tool used to break into a chapter per sub-heading and lose its footnotes. It now keeps its own chapters, its sections inside them, its front and back pages, and its notes.
@@ -30,6 +36,7 @@ to make well.
 **Typesetting**
 - **Tables.** Type `::: table`, then a row per line between bars, and Beuk sets a real table in the preview, the ebook and print: the caption above, a header row when you ask for one, number columns aligned. Word export writes one line per row for now.
 - **An opening plate, whole or filling the page.** Under Opening plate there is a Fit choice: fill the page, cropped to its shape, or show the whole picture inside the margins. A plate you already set stays as it was.
+- **A colour for the drop cap alone.** Under Colour, the drop cap can have a colour of its own while your titles stay black or keep the accent. Amber is a new swatch in both rows.
 
 **The site**
 - **Beuk Weekly has a stand.** Every issue is on one page as a small front page, the newest large in the middle. Press one to read it. Each issue has a bar to the one before, the one after and back to the stand.
