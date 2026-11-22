@@ -3177,7 +3177,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.report.txt-records-and-undo',
     title:
-      'Import report (text): chapter splits, a spaced * * * scene break and smartened quotes are recorded; one chapter split undoes back into its neighbour, typography and break undos restore the original, and Undo the whole import restores the prior book',
+      'Import report (text): chapter splits and a spaced * * * scene break are recorded, and the quotes, dashes and dots stay as typed (no typography change is listed); one chapter split undoes back into its neighbour, the break undo restores the original, and Undo the whole import restores the prior book',
     kind: 'client-only',
     reason: 'The import pipeline, the report and its undos all run in the studio against the book in the browser.',
   },
@@ -3341,6 +3341,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       "The typographic pass sets an en dash in a range of two numbers only: codes, dates and ISBNs keep their hyphens",
     kind: 'client-only',
     reason: "The typographic pass (beautifyText) runs in the studio; the server never sees the import.",
+  },
+  {
+    id: 'import.asgiven.no-tidying',
+    title:
+      "The import stores what the file gives: straight quotes, \"--\", \"...\" and hyphens stay as typed, no typography change is listed, a typed break is still the book's own, and Polish still tidies",
+    kind: 'client-only',
+    reason: "The import and structureText run in the studio; the server never sees the import.",
   },
   {
     id: 'import.txt.heading-frames',
