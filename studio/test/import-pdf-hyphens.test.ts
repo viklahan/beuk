@@ -436,5 +436,13 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     group().open = false;
     (row(g.asks[1].id).querySelector('[data-irundo]') as HTMLElement).click();
     expect(group().open, 'a group the reader shut stays shut').toBe(false);
+    // the 2.0 studio writes the book and reads it back after every press: the report comes back a new object, and it is
+    // still the same report (the first statement of this fix compared the objects, and held here but not in the studio)
+    group().open = true;
+    type Doc = { importReport: { items: Item[] } };
+    g.api.applyBookDoc(JSON.parse(JSON.stringify(g.api.serializeBook())));
+    (row(g.asks[2].id).querySelector('[data-irundo]') as HTMLElement).click();
+    expect((g.api.serializeBook() as Doc).importReport.items.find((it) => it.id === g.asks[2].id), 'the third word is joined in the book as read back').toMatchObject({ state: 'undone' });
+    expect(group().open, 'the group is still open when the report came back a new object').toBe(true);
   }, 120_000);
 });

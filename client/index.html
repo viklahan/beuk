@@ -45937,7 +45937,7 @@
          where a wrong one is changed. The changes one by one, each with
          its undo, are the same report as ever, a step behind the card.
          The card is read from the book as it stands, never from a copy. */
-      let irView = "card", irCardAll = false, irDrawnRep = null; /* irDrawnRep: the report the list was last drawn for (BEUK:hyphensgiven) */
+      let irView = "card", irCardAll = false, irDrawnRep = null; /* irDrawnRep: which report the list was last drawn for (BEUK:hyphensgiven) */
       /* The words the import put in the book: the sections that hold text. A page Beuk builds for
          itself (a title page from the book's details, say) is nothing it read, so it is not counted. */
       function irCardWords() {
@@ -46045,8 +46045,9 @@
            long list (or undoing one item) drew it afresh with every group of more than six shut, and the list closed
            under the reader's hand after each press. */
         const irBodyNow = $("irBody");
-        const openNow = new Set(irBodyNow && irDrawnRep === rep ? Array.from(irBodyNow.querySelectorAll("details.ir-group")).filter((d) => d.open && Number((d.querySelector(".ir-gcount") || {}).textContent) > 6).map((d) => d.id) : []); /* this report's own groups only, and only one drawn shut that the reader opened: a short group that has grown past six is not one */
-        irDrawnRep = rep;
+        const repKey = rep.at + " " + rep.file; /* the report by what it says of itself, not by the object: the 2.0 studio writes the book and reads it back after every press, and the report comes back a new object */
+        const openNow = new Set(irBodyNow && irDrawnRep === repKey ? Array.from(irBodyNow.querySelectorAll("details.ir-group")).filter((d) => d.open && Number((d.querySelector(".ir-gcount") || {}).textContent) > 6).map((d) => d.id) : []); /* this report's own groups only, and only one drawn shut that the reader opened: a short group that has grown past six is not one */
+        irDrawnRep = repKey;
         IR_GROUPS.forEach((g) => {
           const list = by[g];
           if (!list.length) return;
