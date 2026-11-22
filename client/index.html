@@ -30499,14 +30499,19 @@
         const ordered = LIST_NUMBER.test(lines[0]);
         if (!ordered && !LIST_BULLET.test(lines[0])) return null;
         const mark = ordered ? LIST_NUMBER : LIST_BULLET;
-        const items = [];
+        const items = [], marks = [];
         for (const l of lines) {
-          if (mark.test(l)) items.push(l.replace(mark, ""));
+          if (mark.test(l)) { items.push(l.replace(mark, "")); marks.push(l.match(mark)[0].trim()); }
           else if (ordered === false && LIST_NUMBER.test(l)) return null;
           else items[items.length - 1] += " " + l.trim();
         }
         if (!ordered && items.length < 2) return null;
-        return { ordered, items, start: ordered ? parseInt(lines[0].match(LIST_NUMBER)[1], 10) : 1 };
+        /* BEUK:listmarksgiven — each item's own mark as the book stores it ("4.", "2)", "-", "*"), and for a numbered list
+           each item's own number (nums). The book stores the number the writer typed (the import keeps it); until now
+           every surface but the Markdown export read only the FIRST number and counted on from it in steps of one, so
+           a list stored 1. 2. 4. was shown 1. 2. 3. and one stored 3. 7. 9. was shown 3. 4. 5. A number is the
+           writer's: each surface now sets each item's own. */
+        return { ordered, items, start: ordered ? parseInt(lines[0].match(LIST_NUMBER)[1], 10) : 1, marks, nums: ordered ? marks.map((m) => parseInt(m, 10)) : [] };
       }
       /* Quote attribution: in a ">" blockquote of two or more lines, a
          last line that opens with a dash ("> — Name", or "> -- Name" as
@@ -30607,7 +30612,10 @@
           const lines = chunk.split("\n");
           const list = listItemsOf(lines);
           if (list) {
-            const items = list.items.map((it) => "<li>" + inlineMd(it, noteCtx) + "</li>").join("");
+            /* BEUK:listmarksgiven — an item whose stored number is not the one before it plus one carries its number (<li value>,
+               plain HTML: every browser and e-reader numbers the item by it, no stylesheet asked); a list numbered on in
+               steps of one is written exactly as it always was */
+            const items = list.items.map((it, k) => "<li" + (list.ordered && k && list.nums[k] !== list.nums[k - 1] + 1 ? ' value="' + list.nums[k] + '"' : "") + ">" + inlineMd(it, noteCtx) + "</li>").join("");
             out.push(list.ordered
               ? '<ol class="book-list"' + (list.start !== 1 ? ' start="' + list.start + '"' : "") + ">" + items + "</ol>"
               : '<ul class="book-list">' + items + "</ul>");
@@ -50801,6 +50809,9 @@
           if (lines.every((l) => l.startsWith(">"))) return lines.join("\n");
           if (b.startsWith("## ")) return "#### " + b.slice(3);
           if (b.startsWith("# ")) return "### " + b.slice(2);
+          /* BEUK:listmarksgiven — a list is written as the book stores it, item by item, each with the mark the writer typed.
+             Its lines were closed up into one ("1. one 2. two 4. four"), which no reader of Markdown takes for a list. */
+          if (listItemsOf(lines)) return lines.join("\n");
           return lines.join(" ");
         }).filter(Boolean).join("\n\n");
       }
@@ -53046,8 +53057,9 @@
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
           '<w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="singleLevel"/>' + lvl("bullet", "\u2022") + "</w:abstractNum>" +
           '<w:abstractNum w:abstractNumId="1"><w:multiLevelType w:val="singleLevel"/>' + lvl("decimal", "%1.") + "</w:abstractNum>" +
+          '<w:abstractNum w:abstractNumId="2"><w:multiLevelType w:val="singleLevel"/>' + lvl("decimal", "%1)") + "</w:abstractNum>" + /* BEUK:listmarksgiven — a number the writer closed with a bracket, "1)" */
           docxNums.map((n, i) => '<w:num w:numId="' + (i + 1) + '"><w:abstractNumId w:val="' + n.abs + '"/>' +
-            (n.abs === 1 ? '<w:lvlOverride w:ilvl="0"><w:startOverride w:val="' + n.start + '"/></w:lvlOverride>' : "") + "</w:num>").join("") +
+            (n.abs !== 0 ? '<w:lvlOverride w:ilvl="0"><w:startOverride w:val="' + n.start + '"/></w:lvlOverride>' : "") + "</w:num>").join("") +
           "</w:numbering>";
       }
       function docxContentParas(raw) {
@@ -53081,8 +53093,20 @@
           if (list) {
             /* A list exports as a real Word list: its own numbering
                instance, so a numbered list restarts at its own start. */
-            const numId = docxNums.push({ abs: list.ordered ? 1 : 0, start: list.start });
-            list.items.forEach((it) => into.push('<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="' + numId + '"/></w:numPr></w:pPr>' + docxInlineRuns(it) + "</w:p>"));
+            /* BEUK:listmarksgiven — the numbers as stored. Word numbers a list by counting on from its start, so an item whose
+               number is not the one before it plus one, or which closes on the other mark ("." or ")"), opens a
+               numbering instance of its own that starts at its number: real Word numbering (the paragraphs are still a
+               list in Word), showing 1. 2. 4. for a list stored so. A list numbered on in steps of one is one instance,
+               as it always was. */
+            let numId = 0, prevN = null, prevAbs = -1;
+            list.items.forEach((it, k) => {
+              if (list.ordered) {
+                const n = list.nums[k], abs = /\)$/.test(list.marks[k]) ? 2 : 1;
+                if (!numId || n !== prevN + 1 || abs !== prevAbs) numId = docxNums.push({ abs, start: n });
+                prevN = n; prevAbs = abs;
+              } else if (!numId) numId = docxNums.push({ abs: 0, start: 1 });
+              into.push('<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="' + numId + '"/></w:numPr></w:pPr>' + docxInlineRuns(it) + "</w:p>");
+            });
             return;
           }
           into.push(docxPara(lines.join(" "), (opts && opts.style) || "Normal", al));
