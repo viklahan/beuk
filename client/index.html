@@ -47076,6 +47076,11 @@
            in the PDF's text. hyToks: a text's words, parted at spaces and at dashes. hyKey: a word as it is looked for:
            capitals aside, either hyphen ("-" or U+2010) the same, the marks around it left off. */
         const hyEnds = [];
+        /* BEUK:lineendsgiven — and a dash (— or –) at a line's end, straight after a letter or a digit, the next line
+           opening on one ("1914–" + "1918", "he said—" + "nobody"): the page does not say whether a space follows it.
+           After a letter the two lines were always closed up; after a digit they were closed with a space of Beuk's
+           own ("1914– 1918"). Each is noted as its lines close up (dashEnds) and settled with the hyphens. */
+        const dashEnds = [];
         let hyLast = null;
         const hyToks = (s) => String(s || "").split(/[\s—–]+/).filter(Boolean);
         const hyKey = (w) => String(w).toLowerCase().replace(/\u00ad/g, "").replace(/\u2010/g, "-").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
@@ -47163,7 +47168,8 @@
             hyEnds.push({ runs: para.runs, run: last, at: lt.length - 1 });
             if (hyLast) hyLast.hyEnd = true;
             line.hyStart = true;
-          } else if (/\p{L}[—–]$/u.test(lt)) { rejoin(endWord); /* a dash closing up to its word joins tight */ }
+          } else if (/[\p{L}\p{N}][—–]$/u.test(lt) && /^[\p{L}\p{N}]/u.test(nt)) { dashEnds.push({ runs: para.runs, run: last, at: lt.length - 1 }); /* BEUK:lineendsgiven — closed up here, settled after the flow */ }
+          else if (/\p{L}[—–]$/u.test(lt)) { rejoin(endWord); /* a dash closing up to its word joins tight */ }
           else last.t = lt + " ";
           runs.forEach((r) => para.runs.push(r));
           hyLast = line;
@@ -47428,8 +47434,25 @@
              writer with both readings (st.asked: the word as the paragraph holds it, where its hyphen is, and the two
              words before and after it, by which "Join it" finds it in the book). Nothing is guessed. */
         st.asked = [];
-        if (hyEnds.length) {
-          const stands = new Map();
+        /* BEUK:lineendsgiven — two more things the PDF's own text shows, read from every line of every page as the words
+           above are:
+             a piece left OPEN in mid-line, with a space after it and a word following ("pre- and post-war", "1920– 1925"):
+             the writer sets that piece open (opens: the piece, capitals aside, its hyphen or dash kept);
+             a pair standing whole on one line with its dash closed ("1914–1918": pairs, the words parted at spaces only);
+             and how the text sets each dash where it stands in mid-line after a letter or a digit: closed up to the next
+             word, or with a space after it (dashClosed, dashOpen, counted for "—" and "–" apart).
+           A hyphen at a line's end: where the piece is set open elsewhere and neither the hyphenated word nor the joined
+           one stands anywhere, the space after it is the writer's and is kept ("pre-" + "and post-war" is "pre- and
+           post-war"; it was closed up "pre-and" and listed). A dash at a line's end: closed where the pair stands closed
+           elsewhere and the piece nowhere open; a space where the piece stands open elsewhere and the pair nowhere
+           closed; failing both, as the text sets that dash everywhere else, where it sets it one way only. Where the
+           text shows nothing, or both, the page's own reading stays (the lines closed up, no space of Beuk's added) and
+           the place is listed for the writer (st.dashKept). Nothing is guessed. */
+        st.hyOpen = []; st.dashKept = [];
+        if (hyEnds.length || dashEnds.length) {
+          const stands = new Map(), opens = new Map(), pairs = new Map(), dashClosed = new Map(), dashOpen = new Map();
+          const openKey = (w) => String(w).toLowerCase().replace(/\u2010/g, "-").replace(/^[^\p{L}\p{N}]+/u, "");
+          const bump = (m, k, n) => m.set(k, (m.get(k) || 0) + (n == null ? 1 : n));
           allLines.forEach((l) => {
             const ws = hyToks(l.text);
             ws.forEach((w, q) => {
@@ -47437,6 +47460,15 @@
               if (/[-\u2010\u00ad][^\p{L}\p{N}]*$/u.test(w)) return;
               const k = hyKey(w);
               if (k) stands.set(k, (stands.get(k) || 0) + 1);
+            });
+            const sp = String(l.text || "").split(/\s+/).filter(Boolean);
+            sp.forEach((w, q) => {
+              if (q < sp.length - 1 && /[\p{L}\p{N}][-\u2010—–]$/u.test(w) && /^[\p{L}\p{N}]/u.test(sp[q + 1])) bump(opens, openKey(w));
+              if (/[\p{L}\p{N}][—–][\p{L}\p{N}]/u.test(w)) bump(pairs, hyKey(w));
+            });
+            ["—", "–"].forEach((d) => {
+              bump(dashClosed, d, (String(l.text || "").match(new RegExp("[\\p{L}\\p{N}]" + d + "(?=[\\p{L}\\p{N}])", "gu")) || []).length);
+              bump(dashOpen, d, (String(l.text || "").match(new RegExp("[\\p{L}\\p{N}]" + d + "\\s+(?=[\\p{L}\\p{N}])", "gu")) || []).length);
             });
           });
           const core = (w) => String(w).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
@@ -47455,6 +47487,13 @@
             const a = hyToks(first.replace(marked, "")).pop() || "", b = hyToks(second.replace(marked, ""))[0] || "";
             const kept = a + b, joined = a.slice(0, -1) + b;
             const hy = stands.get(hyKey(kept)) || 0, jn = stands.get(hyKey(joined)) || 0;
+            /* BEUK:lineendsgiven — the piece stands open elsewhere, and neither whole word anywhere: the space after the hyphen is the writer's */
+            if (!hy && !jn && opens.get(openKey(a))) {
+              h.run.t = h.run.t.slice(0, h.at + 1) + " " + h.run.t.slice(h.at + 1);
+              irAsideDelta("pdfRejoined", first + "\n" + second, first + " " + second);
+              st.hyOpen.push(core(a) + "- " + core(b));
+              return;
+            }
             if (jn && !hy) {
               h.run.t = h.run.t.slice(0, h.at) + h.run.t.slice(h.at + 1);
               st.joined++;
@@ -47465,6 +47504,25 @@
             if (hy && !jn) { st.kept++; return; }
             st.asked.push({ kept: core(kept), offered: core(joined), why: hy ? "both" : "neither", w: whole, cut,
               b: clear(near(text.slice(0, s)).reverse()).slice(0, 2).reverse(), a: clear(near(text.slice(e))).slice(0, 2) });
+          });
+          /* BEUK:lineendsgiven — each dash at a line's end */
+          dashEnds.forEach((h) => {
+            const text = h.runs.map((r) => r.t).join("");
+            let off = h.at;
+            for (const r of h.runs) { if (r === h.run) break; off += r.t.length; }
+            let s = off, e = off + 1;
+            while (s > 0 && !/\s/.test(text.charAt(s - 1))) s--;
+            while (e < text.length && !/\s/.test(text.charAt(e))) e++;
+            const whole = text.slice(s, e).replace(marked, ""), d = text.charAt(off);
+            const first = text.slice(s, off + 1).replace(marked, ""), second = text.slice(off + 1, e).replace(marked, "");
+            const cl = pairs.get(hyKey(whole)) || 0, op = opens.get(openKey(first)) || 0;
+            let open = null;
+            if (cl && !op) open = false;
+            else if (op && !cl) open = true;
+            else if (!cl && !op) { const c = dashClosed.get(d) || 0, o = dashOpen.get(d) || 0; if (c && !o) open = false; else if (o && !c) open = true; }
+            if (open) h.run.t = h.run.t.slice(0, h.at + 1) + " " + h.run.t.slice(h.at + 1);
+            irAsideDelta("pdfRejoined", first + "\n" + second, first + (open ? " " : "") + second);
+            if (open === null) st.dashKept.push(core(whole));
           });
         }
         /* BEUK:headlevels — a PDF's bookmarks are nested as its headings
@@ -47668,6 +47726,9 @@
         if (spacedSplit.length) add({ kind: "pdfSpaced", group: "structure", before: irClip(spacedSplit.join(" · "), 320), data: { n: spacedSplit.length } });
         if (spacedUnsure.length) add({ kind: "pdfSpacedUnsure", group: "structure", before: irClip(spacedUnsure.join(" · "), 320), data: { n: spacedUnsure.length } });
         if (st.joined || st.kept) add({ kind: "pdfHyphens", group: "structure", data: { n: st.joined, kept: st.kept } });
+        /* BEUK:lineendsgiven — a hyphen at a line's end kept open because the PDF sets that piece open elsewhere; and each dash at a line's end the PDF's text does not settle, kept closed up as the page shows it: both listed whole */
+        if ((st.hyOpen || []).length) add({ kind: "pdfHyphenOpen", group: "structure", before: st.hyOpen.map((w) => "“" + w + "”").join(" · "), data: { n: st.hyOpen.length, words: st.hyOpen } });
+        if ((st.dashKept || []).length) add({ kind: "pdfDashKept", group: "structure", before: st.dashKept.map((w) => "“" + w + "”").join(" · "), data: { n: st.dashKept.length, words: st.dashKept } });
         /* BEUK:hyphensgiven — the words whose line-end hyphen the PDF's own text does not settle: each word once, with what
            the book holds, the other reading, and every place it stands (found again by its own words when the writer joins it) */
         {
@@ -47715,6 +47776,8 @@
           case "pdfSpaced": return t("ir.k.pdfSpaced", { n: d.n });
           case "pdfSpacedUnsure": return t("ir.k.pdfSpacedUnsure", { n: d.n });
           case "pdfHyphens": return t("ir.k.pdfHyphens", { n: d.n, kept: d.kept });
+          case "pdfHyphenOpen": return t("ir.k.pdfHyphenOpen", { n: d.n });
+          case "pdfDashKept": return t("ir.k.pdfDashKept", { n: d.n });
           case "pdfHyphenAsk": return t("ir.k.pdfHyphenAsk." + (d.why === "both" ? "both" : "neither"), { kept: d.kept, offered: d.offered }) + (d.n > 1 ? " ×" + d.n : ""); /* BEUK:hyphensgiven */
           case "pdfHyphenAskAll": return t("ir.k.pdfHyphenAskAll", { n: d.n });
           case "pdfColumns": return t("ir.k.pdfColumns", { n: d.n });
@@ -47765,7 +47828,7 @@
           "ir.from.pdf": "a heading set larger or bold in the PDF: “{heading}”", "ir.why.pdf": "this is how the PDF's text was rebuilt; there is nothing separate to put back",
           "ir.k.pdfLimits": "A PDF stores lines placed on pages, not paragraphs: paragraphs, headings, scene breaks, italic and bold were rebuilt from the layout. Footnotes arrive as plain text where they stood, and drawings made of lines are not imported — read the book through.",
           "ir.k.pdfStyles": "Italic and bold were read from the PDF's font names: {em} italic and {strong} bold passages", "ir.k.pdfNoStyles": "No italic or bold was found — this PDF's font names do not mark any",
-          "ir.k.pdfHyphens": "{n} word broken across lines was joined again ({kept} hyphen kept where the word is hyphenated elsewhere)", "ir.k.pdfHyphensPlural": "{n} words broken across lines were joined again ({kept} hyphens kept where the word is hyphenated elsewhere)",
+          "ir.k.pdfHyphens": "{n} word broken across lines was joined again ({kept} hyphen kept where the word is hyphenated elsewhere)", "ir.k.pdfHyphensPlural": "{n} words broken across lines were joined again ({kept} hyphens kept where the word is hyphenated elsewhere)", "ir.k.pdfHyphenOpen": "{n} line of the PDF ends on a hyphen that the PDF sets open elsewhere, with a space after it: the space is kept here too", "ir.k.pdfHyphenOpenPlural": "{n} lines of the PDF end on a hyphen that the PDF sets open elsewhere, with a space after it: the space is kept here too", "ir.k.pdfDashKept": "{n} line of the PDF ends on a dash straight after a word or a number, and nothing in the PDF’s text shows whether a space follows that dash. Your book keeps it closed up, as the page shows it: no space is added.", "ir.k.pdfDashKeptPlural": "{n} lines of the PDF end on a dash straight after a word or a number, and nothing in the PDF’s text shows whether a space follows that dash. Your book keeps each closed up, as the page shows it: no space is added.",
           "ir.k.pdfSmallCaps": "{n} opening is set in small capitals in the PDF, which holds those letters as capitals: your book keeps them as the PDF has them", "ir.k.pdfSmallCapsPlural": "{n} openings are set in small capitals in the PDF, which holds those letters as capitals: your book keeps them as the PDF has them",
           "ir.k.pdfColumns": "{n} page was set in columns and was read column by column, left first", "ir.k.pdfColumnsPlural": "{n} pages were set in columns and were read column by column, left first",
           "ir.k.pdfHeads": "Running heads and page numbers were left out on {n} page", "ir.k.pdfHeadsPlural": "Running heads and page numbers were left out on {n} pages",
@@ -47786,7 +47849,7 @@
           "ir.from.pdf": "un encabezado más grande o en negrita en el PDF: «{heading}»", "ir.why.pdf": "así se reconstruyó el texto del PDF; no hay nada aparte que devolver",
           "ir.k.pdfLimits": "Un PDF guarda líneas colocadas en páginas, no párrafos: los párrafos, encabezados, saltos de escena, cursivas y negritas se reconstruyeron a partir de la maquetación. Las notas al pie llegan como texto normal donde estaban y los dibujos hechos con líneas no se importan: revisa el libro entero.",
           "ir.k.pdfStyles": "La cursiva y la negrita se leyeron de los nombres de las fuentes del PDF: {em} pasajes en cursiva y {strong} en negrita", "ir.k.pdfNoStyles": "No se encontró cursiva ni negrita: los nombres de las fuentes de este PDF no marcan ninguna",
-          "ir.k.pdfHyphens": "Se volvió a unir {n} palabra partida entre líneas ({kept} guion conservado donde la palabra lleva guion en otro lugar)", "ir.k.pdfHyphensPlural": "Se volvieron a unir {n} palabras partidas entre líneas ({kept} guiones conservados donde la palabra lleva guion en otro lugar)",
+          "ir.k.pdfHyphens": "Se volvió a unir {n} palabra partida entre líneas ({kept} guion conservado donde la palabra lleva guion en otro lugar)", "ir.k.pdfHyphensPlural": "Se volvieron a unir {n} palabras partidas entre líneas ({kept} guiones conservados donde la palabra lleva guion en otro lugar)", "ir.k.pdfHyphenOpen": "{n} línea del PDF termina en un guion que el PDF deja abierto en otros lugares, con un espacio detrás: aquí también se conserva el espacio", "ir.k.pdfHyphenOpenPlural": "{n} líneas del PDF terminan en un guion que el PDF deja abierto en otros lugares, con un espacio detrás: aquí también se conserva el espacio", "ir.k.pdfDashKept": "{n} línea del PDF termina en una raya pegada a una palabra o a un número, y nada en el texto del PDF muestra si tras esa raya va un espacio. Tu libro la conserva cerrada, tal como la muestra la página: no se añade ningún espacio.", "ir.k.pdfDashKeptPlural": "{n} líneas del PDF terminan en una raya pegada a una palabra o a un número, y nada en el texto del PDF muestra si tras esa raya va un espacio. Tu libro conserva cada una cerrada, tal como la muestra la página: no se añade ningún espacio.",
           "ir.k.pdfSmallCaps": "{n} comienzo está compuesto en versalitas en el PDF, que guarda esas letras como mayúsculas: tu libro las conserva tal como las tiene el PDF", "ir.k.pdfSmallCapsPlural": "{n} comienzos están compuestos en versalitas en el PDF, que guarda esas letras como mayúsculas: tu libro las conserva tal como las tiene el PDF",
           "ir.k.pdfColumns": "{n} página estaba en columnas y se leyó columna a columna, empezando por la izquierda", "ir.k.pdfColumnsPlural": "{n} páginas estaban en columnas y se leyeron columna a columna, empezando por la izquierda",
           "ir.k.pdfHeads": "Se omitieron los titulillos y números de página en {n} página", "ir.k.pdfHeadsPlural": "Se omitieron los titulillos y números de página en {n} páginas",
@@ -47807,7 +47870,7 @@
           "ir.from.pdf": "un titre composé plus grand ou en gras dans le PDF : « {heading} »", "ir.why.pdf": "c’est ainsi que le texte du PDF a été reconstruit ; il n’y a rien de séparé à remettre",
           "ir.k.pdfLimits": "Un PDF garde des lignes posées sur des pages, pas des paragraphes : paragraphes, titres, changements de scène, italique et gras ont été reconstruits d’après la mise en page. Les notes arrivent en texte simple à leur place et les dessins faits de traits ne sont pas importés — relisez le livre en entier.",
           "ir.k.pdfStyles": "L’italique et le gras ont été lus d’après les noms des polices du PDF : {em} passages en italique et {strong} en gras", "ir.k.pdfNoStyles": "Aucun italique ni gras trouvé — les noms des polices de ce PDF n’en signalent aucun",
-          "ir.k.pdfHyphens": "{n} mot coupé en fin de ligne a été recollé ({kept} trait d’union gardé là où le mot en porte un ailleurs)", "ir.k.pdfHyphensPlural": "{n} mots coupés en fin de ligne ont été recollés ({kept} traits d’union gardés là où le mot en porte un ailleurs)",
+          "ir.k.pdfHyphens": "{n} mot coupé en fin de ligne a été recollé ({kept} trait d’union gardé là où le mot en porte un ailleurs)", "ir.k.pdfHyphensPlural": "{n} mots coupés en fin de ligne ont été recollés ({kept} traits d’union gardés là où le mot en porte un ailleurs)", "ir.k.pdfHyphenOpen": "{n} ligne du PDF se termine sur un trait d’union que le PDF laisse ouvert ailleurs, suivi d’une espace : l’espace est gardée ici aussi", "ir.k.pdfHyphenOpenPlural": "{n} lignes du PDF se terminent sur un trait d’union que le PDF laisse ouvert ailleurs, suivi d’une espace : l’espace est gardée ici aussi", "ir.k.pdfDashKept": "{n} ligne du PDF se termine sur un tiret collé à un mot ou à un nombre, et rien dans le texte du PDF ne montre si une espace suit ce tiret. Votre livre le garde fermé, tel que la page le montre : aucune espace n’est ajoutée.", "ir.k.pdfDashKeptPlural": "{n} lignes du PDF se terminent sur un tiret collé à un mot ou à un nombre, et rien dans le texte du PDF ne montre si une espace suit ce tiret. Votre livre garde chacun fermé, tel que la page le montre : aucune espace n’est ajoutée.",
           "ir.k.pdfSmallCaps": "{n} attaque est composée en petites capitales dans le PDF, qui contient ces lettres en capitales : votre livre les garde telles que le PDF les a", "ir.k.pdfSmallCapsPlural": "{n} attaques sont composées en petites capitales dans le PDF, qui contient ces lettres en capitales : votre livre les garde telles que le PDF les a",
           "ir.k.pdfColumns": "{n} page était en colonnes et a été lue colonne par colonne, de gauche à droite", "ir.k.pdfColumnsPlural": "{n} pages étaient en colonnes et ont été lues colonne par colonne, de gauche à droite",
           "ir.k.pdfHeads": "Les titres courants et numéros de page ont été écartés sur {n} page", "ir.k.pdfHeadsPlural": "Les titres courants et numéros de page ont été écartés sur {n} pages",
@@ -47828,7 +47891,7 @@
           "ir.from.pdf": "eine im PDF größer oder fett gesetzte Überschrift: „{heading}“", "ir.why.pdf": "so wurde der Text des PDFs neu aufgebaut; es gibt nichts Getrenntes zurückzulegen",
           "ir.k.pdfLimits": "Ein PDF speichert auf Seiten platzierte Zeilen, keine Absätze: Absätze, Überschriften, Szenenwechsel, Kursiv und Fett wurden aus dem Satzbild wieder aufgebaut. Fußnoten kommen als normaler Text an ihrer Stelle an, und aus Linien gezeichnete Grafiken werden nicht importiert — lesen Sie das Buch einmal durch.",
           "ir.k.pdfStyles": "Kursiv und Fett wurden aus den Schriftnamen des PDFs gelesen: {em} kursive und {strong} fette Passagen", "ir.k.pdfNoStyles": "Kein Kursiv oder Fett gefunden — die Schriftnamen dieses PDFs kennzeichnen keines",
-          "ir.k.pdfHyphens": "{n} über das Zeilenende getrenntes Wort wurde wieder zusammengefügt ({kept} Bindestrich behalten, wo das Wort auch sonst mit Bindestrich steht)", "ir.k.pdfHyphensPlural": "{n} über das Zeilenende getrennte Wörter wurden wieder zusammengefügt ({kept} Bindestriche behalten, wo das Wort auch sonst mit Bindestrich steht)",
+          "ir.k.pdfHyphens": "{n} über das Zeilenende getrenntes Wort wurde wieder zusammengefügt ({kept} Bindestrich behalten, wo das Wort auch sonst mit Bindestrich steht)", "ir.k.pdfHyphensPlural": "{n} über das Zeilenende getrennte Wörter wurden wieder zusammengefügt ({kept} Bindestriche behalten, wo das Wort auch sonst mit Bindestrich steht)", "ir.k.pdfHyphenOpen": "{n} Zeile des PDFs endet auf einem Bindestrich, den das PDF an anderer Stelle offen setzt, mit einem Leerzeichen danach: das Leerzeichen bleibt auch hier erhalten", "ir.k.pdfHyphenOpenPlural": "{n} Zeilen des PDFs enden auf einem Bindestrich, den das PDF an anderer Stelle offen setzt, mit einem Leerzeichen danach: das Leerzeichen bleibt auch hier erhalten", "ir.k.pdfDashKept": "{n} Zeile des PDFs endet auf einem Gedankenstrich direkt nach einem Wort oder einer Zahl, und nichts im Text des PDFs zeigt, ob auf diesen Strich ein Leerzeichen folgt. Ihr Buch behält ihn geschlossen, wie die Seite ihn zeigt: es wird kein Leerzeichen eingefügt.", "ir.k.pdfDashKeptPlural": "{n} Zeilen des PDFs enden auf einem Gedankenstrich direkt nach einem Wort oder einer Zahl, und nichts im Text des PDFs zeigt, ob auf diesen Strich ein Leerzeichen folgt. Ihr Buch behält jeden geschlossen, wie die Seite ihn zeigt: es wird kein Leerzeichen eingefügt.",
           "ir.k.pdfSmallCaps": "{n} Anfang ist im PDF in Kapitälchen gesetzt, und das PDF enthält diese Buchstaben als Großbuchstaben: Ihr Buch behält sie so, wie das PDF sie hat", "ir.k.pdfSmallCapsPlural": "{n} Anfänge sind im PDF in Kapitälchen gesetzt, und das PDF enthält diese Buchstaben als Großbuchstaben: Ihr Buch behält sie so, wie das PDF sie hat",
           "ir.k.pdfColumns": "{n} Seite war mehrspaltig gesetzt und wurde Spalte für Spalte gelesen, links zuerst", "ir.k.pdfColumnsPlural": "{n} Seiten waren mehrspaltig gesetzt und wurden Spalte für Spalte gelesen, links zuerst",
           "ir.k.pdfHeads": "Kolumnentitel und Seitenzahlen wurden auf {n} Seite weggelassen", "ir.k.pdfHeadsPlural": "Kolumnentitel und Seitenzahlen wurden auf {n} Seiten weggelassen",
@@ -47849,7 +47912,7 @@
           "ir.from.pdf": "un titolo composto più grande o in grassetto nel PDF: «{heading}»", "ir.why.pdf": "è così che è stato ricostruito il testo del PDF; non c’è nulla di separato da rimettere",
           "ir.k.pdfLimits": "Un PDF conserva righe posate sulle pagine, non paragrafi: paragrafi, titoli, cambi di scena, corsivo e grassetto sono stati ricostruiti dall’impaginazione. Le note arrivano come testo normale dov’erano e i disegni fatti di linee non vengono importati: rileggi tutto il libro.",
           "ir.k.pdfStyles": "Corsivo e grassetto sono stati letti dai nomi dei caratteri del PDF: {em} passaggi in corsivo e {strong} in grassetto", "ir.k.pdfNoStyles": "Nessun corsivo o grassetto trovato: i nomi dei caratteri di questo PDF non ne segnalano",
-          "ir.k.pdfHyphens": "{n} parola spezzata tra due righe è stata riunita ({kept} trattino mantenuto dove la parola ha il trattino anche altrove)", "ir.k.pdfHyphensPlural": "{n} parole spezzate tra due righe sono state riunite ({kept} trattini mantenuti dove la parola ha il trattino anche altrove)",
+          "ir.k.pdfHyphens": "{n} parola spezzata tra due righe è stata riunita ({kept} trattino mantenuto dove la parola ha il trattino anche altrove)", "ir.k.pdfHyphensPlural": "{n} parole spezzate tra due righe sono state riunite ({kept} trattini mantenuti dove la parola ha il trattino anche altrove)", "ir.k.pdfHyphenOpen": "{n} riga del PDF finisce con un trattino che altrove il PDF lascia aperto, con uno spazio dopo: lo spazio è mantenuto anche qui", "ir.k.pdfHyphenOpenPlural": "{n} righe del PDF finiscono con un trattino che altrove il PDF lascia aperto, con uno spazio dopo: lo spazio è mantenuto anche qui", "ir.k.pdfDashKept": "{n} riga del PDF finisce con una lineetta attaccata a una parola o a un numero, e nulla nel testo del PDF mostra se dopo quella lineetta ci sia uno spazio. Il tuo libro la mantiene chiusa, come la mostra la pagina: non viene aggiunto alcuno spazio.", "ir.k.pdfDashKeptPlural": "{n} righe del PDF finiscono con una lineetta attaccata a una parola o a un numero, e nulla nel testo del PDF mostra se dopo quella lineetta ci sia uno spazio. Il tuo libro mantiene ciascuna chiusa, come la mostra la pagina: non viene aggiunto alcuno spazio.",
           "ir.k.pdfSmallCaps": "{n} attacco è composto in maiuscoletto nel PDF, che contiene quelle lettere come maiuscole: il tuo libro le mantiene come le ha il PDF", "ir.k.pdfSmallCapsPlural": "{n} attacchi sono composti in maiuscoletto nel PDF, che contiene quelle lettere come maiuscole: il tuo libro le mantiene come le ha il PDF",
           "ir.k.pdfColumns": "{n} pagina era in colonne ed è stata letta colonna per colonna, a partire da sinistra", "ir.k.pdfColumnsPlural": "{n} pagine erano in colonne e sono state lette colonna per colonna, a partire da sinistra",
           "ir.k.pdfHeads": "Titoli correnti e numeri di pagina sono stati omessi in {n} pagina", "ir.k.pdfHeadsPlural": "Titoli correnti e numeri di pagina sono stati omessi in {n} pagine",
@@ -47870,7 +47933,7 @@
           "ir.from.pdf": "um título composto maior ou a negrito no PDF: «{heading}»", "ir.why.pdf": "foi assim que o texto do PDF foi reconstruído; não há nada à parte para repor",
           "ir.k.pdfLimits": "Um PDF guarda linhas colocadas em páginas, não parágrafos: parágrafos, títulos, mudanças de cena, itálico e negrito foram reconstruídos a partir da paginação. As notas de rodapé chegam como texto simples onde estavam e os desenhos feitos de linhas não são importados — leia o livro todo.",
           "ir.k.pdfStyles": "O itálico e o negrito foram lidos dos nomes das fontes do PDF: {em} passagens em itálico e {strong} a negrito", "ir.k.pdfNoStyles": "Não foi encontrado itálico nem negrito — os nomes das fontes deste PDF não marcam nenhum",
-          "ir.k.pdfHyphens": "{n} palavra partida entre linhas foi unida de novo ({kept} hífen mantido onde a palavra tem hífen noutro sítio)", "ir.k.pdfHyphensPlural": "{n} palavras partidas entre linhas foram unidas de novo ({kept} hífenes mantidos onde a palavra tem hífen noutro sítio)",
+          "ir.k.pdfHyphens": "{n} palavra partida entre linhas foi unida de novo ({kept} hífen mantido onde a palavra tem hífen noutro sítio)", "ir.k.pdfHyphensPlural": "{n} palavras partidas entre linhas foram unidas de novo ({kept} hífenes mantidos onde a palavra tem hífen noutro sítio)", "ir.k.pdfHyphenOpen": "{n} linha do PDF termina num hífen que o PDF deixa aberto noutros sítios, com um espaço a seguir: o espaço é mantido aqui também", "ir.k.pdfHyphenOpenPlural": "{n} linhas do PDF terminam num hífen que o PDF deixa aberto noutros sítios, com um espaço a seguir: o espaço é mantido aqui também", "ir.k.pdfDashKept": "{n} linha do PDF termina num travessão colado a uma palavra ou a um número, e nada no texto do PDF mostra se a esse travessão se segue um espaço. O teu livro mantém-no fechado, como a página o mostra: não é acrescentado nenhum espaço.", "ir.k.pdfDashKeptPlural": "{n} linhas do PDF terminam num travessão colado a uma palavra ou a um número, e nada no texto do PDF mostra se a esse travessão se segue um espaço. O teu livro mantém cada um fechado, como a página o mostra: não é acrescentado nenhum espaço.",
           "ir.k.pdfSmallCaps": "{n} início está composto em versaletes no PDF, que guarda essas letras como maiúsculas: o teu livro mantém-nas como o PDF as tem", "ir.k.pdfSmallCapsPlural": "{n} inícios estão compostos em versaletes no PDF, que guarda essas letras como maiúsculas: o teu livro mantém-nas como o PDF as tem",
           "ir.k.pdfColumns": "{n} página estava em colunas e foi lida coluna a coluna, a começar pela esquerda", "ir.k.pdfColumnsPlural": "{n} páginas estavam em colunas e foram lidas coluna a coluna, a começar pela esquerda",
           "ir.k.pdfHeads": "Os cabeçalhos correntes e números de página foram omitidos em {n} página", "ir.k.pdfHeadsPlural": "Os cabeçalhos correntes e números de página foram omitidos em {n} páginas",
@@ -47891,7 +47954,7 @@
           "ir.from.pdf": "een kop die in de pdf groter of vet is gezet: ‘{heading}’", "ir.why.pdf": "zo is de tekst van de pdf opnieuw opgebouwd; er is niets aparts om terug te zetten",
           "ir.k.pdfLimits": "Een pdf bewaart regels die op pagina’s staan, geen alinea’s: alinea’s, koppen, scènewisselingen, cursief en vet zijn uit de opmaak opnieuw opgebouwd. Voetnoten komen als gewone tekst op hun plek binnen en tekeningen van lijnen worden niet geïmporteerd — lees het boek helemaal door.",
           "ir.k.pdfStyles": "Cursief en vet zijn gelezen uit de lettertypenamen van de pdf: {em} cursieve en {strong} vette passages", "ir.k.pdfNoStyles": "Geen cursief of vet gevonden — de lettertypenamen van deze pdf geven niets aan",
-          "ir.k.pdfHyphens": "{n} over twee regels afgebroken woord is weer aan elkaar gezet ({kept} koppelteken behouden waar het woord elders ook een koppelteken heeft)", "ir.k.pdfHyphensPlural": "{n} over twee regels afgebroken woorden zijn weer aan elkaar gezet ({kept} koppeltekens behouden waar het woord elders ook een koppelteken heeft)",
+          "ir.k.pdfHyphens": "{n} over twee regels afgebroken woord is weer aan elkaar gezet ({kept} koppelteken behouden waar het woord elders ook een koppelteken heeft)", "ir.k.pdfHyphensPlural": "{n} over twee regels afgebroken woorden zijn weer aan elkaar gezet ({kept} koppeltekens behouden waar het woord elders ook een koppelteken heeft)", "ir.k.pdfHyphenOpen": "{n} regel van de pdf eindigt op een koppelteken dat de pdf elders open zet, met een spatie erna: de spatie blijft ook hier behouden", "ir.k.pdfHyphenOpenPlural": "{n} regels van de pdf eindigen op een koppelteken dat de pdf elders open zet, met een spatie erna: de spatie blijft ook hier behouden", "ir.k.pdfDashKept": "{n} regel van de pdf eindigt op een streepje direct na een woord of een getal, en niets in de tekst van de pdf laat zien of er na dat streepje een spatie komt. Je boek houdt het gesloten, zoals de pagina het toont: er wordt geen spatie toegevoegd.", "ir.k.pdfDashKeptPlural": "{n} regels van de pdf eindigen op een streepje direct na een woord of een getal, en niets in de tekst van de pdf laat zien of er na dat streepje een spatie komt. Je boek houdt elk gesloten, zoals de pagina het toont: er wordt geen spatie toegevoegd.",
           "ir.k.pdfSmallCaps": "{n} opening is in de pdf in kleinkapitalen gezet, en de pdf bevat die letters als hoofdletters: je boek houdt ze zoals de pdf ze heeft", "ir.k.pdfSmallCapsPlural": "{n} openingen zijn in de pdf in kleinkapitalen gezet, en de pdf bevat die letters als hoofdletters: je boek houdt ze zoals de pdf ze heeft",
           "ir.k.pdfColumns": "{n} pagina stond in kolommen en is kolom voor kolom gelezen, links eerst", "ir.k.pdfColumnsPlural": "{n} pagina’s stonden in kolommen en zijn kolom voor kolom gelezen, links eerst",
           "ir.k.pdfHeads": "Kopregels en paginanummers zijn weggelaten op {n} pagina", "ir.k.pdfHeadsPlural": "Kopregels en paginanummers zijn weggelaten op {n} pagina’s",
@@ -47912,7 +47975,7 @@
           "ir.from.pdf": "nagłówek złożony w PDF większą lub pogrubioną czcionką: „{heading}”", "ir.why.pdf": "tak został odbudowany tekst PDF; nie ma nic osobnego do przywrócenia",
           "ir.k.pdfLimits": "PDF przechowuje wiersze rozmieszczone na stronach, nie akapity: akapity, nagłówki, przerwy między scenami, kursywę i pogrubienie odbudowano z układu stron. Przypisy trafiają jako zwykły tekst tam, gdzie stały, a rysunki z linii nie są importowane — przeczytaj całą książkę.",
           "ir.k.pdfStyles": "Kursywę i pogrubienie odczytano z nazw czcionek PDF: fragmenty kursywą: {em}, pogrubione: {strong}", "ir.k.pdfNoStyles": "Nie znaleziono kursywy ani pogrubienia — nazwy czcionek w tym PDF ich nie oznaczają",
-          "ir.k.pdfHyphens": "Ponownie złączono słowa przeniesione między wierszami: {n} (zachowane łączniki tam, gdzie słowo ma łącznik także gdzie indziej: {kept})", "ir.k.pdfHyphensPlural": "Ponownie złączono słowa przeniesione między wierszami: {n} (zachowane łączniki tam, gdzie słowo ma łącznik także gdzie indziej: {kept})",
+          "ir.k.pdfHyphens": "Ponownie złączono słowa przeniesione między wierszami: {n} (zachowane łączniki tam, gdzie słowo ma łącznik także gdzie indziej: {kept})", "ir.k.pdfHyphensPlural": "Ponownie złączono słowa przeniesione między wierszami: {n} (zachowane łączniki tam, gdzie słowo ma łącznik także gdzie indziej: {kept})", "ir.k.pdfHyphenOpen": "Wiersze pliku PDF zakończone łącznikiem, który gdzie indziej PDF zostawia otwarty, ze spacją po nim (spacja zachowana także tutaj): {n}", "ir.k.pdfHyphenOpenPlural": "Wiersze pliku PDF zakończone łącznikiem, który gdzie indziej PDF zostawia otwarty, ze spacją po nim (spacja zachowana także tutaj): {n}", "ir.k.pdfDashKept": "Wiersze pliku PDF zakończone pauzą tuż po słowie lub liczbie, przy których nic w tekście pliku nie pokazuje, czy po pauzie następuje spacja: {n}. Twoja książka zachowuje je bez odstępu, tak jak pokazuje strona: nie dodano żadnej spacji.", "ir.k.pdfDashKeptPlural": "Wiersze pliku PDF zakończone pauzą tuż po słowie lub liczbie, przy których nic w tekście pliku nie pokazuje, czy po pauzie następuje spacja: {n}. Twoja książka zachowuje je bez odstępu, tak jak pokazuje strona: nie dodano żadnej spacji.",
           "ir.k.pdfSmallCaps": "Początki złożone w pliku PDF kapitalikami, które plik zawiera jako wielkie litery; twoja książka zachowuje je tak, jak ma je PDF: {n}", "ir.k.pdfSmallCapsPlural": "Początki złożone w pliku PDF kapitalikami, które plik zawiera jako wielkie litery; twoja książka zachowuje je tak, jak ma je PDF: {n}",
           "ir.k.pdfColumns": "Strony złożone w kolumnach, czytane kolumna po kolumnie, od lewej: {n}", "ir.k.pdfColumnsPlural": "Strony złożone w kolumnach, czytane kolumna po kolumnie, od lewej: {n}",
           "ir.k.pdfHeads": "Pominięto żywe paginy i numery stron na stronach: {n}", "ir.k.pdfHeadsPlural": "Pominięto żywe paginy i numery stron na stronach: {n}",
@@ -47933,7 +47996,7 @@
           "ir.from.pdf": "заголовок, набранный в PDF крупнее или жирным: «{heading}»", "ir.why.pdf": "так был восстановлен текст PDF; возвращать отдельно нечего",
           "ir.k.pdfLimits": "PDF хранит строки, размещённые на страницах, а не абзацы: абзацы, заголовки, смены сцен, курсив и жирный восстановлены по вёрстке. Сноски приходят обычным текстом на своём месте, а рисунки из линий не импортируются — прочитайте книгу целиком.",
           "ir.k.pdfStyles": "Курсив и жирный прочитаны по названиям шрифтов PDF: фрагментов курсивом — {em}, жирным — {strong}", "ir.k.pdfNoStyles": "Курсив и жирный не найдены — названия шрифтов этого PDF их не обозначают",
-          "ir.k.pdfHyphens": "Снова соединены слова, разорванные переносом: {n} (дефис сохранён там, где слово пишется через дефис и в других местах: {kept})", "ir.k.pdfHyphensPlural": "Снова соединены слова, разорванные переносом: {n} (дефис сохранён там, где слово пишется через дефис и в других местах: {kept})",
+          "ir.k.pdfHyphens": "Снова соединены слова, разорванные переносом: {n} (дефис сохранён там, где слово пишется через дефис и в других местах: {kept})", "ir.k.pdfHyphensPlural": "Снова соединены слова, разорванные переносом: {n} (дефис сохранён там, где слово пишется через дефис и в других местах: {kept})", "ir.k.pdfHyphenOpen": "Строки PDF, которые заканчиваются дефисом, оставленным в PDF в других местах открытым, с пробелом после него (пробел сохранён и здесь): {n}", "ir.k.pdfHyphenOpenPlural": "Строки PDF, которые заканчиваются дефисом, оставленным в PDF в других местах открытым, с пробелом после него (пробел сохранён и здесь): {n}", "ir.k.pdfDashKept": "Строки PDF, которые заканчиваются тире сразу после слова или числа, и ничто в тексте PDF не показывает, следует ли за этим тире пробел: {n}. В вашей книге они оставлены слитно, как на странице: пробел не добавлен.", "ir.k.pdfDashKeptPlural": "Строки PDF, которые заканчиваются тире сразу после слова или числа, и ничто в тексте PDF не показывает, следует ли за этим тире пробел: {n}. В вашей книге они оставлены слитно, как на странице: пробел не добавлен.",
           "ir.k.pdfSmallCaps": "Начала, набранные в PDF капителью, которые PDF хранит как заглавные буквы; в вашей книге они остаются такими, как в PDF: {n}", "ir.k.pdfSmallCapsPlural": "Начала, набранные в PDF капителью, которые PDF хранит как заглавные буквы; в вашей книге они остаются такими, как в PDF: {n}",
           "ir.k.pdfColumns": "Страниц, набранных в колонки и прочитанных по колонкам слева направо: {n}", "ir.k.pdfColumnsPlural": "Страниц, набранных в колонки и прочитанных по колонкам слева направо: {n}",
           "ir.k.pdfHeads": "Колонтитулы и номера страниц пропущены на страницах: {n}", "ir.k.pdfHeadsPlural": "Колонтитулы и номера страниц пропущены на страницах: {n}",
@@ -47954,7 +48017,7 @@
           "ir.from.pdf": "PDF'de daha büyük ya da kalın dizilmiş bir başlık: “{heading}”", "ir.why.pdf": "PDF'nin metni bu şekilde yeniden kuruldu; ayrıca geri konacak bir şey yok",
           "ir.k.pdfLimits": "Bir PDF paragraf değil, sayfalara yerleştirilmiş satırlar saklar: paragraflar, başlıklar, sahne geçişleri, italik ve kalın sayfa düzeninden yeniden kuruldu. Dipnotlar durdukları yerde düz metin olarak gelir, çizgilerle yapılmış çizimler içe aktarılmaz — kitabı baştan sona okuyun.",
           "ir.k.pdfStyles": "İtalik ve kalın, PDF'nin yazı tipi adlarından okundu: {em} italik ve {strong} kalın bölüm", "ir.k.pdfNoStyles": "İtalik ya da kalın bulunamadı — bu PDF'nin yazı tipi adları hiçbirini belirtmiyor",
-          "ir.k.pdfHyphens": "Satır sonunda bölünmüş {n} kelime yeniden birleştirildi (kelimenin başka yerde de tireyle yazıldığı {kept} yerde tire korundu)", "ir.k.pdfHyphensPlural": "Satır sonunda bölünmüş {n} kelime yeniden birleştirildi (kelimenin başka yerde de tireyle yazıldığı {kept} yerde tire korundu)",
+          "ir.k.pdfHyphens": "Satır sonunda bölünmüş {n} kelime yeniden birleştirildi (kelimenin başka yerde de tireyle yazıldığı {kept} yerde tire korundu)", "ir.k.pdfHyphensPlural": "Satır sonunda bölünmüş {n} kelime yeniden birleştirildi (kelimenin başka yerde de tireyle yazıldığı {kept} yerde tire korundu)", "ir.k.pdfHyphenOpen": "PDF’in {n} satırı, PDF’in başka yerlerde ardından boşluk bırakarak açık dizdiği bir kısa çizgiyle bitiyor: boşluk burada da tutuldu", "ir.k.pdfHyphenOpenPlural": "PDF’in {n} satırı, PDF’in başka yerlerde ardından boşluk bırakarak açık dizdiği bir kısa çizgiyle bitiyor: boşluk burada da tutuldu", "ir.k.pdfDashKept": "PDF’in {n} satırı bir kelimenin ya da sayının hemen ardından gelen bir uzun çizgiyle bitiyor ve PDF’in metninde bu çizgiden sonra boşluk gelip gelmediğini gösteren bir şey yok. Kitabınız onu sayfanın gösterdiği gibi bitişik tutuyor: boşluk eklenmedi.", "ir.k.pdfDashKeptPlural": "PDF’in {n} satırı bir kelimenin ya da sayının hemen ardından gelen bir uzun çizgiyle bitiyor ve PDF’in metninde bu çizgiden sonra boşluk gelip gelmediğini gösteren bir şey yok. Kitabınız her birini sayfanın gösterdiği gibi bitişik tutuyor: boşluk eklenmedi.",
           "ir.k.pdfSmallCaps": "PDF’te küçük büyük harfle dizilmiş {n} açılış var ve PDF bu harfleri büyük harf olarak tutuyor: kitabınız onları PDF’teki gibi tutuyor", "ir.k.pdfSmallCapsPlural": "PDF’te küçük büyük harfle dizilmiş {n} açılış var ve PDF bu harfleri büyük harf olarak tutuyor: kitabınız onları PDF’teki gibi tutuyor",
           "ir.k.pdfColumns": "{n} sayfa sütunlu dizilmişti ve soldan başlayarak sütun sütun okundu", "ir.k.pdfColumnsPlural": "{n} sayfa sütunlu dizilmişti ve soldan başlayarak sütun sütun okundu",
           "ir.k.pdfHeads": "{n} sayfada sayfa başlıkları ve sayfa numaraları dışarıda bırakıldı", "ir.k.pdfHeadsPlural": "{n} sayfada sayfa başlıkları ve sayfa numaraları dışarıda bırakıldı",
@@ -47975,7 +48038,7 @@
           "ir.from.pdf": "عنوان مصفوف بخط أكبر أو عريض في ملف PDF: «{heading}»", "ir.why.pdf": "هكذا أُعيد بناء نص ملف PDF؛ لا يوجد شيء منفصل لإعادته",
           "ir.k.pdfLimits": "يحفظ ملف PDF أسطرًا موضوعة على الصفحات لا فقرات: أُعيد بناء الفقرات والعناوين وفواصل المشاهد والمائل والعريض من التخطيط. تصل الحواشي نصًا عاديًا في مواضعها، ولا تُستورد الرسوم المصنوعة من خطوط — اقرأ الكتاب كاملًا.",
           "ir.k.pdfStyles": "قُرئ المائل والعريض من أسماء خطوط ملف PDF: مقاطع مائلة: {em}، ومقاطع عريضة: {strong}", "ir.k.pdfNoStyles": "لم يُعثر على مائل أو عريض — أسماء خطوط ملف PDF هذا لا تشير إلى أيٍّ منهما",
-          "ir.k.pdfHyphens": "أُعيد وصل كلمات مقسومة بين الأسطر: {n} (أُبقيت الشرطة حيث تُكتب الكلمة بشرطة في موضع آخر: {kept})", "ir.k.pdfHyphensPlural": "أُعيد وصل كلمات مقسومة بين الأسطر: {n} (أُبقيت الشرطة حيث تُكتب الكلمة بشرطة في موضع آخر: {kept})",
+          "ir.k.pdfHyphens": "أُعيد وصل كلمات مقسومة بين الأسطر: {n} (أُبقيت الشرطة حيث تُكتب الكلمة بشرطة في موضع آخر: {kept})", "ir.k.pdfHyphensPlural": "أُعيد وصل كلمات مقسومة بين الأسطر: {n} (أُبقيت الشرطة حيث تُكتب الكلمة بشرطة في موضع آخر: {kept})", "ir.k.pdfHyphenOpen": "أسطر في ملف PDF تنتهي بواصلة يتركها الملف مفتوحة في مواضع أخرى وبعدها مسافة (أُبقيت المسافة هنا أيضًا): {n}", "ir.k.pdfHyphenOpenPlural": "أسطر في ملف PDF تنتهي بواصلة يتركها الملف مفتوحة في مواضع أخرى وبعدها مسافة (أُبقيت المسافة هنا أيضًا): {n}", "ir.k.pdfDashKept": "أسطر في ملف PDF تنتهي بشرطة ملاصقة لكلمة أو لعدد، ولا شيء في نص الملف يبيّن هل تتبع هذه الشرطة مسافة: {n}. يُبقيها كتابك ملتصقة كما تُظهرها الصفحة: لم تُضف أي مسافة.", "ir.k.pdfDashKeptPlural": "أسطر في ملف PDF تنتهي بشرطة ملاصقة لكلمة أو لعدد، ولا شيء في نص الملف يبيّن هل تتبع هذه الشرطة مسافة: {n}. يُبقيها كتابك ملتصقة كما تُظهرها الصفحة: لم تُضف أي مسافة.",
           "ir.k.pdfSmallCaps": "افتتاحيات مضبوطة في ملف PDF بأحرف كبيرة صغيرة، والملف يحفظ هذه الحروف حروفًا كبيرة؛ يُبقيها كتابك كما هي في الملف: {n}", "ir.k.pdfSmallCapsPlural": "افتتاحيات مضبوطة في ملف PDF بأحرف كبيرة صغيرة، والملف يحفظ هذه الحروف حروفًا كبيرة؛ يُبقيها كتابك كما هي في الملف: {n}",
           "ir.k.pdfColumns": "صفحات مصفوفة في أعمدة قُرئت عمودًا عمودًا بدءًا من اليسار: {n}", "ir.k.pdfColumnsPlural": "صفحات مصفوفة في أعمدة قُرئت عمودًا عمودًا بدءًا من اليسار: {n}",
           "ir.k.pdfHeads": "حُذفت ترويسات الصفحات وأرقامها في صفحات عددها: {n}", "ir.k.pdfHeadsPlural": "حُذفت ترويسات الصفحات وأرقامها في صفحات عددها: {n}",
@@ -47996,7 +48059,7 @@
           "ir.from.pdf": "PDF で大きく、または太字で組まれた見出し：「{heading}」", "ir.why.pdf": "PDF の文章はこのように組み立て直されました。別に戻すものはありません",
           "ir.k.pdfLimits": "PDF が持つのはページに置かれた行で、段落ではありません。段落・見出し・場面転換・斜体・太字はレイアウトから組み立て直しました。脚注は元の位置に普通の文として入り、線で描かれた図は読み込まれません。本全体を読み返してください。",
           "ir.k.pdfStyles": "斜体と太字は PDF のフォント名から読み取りました：斜体 {em} 箇所、太字 {strong} 箇所", "ir.k.pdfNoStyles": "斜体も太字も見つかりませんでした。この PDF のフォント名はどちらも示していません",
-          "ir.k.pdfHyphens": "行をまたいで分かれた語 {n} 個をつなぎ直しました（ほかの箇所でもハイフン付きの語はハイフンを {kept} 個残しました）", "ir.k.pdfHyphensPlural": "行をまたいで分かれた語 {n} 個をつなぎ直しました（ほかの箇所でもハイフン付きの語はハイフンを {kept} 個残しました）",
+          "ir.k.pdfHyphens": "行をまたいで分かれた語 {n} 個をつなぎ直しました（ほかの箇所でもハイフン付きの語はハイフンを {kept} 個残しました）", "ir.k.pdfHyphensPlural": "行をまたいで分かれた語 {n} 個をつなぎ直しました（ほかの箇所でもハイフン付きの語はハイフンを {kept} 個残しました）", "ir.k.pdfHyphenOpen": "PDF の行のうち、PDF がほかの箇所では後ろに空きを入れて開いたままにしているハイフンで終わるもの {n} 行：ここでもその空きを残しています", "ir.k.pdfHyphenOpenPlural": "PDF の行のうち、PDF がほかの箇所では後ろに空きを入れて開いたままにしているハイフンで終わるもの {n} 行：ここでもその空きを残しています", "ir.k.pdfDashKept": "PDF の行のうち、語や数字の直後のダッシュで終わり、そのダッシュの後に空きが入るかどうかが PDF の本文から分からないもの：{n} 行。本ではページのとおり詰めたままにし、空きは加えていません。", "ir.k.pdfDashKeptPlural": "PDF の行のうち、語や数字の直後のダッシュで終わり、そのダッシュの後に空きが入るかどうかが PDF の本文から分からないもの：{n} 行。本ではページのとおり詰めたままにし、空きは加えていません。",
           "ir.k.pdfSmallCaps": "PDF でスモールキャップスに組まれた書き出しが {n} か所あり、PDF はその文字を大文字として持っています。本では PDF のとおりに残しています", "ir.k.pdfSmallCapsPlural": "PDF でスモールキャップスに組まれた書き出しが {n} か所あり、PDF はその文字を大文字として持っています。本では PDF のとおりに残しています",
           "ir.k.pdfColumns": "段組みのページ {n} ページを、左の段から順に読みました", "ir.k.pdfColumnsPlural": "段組みのページ {n} ページを、左の段から順に読みました",
           "ir.k.pdfHeads": "{n} ページの柱とページ番号を除きました", "ir.k.pdfHeadsPlural": "{n} ページの柱とページ番号を除きました",
@@ -48017,7 +48080,7 @@
           "ir.from.pdf": "PDF 中以更大或加粗字体排出的标题：“{heading}”", "ir.why.pdf": "PDF 的文字就是这样重建的；没有单独可还原的内容",
           "ir.k.pdfLimits": "PDF 保存的是放在页面上的行，而不是段落：段落、标题、场景分隔、斜体和粗体都是根据版面重建的。脚注以普通文字留在原处，用线条画成的图不会导入——请通读全书。",
           "ir.k.pdfStyles": "斜体和粗体是根据 PDF 的字体名称读取的：斜体 {em} 处，粗体 {strong} 处", "ir.k.pdfNoStyles": "未发现斜体或粗体——这个 PDF 的字体名称没有标出任何一种",
-          "ir.k.pdfHyphens": "重新连接了 {n} 个跨行断开的词（在别处也带连字符的词保留了 {kept} 个连字符）", "ir.k.pdfHyphensPlural": "重新连接了 {n} 个跨行断开的词（在别处也带连字符的词保留了 {kept} 个连字符）",
+          "ir.k.pdfHyphens": "重新连接了 {n} 个跨行断开的词（在别处也带连字符的词保留了 {kept} 个连字符）", "ir.k.pdfHyphensPlural": "重新连接了 {n} 个跨行断开的词（在别处也带连字符的词保留了 {kept} 个连字符）", "ir.k.pdfHyphenOpen": "PDF 中有 {n} 行以连字符结束，而 PDF 在其他地方把这个连字符后面留了空格：这里同样保留空格", "ir.k.pdfHyphenOpenPlural": "PDF 中有 {n} 行以连字符结束，而 PDF 在其他地方把这个连字符后面留了空格：这里同样保留空格", "ir.k.pdfDashKept": "PDF 中有 {n} 行以紧跟在词或数字之后的破折号结束，而 PDF 的文本无法说明这个破折号后面是否有空格。你的书按页面所示保持紧排：没有添加空格。", "ir.k.pdfDashKeptPlural": "PDF 中有 {n} 行以紧跟在词或数字之后的破折号结束，而 PDF 的文本无法说明这个破折号后面是否有空格。你的书按页面所示保持紧排：没有添加空格。",
           "ir.k.pdfSmallCaps": "PDF 中有 {n} 处开头以小型大写字母排版，PDF 将这些字母存为大写字母：你的书按 PDF 原样保留", "ir.k.pdfSmallCapsPlural": "PDF 中有 {n} 处开头以小型大写字母排版，PDF 将这些字母存为大写字母：你的书按 PDF 原样保留",
           "ir.k.pdfColumns": "{n} 页为分栏排版，已按栏从左到右读取", "ir.k.pdfColumnsPlural": "{n} 页为分栏排版，已按栏从左到右读取",
           "ir.k.pdfHeads": "已略去 {n} 页上的页眉和页码", "ir.k.pdfHeadsPlural": "已略去 {n} 页上的页眉和页码",
