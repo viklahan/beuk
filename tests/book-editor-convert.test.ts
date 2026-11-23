@@ -248,6 +248,64 @@ test('convert: headings, quotes and lists are nodes, read as 1.0\'s emitText rea
   assert.deepEqual(types(S.node('doc', null, toDoc('::: center\n# h\n\n- a\n- b\n:::').firstChild!.content.content as Node[])), ['heading', 'list']);
 });
 
+/* ---- BEUK:looselists: a list whose items are parted by blank lines is one list, as 1.0's looseListBlocks reads it ---- */
+
+test('convert: a list whose items are parted by blank lines is one list node, and writes back exactly the text it was read from', () => {
+  const items = (n: Node) => n.content.content.map((i) => [i.attrs.marker, i.textContent]);
+  const cases = [
+    'He packed:\n\n* a lantern\n\n* a chart case\n\n* two letters\n\nAfter.', '1. first\n\n2. then\n\n4. home', '• a\n\n• b', '* a  \r\n\r\n* b\r\n   \r\n  * c\r\n',
+    'Text lines\nand it ran so:\n * a lantern\n\n * a coil of rope\n\n * the ledger that he would\nnot leave behind\n\nEnd.', 'Then:\n 1. one\n\n 2. two', '* a\n\n\n\n* b', '* a\n \t \n* b',
+    '- Gone, said the pilot.\n\n- Gone where? said the clerk.', '* * *\n\n* a\n\n* b', '* a\n\n* b\n1. x\n\n* c', 'last line opens on a mark\n * and nothing follows\n\nNext.',
+    '::: center\n* a\n\n* b\n:::\n\n* c\n\n* d', '* one\n\n![x](img:abc)\n\n* two', '* a\n\n2. b\n\n* c', '1. a\n\n* b\n\n* c\n\n3. d', '# Head\n * a\n\n* b', '* *a*\n\n* **b** [l](https://u.v)',
+  ];
+  for (const c of cases) roundTrips(c);
+  // a bulleted run and a numbered run: one list each, every item under the mark the writer typed
+  let d = toDoc('He packed:\n\n* a lantern\n\n* a chart case\n\n* two letters\n\nAfter.');
+  assert.deepEqual(types(d), ['paragraph', 'list', 'paragraph']);
+  assert.deepEqual(items(d.child(1)), [['* ', 'a lantern'], ['\n* ', 'a chart case'], ['\n* ', 'two letters']]);
+  d = toDoc('1. first\n\n2. then\n\n4. home');
+  assert.deepEqual(types(d), ['list']);
+  assert.deepEqual(items(d.child(0)), [['1. ', 'first'], ['\n2. ', 'then'], ['\n4. ', 'home']]);
+  // what stood between two items is kept where it stood: the end of the upper item's line in its text, the blank lines and the indent before the mark
+  d = toDoc('* a  \r\n\r\n* b\r\n   \r\n  * c\r\n');
+  assert.deepEqual(items(d.child(0)), [['* ', 'a  \r'], ['\r\n* ', 'b\r'], ['   \r\n  * ', 'c']]);
+  // the plain-text shape: text lines whose last line alone opens on a mark, the list going on in the next block
+  d = toDoc('Text lines\nand it ran so:\n * a lantern\n\n * a coil of rope\n\n * the ledger that he would\nnot leave behind\n\nEnd.');
+  assert.deepEqual(types(d), ['paragraph', 'list', 'paragraph']);
+  assert.equal(d.child(0).textContent, 'Text lines\nand it ran so:');
+  assert.equal(d.child(1).attrs.pre, '\n ');
+  assert.deepEqual(items(d.child(1)), [['* ', 'a lantern'], ['\n * ', 'a coil of rope'], ['\n * ', 'the ledger that he would\nnot leave behind']]);
+  // where no list follows, the line stays a line of its paragraph
+  assert.deepEqual(types(toDoc('last line opens on a mark\n * and nothing follows\n\nNext.')), ['paragraph', 'paragraph']);
+  // not read as a list, as 1.0 leaves them: blocks that open on "- " (a line of dialogue is typed so), a line of marks only,
+  // a run with a numbered line among bullets, blocks of two kinds, blocks a picture parts
+  assert.deepEqual(types(toDoc('- Gone, said the pilot.\n\n- Gone where? said the clerk.')), ['paragraph', 'paragraph']);
+  assert.deepEqual(types(toDoc('* * *\n\n* a\n\n* b')), ['paragraph', 'list']);
+  assert.deepEqual(types(toDoc('* a\n\n* b\n1. x\n\n* c')), ['paragraph', 'paragraph', 'paragraph']);
+  assert.deepEqual(types(toDoc('* a\n\n2. b\n\n* c')), ['paragraph', 'list', 'paragraph']);
+  assert.deepEqual(types(toDoc('* one\n\n![x](img:abc)\n\n* two')), ['paragraph', 'image', 'paragraph']);
+  // inside a centre container too; and the run does not reach out of it
+  d = toDoc('::: center\n* a\n\n* b\n:::\n\n* c\n\n* d');
+  assert.deepEqual(types(d), ['container', 'list']);
+  assert.deepEqual(types(S.node('doc', null, d.firstChild!.content.content as Node[])), ['list']);
+});
+
+test('convert: blocks an older build stored one by one are read as the list they are when one of them is touched, and the text does not change', () => {
+  // the document as it stands in a book stored before this reading: each item a paragraph of its own
+  const stored = 'Before.\n\n* a\n\n* b\n\n* c\n\n* d\n\n* e\n\nAfter.';
+  const old = S.node('doc', null, stored.split('\n\n').map((x) => S.node('paragraph', null, [S.text(x)])));
+  assert.equal(toText(old), stored);
+  const f = normalizeBlock(old, 3); // the middle item: the window takes in the whole run
+  assert.ok(f && f !== 'up');
+  assert.deepEqual([f.from, f.to, f.blocks.map((b) => b.type.name + ':' + b.childCount)], [0, 6, ['paragraph:1', 'list:5']]);
+  const d = normalizeDoc(old);
+  assert.deepEqual(types(d), ['paragraph', 'list', 'paragraph']);
+  assert.equal(toText(d), stored);
+  assert.ok(toDoc(stored).eq(d));
+  // and through Yjs the list writes the same text: the marker holds the blank line, nothing new is stored
+  assert.equal(toText(throughYjs(d)), stored);
+});
+
 /* ---- review focus 3: Unicode ---- */
 
 test('convert: Unicode survives exactly (RTL, Devanagari, ZWJ emoji, combining marks, NBSP, soft hyphen)', () => {
@@ -395,7 +453,7 @@ function randomDocs(count: number, seed0: number): Node[] {
         for (let i = 0; i < k; i++) {
           kids.push(quote
             ? S.node('quoteLine', { prefix: pick(['> ', '>', '>\t', '> ', 'x']) }, inline())
-            : S.node('listItem', { marker: pick(['- ', '* ', '• ', '1. ', '2) ', '10.  ', '-', 'x ']) }, inline()));
+            : S.node('listItem', { marker: pick(['- ', '* ', '• ', '1. ', '2) ', '10.  ', '-', 'x ', '\n* ', '\n 3. ']) }, inline())); // the last two: an item after a blank line (BEUK:looselists)
         }
         return S.node(quote ? 'quote' : 'list', edges(), kids);
       }
