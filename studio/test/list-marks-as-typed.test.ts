@@ -124,8 +124,7 @@ describe('the book\'s own EPUB, read back', () => {
     expect(files.length).toBe(1);
     const body = /<body[^>]*>([\s\S]*)<\/body>/.exec(files[0].content)![1];
     const back = await importFile('back.epub', await epub([{ title: 'Chapter 1', body: '<h1>Chapter 1</h1>' + body }, { title: 'Chapter 2', body: '<h1>Chapter 2</h1><p>' + P(40) + '</p>' }]), '');
-    /* all but the list numbered 5. 6. 9.: the EPUB carries its 9 as <li value>, which the EPUB reader does not read yet (the numbers a file's own markup gives are their own piece of work) */
-    expect(listBlocks(back).filter((b, i) => i !== 8)).toEqual(STORED.filter((b, i) => i !== 8));
-    expect(figures(back)).toEqual(CLEAR);
+    /* the list numbered 5. 6. 9. among them: the EPUB carries its 9 as <li value>, which the reader reads (BEUK:listnumbersdrawn) */
+    expect(listBlocks(back)).toEqual(STORED);
   }, 120_000);
 });

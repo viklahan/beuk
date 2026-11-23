@@ -19,7 +19,14 @@
    writer's own in the RTF, web-page and text files and the EPUB (four kinds, U+25C6, U+25C7, U+2767, U+25B8). The book's
    list read none of them, so each was stored "-" and the 104 characters stood in a row of their own (listMarks: 104).
    They are stored as typed now: those four files' book figures are 104 more each and the row is gone. The Word,
-   OpenDocument and Markdown files, whose lists carry no such mark in the file's text, and both PDFs, did not move. */
+   OpenDocument and Markdown files, whose lists carry no such mark in the file's text, and both PDFs, did not move.
+
+   The drawn marks (BEUK:listnumbersdrawn, re-measured the same day). In the Word and OpenDocument files the same 104
+   bullets are not text: the file's numbering (word/numbering.xml, the list styles) says which character each list
+   draws. Both readers stored "-" for every one. They store the character the document shows now, and the tally's file
+   side counts it from the file's own numbering: those two files' file AND book figures are 104 more each (the Word
+   file was 317142 and 316772, the OpenDocument file 317395 and 316772). The Word, RTF, OpenDocument and web-page
+   files now give the same book figure, 316876. */
 
 export type Inventory = {
   file: number; book: number; aside: Record<string, number>; unaccounted: number;
@@ -34,11 +41,11 @@ export type Inventory = {
 export const MERIDIAN_INVENTORY: Record<string, Inventory> = {
   /* nothing differs. The row: "Chapter" over each of the 12 headings, 84 (the book was 316856 with the word in it: 316856 - 84 = 316772).
      ("Appendix A" and "Appendix B" are joined to the name on the line under each with a space: no colon of the import's, BEUK:joinsgiven) */
-  docx: { file: 317142, book: 316772, aside: { titlePage: 208, headers: 78, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
+  docx: { file: 317246, book: 316876, aside: { titlePage: 208, headers: 78, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs (as the Word file: the same 84, the same book) */
   rtf: { file: 318053, book: 316876, aside: { titlePage: 212, headers: 881, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs (as the Word file) */
-  odt: { file: 317395, book: 316772, aside: { titlePage: 208, headers: 76, noteMarks: 255, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
+  odt: { file: 317499, book: 316876, aside: { titlePage: 208, headers: 76, noteMarks: 255, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs (as the Word file) */
   html: { file: 318404, book: 316876, aside: { titlePage: 267, contents: 801, noteMarks: 376, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs. The row: "Chapter" and the colon of each of the 12 headings "## Chapter I: …", 96 (it was the 12 colons; the book was 316998: 316998 - 84 = 316914) */
