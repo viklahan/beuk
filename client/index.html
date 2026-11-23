@@ -53578,8 +53578,10 @@
         opts = opts || {};
         /* BEUK:asgiven — opts.caps: the run is SHOWN in capitals (Word's all-capitals character property, w:caps); its text stays the letters it was given. In w:rPr's own order: rStyle, b, i, caps, smallCaps, vertAlign. */
         const rPr = (opts.b || opts.i || opts.sup || opts.link || opts.sc || opts.caps) ? "<w:rPr>" + (opts.link ? '<w:rStyle w:val="Hyperlink"/>' : "") + (opts.b ? "<w:b/>" : "") + (opts.i ? "<w:i/>" : "") + (opts.caps ? "<w:caps/>" : "") + (opts.sc ? "<w:smallCaps/>" : "") + (opts.sup ? '<w:vertAlign w:val="superscript"/>' : "") + "</w:rPr>" : "";
-        /* BEUK:breaksshown — a line break the writer made, held in the text as U+E070 (paraBreaksHeld): a real Word break between two runs of the one look */
-        if (String(text == null ? "" : text).indexOf(LINE_BREAK_HELD) !== -1) return String(text).split(LINE_BREAK_HELD).map((v) => (v ? "<w:r>" + rPr + '<w:t xml:space="preserve">' + esc(v) + "</w:t></w:r>" : "")).join("<w:r><w:br/></w:r>");
+        /* BEUK:breaksshown — a line break the writer made, held in the text as U+E070 (paraBreaksHeld): a real Word break between two runs of the one look.
+           (The character is written out here, not read from the constant the other surfaces share: the server's EPUB build lifts this function by name, src/book/epub/closure.ts, and its list of names stays as it is.) */
+        const held = String.fromCharCode(0xE070);
+        if (String(text == null ? "" : text).indexOf(held) !== -1) return String(text).split(held).map((v) => (v ? "<w:r>" + rPr + '<w:t xml:space="preserve">' + esc(v) + "</w:t></w:r>" : "")).join("<w:r><w:br/></w:r>");
         return "<w:r>" + rPr + '<w:t xml:space="preserve">' + esc(text) + "</w:t></w:r>";
       }
       /* The hyperlinks of the document being built (buildDocxFiles
