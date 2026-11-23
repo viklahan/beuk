@@ -74449,10 +74449,10 @@
               const placedOk = /^\[\^fn-9\]: The first note\. It runs on\.$/m.test(c1) && /^\[\^note\]: The second note, in type\.$/m.test(c1) && /^\[\^fn_3\]: The third note\.$/m.test(c2) && c1.indexOf("[^fn_3]:") === -1;
               const notes = items.find((i) => i.kind === "notes"), lostRef = items.filter((i) => i.kind === "refOrphan"), lostNote = items.filter((i) => i.kind === "noteOrphan");
               const reportOk = !!notes && notes.data.found === 4 && notes.data.mapped === 3 && notes.data.orphans === 2 && lostRef.length === 1 && String(lostRef[0].data.n) === "nowhere" && lostRef[0].before === "[^nowhere]" && lostNote.length === 1 && String(lostNote[0].data.n) === "spare" && c2.indexOf("Nobody points here.") !== -1;
-              importPlainManuscript("again.md", ["# Chapter 1: The Harbour", "One[^a].", "[^a]: The harbour's note.", "# Chapter 2: The Crossing", "Two[^a].", "[^a]: The crossing's note."].join(P2));
+              importPlainManuscript("again.md", ["# Chapter 1: The Harbour", "One[^aa].", "[^aa]: The harbour's note.", "# Chapter 2: The Crossing", "Two[^aa].", "[^aa]: The crossing's note."].join(P2));
               c1 = body()[0] ? body()[0].content : ""; c2 = body()[1] ? body()[1].content : "";
               s1 = shown()[0] || ""; s2 = shown()[1] || "";
-              const againOk = c1.indexOf("One[^a].") !== -1 && /^\[\^a\]: The harbour's note\.$/m.test(c1) && c2.indexOf("Two[^a].") !== -1 && /^\[\^a\]: The crossing's note\.$/m.test(c2) && /* BEUK:asgiven — the apostrophes as typed */
+              const againOk = c1.indexOf("One[^aa].") !== -1 && /^\[\^aa\]: The harbour's note\.$/m.test(c1) && c2.indexOf("Two[^aa].") !== -1 && /^\[\^aa\]: The crossing's note\.$/m.test(c2) && /* BEUK:asgiven — the apostrophes as typed */
                 s1.indexOf("One[^1].") !== -1 && /^\[\^1\]: The harbour's note\.$/m.test(s1) && s2.indexOf("Two[^2].") !== -1 && /^\[\^2\]: The crossing's note\.$/m.test(s2);
               importPlainManuscript("numbers.md", ["# Chapter 1: The Harbour", "One[^2] two[^1].", "[^1]: First.", "[^2]: Second."].join(P2));
               c1 = body()[0] ? body()[0].content : "";
