@@ -6,13 +6,19 @@
        numeric label in the book uses;
      - a label defined more than once is as many notes: a mark means the next definition of its label at or after
        it in its own section, else the last one before it there; in a section that never defines the label, the
-       next definition on through the book, else the last one before.
+       next definition on through the book, else the last one before;
+     - a mark under a label that is no number and that no definition anywhere in the book answers is no note (the
+       owner, 2026-11-22: Beuk does not invent a number for something that is not a note): it takes no number and
+       is set exactly as typed. A NUMBER with no note is raised as it always was ("[n]", linked to nothing).
    The beta-reader reading copy (src/shares/render.ts) is the one server surface that sets a note's number itself;
    every other one runs the studio's own code. The two copies are held to one table of cases,
    tests/fixtures/note-labels.json (tests/note-labels.test.ts here, studio/test/note-labels-as-typed.test.ts there). */
 
 /** A mark, anywhere: $1 is "^label", or the bare number. */
 export const noteMarkRe = (): RegExp => /\[(\^[^\]\s]+|\d{1,3})\]/g;
+/** A mark as a surface sets one, once the text has come through notesAsShown: under a number ("[^12]", or the bare
+ *  "[12]"); $1 as noteMarkRe's. A mark still under a name there is one no note answers: the writer's text. */
+export const noteNumberRe = (): RegExp => /\[(\^\d+|\d{1,3})\]/g;
 /** A definition opens the block: "[^label]:" (or "[12]:"). */
 export const NOTE_DEF_RE = /^\[(\^[^\]\s]+|\d{1,3})\]:/;
 /** A definition block whole: $1 "^label" or the bare number, $2 its text. */
@@ -81,26 +87,25 @@ export function notesAsShown(contents: readonly string[]): string[] {
     });
     return by;
   });
-  const lone = new Map<string, Note>();
-  const noteOf = (si: number, mi: number, label: string): Note => {
+  /* the note a mark means; undefined where no definition anywhere in the book answers its label: that mark is no
+     note, takes no number and is left exactly as typed */
+  const noteOf = (si: number, mi: number, label: string): Note | undefined => {
     const here = defsOf[si]!.get(label);
     if (here) return here.find((d) => d.mi! >= mi) ?? here[here.length - 1]!;
     for (let j = si + 1; j < defsOf.length; j++) { const d = defsOf[j]!.get(label); if (d) return d[0]!; }
     for (let j = si - 1; j >= 0; j--) { const d = defsOf[j]!.get(label); if (d) return d[d.length - 1]!; }
-    let nt = lone.get(label);
-    if (!nt) { nt = {}; lone.set(label, nt); }
-    return nt;
+    return undefined;
   };
   marks.forEach((ms, si) => ms.forEach((m, mi) => {
     if (isNum(m.label)) return;
     m.note = m.def ? m : noteOf(si, mi, m.label);
-    if (!m.def) m.note.marked = true;
+    if (!m.def && m.note) m.note.marked = true;
   }));
   let next = 1;
   const take = (nt: Note) => { if (nt.shown) return; while (used.has(next)) next++; nt.shown = String(next++); };
-  for (const ms of marks) for (const m of ms) { if (isNum(m.label)) continue; if (!m.def) take(m.note!); else if (!m.marked) take(m); }
+  for (const ms of marks) for (const m of ms) { if (isNum(m.label) || !m.note) continue; if (!m.def) take(m.note); else if (!m.marked) take(m); }
   return texts.map((c, si) => {
-    const ms = marks[si]!.filter((m) => !isNum(m.label));
+    const ms = marks[si]!.filter((m) => !isNum(m.label) && m.note);
     if (!ms.length) return c;
     let out = '', last = 0;
     for (const m of ms) { out += c.slice(last, m.at) + m.note!.shown!; last = m.at + m.label.length; }

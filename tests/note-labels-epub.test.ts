@@ -44,12 +44,13 @@ test('the EPUB: a book under the writer\'s labels builds the very chapter pages 
   const shown = notesAsShown((named.sections as { content: string }[]).map((s) => String(s.content ?? '')));
   (numbered.sections as { content: string }[]).forEach((s, i) => { s.content = shown[i]!; });
   const chapters = (b: typeof base) => (b.sections as { type: string; content: string }[]).filter((s) => s.type === 'chapter').map((s) => s.content);
-  // by hand, from the rule: the writer's own numbers are 1 and 7 ("007"), so salt 2, nowhere 3, fn.2-a 4, the two "a" of chapter 3 are 5 and 6, and chapter 4's is 8
+  // by hand, from the rule: the writer's own numbers are 1 and 7 ("007"), so salt 2, fn.2-a 3, the two "a" of chapter 3 are 4 and 5, and chapter 4's is 6.
+  // "[^nowhere]" answers to no note anywhere in the book: it is no note, takes no number and stays exactly as typed.
   assert.deepEqual(chapters(numbered).slice(0, 4), [
-    'The caravan left[^2] at dawn, and again[^2].\n\nA mark with no note[^3].\n\n[^2]: Salt, by the sack.',
-    'The pans lay white[^4] and[^1], see[^007].\n\n[^4]: The pans of the coast.\n\n[^1]: The writer\'s own number.\n\n[^007]: As typed.',
-    'One[^5] and again[^5].\n\n[^5]: First.\n\nTwo[^6].\n\n[^6]: Second.',
-    'One more[^8].\n\n[^8]: The label again, in a later chapter.',
+    'The caravan left[^2] at dawn, and again[^2].\n\nA mark with no note[^nowhere].\n\n[^2]: Salt, by the sack.',
+    'The pans lay white[^3] and[^1], see[^007].\n\n[^3]: The pans of the coast.\n\n[^1]: The writer\'s own number.\n\n[^007]: As typed.',
+    'One[^4] and again[^4].\n\n[^4]: First.\n\nTwo[^5].\n\n[^5]: Second.',
+    'One more[^6].\n\n[^6]: The label again, in a later chapter.',
   ]);
   const a = await sb.files(epubState(named, 'generic'), { lang: 'en' });
   const b = await sb.files(epubState(numbered, 'generic'), { lang: 'en' });
@@ -57,12 +58,12 @@ test('the EPUB: a book under the writer\'s labels builds the very chapter pages 
   assert.ok(pa.length >= 8, 'the package\'s pages');
   assert.deepEqual(pa.map((p) => p[0]), pb.map((p) => p[0]));
   for (let i = 0; i < pa.length; i++) assert.equal(pa[i]![1], pb[i]![1], pa[i]![0]);
-  // and the pages say what the rule says: linked under the number, the label nowhere
+  // and the pages say what the rule says: a note linked under its number, its label nowhere; the mark with no note as the writer typed it
   const all = pa.map((p) => p[1]).join('\n');
-  for (const label of ['salt]', 'nowhere]', 'fn.2-a]', '[^a]', '[a]']) assert.equal(all.includes(label), false, `"${label}" reached a page`);
+  for (const label of ['salt]', 'fn.2-a]', '[^a]', '[a]']) assert.equal(all.includes(label), false, `"${label}" reached a page`);
   assert.match(all, /<a class="noteref" epub:type="noteref" id="s\d+-fnref2" href="#s\d+-fn2"><sup class="endnote-ref">\[2\]<\/sup><\/a> at dawn, and again<a class="noteref" epub:type="noteref" href="#s\d+-fn2"><sup class="endnote-ref">\[2\]<\/sup><\/a>\./);
-  assert.match(all, /no note<sup class="endnote-ref">\[3\]<\/sup>\./);
+  assert.match(all, /<p>A mark with no note\[\^nowhere\]\.<\/p>/);
   assert.match(all, /see<a class="noteref" epub:type="noteref" id="s\d+-fnref007" href="#s\d+-fn007"><sup class="endnote-ref">\[007\]<\/sup><\/a>\./);
-  assert.match(all, /<p class="endnote" id="s\d+-fn5" epub:type="endnote">[\s\S]*?First\.<\/p><p class="endnote" id="s\d+-fn6" epub:type="endnote">[\s\S]*?Second\.<\/p>/);
-  assert.match(all, /<p class="endnote" id="s\d+-fn8" epub:type="endnote">/);
+  assert.match(all, /<p class="endnote" id="s\d+-fn4" epub:type="endnote">[\s\S]*?First\.<\/p><p class="endnote" id="s\d+-fn5" epub:type="endnote">[\s\S]*?Second\.<\/p>/);
+  assert.match(all, /<p class="endnote" id="s\d+-fn6" epub:type="endnote">/);
 });

@@ -1,4 +1,4 @@
-import { NOTE_DEF_BLOCK_RE, NOTE_DEF_RE, noteLabelOf, noteMarkRe, notesAsShown } from '../book/notes.js';
+import { NOTE_DEF_BLOCK_RE, NOTE_DEF_RE, noteLabelOf, noteNumberRe, notesAsShown } from '../book/notes.js';
 import { sanitizeHtml } from './sanitize.js';
 
 /**
@@ -116,9 +116,10 @@ function inline(text: string, notes: NoteCtx): string {
   s = esc(s);
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
-  /* BEUK:notelabels — a mark under any label; the section's text arrives with each label that is no number written
-     as the number it shows (notesAsShown) */
-  s = s.replace(noteMarkRe(), (_m, cap: string) => {
+  /* BEUK:notelabels — the section's text arrives with each label that has a note written as the number it shows
+     (notesAsShown). A mark still under a name here is one no note answers: it is no note, and stays the writer's
+     text exactly as typed. A number with no note is raised as it always was. */
+  s = s.replace(noteNumberRe(), (_m, cap: string) => {
     const n = noteLabelOf(cap);
     if (notes.defined.has(n)) {
       const idAttr = notes.seen.has(n) ? '' : ` id="${notes.prefix}fnref${n}"`;

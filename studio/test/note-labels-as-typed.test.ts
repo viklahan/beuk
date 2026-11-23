@@ -60,7 +60,7 @@ beforeAll(async () => {
 describe('a footnote keeps the label the writer typed; the number a reader sees is worked out when the book is shown', () => {
 
   it('the numbering itself: every case of the table the server\'s copy is held to (tests/fixtures/note-labels.json)', async () => {
-    expect(FIXTURE.cases.length).toBeGreaterThanOrEqual(12);
+    expect(FIXTURE.cases.length).toBeGreaterThanOrEqual(13);
     for (const c of FIXTURE.cases) {
       const b = await bookOf(c.sections);
       expect(b.secs.map((s) => s.content), c.name + ': the book holds the text as given').toEqual(c.sections);
@@ -192,8 +192,11 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
       '# Chapter 2: Noon', 'The pans lay white[^pans] and lost[^nowhere].', '[^pans]: The pans of the coast.'));
     expect(stored(g, '1')).toEqual(['The caravan left[^salt] at dawn.', 'Sent from Vienna, unmarked.', '[^salt]: Salt, by the sack.']);
     expect(stored(g, '2')).toEqual(['The pans lay white[^pans] and lost[^nowhere].', '[^pans]: The pans of the coast.']);
-    // shown: the mark with no note is raised under the next number, linked to nothing (as a number with no note is)
-    expect(page(g, chapter(g, '2')).marks).toEqual(['[2]', '~[3]']);
+    // shown: "[^nowhere]" answers to no note, so it is no note: set as the writer typed it, under no number (it was raised as "[3]")
+    const p2 = page(g, chapter(g, '2'));
+    expect(p2.marks).toEqual(['[2]']);
+    expect(p2.html).toContain('The pans lay white<a class="noteref"');
+    expect(p2.html).toContain(' and lost[^nowhere].</p>');
     const lostNote = items(g, 'noteOrphan'), lostMark = items(g, 'refOrphan');
     expect(lostNote.map((it) => [it.data!.n, it.where!.secId, it.before])).toEqual([['telex-a', chapter(g, '1').id, 'Sent from Vienna, unmarked.']]);
     expect(lostMark.map((it) => [it.data!.n, it.before])).toEqual([['nowhere', '[^nowhere]']]);
@@ -203,6 +206,43 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
     // the tally: three definitions in the file and two in the book, the third kept as text; three marks on each side
     expect(row(g, 'noteDefs')).toEqual({ file: 3, book: 2, why: [['notesOrphan', 1]] });
     expect(row(g, 'noteRefs')).toEqual({ file: 3, book: 3, why: [] });
+    expect(figures(g)).toEqual(CLEAR);
+  }, 120_000);
+
+  /* The owner's rule, ruled on 2026-11-22 after the first pass: "Beuk does not invent a number for something that is
+     not a note." A mark under a label of the writer's own that no definition anywhere in the book answers was raised
+     under the next free number, linked to nothing (main did the same after its import). It is now the writer's text:
+     exactly as typed on every surface, taking no number, so the notes after it are numbered as if it were not there.
+     The report still names it, by its label, as a mark with no note. A NUMBER with no note is left as main has it (a
+     book made before labels were kept must read as before): raised as "[n]", linked to nothing. */
+  it('a mark under a label that no note answers is no note: every surface sets it exactly as typed, under no number; a NUMBER with no note is raised as it always was', async () => {
+    const g = await importFile('nonote.md', null, md('# Chapter 1: Dawn', 'The caravan left[^salt] at dawn, lost[^nowhere] and[^7].', '[^salt]: Salt, by the sack.',
+      '# Chapter 2: Noon', 'The pans lay white[^pans], and[^nowhere] again.', '[^pans]: The pans of the coast.'));
+    expect(stored(g, '1')).toEqual(['The caravan left[^salt] at dawn, lost[^nowhere] and[^7].', '[^salt]: Salt, by the sack.']);
+    expect(stored(g, '2')).toEqual(['The pans lay white[^pans], and[^nowhere] again.', '[^pans]: The pans of the coast.']);
+    // shown: salt 1 and pans 2 ("nowhere" takes none; 7 is the writer's)
+    expect(shown(g, '1')).toEqual(['The caravan left[^1] at dawn, lost[^nowhere] and[^7].', '[^1]: Salt, by the sack.']);
+    expect(shown(g, '2')).toEqual(['The pans lay white[^2], and[^nowhere] again.', '[^2]: The pans of the coast.']);
+    // the typeset page
+    const p1 = page(g, chapter(g, '1')), p2 = page(g, chapter(g, '2'));
+    expect(p1.marks).toEqual(['[1]', '~[7]']);
+    expect(p1.html).toContain(' at dawn, lost[^nowhere] and<sup class="endnote-ref">[7]</sup>.</p>');
+    expect(p2.marks).toEqual(['[2]']);
+    expect(p2.html).toContain(', and[^nowhere] again.</p>');
+    // the Word export and the submission manuscript: plain text, not a raised mark
+    for (const xml of [String(g.api.buildDocxDocumentXml!()), String(g.api.msDocumentXml!(g.api.msPlan!()))]) {
+      expect((xml.match(/\[\^nowhere\]/g) || []).length).toBe(2);
+      expect(xml).not.toMatch(/>\[nowhere\]</);
+      expect((xml.match(/>\[7\]<\/w:t>/g) || []).length).toBe(1);
+    }
+    // the narration script: no "[NOTE nowhere]", and no note said for it
+    const lines = g.api.acxSectionLines!(chapter(g, '1')) as { k: string; n?: string; text: string }[];
+    expect(lines.filter((l) => l.k === 'para').map((l) => String(g.api.acxPlainInline!(l.text)))).toEqual(['The caravan left [NOTE 1] at dawn, lost[^nowhere] and [NOTE 7].']);
+    expect(lines.filter((l) => l.k === 'note').map((l) => [l.n, l.text])).toEqual([['1', 'Salt, by the sack.'], ['7', '']]);
+    // a mark is no word under any label, with a note or without: the counts are as they were
+    expect(g.api.countWords!('lost[^nowhere] and[^7].')).toBe(2);
+    // the report names each, by what the writer typed; the characters are all accounted for
+    expect(items(g, 'refOrphan').map((it) => [it.data!.n, it.before])).toEqual([['nowhere', '[^nowhere]'], ['7', '[^7]'], ['nowhere', '[^nowhere]']]);
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
@@ -227,11 +267,11 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
     expect(figures(g)).toMatchObject({ counted: true, unaccounted: 8 });
   }, 120_000);
 
-  /* Two corners where a "[^label]" the writer typed is not a note's mark to the writer, measured and pinned as they are
-     (OPEN): the book stores each as typed, and the page reads each as a mark, because the stored text has nothing to
-     tell them apart by. (On main the same was already so for a number: a "[^1]" typed in a code block was LINKED to
+  /* A corner where a "[^label]" the writer typed is not a note's mark to the writer, measured and pinned as it is
+     (OPEN): the book stores it as typed, and the page reads it as a mark, because the stored text has nothing to tell
+     it apart by. (On main the same was already so for a number: a "[^1]" typed in a code block was LINKED to
      whichever note Beuk had numbered 1.) */
-  it('a "[^label]" typed inside a fenced code block, or inside a note\'s own text, is stored as typed and read as a mark', async () => {
+  it('a "[^label]" typed inside a fenced code block is stored as typed and read as a mark', async () => {
     const fence = await importFile('fence.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\ncode [^1] and [^x] stay\n```', '[^x]: X.'));
     expect(stored(fence, '1')).toEqual(['Text[^x] here.', 'code [^1] and [^x] stay', '[^x]: X.']);
     // the code line's "[^1]" is the writer's own number, a mark with no note; its "[^x]" reads as the note "x"
@@ -239,14 +279,18 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
     expect(items(fence, 'refOrphan').map((it) => it.data!.n)).toEqual(['1']);
     // the tally says so: the file counts the code line's "1" and "x", the book takes both for marks
     expect(figures(fence)).toEqual({ counted: true, unaccounted: 2, same: false, fileOnly: [['1', 1], ['x', 1]], bookOnly: [] });
+  }, 120_000);
 
+  it('a note marked only from inside another note\'s text is kept where it stood as its words (as before); its mark there, which now answers to no note, stays as typed', async () => {
     const inNote = await importFile('innote.md', null, md('# Chapter 1: Dawn', 'Text[^a].', '[^a]: See also[^b] and[^1].', '[^b]: Marked only from a note.'));
     // "b" is marked only from inside another note: the import takes it for a note nothing marks and keeps it where it stood, as its words
     expect(stored(inNote, '1')).toEqual(['Text[^a].', 'Marked only from a note.', '[^a]: See also[^b] and[^1].']);
-    expect(page(inNote, chapter(inNote, '1')).marks).toEqual(['[2]', '~[3]', '~[1]']);
+    const p = page(inNote, chapter(inNote, '1'));
+    expect(p.marks).toEqual(['[2]', '~[1]']);
+    expect(p.html).toContain('See also[^b] and<sup class="endnote-ref">[1]</sup>.</p>');
     expect(items(inNote, 'noteOrphan').map((it) => it.data!.n)).toEqual(['b']);
     expect(figures(inNote)).toEqual(CLEAR);
-  }, 240_000);
+  }, 120_000);
 
   it('a note marked only in a table\'s cell, and a mark set the HTML way, keep the label the file typed', async () => {
     const g = await importFile('cell.md', null, md('# Chapter 1: Dawn', 'Before.', '| Tide | Hour |\n| --- | --- |\n| Low[^gauge] | Dawn<a href="#fn-8"><sup>8</sup></a> |', 'After.', '[^gauge]: Read at the north pier.', '[^fn-8]: By the vane.'));

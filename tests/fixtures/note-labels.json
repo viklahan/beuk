@@ -42,9 +42,14 @@
       "shown": ["In[^2024] and[^1].\n\n[^2024]: The year.\n\n[^1]: Salt."]
     },
     {
-      "name": "a mark no note answers is numbered once for its label; a later chapter's mark of an earlier chapter's note shows that note's number; a note nothing marks takes its number where it stands",
+      "name": "a mark under a label that no note anywhere in the book answers is no note: it stays exactly as typed and takes no number; a later chapter's mark of an earlier chapter's note shows that note's number; a note nothing marks takes its number where it stands",
       "sections": ["Dawn[^fn-9] broke[^note] twice[^fn-9], and lost[^nowhere].\n\n[^fn-9]: The first note.\n\n[^note]: The second.", "Rain[^fn_3] came, see[^note] and[^nowhere].\n\n[^spare]: Nobody points here.\n\n[^fn_3]: The third note."],
-      "shown": ["Dawn[^1] broke[^2] twice[^1], and lost[^3].\n\n[^1]: The first note.\n\n[^2]: The second.", "Rain[^4] came, see[^2] and[^3].\n\n[^5]: Nobody points here.\n\n[^4]: The third note."]
+      "shown": ["Dawn[^1] broke[^2] twice[^1], and lost[^nowhere].\n\n[^1]: The first note.\n\n[^2]: The second.", "Rain[^3] came, see[^2] and[^nowhere].\n\n[^4]: Nobody points here.\n\n[^3]: The third note."]
+    },
+    {
+      "name": "a number with no note is left as typed too (the page raises it as it always did); it still keeps its number from every named note",
+      "sections": ["Lost[^5] and found[^salt] and[^nope].\n\n[^salt]: Salt."],
+      "shown": ["Lost[^5] and found[^1] and[^nope].\n\n[^1]: Salt."]
     },
     {
       "name": "a mark inside a note's own text is a mark, numbered where it stands (here the first mark in the text); a definition written before its mark is found",
@@ -57,9 +62,9 @@
       "shown": ["Text[^1] and [word] and [12].\n\n::: log\n09:14 [^a] raw [^b]\n:::\n\n[^1]: A."]
     },
     {
-      "name": "a definition on a line of a container is a definition; one set in from the margin in the middle of a paragraph is not",
+      "name": "a definition on a line of a container is a definition; one set in from the margin in the middle of a paragraph is not, so its label has no note and stays as typed",
       "sections": ["::: texts\nAna: Meet me at the pier[^p]\n[^p]: The north pier.\n:::\n\nA line\n  [^q]: not a note, and[^q] is marked twice."],
-      "shown": ["::: texts\nAna: Meet me at the pier[^1]\n[^1]: The north pier.\n:::\n\nA line\n  [^2]: not a note, and[^2] is marked twice."]
+      "shown": ["::: texts\nAna: Meet me at the pier[^1]\n[^1]: The north pier.\n:::\n\nA line\n  [^q]: not a note, and[^q] is marked twice."]
     }
   ]
 }

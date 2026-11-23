@@ -30191,14 +30191,22 @@
            - a label defined more than once (notes that start again in every chapter) is as many notes: a mark means
              the next definition of its label at or after it in its own section, else the last one before it there;
              in a section that never defines the label, the next definition on through the book, else the last one
-             before. A mark no definition answers anywhere is numbered once for its label; a definition nothing
-             marks takes its number where it stands.
+             before. A definition nothing marks takes its number where it stands.
+           - a mark under a label that is no number and that no definition anywhere in the book answers is no note
+             (the owner, 2026-11-22: Beuk does not invent a number for something that is not a note): it takes no
+             number, and every surface sets it exactly as the writer typed it, "[^nowhere]". The import's report
+             still names it, by its label, as a mark with no note. A NUMBER with no note is as it always was, so
+             that a book made before labels were kept reads as it did: raised as "[n]" and linked to nothing.
          Every reading of a note mark is one of the patterns here. A surface that shows a number (the typeset page and
          all that is built from it, the Word export, the submission manuscript, the narration script) reads the
-         section through notesAsShown, which hands it the text with each such label written as the number it shows;
-         the Markdown export writes the label as stored, so a file exported and imported again is the same file. */
+         section through notesAsShown, which hands it the text with each label that has a note written as the number
+         it shows, and then sets as a mark only what noteNumberRe finds: what is left under a name is the writer's
+         text. The Markdown export writes the label as stored, so a file exported and imported again is the same file. */
       /* a mark, anywhere: $1 is "^label", or the bare number (noteLabelOf takes the caret off) */
       function noteMarkRe() { return /\[(\^[^\]\s]+|\d{1,3})\]/g; }
+      /* a mark as a surface sets one, once the text has come through notesAsShown: under a number ("[^12]", or the bare
+         "[12]"); $1 as noteMarkRe's. A mark still under a name there is one no note answers: the writer's text. */
+      function noteNumberRe() { return /\[(\^\d+|\d{1,3})\]/g; }
       const noteLabelOf = (cap) => (cap.charAt(0) === "^" ? cap.slice(1) : cap);
       /* a mark with the colon that makes it a definition's opening, anywhere (for the readers that only take marks out) */
       function noteLeadRe() { return /\[(?:\^[^\]\s]+|\d{1,3})\]:/g; }
@@ -30253,21 +30261,21 @@
         if (!named) return null;
         /* each label's definitions, section by section, in order */
         const defsOf = marks.map((ms) => { const by = new Map(); ms.forEach((m, mi) => { if (!m.def || isNum(m.label)) return; m.mi = mi; if (!by.has(m.label)) by.set(m.label, []); by.get(m.label).push(m); }); return by; });
-        const lone = new Map();
+        /* the note a mark means; null where no definition anywhere in the book answers its label: that mark is no
+           note, takes no number and is left exactly as typed */
         const noteOf = (si, mi, label) => {
           const here = defsOf[si].get(label);
           if (here) return here.filter((d) => d.mi >= mi)[0] || here[here.length - 1];
           for (let j = si + 1; j < defsOf.length; j++) { const d = defsOf[j].get(label); if (d) return d[0]; }
           for (let j = si - 1; j >= 0; j--) { const d = defsOf[j].get(label); if (d) return d[d.length - 1]; }
-          if (!lone.has(label)) lone.set(label, { label });
-          return lone.get(label);
+          return null;
         };
-        marks.forEach((ms, si) => ms.forEach((m, mi) => { if (isNum(m.label)) return; m.note = m.def ? m : noteOf(si, mi, m.label); if (!m.def) m.note.marked = true; }));
+        marks.forEach((ms, si) => ms.forEach((m, mi) => { if (isNum(m.label)) return; m.note = m.def ? m : noteOf(si, mi, m.label); if (!m.def && m.note) m.note.marked = true; }));
         let next = 1;
         const take = (nt) => { if (nt.shown) return; while (used.has(next)) next++; nt.shown = String(next++); };
-        marks.forEach((ms) => ms.forEach((m) => { if (isNum(m.label)) return; if (!m.def) take(m.note); else if (!m.marked) take(m); }));
+        marks.forEach((ms) => ms.forEach((m) => { if (isNum(m.label) || !m.note) return; if (!m.def) take(m.note); else if (!m.marked) take(m); }));
         return sections.map((s, si) => {
-          const ms = marks[si].filter((m) => !isNum(m.label));
+          const ms = marks[si].filter((m) => !isNum(m.label) && m.note);
           if (!ms.length) return null;
           const c = String(s.content);
           let out = "", last = 0;
@@ -30323,7 +30331,7 @@
         s = emph(s);
         /* BEUK:notelabels — a mark under any label. A surface that shows a number hands the section's text through
            notesAsShown first, so a label that is no number arrives here as the number it shows. */
-        s = s.replace(noteMarkRe(), (m, cap) => {
+        s = s.replace(noteNumberRe(), (m, cap) => { /* a mark still under a name has no note: it stays the writer's text */
           const n = noteLabelOf(cap);
           if (noteCtx && noteCtx.defined.has(n)) {
             const idAttr = noteCtx.seen.has(n) ? "" : ' id="' + noteCtx.prefix + "fnref" + n + '"';
@@ -53546,7 +53554,7 @@
              alternative would take the inner **…** and leave a stray *. */
           /* BEUK:notelabels — the last alternative is a note's mark under any label (noteMarkRe's pattern); the Word
              export reads each section through notesAsShown, so the mark holds the number the note shows */
-          const re = /(\*\*\*[^*]+\*\*\*)|(\*\*[^*]+\*\*)|(\*[^*\n]+\*)|(\[(?:\^[^\]\s]+|\d{1,3})\])/g;
+          const re = /(\*\*\*[^*]+\*\*\*)|(\*\*[^*]+\*\*)|(\*[^*\n]+\*)|(\[(?:\^\d+|\d{1,3})\])/g; /* the last: noteNumberRe's pattern (a mark still under a name has no note and stays the writer's text) */
           let out = "", last = 0, mm;
           while ((mm = re.exec(t)) !== null) {
             if (mm.index > last) out += plain(t.slice(last, mm.index), inh);
@@ -54458,7 +54466,7 @@
          closing credits instead. frontispiece → a picture page. */
       const ACX_DEFAULT_SKIP = { cover: "picture", halftitle: "auto", titlepage: "auto", toc: "toc", copyright: "copyright", frontispiece: "picture", colophon: "colophon" };
       const ACX_SCENE_BREAK = /^(\*\*\*|❦|⁂)$/;
-      const ACX_NOTE_MARK = /\[(\^[^\]\s]+|\d{1,3})\]/g; /* BEUK:notelabels — a mark under any label ($1: "^label", or the bare number; noteLabelOf). The script reads each section through notesAsShown, so "[NOTE n]" says the number the note shows. */
+      const ACX_NOTE_MARK = /\[(\^\d+|\d{1,3})\]/g; /* BEUK:notelabels — a mark under a number ($1: "^n", or the bare number; noteLabelOf; noteNumberRe's pattern). The script reads each section through notesAsShown, so "[NOTE n]" says the number the note shows; a mark still under a name there has no note and stays in the script as the writer typed it. */
       function acxNormalize(a) {
         a = a && typeof a === "object" ? a : {};
         const include = {};
@@ -54488,7 +54496,7 @@
       const acxMinutes = (words) => words / ACX_SPEC.wordsPerHour * 60;
       const acxRound = (n, d) => { const f = Math.pow(10, d); return Math.round(n * f) / f; };
       /* The spoken words of a line: markup and bracketed narrator notes out. */
-      const acxSpoken = (text) => String(text || "").replace(ACX_NOTE_MARK, " ").replace(/\[(NOTE|IMAGE|PAUSE|PRONUNCIATION|NARRATOR)[^\]]*\]/g, " ").replace(/\*\*|\*/g, "");
+      const acxSpoken = (text) => String(text || "").replace(noteMarkRe(), " ") /* BEUK:notelabels — no mark is a spoken word, with a note or without */.replace(/\[(NOTE|IMAGE|PAUSE|PRONUNCIATION|NARRATOR)[^\]]*\]/g, " ").replace(/\*\*|\*/g, "");
       const acxPlainInline = (text) => String(text || "").replace(mdLinkRe(), "$1").replace(ACX_NOTE_MARK, (m, n) => " [NOTE " + noteLabelOf(n) + "]").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*\n]+)\*/g, "$1").replace(/ {2,}/g, " ").trim();
       function acxSectionSkipReason(s) {
         const own = state.audio.include[s.id];
@@ -54699,7 +54707,7 @@
           stripContainerMarks(spokenContainerText(structureText(s.content || ""), " ")).split(/\n\s*\n/).forEach((block) => {
             block = block.trim();
             if (!block || parseImageLine(block) || ACX_SCENE_BREAK.test(block)) return;
-            block = block.replace(/^\[(?:\^[^\]\s]+|\d{1,3})\]:\s*/, "").replace(/^>\s?/gm, "").replace(/^#{1,6}\s+/, "").replace(/\*\*/g, "").replace(ACX_NOTE_MARK, " ");
+            block = block.replace(/^\[(?:\^[^\]\s]+|\d{1,3})\]:\s*/, "").replace(/^>\s?/gm, "").replace(/^#{1,6}\s+/, "").replace(/\*\*/g, "").replace(noteMarkRe(), " ");
             /* italics: mark spans, then strip the asterisks */
             const italicWords = new Set();
             block.replace(/\*([^*\n]+)\*/g, (m0, inner) => { (inner.match(tokenRe) || []).forEach((w) => italicWords.add(w)); return m0; });
@@ -71913,7 +71921,9 @@
               const shown = () => body().map((s) => notesAsShown(s));
               let s1 = shown()[0] || "", s2 = shown()[1] || "";
               const storedOk = c1.indexOf("Dawn[^fn-9] broke[^note] twice[^fn-9], and lost[^nowhere].") !== -1 && c2.indexOf("Rain[^fn_3] came.") !== -1 && !/\[\^\d+\]/.test(c1 + c2);
-              const orderOk = s1.indexOf("Dawn[^1] broke[^2] twice[^1], and lost[^3].") !== -1 && s2.indexOf("Rain[^4] came.") !== -1 && /^\[\^1\]: The first note\. It runs on\.$/m.test(s1) && /^\[\^2\]: The second note, in type\.$/m.test(s1) && /^\[\^4\]: The third note\.$/m.test(s2);
+              /* "[^nowhere]" answers to no note: it is no note, takes no number and stays as typed (it was shown as "[3]", and the third note as 4) */
+              const orderOk = s1.indexOf("Dawn[^1] broke[^2] twice[^1], and lost[^nowhere].") !== -1 && s2.indexOf("Rain[^3] came.") !== -1 && /^\[\^1\]: The first note\. It runs on\.$/m.test(s1) && /^\[\^2\]: The second note, in type\.$/m.test(s1) && /^\[\^3\]: The third note\.$/m.test(s2) &&
+                contentBlocksToHtml(body()[0].content, body()[0], false, true).indexOf("and lost[^nowhere].</p>") !== -1;
               const placedOk = /^\[\^fn-9\]: The first note\. It runs on\.$/m.test(c1) && /^\[\^note\]: The second note, in type\.$/m.test(c1) && /^\[\^fn_3\]: The third note\.$/m.test(c2) && c1.indexOf("[^fn_3]:") === -1;
               const notes = items.find((i) => i.kind === "notes"), lostRef = items.filter((i) => i.kind === "refOrphan"), lostNote = items.filter((i) => i.kind === "noteOrphan");
               const reportOk = !!notes && notes.data.found === 4 && notes.data.mapped === 3 && notes.data.orphans === 2 && lostRef.length === 1 && String(lostRef[0].data.n) === "nowhere" && lostRef[0].before === "[^nowhere]" && lostNote.length === 1 && String(lostNote[0].data.n) === "spare" && c2.indexOf("Nobody points here.") !== -1;

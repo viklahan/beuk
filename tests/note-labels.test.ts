@@ -17,7 +17,7 @@ type Case = { name: string; sections: string[]; shown: string[] };
 const FIXTURE = JSON.parse(readFileSync(path.join(import.meta.dirname, 'fixtures', 'note-labels.json'), 'utf8')) as { cases: Case[] };
 
 test('the note numbering: every case of the shared table, as the studio numbers it', () => {
-  assert.ok(FIXTURE.cases.length >= 12, 'the table lost cases');
+  assert.ok(FIXTURE.cases.length >= 13, 'the table lost cases');
   for (const c of FIXTURE.cases) assert.deepEqual(notesAsShown(c.sections), c.shown, c.name);
 });
 
@@ -34,21 +34,28 @@ const book = (sections: { id: string; content: string; included?: boolean }[]) =
 /** the note numbers a reading copy's text shows, in order (its Notes list left aside): a linked mark as its number, an unlinked one with "~" before it */
 const marks = (html: string) => [...html.replace(/<div class="endnotes">[\s\S]*$/, '').matchAll(/(<a class="noteref"[^>]*>)?<sup>\[([^\]<]*)\]<\/sup>/g)].map((m) => (m[1] ? '' : '~') + m[2]);
 
-test('the reading copy: a note under the writer\'s label is linked and shown under its number; the label never reaches the page', () => {
+test('the reading copy: a note under the writer\'s label is linked and shown under its number, its label never on the page; a mark under a label with no note is the writer\'s text, as typed, under no number', () => {
   const doc = book([
     { id: 'c1', content: 'The caravan left[^salt] at dawn, and again[^salt].\n\nA mark with no note[^nowhere].\n\n[^salt]: Salt, by the sack.' },
     { id: 'c2', content: 'The pans lay white[^fn.2-a] and[^1].\n\n[^fn.2-a]: The pans of the coast.\n\n[^1]: The writer\'s own number.' },
   ]);
   const { snapshot } = renderSnapshot(doc, 'x');
   const [one, two] = snapshot.sections.map((s) => s.html);
-  // chapter 1: "salt" is the first note marked and 1 is the writer's own, so it takes 2; the mark with no note takes 3
+  // chapter 1: "salt" is the first note marked and 1 is the writer's own, so it takes 2
   assert.match(one!, /left<a class="noteref" id="s0-fnref2" href="#s0-fn2"><sup>\[2\]<\/sup><\/a> at dawn, and again<a class="noteref" href="#s0-fn2"><sup>\[2\]<\/sup><\/a>\./);
-  assert.match(one!, /no note<sup>\[3\]<\/sup>\./);
+  // "[^nowhere]" answers to no note anywhere in the book: it is no note, takes no number and is set exactly as typed
+  // (it was raised as "[3]", a number of Beuk's for something that is not a note)
+  assert.match(one!, /<p data-p="1">A mark with no note\[\^nowhere\]\.<\/p>/);
   assert.match(one!, /<p class="endnote" id="s0-fn2" data-p="2"><a class="note-back" href="#s0-fnref2"><sup>\[2\]<\/sup><\/a> Salt, by the sack\.<\/p>/);
-  // chapter 2: the next named note takes 4; the writer's "[^1]" shows 1, as typed
-  assert.match(two!, /white<a class="noteref" id="s1-fnref4" href="#s1-fn4"><sup>\[4\]<\/sup><\/a> and<a class="noteref" id="s1-fnref1" href="#s1-fn1"><sup>\[1\]<\/sup><\/a>\./);
-  assert.match(two!, /id="s1-fn4"[^>]*><a class="note-back" href="#s1-fnref4"><sup>\[4\]<\/sup><\/a> The pans of the coast\./);
-  for (const html of [one!, two!]) for (const label of ['salt', 'nowhere', 'fn.2-a']) assert.equal(html.includes(label), false, `the label "${label}" reached the page`);
+  // chapter 2: the next named note takes 3; the writer's "[^1]" shows 1, as typed
+  assert.match(two!, /white<a class="noteref" id="s1-fnref3" href="#s1-fn3"><sup>\[3\]<\/sup><\/a> and<a class="noteref" id="s1-fnref1" href="#s1-fn1"><sup>\[1\]<\/sup><\/a>\./);
+  assert.match(two!, /id="s1-fn3"[^>]*><a class="note-back" href="#s1-fnref3"><sup>\[3\]<\/sup><\/a> The pans of the coast\./);
+  for (const html of [one!, two!]) for (const label of ['salt', 'fn.2-a']) assert.equal(html.includes(label), false, `the label "${label}" reached the page`);
+});
+
+test('the reading copy: a NUMBER with no note is raised as it always was ("[3]", linked to nothing); only a label that is no number is left as typed', () => {
+  const { snapshot } = renderSnapshot(book([{ id: 'c1', content: 'A number with no note[^3], a name with none[^nope], a bare one[7].' }]), 'x');
+  assert.match(snapshot.sections[0]!.html, /<p data-p="0">A number with no note<sup>\[3\]<\/sup>, a name with none\[\^nope\], a bare one<sup>\[7\]<\/sup>\.<\/p>/);
 });
 
 test('the reading copy: a label defined in two chapters is two notes; a chapter left out of the book still takes its numbers, as in the studio', () => {
