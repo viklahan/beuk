@@ -5344,10 +5344,12 @@ import).
     own under a piece set across its column; and a word broken by a hyphen
     running from one line of a band into the next, or, in a table of three
     bands or more, a line with text in fewer columns than the line above.
-    The table has three columns or more, or a first column whose text turns
-    too (two columns with a first one that never turns are how a list with a
-    hanging indent stands: those stay the text's); lines all in a monospace
-    face are a log, never a table. Each cell is its own lines, joined as
+    Two bands alone are a table only inside a cell, or where the table runs
+    over a page turn and its header's repeat confirms it.
+    The table has three columns or more (two columns are also how a list
+    with a hanging indent stands, or two columns of text side by side: those
+    stay the text's, and two columns are a table's only inside a table's
+    cell); lines all in a monospace face are a log, never a table. Each cell is its own lines, joined as
     running text is joined; a hyphen at a cell line's end is settled by
     BEUK:hyphensgiven with all the others ("Join it" finds a word alone in
     its cell by the cell's bars).
@@ -5373,8 +5375,8 @@ import).
   Not read: a table with no repeated header that continues on the next page
   (two tables, as before); a cell's text after a table set inside it (a row
   of its own); cells set to the middle or the foot of their row; a table of
-  two columns whose first never turns, and a table of a header and one row
-  only (both taken as before); tables read right to left; ruled lines
+  two columns, and a table of two bands that no page turn confirms, a header
+  and one row say (both taken as before); tables read right to left; ruled lines
   (PDF.js gives text only). Known to read wrong: rows that all turn onto
   the same number of lines, set with no space between them, in a table that
   has a taller gap elsewhere and a hyphenated word over a line's end (its

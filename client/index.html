@@ -46722,11 +46722,13 @@
                     that the table sets its rows so, and nothing on it says otherwise: there is such a taller gap; no
                     line of a band has text in a column the line above it has left (cells are set from the top), and
                     none stands under a cell's line that stopped with room for its first word (the writer ended
-                    that line: two rows); and a word broken by a hyphen runs from one line of a band into the next,
-                    or, in a table of three bands or more, a line has text in fewer columns than the line above it.
-                    The table has three columns or more, or its first column's text turns too (two columns with a
-                    first one that never turns are also how a list with a hanging indent stands, or a name beside
-                    its speech: those stay the text's).
+                    that line: two rows); and a word broken by a hyphen runs from one line of a band into the
+                    next, or, in a table of three bands or more, a line has text in fewer columns than the line
+                    above it. Two bands alone are a table only inside a cell, or where the table runs over a page
+                    turn and its header's repeat confirms it.
+                    The table has three columns or more: two columns are also how a list with a hanging indent
+                    stands, a name beside its speech, or two columns of text side by side, and those stay the
+                    text's (two columns are a table's only inside a table's cell).
            cells    each cell's own lines, top to bottom, joined as running text is joined (pdfLayout: a hyphen at
                     a line's end is settled by the rule the text uses, BEUK:hyphensgiven).
            a table set inside a cell (lines of several pieces standing in one column alone) is read by the same
@@ -46920,40 +46922,48 @@
            nothing on it says otherwise: there is a taller gap; no two lines of a band are two rows for certain; and
            some two are one row's for certain (the hyphen), or, in a table of three bands or more, one has text in
            fewer columns than the line above it. (A header set apart from rows that stand a line each under one
-           another is two bands, and its rows are not one row.)
-           Two columns alone do not show a table: a list set with a hanging indent ("7." and its text, the items apart)
-           and a name hung beside its speech stand exactly so, and they are the text's. Two columns are a table's where
-           the first one's text turns onto a second line too (a mark or a label hung beside its text never does), or
-           where they stand inside a table's cell. Three columns or more are no list. */
+           another is two bands, and its rows are not one row.) Two bands alone (weak) are a table only inside a
+           table's cell, or where the table runs over a page turn and its header's repeat confirms it: a line and
+           two lines under it at another distance are no table yet.
+           Two columns alone do not show a table: a list set with a hanging indent ("7." and its text, the items apart),
+           a name hung beside its speech and two columns of running text set side by side stand exactly so, and they
+           are the text's (two lines of two columns under a table, the first ending on "VIE-" and the second opening
+           on "in", were read as one row of a table of their own). Two columns are a table's only where they stand
+           inside a table's cell. Three columns or more are no list and no pair of text columns. */
         /* and a cell set across columns is so on every line of its row: a band with a piece across two columns on one
            line and, on another, a piece of its own in the second of them holds two rows for certain */
         const across = bands.some((B) => { const under = new Set(); B.forEach((k) => P[k].at.forEach((o) => { for (let c = o.c + 1; c < o.c + o.span; c++) under.add(c); })); return under.size > 0 && B.some((k) => P[k].at.some((o) => o.span === 1 && under.has(o.c))); });
         const apart = !across && !pairs.some((k) => !within(sets[k], sets[k + 1]) || (!hyphened(k) && ended(k)));
         const shown = pairs.some(hyphened) || (bands.length >= 3 && pairs.some(fewer));
-        const more = cols >= 3 || !!inCell || bands.some((B) => B.filter((k) => sets[k].has(0)).length >= 2);
+        const more = cols >= 3 || !!inCell;
         /* lines set in a monospace face from first to last are a log, as typed (BEUK:pdfback): its columns are the writer's own spacing, and it is no table */
         const typed = P.every((x) => x.l.mono);
+        /* a line that may be a turned line of the row above, where the lines are the rows: a word broken by a hyphen runs into it, or it has text in fewer columns and no cell above it had stopped with room to spare for its first word (then it is a row, and the page shows it) */
+        const doubt = [];
+        for (let k = 0; k + 1 < P.length; k++) if (hyphened(k) || (fewer(k) && !ended(k))) doubt.push(P[k + 1].l);
+        out.lineRows = lineRows; out.lineUnsure = doubt;
         if (bands.length >= 2 && apart && shown && more && !typed) {
           const rows = bands.map((B) => Object.assign(pdfTableRow(B.map((k) => P[k].l), B.map((k) => P[k].at), cols), { k0: P[B[0]].k }));
           out.banded = true; out.rows = rows;
+          /* two bands only (a header and one row, say): a table where it runs over a page turn and its header's repeat says so (pdfLayout), not by itself */
+          out.weak = !inCell && bands.length < 3;
           place(rows);
           /* how a row stands under the table's first row: from the last line of the one to the first line of the other, where nothing stands between them */
           if (rows.length >= 2 && P[rows[0].lines.length] && P[rows[0].lines.length].k === P[rows[0].lines.length - 1].k + 1) out.gh = P[rows[0].lines.length].l.y - P[rows[0].lines.length - 1].l.y;
           return out;
         }
-        out.banded = false; out.rows = lineRows;
+        out.banded = false; out.rows = lineRows; out.unsure = doubt;
         place(lineRows);
-        /* a line that may be a turned line of the row above: a word broken by a hyphen runs into it, or it has text in fewer columns and no cell above it had stopped with room to spare for its first word (then it is a row, and the page shows it) */
-        for (let k = 0; k + 1 < P.length; k++) if (hyphened(k) || (fewer(k) && !ended(k))) out.unsure.push(P[k + 1].l);
         return out;
       }
-      /* The tables of a column of lines whose rows the page shows by their spacing: each with the index of its first line (at). */
-      function pdfTableFind(ls) {
+      /* The tables of a column of lines whose rows the page shows by their spacing: each with the index of its first
+         line (at). `strong`: none of two bands only. */
+      function pdfTableFind(ls, strong) {
         const out = [];
         for (let q = 0; q < ls.length; q++) {
           const reg = pdfTableRegion(ls, q);
           const g = reg ? pdfTableGrid(ls.slice(q, q + reg.n), true) : null;
-          if (!g || !g.banded) continue;
+          if (!g || !g.banded || (strong && g.weak)) continue;
           g.at = q;
           out.push(g);
           q += g.n - 1;
@@ -47199,7 +47209,7 @@
              and it is read as one column. */
           if (gutter) {
             const ofTable = new Set();
-            pdfTableFind(pdfTableRawLines(pg.items)).forEach((g) => { if (g.rivers.some((r) => gutter > r[0] - 1 && gutter < r[1] + 1)) g.lines.forEach((l) => l.items.forEach((it) => ofTable.add(it))); });
+            pdfTableFind(pdfTableRawLines(pg.items), true).forEach((g) => { if (g.rivers.some((r) => gutter > r[0] - 1 && gutter < r[1] + 1)) g.lines.forEach((l) => l.items.forEach((it) => ofTable.add(it))); });
             if (ofTable.size) gutter = splitCols(pg.items.filter((it) => !ofTable.has(it)), pg.w);
           }
           let cols;
@@ -47677,11 +47687,13 @@
                  the clean spaces between them), no further apart than its rows stand; a row to a band, at the table's
                  leading. Lines of one piece at their foot are the table's only at its leading under the line above,
                  or straight under the header. */
-              const C = pdfTableRivers(T.own.map((l) => { const d = T.dx.get(l) || 0; return { size: l.size, segs: l.segs.map((sg) => ({ x0: sg.x0 - d + dx, x1: sg.x1 - d + dx })) }; }), true), got = [];
+              const here = T.own.map((l) => { const d = T.dx.get(l) || 0; return { size: l.size, segs: l.segs.map((sg) => ({ x0: sg.x0 - d + dx, x1: sg.x1 - d + dx })) }; }), got = [];
+              let C = pdfTableRivers(here, true);
               for (let j = hn; j < B.length; j++) {
                 const l = B[j];
                 if (!ok(l) || l.y - B[j - 1].y > T.tallest * 1.2 || (C.length > 0 && l.segs.every((sg) => pdfTableCrosses(sg, C)))) break;
                 got.push(l);
+                if (l.segs.length >= 2) { here.push(l); C = pdfTableRivers(here, true); } /* a cell set across columns on this page covers the space under it: its turned lines are the table's */
               }
               let keep = got.length - 1;
               while (keep >= 0 && got[keep].segs.length < 2) keep--;
@@ -47699,6 +47711,7 @@
             lines.forEach((l) => { gridLines.add(l); T.dx.set(l, dx); T.lines.push(l); });
             own.forEach((l) => T.own.push(l));
             if (top) gridTables.splice(gridTables.indexOf(top), 1);
+            T.weak = false; /* its header's repeat confirms it */
             let rows = regrid(T, more);
             st.tableHeads.push(T.rows[0].cells.map((c) => c.p.map((pc) => pc.t).join(" ")).filter(Boolean).join(" | ")); /* named by the row it repeats, cell by cell */
             const before = T.rows.length, last = T.rows[before - 1], first = rows[0];
@@ -47725,6 +47738,8 @@
             T.endLs = B; T.endAt = lines.length - 1;
           }
           open.forEach((o) => { if (!(o.sure && nearer > 0)) o.T.unsure.push(o.line); });
+          /* a table of two bands that no repeat of its header confirmed is left to the reading below: its lines go back to the page */
+          for (let k = gridTables.length - 1; k >= 0; k--) if (gridTables[k].weak) gridTables.splice(k, 1);
           gridTables.forEach((g) => {
             g.lines.forEach((l) => { l.inTable = true; l.gridded = true; });
             const firstLine = g.ls[g.at];
@@ -47824,7 +47839,10 @@
               const meanLen = cellsOf.length ? cellsOf.reduce((a, c) => a + c.length, 0) / cellsOf.length : 0;
               if (r - q >= 3 && meanLen <= 28) {
                 const run = ls.slice(q, r), g = run.some((l) => l.rtl) ? null : pdfTableGrid(run, false);
-                if (g && g.n === run.length) { ls[q].table = g.rows; ls[q].tb = g; run.forEach((l) => { l.gridded = true; }); }
+                if (g && g.n === run.length) {
+                  if (g.banded && g.weak) { g.rows = g.lineRows; g.unsure = g.lineUnsure; } /* two bands alone: its lines are its rows */
+                  ls[q].table = g.rows; ls[q].tb = g; run.forEach((l) => { l.gridded = true; });
+                }
                 else ls[q].table = run.map((l) => l.cells);
                 for (let k = q + 1; k < r; k++) ls[k].inTable = true;
                 q = r - 1;
