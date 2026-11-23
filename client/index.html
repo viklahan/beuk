@@ -47833,7 +47833,7 @@
                than the line above, or a word broken by a hyphen runs into it, the report names the table. */
             for (let q = 0; q < ls.length; q++) {
               let r = q;
-              while (r < ls.length && ls[r].cells.length >= 2 && !ls[r].head && !ls[r].mono && !ls[r].table && !ls[r].inTable) r++;
+              while (r < ls.length && ls[r].cells.length >= 2 && !ls[r].table && !ls[r].inTable && !ls[r].head && !ls[r].mono) r++;
               /* Cells of running prose are columns read wrong, not a table. */
               const cellsOf = ls.slice(q, r).reduce((a, l) => a.concat(l.cells), []);
               const meanLen = cellsOf.length ? cellsOf.reduce((a, c) => a + c.length, 0) / cellsOf.length : 0;
