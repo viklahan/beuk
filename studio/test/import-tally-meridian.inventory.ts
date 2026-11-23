@@ -13,7 +13,13 @@
    is 96. In every one of the nine the book's side holds the number as the file wrote it ("I") and the title, never the
    word: before this was so the word was counted on both sides where the file wrote "Chapter" as the book sets it (each
    book figure below was 84 more, and the row held only the Markdown file's 12 colons), and in the text file, which
-   writes it in capitals, it was a difference. */
+   writes it in capitals, it was a difference.
+
+   The list marks (BEUK:listmarkstyped, re-measured 2026-11-22). The book's 104 list items are typed under bullets of the
+   writer's own in the RTF, web-page and text files and the EPUB (four kinds, U+25C6, U+25C7, U+2767, U+25B8). The book's
+   list read none of them, so each was stored "-" and the 104 characters stood in a row of their own (listMarks: 104).
+   They are stored as typed now: those four files' book figures are 104 more each and the row is gone. The Word,
+   OpenDocument and Markdown files, whose lists carry no such mark in the file's text, and both PDFs, did not move. */
 
 export type Inventory = {
   file: number; book: number; aside: Record<string, number>; unaccounted: number;
@@ -30,20 +36,20 @@ export const MERIDIAN_INVENTORY: Record<string, Inventory> = {
      ("Appendix A" and "Appendix B" are joined to the name on the line under each with a space: no colon of the import's, BEUK:joinsgiven) */
   docx: { file: 317142, book: 316772, aside: { titlePage: 208, headers: 78, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs (as the Word file: the same 84, the same book) */
-  rtf: { file: 318053, book: 316772, aside: { titlePage: 212, headers: 881, listMarks: 104, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
+  rtf: { file: 318053, book: 316876, aside: { titlePage: 212, headers: 881, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs (as the Word file) */
   odt: { file: 317395, book: 316772, aside: { titlePage: 208, headers: 76, noteMarks: 255, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs (as the Word file) */
-  html: { file: 318404, book: 316772, aside: { titlePage: 267, contents: 801, noteMarks: 376, listMarks: 104, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
+  html: { file: 318404, book: 316876, aside: { titlePage: 267, contents: 801, noteMarks: 376, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs. The row: "Chapter" and the colon of each of the 12 headings "## Chapter I: …", 96 (it was the 12 colons; the book was 316998: 316998 - 84 = 316914) */
   md: { file: 317465, book: 316914, aside: { titlePage: 135, noteMarks: 26, sceneBreaks: 48, headingMarks: 96, details: 246 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs. The row: "CHAPTER" and the dash of each of the 12 headings "CHAPTER I — …", 96, the same row and the same count as the Markdown file's "Chapter" and colon.
      (Before: the book's side counted Beuk's own "Chapter I", so the six capitals A E H P R T of CHAPTER stood against the book's small letters, 12 of each, and the 12 dashes were
      unaccounted for. The book was 328326: 328326 - 84 = 328242.) The titles are stored in the capitals the file wrote them in. */
-  txt: { file: 334324, book: 328242, aside: { titlePage: 354, noteMarks: 484, listMarks: 104, sceneBreaks: 1872, headingMarks: 96, labels: 988, leftOut: 2184 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
+  txt: { file: 334324, book: 328346, aside: { titlePage: 354, noteMarks: 484, sceneBreaks: 1872, headingMarks: 96, labels: 988, leftOut: 2184 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs. The row: the label element "Chapter I" before each of the 12 headings, the word's 84 (the book was 316867: 316867 - 84 = 316783).
      (a label element before a heading, "Front Matter", "Appendix A", "Appendix B", is joined to it with a space: no colon of the import's) */
-  epub: { file: 317580, book: 316783, aside: { noteMarks: 376, listMarks: 104, headingMarks: 84, pages: 233 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
+  epub: { file: 317580, book: 316887, aside: { noteMarks: 376, headingMarks: 84, pages: 233 }, unaccounted: 0, fileOnly: [], bookOnly: [] },
   /* nothing differs, and no hyphen is taken off at a line's end (BEUK:hyphensgiven). 135 lines end on a hyphen, straight after a
      letter or a digit, that the next line's word continues: 106 with a letter either side, 12 with a digit after ("VIE-" + "04-10")
      and 17 with a digit before ("5-" + "unit", "GRZ-02-" + "REF-17"). For 103 the hyphenated word stands whole elsewhere in the PDF

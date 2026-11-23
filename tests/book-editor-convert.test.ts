@@ -290,6 +290,28 @@ test('convert: a list whose items are parted by blank lines is one list node, an
   assert.deepEqual(types(S.node('doc', null, d.firstChild!.content.content as Node[])), ['list']);
 });
 
+/* ---- BEUK:listmarkstyped: the list holds the mark the writer typed, as 1.0's listItemsOf now reads it ---- */
+
+test('convert: a list under a letter, a Roman numeral, a mark in brackets or a bullet of the writer\'s own is a list node, each item\'s marker as written', () => {
+  const items = (n: Node) => n.content.content.map((i) => [i.attrs.marker, i.textContent]);
+  const cases = [
+    'a. one\nb. two\nc. three', 'iv. one\nv. two\nvii. three', '(1) one\n(2) two', '(a) one\n(b) two', '(iv) one\n(v) two', 'A) one\nB) two\nD) four', 'I. one\nII. two', 'aa. one\nbb. two',
+    '+ one\n+ two', '◆ one\n◇ two', '● one\n● two', '■ one\n- two\n* three', '‣ one\n⁃ two', '◆ one\n\n◆ two', '+ one\n\n+ two', 'a. one\n\nb. two\n\nc. three', 'e.  wide\nf.\tTab', 'a. one\r\nb. two\r\n',
+    'A. Conan Doyle wrote of a hound.', 'Q. What did the clerk see?\nA. Nothing at all.', 'a. one\nB. two', 'a. one\na. again', 'Mix. Then pour.\nStir. Then wait.', '(a) one\nb) two', 'a. one', 'x. one\nab. two', '◆ ◆ ◆\n\n◆ ◆ ◆',
+  ];
+  for (const c of cases) roundTrips(c);
+  assert.deepEqual(items(toDoc('iv. one\nv. two\nvii. three').firstChild!), [['iv. ', 'one'], ['v. ', 'two'], ['vii. ', 'three']]);
+  assert.deepEqual(items(toDoc('(a) one\n(b) two').firstChild!), [['(a) ', 'one'], ['(b) ', 'two']]);
+  assert.deepEqual(items(toDoc('■ one\n- two\n* three').firstChild!), [['■ ', 'one'], ['- ', 'two'], ['* ', 'three']]);
+  for (const c of ['a. one\nb. two\nc. three', '(1) one\n(2) two', '(iv) one\n(v) two', 'A) one\nB) two\nD) four', 'I. one\nII. two', 'aa. one\nbb. two', '+ one\n+ two', '◆ one\n◇ two', '● one\n● two', '‣ one\n⁃ two', '◆ one\n\n◆ two', '+ one\n\n+ two', 'a. one\n\nb. two\n\nc. three'])
+    assert.deepEqual(types(toDoc(c)), ['list'], c);
+  // a letter and a full stop also open a name: one alone, letters that do not climb, marks of two shapes, a word, stay paragraphs
+  for (const c of ['A. Conan Doyle wrote of a hound.', 'Q. What did the clerk see?\nA. Nothing at all.', 'a. one\nB. two', 'a. one\na. again', 'Mix. Then pour.\nStir. Then wait.', '(a) one\nb) two', 'a. one', 'x. one\nab. two'])
+    assert.deepEqual(types(toDoc(c)), ['paragraph'], c);
+  assert.deepEqual(types(toDoc('A. Conan Doyle wrote.\n\nB. Traven wrote.\n\nNo more.')), ['list', 'paragraph']); // two blocks whose letters climb are read as 1.0 reads them: a list
+  assert.deepEqual(types(toDoc('◆ ◆ ◆\n\n◆ ◆ ◆')), ['paragraph', 'paragraph']); // a line of marks only opens no list
+});
+
 test('convert: blocks an older build stored one by one are read as the list they are when one of them is touched, and the text does not change', () => {
   // the document as it stands in a book stored before this reading: each item a paragraph of its own
   const stored = 'Before.\n\n* a\n\n* b\n\n* c\n\n* d\n\n* e\n\nAfter.';

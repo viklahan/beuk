@@ -30493,10 +30493,65 @@
          prose); one whose first line starts "1. " or "1) " is a
          numbered list, starting at that number. Each marked line starts
          an item; an unmarked line continues the item above it. */
-      const LIST_BULLET = /^[-*•]\s+/;
+      /* ==== BEUK:listmarkstyped ==== The book's list holds the mark the writer typed (V, 2026-11-22: "KEEP WHAT THE
+         WRITER GIVES US"). Until this a list read only "-", "*", "•" and a number closed with "." or ")", and drew
+         every bullet as its own disc and every number with a full stop: a list typed "a." "b.", "iv." "v.", "(1)"
+         "(2)", "+", "◆" or "●" was no list to the book, and every reader that met one set the book's own number or
+         "-" in its place.
+         Now a list's item may open on:
+         - a bullet: "-", "*", "+", "•", "‣", "⁃", or any character from U+25A0 to U+27BF (the squares, circles,
+           diamonds, arrows-heads, stars and dingbats: the same set a PDF's lines are read by);
+         - a number closed with "." or ")" (LIST_NUMBER, as always: one item is a list, any numbers);
+         - a typed mark (LIST_TYPED): a letter ("a." "B)"), a Roman numeral up to 399 ("iv." "XII)"), or any of those
+           or a number in brackets ("(a)" "(iv)" "(3)"). Letters at the head of a line are also how a name is written
+           ("A. Conan Doyle"), so such a list is read only on the text's own evidence: two or more items whose marks
+           are of one shape and climb (a. b. d.; iv. v.; never Q. then A.). One alone stays the paragraph it is.
+         The stored text is never touched: this is the reading. Each surface then sets the item's own mark as typed
+         (listItemsOf's `typed`): the page and the EPUB as the mark's own characters (book-list-typed), the Word
+         export as numbering of that kind or the mark itself, the Markdown export as stored. A list of "-", "*", "•"
+         or of numbers closed with a full stop is set exactly as it always was, byte for byte. */
+      const LIST_BULLET = /^[-*+•‣⁃■-➿]\s+/;
       const LIST_NUMBER = /^(\d{1,3})[.)]\s+/;
+      const LIST_TYPED = /^(?:\((\d{1,3}|[A-Za-z]{1,8})\)|([A-Za-z]{1,8})[.)])\s+/;
+      const listRoman = (s) => { const V = { i: 1, v: 5, x: 10, l: 50, c: 100 }; let n = 0; for (let i = 0; i < s.length; i++) { const a = V[s[i]], b = V[s[i + 1]] || 0; if (!a) return 0; n += a < b ? -a : a; } return n > 0 && n < 400 && listToRoman(n) === s ? n : 0; };
+      const listToRoman = (n) => { let s = ""; [[100, "c"], [90, "xc"], [50, "l"], [40, "xl"], [10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]].forEach((p) => { while (n >= p[0]) { s += p[1]; n -= p[0]; } }); return s; };
+      const listToAlpha = (n) => String.fromCharCode(97 + ((n - 1) % 26)).repeat(Math.floor((n - 1) / 26) + 1); /* a … z, aa, bb … as Word counts on */
+      /* a typed mark at the head of a line: its text as typed (raw, with the space after it; mark, without), its shape
+         (the brackets or closing mark around "1", "a" or "A") and what it counts as a number, a letter and a Roman numeral */
+      function listTypedOf(line) {
+        const m = LIST_TYPED.exec(line);
+        if (!m) return null;
+        const body = m[1] || m[2], digits = /^\d+$/.test(body), low = body.toLowerCase();
+        if (!digits && body !== low && body !== body.toUpperCase()) return null; /* a word in mixed case is no mark */
+        const alpha = !digits && low.length <= 3 && low === low.charAt(0).repeat(low.length) ? (low.length - 1) * 26 + low.charCodeAt(0) - 96 : 0;
+        const roman = digits ? 0 : listRoman(low);
+        if (!digits && !alpha && !roman) return null;
+        return { raw: m[0], mark: m[0].trim(), shape: (m[1] ? "(" : "") + (digits ? "1" : body === low ? "a" : "A") + (m[1] ? ")" : m[0].charAt(body.length)), num: digits ? parseInt(body, 10) : 0, alpha, roman };
+      }
+      /* typed marks as one list: all of one shape, and climbing as numbers, as letters or as Roman numerals (kind, vals); null otherwise */
+      function listSeriesOf(tms) {
+        if (tms.length < 2 || tms.some((t) => t.shape !== tms[0].shape)) return null;
+        const climbs = (k) => tms.every((t, i) => t[k] > 0 && (!i || t[k] > tms[i - 1][k]));
+        const steps = (k) => tms.filter((t, i) => i && t[k] === tms[i - 1][k] + 1).length;
+        const num = climbs("num"), alpha = climbs("alpha"), roman = climbs("roman");
+        const kind = num ? "num" : alpha && roman ? (steps("roman") > steps("alpha") || (steps("roman") === steps("alpha") && tms[0].roman === 1) ? "roman" : "alpha") : alpha ? "alpha" : roman ? "roman" : "";
+        return kind ? { kind, vals: tms.map((t) => t[kind]) } : null;
+      }
+      /* the mark a list item is drawn under where its list is set as typed: the book's own bullet for "-", "*" and "•" (as every list of them is drawn), every other mark as its own characters */
+      const listMarkShown = (m) => (/^[-*•]$/.test(m) ? "•" : m);
       function listItemsOf(lines) {
         const ordered = LIST_NUMBER.test(lines[0]);
+        const t0 = !ordered && !LIST_BULLET.test(lines[0]) ? listTypedOf(lines[0]) : null;
+        if (t0) {
+          const items = [], marks = [], tms = [];
+          for (const l of lines) {
+            const tm = listTypedOf(l);
+            if (tm && tm.shape === t0.shape) { items.push(l.slice(tm.raw.length)); marks.push(tm.mark); tms.push(tm); }
+            else items[items.length - 1] += " " + l.trim();
+          }
+          const se = listSeriesOf(tms);
+          return se ? { ordered: true, items, start: se.vals[0], marks, nums: se.vals, typed: true, series: se.kind, shape: t0.shape } : null;
+        }
         if (!ordered && !LIST_BULLET.test(lines[0])) return null;
         const mark = ordered ? LIST_NUMBER : LIST_BULLET;
         const items = [], marks = [];
@@ -30506,13 +30561,17 @@
           else items[items.length - 1] += " " + l.trim();
         }
         if (!ordered && items.length < 2) return null;
+        /* BEUK:listmarkstyped — typed: a mark among them that the list's own number or disc does not draw (a number
+           closed with a bracket; a bullet that is not "-", "*" or "•"): each surface then sets every item's mark as typed */
+        const typed = ordered ? marks.some((m) => /\)$/.test(m)) : marks.some((m) => !/^[-*•]$/.test(m));
         /* BEUK:listmarksgiven — each item's own mark as the book stores it ("4.", "2)", "-", "*"), and for a numbered list
            each item's own number (nums). The book stores the number the writer typed (the import keeps it); until now
            every surface but the Markdown export read only the FIRST number and counted on from it in steps of one, so
            a list stored 1. 2. 4. was shown 1. 2. 3. and one stored 3. 7. 9. was shown 3. 4. 5. A number is the
            writer's: each surface now sets each item's own. */
-        return { ordered, items, start: ordered ? parseInt(lines[0].match(LIST_NUMBER)[1], 10) : 1, marks, nums: ordered ? marks.map((m) => parseInt(m, 10)) : [] };
+        return { ordered, items, start: ordered ? parseInt(lines[0].match(LIST_NUMBER)[1], 10) : 1, marks, nums: ordered ? marks.map((m) => parseInt(m, 10)) : [], typed };
       }
+      /* ==== /BEUK:listmarkstyped ==== */
       /* ==== BEUK:looselists ==== A list whose items the writer parted with blank lines (Markdown's "loose" list; a
          plain-text file's items each on a paragraph of their own) is stored exactly as typed, blank lines and all. A
          block is what stands between two blank lines, so each such item was a block of its own: a lone "* item" is
@@ -30533,7 +30592,10 @@
          not something the text settles. They stay as they were (two or more "- " lines in ONE block are a list,
          as before). */
       function looseListBlocks(blocks) {
-        const kindOf = (b) => { const first = String(b).split("\n")[0]; return LIST_NUMBER.test(first) ? "n" : /^[*•]\s+/.test(first) && /[^\s*•]/.test(first) ? "b" : ""; }; /* a line that is only marks ("* * *") is a break the writer typed, never an item */
+        /* BEUK:listmarkstyped — the kinds are the list's own: a number; a bullet (any the list reads but "-": "*", "+",
+           "•", "●", "◆" …, so paragraphs of a PDF that each open on "●" are the list they were typed as); a typed
+           mark of one shape ("a." "b."; "(i)" "(ii)"), whose run is a list only where its marks climb (listItemsOf) */
+        const kindOf = (b) => { const first = String(b).split("\n")[0]; if (LIST_NUMBER.test(first)) return "n"; if (LIST_BULLET.test(first)) return first.charAt(0) !== "-" && /[^\s*+•‣⁃■-➿]/.test(first) ? "b" : ""; const tm = listTypedOf(first); return tm ? "t" + tm.shape : ""; }; /* a line that is only marks ("* * *") is a break the writer typed, never an item */
         const out = [];
         for (let i = 0; i < blocks.length; i++) {
           let head = String(blocks[i]), k = kindOf(head), lead = null;
@@ -30657,10 +30719,16 @@
             /* BEUK:listmarksgiven — an item whose stored number is not the one before it plus one carries its number (<li value>,
                plain HTML: every browser and e-reader numbers the item by it, no stylesheet asked); a list numbered on in
                steps of one is written exactly as it always was */
-            const items = list.items.map((it, k) => "<li" + (list.ordered && k && list.nums[k] !== list.nums[k - 1] + 1 ? ' value="' + list.nums[k] + '"' : "") + ">" + inlineMd(it, noteCtx) + "</li>").join("");
+            /* BEUK:listmarkstyped — a list with a mark its own number or disc does not draw ("2)", "b.", "iv.", "(c)", "+",
+               "◆", "●") sets each item's mark as the characters the writer typed, in front of the item (li-mark), with
+               the list's own marker off (book-list-typed, in the book's stylesheet). The mark is text, so every reader
+               shows it, stylesheet or none; the numbers stay on the list (start, value) for a reader that reads them. */
+            const markOf = (k) => (list.typed ? '<span class="li-mark">' + esc(listMarkShown(list.marks[k])) + " </span>" : "");
+            const items = list.items.map((it, k) => "<li" + (list.ordered && k && list.nums[k] !== list.nums[k - 1] + 1 ? ' value="' + list.nums[k] + '"' : "") + ">" + markOf(k) + inlineMd(it, noteCtx) + "</li>").join("");
+            const cls = '"book-list' + (list.typed ? " book-list-typed" : "") + '"';
             out.push(list.ordered
-              ? '<ol class="book-list"' + (list.start !== 1 ? ' start="' + list.start + '"' : "") + ">" + items + "</ol>"
-              : '<ul class="book-list">' + items + "</ul>");
+              ? "<ol class=" + cls + (list.start !== 1 ? ' start="' + list.start + '"' : "") + ">" + items + "</ol>"
+              : "<ul class=" + cls + ">" + items + "</ul>");
             return;
           }
           if (lines.every((l) => l.startsWith(">"))) {
@@ -30969,6 +31037,12 @@
           S + "ol.book-list { list-style: decimal outside; }",
           S + ".book-list li { margin: 0 0 0.3em 0; padding-left: 0.15em; padding-inline-start: 0.15em; padding-inline-end: 0; text-indent: 0; text-align: left; text-align: start; hyphens: manual; }",
           S + ".book-list li::marker { color: currentColor; }",
+          /* BEUK:listmarkstyped — a list set under the marks the writer typed: its own marker is off and each item's
+             mark (li-mark, the item's first characters) hangs in the list's margin where the marker stood, ranged to
+             the text; a mark wider than the margin pushes its first line along, never over it */
+          S + ".book-list-typed { list-style: none; }",
+          S + ".book-list-typed li { text-indent: -1.65em; }",
+          S + ".book-list-typed .li-mark { display: inline-block; min-width: 1.65em; box-sizing: border-box; padding-right: 0.4em; padding-inline-end: 0.4em; padding-inline-start: 0; text-indent: 0; text-align: right; text-align: end; white-space: nowrap; }",
           /* Containers. Verse: set flush left and ragged whatever the
              book's justification, no first-line indent, a line's turn-
              over hung under it, a stanza kept whole on its page when it
@@ -40447,7 +40521,8 @@
             const g = st;
             st = stack.pop() || g;
             finish(g, st);
-            if (g.dest === "listtext" && g.own) { listMark = g.buf.t; res.aside.listMarks += g.buf.t.trim() + " \n"; } /* BEUK:importtally — the marker as it heads its line in the file (its \tab is no text of this buffer) */
+            /* BEUK:listmarkstyped — a mark the book now stores as typed and counts as the characters it is ("a.", "iv.", "+", "◆") is in the book: not set aside */
+            if (g.dest === "listtext" && g.own) { listMark = g.buf.t; const mk = g.buf.t.trim(); if (irListMarkKind(mk.replace(/\s+/g, " ")) === "?" || /^(?:[-*•]|\d{1,3}[.)])$/.test(mk)) res.aside.listMarks += mk + " \n"; } /* BEUK:importtally — the marker as it heads its line in the file (its \tab is no text of this buffer) */
             groupStart = false; starred = false; skipUc = 0;
             i++;
             if (!stack.length) break;
@@ -40545,10 +40620,12 @@
           else if (b.kind === "p") { const v = md(b.runs); if (!v) return; take(v); out.push(b.quote ? "> " + v : v); }
           else if (b.kind === "list") {
             /* BEUK:listmarksgiven — the mark the file wrote out, where the book's list reads it (as importRtfRead sets it) */
-            const lines = [];
-            b.items.forEach((item, k) => { const l = md(item), mk = (b.marks || [])[k] || ""; if (l) lines.push((b.ordered ? (/^\d{1,3}[.)]$/.test(mk) ? mk : (lines.length + 1) + ".") : /^[-*•]$/.test(mk) ? mk : "-") + " " + l); });
+            /* BEUK:listmarkstyped — any mark the book's list reads: a letter, a Roman numeral, a mark in brackets, a bullet of the writer's own (irListGiven) */
+            const given = [];
+            b.items.forEach((item, k) => { const l = md(item); if (l) given.push({ text: l, mark: (b.marks || [])[k] || "" }); });
+            const lines = given.length ? irListGiven(given, b.ordered, 1).text.split("\n").filter(Boolean) : [];
             lines.forEach(take);
-            if (lines.length) out.push(lines.join("\n"));
+            if (given.length) out.push(irListGiven(given, b.ordered, 1).text);
           }
         });
         flushDefs();
@@ -40616,10 +40693,13 @@
                  1. 2. 3.), unseen by the tally. Any other mark ("a.", "iv.", "◆") the book's list cannot hold: the item
                  gets the book's own (its place in the list, or "-"), and the mark's characters are counted in the
                  tally's row (res.aside.listMarks), as they were. */
-              const lines = [];
-              b.items.forEach((item, k) => { const l = carry(item), mk = (b.marks || [])[k] || ""; if (l) lines.push((b.ordered ? (/^\d{1,3}[.)]$/.test(mk) ? mk : (lines.length + 1) + ".") : /^[-*•]$/.test(mk) ? mk : "-") + " " + l); });
-              if (!b.ordered && lines.length === 1) lines[0] = lines[0].slice(2); /* one bullet reads as a paragraph */
-              if (lines.length) parts.push(lines.join("\n"));
+              /* BEUK:listmarkstyped — and now every mark the book's list reads is the mark stored: "a.", "iv.", "(1)", "+",
+                 "◆", "●" (irListGiven). Only a mark of no form the list reads still gets the book's own. */
+              const given = [];
+              b.items.forEach((item, k) => { const l = carry(item); if (l) given.push({ text: l, mark: (b.marks || [])[k] || "" }); });
+              let listText = given.length ? irListGiven(given, b.ordered, 1).text : "";
+              if (!b.ordered && given.length === 1 && /^[-*•]?$/.test(String(given[0].mark).trim())) listText = listText.slice(2); /* one bullet reads as a paragraph */
+              if (listText) parts.push(listText);
               if (b.nested) ir.nestedList = (ir.nestedList || 0) + b.nested; /* BEUK:nestedlists */
             } else if (b.kind === "table") {
               /* BEUK:tablerows — each cell keeps its italic, bold, links and note marks, as a paragraph does */
@@ -41248,11 +41328,18 @@
             if (lt !== "li") return;
             let first = li.firstChild;
             while (first && first.nodeType !== 1 && !/\S/.test(first.textContent)) first = first.nextSibling;
-            const glyph = first && first.nodeType === 1 && first.getAttribute("aria-hidden") === "true" && /\S/.test(first.textContent) && !/[\p{L}\p{N}]/u.test(first.textContent) ? first : null;
+            /* BEUK:listmarkstyped — the item's own mark, where the page writes one at its head: an element kept from
+               readers (aria-hidden), or Beuk's own typed mark (li-mark), whose text is a mark the book's list reads
+               ("◆", "+", "a.", "iv.", "(2)", "3)"). It is stored as the item's mark (data-mark, read by the walk), not
+               left out and not left among the item's words. Any other aria-hidden glyph is left out, as it was. */
+            const head = first && first.nodeType === 1 && (first.getAttribute("aria-hidden") === "true" || /(?:^|\s)li-mark(?:\s|$)/.test(first.getAttribute("class") || "")) && /\S/.test(first.textContent) ? first : null;
+            const headMark = head ? head.textContent.replace(/\s+/g, " ").trim() : "";
+            const typedMark = head && irListMarkKind(headMark) !== "?" ? head : null;
+            const glyph = typedMark || (head && first.getAttribute("aria-hidden") === "true" && !/[\p{L}\p{N}]/u.test(first.textContent) ? first : null);
             const subs = [];
-            if (glyph) irAsideDelta("listMarks", irTallyDomText(li, null), irTallyDomText(li, (n) => n === glyph)); /* BEUK:importtally — the drawn bullet is a character of the file: measured as it is left out */
+            if (glyph && !typedMark) irAsideDelta("listMarks", irTallyDomText(li, null), irTallyDomText(li, (n) => n === glyph)); /* BEUK:importtally — the drawn bullet is a character of the file: measured as it is left out */
             const own = trimBr(inline(li, { b: false, i: false, lists: subs, skip: glyph }));
-            items.push({ own: inked(own) ? own : "", sub: subs.map((s) => listHtml(s, true)).join("") });
+            items.push({ own: inked(own) ? own : "", sub: subs.map((s) => listHtml(s, true)).join(""), mark: typedMark ? headMark : "" });
           });
           const start = tag === "ol" ? parseInt(list.getAttribute("start") || "", 10) : NaN;
           /* BEUK:notesstood — a note's place between two items carries what the list must open again with after it (its
@@ -41261,7 +41348,7 @@
           items.forEach((it) => {
             if (it.note != null) { lis += noteToken(it.note, tag, tag === "ol" ? (start > 1 ? start : 1) + count : 1); return; }
             if (!(it.own || it.sub)) return;
-            lis += "<li>" + it.own + it.sub + "</li>";
+            lis += "<li" + (it.mark ? ' data-mark="' + esc(it.mark) + '"' : "") + ">" + it.own + it.sub + "</li>";
             count++;
           });
           if (!count) return items.filter((it) => it.note != null).map((it) => noteToken(it.note)).join("");
@@ -42361,7 +42448,32 @@
          (BEUK:listmarksgiven, below), the line above it a paragraph of
          its own. A glyph that is the list's mark is not a word. A list
          already in Beuk's shape is left exactly as typed. */
-      const IR_LIST_GLYPHS = "•◦‣⁃▪▫◆◇▸▹►❧";
+      const IR_LIST_GLYPHS = "•‣⁃■-➿"; /* BEUK:listmarkstyped — the bullets the book's list reads (LIST_BULLET), written for a character class: "•", "‣", "⁃" and U+25A0 to U+27BF (it was a dozen of them: "●" and "■" were not among them) */
+      /* ==== BEUK:listmarkstyped (the readers) ==== A reader that has the file's own list (RTF's written-out marks, a
+         web page's or an EPUB's item that opens on its mark, a Word or OpenDocument list's drawn numbers) hands each
+         item over with the mark the file shows for it, and the item is stored under THAT mark, wherever the book's
+         list reads it: a number closed with "." or ")", a bullet (IR_LIST_GLYPHS, "-", "*", "+"), a letter, a Roman
+         numeral, any of them in brackets. Until this such a mark was written over with the book's own number or "-".
+         The book's list is of one kind, so a run of items of one kind of mark is a block of its own, in the order
+         read. A typed mark that makes no list on the page (one alone, or letters that do not climb: listItemsOf)
+         still stands at the head of its line as typed: nothing is written over. Only a mark of no form the list
+         reads ("Step 1:", "§") gets the book's own, and is handed back (replaced) for the tally's row. An item the
+         file gave no mark has the book's, counted on from `start` as it always was. */
+      const irListMarkKind = (m) => { if (!m) return ""; if (/^\d{1,3}[.)]$/.test(m)) return "n"; if (new RegExp("^[-*+" + IR_LIST_GLYPHS + "]$").test(m)) return "b"; const tm = listTypedOf(m + " "); return tm && tm.mark === m ? "t" + tm.shape : "?"; };
+      function irListGiven(items, ordered, start) {
+        const runs = [], replaced = [];
+        let own = 0;
+        items.forEach((it) => {
+          const m = String(it.mark || "").replace(/\s+/g, " ").trim(), k = irListMarkKind(m);
+          if (k === "?") replaced.push(m);
+          const mark = k && k !== "?" ? m : ordered ? (start + own) + "." : "-";
+          if (!k || k === "?") own++;
+          const kind = k && k !== "?" ? k : ordered ? "n" : "b", last = runs[runs.length - 1];
+          if (last && last.kind === kind) last.lines.push(mark + " " + it.text); else runs.push({ kind, lines: [mark + " " + it.text] });
+        });
+        return { text: runs.map((r) => r.lines.join("\n")).join("\n\n"), replaced };
+      }
+      /* ==== /BEUK:listmarkstyped (the readers) ==== */
       function irFlatLists(text, ir) {
         const ITEM = new RegExp("^([ \\t]*)(?:([-*+" + IR_LIST_GLYPHS + "])|(\\d{1,3})([.)]))[ \\t]+(\\S.*)$");
         const depthOf = (ws) => ws.replace(/\t/g, "    ").length;
@@ -42382,7 +42494,7 @@
           }
           const base = Math.min.apply(null, items.map((it) => it.depth));
           const nested = items.filter((it) => it.depth > base).length;
-          const foreign = items.some((it) => it.depth > 0 || (it.glyph && !/[-*•]/.test(it.glyph)));
+          const foreign = items.some((it) => it.depth > 0); /* BEUK:listmarkstyped — a list set in from the margin; no bullet is foreign to the book's list now */
           if (items.length < 2 || !(nested || foreign || from > 0)) return block;
           if (nested && ir) ir.nestedList = (ir.nestedList || 0) + nested;
           /* BEUK:listmarksgiven — each item under the mark the writer typed (V, 2026-11-22: "KEEP WHAT THE WRITER GIVES
@@ -42393,14 +42505,13 @@
              one kind (listItemsOf: in a numbered list a line with no number runs on from the item above it, and a
              numbered line in a bulleted one makes it no list at all), so a run of numbered items and a run of
              bulleted ones are each a list of their own, in the order read: a bullet under a numbered item is given
-             no number of Beuk's, and a number under a bullet stays a number. A bullet the book's list has no mark for
-             ("+", "◆") is set as "-", counted below; where its run is that one item, which the book reads as a
-             paragraph and no list, it stays as typed. */
+             no number of Beuk's, and a number under a bullet stays a number. */
           const runs = [];
           items.forEach((it) => { const last = runs[runs.length - 1]; if (last && last.ordered === !!it.num) last.items.push(it); else runs.push({ ordered: !!it.num, items: [it] }); });
-          const markOf = (it, alone) => (it.num ? it.num + it.close : alone || /[-*•]/.test(it.glyph) ? it.glyph : "-") + " ";
-          const out = runs.map((r) => r.items.map((it) => markOf(it, r.items.length === 1) + it.lines.join("\n")).join("\n")).join("\n\n");
-          /* BEUK:importtally — a bullet the file typed (◆, ▸, +) is set as the book's own "- ": measured, the block before and after */
+          /* BEUK:listmarkstyped — and every bullet the writer typed stays that bullet ("+", "◆", "●": the book's list reads them now); none is set as "-" */
+          const markOf = (it) => (it.num ? it.num + it.close : it.glyph) + " ";
+          const out = runs.map((r) => r.items.map((it) => markOf(it) + it.lines.join("\n")).join("\n")).join("\n\n");
+          /* BEUK:importtally — measured, the block before and after: whatever the flattening took off or changed */
           irAsideDelta("listMarks", lines.slice(from).join("\n"), out);
           return (from > 0 ? lines.slice(0, from).join("\n") + "\n\n" : "") + out;
         }).join(""));
@@ -42913,6 +43024,28 @@
         if (fm && /^[A-Za-z_][\w -]*:/m.test(fm[0])) { P.details.push(fm[0]); text = text.slice(fm[0].length); }
         const lines = text.split("\n");
         let fence = false, blockOpen = false, lastPipe = false;
+        /* BEUK:listmarkstyped — the lines that open an item of a lettered, Roman or bracketed list ("a." "b."; "(i)"
+           "(ii)"), read as the book reads such a list: two or more marks of one shape that climb, on the lines of one
+           block or at the head of blocks that follow one another. A letter and a full stop also open a name, so one
+           alone is a line of its paragraph, on this side as in the book. */
+        const typedAt = new Set();
+        {
+          let run = [], block = null;
+          const series = (xs) => xs.length >= 2 && !!listSeriesOf(xs.map((x) => x.tm));
+          const closeRun = () => { if (series(run)) run.forEach((x) => typedAt.add(x.i)); else { const byBlock = new Map(); run.forEach((x) => { if (!byBlock.has(x.b)) byBlock.set(x.b, []); byBlock.get(x.b).push(x); }); byBlock.forEach((xs) => { if (series(xs)) xs.forEach((x) => typedAt.add(x.i)); }); } run = []; };
+          lines.concat([""]).forEach((line, i) => {
+            if (!line.trim()) { block = null; return; }
+            const tm = listTypedOf(line.trim());
+            if (block === null) { /* a block's first line */
+              block = { id: i, shape: tm ? tm.shape : "" };
+              if (!block.shape || (run.length && run[0].tm.shape !== block.shape)) closeRun();
+              if (block.shape) run.push({ i, b: block.id, tm });
+              return;
+            }
+            if (block.shape && tm && tm.shape === block.shape) run.push({ i, b: block.id, tm });
+          });
+          closeRun();
+        }
         const kept = [];
         lines.forEach((line, li) => {
           if (isMd && /^\s*(```|~~~)/.test(line)) { fence = !fence; blockOpen = false; lastPipe = false; return; }
@@ -42959,7 +43092,7 @@
           /* BEUK:tallysaid — a line that is only "#" marks: a plain-text file's lone "#" is a scene break (below); any other is a heading's mark with no words, which the reader leaves out and the report names. It is no ornament. */
           if (!fence && /^#{1,6}$/.test(l.trim()) && !(!isMd && l.trim() === "#")) { blockOpen = false; kept.push(l); return; }
           if ((IR_BREAK_RE.test(l) || (!fence && irTallyOrnament(l))) && !(lines[li - 1] || "").trim() && !(lines[li + 1] || "").trim()) { R.breaks++; irTallyItem(R, "breaks", l); blockOpen = false; kept.push(l); return; }
-          if (new RegExp("^\\s*(?:[-*+" + IR_LIST_GLYPHS + "]|\\d{1,3}[.)])\\s+\\S").test(l)) { R.listItems++; irTallyItem(R, "listItems", l.replace(/^\s*\S+\s+/, "")); blockOpen = true; kept.push(l); return; }
+          if (typedAt.has(li) || new RegExp("^\\s*(?:[-*+" + IR_LIST_GLYPHS + "]|\\d{1,3}[.)])\\s+\\S").test(l)) { R.listItems++; irTallyItem(R, "listItems", l.replace(/^\s*\S+\s+/, "")); blockOpen = true; kept.push(l); return; }
           if (!fence && irTallyOrnament(l)) { irTallyItem(R, "rules", l); kept.push(l); return; }
           if (isMd && !fence && /^\s*!\[[^\]\n]*\]\([^)\n]*\)\s*$/.test(line)) { kept.push(l); return; }
           if (!blockOpen) { R.paragraphs++; irTallyItem(R, "paragraphs", l); blockOpen = true; } else irTallyItem(R, "joined", l);
@@ -43877,18 +44010,24 @@
                  twice. A bullet the book draws itself (an aria-hidden glyph
                  that opens the item) is the list's mark, not a word. */
               const start = tag === "ol" ? Math.max(1, parseInt(epubInAttr(c, "start") || "1", 10) || 1) : 1;
-              const items = [];
+              const items = [], marks = [];
               Array.prototype.slice.call(c.getElementsByTagName("*")).filter((k) => epubTag(k) === "li").forEach((li) => {
                 let first = li.firstChild;
                 while (first && first.nodeType !== 1 && !/\S/.test(first.textContent)) first = first.nextSibling;
-                if (first && first.nodeType === 1 && epubInAttr(first, "aria-hidden") === "true" && /\S/.test(first.textContent) && !/[\p{L}\p{N}]/u.test(first.textContent)) { const was = irTallyDomText(li, null); li.removeChild(first); irAsideDelta("listMarks", was, irTallyDomText(li, null)); /* BEUK:importtally — the drawn bullet is a character of the file: measured as it goes */ }
+                /* BEUK:listmarkstyped — the item's own mark where the book writes one at its head (an aria-hidden element,
+                   or Beuk's own li-mark) and the book's list reads it ("◆", "+", "a.", "iv.", "(2)", "3)"): stored as the
+                   item's mark, not left out and not left among its words. Any other aria-hidden glyph is left out, as it was. */
+                let mark = "";
+                const head = first && first.nodeType === 1 && (epubInAttr(first, "aria-hidden") === "true" || /(?:^|\s)li-mark(?:\s|$)/.test(epubInAttr(first, "class") || "")) && /\S/.test(first.textContent) ? first : null;
+                if (head && irListMarkKind(head.textContent.replace(/\s+/g, " ").trim()) !== "?") { mark = head.textContent.replace(/\s+/g, " ").trim(); li.removeChild(first); }
+                else if (head && epubInAttr(first, "aria-hidden") === "true" && !/[\p{L}\p{N}]/u.test(first.textContent)) { const was = irTallyDomText(li, null); li.removeChild(first); irAsideDelta("listMarks", was, irTallyDomText(li, null)); /* BEUK:importtally — the drawn bullet is a character of the file: measured as it goes */ }
                 const t = md(li, true);
                 if (!t) return;
-                items.push(t);
+                items.push(t); marks.push(mark);
                 /* BEUK:nestedlists — counted for the report */
                 for (let up = li.parentNode; up && up !== c; up = up.parentNode) if (epubTag(up) === "li") { ir.nestedList = (ir.nestedList || 0) + 1; break; }
               });
-              if (items.length) out.push(items.map((t, k) => (tag === "ol" ? (start + k) + ". " : "- ") + t).join("\n"));
+              if (items.length) out.push(marks.some(Boolean) ? irListGiven(items.map((t, k) => ({ text: t, mark: marks[k] })), tag === "ol", start).text : items.map((t, k) => (tag === "ol" ? (start + k) + ". " : "- ") + t).join("\n"));
               c.querySelectorAll("img").forEach((img) => image(img, ""));
               return;
             }
@@ -45149,15 +45288,21 @@
                join it flat; pictures inside items follow the list. */
             const lis = node.querySelectorAll("li");
             const start = tag === "ol" ? Math.max(1, parseInt(node.getAttribute("start") || "1", 10) || 1) : 1;
-            const lines = [];
+            const lines = [], given = [];
             lis.forEach((li, k) => {
               const own = carry(irRunsToMd(irInlineRuns(li, ir, true), ir, false));
-              if (own) lines.push((tag === "ol" ? (start + lines.length) + ". " : "- ") + own);
+              if (own) { lines.push((tag === "ol" ? (start + lines.length) + ". " : "- ") + own); given.push({ text: own, mark: li.getAttribute("data-mark") || "" }); }
               /* BEUK:nestedlists — an item of a list set inside another item: a line of its own, counted for the report */
               if (own && li.parentElement && li.parentElement.closest("li")) ir.nestedList = (ir.nestedList || 0) + 1;
             });
+            /* BEUK:listmarkstyped — where the reader handed over the marks the file shows (data-mark on an item: a web
+               page's item that opens on its own mark, a Word or OpenDocument list's drawn number or bullet), each item
+               is stored under its own (irListGiven); a list with none is written as it always was */
+            if (given.some((g) => g.mark)) parts.push(irListGiven(given, tag === "ol", start).text);
+            else {
             if (tag === "ul" && lines.length === 1) lines[0] = lines[0].slice(2); /* one bullet reads as a paragraph */
             if (lines.length) parts.push(lines.join("\n"));
+            }
             lis.forEach((li) => pushImages(li, (img) => img.closest("li") === li));
           } else if (tag === "table") {
             /* BEUK:tablerows — its own rows, each cell with its italic, bold, links and note marks; a table nested in a cell is a table of its own, after its parent */
@@ -53397,12 +53542,18 @@
       let docxNums = [];
       function buildDocxNumberingXml() {
         const lvl = (fmt, text) => '<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="' + fmt + '"/><w:lvlText w:val="' + text + '"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr></w:lvl>';
+        const more = [];
+        const absOf = (n) => { if (n.abs != null) return n.abs; let i = more.findIndex((d) => d.fmt === n.fmt && d.text === n.text); if (i < 0) i = more.push({ fmt: n.fmt, text: n.text }) - 1; return 3 + i; };
+        docxNums.forEach(absOf);
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
           '<w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="singleLevel"/>' + lvl("bullet", "\u2022") + "</w:abstractNum>" +
           '<w:abstractNum w:abstractNumId="1"><w:multiLevelType w:val="singleLevel"/>' + lvl("decimal", "%1.") + "</w:abstractNum>" +
           '<w:abstractNum w:abstractNumId="2"><w:multiLevelType w:val="singleLevel"/>' + lvl("decimal", "%1)") + "</w:abstractNum>" + /* BEUK:listmarksgiven — a number the writer closed with a bracket, "1)" */
-          docxNums.map((n, i) => '<w:num w:numId="' + (i + 1) + '"><w:abstractNumId w:val="' + n.abs + '"/>' +
-            (n.abs !== 0 ? '<w:lvlOverride w:ilvl="0"><w:startOverride w:val="' + n.start + '"/></w:lvlOverride>' : "") + "</w:num>").join("") +
+          /* BEUK:listmarkstyped — a definition for each further kind of mark the document's lists hold (a lettered or Roman
+             numbering, one in brackets, a bullet of the writer's own), in the order met, after the three that are always there */
+          more.map((d, i) => '<w:abstractNum w:abstractNumId="' + (3 + i) + '"><w:multiLevelType w:val="singleLevel"/>' + lvl(d.fmt, esc(d.text)) + "</w:abstractNum>").join("") +
+          docxNums.map((n, i) => '<w:num w:numId="' + (i + 1) + '"><w:abstractNumId w:val="' + absOf(n) + '"/>' +
+            (n.abs !== 0 && n.fmt !== "bullet" ? '<w:lvlOverride w:ilvl="0"><w:startOverride w:val="' + n.start + '"/></w:lvlOverride>' : "") + "</w:num>").join("") +
           "</w:numbering>";
       }
       function docxContentParas(raw) {
@@ -53441,13 +53592,29 @@
                numbering instance of its own that starts at its number: real Word numbering (the paragraphs are still a
                list in Word), showing 1. 2. 4. for a list stored so. A list numbered on in steps of one is one instance,
                as it always was. */
-            let numId = 0, prevN = null, prevAbs = -1;
+            /* BEUK:listmarkstyped — and the marks as typed. A lettered or Roman list, or one in brackets, is Word numbering
+               of that kind ("%1.", "%1)", "(%1)" in lowerLetter, upperLetter, lowerRoman, upperRoman or decimal),
+               wherever Word's own counting writes the mark exactly as the writer typed it; a bullet that is not the
+               book's disc ("+", "◆", "●"), and any mark Word would write otherwise ("(03)"), is a list paragraph under
+               that mark itself. "-", "*" and "•" are the book's bullet, as they were. */
+            let numId = 0, prevN = null, prevKey = "";
+            const defOf = (k) => {
+              const m = list.marks[k];
+              if (!list.ordered) { const shown = listMarkShown(m); return shown === "•" ? { abs: 0 } : { fmt: "bullet", text: shown, own: true }; }
+              if (!list.series) return { abs: /\)$/.test(m) ? 2 : 1 };
+              const open = list.shape.charAt(0) === "(" ? "(" : "", close = list.shape.charAt(list.shape.length - 1), body = m.slice(open.length, m.length - 1), up = list.shape.indexOf("A") !== -1, n = list.nums[k];
+              const made = list.series === "num" ? String(n) : list.series === "roman" ? listToRoman(n) : listToAlpha(n);
+              if ((up ? made.toUpperCase() : made) !== body) return { fmt: "bullet", text: m, own: true };
+              return { fmt: list.series === "num" ? "decimal" : (up ? "upper" : "lower") + (list.series === "roman" ? "Roman" : "Letter"), text: open + "%1" + close };
+            };
             list.items.forEach((it, k) => {
+              const def = defOf(k), key = def.abs != null ? "#" + def.abs : def.fmt + " " + def.text;
               if (list.ordered) {
-                const n = list.nums[k], abs = /\)$/.test(list.marks[k]) ? 2 : 1;
-                if (!numId || n !== prevN + 1 || abs !== prevAbs) numId = docxNums.push({ abs, start: n });
-                prevN = n; prevAbs = abs;
-              } else if (!numId) numId = docxNums.push({ abs: 0, start: 1 });
+                const n = list.nums[k];
+                if (!numId || n !== prevN + 1 || key !== prevKey || def.own) numId = docxNums.push(Object.assign({ start: n }, def));
+                prevN = n;
+              } else if (!numId || key !== prevKey) numId = docxNums.push(Object.assign({ start: 1 }, def));
+              prevKey = key;
               into.push('<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="' + numId + '"/></w:numPr></w:pPr>' + docxInlineRuns(it) + "</w:p>");
             });
             return;
@@ -71998,7 +72165,8 @@
             const page = '<html><body><h1>Chapter 1: Stores</h1><p>Counted twice.</p><ul class="custom-list"><li data-level="0"><span class="g" aria-hidden="true">◆</span><span class="b"><strong>Bread</strong></span><ul><li><span aria-hidden="true">◇</span><span>Rye</span>' +
               '<ul><li><span aria-hidden="true">❧</span><span>Dark rye</span></li></ul></li><li><span aria-hidden="true">◇</span><span>Wheat</span></li></ul></li><li><span aria-hidden="true">◆</span><span>Water</span></li></ul>' + tail + "</body></html>";
             const hd = await htmlRead(page, []);
-            irCheckRun(() => { const rep = importDocxConverted("fixture.html", hd.html, hd.messages, hd.scan, hd.identity, null, "html"); judge("web page", rep, FLAT.replace("- Bread", "- **Bread**"), 3); if (/[◆◇❧]/.test(chapter().join(NL))) bad.push("web page: a bullet the page drew itself came in as a word"); });
+            /* BEUK:listmarkstyped — each item under the bullet the page gives it ("◆", "◇", "❧": the book's list reads them now; this pinned them left out and every item set under "-"), and never among the item's words */
+            irCheckRun(() => { const rep = importDocxConverted("fixture.html", hd.html, hd.messages, hd.scan, hd.identity, null, "html"); judge("web page", rep, ["◆ **Bread**", "◇ Rye", "❧ Dark rye", "◇ Wheat", "◆ Water"].join(NL), 3); if (chapter().join(NL).split(NL).some((l) => /[◆◇❧]/.test(l.slice(1)))) bad.push("web page: a bullet the page drew itself came in as a word"); });
             /* OpenDocument */
             const ns = 'xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0"';
             const li = (text, sub) => "<text:list-item><text:p>" + text + "</text:p>" + (sub || "") + "</text:list-item>", ul = (inner) => "<text:list>" + inner + "</text:list>";
@@ -72030,7 +72198,8 @@
             irCheckRun(() => {
               const rep = importPlainManuscript("fixture.txt", txt);
               const got = chapter(), it = (rep ? rep.items : []).filter((i) => i.kind === "nestedList");
-              if (got.indexOf("Stores on hand") === -1 || got.indexOf(["- Bread and", "salt", "- Rye", "- Water"].join(NL)) === -1) bad.push("plain text: the list came in as " + JSON.stringify(got.slice(1)));
+              /* BEUK:listmarkstyped — under the bullets as typed (this pinned "◆" and "◇" set as "-") */
+              if (got.indexOf("Stores on hand") === -1 || got.indexOf(["◆ Bread and", "salt", "◇ Rye", "◆ Water"].join(NL)) === -1) bad.push("plain text: the list came in as " + JSON.stringify(got.slice(1)));
               if (it.length !== 1 || it[0].data.n !== 1) bad.push("plain text: nested items reported " + JSON.stringify(it.map((i) => i.data)) + ", not 1");
             });
             return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Word, web page, OpenDocument, RTF, Markdown and plain text: every nested item a line of its own, in order, once, and counted in one line of the report");
@@ -77032,7 +77201,8 @@
               const blocks = one.split(/\n\s*\n/);
               const bad = [];
               if (body.length !== 2) bad.push(body.length + " chapters, not 2");
-              if (blocks.indexOf("- Bread\n- Rye\n- Dark rye\n- Wheat\n- Water") === -1) bad.push("the nested list came in as " + JSON.stringify(blocks.filter((b) => /Bread|Rye|Wheat|Water/.test(b))));
+              /* BEUK:listmarkstyped — the two items the book gives a bullet of its own ("◆", "◇") keep it (this pinned every item under "-"); the three it gives none have the book's */
+              if (blocks.indexOf("◆ Bread\n◇ Rye\n- Dark rye\n- Wheat\n- Water") === -1) bad.push("the nested list came in as " + JSON.stringify(blocks.filter((b) => /Bread|Rye|Wheat|Water/.test(b))));
               const nl = rep.items.filter((it) => it.kind === "nestedList");
               if (nl.length !== 1 || nl[0].data.n !== 3 || nl[0].group !== "notes") bad.push("the three nested items are not reported in one line: " + JSON.stringify(nl.map((i) => i.data)));
               if (blocks.indexOf("The stores were counted *twice* before dark.") === -1) bad.push("the <div> paragraph is not one paragraph");

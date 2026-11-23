@@ -31,6 +31,8 @@ function attributesOf(spec: NodeSpec | MarkSpec): Attributes {
 const str = (v: unknown): string => (v == null ? '' : String(v));
 /** A numbered item's mark as the book stores it: the number, then "." or ")". */
 const LIST_NUMBER_MARK = /^(\d{1,3})[.)]$/;
+/** The bullets every list of them is drawn with the book's own disc for: "-", "*", "•". */
+const LIST_OWN_BULLET = /^[-*•]$/;
 
 const SAFE_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
 
@@ -64,14 +66,21 @@ const NODE_DOM: Record<string, (node: PMNode) => DOMOutputSpec> = {
   quote: () => ['blockquote', { class: 'ms-quote' }, 0],
   quoteLine: () => ['p', { class: 'ms-qline' }, 0],
   list: (n) => {
-    const m = LIST_NUMBER_MARK.exec(listMark(n.firstChild?.attrs.marker));
-    return m ? ['ol', { class: 'book-list ms-list', ...(m[1] !== '1' && { start: String(parseInt(m[1]!, 10)) }) }, 0] : ['ul', { class: 'book-list ms-list' }, 0];
+    const first = listMark(n.firstChild?.attrs.marker);
+    const m = LIST_NUMBER_MARK.exec(first);
+    if (m) return ['ol', { class: 'book-list ms-list', ...(m[1] !== '1' && { start: String(parseInt(m[1]!, 10)) }) }, 0];
+    return [LIST_OWN_BULLET.test(first) || !/[A-Za-z0-9]/.test(first) ? 'ul' : 'ol', { class: 'book-list ms-list' }, 0];
   },
   // BEUK:listmarksgiven — each numbered item is drawn under the number the book stores for it (<li value>, as the
-  // typeset page sets it): the editor counted on from the first number, so a list stored 3. 7. 9. was drawn 3, 4, 5
+  // typeset page sets it): the editor counted on from the first number, so a list stored 3. 7. 9. was drawn 3, 4, 5.
+  // BEUK:listmarkstyped — and an item whose mark the list's own number or disc does not draw ("2)", "b.", "iv.",
+  // "(c)", "+", "◆", "●") is drawn under that mark as typed (data-mark, set by shell.css in the marker's place)
   listItem: (n) => {
-    const m = LIST_NUMBER_MARK.exec(listMark(n.attrs.marker));
-    return m ? ['li', { value: String(parseInt(m[1]!, 10)) }, 0] : ['li', 0];
+    const mark = listMark(n.attrs.marker);
+    const m = LIST_NUMBER_MARK.exec(mark);
+    const own = m ? mark.endsWith('.') : LIST_OWN_BULLET.test(mark) || mark === '';
+    const attrs = { ...(m && { value: String(parseInt(m[1]!, 10)) }), ...(!own && { class: 'ms-li-typed', 'data-mark': mark }) };
+    return ['li', attrs, 0];
   },
   rawBlock: () => ['pre', { class: 'ms-raw' }, 0],
 };

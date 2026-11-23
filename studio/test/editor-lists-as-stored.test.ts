@@ -88,6 +88,32 @@ describe('the editor draws a list as the book stores it', () => {
   });
 });
 
+describe('the editor draws an item under the mark the writer typed (BEUK:listmarkstyped)', () => {
+  const marks = (ed: Editor) => Array.from(ed.view.dom.querySelectorAll('ol, ul')).map((l) => l.tagName.toLowerCase() + ' ' + Array.from(l.querySelectorAll('li')).map((x) => (x.getAttribute('data-mark') ?? '') + (x.getAttribute('value') ? '=' + x.getAttribute('value') : '')).join(' '));
+  it('a letter, a Roman numeral, a mark in brackets, a number closed with a bracket, a bullet of the writer\'s own: each item carries its mark; the book\'s own number and disc are drawn as they were', () => {
+    const ed = mount(fragOf('a. one\nb. two\n\niv. one\nv. two\n\n(1) one\n(2) two\n\n2) one\n3) two\n\n+ one\n+ two\n\n5. one\n9. two\n\n◆ one\n- two\n● three\n\nThen.\n\n* one\n* two'));
+    expect(marks(ed)).toEqual(['ol a. b.', 'ol iv. v.', 'ol (1) (2)', 'ol 2)=2 3)=3', 'ul + +', 'ol =5 =9', 'ul ◆  ●', 'ul  ']);
+    expect(ed.view.dom.querySelectorAll('li.ms-li-typed').length).toBe(12);
+    expect(Array.from(ed.view.dom.querySelectorAll('p')).map((p) => p.textContent), 'none of the lists is a paragraph').toEqual(['Then.']);
+  });
+  it('a name, and letters that do not climb, stay paragraphs', () => {
+    const ed = mount(fragOf('A. Conan Doyle wrote of a hound.\n\nQ. What did the clerk see?\nA. Nothing at all.'));
+    expect(ed.view.dom.querySelectorAll('li').length).toBe(0);
+    expect(ed.view.dom.querySelectorAll('p').length).toBe(2);
+  });
+  it('open, type one character in one item, close the chapter: the marks and the other items are as stored', () => {
+    const stored = 'They came so:\n\niv. the pilot\nv. the clerk\nvii. the boy\n\n◆ a lantern\n\n◆ a chart case\n\n(a) first\n(b) then';
+    const frag = fragOf(stored);
+    const ed = mount(frag);
+    expect(marks(ed)).toEqual(['ol iv. v. vii.', 'ul ◆ ◆', 'ol (a) (b)']);
+    typeAfter(ed, 'the clerk', 'x');
+    typeAfter(ed, 'chart case', 'x');
+    flushNormalize(ed);
+    expect(fragmentText(frag)).toBe(stored.replace('the clerk', 'the clerkx').replace('chart case', 'chart casex'));
+    expect(marks(ed)).toEqual(['ol iv. v. vii.', 'ul ◆ ◆', 'ol (a) (b)']);
+  });
+});
+
 describe('editing one item of such a list writes back exactly what was stored for the others', () => {
   const cases: [string, string, string, string][] = [
     ['stored numbers', NUMBERS, 'first dog watch', NUMBERS.replace('first dog watch', 'first dog watchx')],

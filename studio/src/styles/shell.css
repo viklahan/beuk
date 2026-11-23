@@ -323,6 +323,10 @@ body.zen .pane-fold { display: none; }
 .ms-editor .ms-quote { margin: 0 0 .9em; padding-inline-start: 14px; border-inline-start: 3px solid var(--line-2); font-style: italic; }
 .ms-editor .ms-quote .ms-qline { margin: 0; }
 .ms-editor .ms-list { margin: 0 0 .9em; padding-inline-start: 1.6em; }
+/* BEUK:listmarkstyped — an item under the mark the writer typed ("2)", "b.", "iv.", "(c)", "+", "◆", "●"): the list's
+   own number or disc is off for it and its mark stands in the marker's place, as its own characters */
+.ms-editor .ms-list li.ms-li-typed { list-style: none; position: relative; }
+.ms-editor .ms-list li.ms-li-typed::before { content: attr(data-mark); position: absolute; inset-inline-end: 100%; margin-inline-end: .4em; white-space: nowrap; }
 .ms-editor .ms-rawinline { font-family: var(--mono-font); font-size: .85em; }
 .ms-editor a { color: var(--accent); }
 @media (max-width: 560px) { .ms-editor { padding: 28px 22px; } }

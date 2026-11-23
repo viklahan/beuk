@@ -17,9 +17,9 @@ import { importFile, setupImport, written, type Got } from './import-given';
      writer closed with a bracket ("1)") is numbered from a definition that closes on a bracket ("%1)");
    - the Markdown export writes the block as stored, as it always did.
 
-   NOT done, and pinned here so it cannot be mistaken for done: on the page a number closed with a bracket is still
-   shown closed with a full stop ("1)" is shown "1."). The number is right; the mark after it is the stylesheet's.
-   Setting it needs a rule in the book's own stylesheet, which every EPUB carries. */
+   Done since (BEUK:listmarkstyped): on the page a number closed with a bracket was shown closed with a full stop
+   ("1)" shown "1."), and this file pinned that. Such a list is now set under its marks as typed (book-list-typed:
+   each item's mark its own characters, the list's own marker off by a rule in the book's stylesheet). */
 
 const LAST = 'The pans lay white.';
 const MD = ['# Chapter 1', '1. gap one\n2. gap two\n4. gap four', 'Between the lists a line of text.', '3. from three\n7. then seven\n9. then nine', 'And another line of text.',
@@ -43,7 +43,7 @@ describe('every surface sets a list\'s numbers as the book stores them', () => {
     const page = files.filter((f) => /\.xhtml$/.test(f.path) && f.content.indexOf('gap one') !== -1).map((f) => f.content).join('');
     expect(page).toContain('<ol class="book-list"><li>gap one</li><li>gap two</li><li value="4">gap four</li></ol>');
     expect(page).toContain('<ol class="book-list" start="3"><li>from three</li><li value="7">then seven</li><li value="9">then nine</li></ol>');
-    expect(page).toContain('<ol class="book-list"><li>bracket one</li><li>bracket two</li><li value="5">bracket five</li></ol>');
+    expect(page).toContain('<ol class="book-list book-list-typed"><li><span class="li-mark">1) </span>bracket one</li><li><span class="li-mark">2) </span>bracket two</li><li value="5"><span class="li-mark">5) </span>bracket five</li></ol>');
     /* a list numbered on in steps of one is written as it always was */
     expect(page).toContain('<ol class="book-list"><li>plain one</li><li>plain two</li><li>plain three</li></ol>');
   });
