@@ -39799,12 +39799,12 @@
               const sub = irJoinGiven(headOf(it)); /* BEUK:joinsgiven — a sub-heading is never parted: its lines as the file gave them */
               let line = "# " + sub;
               if (IR_REC) { IR_REC.subs = IR_REC.subs || []; IR_REC.subs.push(sub); line = irSent("SUB", IR_REC.subs.length - 1); }
+              host.bodyText = [host.bodyText, line, it.bodyText].filter(Boolean).join("\n\n");
+              it.cls = "skip";
               /* BEUK:headdepths — the headings that stood under it stand under it still: each one depth further down
                  (they were counted from this heading while it opened a section of its own; now it is a sub-heading
                  itself, and they were coming in beside it, at its own depth) */
               if (IR_REC && it.bodyText) String(it.bodyText).replace(new RegExp(irSent("SUB", "(\\d+)"), "g"), (m0, n) => { IR_REC.subDepths = IR_REC.subDepths || {}; IR_REC.subDepths[n] = Math.min(IR_HEAD_DEEPEST, (IR_REC.subDepths[n] || 1) + 1); return m0; });
-              host.bodyText = [host.bodyText, line, it.bodyText].filter(Boolean).join("\n\n");
-              it.cls = "skip";
               return;
             }
             const head = headOf(it);
