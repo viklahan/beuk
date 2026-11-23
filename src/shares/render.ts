@@ -134,6 +134,16 @@ function inline(text: string, notes: NoteCtx): string {
   return s;
 }
 
+/* BEUK:breaksshown — a line break the writer made inside a paragraph is stored marked, a backslash straight
+   before the newline (client/index.html holds the rule, in contentBlocksToHtml). The reading copy sets it as a
+   line break and no backslash; a bare newline is the space it always was. The break rides through inline() as one
+   private-use character, so emphasis may run over it. */
+const BREAK_MARK = '\\\n';
+const BREAK_HELD = String.fromCharCode(0xe070);
+const paraLine = (block: string): string =>
+  block.indexOf(BREAK_MARK) === -1 ? block.replace(/\n/g, ' ') : block.split(BREAK_MARK).map((part) => part.replace(/\n/g, ' ')).join(BREAK_HELD);
+const breaksShown = (html: string): string => (html.indexOf(BREAK_HELD) === -1 ? html : html.split(BREAK_HELD).join('<br>'));
+
 function parseImageLine(line: string): { alt: string; id: string; full: boolean } | null {
   const m = /^!\[([^\]]*)\]\(img:([A-Za-z0-9-]+)(\|full)?\)$/.exec(String(line ?? '').trim());
   return m ? { alt: m[1], id: m[2], full: !!m[3] } : null;
@@ -203,7 +213,7 @@ function sectionBody(sec: RawSection, index: number, ctx: RenderCtx, shown: stri
     if (lines.some((l) => parseImageLine(l))) {
       let buf: string[] = [];
       const flush = () => {
-        if (buf.length) out.push(`<p data-p="${p}">${inline(buf.join(' '), notes)}</p>`);
+        if (buf.length) out.push(`<p data-p="${p}">${breaksShown(inline(paraLine(buf.join('\n')), notes))}</p>`);
         buf = [];
       };
       for (const l of lines) {
@@ -219,7 +229,8 @@ function sectionBody(sec: RawSection, index: number, ctx: RenderCtx, shown: stri
     }
     if (lines.every((l) => l.startsWith('>'))) {
       out.push(
-        `<blockquote data-p="${p}">${lines.map((l) => inline(l.replace(/^>\s?/, ''), notes)).join('<br>')}</blockquote>`,
+        // BEUK:breaksshown: a quotation's lines are lines already; the mark's backslash on a line another follows is not set
+        `<blockquote data-p="${p}">${lines.map((l, k) => inline((k < lines.length - 1 ? l.replace(/\\$/, '') : l).replace(/^>\s?/, ''), notes)).join('<br>')}</blockquote>`,
       );
       return;
     }
@@ -231,7 +242,7 @@ function sectionBody(sec: RawSection, index: number, ctx: RenderCtx, shown: stri
       out.push(`<h3 data-p="${p}">${inline(block.slice(2), notes)}</h3>`);
       return;
     }
-    out.push(`<p data-p="${p}">${inline(block.replace(/\n/g, ' '), notes)}</p>`);
+    out.push(`<p data-p="${p}">${breaksShown(inline(paraLine(block), notes))}</p>`);
   });
   if (endnotes.length) {
     out.push(
