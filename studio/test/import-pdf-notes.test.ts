@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { CLEAR, blocksOf, figures, importFile, pdf, setupImport, written, type Got, type PdfLine } from './import-given';
 
@@ -53,11 +54,14 @@ const seen = (name: string, g: Got) => { if (process.env.BEUK_NOTES_OUT) appendF
 beforeAll(async () => { await setupImport('import-pdf-notes'); }, 180_000);
 
 describe('notes gathered at a chapter\'s end', () => {
-  /* two chapters numbered through (1, 2 | 3); "10" with a raised 3 stands in the first, and note 3 is the second's */
+  /* two chapters numbered through (1, 2 | 3); "10" with a raised 3 stands in the first, and note 3 is the second's.
+     The first chapter's notes stand a page after its first mark: a run at the chapter's end. The second's stand on
+     the page of their mark. */
   const through = (): PdfLine[] => [
     head('Chapter One'),
     up('The salt was taxed by the sack at the quay gate', '1', ' and the pans were let by the'),
     t('year to whoever would pay for them in kind.', 30),
+    { page: true },
     ...fill(3),
     up('A heap of 10', '3', ' sacks stood on the mole when the ferry came in at the turn of the'),
     t('tide, and nobody counted them twice.'),
@@ -139,6 +143,7 @@ describe('notes gathered at a chapter\'s end', () => {
       head('Chapter One'),
       up('The salt was taxed by the sack at the quay gate', '1', ' and the pans were let by the'),
       t('year to whoever would pay for them in kind.', 30),
+      { page: true },
       ...fill(3),
       up('The gate was shut at dusk.', '2', '', 30),
       note('1. A sack held two bushels of coarse salt.'),
@@ -152,6 +157,58 @@ describe('notes gathered at a chapter\'s end', () => {
     seen('run-turn', g);
     expect(defs(g, 0)).toEqual(['[^1]: A sack held two bushels of coarse salt.', '[^2]: The gate stood at the east mole, and its keeper was paid by the year, in salt.']);
     expect(text(g, 1)).toEqual([FILLED(3)]);
+    expect(figures(g)).toEqual(CLEAR);
+  }, 120_000);
+
+  it('notes set only a little smaller than the text (10.5 against 11, as the Meridian PDFs\' 9.8 against 10.2), under a tall space: they are notes, and the space above them is no scene break of the story', async () => {
+    /* the reader took a tall space between two lines of about the text's size for a scene break: with the notes read
+       as lines of the text, each chapter whose notes began in mid-page got a "***" of Beuk's own above them */
+    const near = (s: string, gap = 14): PdfLine => ({ text: s, size: 10.5, gap });
+    const g = await importFile('near-size.pdf', await pdf([
+      head('Chapter One'),
+      up('The salt was taxed by the sack at the quay gate', '1', ' and the pans were let by the'),
+      t('year to whoever would pay for them in kind.', 30),
+      { page: true },
+      ...fill(3),
+      up('The gate was shut at dusk.', '2', '', 60),
+      near('1. A sack held two bushels of coarse salt.'),
+      near('2. The gate stood at the east mole, and its keeper'),
+      near('was paid by the year.'),
+    ]), '');
+    seen('near-size', g);
+    expect(text(g)).toEqual([
+      'The salt was taxed by the sack at the quay gate[^1] and the pans were let by the year to whoever would pay for them in kind.',
+      FILLED(3),
+      'The gate was shut at dusk.[^2]',
+    ]);
+    expect(defs(g)).toEqual(['[^1]: A sack held two bushels of coarse salt.', '[^2]: The gate stood at the east mole, and its keeper was paid by the year.']);
+    expect(g.rep.items.filter((i) => i.kind === 'break')).toEqual([]);
+    expect(figures(g)).toEqual(CLEAR);
+  }, 120_000);
+
+  it('notes gathered at the book\'s end, numbered through the book: each mark carries the one note of its number, set in the mark\'s own chapter', async () => {
+    const g = await importFile('book-end.pdf', await pdf([
+      head('Chapter One'),
+      up('The salt was taxed by the sack at the quay gate', '1', ' and the pans were let by the'),
+      t('year to whoever would pay for them in kind.', 30),
+      ...fill(3),
+      { page: true },
+      head('Chapter Two'),
+      up('The ferry ran at the turn of the tide', '2', ' and carried the post.', 30),
+      ...fill(3),
+      { page: true },
+      head('Chapter Three'),
+      ...fill(3),
+      note('1. A sack held two bushels of coarse salt.'),
+      note('2. It carried no passengers in winter.'),
+    ]), '');
+    seen('book-end', g);
+    expect(text(g, 0)[0]).toBe('The salt was taxed by the sack at the quay gate[^1] and the pans were let by the year to whoever would pay for them in kind.');
+    expect(defs(g, 0)).toEqual(['[^1]: A sack held two bushels of coarse salt.']);
+    expect(text(g, 1)[0]).toBe('The ferry ran at the turn of the tide[^2] and carried the post.');
+    expect(defs(g, 1)).toEqual(['[^2]: It carried no passengers in winter.']);
+    expect(blocks(g, 2)).toEqual([FILLED(3)]);
+    expect(notesSaid(g)).toEqual({ found: 2, refs: 2, mapped: 2, orphans: 0 });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
@@ -279,7 +336,9 @@ describe('a raised number inside a table\'s cell', () => {
 });
 
 describe('notes at the foot of a page', () => {
-  const RULE = '____________';
+  /* a rule of hyphens: twelve characters of the file. One of underscores is a rule too, but an underscore is a mark of
+     the book's own, counted on neither side of the tally (irTallyWordsOf): it is set aside and its row holds nothing. */
+  const RULE = '------------', UNDER = '____________';
   /* a full page of the text (twelve lines) whose last line the page turn cuts, and its notes at the page's foot */
   const pageOne = (foot: PdfLine[]): PdfLine[] => [
     head('Chapter One'),
@@ -313,11 +372,11 @@ describe('notes at the foot of a page', () => {
       'It was the last boat of the day.',
     ]);
     expect(defs(g)).toEqual(['[^1]: A sack held two bushels of coarse salt.', '[^2]: The gate stood at the east mole, and its keeper was paid by the year.', '[^3]: It carried no passengers in winter.']);
-    expect(all(g)).not.toContain('_');
+    expect(all(g)).not.toContain('---');
     // the two rules, twelve characters each, in a row of their own; the three marks and "1.", "2.", "3."
     expect(g.tally.aside.noteRules).toBe(24);
     expect(g.tally.aside.noteMarks).toBe(9);
-    expect(item(g, 'pdfNoteRules')).toEqual([{ n: 2, before: undefined }]);
+    expect(item(g, 'pdfNoteRules')).toEqual([{ n: 2, before: '' }]);
     expect(notesSaid(g)).toEqual({ found: 3, refs: 3, mapped: 3, orphans: 0 });
     expect(row(g, 'noteRefs')).toEqual({ file: 3, book: 3, why: [] });
     expect(row(g, 'noteDefs')).toEqual({ file: 3, book: 3, why: [] });
@@ -342,14 +401,17 @@ describe('notes at the foot of a page', () => {
   it('a note the page turn cuts goes on at the foot of the next page, above that page\'s own notes, where the page shows it: under the rule, or its sentence still open', async () => {
     for (const rule of [true, false]) {
       const g = await importFile('foot-turn.pdf', await pdf([
-        ...pageOne([...(rule ? [note(RULE, 12, 120)] : []), note('1. A sack held two bushels of coarse salt.', 11, 108), note('2. The gate stood at the east mole, and its keeper was a man the')]),
-        ...pageTwo([...(rule ? [note(RULE, 12, 120)] : []), note('harbour master paid by the year, in salt.', 11, 108), note('3. It carried no passengers in winter.')]),
+        ...pageOne([...(rule ? [note(UNDER, 12, 120)] : []), note('1. A sack held two bushels of coarse salt.', 11, 108), note('2. The gate stood at the east mole, and its keeper was a man the')]),
+        ...pageTwo([...(rule ? [note(UNDER, 12, 120)] : []), note('harbour master paid by the year, in salt.', 11, 108), note('3. It carried no passengers in winter.')]),
       ]), '');
       seen('foot-turn ' + rule, g);
       expect(defs(g), rule ? 'under a rule' : 'no rule').toEqual(['[^1]: A sack held two bushels of coarse salt.', '[^2]: The gate stood at the east mole, and its keeper was a man the harbour master paid by the year, in salt.', '[^3]: It carried no passengers in winter.']);
       expect(text(g)[1]).toBe(TURNED);
       expect(text(g).length).toBe(4);
       expect(item(g, 'pdfNoteUnsure')).toEqual([]);
+      expect(all(g)).not.toContain('_');
+      expect(item(g, 'pdfNoteRules')).toEqual(rule ? [{ n: 2, before: '' }] : []);
+      expect(g.tally.aside.noteRules).toBeUndefined();
       expect(figures(g)).toEqual(CLEAR);
     }
   }, 240_000);
@@ -365,4 +427,38 @@ describe('notes at the foot of a page', () => {
     expect(item(g, 'pdfNoteUnsure')).toEqual([{ n: 1, notes: ['2'], before: '“2”' }]);
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
+});
+
+/* The Meridian test book's two PDFs (the owner's untracked book: BEUK_MERIDIAN_PDFS names their folder; skipped, and
+   said so, where they are not). Its Word file holds 121 notes. Both PDFs set each chapter's notes in a run at the
+   chapter's end, 9.8 points against a text of 10.2, each under its number and a stop. Measured 2026-11-23: 109 of the
+   121 raised numbers stand against a word of the text (96) or of a table's cell (13) and carry their note; 12, one a
+   chapter, stand after a space in a line set in a typewriter face (a log, kept as typed), 7% smaller than it: no
+   raised mark by the reader's rule, so those 12 notes stay paragraphs where they stood, each named in the report. */
+const PDFS = process.env.BEUK_MERIDIAN_PDFS || '';
+describe.skipIf(!PDFS)('the Meridian test book\'s PDFs' + (PDFS ? '' : ' — SKIPPED: set BEUK_MERIDIAN_PDFS to the folder that holds the two PDFs'), () => {
+  const labelOf = (d: string) => /^\[\^(\d+)\]/.exec(d)![1];
+  for (const file of ['meridian-plain.pdf', 'meridian-heads.pdf']) {
+    const there = !!PDFS && existsSync(path.join(PDFS, file));
+    it.skipIf(!there)(file + ': 109 notes linked, nine a chapter and one in the appendix; the 12 no raised number marks named; the tally\'s two sides counted' + (there ? '' : ' — SKIPPED: the file is not there'), async () => {
+      const g = await importFile(file, new Uint8Array(readFileSync(path.join(PDFS, file))), '');
+      const chaps = chapters(g);
+      expect(chaps.length).toBe(12);
+      expect(chaps.map((c, k) => defs(g, k).length)).toEqual(Array.from({ length: 12 }, () => 9));
+      // each note under the number the PDF shows (the first chapter's are 2 to 11 less 7: the appendix holds note 1)
+      expect(defs(g, 0).map(labelOf)).toEqual(['2', '3', '4', '5', '6', '8', '9', '10', '11']);
+      // and each mark in its own chapter, against its word
+      chaps.forEach((c, k) => {
+        const marks = text(g, k).join('\n').match(/\S\[\^\d+\](?!:)/g) || [];
+        expect(marks.map((m) => m.slice(3, -1)).sort()).toEqual(defs(g, k).map(labelOf).sort());
+      });
+      expect(notesSaid(g)).toEqual({ found: 121, refs: 109, mapped: 109, orphans: 12 });
+      expect(item(g, 'noteOrphan').map((o) => (o as { n?: string }).n)).toEqual(['7', '17', '27', '37', '47', '57', '67', '77', '87', '97', '107', '117']);
+      expect(row(g, 'noteRefs')).toEqual({ file: 109, book: 109, why: [] });
+      expect(row(g, 'noteDefs')).toEqual({ file: 121, book: 109, why: [['notesOrphan', 12, 1]] });
+      // the digits of the 109 marks (230) and the numbers their notes open on, each with its stop (339)
+      expect(g.tally.aside.noteMarks).toBe(569);
+      expect(figures(g)).toEqual(CLEAR);
+    }, 600_000);
+  }
 });

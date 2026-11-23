@@ -81,9 +81,18 @@ export const MERIDIAN_INVENTORY: Record<string, Inventory> = {
      figure does not move. The tables themselves now hold what the Word file's hold: 24 tables, 94 rows, 322 cells, each of the 298
      cells with text whole and in its place (none was before), and a hyphen at the end of a cell's line is settled like any other
      (49 of them: 21 kept, their word standing whole elsewhere; 28 left for the writer: the tables' own 27 codes, "VIE-04-A" to
-     "BER-12-B" and "CH-1A", "CH-5A", "CH-9A", and "Cross-checks"); none is taken off. */
-  'pdf-plain': { file: 319802, book: 317686, aside: { titlePage: 256, contents: 848, tableHeads: 928, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [], pdf: { raw: 319802, joins: {}, rejoined: 0 } },
+     "BER-12-B" and "CH-1A", "CH-5A", "CH-9A", and "Cross-checks"); none is taken off.
+     The noteMarks row (BEUK:pdfnotes, 2026-11-23): the PDF sets each chapter's notes in a run at the chapter's end, each under its number
+     and a stop. 109 of its 121 notes are carried by a raised number that stands against a word of the text or of a table's cell: each of
+     those is a note of the book now ("[^n]" against the word, "[^n]: …" in the mark's section, n the number the PDF shows), and the
+     mark's digits (230 in all) and the number and stop its note opens on (339) are the note's own marks, which the book writes itself:
+     569, set aside. The book held them as text and was 317686: 317686 - 569 = 317117. The other 12 notes (7, 17, … 117: one a chapter)
+     are marked by a number that stands after a space in a line set in a typewriter face (a log, kept as typed), 7% smaller than the
+     line: no raised mark by the reader's rule (15% smaller, against its word). Each stays a paragraph where it stood, its number with
+     it, and is named in the report; nothing of it is set aside. The file's figure does not move. */
+  'pdf-plain': { file: 319802, book: 317117, aside: { titlePage: 256, contents: 848, tableHeads: 928, noteMarks: 569, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [], pdf: { raw: 319802, joins: {}, rejoined: 0 } },
   /* as the plain PDF, with its running heads and page numbers set aside (the file was 325398 and the book 318558: each was 56 more after the hyphen rule;
-     the book is 928 fewer since a table's repeated first row is set aside, as in the plain PDF) */
-  'pdf-heads': { file: 325454, book: 317686, aside: { pageNumbers: 756, titlePage: 256, contents: 848, headers: 4896, tableHeads: 928, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [], pdf: { raw: 325454, joins: {}, rejoined: 0 } },
+     the book is 928 fewer since a table's repeated first row is set aside, as in the plain PDF, and 569 fewer since 109 notes are notes:
+     the same notes, the same 569) */
+  'pdf-heads': { file: 325454, book: 317117, aside: { pageNumbers: 756, titlePage: 256, contents: 848, headers: 4896, tableHeads: 928, noteMarks: 569, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [], pdf: { raw: 325454, joins: {}, rejoined: 0 } },
 };

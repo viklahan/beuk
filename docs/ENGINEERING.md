@@ -5386,6 +5386,53 @@ import).
   the same number of lines, set with no space between them, in a table that
   has a taller gap elsewhere and a hyphenated word over a line's end (its
   band is read as one row: nothing on the page tells its rows apart).
+- **Footnotes** are linked where the page shows them (BEUK:pdfnotes, in
+  `pdfLayout`, before and after the flow). A PDF holds no note: only a
+  raised number in the text (a digit run 15% smaller than the piece it
+  stands against, its baseline raised a quarter of the line's size) and a
+  block of text that opens on the same number.
+  - *A note's text* opens on a number and a stop or bracket (`7. …`,
+    `7) …`) or on the number raised and small; it is set smaller than the
+    text (three hundredths of the text's size or more, measured to the
+    twentieth of a point: `zx`, since `size` is rounded to the half point
+    and notes at 9.8 against 10.2 are both 10); and it stands where notes
+    stand: at the foot of a page (every line from it to the page's last is
+    small, and the first that opens on a number opens on one a raised mark
+    of that page carries), or in a run of such lines, over page turns, from
+    a line that opens on a number a raised mark before it carries down to a
+    heading (or a heading's own label line) or the end of the book. Inside
+    such a place a line begins a note where its number is greater than the
+    note before it and a raised mark carries it or it is the next number.
+  - *Which mark carries which note* is settled after the flow: a foot note
+    by the raised marks of its number on its own page, above it; a note of
+    a chapter's run by the marks of its number in its own chapter that have
+    no nearer note after them (numbers that begin again in every chapter
+    pair chapter by chapter); a note of a run in a part of the book with no
+    marks of its own (notes at the book's end) only where one chapter alone
+    has marks of that number left and it is the one such note.
+  - A linked mark becomes `[^n]` against its word, in a paragraph or a
+    table's cell; the note's text is handed to `irFinish` as a Word file's
+    is (`ir.docNotes`, set in the section its mark stands in) under a
+    working number, written back as the number the PDF shows
+    (`ir.mdNoteLabels`, BEUK:notelabels). The mark's digits and the number
+    the note opens on are counted in the tally's `noteMarks` row; the
+    tally's file side counts the notes the pages show and the marks that
+    carry one.
+  - A raised number with no such note stays the number it was. A note no
+    raised number marks stays a paragraph where it stood, its number with
+    it, and is named (`noteOrphan`). A note cut by the page turn goes on
+    in the lines above the next page's own notes where they stand under a
+    rule or the note had left its sentence open; otherwise they stay text
+    and `pdfNoteUnsure` names the note. A rule of characters over a page's
+    notes is set aside (`noteRules`, `pdfNoteRules`).
+  Not read: a note under a bare number and a space (`7 Text`: a turned
+  line opens so too), except under Beuk's own NOTES label (BEUK:pdfback);
+  notes under a sign (an asterisk, a dagger); notes at the text's own size;
+  notes at the book's end whose numbers begin again in every chapter; pages
+  in columns; a raised number inside a line set in a typewriter face (a log
+  holds its lines as typed); a drawn rule, and the PDF's own links from a
+  mark to its note and back (`pdfExtract` reads text only). A return arrow
+  printed after a note's text is the PDF's text and stays in the note.
 - **Right to left.** A line mostly in a right-to-left script (Hebrew,
   Arabic, Syriac, Thaana, N'Ko) is read from its right edge, and its
   column's paragraph rules are mirrored (the indent at the right, the
@@ -5406,9 +5453,10 @@ import).
   picture; its words, if any, not read — run OCR first). Password-protected
   and unreadable files get their own message.
 
-The report adds what only a PDF import knows: the layout caveat (footnotes
-arrive as plain text where they stood; drawings made of lines are not
-imported), italic/bold counts, rejoined hyphens, columned pages, small-cap
+The report adds what only a PDF import knows: the layout caveat (a footnote
+is linked where the page shows its raised number and its note under the
+same number, any other arrives as plain text where it stood; drawings made
+of lines are not imported), italic/bold counts, rejoined hyphens, columned pages, small-cap
 openings, running heads left out (each distinct line with its count), pages read
 right to left, pages with no text layer, unreadable glyphs, contents pages, the
 half-title, backgrounds, decorations, stencils, repeats, rotated text and
