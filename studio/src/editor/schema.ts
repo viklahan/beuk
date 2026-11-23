@@ -1,6 +1,6 @@
 import { Mark, Node, type AnyExtension, type Attributes } from '@tiptap/core';
 import type { MarkSpec, NodeSpec, DOMOutputSpec, Node as PMNode, Mark as PMMark } from '@tiptap/pm/model';
-import { bookSchema, listMark } from '@book/editor/index.js';
+import { bookSchema, headingLevel, listMark } from '@book/editor/index.js';
 
 /* The TipTap editor's schema, GENERATED from Part B's bookSchema
    (src/book/editor/schema.ts) so the two cannot drift: the same node and
@@ -62,7 +62,8 @@ const NODE_DOM: Record<string, (node: PMNode) => DOMOutputSpec> = {
   container: (n) => ['div', { class: 'ms-container', 'data-open': str(n.attrs.open) }, 0],
   // wave 2a (B6): 1.0's emitText draws "# " as h2.inhead and "## " as h3.inhead, a quote as a blockquote, a list as
   // ul/ol.book-list (an ordered list starts at its first number)
-  heading: (n) => [Number(n.attrs.level) === 2 ? 'h3' : 'h2', { class: 'inhead ms-heading' }, 0],
+  // BEUK:headdepths: and "### " to "##### " as h4 to h6 (a heading at each depth a section holds)
+  heading: (n) => ['h' + (headingLevel(n.attrs.level) + 1), { class: 'inhead ms-heading' }, 0],
   quote: () => ['blockquote', { class: 'ms-quote' }, 0],
   quoteLine: () => ['p', { class: 'ms-qline' }, 0],
   list: (n) => {

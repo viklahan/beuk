@@ -2,7 +2,7 @@
    ProseMirror schema, the lossless text <-> document converter, and the
    Y.Doc book model with import and export. The React app imports it through
    its `@book` alias. */
-export { bookSchema, DELIMITED_MARKS, LINE_BLOCKS, textblockPrefix, listMark } from './schema.js';
+export { bookSchema, DELIMITED_MARKS, LINE_BLOCKS, textblockPrefix, listMark, headingLevel } from './schema.js';
 export { toDoc, toText, blockText, blocksText, inlineText, blockCoverage, normalizeBlock, normalizeDoc, canApplyMark, canSetLink } from './convert.js';
 export type { ConvertStats, BlockFix } from './convert.js';
 export { importBook, exportBook, fragmentText, sectionPlain, escKey, unwrapBackup, BookImportError, BookExportError, META, SECTIONS, LAYOUT, BODY } from './model.js';

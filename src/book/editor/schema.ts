@@ -66,7 +66,9 @@ const nodes: Record<string, NodeSpec> = {
   },
 
   /** A heading block (1.0's emitText): "# " (level 1, 1.0's h2) or "## " (level 2, 1.0's h3) and the block's text. A
-   *  line break inside stays a "\n" character, as in a paragraph. Wave 2a (B6). */
+   *  line break inside stays a "\n" character, as in a paragraph. Wave 2a (B6).
+   *  BEUK:headdepths: and "### ", "#### ", "##### " (levels 3 to 5, 1.0's h4 to h6): a section holds a heading at
+   *  five depths, so that a file's headings below its chapters each keep the depth the writer gave them. */
   heading: { group: 'block', content: 'text*', marks: '_', whitespace: 'pre', attrs: { ...blockAttrs, level: { default: 1 } } },
 
   /** A quotation block: every line starts with ">" (1.0's emitText). One quoteLine per line, joined by "\n". */
@@ -119,13 +121,20 @@ export function listMark(marker: unknown): string {
   return String(marker ?? '').trim();
 }
 
+/** A heading node's level as the book holds one: 1 to 5 ("# " to "##### "); anything else an edit can leave reads
+ *  as level 1, as it always did. BEUK:headdepths. */
+export function headingLevel(level: unknown): number {
+  const n = Number(level);
+  return n === 2 || n === 3 || n === 4 || n === 5 ? n : 1;
+}
+
 /** The text a textblock writes before its inline content (convert.ts blockText): a note definition's "[^n]: ", a
  *  heading's "# ", a quote line's ">", a list item's marker. "" for the others. */
 export function textblockPrefix(node: import('prosemirror-model').Node): string {
   const a = node.attrs;
   switch (node.type.name) {
     case 'footnoteDef': return '[' + (a.caret ? '^' : '') + String(a.n) + ']:' + String(a.gap);
-    case 'heading': return (Number(a.level) === 2 ? '## ' : '# ');
+    case 'heading': return '#'.repeat(headingLevel(a.level)) + ' ';
     case 'quoteLine': return String(a.prefix);
     case 'listItem': return String(a.marker);
     default: return '';

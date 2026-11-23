@@ -236,12 +236,13 @@ function sectionBody(sec: RawSection, index: number, ctx: RenderCtx, shown: stri
       );
       return;
     }
-    if (block.startsWith('## ')) {
-      out.push(`<h4 data-p="${p}">${inline(block.slice(3), notes)}</h4>`);
-      return;
-    }
-    if (block.startsWith('# ')) {
-      out.push(`<h3 data-p="${p}">${inline(block.slice(2), notes)}</h3>`);
+    // BEUK:headdepths: a heading inside a section at each depth the book holds ("# " to "##### "). Under the
+    // chapter's h2: "# " h3 and "## " h4, as they were, "### " h5 and "#### " h6; a page has no h7, so the fifth
+    // depth is an h6 too. Before, a block of three or more "#" was a paragraph with its marks showing.
+    const hd = /^#{1,5} /.exec(block);
+    if (hd) {
+      const tag = 'h' + Math.min(6, hd[0].length + 1);
+      out.push(`<${tag} data-p="${p}">${inline(block.slice(hd[0].length), notes)}</${tag}>`);
       return;
     }
     out.push(`<p data-p="${p}">${breaksShown(inline(paraLine(block), notes))}</p>`);

@@ -4904,8 +4904,7 @@ milestone — no server changes needed.
 After every import (`.docx`, `.md`, `.txt`) the studio opens a
 **"Here's what we changed"** report, grouped and counted, with
 before/after snippets. It records chapter splits (and the heading or
-line each came from — Heading 2 is reported as promoted, Heading 3–6
-as demoted to body text), front matter carved out by shape (copyright,
+line each came from), front matter carved out by shape (copyright,
 epigraph, dedication, title-page lines), scene breaks (including spaced
 markers such as `* * *`, now read as breaks), smartened quotes/dashes/
 ellipses per section, footnotes (Word notes are linked as Beuk `[^n]`
@@ -4939,7 +4938,8 @@ plain text, and writes the formatting back in Beuk's own marks:
 italic → `*words*`, bold → `**words**`, bold italic → `***words***`,
 and a link to a web (`http://`, `https://`) or mail (`mailto:`) address
 → `[words](address)` (the links markup the rest of the studio renders).
-This holds in body paragraphs, demoted subheadings (Heading 3–6), quote
+This holds in body paragraphs, headings below a chapter's first
+sub-heading (see "Heading levels" below), quote
 paragraphs (the quote's lines kept together as one `> ` block), list
 items and footnotes. A paragraph in Word's Quote style (and Beuk's own
 Quote Attribution, written under it by the Word export) is mapped to a
@@ -4984,6 +4984,41 @@ emphasis around its span so the XHTML stays well-formed
 import read Word with the same Mammoth options and the same run walk,
 so their text keeps italic, bold and links too (they have no import
 report, so nothing is counted there) — `import.docx.other-paths-formatting`.
+
+### Heading levels: a heading stays a heading, at its own depth (BEUK:headlevels, BEUK:headdepths)
+
+A section's stored text holds a heading inside it as a block that opens
+on one `#` for each depth and a space: `# ` (the page's `h2`) to `##### `
+(its `h6`). Five is as deep as a page goes under the section's own `h1`;
+six `#` is a paragraph.
+
+Every reader of heading levels (Markdown and text, Word, OpenDocument,
+RTF, web pages, EPUB) asks one function, `irHeadDepths`. It ranks the
+levels the file uses (a file of Heading 1, 3 and 5 has three levels; Word
+and RTF name nine and OpenDocument ten, and each is read at the level the
+file gave it), asks `irSubHeadings` which second-level headings are
+sub-headings, and gives every heading a depth: 0 where it opens a section,
+otherwise its rank less the rank of the heading that opened its section.
+A heading the parser then sets inside the chapter before it (an unnumbered
+heading between two numbered chapters) takes the headings under it one
+depth further down. The readers hand such a heading on with `irSubHold`
+and `irFinish` writes its line.
+
+Only a depth of six or more cannot be kept (seven levels of heading in
+use in one file). That heading is set as a paragraph and listed in the
+import report ("Heading 7 became body text"); its button sets it as a
+`##### ` heading.
+
+Each surface sets a stored heading by its depth: `contentBlocksToHtml`
+(preview, EPUB, standalone page, print interior) writes `h2` to `h6` with
+the class `inhead`; the Word export uses Heading 2 to Heading 6; the
+Markdown export writes two levels below (`###` to `######`; the fifth
+depth shares Markdown's sixth level with the fourth, so it reads back as
+the fourth); the 2.0 editor's `heading` node has `level` 1 to 5; the share
+page writes `h3` to `h6`. The rules that size `h4` to `h6` are written
+into an exported stylesheet only for a book that holds such a heading.
+A PDF marks no levels: its reader finds headings by type size and hands
+each on at one depth. Tests: `studio/test/heading-levels-as-given.test.ts`.
 
 ### The book's title, subtitle and author on import (BEUK:importmeta)
 
