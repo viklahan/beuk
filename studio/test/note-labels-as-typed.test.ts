@@ -498,15 +498,16 @@ describe('notes from formats with no typed label: what each stores and shows tod
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('RTF: automatic footnotes are numbered in order; a mark the writer typed ("*") stays as text beside the number Beuk adds', async () => {
+  it('RTF: a mark the writer typed ("*") is the note\'s label, with no number of Beuk\'s beside it; automatic footnotes are numbered in order among themselves (BEUK:notemarks; test/import-rtf-note-marks.test.ts)', async () => {
     const auto = (text: string) => '{' + rw('super') + rw('chftn') + '}{' + rw('footnote') + rw('pard') + rw('plain') + '{' + rw('super') + rw('chftn') + '} ' + text + '}';
     const own = (mark: string, text: string) => '{' + rw('super') + ' ' + mark + '}{' + rw('footnote') + rw('pard') + rw('plain') + '{' + rw('super') + ' ' + mark + '} ' + text + '}';
     const body = rtfH('Chapter 1: Dawn') + rw('pard') + rw('s0') + ' The caravan left' + auto('Salt, by the sack.') + ' at dawn, and' + own('*', 'The pans of the coast.') + ' on, and' + auto('The last, automatic again.') + '.' + rw('par') + '\n';
     const g = await importFile('notes.rtf', null, rtfDoc(body));
-    // OPEN: a word processor shows the writer "1, *, 2". The book shows "[1], *[2], [3]": the "*" kept as text, a number of Beuk's beside it, and the last note 3 where the file's own count gives 2.
+    // A word processor shows the writer "1, *, 2", and so does the book. (Measured 2026-11-22, before BEUK:notemarks: "[1], *[2], [3]": the "*"
+    // kept as text, a number of Beuk's beside it, and the last note 3 where the file's own count gives 2.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^1] at dawn, and*[^2] on, and[^3].', '[^1]: Salt, by the sack.', '[^2]: * The pans of the coast.', '[^3]: The last, automatic again.'],
-      marks: ['[1]', '[2]', '[3]'], notes: ['[1] Salt, by the sack.', '[2] * The pans of the coast.', '[3] The last, automatic again.'] });
+      stored: ['The caravan left[^1] at dawn, and[^*] on, and[^2].', '[^1]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^2]: The last, automatic again.'],
+      marks: ['[1]', '[*]', '[2]'], notes: ['[1] Salt, by the sack.', '[*] The pans of the coast.', '[2] The last, automatic again.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
