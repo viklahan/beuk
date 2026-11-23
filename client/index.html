@@ -43909,6 +43909,27 @@
              where the surfaces read it as a mark (lineBreakMarksOff). The file's side has none to take off, but for a
              Markdown file's own backslash breaks, which irTallyText takes off by the same rule. */
           c = lineBreakMarksOff(c); /* after a raw container's lines are held out: nothing in a log is a mark */
+          /* ==== BEUK:notemarks, a number in brackets that is no note's ==== A text file's "a stray[3]" with no "[3]" entry
+             under NOTES is the writer's text, and is stored as typed. The file's side counts its "3" as a character; this
+             side took every bare "[n]" for a note's mark and counted none of it: "1 character of the file unaccounted".
+             Both sides now count alike: a bare "[n]" that no note of its section answers ("[^n]: …" or "[n]: …" there)
+             is read here as the number it holds, a word of its own as the file's side reads it. Not so read: the number
+             Beuk itself sets before a note that was found and could not be linked ("[5] The note…", named in the report
+             as a note with no mark), which the file's side has set aside with the notes' own numbers; a link's or a
+             picture's words in brackets. (The typeset page still raises a bare "[n]", as it always did.) */
+          if (c.indexOf("[") !== -1) {
+            const answered = new Set();
+            c.split(/\n\s*\n/).forEach((b) => { const d = /^\s*\[\^?(\d{1,3})\]:/.exec(b); if (d) answered.add(d[1]); });
+            const kept = new Set(items.filter((it) => it.kind === "noteOrphan" && it.where && it.where.secId === s.id && it.data && /^\d{1,3}$/.test(String(it.data.n))).map((it) => String(it.data.n)));
+            const whole = c;
+            c = whole.replace(/\[(\d{1,3})\](?![:(])/g, (m0, n, at) => {
+              if (answered.has(n) || (at > 0 && whole.charAt(at - 1) === "!")) return m0;
+              const opens = at === 0 || (whole.charAt(at - 1) === "\n" && (at === 1 || whole.charAt(at - 2) === "\n"));
+              if (opens && kept.has(n)) return m0;
+              return " " + n + " ";
+            });
+          }
+          /* ==== /BEUK:notemarks, a number in brackets that is no note's ==== */
           /* a page with no text is the book's only where its heading is the file's: a Part, a chapter not yet written, a
              named page the file opened with its heading (BEUK:importtally) */
           if (!/\S/.test(c) && s.type !== "part" && !(s.kind === "body" && s.type === "chapter") && !named.has(s.id)) return;

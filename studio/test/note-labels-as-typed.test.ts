@@ -541,7 +541,8 @@ describe('notes from formats with no typed label: what each stores and shows tod
       stored: ['The caravan left[^5] at dawn, and[^9] on, and a stray[3].', '[^5]: Salt, by the sack.', '[^9]: The pans of the coast.'],
       // the stray "[3]" is stored as typed; the typeset page raises a bare "[n]" as a mark with no note, as it always did
       marks: ['[5]', '[9]', '~[3]'], notes: ['[5] Salt, by the sack.', '[9] The pans of the coast.'] });
-    // OPEN (found, not changed): the tally counts the stray "3" in the file and not in the book, whose count takes a bare "[3]" for a note's mark: 1 unaccounted
-    expect(figures(g)).toEqual({ counted: true, unaccounted: 1, same: false, fileOnly: [['3', 1]], bookOnly: [] });
+    // the stray "3" is a character of the file and of the book: both sides of the tally count it (BEUK:notemarks; test/import-stray-bracket-number.test.ts).
+    // (Measured 2026-11-22: 1 unaccounted, the book's side taking the bare "[3]" for a note's mark.)
+    expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 });
