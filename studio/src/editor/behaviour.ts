@@ -285,7 +285,16 @@ export const BookBehaviour = Extension.create<BehaviourOptions>({
   addKeyboardShortcuts() {
     const newline = (): boolean => {
       const { state, view } = this.editor;
-      if (!state.selection.$from.parent.isTextblock) return false;
+      const { empty, $from } = state.selection;
+      if (!$from.parent.isTextblock) return false;
+      /* BEUK:breaksshown — Enter straight after a mark ends the paragraph there: the mark's backslash goes (left
+         as the paragraph's last character it would be no mark, and the page would show it), and the two newlines
+         that part the paragraphs stand */
+      const at = $from.parentOffset;
+      if (empty && $from.parent.type.name === 'paragraph' && at >= LINE_BREAK.length && $from.parent.textBetween(at - LINE_BREAK.length, at) === LINE_BREAK) {
+        view.dispatch(state.tr.insertText('\n\n', $from.pos - LINE_BREAK.length, $from.pos).scrollIntoView());
+        return true;
+      }
       view.dispatch(state.tr.insertText('\n').scrollIntoView());
       return true;
     };

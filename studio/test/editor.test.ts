@@ -156,6 +156,21 @@ describe('typing and normalising (constraints 3 and 4)', () => {
     expect(fragmentText(frag)).not.toContain(BS);
   });
 
+  it('Enter straight after a mark ends the paragraph there: the mark\'s backslash goes, so none is left for the page to show', () => {
+    const BS = String.fromCharCode(92);
+    const { frag } = fragOf('First line\n\nSecond.');
+    const ed = mount(frag);
+    ed.commands.setTextSelection(1 + 'First line'.length);
+    ed.commands.keyboardShortcut('Shift-Enter');
+    expect(fragmentText(frag)).toBe('First line' + BS + '\n\n\nSecond.');
+    ed.commands.keyboardShortcut('Enter');
+    ed.view.dispatch(ed.state.tr.insertText('third'));
+    expect(fragmentText(frag)).toBe('First line\n\nthird\n\nSecond.');
+    ed.view.dispatch(ed.state.tr.setSelection(TextSelection.atEnd(ed.state.doc)));
+    expect(blockTexts(ed)).toEqual(['paragraph:First line', 'paragraph:third', 'paragraph:Second.']);
+    expect(fragmentText(frag)).not.toContain(BS);
+  });
+
   it('Enter inserts "\\n" inside the paragraph; two make a blank line that splits the block once the selection leaves', () => {
     const { frag } = fragOf('First line\n\nSecond.');
     const ed = mount(frag);
