@@ -486,14 +486,15 @@ describe('notes from formats with no typed label: what each stores and shows tod
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('OpenDocument: every note is numbered in order; the writer\'s own mark (text:label "*") is set aside with the citations and a number shown in its place', async () => {
+  it('OpenDocument: the writer\'s own mark (text:label "*") is the note\'s label; the notes the application numbers are numbered in order among themselves (BEUK:notemarks; test/import-odt-note-marks.test.ts)', async () => {
     const note = (id: string, cite: string, label: string | null, text: string) => '<text:note text:id="' + id + '" text:note-class="footnote"><text:note-citation' + (label ? ' text:label="' + label + '"' : '') + '>' + cite + '</text:note-citation><text:note-body><text:p>' + text + '</text:p></text:note-body></text:note>';
     const body = oh('Chapter 1: Dawn') + '<text:p>The caravan left' + note('ftn1', '1', null, 'Salt, by the sack.') + ' at dawn, and' + note('ftn2', '*', '*', 'The pans of the coast.') + ' on, and' + note('ftn3', '2', null, 'The last, automatic again.') + '.</text:p>';
     const g = await importFile('notes.odt', await odt(body), '');
-    // OPEN: the file shows the writer "1, *, 2". The book shows "[1], [2], [3]": the writer's "*" is replaced by 2, and the last note is 3 where the file showed 2.
+    // The file shows the writer "1, *, 2", and so does the book. (Measured 2026-11-22, before BEUK:notemarks: "[1], [2], [3]": the writer's "*"
+    // replaced by 2, and the last note 3 where the file showed 2.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^1] at dawn, and[^2] on, and[^3].', '[^1]: Salt, by the sack.', '[^2]: The pans of the coast.', '[^3]: The last, automatic again.'],
-      marks: ['[1]', '[2]', '[3]'], notes: ['[1] Salt, by the sack.', '[2] The pans of the coast.', '[3] The last, automatic again.'] });
+      stored: ['The caravan left[^1] at dawn, and[^*] on, and[^2].', '[^1]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^2]: The last, automatic again.'],
+      marks: ['[1]', '[*]', '[2]'], notes: ['[1] Salt, by the sack.', '[*] The pans of the coast.', '[2] The last, automatic again.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 

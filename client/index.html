@@ -41241,7 +41241,8 @@
         if (!notes.length) return "";
         return "<ol>" + notes.map((nt, k) => docsNoteLi(k + 1, nt)).join("") + "</ol>";
       }
-      const docsNoteRef = (n) => '<sup><a href="#footnote-' + n + '" id="footnote-ref-' + n + '">[' + n + "]</a></sup>";
+      /* BEUK:notemarks — mark: the mark the file itself gives the note (the Word walk reads it as the note's label, data-ir-mark); unread: the file gives one that cannot be a label */
+      const docsNoteRef = (n, mark, unread) => '<sup><a href="#footnote-' + n + '" id="footnote-ref-' + n + '"' + (mark ? ' data-ir-mark="' + docsEsc(mark) + '"' : unread ? ' data-ir-unread="1"' : "") + ">[" + n + "]</a></sup>";
       /* Formatting Beuk keeps no mark for — underline, strike-through, super- and subscript, small capitals, a
          typewriter font — is never passed over in silence: each reader says where a passage of it begins, in the
          tags the Word walk already counts (<u>, <s>, <sup>, <sub>) and two of its own (<span data-ir="sc">,
@@ -41375,8 +41376,18 @@
               const body = Array.prototype.filter.call(c.children, (k) => is(k, "text", "note-body"))[0];
               const text = body ? Array.prototype.map.call(body.getElementsByTagNameNS(NS.text, "p"), (p) => inline(p, { b: false, i: false })).filter(Boolean).join(" ") : "";
               notes.push(text);
-              Array.prototype.forEach.call(c.children, (k) => { if (is(k, "text", "note-citation")) irAside("noteMarks", k.textContent); });
-              out += docsNoteRef(notes.length);
+              /* BEUK:notemarks — a citation that carries text:label is the writer's own mark for the note (LibreOffice: Insert
+                 Footnote, Character): it is the note's label in the book. A citation with no label is a number the
+                 application draws itself, and the book numbers those in order among themselves, as the application does.
+                 Either way the citation's characters are set aside as a note's mark, as before. */
+              let given = null, unread = false;
+              Array.prototype.forEach.call(c.children, (k) => {
+                if (!is(k, "text", "note-citation")) return;
+                irAside("noteMarks", k.textContent);
+                const own = at(k, "text", "label");
+                if (own) { given = irNoteMarkLabel(own); unread = given == null; }
+              });
+              out += docsNoteRef(notes.length, given, unread);
               return;
             }
             if (is(c, "office", "annotation")) { counts.comments++; irAside("comments", Array.prototype.map.call(c.getElementsByTagNameNS(NS.text, "p"), (p) => p.textContent).join("\n")); return; }
@@ -45927,7 +45938,7 @@
           let given = a.getAttribute("data-ir-mark");
           const own = wordMark(href);
           if (own && own.mark) { given = own.mark; let nx = host.nextSibling; while (nx && nx.nodeType === 3 && !nx.nodeValue) nx = nx.nextSibling; if (cutMark(inkText(nx), own.mark, false)) irAside("noteMarks", own.mark); }
-          if (notesById[href]) { if (given != null && given !== "") notesById[href].given = given; else if (own) notesById[href].unread = true; }
+          if (notesById[href]) { if (given != null && given !== "") notesById[href].given = given; else if (own || a.hasAttribute("data-ir-unread")) notesById[href].unread = true; }
           host.replaceWith(doc.createTextNode("[^" + m[1] + "]"));
         });
         /* BEUK:tableimport — a paragraph the Word file styles as a caption (irDocxParaAligns: tcap) standing directly
