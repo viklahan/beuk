@@ -38,7 +38,7 @@ const ORNAMENT_RE = /^(\*\*\*|❦|⁂)$/;
 const NOTE_DEF_LINE_RE = /^\[(?:\^[^\]\s]+|\d{1,3})\]:/;
 const NOTE_DEF_RE = /^\[(\^[^\]\s]+|\d{1,3})\]:(\s*)([\s\S]+)$/;
 const IMAGE_LINE_RE = /^!\[([^\]]*)\]\(img:([A-Za-z0-9-]+)(\|full)?(?:([ \t]+)(["“”])([^"“”\n]*)(["“”]))?\)$/;
-const LIST_BULLET = /^[-*•]\s+/;
+const LIST_BULLET = /^[-*+•‣⁃■-➿]\s+/; // BEUK:listmarkstyped — "-", "*", "+", "•", "‣", "⁃" and U+25A0 to U+27BF, as 1.0's
 const LIST_NUMBER = /^(\d{1,3})[.)]\s+/;
 const QUOTE_PREFIX = /^>\s?/;
 const REDACT_RE = /\|\|(?=[^|\s])([^|\n]*?[^|\s])\|\|/g;
@@ -77,20 +77,83 @@ const isImageLine = (s: string): boolean => IMAGE_LINE_RE.test(s.trim());
  *  (its marker as written, the rest its text), an unmarked line continues the item above it ("\n" and the line, kept
  *  in the item's text). Null when 1.0 does not read the block as a list. */
 function listItemsOf(lines: string[], raw: string[]): { marker: string; text: string }[] | null {
-  const ordered = LIST_NUMBER.test(lines[0]!);
-  if (!ordered && !LIST_BULLET.test(lines[0]!)) return null;
-  const mark = ordered ? LIST_NUMBER : LIST_BULLET;
+  const fam = listFamily(lines[0]!);
+  if (!fam) return null;
   const items: { marker: string; text: string }[] = [];
+  const tms: TypedMark[] = [];
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i]!, r = raw[i]!;
-    if (mark.test(l)) {
-      const m = mark.exec(r)![0];
+    if (fam.opens(l)) {
+      const m = fam.re.exec(r)![0];
       items.push({ marker: m, text: r.slice(m.length) });
-    } else if (!ordered && LIST_NUMBER.test(l)) return null;
+      if (fam.kind === 't') tms.push(listTypedOf(l)!);
+    } else if (fam.kind === 'b' && LIST_NUMBER.test(l)) return null;
     else items[items.length - 1]!.text += '\n' + r;
   }
-  return ordered || items.length >= 2 ? items : null;
+  if (fam.kind === 't') return listSeriesOk(tms) ? items : null;
+  return fam.kind === 'n' || items.length >= 2 ? items : null;
 }
+
+/* BEUK:listmarkstyped — 1.0's typed marks, the editor's copy (client/index.html: LIST_TYPED, listTypedOf,
+   listSeriesOf). A list's item may open on a letter ("a." "B)"), a Roman numeral up to 399 ("iv." "XII)"), or any of
+   those or a number in brackets ("(a)" "(iv)" "(3)"). Letters at the head of a line are also how a name is written,
+   so such a list is read only where two or more items carry marks of one shape that climb. */
+const LIST_TYPED = /^(?:\((\d{1,3}|[A-Za-z]{1,8})\)|([A-Za-z]{1,8})[.)])\s+/;
+type TypedMark = { shape: string; num: number; alpha: number; roman: number };
+const toRoman = (n: number): string => { let s = ''; for (const [v, r] of [[100, 'c'], [90, 'xc'], [50, 'l'], [40, 'xl'], [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']] as [number, string][]) while (n >= v) { s += r; n -= v; } return s; };
+function romanOf(s: string): number {
+  const V: Record<string, number> = { i: 1, v: 5, x: 10, l: 50, c: 100 };
+  let n = 0;
+  for (let i = 0; i < s.length; i++) { const a = V[s[i]!], b = V[s[i + 1] ?? ''] ?? 0; if (!a) return 0; n += a < b ? -a : a; }
+  return n > 0 && n < 400 && toRoman(n) === s ? n : 0;
+}
+/** A typed mark at the head of a line: its shape (the brackets or closing mark around "1", "a" or "A") and what it counts as. */
+function listTypedOf(line: string): TypedMark | null {
+  const m = LIST_TYPED.exec(line);
+  if (!m) return null;
+  const body = (m[1] || m[2])!, digits = /^\d+$/.test(body), low = body.toLowerCase();
+  if (!digits && body !== low && body !== body.toUpperCase()) return null;
+  const alpha = !digits && low.length <= 3 && low === low.charAt(0).repeat(low.length) ? (low.length - 1) * 26 + low.charCodeAt(0) - 96 : 0;
+  const roman = digits ? 0 : romanOf(low);
+  if (!digits && !alpha && !roman) return null;
+  return { shape: (m[1] ? '(' : '') + (digits ? '1' : body === low ? 'a' : 'A') + (m[1] ? ')' : m[0].charAt(body.length)), num: digits ? parseInt(body, 10) : 0, alpha, roman };
+}
+/** 1.0's listSeriesOf: typed marks make a list where they are two or more, of one shape, and climb as numbers, letters or Roman numerals. */
+function listSeriesOk(tms: TypedMark[]): boolean {
+  if (tms.length < 2 || tms.some((t) => t.shape !== tms[0]!.shape)) return false;
+  const climbs = (k: 'num' | 'alpha' | 'roman'): boolean => tms.every((t, i) => t[k] > 0 && (!i || t[k] > tms[i - 1]![k]));
+  return climbs('num') || climbs('alpha') || climbs('roman');
+}
+/** The kind of list a block's first line opens: its kind, the pattern of an item's mark (with its spacing), and whether a line opens an item of it. */
+function listFamily(first: string): { kind: 'n' | 'b' | 't'; re: RegExp; opens: (l: string) => boolean } | null {
+  if (LIST_NUMBER.test(first)) return { kind: 'n', re: LIST_NUMBER, opens: (l) => LIST_NUMBER.test(l) };
+  if (LIST_BULLET.test(first)) return { kind: 'b', re: LIST_BULLET, opens: (l) => LIST_BULLET.test(l) };
+  const t0 = listTypedOf(first);
+  return t0 ? { kind: 't', re: LIST_TYPED, opens: (l) => listTypedOf(l)?.shape === t0.shape } : null;
+}
+
+/* BEUK:looselists — 1.0's looseListBlocks, read by the editor too. A list whose items the writer parted with blank
+   lines is stored as typed, each item a block of its own; 1.0 reads a run of two or more such blocks that open on a
+   list's mark of one kind (a number; or "*" or "•", never "- ") as ONE list, and so does the editor now: until
+   this it drew them as paragraphs that open on an asterisk, and a numbered one as so many one-item lists.
+   Nothing new is stored and the schema is as it was. The list is one `list` node; an item that follows a blank line
+   carries, in front of its mark in `marker`, the exact text that stood between it and the item above (after the one
+   line break every list writes between two items): the blank lines and the item's own indent. So the text written
+   back is the text read, byte for byte, and a build that does not know this reading still writes the same text.
+   The plain-text shape is read as 1.0 reads it: a block of text lines whose LAST line alone opens on a mark, with the
+   next block opening on a mark of the same kind, is the paragraph of its lines and that last line the list's first
+   item (the list's `pre` holds the line break and indent between them). */
+const dropCr = (l: string): string => (l.endsWith('\r') ? l.slice(0, -1) : l);
+/** 1.0's kindOf: the kind of list a line opens ('n' a number; 'b' a bullet, any the list reads but "-"; 't' and its
+ *  shape, a typed mark), or ''. A line that is only marks ("* * *") opens none. */
+function looseKind(line: string): string {
+  const l = dropCr(line);
+  if (LIST_NUMBER.test(l)) return 'n';
+  if (LIST_BULLET.test(l)) return l.charAt(0) !== '-' && /[^\s*+•‣⁃■-➿]/.test(l) ? 'b' : '';
+  const tm = listTypedOf(l);
+  return tm ? 't' + tm.shape : '';
+}
+const firstLine = (B: string): string => { const nl = B.indexOf('\n'); return nl === -1 ? B : B.slice(0, nl); };
 
 /* ---- inline ---- */
 
@@ -351,15 +414,93 @@ function withEdges(node: Node, pre: string | null, post: string): Node {
   return node.type.create({ ...node.attrs, pre, post }, node.content, node.marks);
 }
 
+/** A block as parseBlocks cut it: [start, end) of the text and its node. `B` is its text where 1.0 reads it as an
+ *  ordinary block (no container, no stray close line, nothing kept as raw source). */
+type Unit = { start: number; end: number; node: Node; B?: string };
+
+/** BEUK:looselists — 1.0's looseListBlocks over the blocks of one run of text: each run of two or more blocks that
+ *  open on a list's mark of one kind becomes one `list` unit (see the note at looseKind). Blocks follow one another
+ *  here only where a blank line parts them, as 1.0's blocks do; a container, a raw block or a picture between two
+ *  blocks ends a run. */
+function looseLists(t: string, units: Unit[], stats?: ConvertStats): Unit[] {
+  if (units.length < 2) return units;
+  const next = (i: number): Unit | null => {
+    const a = units[i]!, b = units[i + 1];
+    return b && a.B !== undefined && b.B !== undefined && /\n[^\S\n]*\n/.test(t.slice(a.end, b.start)) ? b : null;
+  };
+  const kindOf = (u: Unit | null): string => (u && u.B !== undefined ? looseKind(firstLine(u.B)) : '');
+  const out: Unit[] = [];
+  for (let i = 0; i < units.length; i++) {
+    const u = units[i]!;
+    if (u.B === undefined) { out.push(u); continue; }
+    let k = kindOf(u), headStart = u.start, lead: Unit | null = null;
+    if (!k) {
+      // text lines whose last line alone opens on a mark, the list going on in the next block
+      const nl = u.B.lastIndexOf('\n');
+      const lastRaw = nl === -1 ? '' : u.B.slice(nl + 1);
+      const lk = lastRaw.trim() ? looseKind(lastRaw.trim()) : '';
+      if (lk && kindOf(next(i)) === lk && !u.B.slice(0, nl).split('\n').some((l) => looseKind(l.trim()))) {
+        const leadText = u.B.slice(0, nl).trimEnd();
+        let node = buildBlock(leadText, stats);
+        if (node.type.name !== 'rawBlock' && blockText(node) !== leadText) node = raw(leadText, 'mismatch', stats);
+        lead = { start: u.start, end: u.start + leadText.length, node, B: leadText };
+        headStart = u.start + nl + 1 + (lastRaw.length - lastRaw.trimStart().length);
+        k = lk;
+      }
+    }
+    if (!k) { out.push(u); continue; }
+    let j = i;
+    while (kindOf(next(j)) === k) j++;
+    const list = j > i ? looseListNode(t, units, i, j, headStart) : null;
+    if (!list) { out.push(u); continue; }
+    if (lead) out.push(lead);
+    out.push({ start: headStart, end: units[j]!.end, node: list, B: t.slice(headStart, units[j]!.end) });
+    i = j;
+  }
+  return out;
+}
+
+/** The blocks units[i..j] (the first from `headStart`) as one list of kind `k`, or null where 1.0's listItemsOf does
+ *  not read their lines as a list, or the node would not write back exactly the text it was read from. */
+function looseListNode(t: string, units: Unit[], i: number, j: number, headStart: number): Node | null {
+  const fam = listFamily(dropCr(firstLine(t.slice(headStart, units[i]!.end))));
+  if (!fam) return null;
+  const tms: TypedMark[] = [];
+  const items: { marker: string; text: string }[] = [];
+  for (let x = i; x <= j; x++) {
+    const from = x === i ? headStart : units[x]!.start;
+    let gap = '';
+    if (x > i) {
+      // between two items a list writes one "\n": what stood before it stays the upper item's own text (as the end of
+      // any item's line does), what stood after it goes in front of this item's mark
+      const between = t.slice(units[x - 1]!.end, from);
+      const nl = between.indexOf('\n');
+      if (nl === -1) return null;
+      items[items.length - 1]!.text += between.slice(0, nl);
+      gap = between.slice(nl + 1);
+    }
+    const rawLines = t.slice(from, units[x]!.end).split('\n');
+    for (let li = 0; li < rawLines.length; li++) {
+      const r = rawLines[li]!, l = dropCr(r);
+      if (fam.opens(l)) {
+        const m = fam.re.exec(r)![0];
+        if (fam.kind === 't') tms.push(listTypedOf(l)!);
+        items.push({ marker: (li === 0 ? gap : '') + m, text: r.slice(m.length) });
+      } else if (fam.kind === 'b' && LIST_NUMBER.test(l)) return null; // listItemsOf: a numbered line in a bulleted list makes it no list
+      else if (!items.length) return null;
+      else items[items.length - 1]!.text += '\n' + r;
+    }
+  }
+  const node = S.node('list', null, items.map((it) => S.node('listItem', { marker: it.marker }, inlineNodes(it.text, true))));
+  if (fam.kind === 't' && !listSeriesOk(tms)) return null; // listItemsOf: typed marks are a list only where they climb
+  return blockText(node) === t.slice(headStart, units[j]!.end) ? node : null;
+}
+
 /** A run of text -> its blocks (at least one), each carrying its exact pre, the last its post. */
 function parseBlocks(t: string, stats?: ConvertStats): Node[] {
   const lines = splitLines(t);
   const content = (L: Line): string => t.slice(L.start, L.end);
-  const units: { start: number; end: number; node: Node }[] = [];
-  const count = (node: Node): Node => {
-    if (stats && node.type.name !== 'container') { stats.blocks++; if (node.type.name === 'rawBlock') stats.raw++; }
-    return node;
-  };
+  let units: Unit[] = []; // counted for `stats` once they are final (below): a loose list is one block
 
   let i = 0;
   while (i < lines.length) {
@@ -383,10 +524,10 @@ function parseBlocks(t: string, stats?: ConvertStats): Node[] {
         const inner = t.slice(L.next, close >= 0 ? lines[close]!.start : end);
         const innerStats: ConvertStats | undefined = stats ? { blocks: 0, raw: 0, rawWhy: {} } : undefined;
         node = S.node('container', { open: c, openEol: t.slice(L.end, L.next), close: close >= 0 ? content(lines[close]!) : null }, parseBlocks(inner, innerStats));
-        if (blockText(node) !== src) node = count(raw(src, 'mismatch', stats));
+        if (blockText(node) !== src) node = raw(src, 'mismatch', stats);
         else if (stats && innerStats) mergeStats(stats, innerStats);
       } else {
-        node = count(raw(src, 'container:' + om[1]!.toLowerCase(), stats));
+        node = raw(src, 'container:' + om[1]!.toLowerCase(), stats);
       }
       units.push({ start: L.start, end, node });
       i = close >= 0 ? close + 1 : j;
@@ -406,16 +547,19 @@ function parseBlocks(t: string, stats?: ConvertStats): Node[] {
     const lastC = t.slice(lastL.start, lastL.end);
     const end = lastL.start + lastC.trimEnd().length;
     const B = t.slice(first, end);
-    let node: Node;
+    let node: Node, plain = false;
     if (CONTAINER_CLOSE_RE.test(c)) node = raw(B, 'stray-close', stats); // 1.0 drops a stray close line; kept here as source
     else {
       node = buildBlock(B, stats);
       if (node.type.name !== 'rawBlock' && blockText(node) !== B) node = raw(B, 'mismatch', stats);
+      else plain = node.type.name !== 'rawBlock';
     }
-    units.push({ start: first, end, node: count(node) });
+    units.push(plain ? { start: first, end, node, B } : { start: first, end, node });
     i = j;
   }
 
+  units = looseLists(t, units, stats);
+  if (stats) for (const u of units) if (u.node.type.name !== 'container') { stats.blocks++; if (u.node.type.name === 'rawBlock') stats.raw++; }
   if (!units.length) return [S.node('paragraph', { pre: null, post: t })];
   const out: Node[] = [];
   let at = 0;
@@ -492,7 +636,12 @@ export function normalizeBlock(parent: Node, index: number): BlockFix | 'up' | n
   const n = parent.childCount;
   const inContainer = parent.type.name === 'container';
   let from = Math.max(0, index - 1), to = Math.min(n, index + 2);
+  // BEUK:looselists — a block that opens on a list's mark may be one list with the blocks before and after it (and the
+  // last line of the block before it that list's first item): the window takes in the whole run
+  const opens = (i: number): boolean => { const s = blockText(parent.child(i)).trimStart(); return looseKind(firstLine(s)) !== ''; };
   for (;;) {
+    if (from > 0 && opens(from)) { from--; continue; }
+    if (to < n && opens(to)) { to++; continue; }
     let text = '';
     for (let i = from; i < to; i++) text += childText(parent, i);
     if (looseMarker(text)) {

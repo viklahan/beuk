@@ -370,6 +370,40 @@ test('render unit: a redaction ("||words||") never reaches the reading copy — 
   assert.match(html, /Source: <span class="redacted">█{8}<\/span>\./);
 });
 
+/* BEUK:breaksshown — a line break the writer made is stored marked (a backslash straight before the newline); the
+   reading copy sets it as a line break. A bare newline (a paragraph typed on several lines) is the space it was. */
+test('render unit: a marked line break is a line break on the reading copy and its backslash is not set; a bare newline is a space', () => {
+  const BS = String.fromCharCode(92);
+  const doc = {
+    meta: { title: 'Lines', author: 'A. Writer', language: 'en' },
+    sections: [
+      {
+        id: 'sec-l',
+        kind: 'body',
+        type: 'chapter',
+        number: '1',
+        title: 'Lines',
+        content: [
+          'She wrote the address:' + BS + '\n12 Salt Road' + BS + '\nHarbour Town',
+          'Wrapped here\nby the writer.',
+          '> The tide keeps' + BS + '\n> its own count',
+          '*An italic passage' + BS + '\nover a break* and on.',
+          'The path was C:' + BS + BS + '\nand the next line.',
+        ].join('\n\n'),
+      },
+    ],
+  };
+  const { snapshot } = renderSnapshot(doc, 'x');
+  const html = snapshot.sections.map((s) => s.html).join('');
+  assert.ok(html.includes('<p data-p="0">She wrote the address:<br>12 Salt Road<br>Harbour Town</p>'), html);
+  assert.ok(html.includes('<p data-p="1">Wrapped here by the writer.</p>'), html);
+  assert.ok(html.includes('<blockquote data-p="2">The tide keeps<br>its own count</blockquote>'), html);
+  assert.ok(html.includes('<p data-p="3"><em>An italic passage<br>over a break</em> and on.</p>'), html);
+  // a backslash the writer typed stays: only the one straight before the newline is the mark
+  assert.ok(html.includes('<p data-p="4">The path was C:' + BS + '<br>and the next line.</p>'), html);
+  assert.equal(html.split(BS).length - 1, 1);
+});
+
 test('render unit: a redaction in a picture\'s alt text or caption (inline, scene, plate) is said or barred, never its words', () => {
   const doc = {
     meta: { title: 'Exhibit', author: 'A. Writer', language: 'en' },

@@ -39,9 +39,11 @@ function env(): Rec {
   for (const n of [...ORACLE_STUBS, 'cloudHeartbeat', 'localMarkDirty', 'cloudAutosaveTick', 'renderShelfList', 'cloudLoadShelf']) if (!(n in e)) e[n] = noop;
   return e;
 }
-type PdfPage = { drawText: (s: string, o: Rec) => void };
+type PdfPage = { drawText: (s: string, o: Rec) => void; pushOperators: (...ops: unknown[]) => void; node: { setFontDictionary: (name: unknown, ref: unknown) => void } };
 type PdfFont = { widthOfTextAtSize: (s: string, n: number) => number };
-type PdfLib = { PDFDocument: { create: () => Promise<{ addPage: (s: [number, number]) => PdfPage; embedFont: (f: string) => Promise<PdfFont>; save: () => Promise<Uint8Array> }> }; StandardFonts: Record<string, string> };
+type PdfContext = { obj: (o: unknown) => unknown; register: (o: unknown) => unknown; stream: (s: string) => unknown };
+type PdfLib = { PDFDocument: { create: () => Promise<{ addPage: (s: [number, number]) => PdfPage; embedFont: (f: string) => Promise<PdfFont>; save: () => Promise<Uint8Array>; context: PdfContext }> }; StandardFonts: Record<string, string>;
+  PDFName: { of: (s: string) => unknown }; PDFHexString: { of: (s: string) => unknown }; beginText: () => unknown; endText: () => unknown; setFontAndSize: (n: string, s: number) => unknown; moveText: (x: number, y: number) => unknown; showText: (t: unknown) => unknown };
 let pdfLib: PdfLib;
 type Zip = new () => { file: (p: string, s: string, o?: Rec) => void; generateAsync: (o: Rec) => Promise<Uint8Array> };
 const zipOf = () => new ((globalThis as Rec).JSZip as Zip)();
@@ -76,6 +78,19 @@ export async function importFile(name: string, bytes: Uint8Array | null, text: s
   const rep = ((await m.api.readImportFile({ name, arrayBuffer: async () => buf(), text: async () => text })) as () => Got['rep'])();
   const doc = m.api.snapshotBookDoc() as { sections: Sec[]; images?: Rec[] };
   return { secs: doc.sections, rep, tally: rep.tally as Tally, api: m.api, images: doc.images || [] };
+}
+/** jsdom draws no canvas, and the print interior measures a running head's width on one (printFitHead): a stand-in
+ *  whose text is five units a character wide. Call after setupImport, in a test that builds the print interior. */
+export function standInCanvas(): void {
+  const ctx = { font: '', measureText: (s: string) => ({ width: String(s).length * 5 }) };
+  (globalThis as unknown as { HTMLCanvasElement: { prototype: { getContext: () => unknown } } }).HTMLCanvasElement.prototype.getContext = () => ctx;
+}
+/** The page's own functions over an empty book, no file read: for a test that sets a book's stored text itself. */
+export function freshApi(): Api {
+  document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
+  const m = make(env());
+  m.api.applyBookDoc(m.api.buildEmptyBook());
+  return m.api;
 }
 /** the sections that hold something of the file: text, or a heading of their own */
 export const written = (g: Got): Sec[] => g.secs.filter((s) => String(s.content || '').trim() || s.type === 'part' || (s.kind === 'body' && s.type === 'chapter'));
@@ -136,18 +151,35 @@ export const rtfP = (s: string) => rw('pard') + rw('s0') + ' ' + rtfEsc(s) + rw(
 export const rtfH = (s: string) => rw('pard') + rw('s1') + ' ' + rtfEsc(s) + rw('par') + '\n';
 export const rtfDoc = (body: string) => '{' + rw('rtf1') + rw('ansi') + rw('deff0') + '{' + rw('fonttbl') + '{' + rw('f0') + ' Times;}}{' + rw('stylesheet') + '{' + rw('s0') + ' Normal;}{' + rw('s1') + rw('outlinelevel0') + ' heading 1;}}\n' + body + '}';
 
-export type PdfLine = { text?: string; size?: number; x?: number; gap?: number; page?: boolean; runs?: { text: string; size?: number }[] };
-/** a PDF set in Helvetica, line by line down each page ({ page: true } starts a new page; `runs` sets pieces of several sizes on one line) */
+export type PdfLine = { text?: string; size?: number; x?: number; gap?: number; page?: boolean; runs?: { text: string; size?: number; mark?: boolean }[] };
+/** The bullets a `mark` run may be: Helvetica holds none of them, so the PDF sets each from a font of its own whose
+ *  ToUnicode map says which character the code is (as a real PDF's embedded font does). */
+const PDF_MARKS: Record<string, [string, string]> = { '●': ['80', '25CF'], '■': ['81', '25A0'], '◆': ['82', '25C6'] };
+/** a PDF set in Helvetica, line by line down each page ({ page: true } starts a new page; `runs` sets pieces of several sizes on one line;
+ *  a run marked `mark` is one of PDF_MARKS) */
 export async function pdf(lines: PdfLine[], width = 620): Promise<Uint8Array> {
   const doc = await pdfLib.PDFDocument.create();
   const font = await doc.embedFont(pdfLib.StandardFonts.Helvetica);
+  const ctx = doc.context;
+  const cmap = '/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CMapName /Marks def /CMapType 2 def 1 begincodespacerange <00> <FF> endcodespacerange '
+    + Object.keys(PDF_MARKS).length + ' beginbfchar ' + Object.values(PDF_MARKS).map(([c, u]) => '<' + c + '> <' + u + '>').join(' ') + ' endbfchar endcmap CMapName currentdict /CMap defineresource pop end end';
+  const markFont = ctx.register(ctx.obj({ Type: 'Font', Subtype: 'Type1', BaseFont: 'Helvetica', Encoding: ctx.obj({ Type: 'Encoding', BaseEncoding: 'WinAnsiEncoding', Differences: [128, 'bullet', 'bullet', 'bullet'] }), ToUnicode: ctx.register(ctx.stream(cmap)) }));
   const H = 595;
   let pg = doc.addPage([width, H]), y = H - 70;
   for (const l of lines) {
     if (l.page) { pg = doc.addPage([width, H]); y = H - 70; continue; }
     const size = l.size || 11;
     if (y < 60) { pg = doc.addPage([width, H]); y = H - 70; }
-    if (l.runs) { let x = l.x == null ? 60 : l.x; for (const r of l.runs) { pg.drawText(r.text, { x, y, size: r.size || size, font }); x += font.widthOfTextAtSize(r.text, r.size || size); } }
+    if (l.runs) {
+      let x = l.x == null ? 60 : l.x;
+      for (const r of l.runs) {
+        if (r.mark) {
+          pg.node.setFontDictionary(pdfLib.PDFName.of('FMark'), markFont);
+          pg.pushOperators(pdfLib.beginText(), pdfLib.setFontAndSize('FMark', r.size || size), pdfLib.moveText(x, y), pdfLib.showText(pdfLib.PDFHexString.of(PDF_MARKS[r.text]![0])), pdfLib.endText());
+          x += font.widthOfTextAtSize('•', r.size || size);
+        } else { pg.drawText(r.text, { x, y, size: r.size || size, font }); x += font.widthOfTextAtSize(r.text, r.size || size); }
+      }
+    }
     else pg.drawText(l.text || '', { x: l.x == null ? 60 : l.x, y, size, font });
     y -= l.gap == null ? size * 1.35 : l.gap;
   }

@@ -25,10 +25,11 @@ import markup from '../src/generated/import-markup.json';
      irFlatLists sets at the margin, one level deep): each item keeps the number and bracket, or the "-", "*" or "•",
      the writer typed. Until this test the numbers were written over from the first one in steps of one ("3. 7. 9."
      came in "3. 4. 5."), a bracket became a full stop, and a bullet under a numbered item was given a number of
-     Beuk's. A bullet the book's list has no mark for ("+", "◆") is still set as "-", and counted in the tally's row;
+     Beuk's. A bullet of the writer's own ("+", "◆") stays that bullet (BEUK:listmarkstyped: it was set as "-");
    - RTF, whose lists write their numbers out ({\listtext 5.\tab}): the number the file wrote is the number stored
-     (it was written over 1, 2, 3 whatever the file said). A mark the book's list cannot read as a number ("a.",
-     "iv.") gets the book's own, and its characters are counted in the tally's row, as they were.
+     (it was written over 1, 2, 3 whatever the file said), and so is a letter, a Roman numeral or a bullet of the
+     writer's own (BEUK:listmarkstyped: "a.", "iv." and "◆" were given the book's own). Only a mark of no form the
+     book's list reads gets the book's own, and its characters are counted in the tally's row.
 
    What each surface then SHOWS for a stored number is not held here: the preview, the EPUB and the Word export number
    an ordered list from its first item in steps of one (listItemsOf's `start`), a measured finding reported apart. */
@@ -218,10 +219,12 @@ describe('Markdown and plain text: a list set at the margin keeps each item\'s m
     expect(tally.aside.listMarks, 'no mark was taken off').toBeUndefined();
   }, 120_000);
 
-  it.each(TEXT)('%s: a bullet the book\'s list has no mark for ("+", "◆") is set as "-", and each one is counted in the tally\'s row', async (name, head) => {
+  /* BEUK:listmarkstyped — this case pinned the defect: "+" and "◆" were set as "-" and their six characters counted in the
+     tally's row as set aside. The book's list reads them now, so each stays the bullet the writer typed, in the book. */
+  it.each(TEXT)('%s: a bullet of the writer\'s own ("+", "◆", "◇") stays that bullet, and none is set aside', async (name, head) => {
     const { blocks, tally } = await importFile(name, null, file(head, '+ bread\n+ rye\n+ water', '◆ nets\n    ◇ floats\n◆ lines'));
-    expect(blocks).toEqual(['Counted twice.', '- bread\n- rye\n- water', '- nets\n- floats\n- lines']);
-    expect(tally.aside.listMarks).toBe(6); // three "+", two "◆", one "◇"
+    expect(blocks).toEqual(['Counted twice.', '+ bread\n+ rye\n+ water', '◆ nets\n◇ floats\n◆ lines']);
+    expect(tally.aside.listMarks, 'no mark was taken off').toBeUndefined();
     expect(clear(tally)).toEqual(CLEAR);
   }, 120_000);
 
@@ -247,12 +250,15 @@ describe('RTF: the number a list wrote out is the number stored', () => {
     expect(tally.aside.listMarks, 'a number or "•" at the head of a line is counted on neither side').toBeUndefined();
     expect(nested).toBe(2);
   }, 120_000);
-  it('a mark the book\'s list cannot read as a number ("a.", "ii.") gets the book\'s own, a bullet it has no mark for ("◆") is set as "-", and the characters the file wrote are counted in the tally\'s row', async () => {
-    const body = rtfPara('Counted twice.') + list(['a.', 'b.', 'c.'], 'letter') + rtfPara('Then.') + list(['i.', 'ii.', 'iii.'], 'roman') + rtfPara('Then.') + list(['◆', '◆', '◆'], 'glyph');
+  /* BEUK:listmarkstyped — this case pinned the defect: "a." "b." "c." and "i." "ii." "iii." were stored 1. 2. 3., "◆" was
+     stored "-", and the 18 characters the file wrote were counted in the tally's row as set aside. Each is stored as
+     written now. Only a mark of no form the book's list reads ("Step 1:") still gets the book's own, and is counted. */
+  it('a letter, a Roman numeral and a bullet of the writer\'s own ("a.", "ii.", "◆") are stored as the file wrote them; a mark of no form the list reads gets the book\'s own, counted in the tally\'s row', async () => {
+    const body = rtfPara('Counted twice.') + list(['a.', 'b.', 'c.'], 'letter') + rtfPara('Then.') + list(['i.', 'ii.', 'iii.'], 'roman') + rtfPara('Then.') + list(['◆', '◆', '◆'], 'glyph') + rtfPara('Then.') + list(['Step 1:', 'Step 2:', 'Step 3:'], 'step');
     const s = rtfDoc(body);
     const { blocks, tally } = await importFile('lists.rtf', new TextEncoder().encode(s), s);
-    expect(blocks).toEqual(['Counted twice.', '1. letter one\n2. letter two\n3. letter three', 'Then.', '1. roman one\n2. roman two\n3. roman three', 'Then.', '- glyph one\n- glyph two\n- glyph three']);
-    expect(tally.aside.listMarks).toBe(18); // "a." "b." "c." 6, "i." "ii." "iii." 9, "◆" three times 3
+    expect(blocks).toEqual(['Counted twice.', 'a. letter one\nb. letter two\nc. letter three', 'Then.', 'i. roman one\nii. roman two\niii. roman three', 'Then.', '◆ glyph one\n◆ glyph two\n◆ glyph three', 'Then.', '- step one\n- step two\n- step three']);
+    expect(tally.aside.listMarks).toBe(18); // "Step 1:" "Step 2:" "Step 3:", six characters each: the only marks not in the book
     expect(clear(tally)).toEqual(CLEAR);
   }, 120_000);
 });

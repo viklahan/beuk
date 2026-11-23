@@ -136,7 +136,7 @@ describe.skipIf(!present)('the same book from every format: the Meridian stress 
     expect(reads.txt.aside.headingMarks, 'the text file\'s 12 headings: "CHAPTER" 7 and the dash 1, each').toBe(96);
     expect(reads.docx.aside.headingMarks, 'the Word file\'s 12 label lines "Chapter I" over the heading: "Chapter" 7, each').toBe(84);
     expect(reads.docx.unaccounted).toBe(0);
-    expect(reads.txt.file - reads.docx.file, 'the text file holds more characters than the Word file (its typed rules, labels and note numbers)').toBe(17182);
+    expect(reads.txt.file - reads.docx.file, 'the text file holds more characters than the Word file (its typed rules, labels and note numbers)').toBe(17078); /* 17182 until BEUK:listnumbersdrawn: the Word file's count now holds the 104 bullets its lists draw, as the text file's always did */
     expect(reads.txt.aside.noteMarks, 'note numbers typed in the text, set aside (characters)').toBe(484);
     expect(reads.txt.aside.labels, 'notes labels typed, set aside (characters)').toBe(988);
     expect(reads.docx.aside.headers, 'the Word file\'s running headers, set aside (characters)').toBe(78);

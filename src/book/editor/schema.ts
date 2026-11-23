@@ -76,10 +76,14 @@ const nodes: Record<string, NodeSpec> = {
   quoteLine: { content: 'text*', marks: '_', whitespace: 'pre', attrs: { prefix: { default: '> ' } } },
 
   /** A list block (1.0's listItemsOf): bulleted ("- ", "* ", "• ", at least two items) or numbered ("1. ", "1) ").
-   *  One listItem per marked line, joined by "\n". */
+   *  One listItem per marked line, joined by "\n". A list whose items the writer parted with blank lines (1.0's
+   *  looseListBlocks: a run of blocks that each open on a number, or on "*" or "•") is one list too. */
   list: { group: 'block', content: 'listItem+', attrs: { ...blockAttrs } },
   /** One item: `marker` is the item's mark as written (LIST_BULLET / LIST_NUMBER with its spacing); the text runs on
-   *  over the unmarked lines that continue it ("\n" characters in the text, as 1.0 joins them to the item). */
+   *  over the unmarked lines that continue it ("\n" characters in the text, as 1.0 joins them to the item). Where a
+   *  blank line parts this item from the one above (BEUK:looselists), `marker` opens with what stood between them
+   *  after the list's own "\n": the blank lines and this item's indent, exactly as written, then the mark
+   *  (listMark() gives the mark alone). */
   listItem: { content: 'text*', marks: '_', whitespace: 'pre', attrs: { marker: { default: '- ' } } },
 
   /** Source text the converter does not model, verbatim. Edits as plain text. */
@@ -108,6 +112,12 @@ export const DELIMITED_MARKS = ['link', 'em', 'strong'] as const;
 
 /** Blocks whose children are LINES (textblocks written one per line, "\n" between them, each after its own prefix). */
 export const LINE_BLOCKS: ReadonlySet<string> = new Set(['quote', 'list']);
+
+/** A list item's mark as the writer typed it ("3.", "2)", "-", "*", "•"): its `marker` without the blank lines and
+ *  indent that may stand before the mark and the spacing after it. */
+export function listMark(marker: unknown): string {
+  return String(marker ?? '').trim();
+}
 
 /** The text a textblock writes before its inline content (convert.ts blockText): a note definition's "[^n]: ", a
  *  heading's "# ", a quote line's ">", a list item's marker. "" for the others. */
