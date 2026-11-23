@@ -190,13 +190,18 @@ test('rtf: the text-only reader (shelf bulk import, box-set volumes) writes Beuk
   const part = /\n(\s*const PART_HEAD_RE = [^\n]+)\n/.exec(html)![1];
   const levels = /\/\* ==== BEUK:headlevels ==== \*\/([\s\S]*?)\/\* ==== \/BEUK:headlevels ==== \*\//.exec(html)![1];
   /* and, for a list, the marks the book's list reads and the one writer of a list under the marks the file gave
-     (BEUK:listmarkstyped: the list's own patterns, the bullets, irListGiven). rtfRead itself asks nothing outside its block. */
+     (BEUK:listmarkstyped: the list's own patterns, the bullets, irListGiven); and, for a note, what a mark of the writer's is and the
+     labels a file's notes take (BEUK:notemarks: noteIsMark, irNoteMarkLabel, irNoteMarksGiven). */
   const between = (a: string, b: string) => { const i = html.indexOf(a), j = html.indexOf(b, i); assert.ok(i >= 0 && j > i, `the block ${a} is in the studio`); return html.slice(i, j); };
   const lists = [between('/* ==== BEUK:listmarkstyped ==== The book', '/* ==== /BEUK:listmarkstyped ==== */'), /\n(\s*const IR_LIST_GLYPHS = [^\n]+)\n/.exec(html)![1],
     between('/* ==== BEUK:listmarkstyped (the readers) ====', '/* ==== /BEUK:listmarkstyped (the readers) ==== */')].join('\n');
+  const noteMarks = [between('/* ==== BEUK:notemarks ==== (V', '/* ==== /BEUK:notemarks ==== */'), between('/* ==== BEUK:notemarks, the readers ====', '/* ==== /BEUK:notemarks, the readers ==== */')].join('\n');
   const sandbox: Record<string, unknown> = { TextDecoder, btoa, Uint8Array, String };
-  vm.runInNewContext([vocab, part, levels, marks, lists, block, 'this.toText = (s) => rtfToManuscriptText(rtfRead(s));'].join('\n'), sandbox);
+  vm.runInNewContext([vocab, part, levels, marks, lists, noteMarks, block, 'this.toText = (s) => rtfToManuscriptText(rtfRead(s));'].join('\n'), sandbox);
   const toText = sandbox.toText as (s: string) => string;
+  /* BEUK:notemarks — a note the writer gave a mark of their own goes into the text under that mark, the numbered notes counted among themselves */
+  assert.equal(toText(String.raw`{\rtf1\ansi{\stylesheet{\s1 heading 1;}}\pard\s1 One\par\pard Left{\super\chftn}{\footnote\pard{\super\chftn} A note.} and{\super *}{\footnote\pard{\super *} A starred note.} on{\super\chftn}{\footnote\pard{\super\chftn} Another.}.\par}`),
+    '# One\n\nLeft[^1] and[^*] on[^2].\n\n[^1]: A note.\n\n[^*]: A starred note.\n\n[^2]: Another.');
   const out = toText(String.raw`{\rtf1\ansi{\stylesheet{\s1 heading 1;}}\pard\s1 One\par\pard It was {\i dark}.{\super\chftn}{\footnote\pard{\super\chftn} A note.}\par{\listtext 1.\tab}\ls1 Step\par\pard\s1 Two\par\pard The end.\par}`);
   assert.equal(out, '# One\n\nIt was *dark*.[^1]\n\n1. Step\n\n[^1]: A note.\n\n# Two\n\nThe end.');
 });
@@ -210,8 +215,10 @@ test('rtf: the text-only reader keeps a Heading 2 inside its Heading 1 chapter (
   const part = /\n(\s*const PART_HEAD_RE = [^\n]+)\n/.exec(html)![1];
   const levels = /\/\* ==== BEUK:headlevels ==== \*\/([\s\S]*?)\/\* ==== \/BEUK:headlevels ==== \*\//.exec(html);
   assert.ok(levels, 'the BEUK:headlevels block is in the studio');
+  const between = (a: string, b: string) => { const i = html.indexOf(a), j = html.indexOf(b, i); assert.ok(i >= 0 && j > i, `the block ${a} is in the studio`); return html.slice(i, j); };
+  const noteMarks = [between('/* ==== BEUK:notemarks ==== (V', '/* ==== /BEUK:notemarks ==== */'), between('/* ==== BEUK:notemarks, the readers ====', '/* ==== /BEUK:notemarks, the readers ==== */')].join('\n');
   const sandbox: Record<string, unknown> = { TextDecoder, btoa, Uint8Array, String };
-  vm.runInNewContext([vocab, part, levels[1], marks, block, 'this.toText = (s) => rtfToManuscriptText(rtfRead(s));'].join('\n'), sandbox);
+  vm.runInNewContext([vocab, part, levels[1], marks, noteMarks, block, 'this.toText = (s) => rtfToManuscriptText(rtfRead(s));'].join('\n'), sandbox);
   const toText = sandbox.toText as (s: string) => string;
   const out = toText(String.raw`{\rtf1\ansi{\stylesheet{\s1 heading 1;}{\s2 heading 2;}}\pard\s1 The Harbour\par\pard Dawn.\par\pard\s2 Morning\par\pard Fog.\par\pard\s1 The Crossing\par\pard\s2 The Squall\par\pard Rain.\par}`);
   assert.equal(out, '# The Harbour\n\nDawn.\n\nMorning\n\nFog.\n\n# The Crossing\n\nThe Squall\n\nRain.');

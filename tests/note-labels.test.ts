@@ -96,3 +96,34 @@ test('the editor\'s model: a definition and a mark under any label are a note\'s
   assert.deepEqual(types('[word]: no definition'), ['paragraph']);
   assert.deepEqual(types('[^a b]: a label has no space'), ['paragraph']);
 });
+
+/* BEUK:notemarks — a note keeps the mark the writer's document shows for it: a label with no letter and no digit
+   ("*", "†") is shown as typed and takes no number; two notes of one mark in a chapter are two notes, in order. */
+test('the reading copy: a note the writer marked "*" is shown as "*", each mark linked to its own note; a mark no note answers is the writer\'s text; its "*" opens no italic', () => {
+  const doc = book([
+    { id: 'c1', content: 'The caravan left[^1] at dawn, and[^*] on *in a hurry*, and[^†] again, and[^*] once more, by[^salt] the gate.\n\n[^1]: Salt, by the sack.\n\n[^*]: The pans of the coast.\n\n[^†]: The dagger note.\n\n[^*]: The second star.\n\n[^salt]: The gate has its own.' },
+    { id: 'c2', content: 'Lost[^*] and *found* here[^‡].' },
+  ]);
+  const { snapshot } = renderSnapshot(doc, 'x');
+  const [one, two] = snapshot.sections.map((s) => s.html);
+  assert.deepEqual(marks(one!), ['1', '*', '†', '*', '2']);
+  assert.deepEqual([...one!.matchAll(/<a class="noteref"(?: id="s0-([^"]*)")? href="#s0-([^"]*)">/g)].map((m) => [m[1], m[2]]),
+    [['fnref1', 'fn1'], ['fnrefm2a-1', 'fnm2a-1'], ['fnrefm2020-1', 'fnm2020-1'], ['fnrefm2a-2', 'fnm2a-2'], ['fnref2', 'fn2']]);
+  assert.deepEqual([...one!.matchAll(/<p class="endnote" id="s0-([^"]*)" data-p="\d+"><a class="note-back" href="#s0-([^"]*)"><sup>\[([^\]<]*)\]<\/sup><\/a> ([^<]*)/g)].map((m) => [m[1], m[2], m[3], m[4]]), [
+    ['fn1', 'fnref1', '1', 'Salt, by the sack.'], ['fnm2a-1', 'fnrefm2a-1', '*', 'The pans of the coast.'], ['fnm2020-1', 'fnrefm2020-1', '†', 'The dagger note.'],
+    ['fnm2a-2', 'fnrefm2a-2', '*', 'The second star.'], ['fn2', 'fnref2', '2', 'The gate has its own.']]);
+  assert.deepEqual([...one!.matchAll(/<em>([^<]*)<\/em>/g)].map((m) => m[1]), ['in a hurry']);
+  // chapter 2 defines no "*": chapter 1's last "*" note answers it (the last one before), so it is that note's mark, raised and linked to nothing here; "‡" has no note anywhere and stays as typed
+  assert.match(two!, /<p data-p="0">Lost<sup>\[\*\]<\/sup> and <em>found<\/em> here\[\^‡\]\.<\/p>/);
+  for (const html of [one!, two!]) assert.equal(html.includes(String.fromCharCode(0xE080)), false, 'the working key reached the page');
+});
+
+test('the editor\'s model: a mark that holds a "*" is a note\'s mark, never the opening or the close of an italic; the text is written back exactly as typed', () => {
+  const runs = (text: string) => { const out: [string, string[]][] = []; toDoc(text).firstChild!.forEach((n) => out.push([n.text ?? '', n.marks.map((m) => m.type.name)])); return out; };
+  const text = 'Left[^*] and on[^*], *truly*, past[^**] the gate.\n\n[^*]: The first.\n\n[^*]: The second.\n\n[^**]: Two stars.';
+  assert.equal(toText(toDoc(text)), text);
+  assert.deepEqual(runs(text), [['Left', []], ['[^*]', ['footnoteRef']], [' and on', []], ['[^*]', ['footnoteRef']], [', ', []], ['truly', ['em']], [', past', []], ['[^**]', ['footnoteRef']], [' the gate.', []]]);
+  const defs: [string, unknown][] = [];
+  toDoc(text).forEach((n) => { if (n.type.name === 'footnoteDef') defs.push([n.type.name, n.attrs.n]); });
+  assert.deepEqual(defs, [['footnoteDef', '*'], ['footnoteDef', '*'], ['footnoteDef', '**']]);
+});

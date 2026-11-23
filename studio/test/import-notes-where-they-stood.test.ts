@@ -121,14 +121,14 @@ describe('a note the file defines and never marks stays where the file wrote it,
   const back = (n: number) => ' <a href="#r' + n + '">↩</a>';
   const C1 = '<h1>Chapter 1: Dawn</h1><p>The caravan left' + ref(1) + ' at dawn.</p><p>The last line of dawn.</p>';
   const C2 = '<h1>Chapter 2: Noon</h1><p>The pans lay white' + ref(3) + '.</p>';
-  const DAWN = ['The caravan left[^1] at dawn.', 'The last line of dawn.'], SALT = '[^1]: Salt, by the sack.', NOON = 'The pans lay white[^2].', PANS = '[^2]: The pans of the coast.';
+  const DAWN = ['The caravan left[^1] at dawn.', 'The last line of dawn.'], SALT = '[^1]: Salt, by the sack.', NOON = 'The pans lay white[^3].', PANS = '[^3]: The pans of the coast.'; /* BEUK:notemarks — the page shows this note as 3, and so does the book (it was "[^2]", the second in Beuk's own count) */
   const VIENNA = 'Sent from Vienna, unmarked.', GRAZ = 'Sent from Graz, unmarked.';
   const orphansOf = (rep: Rep) => rep.items.filter((it) => it.kind === 'noteOrphan');
   const named = (rep: Rep) => orphansOf(rep).map((it) => [it.data.n, it.where.secId, it.before]);
   const clean = (rep: Rep) => ({ unaccounted: rep.tally.unaccounted, same: rep.tally.chars.same, fileOnly: rep.tally.chars.fileOnly, bookOnly: rep.tally.chars.bookOnly });
   const CLEAN = { unaccounted: 0, same: true, fileOnly: [], bookOnly: [] };
-  /** no "[?]", and no note number past the two the page marks */
-  const madeUp = (secs: Sec[]) => secs.map((s) => s.content).join('\n').match(/\[\?\]|\[\^?(?:[3-9]|\d{2,3})\]/g) || [];
+  /** no "[?]", and no note number but the two the page shows for its marked notes, 1 and 3 */
+  const madeUp = (secs: Sec[]) => secs.map((s) => s.content).join('\n').match(/\[\?\]|\[\^?(?:2|[4-9]|\d{2,3})\]/g) || [];
 
   it('a web page, each chapter\'s notes in a block at that chapter\'s end: each unmarked note is a paragraph in its own chapter where its block stood; the marked notes link as before', async () => {
     const html = page(C1 + '<section class="footnotes"><ol><li id="fn1">Salt, by the sack.' + back(1) + '</li><li id="fn2">' + VIENNA + '</li></ol></section>'

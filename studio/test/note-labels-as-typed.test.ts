@@ -470,7 +470,7 @@ describe('notes from formats with no typed label: what each stores and shows tod
   const WREF = (id: number, custom?: string) => '<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteReference ' + (custom ? 'w:customMarkFollows="1" ' : '') + 'w:id="' + id + '"/>' + (custom ? '<w:t>' + custom + '</w:t>' : '') + '</w:r>';
   const WT = (s: string) => '<w:r><w:t xml:space="preserve">' + s + '</w:t></w:r>';
 
-  it('Word: automatic footnotes are numbered in order (Word draws those numbers itself); a custom mark ("*", "†") stays as text beside the number Beuk adds', async () => {
+  it('Word: automatic footnotes are numbered in order among themselves (Word draws those numbers itself); a custom mark ("*", "†") is the note\'s label, with no number of Beuk\'s beside it (BEUK:notemarks; test/import-word-note-marks.test.ts)', async () => {
     const body = wp('Chapter 1: Dawn', true) + '<w:p>' + WT('The caravan left') + WREF(2) + WT(' at dawn, and') + WREF(3, '*') + WT(' on, and') + WREF(4, '†') + WT(' again, and') + WREF(5) + WT('.') + '</w:p>';
     const notes = '<?xml version="1.0" encoding="UTF-8"?><w:footnotes ' + W_NS + '><w:footnote w:type="separator" w:id="0"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>'
       + '<w:footnote w:id="2"><w:p><w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteRef/></w:r>' + WT(' Salt, by the sack.') + '</w:p></w:footnote>'
@@ -478,55 +478,60 @@ describe('notes from formats with no typed label: what each stores and shows tod
       + '<w:footnote w:id="4"><w:p>' + WT('†') + WT(' The dagger note.') + '</w:p></w:footnote>'
       + '<w:footnote w:id="5"><w:p><w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteRef/></w:r>' + WT(' The last, automatic again.') + '</w:p></w:footnote></w:footnotes>';
     const g = await importFile('notes.docx', await docx(body, { 'word/footnotes.xml': notes }), '');
-    // OPEN: Word shows the writer "1, *, †, 2". The book shows "[1], [2]*, [3]†, [4]": the writer's marks are kept as text, a number of Beuk's stands beside each, and the last automatic note is 4 where Word drew 2.
+    // Word shows the writer "1, *, †, 2", and so does the book. (Measured 2026-11-22, before BEUK:notemarks: "[1], [2]*, [3]†, [4]": the writer's
+    // marks kept as text, a number of Beuk's beside each, and the last automatic note 4 where Word drew 2.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^1] at dawn, and[^2]* on, and[^3]† again, and[^4].', '[^1]: Salt, by the sack.', '[^2]: * The pans of the coast.', '[^3]: † The dagger note.', '[^4]: The last, automatic again.'],
-      marks: ['[1]', '[2]', '[3]', '[4]'], notes: ['[1] Salt, by the sack.', '[2] * The pans of the coast.', '[3] † The dagger note.', '[4] The last, automatic again.'] });
+      stored: ['The caravan left[^1] at dawn, and[^*] on, and[^†] again, and[^2].', '[^1]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^†]: The dagger note.', '[^2]: The last, automatic again.'],
+      marks: ['[1]', '[*]', '[†]', '[2]'], notes: ['[1] Salt, by the sack.', '[*] The pans of the coast.', '[†] The dagger note.', '[2] The last, automatic again.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('OpenDocument: every note is numbered in order; the writer\'s own mark (text:label "*") is set aside with the citations and a number shown in its place', async () => {
+  it('OpenDocument: the writer\'s own mark (text:label "*") is the note\'s label; the notes the application numbers are numbered in order among themselves (BEUK:notemarks; test/import-odt-note-marks.test.ts)', async () => {
     const note = (id: string, cite: string, label: string | null, text: string) => '<text:note text:id="' + id + '" text:note-class="footnote"><text:note-citation' + (label ? ' text:label="' + label + '"' : '') + '>' + cite + '</text:note-citation><text:note-body><text:p>' + text + '</text:p></text:note-body></text:note>';
     const body = oh('Chapter 1: Dawn') + '<text:p>The caravan left' + note('ftn1', '1', null, 'Salt, by the sack.') + ' at dawn, and' + note('ftn2', '*', '*', 'The pans of the coast.') + ' on, and' + note('ftn3', '2', null, 'The last, automatic again.') + '.</text:p>';
     const g = await importFile('notes.odt', await odt(body), '');
-    // OPEN: the file shows the writer "1, *, 2". The book shows "[1], [2], [3]": the writer's "*" is replaced by 2, and the last note is 3 where the file showed 2.
+    // The file shows the writer "1, *, 2", and so does the book. (Measured 2026-11-22, before BEUK:notemarks: "[1], [2], [3]": the writer's "*"
+    // replaced by 2, and the last note 3 where the file showed 2.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^1] at dawn, and[^2] on, and[^3].', '[^1]: Salt, by the sack.', '[^2]: The pans of the coast.', '[^3]: The last, automatic again.'],
-      marks: ['[1]', '[2]', '[3]'], notes: ['[1] Salt, by the sack.', '[2] The pans of the coast.', '[3] The last, automatic again.'] });
+      stored: ['The caravan left[^1] at dawn, and[^*] on, and[^2].', '[^1]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^2]: The last, automatic again.'],
+      marks: ['[1]', '[*]', '[2]'], notes: ['[1] Salt, by the sack.', '[*] The pans of the coast.', '[2] The last, automatic again.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('RTF: automatic footnotes are numbered in order; a mark the writer typed ("*") stays as text beside the number Beuk adds', async () => {
+  it('RTF: a mark the writer typed ("*") is the note\'s label, with no number of Beuk\'s beside it; automatic footnotes are numbered in order among themselves (BEUK:notemarks; test/import-rtf-note-marks.test.ts)', async () => {
     const auto = (text: string) => '{' + rw('super') + rw('chftn') + '}{' + rw('footnote') + rw('pard') + rw('plain') + '{' + rw('super') + rw('chftn') + '} ' + text + '}';
     const own = (mark: string, text: string) => '{' + rw('super') + ' ' + mark + '}{' + rw('footnote') + rw('pard') + rw('plain') + '{' + rw('super') + ' ' + mark + '} ' + text + '}';
     const body = rtfH('Chapter 1: Dawn') + rw('pard') + rw('s0') + ' The caravan left' + auto('Salt, by the sack.') + ' at dawn, and' + own('*', 'The pans of the coast.') + ' on, and' + auto('The last, automatic again.') + '.' + rw('par') + '\n';
     const g = await importFile('notes.rtf', null, rtfDoc(body));
-    // OPEN: a word processor shows the writer "1, *, 2". The book shows "[1], *[2], [3]": the "*" kept as text, a number of Beuk's beside it, and the last note 3 where the file's own count gives 2.
+    // A word processor shows the writer "1, *, 2", and so does the book. (Measured 2026-11-22, before BEUK:notemarks: "[1], *[2], [3]": the "*"
+    // kept as text, a number of Beuk's beside it, and the last note 3 where the file's own count gives 2.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^1] at dawn, and*[^2] on, and[^3].', '[^1]: Salt, by the sack.', '[^2]: * The pans of the coast.', '[^3]: The last, automatic again.'],
-      marks: ['[1]', '[2]', '[3]'], notes: ['[1] Salt, by the sack.', '[2] * The pans of the coast.', '[3] The last, automatic again.'] });
+      stored: ['The caravan left[^1] at dawn, and[^*] on, and[^2].', '[^1]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^2]: The last, automatic again.'],
+      marks: ['[1]', '[*]', '[2]'], notes: ['[1] Salt, by the sack.', '[*] The pans of the coast.', '[2] The last, automatic again.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('a web page: the page\'s own visible numbers and marks (5, "*", 9) are set aside and the notes numbered 1, 2, 3 in order', async () => {
+  it('a web page: the page\'s own visible numbers and marks (5, "*", 9) are the notes\' labels (BEUK:notemarks; test/import-web-note-marks.test.ts)', async () => {
     const html = webPage('<h1>Chapter 1: Dawn</h1><p>The caravan left<a href="#fn5" id="r5"><sup>5</sup></a> at dawn, and<a href="#fna" id="ra"><sup>*</sup></a> on, and<a href="#fn9" id="r9"><sup>9</sup></a>.</p>'
       + '<div class="footnotes"><p id="fn5" class="footnote"><sup>5</sup> Salt, by the sack. <a href="#r5">↩</a></p><p id="fna" class="footnote"><sup>*</sup> The pans of the coast. <a href="#ra">↩</a></p><p id="fn9" class="footnote"><sup>9</sup> Nine. <a href="#r9">↩</a></p></div>');
     const g = await importFile('notes.html', null, html);
-    // OPEN: the page shows the writer "5, *, 9" (the writer's own). The book shows "[1], [2], [3]": all three replaced by numbers of Beuk's.
+    // The page shows the writer "5, *, 9" (the writer's own), and so does the book. (Measured 2026-11-22, before BEUK:notemarks: "[1], [2], [3]":
+    // all three replaced by numbers of Beuk's.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^1] at dawn, and[^2] on, and[^3].', '[^1]: Salt, by the sack.', '[^2]: The pans of the coast.', '[^3]: Nine.'],
-      marks: ['[1]', '[2]', '[3]'], notes: ['[1] Salt, by the sack.', '[2] The pans of the coast.', '[3] Nine.'] });
+      stored: ['The caravan left[^5] at dawn, and[^*] on, and[^9].', '[^5]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^9]: Nine.'],
+      marks: ['[5]', '[*]', '[9]'], notes: ['[5] Salt, by the sack.', '[*] The pans of the coast.', '[9] Nine.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('EPUB: a note keeps the number its page showed (5, 9); a mark that is no number ("*") takes the next free number, its "*" left in the note\'s text', async () => {
+  it('EPUB: a note keeps the number its page showed (5, 9), and a mark that is no number ("*") is the note\'s label (BEUK:notemarks; test/import-epub-note-marks.test.ts)', async () => {
     const body = '<h1>Chapter 1: Dawn</h1><p>The caravan left<a epub:type="noteref" href="#fn5" id="r5"><sup>5</sup></a> at dawn, and<a epub:type="noteref" href="#fna" id="ra"><sup>*</sup></a> on, and<a epub:type="noteref" href="#fn9" id="r9"><sup>9</sup></a>.</p>'
       + '<aside epub:type="footnote" id="fn5"><p>5. Salt, by the sack.</p></aside><aside epub:type="footnote" id="fna"><p>* The pans of the coast.</p></aside><aside epub:type="footnote" id="fn9"><p>9. Nine.</p></aside>';
     const g = await importFile('notes.epub', await epub([{ title: 'Chapter 1: Dawn', body }]), '');
-    // The writer's 5 and 9 are what the book shows. OPEN: the writer's "*" is shown as "[1]" (the mark itself gone from the text, the "*" that opens the note kept).
+    // The writer's 5, * and 9 are what the book shows. (Measured 2026-11-22, before BEUK:notemarks: the "*" shown as "[1]", the mark itself gone
+    // from the text and the "*" that opens the note kept in its words.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^5] at dawn, and[^1] on, and[^9].', '[^5]: Salt, by the sack.', '[^1]: * The pans of the coast.', '[^9]: Nine.'],
-      marks: ['[5]', '[1]', '[9]'], notes: ['[5] Salt, by the sack.', '[1] * The pans of the coast.', '[9] Nine.'] });
+      stored: ['The caravan left[^5] at dawn, and[^*] on, and[^9].', '[^5]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^9]: Nine.'],
+      marks: ['[5]', '[*]', '[9]'], notes: ['[5] Salt, by the sack.', '[*] The pans of the coast.', '[9] Nine.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
@@ -536,7 +541,8 @@ describe('notes from formats with no typed label: what each stores and shows tod
       stored: ['The caravan left[^5] at dawn, and[^9] on, and a stray[3].', '[^5]: Salt, by the sack.', '[^9]: The pans of the coast.'],
       // the stray "[3]" is stored as typed; the typeset page raises a bare "[n]" as a mark with no note, as it always did
       marks: ['[5]', '[9]', '~[3]'], notes: ['[5] Salt, by the sack.', '[9] The pans of the coast.'] });
-    // OPEN (found, not changed): the tally counts the stray "3" in the file and not in the book, whose count takes a bare "[3]" for a note's mark: 1 unaccounted
-    expect(figures(g)).toEqual({ counted: true, unaccounted: 1, same: false, fileOnly: [['3', 1]], bookOnly: [] });
+    // the stray "3" is a character of the file and of the book: both sides of the tally count it (BEUK:notemarks; test/import-stray-bracket-number.test.ts).
+    // (Measured 2026-11-22: 1 unaccounted, the book's side taking the bare "[3]" for a note's mark.)
+    expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 });
