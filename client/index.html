@@ -30385,8 +30385,32 @@
       function noteMarkRe() { return /\[(\^[^\]\s]+|\d{1,3})\]/g; }
       /* a mark as a surface sets one, once the text has come through notesAsShown: under a number ("[^12]", or the bare
          "[12]"); $1 as noteMarkRe's. A mark still under a name there is one no note answers: the writer's text. */
-      function noteNumberRe() { return /\[(\^\d+|\d{1,3})\]/g; }
+      function noteNumberRe() { return /\[(\^\d+|\^[^\]\s]+\uE080\d+|\d{1,3})\]/g; } /* BEUK:notemarks — or under a mark of the writer's, as notesAsShown hands it on (NOTE_KEY) */
       const noteLabelOf = (cap) => (cap.charAt(0) === "^" ? cap.slice(1) : cap);
+      /* ==== BEUK:notemarks ==== (V, 2026-11-22, on a note shown under a number Beuk made up: "WHY ARE WE INVENTING
+         NUMBERS?") A note keeps the mark the writer's document shows for it. Which labels a reader is shown as typed:
+           - a NUMBER (digits and nothing else: "1", "007", "2024"): shown as typed;
+           - a MARK (a label with no letter and no digit in it: "*", "**", "†", "‡", "§", "#"): shown as typed. A note
+             the writer marked "*" is marked "*" in the text and at the note, on every surface, and takes no number;
+           - a NAME (anything else: a letter or a digit beside something else, "salt", "fn-7", "a", "1a"): a Markdown
+             writer never meant it to be seen, so it takes a number, as before (BEUK:notelabels).
+         The same mark may stand twice in one section (two "*" notes on a page is common in print): each mark means its
+         own note, in order. Walking the section, a mark waits for its note; the definitions of that mark that stand
+         together answer the marks waiting, the first definition the first mark and so on (more marks waiting than
+         definitions there: the marks left over all mean the last of them, a note marked more than once); a mark with
+         no definition after it means the last one before it. In a section that never defines the mark, the next
+         definition on through the book, else the last before, as for a name.
+         notesAsShown hands a surface each such note as "[^" + mark + NOTE_KEY + k + "]": k tells the section's notes
+         of one mark apart (the first is 1), so a surface pairs mark and note as it pairs numbers, and gives each an
+         id of its own. NOTE_KEY is never stored and never shown: noteMarkShown(label) is what a reader sees, and
+         noteIdOf(label) the part of an id it makes (a number as it is, as it always was; a mark by its characters'
+         code points, "m2a-1" for the first "*": letters, digits and hyphens, a valid id in XHTML and EPUB). A mark no
+         note answers is the writer's text, exactly as typed, as a name is. */
+      const NOTE_KEY = String.fromCharCode(0xE080);
+      const noteIsMark = (label) => /^[^\p{L}\p{N}\s\]\uE080]+$/u.test(String(label == null ? "" : label));
+      const noteMarkShown = (label) => { const l = String(label == null ? "" : label), at = l.indexOf(NOTE_KEY); return at < 0 ? l : l.slice(0, at); };
+      const noteIdOf = (label) => { const l = String(label == null ? "" : label), at = l.indexOf(NOTE_KEY); return at < 0 ? l : "m" + Array.from(l.slice(0, at)).map((ch) => ch.codePointAt(0).toString(16)).join("-") + "-" + l.slice(at + 1); };
+      /* ==== /BEUK:notemarks ==== */
       /* a mark with the colon that makes it a definition's opening, anywhere (for the readers that only take marks out) */
       function noteLeadRe() { return /\[(?:\^[^\]\s]+|\d{1,3})\]:/g; }
       /* a definition opens the block: "[^label]:" (or "[12]:") */
@@ -30442,8 +30466,27 @@
         const defsOf = marks.map((ms) => { const by = new Map(); ms.forEach((m, mi) => { if (!m.def || isNum(m.label)) return; m.mi = mi; if (!by.has(m.label)) by.set(m.label, []); by.get(m.label).push(m); }); return by; });
         /* the note a mark means; null where no definition anywhere in the book answers its label: that mark is no
            note, takes no number and is left exactly as typed */
+        /* BEUK:notemarks — a mark of the writer's ("*") in a section that defines it: each mark its own note, in order
+           (the rule above). `own` is that pairing, mark → definition; each definition shows its mark, keyed by its
+           place among the section's notes of that mark, and takes no number. */
+        const own = new Map();
+        defsOf.forEach((by, si) => by.forEach((defs, label) => {
+          if (!noteIsMark(label)) return;
+          defs.forEach((d, k) => { d.shown = label + NOTE_KEY + (k + 1); });
+          const seq = marks[si].filter((m) => m.label === label);
+          let waiting = [], last = null, i = 0;
+          while (i < seq.length) {
+            if (!seq[i].def) { waiting.push(seq[i++]); continue; }
+            const run = [];
+            while (i < seq.length && seq[i].def) run.push(seq[i++]);
+            waiting.forEach((m, k) => own.set(m, run[Math.min(k, run.length - 1)]));
+            waiting = []; last = run[run.length - 1];
+          }
+          waiting.forEach((m) => own.set(m, last));
+        }));
         const noteOf = (si, mi, label) => {
           const here = defsOf[si].get(label);
+          if (here && own.has(marks[si][mi])) return own.get(marks[si][mi]);
           if (here) return here.filter((d) => d.mi >= mi)[0] || here[here.length - 1];
           for (let j = si + 1; j < defsOf.length; j++) { const d = defsOf[j].get(label); if (d) return d[0]; }
           for (let j = si - 1; j >= 0; j--) { const d = defsOf[j].get(label); if (d) return d[d.length - 1]; }
@@ -30507,19 +30550,31 @@
           links.push('<a class="ext-link" href="' + url + '">' + emph(label) + "</a>");
           return "" + (links.length - 1) + "";
         });
+        /* BEUK:notemarks — a mark under a label that is no number is set aside before the emphasis is read, as a link
+           is: a note under a mark of the writer's ("[^*]", handed on keyed by notesAsShown), whose "*" is the note's
+           mark and never the opening or the close of an italic; and a mark no note answers, which is the writer's
+           text exactly as typed ("[^*]", "[^nowhere]"). A mark under a number is read after the emphasis, exactly as
+           it always was. */
+        const marksHeld = [];
+        if (s.indexOf("[^") !== -1) s = s.replace(/\[(\^(?!\d+\])[^\]\s]+)\]/g, (m, cap) => (marksHeld.push(cap.indexOf(NOTE_KEY) === -1 ? m : cap), "\uE081" + (marksHeld.length - 1) + "\uE082"));
         s = emph(s);
         /* BEUK:notelabels — a mark under any label. A surface that shows a number hands the section's text through
            notesAsShown first, so a label that is no number arrives here as the number it shows. */
-        s = s.replace(noteNumberRe(), (m, cap) => { /* a mark still under a name has no note: it stays the writer's text */
-          const n = noteLabelOf(cap);
+        const markHtml = (m, cap) => { /* a mark still under a name has no note: it stays the writer's text */
+          /* BEUK:notemarks — what a reader sees, and the id it makes (a number: itself, both). The text is escaped by
+             now, so a mark that is "&", "<", ">" or a quote is read back as its own character to find its note. */
+          const held = noteLabelOf(cap), n = held.indexOf("&") === -1 ? held : held.replace(/&(amp|lt|gt|quot);/g, (e, w) => ({ amp: "&", lt: "<", gt: ">", quot: '"' })[w]);
+          const shown = esc(noteMarkShown(n)), id = noteIdOf(n);
           if (noteCtx && noteCtx.defined.has(n)) {
-            const idAttr = noteCtx.seen.has(n) ? "" : ' id="' + noteCtx.prefix + "fnref" + n + '"';
+            const idAttr = noteCtx.seen.has(n) ? "" : ' id="' + noteCtx.prefix + "fnref" + id + '"';
             noteCtx.seen.add(n);
             /* BEUK:footnotes — a page-bottom note is called by a bare superior figure, the printed convention */
-            return '<a class="noteref" epub:type="noteref"' + idAttr + ' href="#' + noteCtx.prefix + "fn" + n + '"><sup class="endnote-ref">' + (noteCtx.foot ? n : "[" + n + "]") + "</sup></a>";
+            return '<a class="noteref" epub:type="noteref"' + idAttr + ' href="#' + noteCtx.prefix + "fn" + id + '"><sup class="endnote-ref">' + (noteCtx.foot ? shown : "[" + shown + "]") + "</sup></a>";
           }
-          return '<sup class="endnote-ref">[' + n + "]</sup>";
-        });
+          return '<sup class="endnote-ref">[' + shown + "]</sup>";
+        };
+        s = s.replace(noteNumberRe(), markHtml);
+        if (marksHeld.length) s = s.replace(/\uE081(\d+)\uE082/g, (m, i) => { const h = marksHeld[+i]; return h.charAt(0) === "[" ? h : markHtml(m, h); });
         /* Vault shelf references ([label](note:slug), planted by bulk
            import when a [[wikilink]] resolves to another note in the
            batch) render as styled reference text — the target lives in
@@ -31213,7 +31268,8 @@
         if (cx.layout !== "epub" && segs.some((sg) => sg.kind === "margin") && out.length) out.splice(0, out.length, '<div class="mn-body">' + out.join("\n") + "</div>");
         if (notes.length) {
           out.push('<div class="endnotes' + (foot ? " fn-page" : "") + '" epub:type="endnotes"><p class="endnotes-h">Notes</p>' +
-            notes.map((nt) => '<p class="endnote" id="' + prefix + "fn" + nt.n + '" epub:type="endnote"><a class="note-back" href="#' + prefix + "fnref" + nt.n + '" title="Back to the reference"><sup>' + (foot ? nt.n : "[" + nt.n + "]") + "</sup></a> " + inlineMd(nt.text, noteCtx) + "</p>").join("") + "</div>");
+            /* BEUK:notemarks — a note under a mark of the writer's shows that mark, in the dress a number wears here; its id is made from the mark (noteIdOf: a number's is the number, as before) */
+            notes.map((nt) => '<p class="endnote" id="' + prefix + "fn" + noteIdOf(nt.n) + '" epub:type="endnote"><a class="note-back" href="#' + prefix + "fnref" + noteIdOf(nt.n) + '" title="Back to the reference"><sup>' + (foot ? esc(noteMarkShown(nt.n)) : "[" + esc(noteMarkShown(nt.n)) + "]") + "</sup></a> " + inlineMd(nt.text, noteCtx) + "</p>").join("") + "</div>");
         }
         /* In the studio's preview a link opens in a new tab, cut off
            from the studio (noopener noreferrer); exported files carry
@@ -45123,9 +45179,28 @@
         let seq = 0;
         const next = () => { do seq++; while (written.has(seq)); return seq; };
         const lone = new Map();
+        /* BEUK:notemarks — a mark of the writer's ("[^*]": a label with no letter and no digit, noteIsMark) may stand
+           for several notes: each mark means its own note, in order, as the book reads it (noteBookShown). Walking the
+           file, a mark waits; the definitions of that mark that stand together answer the marks waiting, the first
+           definition the first mark (marks left over mean the last of them); a mark with none after it means the
+           last before. (A name keeps its rule: the next definition at or after the mark, else the last.) */
+        const ownDef = new Map();
+        byLabel.forEach((ds, label) => {
+          if (!noteIsMark(label)) return;
+          const seq = ds.map((d) => ({ at: d.from, def: d })).concat(refs.filter((r) => r.label === label).map((r) => ({ at: r.line, ref: r }))).sort((a, b) => a.at - b.at);
+          let waiting = [], last = null, i = 0;
+          while (i < seq.length) {
+            if (!seq[i].def) { waiting.push(seq[i++].ref); continue; }
+            const run = [];
+            while (i < seq.length && seq[i].def) run.push(seq[i++].def);
+            waiting.forEach((r, k) => ownDef.set(r, run[Math.min(k, run.length - 1)]));
+            waiting = []; last = run[run.length - 1];
+          }
+          waiting.forEach((r) => ownDef.set(r, last));
+        });
         refs.forEach((r) => {
           const ds = byLabel.get(r.label);
-          const d = ds ? (ds.filter((x) => x.from >= r.line)[0] || ds[ds.length - 1]) : null;
+          const d = ds ? (ownDef.get(r) || ds.filter((x) => x.from >= r.line)[0] || ds[ds.length - 1]) : null;
           if (d) { if (!d.n) d.n = next(); r.n = d.n; }
           else { if (!lone.has(r.label)) lone.set(r.label, next()); r.n = lone.get(r.label); }
         });
@@ -46584,7 +46659,7 @@
         const hostOf = (nt) => { const re = new RegExp("\\[\\^" + nt.n + "\\](?!:)"); return importSecs.find((s) => re.test(String(s.content || ""))) || null; };
         const twice = new Set();
         if (typed) { const one = new Set(); ir.docNotes.forEach((nt) => { if (nt.stood || !nt.n) return; const h = hostOf(nt); if (!h) return; const k = h.id + " " + nt.typed; if (one.has(k)) twice.add(k); else one.add(k); }); }
-        const afterLastMark = (content, re, def) => {
+        const afterLastMark = (content, re, def, sameLabel) => {
           const lines = content.split("\n");
           let last = -1;
           lines.forEach((l, i) => { if (re.test(l)) last = i; });
@@ -46593,6 +46668,11 @@
           for (let i = 0; i <= last; i++) { if (CONTAINER_OPEN_RE.test(lines[i])) open = true; else if (CONTAINER_CLOSE_RE.test(lines[i])) open = false; }
           if (open) { while (end < lines.length - 1 && !CONTAINER_CLOSE_RE.test(lines[end])) end++; }
           else while (end + 1 < lines.length && lines[end + 1].trim()) end++;
+          /* BEUK:notemarks — two notes of one mark whose marks stand in one block ("left* and on*"): the second note
+             is set after the first, not before it, so the definitions stand in the order of their marks (a mark means
+             its own note in order, noteBookShown). sameLabel says whether a line opens a definition of this note's
+             own label; only such a definition, standing straight after the block, is stepped over. */
+          if (sameLabel) while (end + 2 < lines.length && !lines[end + 1].trim() && sameLabel(lines[end + 2])) { end += 2; while (end + 1 < lines.length && lines[end + 1].trim()) end++; }
           lines.splice(end + 1, 0, "", def, "");
           return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
         };
@@ -46610,7 +46690,7 @@
           const host = re ? (typed ? hostOf(nt) : state.sections.find((s) => re.test(String(s.content || "")))) : null;
           if (host) {
             const def = "[^" + nt.n + "]: " + nt.plain;
-            host.content = typed && twice.has(host.id + " " + nt.typed) ? afterLastMark(String(host.content || ""), re, def) : String(host.content || "").trim() + "\n\n" + def;
+            host.content = typed && twice.has(host.id + " " + nt.typed) ? afterLastMark(String(host.content || ""), re, def, noteIsMark(nt.typed) ? (l) => { const d = /^\[\^(\d+)\]:/.exec(l); return !!d && ir.mdNoteLabels[d[1]] === nt.typed; } : null /* BEUK:notemarks */) : String(host.content || "").trim() + "\n\n" + def;
             noteStats.mapped++;
           } else if (typed) {
             /* BEUK:notelabels — a note whose every mark stood in text the import set aside has no section to join: it is
@@ -55290,14 +55370,15 @@
              alternative would take the inner **…** and leave a stray *. */
           /* BEUK:notelabels — the last alternative is a note's mark under any label (noteMarkRe's pattern); the Word
              export reads each section through notesAsShown, so the mark holds the number the note shows */
-          const re = /(\*\*\*[^*]+\*\*\*)|(\*\*[^*]+\*\*)|(\*[^*\n]+\*)|(\[(?:\^\d+|\d{1,3})\])/g; /* the last: noteNumberRe's pattern (a mark still under a name has no note and stays the writer's text) */
+          const re = /(\*\*\*[^*]+\*\*\*)|(\*\*[^*]+\*\*)|(\*[^*\n]+\*)|(\[(?:\^\d+|\^[^\]\s]+\uE080\d+|\d{1,3})\])|(\[\^[^\]\s]+\])/g; /* the fourth: noteNumberRe's pattern. BEUK:notemarks — a mark of the writer's ("[^*]", keyed by notesAsShown) is found where its bracket opens, before its "*" can be read as an italic's; the fifth is a mark no note answers ("[^*]", "[^nowhere]"), the writer's text exactly as typed, found the same way */
           let out = "", last = 0, mm;
           while ((mm = re.exec(t)) !== null) {
             if (mm.index > last) out += plain(t.slice(last, mm.index), inh);
             if (mm[1]) out += emit(mm[1].slice(3, -3), Object.assign({}, inh, { b: true, i: true }));
             else if (mm[2]) out += emit(mm[2].slice(2, -2), Object.assign({}, inh, { b: true }));
             else if (mm[3]) out += emit(mm[3].slice(1, -1), Object.assign({}, inh, { i: true }));
-            else out += docxRun("[" + noteLabelOf(mm[4].slice(1, -1)) + "]", Object.assign({}, inh, { sup: true }));
+            else if (mm[4]) out += docxRun("[" + noteMarkShown(noteLabelOf(mm[4].slice(1, -1))) + "]", Object.assign({}, inh, { sup: true })); /* BEUK:notemarks — the writer's mark as typed, where a number would stand */
+            else out += plain(mm[5], inh);
             last = mm.index + mm[0].length;
           }
           if (last < t.length) out += plain(t.slice(last), inh);
@@ -55493,7 +55574,7 @@
         if (notes.length) {
           parts.push(docxPageBreak());
           parts.push(docxPara("Endnotes", "Heading1"));
-          notes.forEach((nt) => parts.push(docxPara("", "Normal", { rawRuns: docxRun("[" + nt.n + "] ", { b: true }) + docxRun("(" + nt.label + ") ", { i: true }) + docxInlineRuns(nt.text) })));
+          notes.forEach((nt) => parts.push(docxPara("", "Normal", { rawRuns: docxRun("[" + noteMarkShown(nt.n) + "] ", { b: true }) /* BEUK:notemarks */ + docxRun("(" + nt.label + ") ", { i: true }) + docxInlineRuns(nt.text) })));
         }
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
           '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>\n' +
@@ -55782,7 +55863,7 @@
           parts.push(msP("Heading1", docxRun("Notes", {})));
           notes.forEach((g) => {
             parts.push(msP("Heading2", docxRun(g.label, {})));
-            g.list.forEach((nt) => msDress([msP("Normal", docxRun(nt.n + ". ", {}) + docxInlineRuns(nt.text))]).forEach((p) => parts.push(p)));
+            g.list.forEach((nt) => msDress([msP("Normal", docxRun(/^\d+$/.test(nt.n) ? nt.n + ". " : noteMarkShown(nt.n) + " ", {}) /* BEUK:notemarks — a number is followed by its point, as before; a mark of the writer's stands as typed, with no point of Beuk's */ + docxInlineRuns(nt.text))]).forEach((p) => parts.push(p)));
           });
         }
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
@@ -56226,7 +56307,7 @@
          closing credits instead. frontispiece → a picture page. */
       const ACX_DEFAULT_SKIP = { cover: "picture", halftitle: "auto", titlepage: "auto", toc: "toc", copyright: "copyright", frontispiece: "picture", colophon: "colophon" };
       const ACX_SCENE_BREAK = /^(\*\*\*|❦|⁂)$/;
-      const ACX_NOTE_MARK = /\[(\^\d+|\d{1,3})\]/g; /* BEUK:notelabels — a mark under a number ($1: "^n", or the bare number; noteLabelOf; noteNumberRe's pattern). The script reads each section through notesAsShown, so "[NOTE n]" says the number the note shows; a mark still under a name there has no note and stays in the script as the writer typed it. */
+      const ACX_NOTE_MARK = /\[(\^\d+|\^[^\]\s]+\uE080\d+|\d{1,3})\]/g; /* BEUK:notemarks — or under a mark of the writer's, keyed by notesAsShown */ /* BEUK:notelabels — a mark under a number ($1: "^n", or the bare number; noteLabelOf; noteNumberRe's pattern). The script reads each section through notesAsShown, so "[NOTE n]" says the number the note shows; a mark still under a name there has no note and stays in the script as the writer typed it. */
       function acxNormalize(a) {
         a = a && typeof a === "object" ? a : {};
         const include = {};
@@ -56257,7 +56338,16 @@
       const acxRound = (n, d) => { const f = Math.pow(10, d); return Math.round(n * f) / f; };
       /* The spoken words of a line: markup and bracketed narrator notes out. */
       const acxSpoken = (text) => String(text || "").split(LINE_BREAK_HELD).join(" ") /* BEUK:breaksshown — a held line break parts two words, as the space it stood for did */.replace(noteMarkRe(), " ") /* BEUK:notelabels — no mark is a spoken word, with a note or without */.replace(/\[(NOTE|IMAGE|PAUSE|PRONUNCIATION|NARRATOR)[^\]]*\]/g, " ").replace(/\*\*|\*/g, "");
-      const acxPlainInline = (text, typed) => String(text || "").replace(mdLinkRe(), "$1").replace(ACX_NOTE_MARK, (m, n) => (typed ? m /* BEUK:notelabels — a log's line: nothing in it is a note's mark */ : " [NOTE " + noteLabelOf(n) + "]")).replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*\n]+)\*/g, "$1").replace(/ {2,}/g, " ").trim();
+      /* BEUK:notemarks — a note under a mark of the writer's is cued by that mark, "[NOTE *]": the cue names the note as the page shows it, and no number and no word of Beuk's is put in its place (the note's own line follows its paragraph, so two "*" notes of one chapter are never confused). The mark is held aside while the emphasis marks are taken off, so its "*" is not read as one. */
+      const acxPlainInline = (text, typed) => {
+        const held = [];
+        return String(text || "").replace(mdLinkRe(), "$1")
+          /* a mark under a label that is no number: a note's (keyed) becomes its cue; one no note answers, and any on a log's line, stays as typed */
+          .replace(/\[(\^(?!\d+\])[^\]\s]+)\]/g, (m, cap) => { const cue = !typed && cap.indexOf(NOTE_KEY) !== -1; held.push(cue ? "[NOTE " + noteMarkShown(noteLabelOf(cap)) + "]" : m); return (cue ? " " : "") + "\uE081" + (held.length - 1) + "\uE082"; })
+          .replace(ACX_NOTE_MARK, (m, n) => (typed ? m /* BEUK:notelabels — a log's line: nothing in it is a note's mark */ : " [NOTE " + noteLabelOf(n) + "]"))
+          .replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*\n]+)\*/g, "$1")
+          .replace(/\uE081(\d+)\uE082/g, (m, i) => held[+i]).replace(/ {2,}/g, " ").trim();
+      };
       function acxSectionSkipReason(s) {
         const own = state.audio.include[s.id];
         if (own === false) return "user";
@@ -56327,7 +56417,7 @@
           lines.push({ k: kind, text: body });
           const cited = [];
           body.replace(ACX_NOTE_MARK, (m, cap) => { const n = noteLabelOf(cap); if (!cited.includes(n)) cited.push(n); return m; });
-          cited.forEach((n) => lines.push({ k: "note", n: n, text: notes[n] || "" }));
+          cited.forEach((n) => lines.push({ k: "note", n: noteMarkShown(n) /* BEUK:notemarks — the note's line names it as the page shows it: its number, or the writer's mark */, text: notes[n] || "" }));
         });
         return lines;
       }
@@ -56558,7 +56648,7 @@
         return f.lines.map(acxLineTxt).join("\n\n") + "\n";
       }
       function acxDocxRunsWithNotes(text) {
-        return String(text || "").split(ACX_NOTE_MARK).map((piece, i) => (i % 2 ? docxRun("[NOTE " + noteLabelOf(piece) + "]", { b: true }) : (piece ? docxInlineRuns(piece) : ""))).join("");
+        return String(text || "").split(ACX_NOTE_MARK).map((piece, i) => (i % 2 ? docxRun("[NOTE " + noteMarkShown(noteLabelOf(piece)) + "]", { b: true }) /* BEUK:notemarks */ : (piece ? docxInlineRuns(piece) : ""))).join("");
       }
       function acxDocxXml(lines) {
         const parts = lines.map((l) => {

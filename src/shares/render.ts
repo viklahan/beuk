@@ -1,4 +1,4 @@
-import { NOTE_DEF_BLOCK_RE, NOTE_DEF_RE, noteLabelOf, noteNumberRe, notesAsShown } from '../book/notes.js';
+import { NOTE_DEF_BLOCK_RE, NOTE_DEF_RE, NOTE_KEY, noteIdOf, noteLabelOf, noteMarkShown, noteNumberRe, notesAsShown } from '../book/notes.js';
 import { sanitizeHtml } from './sanitize.js';
 
 /**
@@ -116,20 +116,32 @@ function inline(text: string, notes: NoteCtx): string {
     return `${bars.length - 1}`;
   });
   s = esc(s);
+  /* BEUK:notemarks — a mark under a label that is no number is set aside before the emphasis is read: a note under a
+     mark of the writer's ("[^*]", handed on keyed by notesAsShown), whose "*" is the note's mark and never an
+     italic's; and a mark no note answers, the writer's text exactly as typed. A number is read after it, as it
+     always was. */
+  const held: string[] = [];
+  if (s.includes('[^')) s = s.replace(/\[(\^(?!\d+\])[^\]\s]+)\]/g, (m, cap: string) => '\uE081' + (held.push(cap.includes(NOTE_KEY) ? cap : m) - 1) + '\uE082');
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
   /* BEUK:notelabels — the section's text arrives with each label that has a note written as the number it shows
      (notesAsShown). A mark still under a name here is one no note answers: it is no note, and stays the writer's
      text exactly as typed. A number with no note is raised as it always was. */
-  s = s.replace(noteNumberRe(), (_m, cap: string) => {
-    const n = noteLabelOf(cap);
+  const mark = (_m: string, cap: string): string => {
+    /* BEUK:notemarks — what a reader sees and the id it makes (a number: itself, both); the text is escaped by now,
+       so a mark that is "&", "<", ">" or a quote is read back as its own character to find its note */
+    const heldAs = noteLabelOf(cap);
+    const n = heldAs.includes('&') ? heldAs.replace(/&(amp|lt|gt|quot);/g, (_e, w: string) => ({ amp: '&', lt: '<', gt: '>', quot: '"' })[w] ?? '') : heldAs;
+    const shown = esc(noteMarkShown(n)), id = noteIdOf(n);
     if (notes.defined.has(n)) {
-      const idAttr = notes.seen.has(n) ? '' : ` id="${notes.prefix}fnref${n}"`;
+      const idAttr = notes.seen.has(n) ? '' : ` id="${notes.prefix}fnref${id}"`;
       notes.seen.add(n);
-      return `<a class="noteref"${idAttr} href="#${notes.prefix}fn${n}"><sup>[${n}]</sup></a>`;
+      return `<a class="noteref"${idAttr} href="#${notes.prefix}fn${id}"><sup>[${shown}]</sup></a>`;
     }
-    return `<sup>[${n}]</sup>`;
-  });
+    return `<sup>[${shown}]</sup>`;
+  };
+  s = s.replace(noteNumberRe(), mark);
+  if (held.length) s = s.replace(/\uE081(\d+)\uE082/g, (m, i: string) => { const h = held[Number(i)] ?? ''; return h.startsWith('[') ? h : mark(m, h); });
   // Shelf references ([label](note:slug)) are styled text, never links.
   s = s.replace(/\[([^\]]+)\]\(note:([a-z0-9-]+)\)/g, '<span class="note-link">$1</span>');
   if (bars.length) s = s.replace(REDACT_MARK, (_m, i: string) => bars[Number(i)] ?? '');
@@ -252,7 +264,7 @@ function sectionBody(sec: RawSection, index: number, ctx: RenderCtx, shown: stri
         endnotes
           .map(
             (nt) =>
-              `<p class="endnote" id="${prefix}fn${nt.n}" data-p="${nt.p}"><a class="note-back" href="#${prefix}fnref${nt.n}"><sup>[${nt.n}]</sup></a> ${inline(nt.text, notes)}</p>`,
+              `<p class="endnote" id="${prefix}fn${noteIdOf(nt.n)}" data-p="${nt.p}"><a class="note-back" href="#${prefix}fnref${noteIdOf(nt.n)}"><sup>[${esc(noteMarkShown(nt.n))}]</sup></a> ${inline(nt.text, notes)}</p>`, /* BEUK:notemarks — the writer's mark where a number would stand */
           )
           .join('') +
         '</div>',
