@@ -161,12 +161,41 @@ describe('a file\'s headings below its chapters each come in as a heading, at th
   }, 120_000);
 });
 
+/* A page has six levels of heading; RTF and Word name nine and OpenDocument ten. Measured before on a made-up book of
+   Heading 1 chapters with Heading 7 and Heading 9 under them: RTF read the three levels; a Word paragraph in Heading
+   7, 8 or 9 was no heading at all (the converter knows six: each came in as a paragraph, with no item in the report,
+   and the tally said "Headings: 6 in the file, 2 in the book, 4 in the book as paragraphs"); an OpenDocument heading
+   at level 7 or deeper was read as level 6, so its Heading 7 and Heading 9 came in at one depth. */
+describe('a level past the sixth is a level of the file like any other: Word\'s Heading 7 to 9, OpenDocument\'s 7 to 10', () => {
+  it.each(['docx', 'odt', 'rtf'] as const)('%s: Heading 1 chapters with Heading 7 and Heading 9 under them hold three levels: "# " and "## "', async (kind) => {
+    const g = await read(kind, book([1, 7, 9]));
+    expect(chapters(g).map((s) => s.title)).toEqual(['Chapter 1', 'Chapter 2']);
+    expect(one(g)).toEqual(stored(2));
+    expect(blocksOf(chapters(g)[1]!.content)).toEqual([P(21), '# The ledger', P(22)]);
+    expect(demoted(g)).toEqual([]);
+    expect(row(g, 'headings')).toEqual({ key: 'headings', file: 6, book: 6, why: [] });
+    expect(figures(g)).toEqual(CLEAR);
+  }, 120_000);
+  it('OpenDocument: a heading at level 10 is read at its level too', async () => {
+    const g = await read('odt', book([1, 8, 10]));
+    expect(one(g)).toEqual(stored(2));
+    expect(demoted(g)).toEqual([]);
+  }, 120_000);
+  it('a Word file whose chapters are in Heading 7 (nothing above it) is a book of chapters', async () => {
+    const g = await read('docx', book([7, 8, 9]));
+    expect(chapters(g).map((s) => s.title)).toEqual(['Chapter 1', 'Chapter 2']);
+    expect(one(g)).toEqual(stored(2));
+    expect(g.rep.items.filter((i) => i.kind === 'mammoth'), 'the converter names no style it does not know').toEqual([]);
+  }, 120_000);
+});
+
 describe('the one heading that cannot be kept: the sixth depth, in a file with seven levels of heading in use', () => {
-  /* RTF names its levels 1 to 9. Chapters in Heading 1 and a heading at each of Heading 2 to Heading 7 under the
-     first: the Heading 7 is six depths down, and a section holds five. It is set as a paragraph, reported exactly
-     as before, and the Headings row's two totals differ by that one and say why. */
-  it('RTF, Heading 1 to Heading 7: five depths kept, the sixth reported as body text; the Headings row says the one and no more; its button sets it as the deepest heading', async () => {
-    const g = await read('rtf', book([1, 2, 3, 4, 5, 6, 7]));
+  /* Chapters in Heading 1 and a heading at each of Heading 2 to Heading 7 under the first: the Heading 7 is six
+     depths down, and a section holds five. It is set as a paragraph, reported exactly as before, and the Headings
+     row's two totals differ by that one and say why. (Markdown, a web page and an EPUB have six levels: the case
+     cannot arise in them.) */
+  it.each(['rtf', 'docx', 'odt'] as const)('%s, Heading 1 to Heading 7: five depths kept, the sixth reported as body text; the Headings row says the one and no more; its button sets it as the deepest heading', async (kind) => {
+    const g = await read(kind, book([1, 2, 3, 4, 5, 6, 7]));
     expect(one(g)).toEqual(stored(5).slice(0, 11).concat(['The flake', P(7), '# The pans', P(20)]));
     const dem = demoted(g);
     expect(dem.map((i) => [i.before, (i.data as Rec).level, (i as unknown as Rec).reversible])).toEqual([['The flake', 7, true]]);

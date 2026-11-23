@@ -41460,13 +41460,15 @@
             if (taken.has(c)) return;
             if (is(c, "text", "h") || is(c, "text", "p")) {
               const sn = at(c, "text", "style-name");
-              const lvl = is(c, "text", "h") ? Math.min(6, Math.max(1, parseInt(at(c, "text", "outline-level"), 10) || headLevel(sn) || 1)) : Math.min(6, headLevel(sn));
+              /* BEUK:headdepths — the level the file gave (OpenDocument names ten), kept beside the h6 a page can write for levels 7 to 10 (data-ir-level), where each was read as level 6 */
+              const given = is(c, "text", "h") ? Math.max(1, parseInt(at(c, "text", "outline-level"), 10) || headLevel(sn) || 1) : headLevel(sn);
+              const lvl = Math.min(6, given);
               const pf = fmtOf(sn);
               /* a heading's own style is bold by nature: only italic there is the writer's */
               const pg = { b: !!pf.b, i: !!pf.i, u: !!pf.u, s: !!pf.s, sup: !!pf.sup, sub: !!pf.sub, sc: !!pf.sc, mono: !!pf.mono };
               const body = lvl ? inline(c, { b: false, i: false }) : docsWrapNew(inline(c, pg), pg, {});
               if (!/\S/.test(body.replace(/<br \/>/g, "").replace(/&nbsp;/g, " ")) ) return;
-              if (lvl) html.push("<h" + lvl + ">" + body + "</h" + lvl + ">");
+              if (lvl) html.push("<h" + lvl + (given > 6 && given <= 10 ? ' data-ir-level="' + given + '"' : "") + ">" + body + "</h" + lvl + ">");
               else if (isQuote(sn)) html.push("<blockquote><p>" + body + "</p></blockquote>");
               else html.push("<p>" + body + "</p>");
               return;
@@ -45553,7 +45555,10 @@
         "p[style-name='Log Dark'] => p:fresh", "p[style-name='Insert'] => p:fresh", "p[style-name='Insert Title'] => p:fresh",
         /* BEUK:layout — margin notes, sideways and upside-down blocks */
         "p[style-name='Margin Note'] => p:fresh", "p[style-name='Sideways'] => p:fresh", "p[style-name='Upside Down'] => p:fresh",
-        "p[style-name='Hanging'] => p:fresh", "p[style-name='Columns'] => p:fresh", "p[style-name='Columns Hanging'] => p:fresh"] };
+        "p[style-name='Hanging'] => p:fresh", "p[style-name='Columns'] => p:fresh", "p[style-name='Columns Hanging'] => p:fresh",
+        /* BEUK:headdepths — Word's Heading 7, 8 and 9: the converter knows Heading 1 to 6 and set these as plain paragraphs.
+           Each is a heading, handed on as an h6 that says its own level (irDocxHtmlToText reads the class). */
+        "p[style-name='heading 7'] => h6.ir-level-7:fresh", "p[style-name='heading 8'] => h6.ir-level-8:fresh", "p[style-name='heading 9'] => h6.ir-level-9:fresh"] };
       /* A web or mail address; a space or parenthesis inside it (Word
          keeps them raw) is percent-encoded by irRunsToMd, not refused. */
       const IR_LINK_OK = /^(?:https?:\/\/|mailto:)\S/i;
@@ -45890,7 +45895,13 @@
           const text = ln.paras.map((rs) => carry(irRunsToMd(rs, ir, false))).filter(Boolean).join(" ");
           if (text) ir.docNotes.push({ id: "note-loose-" + ir.docNotes.length, n: "", label: "?", text, stood: true, loose: ln.kind, secId: null });
         });
-        doc.querySelectorAll("*").forEach((el) => { el.removeAttribute("style"); el.removeAttribute("class"); el.removeAttribute("lang"); });
+        /* BEUK:headdepths — a page has six levels of heading; Word names nine and OpenDocument ten. A Word paragraph in
+           Heading 7, 8 or 9 was no heading at all here (the converter knows six: it came in as a paragraph, unreported),
+           and an OpenDocument heading at level 7 or deeper was read as level 6. Each now arrives as an h6 that says the
+           level the file gave it (IR_MAMMOTH_OPTS sets a Word one as h6.ir-level-7 …, the OpenDocument reader writes
+           data-ir-level itself), and the levels are ranked by that: a file of Heading 1, 7 and 9 holds three levels. */
+        doc.querySelectorAll("*").forEach((el) => { const lv = el.tagName === "H6" ? /(?:^|\s)ir-level-([789])(?:\s|$)/.exec(el.getAttribute("class") || "") : null; if (lv) el.setAttribute("data-ir-level", lv[1]); el.removeAttribute("style"); el.removeAttribute("class"); el.removeAttribute("lang"); });
+        const headLevelOf = (c) => Number(c.getAttribute("data-ir-level")) || Number(c.tagName.slice(1));
         /* BEUK:headlevels — depth is relative (irHeadDepths; V's ruling, 2026-11-20: the same book comes out the same
            from every format). A level the file never uses is no level, so its headings are set at their place among
            the levels it does use before the walk reads them: a file of Heading 1 and Heading 3 is walked as Heading 1
@@ -45903,11 +45914,11 @@
         const deepSubs = new Map();
         {
           const hs = Array.prototype.filter.call(doc.body ? doc.body.children : [], (c) => /^h[1-6]$/i.test(c.tagName));
-          const depth = irHeadDepths(hs.map((c) => ({ level: Number(c.tagName.slice(1)), text: irTextBr(c) })));
+          const depth = irHeadDepths(hs.map((c) => ({ level: headLevelOf(c), text: irTextBr(c) })));
           hs.forEach((c, k) => {
-            const level = Number(c.tagName.slice(1)), d = depth[k];
+            const level = headLevelOf(c), d = depth[k];
             let el = c;
-            if (d.rank !== level && d.rank >= 1 && d.rank <= 6) {
+            if (d.rank !== Number(c.tagName.slice(1)) && d.rank >= 1 && d.rank <= 6) {
               el = doc.createElement("h" + d.rank);
               while (c.firstChild) el.appendChild(c.firstChild);
               el.setAttribute("data-ir-level", c.getAttribute("data-ir-level") || String(level));
