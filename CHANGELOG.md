@@ -28,6 +28,13 @@ to make well.
 - **Lists keep your numbers.** A list typed 3, 7, 9 came in as 3, 4, 5 from Markdown, plain text and RTF. It comes in as you typed it.
 - **A web page's unmarked note stays put.** Like a Markdown file's, a note nothing points to now stays where the page had it.
 - **The manuscript's title keeps its letters.** The submission manuscript shows your title in capitals without rewriting it.
+- **A PDF keeps your paragraphs.** A letter or quotation set in from the margin came in as one paragraph for every line, and a paragraph was cut after any line that opened on a dash. Both now come in as the paragraphs you wrote.
+- **Headings and page names as you typed them.** "TWENTY-ONE" stays "TWENTY-ONE", and "Acknowledgements" is no longer respelled "Acknowledgments".
+- **A line break inside a paragraph is kept.** Shift+Enter in Word, and its like in a web page, RTF or OpenDocument file, came in as a space. It is stored as the break you made.
+- **Your list numbers on every page.** A list numbered 3, 7, 9 now shows 3, 7, 9 in the preview, the EPUB and the Word export.
+- **A list with space between its items is still a list.** Items parted by blank lines in a Markdown or text file came in as paragraphs that began with an asterisk.
+- **A Word footnote nothing points to is kept**, and the report names it.
+- **A picture keeps its title and its description**, with no dash added between them.
 - **The words themselves are checked.** After an import Beuk compares the words in your file with the words in your book, not only the totals. When they match, the card says "Every word of your file is in your book." When they don't, it says how many differ and the report lists them.
 - **A PDF is counted too.** The tally now works for a PDF: page numbers, running heads, the title page's lines and a contents page are each named with their count. A line of your story that repeated at a page's edge is no longer taken for a running head and left out.
 - **A chapter you haven't written yet stays.** A heading with nothing under it used to be dropped. It now comes in as an empty chapter or page, and an outline of headings comes in as chapters.
