@@ -77,6 +77,19 @@ export async function importFile(name: string, bytes: Uint8Array | null, text: s
   const doc = m.api.snapshotBookDoc() as { sections: Sec[]; images?: Rec[] };
   return { secs: doc.sections, rep, tally: rep.tally as Tally, api: m.api, images: doc.images || [] };
 }
+/** jsdom draws no canvas, and the print interior measures a running head's width on one (printFitHead): a stand-in
+ *  whose text is five units a character wide. Call after setupImport, in a test that builds the print interior. */
+export function standInCanvas(): void {
+  const ctx = { font: '', measureText: (s: string) => ({ width: String(s).length * 5 }) };
+  (globalThis as unknown as { HTMLCanvasElement: { prototype: { getContext: () => unknown } } }).HTMLCanvasElement.prototype.getContext = () => ctx;
+}
+/** The page's own functions over an empty book, no file read: for a test that sets a book's stored text itself. */
+export function freshApi(): Api {
+  document.body.innerHTML = markup.summary + markup.reopen + markup.report + markup.fileInput;
+  const m = make(env());
+  m.api.applyBookDoc(m.api.buildEmptyBook());
+  return m.api;
+}
 /** the sections that hold something of the file: text, or a heading of their own */
 export const written = (g: Got): Sec[] => g.secs.filter((s) => String(s.content || '').trim() || s.type === 'part' || (s.kind === 'body' && s.type === 'chapter'));
 export const blocksOf = (content: string): string[] => String(content || '').split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);

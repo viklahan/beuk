@@ -18,13 +18,20 @@ import { CLEAR, blocksOf, docx, epub, figures, importFile, odt, oh, op, page, rt
 
    What is NOT kept as a break, pinned so that it cannot move unseen (each is still a space, as before): a break in a
    heading, in a list's item, in a table's cell. The tally cannot see any of this (it does not count white space),
-   which is why it is held here directly. What each surface then SHOWS for a line break inside a paragraph is not
-   held here: the preview, the EPUB, the Word export and the Markdown export all set a paragraph's lines as one
-   flowing paragraph, as they do for a paragraph typed on several lines in the editor. */
+   which is why it is held here directly.
+
+   BEUK:breaksshown — the break is stored MARKED as one the writer made: a backslash straight before the newline
+   (Markdown's own spelling), BR below. A bare newline inside a paragraph is what the book has always held for a
+   paragraph merely typed on several lines, and every surface sets that as a space; a marked one is set as a line
+   break (line-breaks-shown.test.ts holds the surfaces). The pins below were the bare newline until that change.
+   The mark is the book's markup: the tally counts it on neither side (its figures stay CLEAR). */
 
 const LINES = ['12 Salt Road', 'Harbour Town', 'HT1 2AB'];
 const QUOTE = ['The tide keeps', 'its own count'];
 const REFS = ['See also', 'Chapter 4', 'Appendix B'];
+const BS = String.fromCharCode(92);
+/* the book's mark of a line break the writer made, and the newline it marks */
+const BR = BS + '\n';
 const BODY = 'The pans lay white under the low sun and nobody on the quay spoke of the ledger that year.';
 const LAST = 'The second chapter stands here so that the book has two.';
 const wr = (s: string, pr = '') => '<w:r>' + (pr ? '<w:rPr>' + pr + '</w:rPr>' : '') + '<w:t xml:space="preserve">' + xml(s) + '</w:t></w:r>';
@@ -57,7 +64,7 @@ const FILES: [string, () => Promise<{ bytes: Uint8Array | null; text: string }>]
     + rw('pard') + rw('s0') + ' ' + REFS.join(rw('line') + ' ') + rw('par') + '\n'
     + rtfH('Chapter 2') + rtfP(LAST)) })],
   ['breaks.epub', async () => ({ bytes: await epub([
-    { title: 'One', body: '<h1>Chapter 1</h1><p>' + BODY + '</p><p>' + LINES.join('<br/>') + '</p><p>First of two.<br/><br/>Second of two.</p><p><em>Slowly<br/>the tide</em> came in.</p><p>' + REFS.join('<br/>') + '</p>' },
+    { title: 'One', body: '<h1>Chapter 1</h1><p>' + BODY + '</p><p>' + LINES.join('<br/>') + '</p><p>First of two.<br/><br/>Second of two.</p><p><em>Slowly<br/>the tide</em> came in.</p><blockquote><p>' + QUOTE.join('<br/>') + '</p></blockquote><p>' + REFS.join('<br/>') + '</p>' },
     { title: 'Two', body: '<h1>Chapter 2</h1><p>' + LAST + '</p>' },
   ]), text: '' })],
 ];
@@ -72,11 +79,11 @@ describe('a line break the writer typed inside a paragraph is stored as a line b
     const g = await importFile(name, f.bytes, f.text);
     const blocks = one(g);
     expect(chapters(g), name + ': the book has its two chapters and no third').toEqual(['1', '2']);
-    expect(blocks, name).toContain(LINES.join('\n'));
+    expect(blocks, name).toContain(LINES.join(BR));
     expect(blocks, name).toContain('First of two.');
     expect(blocks, name).toContain('Second of two.');
-    expect(blocks, name).toContain('*Slowly*\n*the tide* came in.');
-    expect(blocks, name).toContain(REFS.join('\n'));
+    expect(blocks, name).toContain('*Slowly*' + BR + '*the tide* came in.');
+    expect(blocks, name).toContain(REFS.join(BR));
     expect(blocks.some((b) => b.indexOf(LINES.join(' ')) !== -1 || b.indexOf('First of two. Second of two.') !== -1), name + ': no break is closed up as a space').toBe(false);
     expect(figures(g), name + ': the tally').toEqual(CLEAR);
     /* the paragraph parted by an empty line is two paragraphs in the file's count too: the tally's rows agree.
@@ -85,29 +92,29 @@ describe('a line break the writer typed inside a paragraph is stored as a line b
     expect(g.tally.rows.filter((r) => r.key === 'paragraphs').map((r) => r.file - r.book), name + ': paragraphs, in the file less in the book').toEqual([/odt$/.test(name) ? 1 : 0]);
   }, 120_000);
 
-  it.each(FILES.filter(([n]) => !/epub$/.test(n)))('%s: each line of a quotation\'s paragraph is a line of the quotation', async (name, build) => {
+  it.each(FILES)('%s: each line of a quotation\'s paragraph is a line of the quotation, its break marked as the writer\'s', async (name, build) => {
     const f = await build();
     const g = await importFile(name, f.bytes, f.text);
     if (/rtf$/.test(name)) return; /* the RTF made here marks no quotation: its lines are held by the case above */
-    expect(one(g), name).toContain(QUOTE.map((l) => '> ' + l).join('\n'));
+    expect(one(g), name).toContain(QUOTE.map((l) => '> ' + l).join(BR));
   }, 120_000);
 });
 
 describe('what a line break is in Markdown and in plain text, as measured: each keeps its own rule', () => {
-  it('Markdown: a hard break (two trailing spaces, or a backslash, before the newline) and a <br> each stay a line break of the paragraph; a plain newline stays the newline it is', async () => {
-    const BS = String.fromCharCode(92);
+  it('Markdown: a hard break in each of its three spellings (two trailing spaces, a backslash, <br>) is stored as the marked break; a plain newline stays the bare newline it is', async () => {
     const g = await importFile('breaks.md', null, ['# Chapter 1', BODY, LINES[0] + '  \n' + LINES[1] + BS + '\n' + LINES[2], 'A line<br>and its next.', 'Wrapped here\nby the writer.', '# Chapter 2', LAST].join('\n\n') + '\n');
     const blocks = one(g);
-    expect(blocks).toContain('A line\nand its next.');
+    expect(blocks).toContain('A line' + BR + 'and its next.');
     expect(blocks).toContain('Wrapped here\nby the writer.');
-    /* the three lines stay three lines; what stands at each line's end is pinned as the import leaves it */
-    const addr = blocks.find((b) => b.indexOf(LINES[0]) === 0) || '';
-    expect(addr.split('\n').map((l) => l.replace(/\s+$/, '').replace(/\\$/, ''))).toEqual(LINES);
+    /* the three lines stay three lines, and each line end is the mark: the two spaces are gone (white space at a line's end is not stored), the backslash the writer typed stays as typed */
+    expect(blocks).toContain(LINES.join(BR));
+    expect(figures(g), 'the tally: the backslash is markup on both sides').toEqual(CLEAR);
   }, 120_000);
 
-  it('plain text: a paragraph typed on three lines is stored on three lines', async () => {
+  it('plain text: an address typed on three lines, in a file whose paragraphs run long on one line each, keeps its three lines (import-text-lines.test.ts holds the rule)', async () => {
     const g = await importFile('breaks.txt', null, ['Chapter 1', BODY, LINES.join('\n'), 'Chapter 2', LAST].join('\n\n') + '\n');
-    expect(one(g)).toContain(LINES.join('\n'));
+    expect(one(g)).toContain(LINES.join(BR));
+    expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 });
 
@@ -139,8 +146,8 @@ describe('the tally counts a paragraph of several lines the same way on both sid
     const row = ((g.tally as unknown as { rows: Row[] }).rows).find((r) => r.key === 'paragraphs')!;
     expect(row.file, 'the totals differ, so the row gives its reasons').not.toBe(row.book);
     expect((row.why || []).filter((y) => y.k === 'none'), 'nothing unexplained on either side').toEqual([]);
-    expect(blocksOf(written(g).filter((s) => s.type === 'chapter')[0].content)).toEqual([BODY, 'The rule:\nNobody on the quay spoke of the ledger that year.',
-      'Listen.\nThe tide came in slowly.\nThe lamps came on along the wall.', 'She said it once, and plainly enough for the whole quay to hear it.\nNobody answered.']);
+    expect(blocksOf(written(g).filter((s) => s.type === 'chapter')[0].content)).toEqual([BODY, 'The rule:' + BR + 'Nobody on the quay spoke of the ledger that year.',
+      'Listen.' + BR + 'The tide came in slowly.' + BR + 'The lamps came on along the wall.', 'She said it once, and plainly enough for the whole quay to hear it.' + BR + 'Nobody answered.']);
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 });
