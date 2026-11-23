@@ -50569,7 +50569,7 @@
         if (st.joined || st.kept) add({ kind: "pdfHyphens", group: "structure", data: { n: st.joined, kept: st.kept } });
         /* BEUK:lineendsgiven — a hyphen at a line's end kept open because the PDF sets that piece open elsewhere; and each dash at a line's end the PDF's text does not settle, kept closed up as the page shows it: both listed whole */
         if ((st.hyOpen || []).length) add({ kind: "pdfHyphenOpen", group: "structure", before: st.hyOpen.map((w) => "“" + w + "”").join(" · "), data: { n: st.hyOpen.length, words: st.hyOpen } });
-        if ((st.hyDigit || []).length) add({ kind: "pdfHyphenDigit", group: "structure", before: st.hyDigit.map((w) => "“" + w + "”").join(" · "), data: { n: st.hyDigit.length, words: st.hyDigit } }); /* BEUK:hyphendigits */
+        if ((st.hyDigit || []).length) add({ kind: "pdfHyphenDigit", group: "structure", before: Array.from(new Set(st.hyDigit)).map((w) => { const k = st.hyDigit.filter((x) => x === w).length; return "“" + w + "”" + (k > 1 ? " ×" + k : ""); }).join(" · "), data: { n: st.hyDigit.length, words: st.hyDigit } }); /* BEUK:hyphendigits — each word once, with its places where more than one; data.words holds every place */
         if ((st.dashKept || []).length) add({ kind: "pdfDashKept", group: "structure", before: st.dashKept.map((w) => "“" + w + "”").join(" · "), data: { n: st.dashKept.length, words: st.dashKept } });
         /* BEUK:hyphensgiven — the words whose line-end hyphen the PDF's own text does not settle: each word once, with what
            the book holds, the other reading, and every place it stands (found again by its own words when the writer joins it) */

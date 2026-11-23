@@ -317,6 +317,15 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     expect(textOf(g.api)).toContain('confirmation code VIE-04-10 into the ledger');
   }, 120_000);
 
+  it('the same code broken at two line ends is named once, with its two places; a second code beside it once', async () => {
+    const g = await importPdf(book(CODE, ['The clerk copied the confirmation code VIE-', '04-10 a second time and then the index GRZ-', '02 beneath it.']));
+    expect(g.all).toContain('confirmation code VIE-04-10 a second time and then the index GRZ-02 beneath it.');
+    expect(g.asks).toEqual([]);
+    expect(g.items.filter((it: { kind: string }) => it.kind === 'pdfHyphenDigit').map((it) => ({ before: (it as Item & { before?: string }).before, data: it.data }))).toEqual([{ before: '“VIE-04-10” ×2 · “GRZ-02”', data: { n: 3, words: ['VIE-04-10', 'VIE-04-10', 'GRZ-02'] } }]);
+    expect(reportSaid(g)).toContain('3 lines of the PDF end on a hyphen beside a digit: each kept as the page shows it');
+    expect({ unaccounted: g.tally.unaccounted, same: g.tally.chars.same }).toEqual({ unaccounted: 0, same: true });
+  }, 120_000);
+
   it('the same code where only the form without that hyphen stands elsewhere ("VIE04-10"): taken off, counted in the row and listed, as for any word', async () => {
     const g = await importPdf(book(CODE, ['The code VIE04-10 was struck out at noon.']));
     expect(g.all).toContain('confirmation code VIE04-10 into the ledger');
