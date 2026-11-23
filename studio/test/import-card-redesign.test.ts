@@ -175,7 +175,7 @@ describe('the card: the verdict panel first', () => {
 
   it('a count that differs with no named reason puts the panel in the differs state: a file with no headings, whose book has one', async () => {
     fresh();
-    const rep = await importFile('no-headings.txt', null, 'The caravan left at dawn.\n\nThe pans lay white under the sun.\n');
+    const rep = await importFile('no-headings.md', null, 'The caravan left at dawn.\n\nThe pans lay white under the sun.\n'); // Markdown: a text file marks no headings, and its tally has no row for them
     const un = rep.tally.rows.filter((r) => r.file !== r.book && r.why.some((y) => y.k === 'none'));
     expect(un.map((r) => [r.key, r.file, r.book, r.why]), 'the tally itself: one heading in the book that the file does not have, not explained').toEqual([['headings', 0, 1, [{ k: 'none', n: 1, side: -1 }]]]);
     expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.chars.same }).toEqual({ unaccounted: 0, same: true });
@@ -203,10 +203,17 @@ describe('what the old screen filed under "Dropped or not supported" is named fo
     expect(rep.items.filter((it) => it.kind === 'mdImage').map((it) => it.data.n)).toEqual([1]);
     const orphans = rep.items.filter((it) => it.kind === 'noteOrphan');
     expect(orphans.length).toBe(1);
-    expect(txt($('irH'))).toBe('Your book is in, with 2 things to check.');
+    /* three things: the picture, the note, and a count the tally itself leaves unexplained. The note nothing marks stands in
+       the book as a paragraph, and the tally (2026-11-22) has no reason for that paragraph: "1 in the book not explained".
+       The card shows what the tally says and does not explain it away. */
+    const para = rep.tally.rows.find((r) => r.key === 'paragraphs')!;
+    expect(para.why.filter((y) => y.k === 'none')).toEqual([{ k: 'none', n: 1, side: -1 }]);
+    expect(txt($('irH'))).toBe('Your book is in, with 3 things to check.');
     const panel = q('.ir-verdict', card())!;
     expect(panel.classList.contains('differs')).toBe(true);
     const said = [txt(q('.ir-vhead p', panel)), ...qa('.ir-vsay', panel).map(txt)];
+    expect(said).toContain('Paragraphs: ' + para.file + ' in your file, ' + para.book + ' in your book (1 in the book not explained).');
+    expect(said).toContain('Every character of your file is in your book.');
     expect(said).toContain('Your file names 1 picture it does not contain.');
     expect(said).toContain('Your book keeps each pointer and its description, and has no picture to show. Add the pictures from the image library, or import the folder as a zip.');
     expect(said).toContain('1 note in your file has no mark in the text.');
@@ -215,7 +222,10 @@ describe('what the old screen filed under "Dropped or not supported" is named fo
     const all = doc().sections.map((s) => s.content).join('\n');
     expect(all).toContain('![A copper plate](images/plate-01.png)');
     expect(all).toContain('A note nothing marks.');
-    q('.ir-vact [data-irpart="look"]', panel)!.click();
+    /* the tally's own line for the picture reads "not kept"; the account's table says it in the card's words */
+    $('btnIrEvery').click();
+    const pics = qa('#ir-g-count .ir-ctable .ir-trow', account()).find((r) => txt(q('.ir-tname', r)) === 'Pictures')!;
+    expect(txt(q('.ir-twhy', pics))).toBe('Your file names 1 picture it does not contain.');
     const look = q('#ir-g-look', account())!;
     expect(txt(q('.ir-ph', look))).toBe('For you to look at');
     const heads = qa('.ir-askhead', look).map(txt);
@@ -290,11 +300,11 @@ describe('the full account: the same report, part by part', () => {
     expect(txt($('irSub'))).toBe('Your file beside your book, count by count. Beuk changed none of your characters: no quote, dash or ellipsis was changed. Auto-Format in the editor tidies them when you want it. What follows is what it set aside, what a Beuk book cannot show, and where it filed each page.');
     const order = ['count', 'look', 'aside', 'looks', 'typography', 'filed', 'notes', 'book'];
     const ids = () => qa('.ir-part', account()).map((p) => p.id.replace('ir-g-', ''));
-    expect(ids(), 'only the parts this import has something in, in order').toEqual(['count', 'aside', 'filed']);
+    expect(ids(), 'only the parts this import has something in, in order').toEqual(['count', 'aside', 'filed', 'book']); // book: the title read from the file's name
     expect(qa('.ir-chip', account()).map((a) => a.getAttribute('href'))).toEqual(ids().map((p) => '#ir-g-' + p));
     for (const p of qa('.ir-part', account())) expect(p.children.length, p.id + ' has something under its heading').toBeGreaterThan(1);
-    expect(qa('.ir-chip', account()).map(txt)).toEqual(['The count', 'Set aside 17 characters', 'Where pages were filed']);
-    expect(qa('.ir-ph', account()).map(txt)).toEqual(['The count', 'Set aside: 17 characters', 'Where Beuk filed your pages']);
+    expect(qa('.ir-chip', account()).map(txt)).toEqual(['The count', 'Set aside 17 characters', 'Where pages were filed', 'Book details 1']);
+    expect(qa('.ir-ph', account()).map(txt)).toEqual(['The count', 'Set aside: 17 characters', 'Where Beuk filed your pages', 'Book details Beuk read from your file']);
     // every part, when each has something
     withItems([{ kind: 'mdImage', group: 'dropped', data: { n: 2 } }, { kind: 'underline', group: 'dropped', data: { n: 3 } }, { kind: 'typography', group: 'typography', data: { q: 1, d: 0, e: 0 } }, { kind: 'notes', group: 'notes', data: { found: 1, mapped: 1, orphans: 0 } }, { kind: 'zzBook', group: 'book', data: {} }]);
     $('btnIrEvery').click();
@@ -324,7 +334,8 @@ describe('the full account: the same report, part by part', () => {
     expect(body).toEqual([['Characters', num(ty.file), num(ty.book)], ...differ.map((r) => [t('ir.tally.r.' + r.key), num(r.file), num(r.book)])]);
     expect(txt(q('.ir-twhy', table[1]))).toBe('17 are set aside, each named under Set aside.None is unaccounted for.');
     const same = ty.rows.filter((r) => r.file === r.book);
-    expect(txt(q('.ir-samehead', count))).toBe(same.length + ' counts are the same in your file and your book');
+    expect(same.length).toBeGreaterThan(0);
+    expect(txt(q('.ir-samehead', count))).toBe(same.length === 1 ? '1 count is the same in your file and your book' : same.length + ' counts are the same in your file and your book');
     expect(qa('.ir-samegrid > div', count).map((d) => qa('span', d).map(txt))).toEqual(same.map((r) => [t('ir.tally.r.' + r.key), num(r.book)]));
     // nothing the old tally showed is gone: it stands whole, behind the counts
     const whole = q('details#ir-g-tally', count)!;

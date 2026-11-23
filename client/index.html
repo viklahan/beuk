@@ -46146,27 +46146,26 @@
           default: return "aside";
         }
       }
-      /* The pictures a file names and does not hold (the report's mdImage line) are a named reason, though the tally
-         itself has none for them: so many of the "Pictures" row's unexplained surplus on the file's side are explained. */
-      const irRowCover = (r, pics) => r && r.key === "pictures" && r.file > r.book ? Math.min(Number(pics) || 0, (Array.isArray(r.why) ? r.why : []).filter((y) => y.k === "none" && y.side > 0).reduce((a, y) => a + (Number(y.n) || 0), 0)) : 0;
-      /* How many of a row's difference no reason names (irTallyWhy: its "none" reasons, and whatever its reasons do not
-         add up to; less what irRowCover names): 0 when the two figures are the same, or all of the difference is explained. */
-      function irRowUnexplained(r, pics) {
+      /* How many of a row's difference no reason of its own names (irTallyWhy: its "none" reasons, and whatever its
+         reasons do not add up to): 0 when the two figures are the same, or every one of the difference is explained.
+         Read from the tally's own data and nothing else: a difference the tally does not explain is shown as one. */
+      function irRowUnexplained(r) {
         if (!r || r.file === r.book) return 0;
         const why = Array.isArray(r.why) ? r.why : [];
         const none = why.filter((y) => y.k === "none").reduce((a, y) => a + (Number(y.n) || 0), 0);
         const net = why.reduce((a, y) => a + (y.side < 0 ? -1 : 1) * (Number(y.n) || 0), 0);
-        return none - irRowCover(r, pics) + Math.abs((Number(r.file) || 0) - (Number(r.book) || 0) - net);
+        return none + Math.abs((Number(r.file) || 0) - (Number(r.book) || 0) - net);
       }
-      /* A row's reasons as lines, the pictures the file does not hold said in the card's own words in place of "not explained" */
+      /* A row's reasons as lines. Pictures the file names and does not hold are said in the card's own words where the
+         tally's reason for them reads "not kept": the book keeps each pointer, and the file never held the picture. */
       function irRowWhyLines(r, pics) {
-        let cover = irRowCover(r, pics);
-        const covered = cover, lines = [];
+        let named = r && r.key === "pictures" ? (Number(pics) || 0) : 0;
+        const lines = [];
         (Array.isArray(r.why) ? r.why : []).forEach((y) => {
-          if (y.k === "none" && y.side > 0 && cover) { const n = Math.min(cover, Number(y.n) || 0); cover -= n; if (y.n - n > 0) lines.push(irTallyWhyLine(Object.assign({}, y, { n: y.n - n }))); return; }
+          if (y.k === "picsLost" && named) { const n = Math.min(named, Number(y.n) || 0); named -= n; lines.push(irSay("ir.card.pics", n)); if (y.n - n > 0) lines.push(irTallyWhyLine(Object.assign({}, y, { n: y.n - n }))); return; }
           lines.push(irTallyWhyLine(y));
         });
-        return (covered ? [irSay("ir.card.pics", covered)] : []).concat(lines);
+        return lines;
       }
       /* What the card and the account both read off the report: the tally (in characters, or none), what differs
          (characters; a count with no named reason; pictures the file names and does not hold; notes nothing marks),
@@ -46184,7 +46183,7 @@
           else if (!ty.chars.same) diffs.push({ what: "chars", key: "ir.tally.cardWords", n: ty.chars.fileOnlyN || ty.chars.bookOnlyN });
         }
         const pics = items.filter((it) => it.kind === "mdImage").reduce((a, it) => a + (Number(it.data && it.data.n) || 0), 0);
-        const rows = ((ty && ty.rows) || []).filter((r) => irRowUnexplained(r, pics) > 0);
+        const rows = ((ty && ty.rows) || []).filter((r) => irRowUnexplained(r) > 0);
         if (rows.length) diffs.push({ what: "counts", n: rows.length, rows });
         if (pics) diffs.push({ what: "pics", n: pics });
         const notes = items.filter((it) => it.kind === "noteOrphan").length;
@@ -46386,7 +46385,7 @@
               why = !ty.counted ? [t("ir.tally.notCountedWhy")] : (v.aside + v.joined ? [irSay("ir.acc.asideN", v.aside + v.joined)] : []).concat(v.joined ? [t("ir.card.joined", { n: v.joined }) + ": " + fmtNum(v.joined)] : [],
                 [ty.unaccounted > 0 ? irSay("ir.tally.cardWarn", ty.unaccounted) : ty.unaccounted < 0 ? irSay("ir.tally.cardMore", -ty.unaccounted) : t("ir.acc.noneUn")]);
             } else why = irRowWhyLines(r, v.pics);
-            h += '<div class="ir-trow' + (r.chars ? " strong" : "") + (!r.chars && irRowUnexplained(r, v.pics) ? " gold" : "") + '"><span class="ir-tname">' + esc(t("ir.tally.r." + r.key)) + '</span><span class="num">' + (r.file == null ? esc(t("ir.tally.notCounted")) : num(r.file)) + '</span><span class="num book">' + num(r.book) + '</span><span class="ir-twhy">' + why.map((y) => "<span>" + esc(y) + "</span>").join("") + "</span></div>";
+            h += '<div class="ir-trow' + (r.chars ? " strong" : "") + (!r.chars && irRowUnexplained(r) ? " gold" : "") + '"><span class="ir-tname">' + esc(t("ir.tally.r." + r.key)) + '</span><span class="num">' + (r.file == null ? esc(t("ir.tally.notCounted")) : num(r.file)) + '</span><span class="num book">' + num(r.book) + '</span><span class="ir-twhy">' + why.map((y) => "<span>" + esc(y) + "</span>").join("") + "</span></div>";
           });
           h += "</div>";
         }
@@ -46410,7 +46409,14 @@
         pics.forEach((it) => { const n = Number(it.data && it.data.n) || 0; h += block(irSay("ir.card.pics", n), t("ir.acc.picsWhy"), [], "pics", it); });
         /* a note the file defines and nothing marks: named by the writer's own label, with its text, kept where it stood */
         const notes = of(["noteOrphan"]);
-        if (notes.length) h += block(irSay("ir.card.notes", notes.length), t("ir.acc.notesWhy"), notes.map((it) => irItemRow(it, { main: '<div class="ir-imain ir-note"><span class="ir-notelabel">' + esc(String(it.data && it.data.n != null ? it.data.n : "")) + '</span><span class="ir-set">' + esc(it.before || "") + "</span>" +
+        /* the note's text: the report's own copy of it, or (a Markdown note, whose report keeps its label and its page only) the line as it stands in the book now */
+        const noteText = (it) => {
+          if (it.before) return it.before;
+          const s = it.where && it.where.secId ? state.sections.find((x) => x.id === it.where.secId) : null, n = String(it.data && it.data.n != null ? it.data.n : "");
+          const line = s && /^\d{1,3}$/.test(n) ? String(s.content || "").split("\n").find((l) => l.indexOf("[^" + n + "]:") === 0 || l.indexOf("[" + n + "]:") === 0) : "";
+          return line ? irClip(line.slice(line.indexOf("]:") + 2), 140) : "";
+        };
+        if (notes.length) h += block(irSay("ir.card.notes", notes.length), t("ir.acc.notesWhy"), notes.map((it) => irItemRow(it, { main: '<div class="ir-imain ir-note"><span class="ir-notelabel">' + esc(String(it.data && it.data.n != null ? it.data.n : "")) + '</span><span class="ir-set">' + esc(noteText(it)) + "</span>" +
           (it.where && it.where.label ? '<div class="ir-where">' + esc(t("ir.where", { where: it.where.label })) + "</div>" : "") + "</div>" })), "notes");
         /* BEUK:hyphensgiven — the words a PDF's line-end hyphen leaves for the writer: the line that joins them all first, then each word */
         const hy = of(["pdfHyphenAskAll", "pdfHyphenAsk"]);
