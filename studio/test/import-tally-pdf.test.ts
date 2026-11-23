@@ -121,9 +121,9 @@ describe('the import tally counts a PDF from the text pdf.js reads, and names wh
     expect(ty.pdf!.rejoined, 'no hyphen was taken off').toEqual([]);
     expect((lastModule!.api.snapshotBookDoc() as { sections: { content: string }[] }).sections.map((x) => x.content).join('\n'), 'the word as the page shows it').toContain('the trans-port reached');
     expect((rep as unknown as { items: { kind: string; data: Rec }[] }).items.filter((it) => it.kind === 'pdfHyphenAsk').map((it) => it.data), 'the word is listed for the writer, with both readings').toMatchObject([{ kept: 'trans-port', offered: 'transport', why: 'neither', n: 1 }]);
-    // the card's sentence stays true arithmetic (182 − 122 = 60 set aside); the full tally shows the pieces' 182 and no row for a hyphen
+    // the card's three figures stay true arithmetic (182 = 122 + 60 set aside); the full tally shows the pieces' 182 and no row for a hyphen
     lastModule!.api.irRenderReport();
-    expect(document.body.textContent || '').toContain(t('ir.tally.cardOk', { file: '182', book: '122', aside: '60' }));
+    expect((document.querySelector('.ir-card .ir-figs')!.textContent || '').replace(/\s+/g, ' ')).toBe('182' + t('ir.card.figFile') + '=122' + t('ir.card.figBook') + '+60' + t('ir.card.figAside'));
     const el = document.createElement('div');
     el.innerHTML = String(lastModule!.api.irTallyHtmlOf(rep));
     const said = (el.textContent || '').replace(/\s+/g, ' ');

@@ -639,7 +639,7 @@ export function extractImportMarkup(html) {
   if (!fi) fail("client/index.html no longer has the Import button's file input (#fileInput)");
   for (const id of ['importSummaryText', 'btnImportSummaryClose']) if (!summary.includes('id="' + id + '"')) fail(`the import summary no longer has #${id}`);
   if (!reopen.includes('id="btnIrReopen"')) fail("the import report's reopen block no longer has #btnIrReopen");
-  for (const id of ['irH', 'irSub', 'irBody', 'irUndoAllNote', 'btnIrDismiss', 'btnIrUndoAll', 'btnIrClose', 'btnIrKeep']) if (!report.includes('id="' + id + '"')) fail(`the import report no longer has #${id}`);
+  for (const id of ['irH', 'irFile', 'irSub', 'irBody', 'irUndoAllNote', 'btnIrDismiss', 'btnIrUndoAll', 'btnIrClose', 'btnIrKeep', 'btnIrEvery', 'btnIrBack']) if (!report.includes('id="' + id + '"')) fail(`the import report no longer has #${id}`);
   if (/<script|\son[a-z]+=/i.test(summary + reopen + report + fi[0])) fail("the import's markup carries a script or a handler attribute: the studio puts it in place as it is");
   // the mammoth build 1.0 links (its .docx reader): the same file, the same integrity
   const mammoth = /<script src="assets\/vendor\/mammoth\.browser\.min\.js" integrity="([^"]+)"><\/script>/.exec(html);

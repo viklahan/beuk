@@ -154,16 +154,20 @@ describe("wave 6: 1.0's Import button, the replace and the summary (task 2)", ()
     expect($('importSummary').textContent).toContain(t('import.recognised'));
     // the report, open over the new book, on the dialog stack; the reopen button shown
     expect($('modalImportReport').classList.contains('open')).toBe(true);
-    // BEUK:importcard — it opens on the book that came in: the file's name, the chapters found, and the one-by-one list a step behind
+    // BEUK:importcard — it opens on the card: the file's name beside the title, the verdict panel first, the chapters found, and the full account a step behind
     expect($('modalImportReport').querySelector('.ir-modal')!.classList.contains('ir-card-view')).toBe(true);
-    expect($('irBody').querySelector('.ir-kicker')!.textContent).toContain('plain-manuscript.txt');
+    expect($('irFile').textContent).toBe('plain-manuscript.txt');
+    expect($('irBody').querySelector('.ir-card')!.firstElementChild!.classList.contains('ir-verdict')).toBe(true);
     expect($('irBody').querySelectorAll('.ir-row').length).toBe(2);
-    expect($('irSub').textContent).toBe(t('ir.card.lede', { words: '48' })); // the words the import placed (the whole book counts 110 with the pages Beuk builds itself)
     await click($('btnIrEvery'));
     expect($('modalImportReport').querySelector('.ir-modal')!.classList.contains('ir-card-view')).toBe(false);
-    expect($('irSub').textContent).toContain('plain-manuscript.txt');
+    expect($('irH').textContent).toBe(t('ir.acc.title'));
+    expect($('irFile').textContent).toContain('plain-manuscript.txt');
+    expect($('irBody').textContent).toContain(t('ir.acc.wordsPlural', { n: '48' })); // the words the import placed (the whole book counts 110 with the pages Beuk builds itself): the old card's lede, now a line of the count
     expect($('irReopen').style.display).toBe('');
-    // its close; then the summary's close
+    // back to the card, and its "Open my book" (the old Close) closes the report; then the summary's close
+    await click($('btnIrBack'));
+    expect($('modalImportReport').querySelector('.ir-modal')!.classList.contains('ir-card-view')).toBe(true);
     await click($('btnIrClose'));
     expect($('modalImportReport').classList.contains('open')).toBe(false);
     await click($('btnImportSummaryClose'));

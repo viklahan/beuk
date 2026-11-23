@@ -116,10 +116,14 @@ const isOpen = (id: string) => !!document.getElementById(id) && $(id).classList.
 const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 const button = (label: string) => Array.from(document.querySelectorAll('button')).find((x) => x.textContent === label) as HTMLElement | undefined;
 const live = () => exportBook(desk.ydoc!) as Rec;
-/** The toasts were only 1.0's own note after an import ("Imported <name> — <what it recognised>"): no error, no other. */
+/** After an import: no error toast, no other; the import's card stands open with the file's name (until 2026-11-22 this
+ *  was 1.0's own note, "Imported <name> — <what it recognised>", as the one toast). */
 const onlyImported = (name: string) => {
-  expect(seen.toasts.length, JSON.stringify(seen.toasts)).toBe(1);
-  expect(seen.toasts[0]!.startsWith(t('import.imported', { name }) + ' — '), seen.toasts[0]).toBe(true);
+  // BEUK:importcard — the "Imported <name> — …" toast is no longer raised over the import's own card (it sat on the
+  // card's buttons): the card is open and names the file, and there is no toast at all
+  expect(seen.toasts, JSON.stringify(seen.toasts)).toEqual([]);
+  expect(isOpen('modalImportReport'), 'the import card is open').toBe(true);
+  expect($('irFile').textContent).toBe(name);
 };
 const stored = (doc: Rec) => JSON.parse(JSON.stringify(readBook(doc).book)) as Rec;
 

@@ -3198,7 +3198,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.card.opens-on-the-book',
     title:
-      'The import report opens on the book that came in (chapters, the sections inside them, the pages around them, and three plain lines of what Beuk did); every change one by one is a step behind it, and a label opens its section',
+      'The import report opens on a card that answers first (the verdict panel with its three figures and a row for each kind set aside, then the book Beuk found), with nothing on it red; the full account is a step behind it with every item of the report as one row, and a page opens its section',
     kind: 'client-only',
     reason: 'The import report (BEUK:importcard) is drawn in the studio from the book on the desk; the server never sees an import.',
   },
@@ -3434,7 +3434,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.report.names-the-file',
     title:
-      "The import report names the kind of file that was imported (never a Word file for Markdown, text or OpenDocument), and the summary's count of things left out is the list's",
+      "The import report names the kind of file that was imported (never a Word file for Markdown, text or OpenDocument), and the card's count of looks the book does not carry is the full account's",
     kind: 'client-only',
     reason: 'The import report (BEUK:importreport, BEUK:importcard) is drawn in the studio; the server never sees an import.',
   },

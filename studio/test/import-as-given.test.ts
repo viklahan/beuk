@@ -161,12 +161,12 @@ describe('the import stores the writer\'s characters as the file gives them: no 
     expect(polished).toBe('“Go,” she said — ‘now’… It ran 1914–1918, pages 12–15; a — b, and it’s done—almost.');
   }, 120_000);
 
-  it('the import card says so in one sentence, naming the editor\'s own button for the tidying', async () => {
+  it('the full account says so in its opening lines, naming the editor\'s own button for the tidying', async () => {
     await importFile('as-given.txt', null, TXT);
     lastModule!.api.irRenderReport();
     const said = (document.body.textContent || '').replace(/\s+/g, ' ');
     expect(t('tool.autoFormat')).toBe('Auto-Format');
-    expect(said).toContain('Your text is as your file gave it: no quote, dash or ellipsis was changed. Auto-Format in the editor tidies them when you want it.');
+    expect(said).toContain('Beuk changed none of your characters: no quote, dash or ellipsis was changed. Auto-Format in the editor tidies them when you want it.');
   }, 120_000);
 
   it('a scene break the writer typed is still the book\'s own break, and the report names the marker it came from', async () => {
@@ -187,6 +187,7 @@ type Tally = { v: number; counted: boolean; file: number; book: number; aside: R
 const tallyOf = (rep: Rep) => rep.tally as unknown as Tally;
 const reportSaid = (rep: Rep) => { const el = document.createElement('div'); el.innerHTML = String(lastModule!.api.irTallyHtmlOf(rep)); return (el.textContent || '').replace(/\s+/g, ' '); };
 const cardSaid = () => { lastModule!.api.irRenderReport(); return (document.body.textContent || '').replace(/\s+/g, ' '); };
+const figures = (file: string, book: string, aside: string) => file + t('ir.card.figFile') + '=' + book + t('ir.card.figBook') + '+' + aside + t('ir.card.figAside'); /* the card's three figures, as its text runs: file = book + set aside */
 /** the characters of a text as the tally counts them here: every code point that is not whitespace (the fixtures hold none of Beuk's marks) */
 const count = (s: string) => Array.from(s.replace(/\s+/g, '')).length;
 
@@ -202,7 +203,8 @@ describe('the import tally counts and compares characters, exactly', () => {
     expect(ty.file, name + ': file = book + set aside + unaccounted').toBe(ty.book + aside + ty.unaccounted);
     expect({ unaccounted: ty.unaccounted, same: ty.chars.same, fileOnly: ty.chars.fileOnly, bookOnly: ty.chars.bookOnly }, name).toEqual({ unaccounted: 0, same: true, fileOnly: [], bookOnly: [] });
     // the all-clear, in characters
-    expect(cardSaid()).toContain(t('ir.tally.cardOk', { file: ty.file.toLocaleString('en-US'), book: ty.book.toLocaleString('en-US'), aside: aside.toLocaleString('en-US') }));
+    expect(cardSaid()).toContain(figures(ty.file.toLocaleString('en-US'), ty.book.toLocaleString('en-US'), aside.toLocaleString('en-US')));
+    expect((document.querySelector('.ir-card .ir-verdict.clear .ir-vhead')!.textContent || '').trim()).toBe('Every character of your file is in your book.');
     expect(reportSaid(rep)).toContain('Every character of your file is in your book.');
   }, 120_000);
 
@@ -224,7 +226,8 @@ describe('the import tally counts and compares characters, exactly', () => {
     expect(ty.chars.fileOnly).toEqual([['"', 2, ['"Go,"']]]);
     expect(ty.chars.bookOnly).toEqual([['“', 1, ['“Go,”']], ['”', 1, ['“Go,”']]]);
     const card = cardSaid();
-    expect(card).not.toContain('Every character is accounted for');
+    expect(card).not.toContain('Every character of your file is in your book.');
+    expect(document.querySelector('.ir-card .ir-verdict.differs'), 'the verdict panel is the differs panel').not.toBeNull();
     expect(card).toContain('2 characters of your file are not in your book as written.');
     const said = reportSaid(rep);
     expect(said).toContain('In your file, not in your book: “"” U+0022 ×2 (in “"Go,"”)');
