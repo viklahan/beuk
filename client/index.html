@@ -31040,7 +31040,7 @@
           /* BEUK:listmarkstyped — a list set under the marks the writer typed: its own marker is off and each item's
              mark (li-mark, the item's first characters) hangs in the list's margin where the marker stood, ranged to
              the text; a mark wider than the margin pushes its first line along, never over it */
-          S + ".book-list-typed { list-style: none; }",
+          S + "ol.book-list-typed, " + S + "ul.book-list-typed { list-style: none; }", /* named with its element, as the two rules above are: a class alone is the weaker rule, and the list's own marker stayed on beside the typed mark (seen in a real browser) */
           S + ".book-list-typed li { text-indent: -1.65em; }",
           S + ".book-list-typed .li-mark { display: inline-block; min-width: 1.65em; box-sizing: border-box; padding-right: 0.4em; padding-inline-end: 0.4em; padding-inline-start: 0; text-indent: 0; text-align: right; text-align: end; white-space: nowrap; }",
           /* Containers. Verse: set flush left and ragged whatever the
