@@ -60,8 +60,17 @@ export const MERIDIAN_INVENTORY: Record<string, Inventory> = {
      (Before, the reader looked for the two forms among each line's words less its first and its last, and took 56 of these hyphens off,
      each one the writer's: "Cross-" + "checked" 24 times, "one-" + "time" 18, "ink-" + "plate" 9, and the five above. The file was
      319746 and the book 318558: each is 56 more now.)
-     The row: the label line "Chapter I" over each of the 12 titles, the word's 84 */
-  'pdf-plain': { file: 319802, book: 318614, aside: { titlePage: 256, contents: 848, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [], pdf: { raw: 319802, joins: {}, rejoined: 0 } },
-  /* as the plain PDF, with its running heads and page numbers set aside (the file was 325398 and the book 318558: each is 56 more now) */
-  'pdf-heads': { file: 325454, book: 318614, aside: { pageNumbers: 756, titlePage: 256, contents: 848, headers: 4896, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [], pdf: { raw: 325454, joins: {}, rejoined: 0 } },
+     The row: the label line "Chapter I" over each of the 12 titles, the word's 84.
+     The tableHeads row (BEUK:pdftables, 2026-11-22): a table's first row printed again at the top of the table's next page, 13 times in
+     this book, is the typesetter's repeat and is set aside: once for the table of operatives (64 characters), 8 times for the chapters'
+     tables ("Index", "Operational Event & Location", "Verification Evidence & Nested Audit", "Time / Variance": 75 each, 600) and 4
+     times for the appendix's (66 each, 264): 928. The book held those rows twice and was 318614: 318614 - 928 = 317686. The file's
+     figure does not move. The tables themselves now hold what the Word file's hold: 24 tables, 94 rows, 322 cells, each of the 298
+     cells with text whole and in its place (none was before), and a hyphen at the end of a cell's line is settled like any other
+     (49 of them: 21 kept, their word standing whole elsewhere; 28 left for the writer: the tables' own 27 codes, "VIE-04-A" to
+     "BER-12-B" and "CH-1A", "CH-5A", "CH-9A", and "Cross-checks"); none is taken off. */
+  'pdf-plain': { file: 319802, book: 317686, aside: { titlePage: 256, contents: 848, tableHeads: 928, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [], pdf: { raw: 319802, joins: {}, rejoined: 0 } },
+  /* as the plain PDF, with its running heads and page numbers set aside (the file was 325398 and the book 318558: each was 56 more after the hyphen rule;
+     the book is 928 fewer since a table's repeated first row is set aside, as in the plain PDF) */
+  'pdf-heads': { file: 325454, book: 317686, aside: { pageNumbers: 756, titlePage: 256, contents: 848, headers: 4896, tableHeads: 928, headingMarks: 84 }, unaccounted: 0, fileOnly: [], bookOnly: [], pdf: { raw: 325454, joins: {}, rejoined: 0 } },
 };

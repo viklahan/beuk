@@ -5322,9 +5322,63 @@ import).
   chapter heading; a full-page picture behind text is a background. Repeats,
   decorations under 24 px, stencil masks and pictures that cannot be decoded
   (no JPEG 2000 / JBIG2 decoders are vendored) are counted as left out.
-- **Tables**: three or more lines of cells separated by wide gaps are taken
-  out of the prose like a Word table (listed with their rows; words back on
-  undo). Cells of running prose are read as columns, not a table.
+- **Tables** are read as a grid, from what the page shows (BEUK:pdftables;
+  `pdfTableRivers`, `pdfTableRegion`, `pdfTableGrid`, `pdfTableFind`). A
+  line keeps its pieces as they stand: `segs`, parted at a gap wider than
+  the line's size (no word space is that wide), and `fine`, parted at half
+  that. The wider pieces say which lines may be a table's (a line of running
+  text is one piece and crosses the columns); the finer ones give its
+  columns and cells.
+  - *Columns* are the spaces that run down between the pieces: a stretch
+    more lines leave open than cover, where two lines at least leave it open
+    or one leaves a gap of 2.2 sizes. A column 18 points from its neighbour
+    is its own. A piece that crosses such a space is a cell set across
+    columns: its words stand in the first, the places it covers stay empty.
+  - *Rows* are the vertical bands, where the page shows that the table sets
+    its rows so and nothing on it says otherwise: a gap a fifth taller than
+    the table's own leading between bands; in no band a line with text in a
+    column the line above it has left (cells are set from the top), a line
+    under a cell's line that stopped with room for its first word (the
+    writer ended it: measured against what the cell is known to hold, its
+    widest line of two words or more, `pdfTableWidths`), or a piece of its
+    own under a piece set across its column; and a word broken by a hyphen
+    running from one line of a band into the next, or, in a table of three
+    bands or more, a line with text in fewer columns than the line above.
+    The table has three columns or more, or a first column whose text turns
+    too (two columns with a first one that never turns are how a list with a
+    hanging indent stands: those stay the text's); lines all in a monospace
+    face are a log, never a table. Each cell is its own lines, joined as
+    running text is joined; a hyphen at a cell line's end is settled by
+    BEUK:hyphensgiven with all the others ("Join it" finds a word alone in
+    its cell by the cell's bars).
+  - A table set inside a cell (lines of several pieces standing in one
+    column alone) is read the same way and follows its parent as a table of
+    its own, as in every other format.
+  - Where the page does not show the rows (no taller gap), the table is taken
+    as before: three or more lines of two or more cells whose cells average
+    28 characters or fewer, a row to a line; its cells are still set in their
+    columns, so a row with an empty cell keeps the cells after it in place.
+  - *Over a page turn*: where a table ends its page and the next page opens
+    on lines that are, piece for piece, its first row, it is one table and
+    the repeat is set aside (the tally's `tableHeads` row, `pdfTableHeads` in
+    the report). The band under the repeat is the rest of the row the turn
+    cut only where a hyphenated word runs over the turn, or it stands nearer
+    under the header than a row does in that table (0.3 sizes or more) and
+    no cell had stopped with room to spare; otherwise it is a row.
+  - What the page does not settle is kept as rows and named:
+    `pdfTableUnsure` lists each such table by its first row.
+  - A page that is mostly a table is no longer read as two columns: where
+    the page's gutter lies between the columns of a table found on it, the
+    page is parted on what is left without the table.
+  Not read: a table with no repeated header that continues on the next page
+  (two tables, as before); a cell's text after a table set inside it (a row
+  of its own); cells set to the middle or the foot of their row; a table of
+  two columns whose first never turns, and a table of a header and one row
+  only (both taken as before); tables read right to left; ruled lines
+  (PDF.js gives text only). Known to read wrong: rows that all turn onto
+  the same number of lines, set with no space between them, in a table that
+  has a taller gap elsewhere and a hyphenated word over a line's end (its
+  band is read as one row: nothing on the page tells its rows apart).
 - **Right to left.** A line mostly in a right-to-left script (Hebrew,
   Arabic, Syriac, Thaana, N'Ko) is read from its right edge, and its
   column's paragraph rules are mirrored (the indent at the right, the
