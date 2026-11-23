@@ -46761,7 +46761,9 @@
         part("notes", t("ir.acc.h.notes"), fmtNum(by.notes.length), t("ir.acc.h.notes"), by.notes.length ? '<div class="ir-table">' + irFold("notes", by.notes.map((it) => irItemRow(it)), open) + "</div>" : "");
         part("book", t("ir.acc.c.book"), fmtNum(by.book.length), t("ir.acc.h.book"), by.book.length ? irBookHtml(rep, by.book, open) : "");
         let html = '<div class="ir-chips">' + parts.map((p) => '<a class="ir-chip' + (p.id === "aside" ? " aside" : "") + '" href="#ir-g-' + p.id + '">' + esc(p.chip) + (p.chipN ? " <span>" + esc(p.chipN) + "</span>" : "") + "</a>").join("") + "</div>";
-        if (!rep.items.some((it) => it.group === "dropped")) html += '<p class="ir-clean">' + esc(t("ir.noneDropped", { list: rep.checked.map((c) => t("ir.c." + c)).join(", ") })) + "</p>";
+        /* "Nothing was dropped" is never said above a tally that has characters it cannot place, or characters that differ (as the old card's "Left nothing out." was not) */
+        const charsOff = v.diffs.some((d) => d.what === "chars");
+        if (!charsOff && !rep.items.some((it) => it.group === "dropped")) html += '<p class="ir-clean">' + esc(t("ir.noneDropped", { list: rep.checked.map((c) => t("ir.c." + c)).join(", ") })) + "</p>";
         if (rep.format === "docx" && !rep.scanOk) html += '<p class="ir-warn-line">' + esc(t("ir.scanFailed")) + "</p>";
         parts.forEach((p) => { html += '<div class="ir-part" id="ir-g-' + p.id + '"><h3 class="ir-ph">' + esc(p.head) + "</h3>" + p.body + "</div>"; });
         return html;
@@ -72759,7 +72761,7 @@
                 if (more === rd.html || !ty || ty.unaccounted !== -12) bad.push("a paragraph added: unaccounted " + (ty ? ty.unaccounted : "-") + ", not -12");
                 if (t0.indexOf(t("ir.tally.cardMore", { n: 12 })) === -1) bad.push("the card does not say the book holds 12 characters more");
                 if (t0.indexOf(t("ir.tally.cardWarn", { n: 12 })) !== -1) bad.push("the card calls 12 characters more in the book unaccounted for");
-                if (t0.indexOf(t("ir.card.didNone")) !== -1) bad.push("the card says nothing was left out above a tally that does not reconcile");
+                if ($("irBody").querySelector(".ir-verdict.clear") || $("irBody").querySelector(".ir-clean") || t0.indexOf(t("ir.tally.wf.same")) !== -1) bad.push("the card gives the all-clear, or the account says nothing was dropped, above a tally that does not reconcile"); /* BEUK:importcard — the old card's "Left nothing out." is the verdict panel's all-clear and the account's "Nothing was dropped" now */
               }); }
             return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "a Word-numbered list, an RTF list with written-out numbers, a page break switched off, rules of underscores (one lifted with the title page): each reconciles to zero; 12 characters more in the book are said as such, without \"Left nothing out\"");
           } },
@@ -72978,7 +72980,7 @@
                 const said = $("irBody") ? $("irBody").textContent : "";
                 if ($("irBody").querySelector(".ir-verdict.clear") || said.indexOf(t("ir.tally.wf.same")) !== -1) bad.push("the card says every character of the file is in the book when a letter was changed"); /* BEUK:importcard — the verdict panel is not the clear one */
                 if (said.indexOf(t("ir.tally.cardWords", { n: 1 })) === -1) bad.push("the card does not say a character is not in the book as written");
-                if (said.indexOf(t("ir.card.didNone")) !== -1) bad.push("the card says nothing was left out above characters that differ");
+                if ($("irBody").querySelector(".ir-clean")) bad.push("the account says nothing was dropped above characters that differ"); /* BEUK:importcard — as the old card's "Left nothing out." was not said there */
               }); }
             return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "a faithful read accounted for character for character; a changed letter named on both sides (v in caravan, b in caraban) and the card warns, with the count unchanged");
           } },
