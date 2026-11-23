@@ -134,8 +134,10 @@ test('import card: at 560px and under the arithmetic stacks, chapter rows drop t
   assert.match(phone, /\.ir-row \{[^}]*min-height: 44px;/);
   /* the primary action is last in the markup, so a reversed column puts it first */
   const html = await clientHtml();
-  const modal = html.slice(html.indexOf('<div class="modal-actions ir-actions">'), html.indexOf('<!-- ==== /BEUK:importreport ==== -->'));
-  assert.ok(modal.lastIndexOf('class="ir-btn primary"') > modal.lastIndexOf('id="btnIrEvery"'));
+  const from = html.indexOf('<div class="modal-actions ir-actions">');
+  const modal = html.slice(from, html.indexOf('<!-- ==== /BEUK:importreport ==== -->', from));
+  assert.ok(from > 0 && modal.length > 0, 'the actions are in the report');
+  assert.ok(modal.lastIndexOf('class="ir-btn primary"') > modal.lastIndexOf('id="btnIrEvery"'), 'the primary action comes last in the markup');
 });
 
 test('import card: the actions stay in reach at the foot of the report\'s own scroll box, on both screens and at phone width', async () => {
