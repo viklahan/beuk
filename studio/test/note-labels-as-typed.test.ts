@@ -124,9 +124,9 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
   }, 120_000);
 
   it('a label defined in two chapters (notes that start again in every chapter): each chapter keeps the label and has its own note', async () => {
-    const g = await importFile('again.md', null, md('# Chapter 1: The Harbour', 'One[^a].', '[^a]: The harbour\'s note.', '# Chapter 2: The Crossing', 'Two[^a].', '[^a]: The crossing\'s note.'));
-    expect(stored(g, '1')).toEqual(['One[^a].', '[^a]: The harbour\'s note.']);
-    expect(stored(g, '2')).toEqual(['Two[^a].', '[^a]: The crossing\'s note.']);
+    const g = await importFile('again.md', null, md('# Chapter 1: The Harbour', 'One[^aa].', '[^aa]: The harbour\'s note.', '# Chapter 2: The Crossing', 'Two[^aa].', '[^aa]: The crossing\'s note.'));
+    expect(stored(g, '1')).toEqual(['One[^aa].', '[^aa]: The harbour\'s note.']);
+    expect(stored(g, '2')).toEqual(['Two[^aa].', '[^aa]: The crossing\'s note.']);
     expect(shown(g, '1')).toEqual(['One[^1].', '[^1]: The harbour\'s note.']);
     expect(shown(g, '2')).toEqual(['Two[^2].', '[^2]: The crossing\'s note.']);
     expect(page(g, chapter(g, '2')).notes).toEqual(['[2] The crossing\'s note.']);
@@ -134,9 +134,9 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
   }, 120_000);
 
   it('a label defined twice in ONE chapter: a mark means the next definition of its label at or after it, else the last one before; each definition is set after its own last mark so the stored text still says which is which', async () => {
-    const g = await importFile('twice.md', null, md('# Chapter 1: Dawn', 'One[^a] and again[^a].', '[^a]: First.', 'Two[^a].', '[^a]: Second.', 'After the last[^a].', 'A plain note[^b].', '[^b]: Plain.', '# Chapter 2: Noon', 'Noon.'));
-    // the first "[^a]" definition answers the two marks before it; the second answers the mark between them and the one after it
-    expect(stored(g, '1')).toEqual(['One[^a] and again[^a].', '[^a]: First.', 'Two[^a].', 'After the last[^a].', '[^a]: Second.', 'A plain note[^b].', '[^b]: Plain.']);
+    const g = await importFile('twice.md', null, md('# Chapter 1: Dawn', 'One[^aa] and again[^aa].', '[^aa]: First.', 'Two[^aa].', '[^aa]: Second.', 'After the last[^aa].', 'A plain note[^bb].', '[^bb]: Plain.', '# Chapter 2: Noon', 'Noon.'));
+    // the first "[^aa]" definition answers the two marks before it; the second answers the mark between them and the one after it
+    expect(stored(g, '1')).toEqual(['One[^aa] and again[^aa].', '[^aa]: First.', 'Two[^aa].', 'After the last[^aa].', '[^aa]: Second.', 'A plain note[^bb].', '[^bb]: Plain.']);
     expect(shown(g, '1')).toEqual(['One[^1] and again[^1].', '[^1]: First.', 'Two[^2].', 'After the last[^2].', '[^2]: Second.', 'A plain note[^3].', '[^3]: Plain.']);
     const p = page(g, chapter(g, '1'));
     expect(p.marks).toEqual(['[1]', '[1]', '[2]', '[2]', '[3]']);
@@ -150,8 +150,8 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
      one paragraph parts that paragraph where it stood (the import takes the definition's line out and leaves the
      line's place empty, as it always did), so the two marks are never left in one block with nothing between them. */
   it('a label defined twice, the first definition typed between two lines of one paragraph: the lines are parted where it stood, and each mark keeps its own note', async () => {
-    const g = await importFile('between.md', null, md('# Chapter 1: Dawn', 'One[^a]\n[^a]: First.\nTwo[^a].', '[^a]: Second.', '# Chapter 2: Noon', 'Noon.'));
-    expect(stored(g, '1')).toEqual(['One[^a]', '[^a]: First.', 'Two[^a].', '[^a]: Second.']);
+    const g = await importFile('between.md', null, md('# Chapter 1: Dawn', 'One[^aa]\n[^aa]: First.\nTwo[^aa].', '[^aa]: Second.', '# Chapter 2: Noon', 'Noon.'));
+    expect(stored(g, '1')).toEqual(['One[^aa]', '[^aa]: First.', 'Two[^aa].', '[^aa]: Second.']);
     expect(shown(g, '1')).toEqual(['One[^1]', '[^1]: First.', 'Two[^2].', '[^2]: Second.']);
     expect(page(g, chapter(g, '1')).notes).toEqual(['[1] First.', '[2] Second.']);
     expect(figures(g)).toEqual(CLEAR);
@@ -247,21 +247,21 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
   }, 120_000);
 
   it('a mark with a colon after it in the middle of a line is the writer\'s mark and colon, stored as typed, and the tally counts both sides alike', async () => {
-    const g = await importFile('colon.md', null, md('# Chapter 1: Dawn', 'Text[^a] and see[^a]: more, and[^9]: nine.', '[^a]: A.'));
-    // (main stored "Text[^1] and see[^a]: more": the mark renumbered, the one before a colon left as the label)
-    expect(stored(g, '1')).toEqual(['Text[^a] and see[^a]: more, and[^9]: nine.', '[^a]: A.']);
+    const g = await importFile('colon.md', null, md('# Chapter 1: Dawn', 'Text[^aa] and see[^aa]: more, and[^9]: nine.', '[^aa]: A.'));
+    // (main stored "Text[^1] and see[^aa]: more": the mark renumbered, the one before a colon left as the label)
+    expect(stored(g, '1')).toEqual(['Text[^aa] and see[^aa]: more, and[^9]: nine.', '[^aa]: A.']);
     expect(page(g, chapter(g, '1')).marks).toEqual(['[1]', '[1]', '~[9]']);
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
   it('a note marked only in its chapter\'s heading has no section text to join: it is kept at the end of the text as its words, under no number, and the report names it by the writer\'s label', async () => {
-    const g = await importFile('heading.md', null, md('# Chapter 1: Dawn[^h]', 'Text[^t].', '[^h]: Head note.', '[^t]: Text note.', '# Chapter 2: Noon', 'Noon.'));
+    const g = await importFile('heading.md', null, md('# Chapter 1: Dawn[^hh]', 'Text[^tt].', '[^hh]: Head note.', '[^tt]: Text note.', '# Chapter 2: Noon', 'Noon.'));
     // (main: the title held "Dawn[^1]", and the note stood at the end as "[1] Head note." under Beuk's number)
-    expect(chapter(g, '1').title).toBe('Dawn[^h]');
-    expect(stored(g, '1')).toEqual(['Text[^t].', '[^t]: Text note.']);
+    expect(chapter(g, '1').title).toBe('Dawn[^hh]');
+    expect(stored(g, '1')).toEqual(['Text[^tt].', '[^tt]: Text note.']);
     expect(stored(g, '2')).toEqual(['Noon.', 'Head note.']);
     expect(JSON.stringify(g.secs).match(/\[\^?\d+\]/g) || [], 'a number of Beuk\'s anywhere in the book').toEqual([]);
-    expect(items(g, 'noteOrphan').map((it) => [it.data!.n, it.where!.secId, it.before])).toEqual([['h', chapter(g, '2').id, 'Head note.']]);
+    expect(items(g, 'noteOrphan').map((it) => [it.data!.n, it.where!.secId, it.before])).toEqual([['hh', chapter(g, '2').id, 'Head note.']]);
     expect(items(g, 'notes')[0]!.data).toMatchObject({ found: 2, mapped: 1, orphans: 1 });
     // OPEN (found, not changed, the same on main): a heading that carries a mark is not matched to its chapter by the tally: its "Chapter" and ":" are 8 characters unaccounted
     expect(figures(g)).toMatchObject({ counted: true, unaccounted: 8 });
@@ -276,28 +276,28 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
      read as a note's mark is stored as one. A fenced block that holds none is stored as it always was: its lines as
      paragraphs, the typewriter face counted as left out. */
   it('a fenced code block that holds a "[^1]" or a "[^label]" is the writer\'s literal text: stored as typed in a log container, read as no mark at import, in the tally or on any surface', async () => {
-    const g = await importFile('fence.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\ncode [^1] and [^x] stay\n```', 'More[^1] text.', '[^x]: X.', '[^1]: One.'));
+    const g = await importFile('fence.md', null, md('# Chapter 1: Dawn', 'Text[^xx] here.', '```\ncode [^1] and [^xx] stay\n```', 'More[^1] text.', '[^xx]: X.', '[^1]: One.'));
     // stored: the code line to the character, between the container's marks where the fence's stood
-    expect(stored(g, '1')).toEqual(['Text[^x] here.', '::: log\ncode [^1] and [^x] stay\n:::', 'More[^1] text.', '[^x]: X.', '[^1]: One.']);
+    expect(stored(g, '1')).toEqual(['Text[^xx] here.', '::: log\ncode [^1] and [^xx] stay\n:::', 'More[^1] text.', '[^xx]: X.', '[^1]: One.']);
     // at import: two notes, two marks, nothing lost and nothing named as a mark with no note
     expect(items(g, 'notes')[0]!.data).toMatchObject({ found: 2, refs: 2, mapped: 2, orphans: 0 });
     expect(items(g, 'refOrphan')).toEqual([]);
     // shown: the writer's 1 is 1 and "x" takes 2; the code line is untouched by the numbering
-    expect(shown(g, '1')).toEqual(['Text[^2] here.', '::: log\ncode [^1] and [^x] stay\n:::', 'More[^1] text.', '[^2]: X.', '[^1]: One.']);
+    expect(shown(g, '1')).toEqual(['Text[^2] here.', '::: log\ncode [^1] and [^xx] stay\n:::', 'More[^1] text.', '[^2]: X.', '[^1]: One.']);
     // the typeset page: the two marks of the text, and the code line as typed (main raised its "[^1]" and linked it to a note)
     const p = page(g, chapter(g, '1'));
     expect(p.marks).toEqual(['[2]', '[1]']);
-    expect(p.html).toContain('<div class="log"><p class="lg" dir="ltr">code [^1] and [^x] stay</p></div>');
+    expect(p.html).toContain('<div class="log"><p class="lg" dir="ltr">code [^1] and [^xx] stay</p></div>');
     // the Word export and the narration script
     const docx = String(g.api.buildDocxDocumentXml!());
-    expect(docx).toContain('code [^1] and [^x] stay');
+    expect(docx).toContain('code [^1] and [^xx] stay');
     expect((docx.match(/>\[1\]<\/w:t>/g) || []).length).toBe(1);
     expect((docx.match(/>\[2\]<\/w:t>/g) || []).length).toBe(1);
     const lines = g.api.acxSectionLines!(chapter(g, '1')) as { k: string; n?: string; text: string; typed?: boolean }[];
-    expect(lines.filter((l) => l.k === 'para').map((l) => String(g.api.acxPlainInline!(l.text, l.typed)))).toEqual(['Text [NOTE 2] here.', 'code [^1] and [^x] stay', 'More [NOTE 1] text.']);
+    expect(lines.filter((l) => l.k === 'para').map((l) => String(g.api.acxPlainInline!(l.text, l.typed)))).toEqual(['Text [NOTE 2] here.', 'code [^1] and [^xx] stay', 'More [NOTE 1] text.']);
     expect(lines.filter((l) => l.k === 'note').map((l) => l.n)).toEqual(['2', '1']);
     // the Markdown export writes the container as the book stores it
-    expect(String(g.api.buildMarkdown!())).toContain('::: log\ncode [^1] and [^x] stay\n:::');
+    expect(String(g.api.buildMarkdown!())).toContain('::: log\ncode [^1] and [^xx] stay\n:::');
     // the tally: the code line's characters are counted on both sides ("1" and "x" among them), and it is no mark on either
     expect(row(g, 'noteRefs')).toEqual({ file: 2, book: 2, why: [] });
     expect(row(g, 'noteDefs')).toEqual({ file: 2, book: 2, why: [] });
@@ -319,24 +319,24 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
   }, 120_000);
 
   it('a fenced block that holds no mark is stored as it always was: its lines as text, no container, the typewriter face counted as left out', async () => {
-    const g = await importFile('plain-code.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\nplain code line\n```', '[^x]: X.'));
-    expect(stored(g, '1')).toEqual(['Text[^x] here.', 'plain code line', '[^x]: X.']);
+    const g = await importFile('plain-code.md', null, md('# Chapter 1: Dawn', 'Text[^xx] here.', '```\nplain code line\n```', '[^xx]: X.'));
+    expect(stored(g, '1')).toEqual(['Text[^xx] here.', 'plain code line', '[^xx]: X.']);
     expect(items(g, 'mono').map((it) => it.data!.n)).toEqual([1]);
     expect(figures(g)).toEqual(CLEAR);
     // and the block that is held as a log is not counted as a typewriter face left out: the log sets it in one
-    const held = await importFile('held-code.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\ncode [^x] line\n```', '[^x]: X.'));
+    const held = await importFile('held-code.md', null, md('# Chapter 1: Dawn', 'Text[^xx] here.', '```\ncode [^xx] line\n```', '[^xx]: X.'));
     expect(items(held, 'mono')).toEqual([]);
   }, 240_000);
 
   it('a log the writer typed as one in a Markdown file: nothing in it is a mark or a definition at import or on the page', async () => {
-    const g = await importFile('typed-log.md', null, md('# Chapter 1: Dawn', 'Text[^x].', '::: log\n09:14 [^x] raw [^1] and [^nope]\n[^y]: no definition here\n:::', '[^x]: X.'));
-    expect(stored(g, '1')).toEqual(['Text[^x].', '::: log\n09:14 [^x] raw [^1] and [^nope]\n[^y]: no definition here\n:::', '[^x]: X.']);
+    const g = await importFile('typed-log.md', null, md('# Chapter 1: Dawn', 'Text[^xx].', '::: log\n09:14 [^xx] raw [^1] and [^nope]\n[^yy]: no definition here\n:::', '[^xx]: X.'));
+    expect(stored(g, '1')).toEqual(['Text[^xx].', '::: log\n09:14 [^xx] raw [^1] and [^nope]\n[^yy]: no definition here\n:::', '[^xx]: X.']);
     expect(items(g, 'notes')[0]!.data).toMatchObject({ found: 1, refs: 1, mapped: 1, orphans: 0 });
     expect(items(g, 'refOrphan')).toEqual([]);
     expect(items(g, 'noteOrphan')).toEqual([]);
     const p = page(g, chapter(g, '1'));
     expect(p.marks).toEqual(['[1]']);
-    expect(p.html).toContain('09:14 [^x] raw [^1] and [^nope]');
+    expect(p.html).toContain('09:14 [^xx] raw [^1] and [^nope]');
   }, 120_000);
 
   /* Found in a browser on c246e7e (2026-11-22): a file with a fenced block that holds a mark came in right, and the
@@ -353,24 +353,24 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
     .filter((r) => (r.why || []).some((y) => y.k === 'none')).map((r) => [r.key, r.file, r.book, (r.why || []).map((y) => y.k + ':' + y.n).join('+')]);
   const totals = (g: Got, key: string) => { const r = (g.tally.rows as { key: string; file: number; book: number }[]).find((x) => x.key === key); return r ? [r.file, r.book] : null; };
   it('the tally counts a fenced block and a log alike on both sides: no row ends "not explained" for a fence with a mark, a fence without one, or a log the writer typed', async () => {
-    const NOTES = ['[^x]: X.', '[^y]: A note nothing marks.'];
+    const NOTES = ['[^xx]: X.', '[^yy]: A note nothing marks.'];
     // a fence with a mark: stored as a log
-    const marked = await importFile('fence-mark.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\na pattern in code: [^1] and [^x] are not marks here\n```', 'More text.', ...NOTES));
-    expect(stored(marked, '1')).toContain('::: log\na pattern in code: [^1] and [^x] are not marks here\n:::');
+    const marked = await importFile('fence-mark.md', null, md('# Chapter 1: Dawn', 'Text[^xx] here.', '```\na pattern in code: [^1] and [^xx] are not marks here\n```', 'More text.', ...NOTES));
+    expect(stored(marked, '1')).toContain('::: log\na pattern in code: [^1] and [^xx] are not marks here\n:::');
     expect(unexplained(marked)).toEqual([]);
     expect(totals(marked, 'breaks') || [0, 0]).toEqual([0, 0]);
     expect(totals(marked, 'paragraphs')).toEqual([5, 4]); // the file's fifth is the linked note's line; the note nothing marks is a paragraph on both sides
     expect(figures(marked)).toEqual(CLEAR);
     // a fence without one: stored as it always was, its line a paragraph
-    const plain = await importFile('fence-plain.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\na plain line of code\n```', 'More text.', ...NOTES));
+    const plain = await importFile('fence-plain.md', null, md('# Chapter 1: Dawn', 'Text[^xx] here.', '```\na plain line of code\n```', 'More text.', ...NOTES));
     expect(stored(plain, '1')).toContain('a plain line of code');
     expect(unexplained(plain)).toEqual([]);
     expect(totals(plain, 'breaks') || [0, 0]).toEqual([0, 0]);
     expect(totals(plain, 'paragraphs')).toEqual([5, 4]);
     expect(figures(plain)).toEqual(CLEAR);
     // a log the writer typed as one, with a mark in it and an empty line before its close
-    const typed = await importFile('typed-log.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '::: log\n09:14 [^1] and [^x] are not marks here\n\n09:15 second entry\n\n:::', 'More text.', ...NOTES));
-    expect(stored(typed, '1').join('\n\n')).toContain('::: log\n09:14 [^1] and [^x] are not marks here\n\n09:15 second entry\n\n:::');
+    const typed = await importFile('typed-log.md', null, md('# Chapter 1: Dawn', 'Text[^xx] here.', '::: log\n09:14 [^1] and [^xx] are not marks here\n\n09:15 second entry\n\n:::', 'More text.', ...NOTES));
+    expect(stored(typed, '1').join('\n\n')).toContain('::: log\n09:14 [^1] and [^xx] are not marks here\n\n09:15 second entry\n\n:::');
     expect(unexplained(typed)).toEqual([]);
     expect(totals(typed, 'breaks') || [0, 0]).toEqual([0, 0]);
     expect(totals(typed, 'paragraphs')).toEqual([6, 5]);
@@ -394,20 +394,20 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
      and pinned as it is (OPEN): it is not what the rule asks of a fenced block, and it cannot be had without the
      book's text gaining a mark for a code span. */
   it('OPEN — an inline code span: the stored text has no notion of one, so a mark inside it is still read as a mark', async () => {
-    const g = await importFile('span.md', null, md('# Chapter 1: Dawn', 'Write `[^x]` to mark a note, as here[^x], and `a[1]` for the first.', '[^x]: X.'));
-    expect(stored(g, '1')).toEqual(['Write [^x] to mark a note, as here[^x], and a[1] for the first.', '[^x]: X.']);
+    const g = await importFile('span.md', null, md('# Chapter 1: Dawn', 'Write `[^xx]` to mark a note, as here[^xx], and `a[1]` for the first.', '[^xx]: X.'));
+    expect(stored(g, '1')).toEqual(['Write [^xx] to mark a note, as here[^xx], and a[1] for the first.', '[^xx]: X.']);
     expect(page(g, chapter(g, '1')).marks).toEqual(['[2]', '[2]', '~[1]']);
     expect(items(g, 'mono').map((it) => it.data!.n)).toEqual([2]);
   }, 120_000);
 
   it('a note marked only from inside another note\'s text is kept where it stood as its words (as before); its mark there, which now answers to no note, stays as typed', async () => {
-    const inNote = await importFile('innote.md', null, md('# Chapter 1: Dawn', 'Text[^a].', '[^a]: See also[^b] and[^1].', '[^b]: Marked only from a note.'));
+    const inNote = await importFile('innote.md', null, md('# Chapter 1: Dawn', 'Text[^aa].', '[^aa]: See also[^bb] and[^1].', '[^bb]: Marked only from a note.'));
     // "b" is marked only from inside another note: the import takes it for a note nothing marks and keeps it where it stood, as its words
-    expect(stored(inNote, '1')).toEqual(['Text[^a].', 'Marked only from a note.', '[^a]: See also[^b] and[^1].']);
+    expect(stored(inNote, '1')).toEqual(['Text[^aa].', 'Marked only from a note.', '[^aa]: See also[^bb] and[^1].']);
     const p = page(inNote, chapter(inNote, '1'));
     expect(p.marks).toEqual(['[2]', '~[1]']);
-    expect(p.html).toContain('See also[^b] and<sup class="endnote-ref">[1]</sup>.</p>');
-    expect(items(inNote, 'noteOrphan').map((it) => it.data!.n)).toEqual(['b']);
+    expect(p.html).toContain('See also[^bb] and<sup class="endnote-ref">[1]</sup>.</p>');
+    expect(items(inNote, 'noteOrphan').map((it) => it.data!.n)).toEqual(['bb']);
     expect(figures(inNote)).toEqual(CLEAR);
   }, 120_000);
 
@@ -449,11 +449,11 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
 
   it('joining two chapters: a named label both define is rewritten in neither, and each mark keeps its own note; two chapters numbered from 1 are joined as they always were', async () => {
     const b = await bookOf(['Seed.']);
-    const named = b.api.chopMergePlan!({ content: 'One[^a].\n\n[^a]: The harbour\'s note.', scenes: [] }, { content: 'Two[^a] and[^b].\n\n[^a]: The crossing\'s note.\n\n[^b]: Its own.', scenes: [] }) as { content: string; relabelled: number };
-    expect(named).toMatchObject({ content: 'One[^a].\n\n[^a]: The harbour\'s note.\n\n***\n\nTwo[^a] and[^b].\n\n[^a]: The crossing\'s note.\n\n[^b]: Its own.', relabelled: 0 });
+    const named = b.api.chopMergePlan!({ content: 'One[^aa].\n\n[^aa]: The harbour\'s note.', scenes: [] }, { content: 'Two[^aa] and[^bb].\n\n[^aa]: The crossing\'s note.\n\n[^bb]: Its own.', scenes: [] }) as { content: string; relabelled: number };
+    expect(named).toMatchObject({ content: 'One[^aa].\n\n[^aa]: The harbour\'s note.\n\n***\n\nTwo[^aa] and[^bb].\n\n[^aa]: The crossing\'s note.\n\n[^bb]: Its own.', relabelled: 0 });
     expect(String(b.api.notesAsShown!(null, named.content))).toBe('One[^1].\n\n[^1]: The harbour\'s note.\n\n***\n\nTwo[^2] and[^3].\n\n[^2]: The crossing\'s note.\n\n[^3]: Its own.');
-    const numbers = b.api.chopMergePlan!({ content: 'One[^1].\n\n[^1]: A.', scenes: [] }, { content: 'Two[^1] and[^x].\n\n[^1]: B.\n\n[^x]: X.', scenes: [] }) as { content: string; relabelled: number };
-    expect(numbers).toMatchObject({ content: 'One[^1].\n\n***\n\nTwo[^2] and[^x].\n\n[^1]: A.\n\n[^2]: B.\n\n[^x]: X.', relabelled: 1 });
+    const numbers = b.api.chopMergePlan!({ content: 'One[^1].\n\n[^1]: A.', scenes: [] }, { content: 'Two[^1] and[^xx].\n\n[^1]: B.\n\n[^xx]: X.', scenes: [] }) as { content: string; relabelled: number };
+    expect(numbers).toMatchObject({ content: 'One[^1].\n\n***\n\nTwo[^2] and[^xx].\n\n[^1]: A.\n\n[^2]: B.\n\n[^xx]: X.', relabelled: 1 });
   }, 120_000);
 });
 

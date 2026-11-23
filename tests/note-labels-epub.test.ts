@@ -24,8 +24,8 @@ const base = readBook((JSON.parse(readFileSync(fixturePath('real', 'salt-road-st
 const NAMED = [
   'The caravan left[^salt] at dawn, and again[^salt].\n\nA mark with no note[^nowhere].\n\n[^salt]: Salt, by the sack.',
   'The pans lay white[^fn.2-a] and[^1], see[^007].\n\n[^fn.2-a]: The pans of the coast.\n\n[^1]: The writer\'s own number.\n\n[^007]: As typed.',
-  'One[^a] and again[^a].\n\n[^a]: First.\n\nTwo[^a].\n\n[^a]: Second.',
-  'One more[^a].\n\n[^a]: The label again, in a later chapter.',
+  'One[^aa] and again[^aa].\n\n[^aa]: First.\n\nTwo[^aa].\n\n[^aa]: Second.',
+  'One more[^aa].\n\n[^aa]: The label again, in a later chapter.',
 ];
 /** the fixture book with its chapters' text replaced, in order (a chapter past the list holds one plain line) */
 function bookWith(texts: string[]): typeof base {
@@ -60,7 +60,7 @@ test('the EPUB: a book under the writer\'s labels builds the very chapter pages 
   for (let i = 0; i < pa.length; i++) assert.equal(pa[i]![1], pb[i]![1], pa[i]![0]);
   // and the pages say what the rule says: a note linked under its number, its label nowhere; the mark with no note as the writer typed it
   const all = pa.map((p) => p[1]).join('\n');
-  for (const label of ['salt]', 'fn.2-a]', '[^a]', '[a]']) assert.equal(all.includes(label), false, `"${label}" reached a page`);
+  for (const label of ['salt]', 'fn.2-a]', '[^aa]', '[a]']) assert.equal(all.includes(label), false, `"${label}" reached a page`);
   assert.match(all, /<a class="noteref" epub:type="noteref" id="s\d+-fnref2" href="#s\d+-fn2"><sup class="endnote-ref">\[2\]<\/sup><\/a> at dawn, and again<a class="noteref" epub:type="noteref" href="#s\d+-fn2"><sup class="endnote-ref">\[2\]<\/sup><\/a>\./);
   assert.match(all, /<p>A mark with no note\[\^nowhere\]\.<\/p>/);
   assert.match(all, /see<a class="noteref" epub:type="noteref" id="s\d+-fnref007" href="#s\d+-fn007"><sup class="endnote-ref">\[007\]<\/sup><\/a>\./);

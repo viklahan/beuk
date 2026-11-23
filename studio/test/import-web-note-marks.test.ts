@@ -97,12 +97,18 @@ describe('a web page\'s note keeps the number or mark its reference shows', () =
     for (const r of rows(g)) expect(r.why.filter((y) => y[0] === 'none'), r.key + ': a difference with no reason').toEqual([]);
   }, 120_000);
 
-  it('a mark that is a name (a letter) is kept as the label, shown under a number, and named in the report', async () => {
-    const g = await importFile('letter.html', null, webPage('<h1>Chapter 1: Dawn</h1><p>One' + ref('1', '1') + ' two' + ref('x', 'a') + '.</p>' + notes(fn('1', '1', 'First.'), fn('x', 'a', 'The lettered note.'))));
-    expect(both(g)).toEqual({ stored: ['One[^1] two[^a].', '[^1]: First.', '[^a]: The lettered note.'], marks: ['[1]', '[2]'], notes: ['[1] First.', '[2] The lettered note.'] });
-    expect(items(g, 'noteMark').map((it) => [it.data, it.before])).toEqual([[{ why: 'name', mark: 'a' }, 'The lettered note.']]);
+  /* BEUK:noteletters — V, 2026-11-23: "Show letter". Before, the letter was kept as the label and shown under 2. */
+  it('a mark that is one letter is shown as the page shows it and nothing is named; a mark of two letters is a name: kept as the label, shown under a number, and named in the report', async () => {
+    const page = (mark: string) => webPage('<h1>Chapter 1: Dawn</h1><p>One' + ref('1', '1') + ' two' + ref('x', mark) + '.</p>' + notes(fn('1', '1', 'First.'), fn('x', mark, 'The lettered note.')));
+    const g = await importFile('letter.html', null, page('a'));
+    expect(both(g)).toEqual({ stored: ['One[^1] two[^a].', '[^1]: First.', '[^a]: The lettered note.'], marks: ['[1]', '[a]'], notes: ['[1] First.', '[a] The lettered note.'] });
+    expect(items(g, 'noteMark')).toEqual([]);
     expect(figures(g)).toEqual(CLEAR);
-  }, 120_000);
+    const n = await importFile('name.html', null, page('ab'));
+    expect(both(n)).toEqual({ stored: ['One[^1] two[^ab].', '[^1]: First.', '[^ab]: The lettered note.'], marks: ['[1]', '[2]'], notes: ['[1] First.', '[2] The lettered note.'] });
+    expect(items(n, 'noteMark').map((it) => [it.data, it.before])).toEqual([[{ why: 'name', mark: 'ab' }, 'The lettered note.']]);
+    expect(figures(n)).toEqual(CLEAR);
+  }, 240_000);
 
   it('a reference the page calls a note whose text is not on the page keeps the number the page shows, raised and linked to nothing, and is named', async () => {
     const g = await importFile('lost.html', null, webPage('<h1>Chapter 1: Dawn</h1><p>One' + ref('5', '5') + ' two<a href="#gone" role="doc-noteref"><sup>7</sup></a> three.</p>' + notes(fn('5', '5', 'Five.'))));

@@ -299,18 +299,22 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     expect(g.items.find((it) => it.kind === 'pdfHyphens')!.data).toEqual({ n: 0, kept: 1 });
   }, 120_000);
 
-  it('the same code standing nowhere else: the hyphen is kept and no space is added (only the line break goes), and it is listed for the writer like any other; "Join it" takes that one hyphen out', async () => {
+  /* BEUK:hyphendigits — V, 2026-11-23: "Why can't we show how it is?" A hyphen beside a digit that the PDF's text does
+     not settle is kept as the page shows it, as before, and is no longer listed with an offer to take it out (it was:
+     "Join it: “VIE04-10”", "5unit", "1215"). The account names each such word in a line of its own. */
+  it('the same code standing nowhere else: the hyphen is kept and no space is added (only the line break goes); it is not listed with an offer to take the hyphen out, and the account names it', async () => {
     const g = await importPdf(book(CODE, ['The pans lay white under the sun.']));
     expect(g.all).toContain('confirmation code VIE-04-10 into the ledger');
     expect(g.all).not.toContain('VIE- 04');
     expect({ joins: g.tally.pdf.joins, rejoined: g.tally.pdf.rejoined, unaccounted: g.tally.unaccounted, same: g.tally.chars.same }).toEqual({ joins: {}, rejoined: [], unaccounted: 0, same: true });
     expect(g.tally.file).toBe(g.tally.pdf.raw);
-    expect(g.asks.map((it) => ({ group: it.group, state: it.state, reversible: it.reversible, data: it.data }))).toMatchObject([{ group: 'structure', state: 'applied', reversible: true, data: { kept: 'VIE-04-10', offered: 'VIE04-10', why: 'neither', n: 1 } }]);
+    expect(g.asks).toEqual([]);
+    expect(g.items.filter((it: { kind: string }) => it.kind === 'pdfHyphenDigit').map((it) => ({ group: it.group, state: it.state, reversible: it.reversible, before: (it as Item & { before?: string }).before, data: it.data }))).toEqual([{ group: 'structure', state: 'applied', reversible: false, before: '“VIE-04-10”', data: { n: 1, words: ['VIE-04-10'] } }]);
     const said = reportSaid(g);
-    expect(said).toContain('A line of the PDF ends on the hyphen of “VIE-04-10”, and the word stands nowhere else in it to say whose hyphen that is. Your book keeps it as the page shows it: “VIE-04-10”. The other reading is “VIE04-10”.');
-    expect(said).toContain('Join it: “VIE04-10”');
-    expect(g.api.irUndoItem(g.asks[0].id)).toMatchObject({ ok: true });
-    expect(textOf(g.api)).toContain('confirmation code VIE04-10 into the ledger');
+    expect(said).toContain('1 line of the PDF ends on a hyphen beside a digit: kept as the page shows it');
+    expect(said).not.toContain('Join it');
+    expect(said).not.toContain('VIE04-10');
+    expect(textOf(g.api)).toContain('confirmation code VIE-04-10 into the ledger');
   }, 120_000);
 
   it('the same code where only the form without that hyphen stands elsewhere ("VIE04-10"): taken off, counted in the row and listed, as for any word', async () => {
@@ -329,18 +333,20 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     expect(listed.all).toContain('that night via 5-unit Baudot wire');
     expect(listed.all).not.toContain('5- unit');
     expect(listed.tally.pdf.joins).toEqual({});
-    expect(listed.asks.map((it) => it.data)).toMatchObject([{ kept: '5-unit', offered: '5unit', why: 'neither', n: 1 }]);
+    expect(listed.asks).toEqual([]); /* BEUK:hyphendigits — it was listed, with "5unit" offered */
+    expect(listed.items.filter((it: { kind: string }) => it.kind === 'pdfHyphenDigit').map((it) => it.data)).toEqual([{ n: 1, words: ['5-unit'] }]);
   }, 120_000);
 
-  it('a digit either side ("pages 12-" + "15"): the hyphen is the page\'s and stays, no space is added, and where the PDF does not settle it the range is listed like any other', async () => {
+  it('a digit either side ("pages 12-" + "15"): the hyphen is the page\'s and stays, no space is added, and where the PDF does not settle it the range is named in the account and not offered joined', async () => {
     const g = await importPdf(book(['The entry is in the second ledger, pages 12-', '15 of the bound volume.'], ['The pans lay white under the sun.']));
     expect(g.all).toContain('ledger, pages 12-15 of the bound volume');
     expect(g.all).not.toContain('12- 15');
     expect({ joins: g.tally.pdf.joins, same: g.tally.chars.same }).toEqual({ joins: {}, same: true });
-    expect(g.asks.map((it) => it.data)).toMatchObject([{ kept: '12-15', offered: '1215', why: 'neither', n: 1 }]);
+    expect(g.asks).toEqual([]); /* BEUK:hyphendigits — it was listed, with "1215" offered */
+    expect(g.items.filter((it: { kind: string }) => it.kind === 'pdfHyphenDigit').map((it) => it.data)).toEqual([{ n: 1, words: ['12-15'] }]);
     const settled = await importPdf(book(['The entry is in the second ledger, pages 12-', '15 of the bound volume.'], ['See pages 12-15 again.']));
     expect(settled.all).toContain('ledger, pages 12-15 of the bound volume');
-    expect({ joins: settled.tally.pdf.joins, asks: settled.asks.length }).toEqual({ joins: {}, asks: 0 });
+    expect({ joins: settled.tally.pdf.joins, asks: settled.asks.length, named: settled.items.filter((it: { kind: string }) => it.kind === 'pdfHyphenDigit').length }).toEqual({ joins: {}, asks: 0, named: 0 }); /* settled by the PDF's own text: counted with the hyphens kept, as before */
   }, 120_000);
 
   it('a dash the page sets apart is not a word\'s hyphen: a line that ends on a spaced hyphen keeps the space the page shows before it and is closed with a space after it, before a letter or a digit, and nothing is listed', async () => {

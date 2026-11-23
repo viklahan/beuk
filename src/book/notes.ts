@@ -29,6 +29,8 @@ export const noteNumberRe = (): RegExp => /\[(\^\d+|\^[^\]\s]+\uE080\d+|\d{1,3})
 export const NOTE_KEY = '\uE080';
 /** A label that is a mark: no letter and no digit in it. */
 export const noteIsMark = (label: string): boolean => /^[^\p{L}\p{N}\s\]\uE080]+$/u.test(label);
+/** BEUK:noteletters — a label shown as typed that takes no number: a sign, or one letter ("a"). */
+export const noteAsTyped = (label: string): boolean => noteIsMark(label) || /^\p{L}$/u.test(label);
 /** What a reader sees for a label a surface was handed: the number, or the writer's mark. */
 export const noteMarkShown = (label: string): string => { const at = label.indexOf(NOTE_KEY); return at < 0 ? label : label.slice(0, at); };
 /** The part of an id a label makes: a number as it is; a mark by its characters' code points ("m2a-1" for the first "*"). */
@@ -109,7 +111,7 @@ export function notesAsShown(contents: readonly string[]): string[] {
   /* BEUK:notemarks — a mark of the writer's in a section that defines it: each mark its own note, in order */
   const own = new Map<Mark, Mark>();
   defsOf.forEach((by, si) => by.forEach((defs, label) => {
-    if (!noteIsMark(label)) return;
+    if (!noteAsTyped(label)) return;
     defs.forEach((d, k) => { d.shown = label + NOTE_KEY + (k + 1); });
     const seq = marks[si]!.filter((m) => m.label === label);
     let waiting: Mark[] = [], last: Mark | null = null, i = 0;

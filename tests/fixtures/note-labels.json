@@ -23,17 +23,17 @@
     },
     {
       "name": "a label defined in two chapters is two notes, each chapter's own",
-      "sections": ["One[^a].\n\n[^a]: The harbour's note.", "Two[^a].\n\n[^a]: The crossing's note."],
+      "sections": ["One[^aa].\n\n[^aa]: The harbour's note.", "Two[^aa].\n\n[^aa]: The crossing's note."],
       "shown": ["One[^1].\n\n[^1]: The harbour's note.", "Two[^2].\n\n[^2]: The crossing's note."]
     },
     {
       "name": "a label defined twice in one section: a mark means the next definition at or after it, else the last one before",
-      "sections": ["One[^a] and again[^a].\n\n[^a]: First.\n\nTwo[^a].\n\n[^a]: Second.\n\nAfter the last[^a]."],
+      "sections": ["One[^aa] and again[^aa].\n\n[^aa]: First.\n\nTwo[^aa].\n\n[^aa]: Second.\n\nAfter the last[^aa]."],
       "shown": ["One[^1] and again[^1].\n\n[^1]: First.\n\nTwo[^2].\n\n[^2]: Second.\n\nAfter the last[^2]."]
     },
     {
       "name": "a label with punctuation; a label that is a number with leading zeros shows as typed and keeps 7 from every named note",
-      "sections": ["A[^fn.2-a] b[^007] c[^x] d[^y] e[^z] f[^p] g[^q] h[^r] i[^s] j[^t].\n\n[^fn.2-a]: Dotted.\n\n[^007]: Bond.\n\n[^x]: X.\n\n[^y]: Y.\n\n[^z]: Z.\n\n[^p]: P.\n\n[^q]: Q.\n\n[^r]: R.\n\n[^s]: S.\n\n[^t]: T."],
+      "sections": ["A[^fn.2-a] b[^007] c[^xx] d[^yy] e[^zz] f[^pp] g[^qq] h[^rr] i[^ss] j[^tt].\n\n[^fn.2-a]: Dotted.\n\n[^007]: Bond.\n\n[^xx]: X.\n\n[^yy]: Y.\n\n[^zz]: Z.\n\n[^pp]: P.\n\n[^qq]: Q.\n\n[^rr]: R.\n\n[^ss]: S.\n\n[^tt]: T."],
       "shown": ["A[^1] b[^007] c[^2] d[^3] e[^4] f[^5] g[^6] h[^8] i[^9] j[^10].\n\n[^1]: Dotted.\n\n[^007]: Bond.\n\n[^2]: X.\n\n[^3]: Y.\n\n[^4]: Z.\n\n[^5]: P.\n\n[^6]: Q.\n\n[^8]: R.\n\n[^9]: S.\n\n[^10]: T."]
     },
     {
@@ -53,18 +53,18 @@
     },
     {
       "name": "a mark inside a note's own text is a mark, numbered where it stands (here the first mark in the text); a definition written before its mark is found",
-      "sections": ["[^b]: Stands first, see[^a].\n\nText[^b] here.\n\n[^a]: Marked only from a note."],
+      "sections": ["[^bb]: Stands first, see[^aa].\n\nText[^bb] here.\n\n[^aa]: Marked only from a note."],
       "shown": ["[^2]: Stands first, see[^1].\n\nText[^2] here.\n\n[^1]: Marked only from a note."]
     },
     {
       "name": "a log is the writer's to the character; a bare [word] is the writer's word; a bare [12] is a note's number",
-      "sections": ["Text[^a] and [word] and [12].\n\n::: log\n09:14 [^a] raw [^b]\n:::\n\n[^a]: A."],
-      "shown": ["Text[^1] and [word] and [12].\n\n::: log\n09:14 [^a] raw [^b]\n:::\n\n[^1]: A."]
+      "sections": ["Text[^aa] and [word] and [12].\n\n::: log\n09:14 [^aa] raw [^bb]\n:::\n\n[^aa]: A."],
+      "shown": ["Text[^1] and [word] and [12].\n\n::: log\n09:14 [^aa] raw [^bb]\n:::\n\n[^1]: A."]
     },
     {
       "name": "a definition on a line of a container is a definition; one set in from the margin in the middle of a paragraph is not, so its label has no note and stays as typed",
-      "sections": ["::: texts\nAna: Meet me at the pier[^p]\n[^p]: The north pier.\n:::\n\nA line\n  [^q]: not a note, and[^q] is marked twice."],
-      "shown": ["::: texts\nAna: Meet me at the pier[^1]\n[^1]: The north pier.\n:::\n\nA line\n  [^q]: not a note, and[^q] is marked twice."]
+      "sections": ["::: texts\nAna: Meet me at the pier[^pp]\n[^pp]: The north pier.\n:::\n\nA line\n  [^qq]: not a note, and[^qq] is marked twice."],
+      "shown": ["::: texts\nAna: Meet me at the pier[^1]\n[^1]: The north pier.\n:::\n\nA line\n  [^qq]: not a note, and[^qq] is marked twice."]
     },
     {
       "name": "BEUK:notemarks — a mark of the writer's (a label with no letter and no digit) is shown as typed and takes no number: it is handed on keyed (the mark, U+E080, its place among the section's notes of that mark); a name beside it takes the next number as if the mark were not there",
@@ -87,14 +87,25 @@
       "shown": ["Early[^*\uE0801].", "Here[^*\uE0801] and[^*\uE0802].\n\n[^*\uE0801]: A.\n\n[^*\uE0802]: B.", "Late[^*\uE0802]."]
     },
     {
-      "name": "BEUK:notemarks — the line between a mark and a name: a mark no note answers is the writer's text, as typed; a mark of several characters is a mark; a letter, a digit beside a letter, a name that holds a mark's character are names and take numbers",
-      "sections": ["Lost[^*] and[^**] kept[^‡], names[^a] and[^1a] and[^fn-7] and[^x*].\n\n[^**]: Two stars.\n\n[^‡]: Double dagger.\n\n[^a]: A.\n\n[^1a]: One a.\n\n[^fn-7]: Seven.\n\n[^x*]: X star."],
+      "name": "BEUK:notemarks — the line between a mark and a name: a mark no note answers is the writer's text, as typed; a mark of several characters is a mark; two letters, a digit beside a letter, a name that holds a mark's character are names and take numbers (one letter alone is shown as typed: BEUK:noteletters, below)",
+      "sections": ["Lost[^*] and[^**] kept[^‡], names[^aa] and[^1a] and[^fn-7] and[^x*].\n\n[^**]: Two stars.\n\n[^‡]: Double dagger.\n\n[^aa]: A.\n\n[^1a]: One a.\n\n[^fn-7]: Seven.\n\n[^x*]: X star."],
       "shown": ["Lost[^*] and[^**\uE0801] kept[^‡\uE0801], names[^1] and[^2] and[^3] and[^4].\n\n[^**\uE0801]: Two stars.\n\n[^‡\uE0801]: Double dagger.\n\n[^1]: A.\n\n[^2]: One a.\n\n[^3]: Seven.\n\n[^4]: X star."]
     },
     {
       "name": "BEUK:notemarks — a number the writer typed is kept from every name and is no concern of a mark; a mark inside a log is the writer's text",
       "sections": ["A[^*] b[^salt] c[^1].\n\n::: log\n09:14 [^*] raw\n:::\n\n[^*]: Star.\n\n[^salt]: Salt.\n\n[^1]: One."],
       "shown": ["A[^*\uE0801] b[^2] c[^1].\n\n::: log\n09:14 [^*] raw\n:::\n\n[^*\uE0801]: Star.\n\n[^2]: Salt.\n\n[^1]: One."]
+    },
+    {
+      "name": "BEUK:noteletters \u2014 one letter is shown as typed and takes no number, whatever its case or script; two letters are a name and take the first free number; two notes of one letter in a section are each their own note, in order; a letter no note answers is the writer's text",
+      "sections": [
+        "One[^a] two[^B] three[^\u0431] four[^ab] five[^2] six[^c].\n\n[^a]: Small a.\n\n[^B]: Big b.\n\n[^\u0431]: Cyrillic be.\n\n[^ab]: A name.\n\n[^2]: Two.",
+        "Salt[^a] and again[^a].\n\n[^a]: First.\n\n[^a]: Second."
+      ],
+      "shown": [
+        "One[^a\uE0801] two[^B\uE0801] three[^\u0431\uE0801] four[^1] five[^2] six[^c].\n\n[^a\uE0801]: Small a.\n\n[^B\uE0801]: Big b.\n\n[^\u0431\uE0801]: Cyrillic be.\n\n[^1]: A name.\n\n[^2]: Two.",
+        "Salt[^a\uE0801] and again[^a\uE0802].\n\n[^a\uE0801]: First.\n\n[^a\uE0802]: Second."
+      ]
     }
   ]
 }

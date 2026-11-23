@@ -91,18 +91,28 @@ describe('a Word note keeps the mark the writer gave it; the notes Word numbers 
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('a mark that is a name (a letter): kept as the note\'s label, shown under a number as a name is, and the report names it with its note', async () => {
-    const body = wp('Chapter 1: Dawn', true) + '<w:p>' + WT('One') + REF(2) + WT(' two') + REF(3, 'a') + WT(' three') + REF(4) + WT('.') + '</w:p>';
-    const g = await importFile('letter.docx', await docx(body, { 'word/footnotes.xml': notesPart('footnote', NOTE(2, 'First.') + NOTE(3, 'The lettered note.', 'a') + NOTE(4, 'Second.')) }), '');
-    // Word shows 1, a, 2. The book keeps "a" as the label; a name takes the next number no numbered note uses: 3
+  /* BEUK:noteletters — V, 2026-11-23: "Show letter". Before, the letter was kept as the label and shown under 3. */
+  it('a mark that is one letter is shown as typed, in the text and at the note, and nothing is named; a mark of two letters is a name: kept as the label, shown under a number, and named with its note', async () => {
+    const file = async (mark: string) => {
+      const body = wp('Chapter 1: Dawn', true) + '<w:p>' + WT('One') + REF(2) + WT(' two') + REF(3, mark) + WT(' three') + REF(4) + WT('.') + '</w:p>';
+      return importFile('letter.docx', await docx(body, { 'word/footnotes.xml': notesPart('footnote', NOTE(2, 'First.') + NOTE(3, 'The lettered note.', mark) + NOTE(4, 'Second.')) }), '');
+    };
+    // Word shows 1, a, 2, and so does the book
+    const g = await file('a');
     expect(both(g)).toEqual({ stored: ['One[^1] two[^a] three[^2].', '[^1]: First.', '[^a]: The lettered note.', '[^2]: Second.'],
-      marks: ['[1]', '[3]', '[2]'], notes: ['[1] First.', '[3] The lettered note.', '[2] Second.'] });
-    const named = items(g, 'noteMark');
-    expect(named.map((it) => [it.data, it.before, it.group])).toEqual([[{ why: 'name', mark: 'a' }, 'The lettered note.', 'notes']]);
-    expect(String(g.api.irItemLabel!(named[0]))).toBe(t('ir.k.noteMark.name', { mark: 'a' }));
-    expect(String(g.api.irItemLabel!(named[0]))).toBe('A note the file marks “a” is shown under a number: Beuk shows a note’s own mark when it is a number or a symbol such as * or †');
+      marks: ['[1]', '[a]', '[2]'], notes: ['[1] First.', '[a] The lettered note.', '[2] Second.'] });
+    expect(items(g, 'noteMark')).toEqual([]);
     expect(figures(g)).toEqual(CLEAR);
-  }, 120_000);
+    // Word shows 1, ab, 2. The book keeps "ab" as the label; a name takes the next number no numbered note uses: 3
+    const n = await file('ab');
+    expect(both(n)).toEqual({ stored: ['One[^1] two[^ab] three[^2].', '[^1]: First.', '[^ab]: The lettered note.', '[^2]: Second.'],
+      marks: ['[1]', '[3]', '[2]'], notes: ['[1] First.', '[3] The lettered note.', '[2] Second.'] });
+    const named = items(n, 'noteMark');
+    expect(named.map((it) => [it.data, it.before, it.group])).toEqual([[{ why: 'name', mark: 'ab' }, 'The lettered note.', 'notes']]);
+    expect(String(n.api.irItemLabel!(named[0]))).toBe(t('ir.k.noteMark.name', { mark: 'ab' }));
+    expect(String(n.api.irItemLabel!(named[0]))).toBe('A note the file marks “ab” is shown under a number: Beuk shows a note’s own mark when it is a number, a single letter or a symbol such as * or †');
+    expect(figures(n)).toEqual(CLEAR);
+  }, 240_000);
 
   it('a mark set as a symbol-font character (w:sym), which is no text the file types: the note is numbered, and the report says its mark could not be read', async () => {
     const body = wp('Chapter 1: Dawn', true) + '<w:p>' + WT('One') + REF(2) + WT(' two') + REF(3, '*', 'footnote', true) + WT(' three.') + '</w:p>';

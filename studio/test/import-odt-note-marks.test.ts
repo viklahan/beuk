@@ -66,18 +66,29 @@ describe('an OpenDocument note keeps the label the writer gave it; the notes the
     expect(rows(g).filter((r) => /^note/.test(r.key))).toEqual([{ key: 'noteRefs', file: 5, book: 5, why: [] }, { key: 'noteDefs', file: 5, book: 5, why: [] }]);
   }, 120_000);
 
-  it('a label that is a name (a letter) is kept as the note\'s label, shown under a number, and named in the report; a label that cannot be one (it holds a space) is said too', async () => {
-    const body = oh('Chapter 1: Dawn') + '<text:p>One' + note('f1', '1', null, 'First.') + ' two' + note('f2', 'a', 'a', 'The lettered note.') + ' three' + note('f3', 'see end', 'see end', 'The worded note.') + ' four' + note('f4', '2', null, 'Second.') + '.</text:p>';
-    const g = await importFile('letter.odt', await odt(body), '');
+  /* BEUK:noteletters — V, 2026-11-23: "Show letter". Before, the letter was kept as the label and shown under 4. */
+  it('a label that is one letter is shown as typed and not named; a label of two letters is a name: kept as the note\'s label, shown under a number, and named in the report; a label that cannot be one (it holds a space) is said too', async () => {
+    const file = async (label: string) => {
+      const body = oh('Chapter 1: Dawn') + '<text:p>One' + note('f1', '1', null, 'First.') + ' two' + note('f2', label, label, 'The lettered note.') + ' three' + note('f3', 'see end', 'see end', 'The worded note.') + ' four' + note('f4', '2', null, 'Second.') + '.</text:p>';
+      return importFile('letter.odt', await odt(body), '');
+    };
+    const g = await file('a');
     const b = both(g);
     dump('odt-letter', { b, items: items(g, 'noteMark'), figures: figures(g) });
     // the application's own numbers are 1 and 2 among themselves; the worded label cannot be a label, so that note is numbered with them: 1, a, 2, 3
     expect(b.stored).toEqual(['One[^1] two[^a] three[^2] four[^3].', '[^1]: First.', '[^a]: The lettered note.', '[^2]: The worded note.', '[^3]: Second.']);
-    // "a" is a name: it takes the next number no numbered note uses, 4
-    expect(b.marks).toEqual(['[1]', '[4]', '[2]', '[3]']);
-    expect(items(g, 'noteMark').map((it) => [it.data, it.before])).toEqual([[{ why: 'name', mark: 'a' }, 'The lettered note.'], [{ why: 'unread', mark: '' }, 'The worded note.']]);
+    // the file shows "a", and so does the book
+    expect(b.marks).toEqual(['[1]', '[a]', '[2]', '[3]']);
+    expect(items(g, 'noteMark').map((it) => [it.data, it.before])).toEqual([[{ why: 'unread', mark: '' }, 'The worded note.']]);
     expect(figures(g)).toEqual(CLEAR);
-  }, 120_000);
+    const n = await file('ab');
+    const nb = both(n);
+    expect(nb.stored).toEqual(['One[^1] two[^ab] three[^2] four[^3].', '[^1]: First.', '[^ab]: The lettered note.', '[^2]: The worded note.', '[^3]: Second.']);
+    // "ab" is a name: it takes the next number no numbered note uses, 4
+    expect(nb.marks).toEqual(['[1]', '[4]', '[2]', '[3]']);
+    expect(items(n, 'noteMark').map((it) => [it.data, it.before])).toEqual([[{ why: 'name', mark: 'ab' }, 'The lettered note.'], [{ why: 'unread', mark: '' }, 'The worded note.']]);
+    expect(figures(n)).toEqual(CLEAR);
+  }, 240_000);
 
   it('a file in which no note has a label of its own is read as it always was', async () => {
     const body = oh('Chapter 1: Dawn') + '<text:p>One' + note('f1', '1', null, 'First.') + ' two' + note('f2', '2', null, 'Second.') + '.</text:p>';
