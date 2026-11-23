@@ -189,8 +189,13 @@ test('rtf: the text-only reader (shelf bulk import, box-set volumes) writes Beuk
   const vocab = html.slice(html.indexOf('      const MATTER_HEADINGS = {'), html.indexOf('      function parseChapterHeading('));
   const part = /\n(\s*const PART_HEAD_RE = [^\n]+)\n/.exec(html)![1];
   const levels = /\/\* ==== BEUK:headlevels ==== \*\/([\s\S]*?)\/\* ==== \/BEUK:headlevels ==== \*\//.exec(html)![1];
+  /* and, for a list, the marks the book's list reads and the one writer of a list under the marks the file gave
+     (BEUK:listmarkstyped: the list's own patterns, the bullets, irListGiven). rtfRead itself asks nothing outside its block. */
+  const between = (a: string, b: string) => { const i = html.indexOf(a), j = html.indexOf(b, i); assert.ok(i >= 0 && j > i, `the block ${a} is in the studio`); return html.slice(i, j); };
+  const lists = [between('/* ==== BEUK:listmarkstyped ==== The book', '/* ==== /BEUK:listmarkstyped ==== */'), /\n(\s*const IR_LIST_GLYPHS = [^\n]+)\n/.exec(html)![1],
+    between('/* ==== BEUK:listmarkstyped (the readers) ====', '/* ==== /BEUK:listmarkstyped (the readers) ==== */')].join('\n');
   const sandbox: Record<string, unknown> = { TextDecoder, btoa, Uint8Array, String };
-  vm.runInNewContext([vocab, part, levels, marks, block, 'this.toText = (s) => rtfToManuscriptText(rtfRead(s));'].join('\n'), sandbox);
+  vm.runInNewContext([vocab, part, levels, marks, lists, block, 'this.toText = (s) => rtfToManuscriptText(rtfRead(s));'].join('\n'), sandbox);
   const toText = sandbox.toText as (s: string) => string;
   const out = toText(String.raw`{\rtf1\ansi{\stylesheet{\s1 heading 1;}}\pard\s1 One\par\pard It was {\i dark}.{\super\chftn}{\footnote\pard{\super\chftn} A note.}\par{\listtext 1.\tab}\ls1 Step\par\pard\s1 Two\par\pard The end.\par}`);
   assert.equal(out, '# One\n\nIt was *dark*.[^1]\n\n1. Step\n\n[^1]: A note.\n\n# Two\n\nThe end.');

@@ -40521,8 +40521,7 @@
             const g = st;
             st = stack.pop() || g;
             finish(g, st);
-            /* BEUK:listmarkstyped — a mark the book now stores as typed and counts as the characters it is ("a.", "iv.", "+", "◆") is in the book: not set aside */
-            if (g.dest === "listtext" && g.own) { listMark = g.buf.t; const mk = g.buf.t.trim(); if (irListMarkKind(mk.replace(/\s+/g, " ")) === "?" || /^(?:[-*•]|\d{1,3}[.)])$/.test(mk)) res.aside.listMarks += mk + " \n"; } /* BEUK:importtally — the marker as it heads its line in the file (its \tab is no text of this buffer) */
+            if (g.dest === "listtext" && g.own) { listMark = g.buf.t; res.aside.listMarks += g.buf.t.trim() + " \n"; } /* BEUK:importtally — the marker as it heads its line in the file (its \tab is no text of this buffer) */
             groupStart = false; starred = false; skipUc = 0;
             i++;
             if (!stack.length) break;
@@ -40640,7 +40639,12 @@
         try {
           const C = rd.counts;
           const d = ir.drops;
-          if (rd.aside) Object.keys(rd.aside).forEach((k) => irAside(k, rd.aside[k])); /* BEUK:importtally */
+          /* BEUK:listmarkstyped — of the marks the file wrote out, a mark the book now stores as typed and counts as the
+             characters it is ("a.", "iv.", "+", "◆") is in the book, not set aside. What stays in the row: a mark of no
+             form the book's list reads, and the marks neither side counts (a number, "-", "•"). The reader itself
+             (rtfRead) hands every mark over and asks nothing outside its own block. */
+          const asideOf = (k) => (k !== "listMarks" ? rd.aside[k] : String(rd.aside[k] || "").split("\n").filter((l) => { const mk = l.trim(); return !mk || irListMarkKind(mk.replace(/\s+/g, " ")) === "?" || /^(?:[-*•]|\d{1,3}[.)])$/.test(mk); }).join("\n"));
+          if (rd.aside) Object.keys(rd.aside).forEach((k) => irAside(k, asideOf(k))); /* BEUK:importtally */
           ir.carried = { em: 0, strong: 0, links: C.linksOk };
           const carry = (rs) => { const r = irRunsToMd(rs, ir, false); ir.carried.em += r.em; ir.carried.strong += r.strong; return r.md; };
           ["underline", "strike", "subsup", "smallcaps", "mono", "links"].forEach((k) => { if (C[k]) d[k] = C[k]; });
