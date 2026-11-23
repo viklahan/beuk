@@ -41712,6 +41712,8 @@
             const rec = { el: null, mark, back: new Set(), html: null, n: 0, refd: true, label: "", shown: "", placed: false };
             noteRecs.push(rec); rec.k = noteRecs.length - 1;
             noteAt.set(a, rec);
+            /* BEUK:notemarks — the reference goes into the book as a note's mark (under the number the page shows for it), so what it shows is set aside as a note's mark, as a found note's is: the tally counted it as a character of the file that the book did not hold */
+            if (!(a.closest && a.closest("nav"))) irAside("noteMarks", mark);
           }
         });
         /* a note the page marks as one, that no reference points at */
@@ -41987,9 +41989,13 @@
         /* BEUK:headlevels — the headings are handed on at the levels the page gave them: the walk reads every file's
            levels by their order (a page of h1 chapters and h3 sections is walked as Heading 1 and Heading 2). */
         const pieces = html.map((x) => (typeof x === "string" ? x : "<h" + x.level + ">" + x.v + "</h" + x.level + ">"));
-        /* Beuk numbers the notes itself, in the order their references stand */
+        /* The references are marked in the order they stand (a working number, as Mammoth gives a Word file's), and
+           each carries what the page itself shows for its note: BEUK:notemarks — the visible number or mark of the
+           reference ("5", "*", less the brackets a page may dress it in) is the writer's, and is the note's label in
+           the book (the Word walk and irNoteMarksGiven). Before, the page's 5, *, 9 were set aside and the notes
+           numbered 1, 2, 3. */
         let seq = 0;
-        const number = (h) => String(h).replace(/\u0001(\d+)\u0002/g, (m, k) => { const rec = noteRecs[Number(k)]; if (!rec) return ""; if (!rec.n) rec.n = ++seq; return docsNoteRef(rec.n); });
+        const number = (h) => String(h).replace(/\u0001(\d+)\u0002/g, (m, k) => { const rec = noteRecs[Number(k)]; if (!rec) return ""; if (!rec.n) rec.n = ++seq; return docsNoteRef(rec.n, irNoteMarkLabel(rec.mark)); });
         let out = number(pieces.join(""));
         const lis = [], listed = new Set(), read = new Set();
         for (let more = true; more;) {
@@ -45948,6 +45954,7 @@
            mark of the note an id names ({ mark: null } where the file's mark could not be read), or null for a note
            Word numbers itself. */
         const wordMarks = ir.scan && ir.scan.noteMarks ? ir.scan.noteMarks : null;
+        const markOrphans = [];
         const wordMark = (htmlId) => { const m = /^(footnote|endnote)-(.+)$/.exec(String(htmlId || "")); const by = m && wordMarks ? wordMarks[m[1]] : null; return by && Object.prototype.hasOwnProperty.call(by, m[2]) ? { mark: by[m[2]] } : null; };
         const inkText = (n) => { if (!n) return null; if (n.nodeType === 3) return /\S/.test(n.nodeValue) ? n : null; if (n.nodeType !== 1) return null; for (let c = n.firstChild; c; c = c.nextSibling) { const r = inkText(c); if (r) return r; } return null; };
         const cutMark = (tn, mark, spaced) => {
@@ -45985,6 +45992,7 @@
           const own = wordMark(href);
           if (own && own.mark) { given = own.mark; let nx = host.nextSibling; while (nx && nx.nodeType === 3 && !nx.nodeValue) nx = nx.nextSibling; if (cutMark(inkText(nx), own.mark, false)) irAside("noteMarks", own.mark); }
           if (notesById[href]) { if (given != null && given !== "") notesById[href].given = given; else if (own || a.hasAttribute("data-ir-unread")) notesById[href].unread = true; }
+          else markOrphans.push({ n: m[1], given: given != null && /^\d+$/.test(given) ? given : null }); /* a reference with no note: the number the page shows for it, where it shows one */
           host.replaceWith(doc.createTextNode("[^" + m[1] + "]"));
         });
         /* BEUK:tableimport — a paragraph the Word file styles as a caption (irDocxParaAligns: tcap) standing directly
@@ -46009,7 +46017,7 @@
           });
         }
         ir.docNotes = Object.keys(notesById).map((k) => notesById[k]);
-        irNoteMarksGiven(ir, ir.docNotes); /* BEUK:notemarks — the labels of the notes, where the file gives any note a mark of its own */
+        irNoteMarksGiven(ir, ir.docNotes, markOrphans); /* BEUK:notemarks — the labels of the notes, where the file gives any note a mark of its own */
         /* BEUK:notesstood — a Word file's footnote or endnote that no reference points to (irDocxLooseNotes): its words
            are the writer's and are kept. A Word note stands in a part of the file of its own, not at a place in the
            text, and nothing in the file says which chapter it is of: it is kept, under no number, as a paragraph at
@@ -46617,15 +46625,16 @@
          of the file is, counted among the notes with no mark, as the source app counts them. So a Word file that
          shows 1, *, †, 2 is a book that shows 1, *, †, 2: the "*" is kept, and no number of Beuk's stands beside it
          or is taken by it. A file in which no note has a mark of its own is read exactly as it always was. */
-      /* a mark as a note's label: what the file shows, less the brackets a page may dress it in ("[5]", "(a)"); null
+      /* a mark as a note's label: what the file shows, less the brackets or the point a page may dress it in ("[5]", "(a)", "5."); null
          where it cannot be a label (nothing, a space or a "]" inside it) */
       function irNoteMarkLabel(mark) {
         let s = String(mark == null ? "" : mark).replace(/\u00a0/g, " ").trim();
         const m = /^\[([^\[\]]+)\]$/.exec(s) || /^\(([^()]+)\)$/.exec(s);
         if (m) s = m[1].trim();
+        s = s.replace(/^([\p{L}\p{N}]+)[.:)]$/u, "$1"); /* a page's "5." or "a)": the point or the bracket after a number or a letter is its dress */
         return s && /^[^\s\]]+$/.test(s) && s.length <= 12 ? s : null;
       }
-      function irNoteMarksGiven(ir, notes) {
+      function irNoteMarksGiven(ir, notes, orphans) {
         const linked = notes.filter((nt) => nt && nt.n && !nt.stood).sort((a, b) => Number(a.n) - Number(b.n));
         if (!linked.some((nt) => nt.given != null)) return;
         const labels = Object.create(null), isNumber = (l) => /^\d+$/.test(l), taken = new Set();
@@ -46636,6 +46645,9 @@
           else { while (taken.has(next)) next++; nt.typed = String(next++); }
           labels[nt.n] = nt.typed;
         });
+        /* a reference whose note was not found (a web page's): its working number would be read as some note's label once
+           the labels are written, so it is written too: as the number the page shows for it, else the next number free */
+        (orphans || []).forEach((o) => { if (labels[o.n] != null) return; if (o.given != null) { labels[o.n] = o.given; return; } while (taken.has(next)) next++; labels[o.n] = String(next++); });
         ir.mdNoteLabels = labels;
         ir.noteMarksGiven = true;
       }
@@ -46821,6 +46833,25 @@
            so the report counts none there and names none as a mark with no note */
         const outsideRaw = (content) => { const c = String(content || ""); return c.indexOf(":::") === -1 ? c : holdRawContainers(c.replace(/\r\n?/g, "\n"), []); };
         const hostOf = (nt) => { const re = new RegExp("\\[\\^" + nt.n + "\\](?!:)"); return importSecs.find((s) => re.test(String(s.content || ""))) || null; };
+        /* BEUK:notemarks — a NUMBER the file gives two notes that fall in one section (a page whose notes start again from
+           1 with no chapter between them) cannot be both notes' label there: a number is paired with its note by the
+           number alone, and two notes under it would be one. The first keeps it; each later one takes the next number
+           no note of this import carries, and the report names it with its note. (A mark, "*", may stand twice: each
+           mark means its own note in order. A name is told apart by where its definitions stand, as a Markdown file's.) */
+        if (ir.noteMarksGiven) {
+          const seen = new Set(), all = new Set(Object.keys(ir.mdNoteLabels).map((k) => String(ir.mdNoteLabels[k])));
+          let free = 1;
+          ir.docNotes.forEach((nt) => {
+            if (nt.stood || !nt.n || !/^\d+$/.test(String(nt.typed))) return;
+            const h = hostOf(nt);
+            if (!h) return;
+            const key = h.id + " " + nt.typed;
+            if (!seen.has(key)) { seen.add(key); return; }
+            while (all.has(String(free))) free++;
+            markNotes.push({ why: "taken", mark: nt.typed, n: String(free), text: nt.plain, secId: h.id });
+            nt.typed = String(free); all.add(nt.typed); ir.mdNoteLabels[nt.n] = nt.typed;
+          });
+        }
         const twice = new Set();
         if (typed) { const one = new Set(); ir.docNotes.forEach((nt) => { if (nt.stood || !nt.n) return; const h = hostOf(nt); if (!h) return; const k = h.id + " " + nt.typed; if (one.has(k)) twice.add(k); else one.add(k); }); }
         const afterLastMark = (content, re, def, sameLabel) => {
@@ -73846,7 +73877,7 @@
               return scVerdict(viaWord === want && viaRtf === want && viaPage === want && viaMd === want, "Word: " + viaWord + " · RTF: " + viaRtf + " · web page: " + viaPage + " · markdown: " + viaMd);
             });
           } },
-        { id: "import.html.footnotes", feature: "import", name: "A web page's footnotes come in as Beuk notes, however the page marks them: a doc-noteref link to an item of a notes list, a fn-ref link to an <aside> that opens with its own number and ends with a way back, a raised link to a paragraph that links back; each is numbered in the order of first reference, its number and its back-link left out of its text. A raised number that links nowhere, or to an ordinary paragraph, is no footnote. A reference whose note is missing and a note nothing points at are both reported, and an emptied notes section leaves no scene break",
+        { id: "import.html.footnotes", feature: "import", name: "A web page's footnotes come in as Beuk notes, however the page marks them: a doc-noteref link to an item of a notes list, a fn-ref link to an <aside> that opens with its own number and ends with a way back, a raised link to a paragraph that links back; each keeps the number its reference shows on the page (BEUK:notemarks: the page's own numbers are the writer's), its number and its back-link left out of its text. A raised number that links nowhere, or to an ordinary paragraph, is no footnote. A reference whose note is missing and a note nothing points at are both reported, and an emptied notes section leaves no scene break",
           async run() {
             const page = '<html><body><h1>Chapter 1: The Harbour</h1>' +
               '<p>Pandoc.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> Aside.<a id="ref-fn-2" href="#fn-2" class="fn-ref"><sup>2</sup></a> Plain.<sup><a href="#n3" id="r3">3</a></sup></p>' +
@@ -73862,14 +73893,15 @@
               const items = rep ? rep.items : [];
               const body = state.sections.filter((s) => s.kind === "body" && s.type === "chapter");
               const c1 = body[0] ? body[0].content : "", c2 = body[1] ? body[1].content : "", all = c1 + String.fromCharCode(10) + c2;
-              const marksOk = c1.indexOf("Pandoc.[^1] Aside.[^2] Plain.[^3]") !== -1 && c1.indexOf("lost.[^4]") !== -1;
+              /* BEUK:notemarks — the reference whose note is missing shows 6 on the page, and is the mark "[^6]" in the book (it was "[^4]", the fourth in Beuk's own count, a number the page never showed) */
+              const marksOk = c1.indexOf("Pandoc.[^1] Aside.[^2] Plain.[^3]") !== -1 && c1.indexOf("lost.[^6]") !== -1;
               const textsOk = /^\[\^1\]: First note\.$/m.test(c1) && /^\[\^2\]: \*\*Aside note:\*\* second\.$/m.test(c1) && /^\[\^3\]: Third note\.$/m.test(c1) && all.indexOf("↩") === -1 && all.indexOf("back") === -1;
               const notOk = c1.indexOf("Raised**4**") !== -1 && c1.indexOf("linked5") !== -1 && c1.indexOf("Elsewhere is an ordinary paragraph.") !== -1;
               const notes = items.find((i) => i.kind === "notes"), lostRef = items.filter((i) => i.kind === "refOrphan"), lostNote = items.filter((i) => i.kind === "noteOrphan");
-              const reportOk = !!notes && notes.data.found === 4 && notes.data.mapped === 3 && notes.data.orphans === 2 && lostRef.length === 1 && String(lostRef[0].data.n) === "4" &&
+              const reportOk = !!notes && notes.data.found === 4 && notes.data.mapped === 3 && notes.data.orphans === 2 && lostRef.length === 1 && String(lostRef[0].data.n) === "6" &&
                 lostNote.length === 1 && all.indexOf("Nobody points here.") !== -1;
               const breakOk = irBlocks(all).filter((b) => /^(\*\*\*|❦|⁂)$/.test(b.trim())).length === 0;
-              return scVerdict(marksOk && textsOk && notOk && reportOk && breakOk, "three notes marked in order of first reference, the missing one's mark kept (" + marksOk + "), each note's text without its number or its way back (" + textsOk +
+              return scVerdict(marksOk && textsOk && notOk && reportOk && breakOk, "three notes marked under the numbers the page shows, the missing one's mark kept under its own (" + marksOk + "), each note's text without its number or its way back (" + textsOk +
                 "), a raised number and a link to a plain paragraph are not notes (" + notOk + "), the missing note and the unreferenced one reported (" + reportOk + (notes ? ": " + JSON.stringify(notes.data) : "") + "), no scene break from the notes' rule (" + breakOk + ")");
             });
           } },

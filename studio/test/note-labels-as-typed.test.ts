@@ -511,14 +511,15 @@ describe('notes from formats with no typed label: what each stores and shows tod
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('a web page: the page\'s own visible numbers and marks (5, "*", 9) are set aside and the notes numbered 1, 2, 3 in order', async () => {
+  it('a web page: the page\'s own visible numbers and marks (5, "*", 9) are the notes\' labels (BEUK:notemarks; test/import-web-note-marks.test.ts)', async () => {
     const html = webPage('<h1>Chapter 1: Dawn</h1><p>The caravan left<a href="#fn5" id="r5"><sup>5</sup></a> at dawn, and<a href="#fna" id="ra"><sup>*</sup></a> on, and<a href="#fn9" id="r9"><sup>9</sup></a>.</p>'
       + '<div class="footnotes"><p id="fn5" class="footnote"><sup>5</sup> Salt, by the sack. <a href="#r5">↩</a></p><p id="fna" class="footnote"><sup>*</sup> The pans of the coast. <a href="#ra">↩</a></p><p id="fn9" class="footnote"><sup>9</sup> Nine. <a href="#r9">↩</a></p></div>');
     const g = await importFile('notes.html', null, html);
-    // OPEN: the page shows the writer "5, *, 9" (the writer's own). The book shows "[1], [2], [3]": all three replaced by numbers of Beuk's.
+    // The page shows the writer "5, *, 9" (the writer's own), and so does the book. (Measured 2026-11-22, before BEUK:notemarks: "[1], [2], [3]":
+    // all three replaced by numbers of Beuk's.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^1] at dawn, and[^2] on, and[^3].', '[^1]: Salt, by the sack.', '[^2]: The pans of the coast.', '[^3]: Nine.'],
-      marks: ['[1]', '[2]', '[3]'], notes: ['[1] Salt, by the sack.', '[2] The pans of the coast.', '[3] Nine.'] });
+      stored: ['The caravan left[^5] at dawn, and[^*] on, and[^9].', '[^5]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^9]: Nine.'],
+      marks: ['[5]', '[*]', '[9]'], notes: ['[5] Salt, by the sack.', '[*] The pans of the coast.', '[9] Nine.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
