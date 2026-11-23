@@ -12,8 +12,8 @@ import { CLEAR, W_NS, blocksOf, docx, epub, figures, freshApi, importFile, odt, 
      text"), and the tally said "Headings: 7 in the file, 5 in the book, 2 in the book as paragraphs".
    - an EPUB kept all three as headings, the second and the third depth both as "## ".
    - a PDF marks no levels; its reader finds headings by their type size and hands every one it finds on at one
-     depth, none to the report. That is its own rule and is not changed here (its figures are the same before and
-     after, measured on six made-up books).
+     depth, none to the report. That is its own rule and is not changed here. (The one thing that moves for a PDF
+     is the parser's, shared by every format: see the last test.)
 
    Now: every level below a file's chapters comes in as a heading inside the chapter, at the depth the writer gave it
    relative to the others (the file's levels by rank, as irHeadDepths ranks them: a file of Heading 1, 3, 5 and 6
@@ -150,6 +150,20 @@ describe('a file\'s headings below its chapters each come in as a heading, at th
       expect(row(g, 'headings')).toEqual({ key: 'headings', file: 9, book: 9, why: [] });
       expect(levels(g)!.book).toEqual({ sub: 3, sub2: 1, sub3: 1, sub4: 1, sub5: 1, chapters: 2, pages: 0 });
     }
+  }, 120_000);
+
+  /* Two first-level chapters, the first holding two second-level headings and the second none: the one rule does not
+     read those as sub-headings (one chapter holds them, and there are as many of them as chapters), so each opens a
+     section, and the parser then sets each, standing unnumbered between two numbered chapters, inside the chapter
+     before it as its sub-heading. The headings that stood under one stand under it still: one depth further down.
+     Measured before: "# The quay" and, beside it, "# The east berth". */
+  it.each(['md', 'docx', 'rtf', 'html', 'epub'] as const)('%s: a heading the parser sets inside the chapter before it takes the headings under it with it, each one depth down', async (kind) => {
+    const ls: Line[] = [[1, 'Chapter 1'], [0, P(1)], [2, 'The quay'], [0, P(2)], [3, 'The east berth'], [0, P(3)], [4, 'The third bollard'], [0, P(4)], [2, 'The pans'], [0, P(20)], [1, 'Chapter 2'], [0, P(21)]];
+    const g = await read(kind, ls);
+    expect(chapters(g).map((s) => s.title)).toEqual(['Chapter 1', 'Chapter 2']);
+    expect(one(g)).toEqual(stored(3));
+    expect(demoted(g)).toEqual([]);
+    expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
   it('a Word heading below a sub-heading keeps the italic it had as a paragraph', async () => {
@@ -359,5 +373,19 @@ describe('a PDF marks no levels: its reader finds headings by their size, hands 
     /* every block of the book that opens on "#" is one of the file's headings, at the one depth the reader gives */
     const marks = written(g).flatMap((s) => blocksOf(s.content)).filter((b) => /^#/.test(b));
     expect(marks.every((b) => /^# (The quay|The east berth|The third bollard) \d$/.test(b)), JSON.stringify(marks)).toBe(true);
+  }, 120_000);
+  /* The one thing that moves for a PDF, and it is the parser's, shared by every format: where the parser sets a
+     heading inside the chapter before it, the headings the reader handed on as sub-headings under that heading go one
+     depth down with it. Measured on this made-up book (the two-chapter book above, its levels set at 26, 20, 17 and
+     14.5 points over 11-point text): before, "The quay", "The east berth" and "The third bollard" all came in "# ";
+     now the two under "The quay" are "## ". The reader tells no depth between the two smaller sizes, before or after.
+     Which headings the reader hands on as which is its own rule and depends on the page: this pins one page. */
+  it('a heading the parser sets inside the chapter takes the sub-headings the reader found under it one depth down', async () => {
+    const SIZE = [26, 20, 17, 14.5];
+    const ls = book([1, 2, 3, 4]);
+    const g = await importFile('given.pdf', await pdf(ls.flatMap((l) => (l[0] ? [{ text: l[1], size: SIZE[l[0] - 1]!, gap: SIZE[l[0] - 1]! * 1.6 }] : pdfPara(l[1])))), '');
+    expect(one(g)).toEqual([P(1), '# The quay', P(2), '## The east berth', P(3), '## The third bollard', P(4), '# The pans', P(20)]);
+    expect(demoted(g)).toEqual([]);
+    expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 });
