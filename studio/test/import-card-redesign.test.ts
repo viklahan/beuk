@@ -196,7 +196,10 @@ describe('the card: the verdict panel first', () => {
     expect(boxClass().contains('ir-card-view')).toBe(false);
     const row = qa('#ir-g-count .ir-ctable .ir-trow', account()).find((r) => txt(q('.ir-tname', r)) === 'Scene breaks and ornaments')!;
     expect(qa('span.num', row).map(txt)).toEqual(['25', '1']);
-    expect(qa('.ir-twhy span', row).map(txt)).toEqual([t('ir.tally.y.aside', { n: '1', what: t('ir.tally.b.titlePage') }), '23 in the file not explained']);
+    expect(Array.from(q('.ir-twhy', row)!.children).map(txt)).toEqual([t('ir.tally.y.aside', { n: '1', what: t('ir.tally.b.titlePage') }), '23 in the file not explained']);
+    /* a reason is a link to the part that lists what it speaks of, where the account has that part; "not explained" leads nowhere */
+    expect(!!q('.ir-twhy [data-irpart="aside"]', row)).toBe(!!q('#ir-g-aside', account()));
+    expect(q('.ir-twhy', row)!.lastElementChild!.tagName).toBe('SPAN');
     expect(row.classList.contains('gold')).toBe(true);
     // two rows: the plural, and the title counts them
     d.importReport.tally.rows.push({ key: 'listItems', file: 9, book: 4, why: [{ k: 'none', n: 5, side: 1 }] });
@@ -237,6 +240,10 @@ describe('what the old screen filed under "Dropped or not supported" is named fo
     $('btnIrEvery').click();
     const pics = qa('#ir-g-count .ir-ctable .ir-trow', account()).find((r) => txt(q('.ir-tname', r)) === 'Pictures')!;
     expect(txt(q('.ir-twhy', pics))).toBe('Your file names 1 picture it does not contain.');
+    expect(q('.ir-twhy button[data-irpart="look"]', pics), 'the reason is a link to "For you to look at"').not.toBeNull();
+    /* the note's own reason names the full account, not "the report", and is a link too */
+    const defs = qa('#ir-g-count .ir-ctable .ir-trow', account()).find((r) => txt(q('.ir-tname', r)) === 'Footnotes');
+    if (defs) { expect(txt(q('.ir-twhy', defs))).not.toContain('the report'); expect(txt(q('.ir-twhy', defs))).toContain('the full account lists them'); expect(q('.ir-twhy button[data-irpart="look"]', defs)).not.toBeNull(); }
     const look = q('#ir-g-look', account())!;
     expect(txt(q('.ir-ph', look))).toBe('For you to look at');
     const heads = qa('.ir-askhead', look).map(txt);
@@ -273,6 +280,9 @@ describe('the full account: the same report, part by part', () => {
       { kind: 'matter', group: 'matter', reversible: true, why: '', where: { secId: ch1.id, label: 'Chapter 1' }, after: 'A line of verse.', data: { type: 'epigraph', via: 'chapter-head', chapterId: ch1.id, chapterLabel: 'Chapter 1', content: 'A line of verse.', mode: 'created' } },
     ]);
     // the card: the looks in one sentence with their counts, most first, and nothing but looks
+    /* nothing differs here, so the panel has no button of its own: the sentence about the other lines carries the link */
+    expect(q('.ir-verdict.clear .ir-vcalm [data-irlist]', card()), 'the sentence has its link').not.toBeNull();
+    expect(q('.ir-vact', card())).toBeNull();
     const looks = q('.ir-looks', card())!;
     expect(txt(q('h3', looks))).toBe('4 looks from your file that a Beuk book does not carry');
     expect(txt(q('p', looks))).toBe('Your words are all kept; these ways of setting them are not: passages in a typewriter font (40), underlined passages (3), struck-through passages (2), and page headers or footers with text (1). See each one');
@@ -315,6 +325,12 @@ describe('the full account: the same report, part by part', () => {
     const extra: Partial<Item>[] = [...made.keys()].map((k) => ({ kind: k.split('/')[0], group: k.split('/')[1], before: 'before words', after: 'after words', data: { ...data } }));
     extra.push({ kind: 'noteOrphan', group: 'dropped', before: 'A loose note, whole.', data: { n: '', loose: 'footnote' } });
     const rep = withItems(extra);
+    /* this report differs (a picture the file does not hold, notes nothing marks): the panel has its button to the full account, and the
+       sentence about the other lines keeps its words without a second link to the same place */
+    const more = qa('.ir-vcalm', card()).find((c) => /more lines? for you to read/.test(txt(c)))!;
+    expect(more, 'the sentence is still said').toBeTruthy();
+    expect(q('button, a', more), 'with no link of its own').toBeNull();
+    expect(qa('.ir-vact [data-irpart]', card()).length, 'the one button').toBe(1);
     $('btnIrEvery').click();
     const rows = qa('[data-irid]', account());
     const ids = rows.map((r) => r.getAttribute('data-irid'));

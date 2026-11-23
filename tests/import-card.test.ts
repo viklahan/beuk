@@ -40,7 +40,7 @@ const KEPT = ['ir.card.title', 'ir.card.zoneFront', 'ir.card.zoneBody', 'ir.card
   'ir.card.didHyphens', 'ir.card.didHyphensPlural', 'ir.card.seeWords', 'ir.card.open', 'ir.card.back', 'ir.card.ledeEmpty', 'ir.card.ledeEmptyPlural'];
 
 /** the report's stylesheet: from its opening rule to the end of its block */
-const cssOf = (html: string) => html.slice(html.indexOf('.ir-modal.modal.wide { max-width: 944px;'), html.indexOf('/* ==== /BEUK:importreport ==== */'));
+const cssOf = (html: string) => html.slice(html.indexOf('.ir-modal.modal.wide { box-sizing: border-box; max-width: 944px;'), html.indexOf('/* ==== /BEUK:importreport ==== */'));
 
 test('import card: the self-check exists in the client and is registered client-only with a reason', async () => {
   const html = await clientHtml();
@@ -136,6 +136,32 @@ test('import card: at 560px and under the arithmetic stacks, chapter rows drop t
   const html = await clientHtml();
   const modal = html.slice(html.indexOf('<div class="modal-actions ir-actions">'), html.indexOf('<!-- ==== /BEUK:importreport ==== -->'));
   assert.ok(modal.lastIndexOf('class="ir-btn primary"') > modal.lastIndexOf('id="btnIrEvery"'));
+});
+
+test('import card: the actions stay in reach at the foot of the report\'s own scroll box, on both screens and at phone width', async () => {
+  const css = cssOf(await clientHtml());
+  /* sticky to the foot, on the card's own ground, across the box's width (its inline padding given back), with a rule above */
+  assert.match(css, /\.ir-modal \.ir-actions \{ position: sticky; bottom: 0; z-index: 1;[^}]*margin-inline: -40px;[^}]*padding-inline: 40px; background: var\(--panel-2\); border-top: 1px solid var\(--line\); \}/);
+  /* the box's own foot is the actions', so nothing of the content ends under them; a control the keyboard brings into view stops above them */
+  assert.match(css, /\.ir-modal\.modal\.wide \{ box-sizing: border-box; max-width: 944px; padding: 34px 40px 0; color: var\(--ink\); scroll-padding-bottom: 104px; \}/);
+  const phone = css.slice(css.indexOf('@media (max-width: 560px) {'));
+  assert.match(phone, /\.ir-modal\.modal\.wide \{[^}]*padding: 26px 20px 0;[^}]*scroll-padding-bottom: 204px; \}/);
+  assert.match(phone, /\.ir-modal\.modal\.wide:not\(\.ir-card-view\) \{ scroll-padding-bottom: 256px; \}/);
+  assert.match(phone, /\.ir-modal \.ir-actions \{ flex-direction: column-reverse;[^}]*margin-inline: -20px;[^}]*padding-inline: 20px; \}/);
+  /* neither rule un-sticks them at phone width */
+  assert.doesNotMatch(phone, /\.ir-actions \{[^}]*position: (?:static|relative)/);
+});
+
+test('import card: no string names this screen "the report" where it means the full account', async () => {
+  const html = await clientHtml();
+  /* the tally's reasons and rows pointed the writer to "the report" for a list: the screen that lists them is the full account */
+  assert.doesNotMatch(html, /\((?:the report lists them|listed in the report)\)/);
+  for (const k of ['ir.tally.y.picsLost', 'ir.tally.y.notesOrphan', 'ir.tally.y.descUnlinked', 'ir.tally.b.leftOut']) {
+    const en = new RegExp('"en": \\{[^\\n]*"' + k.replace(/\./g, '\\.') + '": "([^"]*)"').exec(html);
+    assert.ok(en && /the full account/.test(en[1]), k + ': ' + (en ? en[1] : 'not found'));
+  }
+  /* and in the count's table such a reason is a link to the part that lists what it speaks of */
+  assert.ok(html.includes('const IR_WHY_PART = { picsLost: "notes", notesOrphan: "look", descUnlinked: "look", aside: "aside", pdfPicLost: "notes", pdfPicDup: "notes", pdfBackdrop: "notes" };'));
 });
 
 test('import card: the "Imported" toast is not raised over the open card', async () => {
