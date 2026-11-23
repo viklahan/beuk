@@ -42505,7 +42505,15 @@
          line break parts nothing: the paragraph is one, in the file and in the book. */
       function irTallyParas(R, text) {
         const parts = String(text).split(/\x0b\s*\x0b\s*/).filter((v) => /\S/.test(v));
-        (parts.length ? parts : [String(text)]).forEach((v) => { R.paragraphs++; irTallyItem(R, "paragraphs", v); });
+        /* A paragraph is known by its first line, and its later lines are counted as lines joined to it: that is how
+           the book's side counts a paragraph of several lines (irTallyBook), and the two sides must count alike. Known
+           by its first words whole, a paragraph whose first line has fewer than six words matched nothing in the book,
+           and wherever the row's two totals differed (a title page's lines set aside) the row said "N in the file not
+           explained, N in the book not explained" of paragraphs that are in both: 24 and 23 in one real manuscript. */
+        (parts.length ? parts : [String(text)]).forEach((v) => {
+          const lines = String(v).split("\x0b").filter((l) => /\S/.test(l));
+          R.paragraphs++; irTallyItem(R, "paragraphs", lines[0] || v); lines.slice(1).forEach((l) => irTallyItem(R, "joined", l));
+        });
       }
       /* an element's text with each <br> in it as that mark */
       function irTallyBrText(e) {

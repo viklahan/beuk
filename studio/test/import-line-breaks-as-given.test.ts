@@ -121,3 +121,26 @@ describe('pinned, not kept: a line break in a heading, a list\'s item and a tabl
     expect(ch.content).toContain('cell one line two');
   }, 120_000);
 });
+
+/* Found on a real manuscript (private; counts only), 2026-11-22: 68 of its paragraphs hold line breaks, and its
+   Paragraphs row said "24 in the file not explained, 23 in the book not explained" of paragraphs that are in both.
+   The book's side knows a paragraph of several lines by its first line; the file's side knew it by its first six
+   words, across its lines. Where the first line has fewer than six words the two never met. The row only says so
+   where its totals differ (here: a title page's lines, set aside), which is why no book with equal totals showed it. */
+describe('the tally counts a paragraph of several lines the same way on both sides', () => {
+  type Row = { key: string; file: number; book: number; why?: { k: string; n: number }[] };
+  const para = (...lines: string[]) => '<w:p>' + lines.map((l) => wr(l)).join(WBR) + '</w:p>';
+  it('Word: paragraphs whose first line is short, in a book whose Paragraphs totals differ: no line of the row is "not explained"', async () => {
+    const g = await importFile('salt.docx', await docx(wp('The Salt Road') + wp('by Ada Wren') + wp('Chapter 1', true) + wp(BODY)
+      + para('The rule:', 'Nobody on the quay spoke of the ledger that year.')
+      + para('Listen.', 'The tide came in slowly.', 'The lamps came on along the wall.')
+      + para('She said it once, and plainly enough for the whole quay to hear it.', 'Nobody answered.')
+      + wp('Chapter 2', true) + wp(LAST)), '');
+    const row = ((g.tally as unknown as { rows: Row[] }).rows).find((r) => r.key === 'paragraphs')!;
+    expect(row.file, 'the totals differ, so the row gives its reasons').not.toBe(row.book);
+    expect((row.why || []).filter((y) => y.k === 'none'), 'nothing unexplained on either side').toEqual([]);
+    expect(blocksOf(written(g).filter((s) => s.type === 'chapter')[0].content)).toEqual([BODY, 'The rule:\nNobody on the quay spoke of the ledger that year.',
+      'Listen.\nThe tide came in slowly.\nThe lamps came on along the wall.', 'She said it once, and plainly enough for the whole quay to hear it.\nNobody answered.']);
+    expect(figures(g)).toEqual(CLEAR);
+  }, 120_000);
+});
