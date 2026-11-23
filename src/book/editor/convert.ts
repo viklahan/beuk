@@ -404,8 +404,9 @@ function buildBlock(B: string, stats?: ConvertStats): Node {
       return S.node('quoteLine', { prefix }, inlineNodes(r.slice(prefix.length), false));
     }));
   }
-  if (B.startsWith('## ')) return S.node('heading', { level: 2 }, inlineNodes(B.slice(3), false));
-  if (B.startsWith('# ')) return S.node('heading', { level: 1 }, inlineNodes(B.slice(2), false));
+  // BEUK:headdepths: one to five "#" and a space, as 1.0's emitText reads a heading (level 1 to 5: its h2 to h6)
+  const hd = /^#{1,5} /.exec(B);
+  if (hd) return S.node('heading', { level: hd[0].length - 1 }, inlineNodes(B.slice(hd[0].length), false));
   return S.node('paragraph', null, inlineNodes(B, true));
 }
 

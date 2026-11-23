@@ -60,7 +60,10 @@ const READER_CSS = `
 .rd-page .ch-sub{text-align:center;font-style:italic;color:var(--ink-soft);margin:0 0 1.2em}
 .rd-page p{text-indent:1.4em;margin:0}
 .rd-page p.ch-num,.rd-page p.ch-sub,.rd-page .endnote,.rd-page .endnotes-h{text-indent:0}
-.rd-page h2+p,.rd-page .ch-sub+p,.rd-page .scene-break+p,.rd-page h3+p,.rd-page h4+p{text-indent:0}
+.rd-page h2+p,.rd-page .ch-sub+p,.rd-page .scene-break+p,.rd-page h3+p,.rd-page h4+p,.rd-page h5+p,.rd-page h6+p{text-indent:0}
+.rd-page h5,.rd-page h6{font-size:1em}
+.rd-page h5,.rd-page h6{font-style:italic}
+.rd-page h6{font-weight:400}
 .rd-page .scene-break{text-align:center;margin:1em 0;color:var(--ink-soft)}
 .rd-page .redacted{background:currentColor;letter-spacing:0;user-select:none}
 .rd-page figure{margin:1.2em 0;text-align:center}

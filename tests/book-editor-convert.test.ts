@@ -219,6 +219,7 @@ test('convert: a "::: table" block is one raw block and survives an edit beside 
 test('convert: headings, quotes and lists are nodes, read as 1.0\'s emitText reads them, and round-trip', () => {
   const cases = [
     '# One', '## Two', '# a *b* c\nsecond line', '## **x** [l](https://u.v) [^1]', '#no space', '### three', '# ', '## ',
+    '#### four', '##### five *x*', '###### six', '####### seven', '### ', '#####', '# One\n\n## Two\n\n### Three\n\n#### Four\n\n##### Five\n\ntext',
     '> a\n> b', '>a\n>  b\n>\tc', '>', '> *x*\n> — Name', '> a\r\n> b\r', '>\r\n> x', '> [l](https://a.b)\n> **y**',
     '- a\n- b', '* a\n* b', '• a\n• b', '- a\n  more\n- b', '1. a\n2. b', '3) c\nmore\n4) d', '1. x\n- y', '10.  wide\n11.\tTab',
     '- a\r\n- b\r\n', '- *a\n  b* c\n- d', '- a\n1. b', '-\r\n- x', '- \r\n- y',
@@ -227,7 +228,13 @@ test('convert: headings, quotes and lists are nodes, read as 1.0\'s emitText rea
   for (const c of cases) roundTrips(c);
   assert.deepEqual(types(toDoc('# One\n\n## Two')), ['heading', 'heading']);
   assert.deepEqual(toDoc('# One\n\n## Two').content.content.map((h) => h.attrs.level), [1, 2]);
-  assert.deepEqual(types(toDoc('### three')), ['paragraph']); // 1.0: neither "## " nor "# "
+  // BEUK:headdepths: a section holds a heading at five depths, "# " to "##### " (1.0's h2 to h6). Restated: "### three"
+  // was a paragraph here, as 1.0 read it ("neither '## ' nor '# '"), and that reading was the limit the import ran into.
+  assert.deepEqual(types(toDoc('### three')), ['heading']);
+  assert.deepEqual(toDoc('# One\n\n## Two\n\n### Three\n\n#### Four\n\n##### Five').content.content.map((h) => [h.type.name, h.attrs.level, h.textContent]),
+    [['heading', 1, 'One'], ['heading', 2, 'Two'], ['heading', 3, 'Three'], ['heading', 4, 'Four'], ['heading', 5, 'Five']]);
+  assert.deepEqual(types(toDoc('###### six')), ['paragraph']); // six "#": no heading (a page has no h7)
+  assert.deepEqual(runs(toDoc('##### five *x*')), [['five ', []], ['x', ['em']]]);
   assert.deepEqual(types(toDoc('- lone dash line')), ['paragraph']); // a bulleted list needs two items
   assert.deepEqual(types(toDoc('- a\n1. b')), ['paragraph']); // a numbered line inside a bulleted list: not a list
   // a quote: one line per line, its ">" and one whitespace character as the prefix
@@ -467,7 +474,7 @@ function randomDocs(count: number, seed0: number): Node[] {
       case 4: return S.node('image', { ...edges(), alt: pick(['a', 'a]b', '']), id: pick(['x', '', 'a b']), full: rnd(2) === 0, caption: pick([null, 'cap', 'c"d']) });
       case 5: return S.node('footnoteDef', { ...edges(), n: pick(['1', '22']), caret: rnd(2) === 0, gap: pick([' ', '', '\n']) }, inline());
       // wave 2a: headings, quotes, lists (with prefixes and markers 1.0 would not read, as an edit can leave them)
-      case 6: return S.node('heading', { ...edges(), level: pick([1, 2, 3]) }, inline());
+      case 6: return S.node('heading', { ...edges(), level: pick([1, 2, 3, 4, 5, 6, 0]) }, inline()); // 6 and 0: levels the book does not hold, as an edit can leave them
       case 7: case 8: {
         const quote = rnd(2) === 0;
         const kids: Node[] = [];

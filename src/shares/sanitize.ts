@@ -25,7 +25,8 @@
  */
 
 const ALLOWED_TAGS = new Set([
-  'p', 'h2', 'h3', 'h4', 'blockquote', 'br', 'em', 'strong', 'i', 'b',
+  // BEUK:headdepths: h5 and h6, a section's headings at the third depth and below (render.ts)
+  'p', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'br', 'em', 'strong', 'i', 'b',
   'sup', 'sub', 'a', 'span', 'figure', 'figcaption', 'img', 'div', 'section', 'hr',
 ]);
 

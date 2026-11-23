@@ -404,6 +404,26 @@ test('render unit: a marked line break is a line break on the reading copy and i
   assert.equal(html.split(BS).length - 1, 1);
 });
 
+/* BEUK:headdepths: a section holds a heading at five depths ("# " to "##### "). The reading copy sets each as a heading
+   under the chapter's own h2: h3 and h4, as before, then h5 and h6; a page has no h7, so the fifth depth is an h6 too.
+   Every text is made up. */
+test('render unit: a heading inside a section is a heading at each depth the book holds, and passes the sanitizer; six "#" is the paragraph it was', () => {
+  const doc = {
+    meta: { title: 'Depths', author: 'A. Writer', language: 'en' },
+    sections: [{ id: 'sec-d', kind: 'body', type: 'chapter', number: '1', title: 'Dawn',
+      content: ['Opening words.', '# The quay', '## The east berth', '### The third *bollard*', '#### The iron ring', '##### The rust', '###### Six marks', 'Closing words.'].join('\n\n') }],
+  };
+  const { snapshot } = renderSnapshot(doc, 'x');
+  const html = snapshot.sections.map((s) => s.html).join('');
+  assert.ok(html.includes('<h3 data-p="1">The quay</h3>'), html);
+  assert.ok(html.includes('<h4 data-p="2">The east berth</h4>'), html);
+  assert.ok(html.includes('<h5 data-p="3">The third <em>bollard</em></h5>'), html);
+  assert.ok(html.includes('<h6 data-p="4">The iron ring</h6>'), html);
+  assert.ok(html.includes('<h6 data-p="5">The rust</h6>'), html);
+  assert.ok(html.includes('<p data-p="6">###### Six marks</p>'), html);
+  assert.equal(sanitizeHtml(html), html, 'the sanitizer lets each heading through as written');
+});
+
 test('render unit: a redaction in a picture\'s alt text or caption (inline, scene, plate) is said or barred, never its words', () => {
   const doc = {
     meta: { title: 'Exhibit', author: 'A. Writer', language: 'en' },

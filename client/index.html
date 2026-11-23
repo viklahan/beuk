@@ -31124,8 +31124,12 @@
             out.push("<blockquote" + (qa ? ' class="has-attribution"' : "") + ">" + body.map((l, k) => inlineMd((k < lines.length - 1 ? l.replace(/\\$/, "") : l).replace(/^>\s?/, ""), noteCtx)).join("<br/>") +
               (qa ? '<p class="attribution">' + esc(quoteAttributionDash(lines)) + " " + inlineMd(qa, noteCtx) + "</p>" : "") + "</blockquote>"); return;
           }
-          if (chunk.startsWith("## ")) { out.push('<h3 class="inhead">' + inlineMd(chunk.slice(3), noteCtx) + "</h3>"); return; }
-          if (chunk.startsWith("# ")) { out.push('<h2 class="inhead">' + inlineMd(chunk.slice(2), noteCtx) + "</h2>"); return; }
+          /* BEUK:headdepths — a heading inside a section, at the depth its marks give: "# " the page's h2 and "## " its
+             h3, exactly as they were, and "### ", "#### " and "##### " its h4, h5 and h6 (a block that opens on three to
+             five "#" and a space was set as a paragraph with its marks showing; the import now stores a file's deeper
+             headings so, where it turned them into body text). A page has no h7: six "#" is no heading. */
+          const hd = /^#{1,5} /.exec(chunk);
+          if (hd) { const hn = hd[0].length; out.push("<h" + hn + ' class="inhead">' + inlineMd(chunk.slice(hn), noteCtx) + "</h" + hn + ">"); return; }
           emitPara(chunk);
         };
         let sceneBreakIdx = 0;
@@ -31677,6 +31681,15 @@
           S + "figure.book-img.full-bleed img { max-width: 100%; width: 100%; }",
           S + ".img-missing { border: 1px dashed currentColor; padding: 0.5em 1em; }",
           S + ".inhead { font-family: " + headFf + "; margin: 1.3em 0 0.6em 0; text-align: left; }",
+          /* BEUK:headdepths — the three depths below a section's h2 and h3 (h4, h5, h6: "### ", "#### ", "##### "). Left to
+             a reader's own stylesheet, an h5 and an h6 are set smaller than the text they head; here each is the text's
+             size and told from the next by its cut: h4 bold, h5 bold italic, h6 italic. In a file made of the book (the
+             EPUB's stylesheet, the web page's, the print interior's: no scope) they are written only for a book that
+             holds such a heading, so every other book's stylesheet is byte for byte what it was; on the studio's own
+             page (a scope: the preview, the print view) they are always there, since its stylesheet is not written
+             again each time the text changes. */
+          ...(scope || (Array.isArray(state.sections) ? state.sections : []).concat(...(Array.isArray(state.boxSetVolumes) ? state.boxSetVolumes : []).map((v) => (v && Array.isArray(v.sections) ? v.sections : []))).some((s) => s && /^[ \t]*#{3,5} /m.test(String(s.content || "")))
+            ? [S + "h4.inhead, " + S + "h5.inhead, " + S + "h6.inhead { font-size: 1em; }", S + "h5.inhead, " + S + "h6.inhead { font-style: italic; }", S + "h6.inhead { font-weight: 400; }"] : []),
           S + ".empty-note { text-indent: 0; font-style: italic; opacity: 0.6; text-align: center; margin-top: 3em; }",
           S + ".plate-page { margin: 0; height: 100%; text-indent: 0; page-break-after: always; break-after: page; -webkit-column-break-after: always; break-inside: avoid; }",
           S + ".plate-page img { display: block; width: 100%; height: 100%; object-fit: cover; }",
@@ -38126,7 +38139,7 @@
       }
       /* The typeset blocks that carry the section's own words, in order. */
       function pvCandidates(flow) {
-        return Array.prototype.filter.call(flow.querySelectorAll("p, blockquote, h2.inhead, h3.inhead"), (el) =>
+        return Array.prototype.filter.call(flow.querySelectorAll("p, blockquote, h2.inhead, h3.inhead, h4.inhead, h5.inhead, h6.inhead"), (el) => /* BEUK:headdepths — a heading at every depth a section holds */
           !el.closest(".chapter-opening, .endnotes, figure, .empty-note, .part-divider > p, .tp-top") &&
           !(el.tagName === "P" && el.parentElement && el.parentElement.closest("blockquote")) &&
           /* BEUK:layout — a margin note's copy for the other width is not shown */
@@ -39548,10 +39561,24 @@
          gives each its place among the levels in use (`rank`; a heading
          without words keeps its own level and counts for nothing) and
          whether it is a sub-heading (`sub`). */
+      /* BEUK:headdepths — a heading the writer made stays a heading, at its own depth (the owner's rule, 2026-11-22:
+         "KEEP WHAT THE WRITER GIVES US"). "Whatever lies deeper" above was turned into body text: a file of Heading 1
+         chapters with Heading 2, 3 and 4 under them kept the Heading 2s and came in with the Heading 3s and 4s as
+         paragraphs nothing told from the text round them (measured on a made-up book in Markdown, text, Word,
+         OpenDocument, RTF and a web page: 7 headings in the file, 5 in the book, "2 in the book as paragraphs").
+         So each heading also gets its `depth`: 0 where it opens a section of the book (a first-level heading, and a
+         second-level one that is no sub-heading), and otherwise how far below the heading that opened its section it
+         stands, by rank: under a first-level chapter a second-level heading is 1, a third-level one 2, a fourth 3;
+         under a second-level chapter a third-level heading is 1. A heading standing before any heading that opens a
+         section is counted from the shallowest heading standing there with it. The book holds a heading inside a
+         section at depths 1 to 5 (IR_HEAD_DEEPEST: "# " to "##### ", the page's h2 to h6, and a page has no h7), so a
+         depth of 6 or more is the one thing still below what a section holds: a file with seven levels of heading in
+         use. Only that is still reported as body text. */
+      const IR_HEAD_DEEPEST = 5;
       function irHeadDepths(heads) {
         const hs = (heads || []).map((h) => ({ level: Number(h.level) || 1, text: String(h.text == null ? "" : h.text).replace(/\s+/g, " ").trim() }));
         const used = Array.from(new Set(hs.filter((h) => h.text).map((h) => h.level))).sort((a, b) => a - b);
-        const out = hs.map((h) => ({ rank: h.text ? used.indexOf(h.level) + 1 : h.level, sub: false }));
+        const out = hs.map((h) => ({ rank: h.text ? used.indexOf(h.level) + 1 : h.level, sub: false, depth: 0 }));
         const top = [];
         hs.forEach((h, i) => { if (h.text && out[i].rank <= 2) top.push(i); });
         const flags = irSubHeadings(top.map((i) => ({ level: out[i].rank, text: hs[i].text })));
@@ -39562,8 +39589,26 @@
           if (out[i].rank <= 2) { above = i; return; }
           if (out[i].rank === 3 && above >= 0 && out[above].rank === 2 && !out[above].sub) out[i].sub = true;
         });
+        /* BEUK:headdepths */
+        let opened = 0, lead = 0;
+        hs.some((h, i) => { if (!h.text) return false; if (out[i].rank <= 2 && !out[i].sub) return true; lead = lead ? Math.min(lead, out[i].rank) : out[i].rank; return false; });
+        hs.forEach((h, i) => {
+          if (!h.text) return;
+          if (out[i].rank <= 2 && !out[i].sub) { opened = out[i].rank; return; }
+          out[i].depth = Math.max(1, out[i].rank - (opened || lead - 1));
+        });
         return out;
       }
+      /* BEUK:headdepths — a heading inside a section, held for irFinish as the block of its own it is (the "SUB"
+         placeholder every reader hands on), with its depth; and the line irFinish sets it back as: "# " at depth 1,
+         as it always was, "## " at depth 2, to "##### " at depth 5. */
+      function irSubHold(ir, text, depth) {
+        ir.subs = ir.subs || [];
+        ir.subs.push(text);
+        if (depth > 1) { ir.subDepths = ir.subDepths || {}; ir.subDepths[ir.subs.length - 1] = Math.min(IR_HEAD_DEEPEST, depth); }
+        return irSent("SUB", ir.subs.length - 1);
+      }
+      const irSubLine = (ir, n) => "#".repeat((ir.subDepths && ir.subDepths[n]) || 1) + " " + ir.subs[n];
       /* Markdown and text: a "#" line is a Heading 1 and a "##" line a
          Heading 2, judged by the same rule, and "###" to "######" are
          the levels below them (irHeadDepths). A sub-heading leaves its
@@ -39606,7 +39651,8 @@
         const depth = irHeadDepths(heads);
         heads.forEach((h, k) => {
           const d = depth[k];
-          if (!d.sub && d.rank > 2) {
+          /* BEUK:headdepths — a heading inside a section is kept at its depth; only one deeper than a section holds (the sixth level below a chapter) is still set as a paragraph and reported */
+          if (d.depth > IR_HEAD_DEEPEST) {
             /* below what a section holds: its words stay, as a paragraph of their own */
             if (ir && ir.demoted) ir.demoted.push({ level: h.level, text: h.typed });
             lines[h.i] = "\n" + h.typed + "\n";
@@ -39614,10 +39660,8 @@
             return;
           }
           if (h.bold) { touched = true; if (ir && ir.drops) ir.drops.fmtHeading = (ir.drops.fmtHeading || 0) + 1; }
-          if (d.sub) {
-            ir.subs = ir.subs || [];
-            ir.subs.push(h.text);
-            lines[h.i] = "\n" + irSent("SUB", ir.subs.length - 1) + "\n";
+          if (d.depth) {
+            lines[h.i] = "\n" + irSubHold(ir, h.text, d.depth) + "\n";
             touched = true;
             return;
           }
@@ -41005,11 +41049,15 @@
          chapter or a page), "sub" (a sub-heading inside its chapter: a
          Heading 2 under Heading 1 chapters, and a Heading 3 where the file
          has no Heading 2 at all) or "deep" (below what a section holds). */
+      /* BEUK:headdepths — "sub" is now every heading inside a section, each with its depth (rtfSubHeadings(rd).depths:
+         1 for the sub-headings above, 2 and deeper for the levels under them); "deep" is only a heading deeper than a
+         section holds (IR_HEAD_DEEPEST) */
       function rtfSubHeadings(rd) {
         const hb = rd.blocks.filter((b) => b.kind === "h");
         const depth = irHeadDepths(hb);
         const roles = new Map();
-        hb.forEach((b, k) => { roles.set(b, depth[k].sub ? "sub" : (depth[k].rank <= 2 ? "open" : "deep")); });
+        roles.depths = new Map();
+        hb.forEach((b, k) => { const d = depth[k].depth; roles.set(b, d > IR_HEAD_DEEPEST ? "deep" : d ? "sub" : (depth[k].rank <= 2 ? "open" : "deep")); roles.depths.set(b, d); });
         return roles;
       }
       /* Blocks -> manuscript text, for the readers that take text only
@@ -41082,8 +41130,8 @@
             if (b.kind === "h") {
               if (subs.get(b) === "sub") {
                 /* BEUK:headlevels — a Heading 2 inside a Heading 1 chapter stays in it, as its sub-heading */
-                ir.subs.push(b.text);
-                parts.push(irSent("SUB", ir.subs.length - 1));
+                /* BEUK:headdepths — and every level under it, at its depth: with the italic, bold and links it kept when it was set as a paragraph (a first sub-heading's words come across plain, as they did) */
+                { const dp = subs.depths.get(b); parts.push(irSubHold(ir, dp > 1 ? carry(b.runs) || b.text : b.text, dp)); }
               } else if (subs.get(b) === "open") {
                 /* A chapter title is set in the book's heading style:
                    its words come across plain, its italic/bold counted. */
@@ -43811,7 +43859,8 @@
             R.noteRefs += new Set(v.match(/\[\^[^\]\s]+\](?!:)/g) || []).size;
             R.links += (v.match(mdLinkRe()) || []).length;
             const plain = countWordsClean(v);
-            if (/^#{1,2} \S/.test(v)) { const lv = /^## /.test(v) ? "sub2" : "sub"; R.headings[lv] = (R.headings[lv] || 0) + 1; irTallyItem(R, "headings", plain); return; }
+            /* BEUK:headdepths — a heading inside a section at each depth the book holds: "sub", "sub2" … "sub5" */
+            { const hd = /^(#{1,5}) \S/.exec(v); if (hd) { const lv = hd[1].length > 1 ? "sub" + hd[1].length : "sub"; R.headings[lv] = (R.headings[lv] || 0) + 1; irTallyItem(R, "headings", plain); return; } }
             if (/^(\*\*\*|❦|⁂)$/.test(v) || (v.indexOf("\n") === -1 && irTallyOrnament(v))) { R.breaks++; irTallyItem(R, "breaks", v); return; }
             const lines = plain.split("\n").filter((l) => /\S/.test(l));
             if (/^>/.test(v)) { R.quotes++; irTallyItem(R, "quotes", lines[0] || ""); lines.slice(1).forEach((l) => irTallyItem(R, "quoteLines", l)); return; }
@@ -44630,7 +44679,7 @@
                 h = made;
               }
               if (ctx.heads) { ctx.heads.push({ level: Number(tag.slice(1)), text: h, rank: 0, role: "" }); out.push(irSent("EH", ctx.heads.length - 1)); }
-              else out.push((tag === "h1" || tag === "h2" ? "# " : "## ") + h);
+              else out.push("#".repeat(Math.max(1, Math.min(IR_HEAD_DEEPEST, Number(tag.slice(1)) - 1))) + " " + h); /* BEUK:headdepths — by its own tag: h1 and h2 "# ", h3 "## ", h4 to h6 the depths below */
               return;
             }
             if (tag === "blockquote") {
@@ -44891,24 +44940,22 @@
            sub-heading inside its chapter; a deeper heading never opens a
            chapter (it is a sub-heading, "# " directly under the chapter's
            own heading and "## " below that). */
+        /* BEUK:headdepths — "below that" was one depth for every level: a chapter's h3, h4 and h5 all came in "## ".
+           Each is now a heading at its own depth, the depth every reader asks irHeadDepths for (h.depth; "# " to
+           "##### "), held as the block every reader hands on (irSubHold). On a page that says what it is (Beuk's own
+           EPUB among them, which sets a section's headings as h2 to h6) a heading is read by its own tag, as it was:
+           h1 and h2 "# ", h3 "## ", and now h4 "### ", h5 "#### ", h6 "##### ". */
         const plainHeads = [];
         pages.forEach((pg) => { if (!pg.skip && !pg.plateOnly && !pg.kindType) for (let k = pg.h0; k < pg.h1; k++) plainHeads.push(ir.epubHeads[k]); });
         const depth = irHeadDepths(plainHeads); /* the one reading every format asks: rank among the levels in use, and which headings are sub-headings */
-        plainHeads.forEach((h, k) => { h.rank = depth[k].rank; if (h.rank <= 2 && !depth[k].sub) h.role = "chapter"; });
-        let cur = 0;
-        plainHeads.forEach((h) => {
-          if (h.role === "chapter") { cur = h.rank; return; }
-          h.role = cur && h.rank - cur >= 2 ? "sub2" : "sub";
-        });
+        plainHeads.forEach((h, k) => { h.rank = depth[k].rank; h.depth = depth[k].depth; h.role = h.depth ? "sub" : "chapter"; });
         const render = (pg, byHeadings) => pg.blocks.map((b) => {
           const m = IR_SENT_RE.exec(b);
           if (!m || m[1] !== "EH") return b;
           const h = ir.epubHeads[Number(m[2])];
-          if (!byHeadings || !h.role) return (h.level <= 2 ? "# " : "## ") + h.text;
+          if (!byHeadings || !h.role) return "#".repeat(Math.max(1, Math.min(IR_HEAD_DEEPEST, h.level - 1))) + " " + h.text;
           if (h.role === "chapter") { ir.headings.push({ level: h.rank, key: irLoose(h.text) }); return "# " + h.text; }
-          if (h.role === "sub2") { ir.epubSub2.push(irJoinGiven(h.text)); return irSent("SUBB", ir.epubSub2.length - 1); } /* BEUK:joinsgiven — a sub-heading is never parted */
-          ir.subs.push(irJoinGiven(h.text));
-          return irSent("SUB", ir.subs.length - 1);
+          return irSubHold(ir, irJoinGiven(h.text), h.depth); /* BEUK:joinsgiven — a sub-heading is never parted */
         });
         /* 5. The sections. Pages that say what they are become that
            section, one by one. The pages between them that say nothing
@@ -45850,7 +45897,10 @@
            and Heading 2, and its Heading 3s are sub-headings inside their chapters, as a web page's and an EPUB's are.
            The level the file gave is kept for the report (data-ir-level). And a third level under a second-level
            heading that opens a chapter is that chapter's sub-heading. */
-        const deepSubs = new Set();
+        /* BEUK:headdepths — and every level below a chapter's sub-headings is a heading inside the chapter too, at its
+           depth (deepSubs: the heading, and how far below the heading that opened its section it stands). Only a heading
+           deeper than a section holds is left for the walk to set as a paragraph and report. */
+        const deepSubs = new Map();
         {
           const hs = Array.prototype.filter.call(doc.body ? doc.body.children : [], (c) => /^h[1-6]$/i.test(c.tagName));
           const depth = irHeadDepths(hs.map((c) => ({ level: Number(c.tagName.slice(1)), text: irTextBr(c) })));
@@ -45863,7 +45913,7 @@
               el.setAttribute("data-ir-level", c.getAttribute("data-ir-level") || String(level));
               c.parentNode.replaceChild(el, c);
             }
-            if (d.sub && d.rank > 2) deepSubs.add(el);
+            if (d.rank > 2 && d.depth && d.depth <= IR_HEAD_DEEPEST) deepSubs.set(el, d.depth);
           });
         }
         const parts = [];
@@ -46105,8 +46155,10 @@
             pushImages(node);
           } else if (deepSubs.has(node)) {
             /* BEUK:headlevels — the first level under a Heading 2 chapter is its sub-heading */
-            ir.subs.push(htxt);
-            parts.push(irSent("SUB", ir.subs.length - 1));
+            /* BEUK:headdepths — and each level below a sub-heading is a heading at its depth. Set as a paragraph it kept its
+               italic, bold and links (the run walk), so as a heading it keeps them still; a first sub-heading's words
+               come across plain, as they did. */
+            { const dp = deepSubs.get(node); parts.push(irSubHold(ir, dp > 1 ? carry(irRunsToMd(irInlineRuns(node, ir), ir, false)).replace(/\s+/g, " ").trim() || htxt : htxt, dp)); }
             pushImages(node);
           } else if (/^h[3-6]$/.test(tag)) {
             const v = txt.replace(/\s+/g, " ").trim();
@@ -46542,7 +46594,7 @@
             }
             const n = Number(m[2]);
             if (m[1] === "SB" && ir.breaks[n]) { ir.breaks[n].secId = s.id; marks.push({ rec: ir.breaks[n], at: out.length }); out.push("***"); }
-            else if (m[1] === "SUB" && ir.subs && ir.subs[n] != null) out.push("# " + ir.subs[n]); /* BEUK:wordback */
+            else if (m[1] === "SUB" && ir.subs && ir.subs[n] != null) out.push(irSubLine(ir, n)); /* BEUK:wordback; BEUK:headdepths — at its depth */
             else if (m[1] === "PARA" && ir.paras && ir.paras[n] != null) out.push(ir.paras[n]); /* BEUK:breaksgiven — a paragraph held aside from the rules that read line by line, back as it was */
             else if (m[1] === "NOTE" && ir.docNotes[n] && ir.docNotes[n].stood) { ir.docNotes[n].secId = s.id; out.push(ir.docNotes[n].plain); } /* BEUK:notesstood — an unmarked note's text, where its definition stood */
             else if (m[1] === "SUBT" && ir.subtitles && ir.subtitles[n] != null) { if (!s.subtitle) s.subtitle = ir.subtitles[n]; }
@@ -46560,7 +46612,7 @@
           marks.forEach((mk) => { mk.rec.prev = (out[mk.at - 1] || "").trim(); mk.rec.next = (out[mk.at + 1] || "").trim(); });
           s.content = out.filter((b, i) => b.trim() || i === 0).join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
         });
-        const resolveText = (str) => String(str || "").replace(/SB\d+/g, "***").replace(/SUB(\d+)/g, (m, n) => (ir.subs && ir.subs[n] != null ? "# " + ir.subs[n] : "")).replace(/PARA(\d+)/g, (m, n) => (ir.paras && ir.paras[n] != null ? ir.paras[n] : "")).replace(/TBL(\d+)/g, (m, n) => (ir.tables[n] && ir.tables[n].blocks ? ir.tables[n].blocks.join("\n\n") : "")).replace(/\n?[A-Z]+\d+\n?/g, "");
+        const resolveText = (str) => String(str || "").replace(/SB\d+/g, "***").replace(/SUB(\d+)/g, (m, n) => (ir.subs && ir.subs[n] != null ? irSubLine(ir, n) : "")).replace(/PARA(\d+)/g, (m, n) => (ir.paras && ir.paras[n] != null ? ir.paras[n] : "")).replace(/TBL(\d+)/g, (m, n) => (ir.tables[n] && ir.tables[n].blocks ? ir.tables[n].blocks.join("\n\n") : "")).replace(/\n?[A-Z]+\d+\n?/g, "");
         /* BEUK:notesstood — and in the record of what each piece placed (the report's undo matches the page by it) */
         const resolveStood = (str) => String(str || "").replace(new RegExp(irSent("NOTE", "(\\d+)"), "g"), (m0, k) => (ir.docNotes[k] && ir.docNotes[k].stood ? ir.docNotes[k].plain : m0));
         (pieces || []).forEach((p) => { if (p._placed) p._placed.content = resolveText(resolveStood(p._placed.content)); });
@@ -46732,7 +46784,7 @@
           const k = irLoose(d.text);
           const host = importSecs.find((s) => irBlocks(s.content).some((b) => irLoose(b) === k));
           add({ kind: "demoted", group: "structure", where: { secId: host ? host.id : null, label: host ? secName(host) : "" },
-            before: irClip(d.text, 100), after: irClip(d.text, 100), reversible: !!host, why: host ? "" : "gone", data: { level: d.level, text: d.text } });
+            before: irClip(d.text, 100), after: irClip(d.text, 100), reversible: !!host, why: host ? "" : "gone", data: { level: d.level, text: d.text, depth: IR_HEAD_DEEPEST } }); /* BEUK:headdepths — only a heading deeper than a section holds comes here now */
         });
         ir.breaks.forEach((b) => {
           const host = b.secId ? secById(b.secId) : null;
@@ -46964,7 +47016,8 @@
           const order = [state.sections.find((s) => s.id === it.where.secId)].concat(state.sections).filter(Boolean);
           for (const sec of order) {
             const f = irFindBlock(sec, (b) => irLoose(b) === k && !/^#/.test(b));
-            if (f) { f.bl[f.i] = "## " + f.bl[f.i].trim(); sec.content = f.bl.join("\n\n"); return { ok: true, into: sec.id }; }
+            /* BEUK:headdepths — a heading deeper than a section holds goes back as the deepest heading it holds (data.depth); a report written before this says nothing of depth and gets "## ", as it did */
+            if (f) { f.bl[f.i] = "#".repeat(it.data.depth || 2) + " " + f.bl[f.i].trim(); sec.content = f.bl.join("\n\n"); return { ok: true, into: sec.id }; }
           }
           return { ok: false, why: "gone" };
         },
@@ -53097,8 +53150,12 @@
           if (/^(\*\*\*|❦|⁂)$/.test(b)) return "* * *";
           const lines = b.split("\n");
           if (lines.every((l) => l.startsWith(">"))) return lines.join("\n");
-          if (b.startsWith("## ")) return "#### " + b.slice(3);
-          if (b.startsWith("# ")) return "### " + b.slice(2);
+          /* BEUK:headdepths — a heading inside a section is written two levels below its own depth, under the book's "#"
+             and the section's "##": "# " is "### " and "## " is "#### ", as they were, and "### " and "#### " are
+             "##### " and "###### ". Markdown has six levels, so the fifth depth ("##### ") has none of its own: it is
+             written at the sixth too, still a heading, beside the fourth. */
+          const hd = /^#{1,5} /.exec(b);
+          if (hd) return "#".repeat(Math.min(6, hd[0].length + 1)) + " " + b.slice(hd[0].length);
           /* BEUK:listmarksgiven — a list is written as the book stores it, item by item, each with the mark the writer typed.
              Its lines were closed up into one ("1. one 2. two 4. four"), which no reader of Markdown takes for a list. */
           if (listItemsOf(lines)) return lines.join("\n");
@@ -53479,7 +53536,7 @@
         const root = scope || "body";
         const rules = [
           S + "p { orphans: 3; widows: 3; }",
-          S + "h2.inhead, " + S + "h3.inhead, " + S + ".chapter-opening, " + S + ".endnotes-h { page-break-after: avoid; break-after: avoid; page-break-inside: avoid; break-inside: avoid; }",
+          S + "h2.inhead, " + S + "h3.inhead, " + S + "h4.inhead, " + S + "h5.inhead, " + S + "h6.inhead, " + S + ".chapter-opening, " + S + ".endnotes-h { page-break-after: avoid; break-after: avoid; page-break-inside: avoid; break-inside: avoid; }",
           S + ".scene-break { page-break-inside: avoid; break-inside: avoid; page-break-before: avoid; break-before: avoid; page-break-after: avoid; break-after: avoid; }",
           S + "figure.book-img, " + S + "figure.scene-img, " + S + ".plate-page { page-break-inside: avoid; break-inside: avoid; }",
           S + ".lp-edition { text-align: center; text-indent: 0; margin: 2.2em 0 0 0; font-family: " + fontStack(labelFaceOf(state.theme)) + "; font-size: 0.82em; letter-spacing: 0.22em; text-transform: uppercase; }"
@@ -55391,8 +55448,9 @@
             if (qa) into.push(docxPara(quoteAttributionDash(lines) + " " + qa, "QuoteAttribution", { align: "right" }));
             return;
           }
-          if (block.startsWith("## ")) { into.push(docxPara(block.slice(3).trim(), "Heading3", al)); return; }
-          if (block.startsWith("# ")) { into.push(docxPara(block.slice(2).trim(), "Heading2", al)); return; }
+          /* BEUK:headdepths — a heading inside a section in Word's own heading style of its depth, under the section's
+             Heading 1: "# " Heading 2 and "## " Heading 3, as they were, and "### " to "##### " Heading 4 to Heading 6 */
+          { const hd = /^#{1,5} /.exec(block); if (hd) { into.push(docxPara(block.slice(hd[0].length).trim(), "Heading" + hd[0].length, al)); return; } }
           const list = listItemsOf(lines);
           if (list) {
             /* A list exports as a real Word list: its own numbering
@@ -55513,6 +55571,10 @@
           style("Heading1", "heading 1", "Normal", fonts(headF) + '<w:b/><w:sz w:val="32"/>', '<w:pPr><w:keepNext/><w:spacing w:before="360" w:after="200"/><w:outlineLvl w:val="0"/></w:pPr>') +
           style("Heading2", "heading 2", "Normal", fonts(headF) + '<w:b/><w:sz w:val="28"/>', '<w:pPr><w:keepNext/><w:spacing w:before="280" w:after="160"/><w:outlineLvl w:val="1"/></w:pPr>') +
           style("Heading3", "heading 3", "Normal", fonts(headF) + '<w:b/><w:i/><w:sz w:val="26"/>', '<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="140"/><w:outlineLvl w:val="2"/></w:pPr>') +
+          /* BEUK:headdepths — Word's own Heading 4 to Heading 6, for a section's headings at the third to the fifth depth: the text's size, told apart by their cut (bold, bold italic, italic), as on the page */
+          style("Heading4", "heading 4", "Normal", fonts(headF) + '<w:b/><w:sz w:val="24"/>', '<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120"/><w:outlineLvl w:val="3"/></w:pPr>') +
+          style("Heading5", "heading 5", "Normal", fonts(headF) + '<w:b/><w:i/><w:sz w:val="24"/>', '<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120"/><w:outlineLvl w:val="4"/></w:pPr>') +
+          style("Heading6", "heading 6", "Normal", fonts(headF) + '<w:i/><w:sz w:val="24"/>', '<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120"/><w:outlineLvl w:val="5"/></w:pPr>') +
           style("Quote", "Quote", "Normal", fonts(bodyF) + '<w:i/><w:sz w:val="24"/>', '<w:pPr><w:ind w:left="720" w:right="720"/><w:spacing w:after="160"/></w:pPr>') +
           /* A verse stanza: one paragraph, its lines real line breaks, set ragged and kept whole. */
           style("Verse", "Verse", "Normal", fonts(bodyF) + '<w:sz w:val="24"/>', '<w:pPr><w:keepLines/><w:spacing w:after="240"/><w:ind w:left="720"/><w:jc w:val="left"/></w:pPr>') +
@@ -55820,6 +55882,10 @@
           style("ChapterSub", "Chapter Subtitle", "Normal", { keepNext: true, spacing: '<w:spacing w:after="480"/>', ind: flush, jc: "center" }) +
           style("Heading2", "heading 2", "Normal", { keepNext: true, ind: flush, jc: "left", outline: 1 }, "<w:b/>") +
           style("Heading3", "heading 3", "Normal", { keepNext: true, ind: flush, jc: "left", outline: 2 }, "<w:b/>") +
+          /* BEUK:headdepths — the manuscript's Heading 4 to Heading 6, for a section's headings at the third to the fifth depth */
+          style("Heading4", "heading 4", "Normal", { keepNext: true, ind: flush, jc: "left", outline: 3 }, "<w:b/>") +
+          style("Heading5", "heading 5", "Normal", { keepNext: true, ind: flush, jc: "left", outline: 4 }, "<w:b/><w:i/>") +
+          style("Heading6", "heading 6", "Normal", { keepNext: true, ind: flush, jc: "left", outline: 5 }, "<w:i/>") +
           style("Title", "Title", "Normal", { ind: flush, jc: "center" }) +
           style("MsByline", "Byline", "Normal", { ind: flush, jc: "center" }) +
           style("MsContact", "Contact Block", "Normal", { tabs: '<w:tabs><w:tab w:val="right" w:pos="' + textW + '"/></w:tabs>', spacing: '<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>', ind: flush, jc: "left" }) +
@@ -73537,7 +73603,7 @@
             });
           } },
         /* BEUK:headlevels; BEUK:docsimport; BEUK:mdimport — web pages and Markdown, read whole and reported honestly (2026-11-20) */
-        { id: "import.headlevels.depth-is-relative", feature: "import", name: "One book, whatever levels its headings skip: a web page of h1 chapters and h3 sections (no h2) comes in as the Word file of Heading 1 and Heading 2 does; a page or a markdown file titled in its first level, with chapters in the second and sections in the third, keeps each section inside its chapter; and a heading deeper than a section holds is reported with the level the file gave it",
+        { id: "import.headlevels.depth-is-relative", feature: "import", name: "One book, whatever levels its headings skip: a web page of h1 chapters and h3 sections (no h2) comes in as the Word file of Heading 1 and Heading 2 does; a page or a markdown file titled in its first level, with chapters in the second and sections in the third, keeps each section inside its chapter; and a heading under a section's own is kept as a heading one depth down, not turned into body text",
           async run() {
             const shape = () => state.sections.filter((s) => s.kind === "body" && s.type === "chapter").map((s) => (s.number || "-") + " " + s.title + " [" + irBlocks(s.content).filter((b) => /^# /.test(b)).map((b) => b.slice(2)).join(", ") + "]").join(" | ");
             const want = "1 The Harbour [Morning, Noon] | 2 The Crossing [The Squall]";
@@ -73551,18 +73617,20 @@
               const viaPage = shape();
               const rep = importDocxConverted("titled.html", titled.html, titled.messages, titled.scan, titled.identity, null, "html");
               const viaTitled = shape();
+              /* BEUK:headdepths — restated: this pinned the defect (the h4 turned into body text and reported). A heading below a section's sub-heading is kept as a heading, one depth down ("## "), and nothing is reported. */
               const dem = (rep ? rep.items : []).filter((i) => i.kind === "demoted");
-              const demOk = dem.length === 1 && dem[0].data.level === 4 && dem[0].data.text === "A deeper line";
               const P2 = String.fromCharCode(10, 10);
+              const deeperKept = () => { const c = state.sections.filter((s) => s.kind === "body" && s.type === "chapter").map((s) => String(s.content || ""))[0] || ""; return c.indexOf("# Morning" + P2 + "Fog." + P2 + "## A deeper line" + P2 + "Under it." + P2 + "# Noon") !== -1; };
+              const demOk = dem.length === 0 && deeperKept();
               const mrep = importPlainManuscript("fixture.md", ["# The Tide Book", "A book of tides.", "## Chapter 1: The Harbour", "Dawn broke.", "### Morning", "Fog.", "#### A deeper line", "Under it.", "### Noon", "Tide.", "## Chapter 2: The Crossing", "### The Squall", "Rain."].join(P2));
               const viaMd = shape();
               const mdDem = (mrep ? mrep.items : []).filter((i) => i.kind === "demoted");
               const all = state.sections.map((s) => String(s.content || "")).join(P2);
-              const mdOk = mdDem.length === 1 && mdDem[0].data.level === 4 && !/^#{2,6} /m.test(all) && all.indexOf("A deeper line") !== -1;
+              const mdOk = mdDem.length === 0 && deeperKept() && !/^#{3,6} /m.test(all);
               importPlainManuscript("skipped.md", ["# Chapter 1: The Harbour", "Dawn broke.", "### Morning", "Fog.", "### Noon", "Tide.", "# Chapter 2: The Crossing", "### The Squall", "Rain."].join(P2));
               const viaMdSkipped = shape();
               return scVerdict(viaWord === want && viaPage === want && viaTitled === want && demOk && viaMd === want && mdOk && viaMdSkipped === want,
-                "Word h1+h2: " + viaWord + " · page h1+h3: " + viaPage + " · page h1 title, h2, h3: " + viaTitled + " (h4 reported as level 4: " + demOk + ") · markdown #, ##, ###: " + viaMd + " (#### reported, no raw marks: " + mdOk + ") · markdown # and ###: " + viaMdSkipped);
+                "Word h1+h2: " + viaWord + " · page h1+h3: " + viaPage + " · page h1 title, h2, h3: " + viaTitled + " (h4 kept as a heading one depth down, nothing reported: " + demOk + ") · markdown #, ##, ###: " + viaMd + " (#### kept as \"## \", nothing reported: " + mdOk + ") · markdown # and ###: " + viaMdSkipped);
             });
           } },
         { id: "import.headlevels.skipped-level-every-reader", feature: "import", name: "One small book whose chapters are Heading 1 and whose sections are Heading 3, with no Heading 2 anywhere, comes out the same from every reader (Word-shaped HTML, RTF, a web page, markdown): two chapters, each Heading 3 a sub-heading inside its chapter, none turned into body text and none reported as demoted",
@@ -74670,7 +74738,7 @@
             });
             return scVerdict(out.epubOk && out.pdfOk, "an EPUB's lines name the EPUB file (" + out.epubOk + "), a PDF's the PDF file (" + out.pdfOk + ")" + (out.epubOk ? "" : " — " + out.said));
           } },
-        { id: "import.report.docx-honest", feature: "import", name: "Import report (Word): a Mammoth-shaped document's table is kept as a table block where it stood (BEUK:tableimport; its undo sets plain rows instead, and theirs takes them out again), the footnote is linked as a Beuk note, the image lands in the library with its alt text, a Heading 3 straight under a Heading 1 chapter is its sub-heading and the Heading 4 below it is reported as demoted, and comments, tracked changes, headers, lists and converter warnings are all listed — never silently lost",
+        { id: "import.report.docx-honest", feature: "import", name: "Import report (Word): a Mammoth-shaped document's table is kept as a table block where it stood (BEUK:tableimport; its undo sets plain rows instead, and theirs takes them out again), the footnote is linked as a Beuk note, the image lands in the library with its alt text, a Heading 3 straight under a Heading 1 chapter is its sub-heading and the Heading 4 below it is kept as a heading one depth down, and comments, tracked changes, headers, lists and converter warnings are all listed — never silently lost",
           run() {
             return irCheckRun(() => {
               const html = "<p>Copyright © 2026 Fixture Author. All rights reserved.</p><h1>The Harbour</h1>" +
@@ -74692,7 +74760,8 @@
               const b1 = ch1 ? irBlocks(ch1.content) : [];
               const tableOk = !!tbl && tbl.group === "notes" && tbl.data.kept === true && tbl.after.indexOf("Tide | Height") !== -1 &&
                 tbl.data.fence === true && b1.indexOf("::: table\n| Tide | Height |\n| Low | 0.4 m |\n:::") === b1.indexOf("Words under the slack water heading.") + 1 && b1.indexOf("After the table.") === b1.indexOf("::: table\n| Tide | Height |\n| Low | 0.4 m |\n:::") + 1; /* BEUK:tableimport — a table block */
-              const listedOk = !!ch1 && irBlocks(ch1.content).indexOf("# Low tide") !== -1 && items.filter((i) => i.kind === "demoted").length === 1 && !!dem && dem.data.level === 4 && dem.data.text === "Slack water" && !!has("comments") && !!has("tracked") && !!has("headers") && !has("lists") &&
+              /* BEUK:headdepths — restated: this pinned the defect (the Heading 4 turned into body text, reported, and set back as "## " by its undo). The Heading 4 under the Heading 3 sub-heading is kept as a heading one depth down from the start, and no item is listed for it. */
+              const listedOk = !!ch1 && irBlocks(ch1.content).indexOf("# Low tide") !== -1 && !dem && irBlocks(ch1.content).indexOf("## Slack water") === irBlocks(ch1.content).indexOf("Words under the low tide heading.") + 1 && !!has("comments") && !!has("tracked") && !!has("headers") && !has("lists") &&
                 ((state.sections.find((x) => x.title === "The Chart Room") || {}).content || "").includes("- One\n- Two") &&
                 !!has("mammoth") && !!items.find((i) => i.kind === "matter" && i.data.type === "copyright") && !has("typography") && ch1.content.indexOf('She said "wait".') !== -1; /* BEUK:asgiven — the straight quotes stay, and no typography item is listed */
               const rp = irUndoItem(tbl.id), bp = irBlocks(ch1.content); /* plain rows instead, then their undo takes them out */
@@ -74700,11 +74769,10 @@
               const tableBack = rt.ok && ch1.content.indexOf("Tide") === -1 && ch1.content.indexOf("0.4 m") === -1 && ch1.content.indexOf("After the table.") !== -1;
               const ri = irUndoItem(img.id);
               const imgGone = ri.ok && ch1.content.indexOf("img:" + img.data.imgId) === -1 && !state.images.some((im) => im.id === img.data.imgId);
-              const rd = irUndoItem(dem.id);
-              const demBack = rd.ok && ch1.content.indexOf("## Slack water") !== -1;
-              const naOk = !has("comments").reversible && !!$("irBody") && /Slack water/.test($("irBody").textContent);
+              const demBack = irBlocks(ch1.content).indexOf("## Slack water") !== -1; /* still there after the undos above */
+              const naOk = !has("comments").reversible && !!$("irBody") && !/Slack water/.test($("irBody").textContent);
               return scVerdict(noteOk && imgOk && tableOk && listedOk && tableBack && imgGone && demBack && naOk,
-                "footnote linked as [^1] (" + noteOk + "), image in library with alt (" + imgOk + "), table kept as a table block where it stood (" + tableOk + "), Heading 3 kept as a sub-heading, the Heading 4 demoted + comments/tracked/headers/warning/copyright listed, the straight quotes kept and no typography item, the Word list kept as a list (" + listedOk + "), plain rows instead, then out again, on undo (" + tableBack + "), image undo (" + imgGone + "), subheading restored (" + demBack + "), unrevertable items say so (" + naOk + ")");
+                "footnote linked as [^1] (" + noteOk + "), image in library with alt (" + imgOk + "), table kept as a table block where it stood (" + tableOk + "), Heading 3 kept as a sub-heading, the Heading 4 kept as a heading under it and not listed + comments/tracked/headers/warning/copyright listed, the straight quotes kept and no typography item, the Word list kept as a list (" + listedOk + "), plain rows instead, then out again, on undo (" + tableBack + "), image undo (" + imgGone + "), the Heading 4 still a heading after the undos (" + demBack + "), unrevertable items say so and the report names no heading as body text (" + naOk + ")");
             });
           } },
         /* ---- BEUK:wordback: a Word book Beuk wrote comes back as the book it was ---- */
@@ -74797,7 +74865,7 @@
                 "<blockquote><p>To <em>be</em>.</p><p>Or <strong>not</strong>.</p></blockquote>" +
                 "<ul><li>One <em>fish</em></li><li><strong>Two</strong> fish</li></ul>" +
                 "<p><strong>Chapter Two</strong></p><p>Second <em>chapter</em> text.</p>" +
-                "<h2>Coda</h2><p>Last words.</p>" + /* a Heading 2 in the file: the Heading 3 above is a third level, below what a section holds */
+                "<h2>Coda</h2><p>Last words.</p>" + /* a Heading 2 in the file: the Heading 3 above is a third level, two depths under its Heading 1 chapter */
                 '<ol><li id="footnote-1"><p>See the <em>Ledger</em>, page 9. <a href="#footnote-ref-1">↑</a></p></li></ol>';
               const rep = importDocxConverted("formatting.docx", html, [], { comments: 0, ins: 0, del: 0, textboxes: 0, headers: 0, scanned: true }, {}, null);
               const items = rep ? rep.items : [];
@@ -74810,7 +74878,8 @@
                 c1.includes("*Hello world* and *spaced* words, **All** ***of*** **it** mattered.") &&
                 c1.includes("*\"Run!\"* she said. It's *Titanic*'s wake.[^1]"); /* BEUK:asgiven — the straight quotes and apostrophes as the file gives them */
               const links = c1.includes("Visit [our *site*](https://example.com/2024-05-01/a--b) or [write](mailto:ada@example.com); see the chart.");
-              const blocks = c1.includes("## Low *tide*") === false && c1.includes("Low *tide*") && c1.includes("> To *be*.") && c1.includes("> Or **not**.") &&
+              /* BEUK:headdepths — restated: this pinned the defect (the third-level heading set as a paragraph, "Low *tide*", until its undo made it "## "). It is a heading two depths under its chapter from the start, with the italic it had as a paragraph. */
+              const blocks = irBlocks(c1).indexOf("## Low *tide*") !== -1 && c1.includes("> To *be*.") && c1.includes("> Or **not**.") &&
                 c1.includes("- One *fish*\n- **Two** fish") && /\n\[\^1\]: See the \*Ledger\*, page 9\.$/.test(c1);
               const plainKept = c1.includes("The vital clue: H2O on the 1st, gone.");
               const heads = !!ch1 && !!ch2 && c2.includes("Second *chapter* text.") && c2.indexOf("**Chapter Two**") === -1 && !/\*/.test(ch1.title + (ch2 ? ch2.title : ""));
@@ -74834,11 +74903,10 @@
                 /<w:rPr><w:b\/><\/w:rPr><w:t[^>]*>All<\/w:t>/.test(xml) && /<w:rPr><w:b\/><\/w:rPr><w:t[^>]*>it<\/w:t>/.test(xml);
               /* BEUK:asgiven — the dialogue stands with its straight quotes
                  and its italic from the start (no typography item to undo),
-                 and the demoted subheading is promoted again. */
+                 and the third-level heading is a heading from the start. */
               const typoBack = !items.some((i) => i.kind === "typography") && String(ch1.content).includes('*"Run!"* she said.') && String(ch1.content).includes("](https://example.com/2024-05-01/a--b)");
               const dem = has("demoted");
-              const rd = dem ? irUndoItem(dem.id) : { ok: false };
-              const demBack = rd.ok && String(ch1.content).includes("## Low *tide*");
+              const demBack = !dem && irBlocks(String(ch1.content)).indexOf("## Low *tide*") !== -1; /* BEUK:headdepths — nothing reported, nothing to undo: it is a heading already */
               /* BEUK:headlevels — the same Heading 3 in a file with no Heading 2 is no third level: it is the chapter's sub-heading */
               importDocxConverted("skipped.docx", "<h1>One</h1><p>First.</p><h3>Low <em>tide</em></h3><p>Under it.</p><h1>Two</h1><p>Second.</p>", [], { comments: 0, ins: 0, del: 0, textboxes: 0, headers: 0, scanned: true }, {}, null);
               const one = state.sections.find((s) => s.type === "chapter" && s.title === "One");
@@ -74848,7 +74916,7 @@
                 "400 generated run patterns render with their italic/bold (" + walkOk + (bad ? ", " + bad + " bad, e.g. " + firstBad : "") + "), *, ** and *** marks in prose (" + marks + "), links as [words](address) with the address intact (" + links +
                 "), subheading/quote/list/footnote keep theirs (" + blocks + "), underline/sub/sup/strike words kept plain (" + plainKept + "), bold chapter line still splits, titles plain (" + heads +
                 "), report lists only what has no mark (" + reportOk + (rep && rep.carried ? ", carried " + JSON.stringify(rep.carried) : "") + "), preview renders the marks (" + render + "), marks are not words (" + words +
-                "), Word export: no stray *, bold-italic runs (" + docxOk + (docxOk ? "" : ", " + JSON.stringify(wts.filter((t) => t.includes("*")).slice(0, 3))) + "), straight quotes kept with the marks, no typography item (" + typoBack + "), subheading undo (" + demBack + ")");
+                "), Word export: no stray *, bold-italic runs (" + docxOk + (docxOk ? "" : ", " + JSON.stringify(wts.filter((t) => t.includes("*")).slice(0, 3))) + "), straight quotes kept with the marks, no typography item (" + typoBack + "), the third-level heading a heading from the start, nothing reported (" + demBack + ")");
             });
           } },
         { id: "import.docx.dropcap-emphasis", feature: "import", name: "Drop cap on an opening in emphasis: a first paragraph that starts *It was…*, **It was**, ***Never***, or *“Run!”* (Word import writes these marks) still gets its drop cap inside the emphasis, the plain opening is unchanged, the note reference keeps a single id, and with small-caps lead-in words ending inside the italic the markup stays well-formed XHTML",
