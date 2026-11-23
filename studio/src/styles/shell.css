@@ -307,6 +307,8 @@ body.zen .pane-fold { display: none; }
 .ms-editor p { margin: 0 0 .9em; }
 .ms-editor .ms-fndef::before { content: "[" attr(data-caret) attr(data-n) "]: "; color: var(--muted); }
 .ms-editor .ms-fnref { color: var(--accent); }
+/* BEUK:breaksshown — the mark of a line break the writer made (Shift+Enter): the backslash, shown dimmed; the page shows the break and no backslash */
+.ms-editor .ms-brmark { color: var(--muted); opacity: .6; }
 .ms-editor .ms-scene { text-align: center; color: var(--muted); margin: 0 0 .9em; letter-spacing: .3em; }
 .ms-editor .ms-image { margin: 0 0 .9em; padding: 10px 12px; border: 1px dashed var(--line-2); border-radius: 8px; color: var(--muted); font-size: .8em; }
 .ms-editor .ms-image figcaption { font-style: italic; }

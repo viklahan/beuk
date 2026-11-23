@@ -124,14 +124,46 @@ describe('typing and normalising (constraints 3 and 4)', () => {
     return out;
   };
 
-  it('Enter and Shift-Enter insert "\\n" inside the paragraph; two make a blank line that splits the block once the selection leaves', () => {
+  /* BEUK:breaksshown — Shift-Enter used to insert the same "\n" as Enter, so a line break the writer made could not be
+     told from a paragraph typed on several lines, and no surface showed it. It now types the book's mark of a break
+     (a backslash straight before the newline), which every surface sets as a line break. */
+  it('Shift-Enter in a paragraph types the mark of a line break (a backslash before the "\\n"); Backspace straight after it takes both back; in a heading it is the plain "\\n" it was', () => {
+    const BS = String.fromCharCode(92);
+    const { frag } = fragOf('First line\n\n# A heading\n\nLast.');
+    const ed = mount(frag);
+    ed.commands.setTextSelection(1 + 'First line'.length);
+    ed.commands.keyboardShortcut('Shift-Enter');
+    ed.view.dispatch(ed.state.tr.insertText('next'));
+    expect(blockTexts(ed)[0]).toBe('paragraph:First line' + BS + '\nnext');
+    expect(fragmentText(frag)).toBe('First line' + BS + '\nnext\n\n# A heading\n\nLast.');
+    // the mark's backslash is shown dimmed (a decoration: the document holds only the two characters)
+    const marks = Array.from(ed.view.dom.querySelectorAll('.ms-brmark')).map((n) => n.textContent);
+    expect(marks).toEqual([BS]);
+    // the text reads back as the same paragraph: nothing to normalise once the selection leaves
+    ed.view.dispatch(ed.state.tr.setSelection(TextSelection.atEnd(ed.state.doc)));
+    expect(blockTexts(ed)).toEqual(['paragraph:First line' + BS + '\nnext', 'heading:A heading', 'paragraph:Last.']);
+    // Backspace straight after the mark: the backslash and its new line go together
+    ed.commands.setTextSelection(1 + ('First line' + BS + '\n').length);
+    ed.commands.keyboardShortcut('Backspace');
+    expect(blockTexts(ed)[0]).toBe('paragraph:First linenext');
+    expect(ed.view.dom.querySelectorAll('.ms-brmark').length).toBe(0);
+    // in a heading the page reads no mark (it would show the backslash): Shift-Enter is the plain new line
+    let head = 0;
+    ed.state.doc.forEach((n, off) => { if (n.type.name === 'heading') head = off; });
+    ed.commands.setTextSelection(head + 1 + 'A'.length);
+    ed.commands.keyboardShortcut('Shift-Enter');
+    expect(blockTexts(ed)[1]).toBe('heading:A\n heading');
+    expect(fragmentText(frag)).not.toContain(BS);
+  });
+
+  it('Enter inserts "\\n" inside the paragraph; two make a blank line that splits the block once the selection leaves', () => {
     const { frag } = fragOf('First line\n\nSecond.');
     const ed = mount(frag);
     ed.commands.setTextSelection(1 + 'First line'.length);
     ed.commands.keyboardShortcut('Enter');
     ed.view.dispatch(ed.state.tr.insertText('next'));
     expect(blockTexts(ed)).toEqual(['paragraph:First line\nnext', 'paragraph:Second.']);
-    ed.commands.keyboardShortcut('Shift-Enter');
+    ed.commands.keyboardShortcut('Enter');
     ed.commands.keyboardShortcut('Enter');
     ed.view.dispatch(ed.state.tr.insertText('third'));
     // still one block while the writer is in it
