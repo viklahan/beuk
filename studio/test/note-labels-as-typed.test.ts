@@ -339,6 +339,55 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
     expect(p.html).toContain('09:14 [^x] raw [^1] and [^nope]');
   }, 120_000);
 
+  /* Found in a browser on c246e7e (2026-11-22): a file with a fenced block that holds a mark came in right, and the
+     tally then said "Scene breaks and ornaments: 0 in the file, 1 in the book, 1 in the book not explained", and the
+     card warned that a count differs with no reason found. Nothing in the file or the book was a scene break. The
+     book's side took the log's body out to count it as it is and left the container's two mark lines standing with an
+     empty line between them; the closing ":::" was then a block of its own with no letter in it, which the book's
+     side counts as an ornament. The tests of the first pass looked at the characters and at two rows only.
+     Now both sides count a raw container alike: its mark lines are markup (no character, no paragraph, no rule, no
+     ornament), and its lines are counted as a fenced block's are, as they stand. Held for every row at once: no row
+     of the tally may end "not explained" (a reason of kind "none"), in files whose Paragraphs totals differ, so that
+     the rows do give their reasons. */
+  const unexplained = (g: Got) => (g.tally.rows as { key: string; file: number; book: number; why?: { k: string; n: number }[] }[])
+    .filter((r) => (r.why || []).some((y) => y.k === 'none')).map((r) => [r.key, r.file, r.book, (r.why || []).map((y) => y.k + ':' + y.n).join('+')]);
+  const totals = (g: Got, key: string) => { const r = (g.tally.rows as { key: string; file: number; book: number }[]).find((x) => x.key === key); return r ? [r.file, r.book] : null; };
+  it('the tally counts a fenced block and a log alike on both sides: no row ends "not explained" for a fence with a mark, a fence without one, or a log the writer typed', async () => {
+    const NOTES = ['[^x]: X.', '[^y]: A note nothing marks.'];
+    // a fence with a mark: stored as a log
+    const marked = await importFile('fence-mark.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\na pattern in code: [^1] and [^x] are not marks here\n```', 'More text.', ...NOTES));
+    expect(stored(marked, '1')).toContain('::: log\na pattern in code: [^1] and [^x] are not marks here\n:::');
+    expect(unexplained(marked)).toEqual([]);
+    expect(totals(marked, 'breaks') || [0, 0]).toEqual([0, 0]);
+    expect(totals(marked, 'paragraphs')).toEqual([5, 4]); // the file's fifth is the linked note's line; the note nothing marks is a paragraph on both sides
+    expect(figures(marked)).toEqual(CLEAR);
+    // a fence without one: stored as it always was, its line a paragraph
+    const plain = await importFile('fence-plain.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\na plain line of code\n```', 'More text.', ...NOTES));
+    expect(stored(plain, '1')).toContain('a plain line of code');
+    expect(unexplained(plain)).toEqual([]);
+    expect(totals(plain, 'breaks') || [0, 0]).toEqual([0, 0]);
+    expect(totals(plain, 'paragraphs')).toEqual([5, 4]);
+    expect(figures(plain)).toEqual(CLEAR);
+    // a log the writer typed as one, with a mark in it and an empty line before its close
+    const typed = await importFile('typed-log.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '::: log\n09:14 [^1] and [^x] are not marks here\n\n09:15 second entry\n\n:::', 'More text.', ...NOTES));
+    expect(stored(typed, '1').join('\n\n')).toContain('::: log\n09:14 [^1] and [^x] are not marks here\n\n09:15 second entry\n\n:::');
+    expect(unexplained(typed)).toEqual([]);
+    expect(totals(typed, 'breaks') || [0, 0]).toEqual([0, 0]);
+    expect(totals(typed, 'paragraphs')).toEqual([6, 5]);
+    expect(figures(typed)).toEqual(CLEAR);
+  }, 360_000);
+
+  it('the file the tally warned on: two chapters, a fenced block that holds marks, a mark with no note, a note nothing marks: no row ends "not explained"', async () => {
+    const g = await importFile('notes-a.md', null, md('# Chapter 1: Dawn', 'The caravan left[^salt] at dawn, and the pans lay white[^7] under the sun.[^fn.2-a]', 'A mark with no note stands here[^nowhere] and stays as typed.',
+      '```\na pattern in code: [^1] and [^salt] are not marks here\n```', '[^salt]: Salt, by the sack.', '[^7]: The pans of the coast, numbered seven by the writer.', '[^fn.2-a]: A label with a point and a hyphen.',
+      '# Chapter 2: Noon', 'The ferry was already casting off[^salt], and nobody moved to stop it.[^quay]', '[^salt]: Salt again, a second note under the same label.', '[^quay]: The old quay, by the wall.', '[^telex]: A note nothing marks, kept where it stands.'));
+    expect(page(g, chapter(g, '1')).marks).toEqual(['[1]', '[7]', '[2]']);
+    expect(page(g, chapter(g, '2')).marks).toEqual(['[3]', '[4]']);
+    expect(unexplained(g)).toEqual([]);
+    expect(totals(g, 'breaks') || [0, 0]).toEqual([0, 0]);
+    expect(figures(g)).toEqual(CLEAR);
+  }, 120_000);
+
   /* An inline code span (`…` between backticks). The book's stored text has NO notion of one: the import takes the
      backticks off, keeps the words and counts the typewriter face as left out (irMdMarkup), so nothing in the book
      says where the span was. A mark inside one is therefore still read as a mark, at import and on the page. Measured

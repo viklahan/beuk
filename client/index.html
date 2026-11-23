@@ -43060,13 +43060,26 @@
         const fm = /^---\n[\s\S]*?\n(?:---|\.\.\.)[ \t]*(?:\n|$)/.exec(text);
         if (fm && /^[A-Za-z_][\w -]*:/m.test(fm[0])) { P.details.push(fm[0]); text = text.slice(fm[0].length); }
         const lines = text.split("\n");
-        let fence = false, blockOpen = false, lastPipe = false;
+        let fence = false, rawBox = false, blockOpen = false, lastPipe = false;
         const kept = [];
         lines.forEach((line, li) => {
           if (isMd && /^\s*(```|~~~)/.test(line)) { fence = !fence; blockOpen = false; lastPipe = false; return; }
+          /* BEUK:notelabels — a raw container (a log) the writer typed: counted as the book's side counts it (irTallyBook) and as
+             a fenced block is counted here. Its two mark lines ("::: log", ":::") are markup: no character, no paragraph,
+             no rule, no ornament. Its lines are the writer's to the character: counted as they stand, nothing in them a
+             note's mark, a heading, a link or a table's row (lit: inside a fenced block or a raw container). */
+          if (!fence && line.indexOf(":::") !== -1) {
+            const om = line.match(CONTAINER_OPEN_RE);
+            if (om || CONTAINER_CLOSE_RE.test(line)) {
+              const k = om ? containerKind(om[1].toLowerCase()) : null, was = rawBox;
+              rawBox = !!(k && k.raw);
+              if (rawBox || was) { blockOpen = false; lastPipe = false; return; }
+            }
+          }
+          const lit = fence || rawBox;
           let l = line;
           if (!l.trim()) { blockOpen = false; lastPipe = false; kept.push(""); return; }
-          if (isMd && !fence) {
+          if (isMd && !lit) {
             if (/^ {0,3}\[\^[^\]\s]+\]:/.test(l)) { R.noteDefs++; l = l.replace(/^ {0,3}\[\^[^\]\s]+\]:/, " "); }
             R.noteRefs += (l.match(/\[\^[^\]\s]+\](?!:)/g) || []).length;
             /* BEUK:notelabels — the book's side takes a mark out with the colon that follows it, wherever it stands
@@ -43109,11 +43122,11 @@
             if (/^\s*>/.test(l)) { if (!blockOpen) { R.quotes++; irTallyItem(R, "quotes", l); } blockOpen = true; kept.push(l); return; }
           }
           /* BEUK:tallysaid — a line that is only "#" marks: a plain-text file's lone "#" is a scene break (below); any other is a heading's mark with no words, which the reader leaves out and the report names. It is no ornament. */
-          if (!fence && /^#{1,6}$/.test(l.trim()) && !(!isMd && l.trim() === "#")) { blockOpen = false; kept.push(l); return; }
-          if ((IR_BREAK_RE.test(l) || (!fence && irTallyOrnament(l))) && !(lines[li - 1] || "").trim() && !(lines[li + 1] || "").trim()) { R.breaks++; irTallyItem(R, "breaks", l); blockOpen = false; kept.push(l); return; }
+          if (!lit && /^#{1,6}$/.test(l.trim()) && !(!isMd && l.trim() === "#")) { blockOpen = false; kept.push(l); return; }
+          if ((IR_BREAK_RE.test(l) || (!lit && irTallyOrnament(l))) && !(lines[li - 1] || "").trim() && !(lines[li + 1] || "").trim()) { R.breaks++; irTallyItem(R, "breaks", l); blockOpen = false; kept.push(l); return; }
           if (new RegExp("^\\s*(?:[-*+" + IR_LIST_GLYPHS + "]|\\d{1,3}[.)])\\s+\\S").test(l)) { R.listItems++; irTallyItem(R, "listItems", l.replace(/^\s*\S+\s+/, "")); blockOpen = true; kept.push(l); return; }
-          if (!fence && irTallyOrnament(l)) { irTallyItem(R, "rules", l); kept.push(l); return; }
-          if (isMd && !fence && /^\s*!\[[^\]\n]*\]\([^)\n]*\)\s*$/.test(line)) { kept.push(l); return; }
+          if (!lit && irTallyOrnament(l)) { irTallyItem(R, "rules", l); kept.push(l); return; }
+          if (isMd && !lit && /^\s*!\[[^\]\n]*\]\([^)\n]*\)\s*$/.test(line)) { kept.push(l); return; }
           if (!blockOpen) { R.paragraphs++; irTallyItem(R, "paragraphs", l); blockOpen = true; } else irTallyItem(R, "joined", l);
           kept.push(l);
         });
@@ -43150,15 +43163,16 @@
         return { rows: R, parts: P, own: { tiny: P.tiny.join("\n") }, pdf: { pages: ext.numPages, unread } };
       }
       /* ---- in the book ---- */
-      function irTallyBook(rep, literal) {
+      function irTallyBook(rep) {
         const R = irTallyRows(), parts = [];
-        /* BEUK:notelabels — the fenced code blocks this import stored as log containers (irPlainTextPrep hands their text over):
-           each is the writer's to the character, so the book's side counts it as the file's side counts a fenced block's
-           lines, as they are: no mark of the book's is taken out of it, and its lines are the paragraphs the file's side
-           counts. A log the writer typed as one is counted as it always was. */
-        const litKey = (b) => String(b).replace(/\s+/g, " ").trim(), lit = new Map();
-        (literal || []).forEach((b) => { const k = litKey(b); lit.set(k, (lit.get(k) || 0) + 1); });
-        const litHeld = new RegExp(String.fromCharCode(0xE052) + "(\\d+)" + String.fromCharCode(0xE053), "g");
+        /* BEUK:notelabels — a raw container (a log: one the writer typed, or a fenced code block the import stored as one,
+           irPlainTextPrep) is the writer's to the character. Both sides of the tally count it alike (irTallyText is the
+           file's): its two mark lines are markup, no character and no paragraph, rule or ornament; its lines are
+           counted as they stand, no mark of the book's taken out of them, each run of them a paragraph, as a fenced
+           block's lines are. (The body is taken out WITH its line's end, so the container's two mark lines stay one
+           block: left apart, the closing ":::" was a block of its own with no letter in it, and was counted as an
+           ornament: "Scene breaks and ornaments: 0 in the file, 1 in the book, 1 in the book not explained".) */
+        const litHeld = new RegExp(String.fromCharCode(0xE052) + "(\\d+)" + String.fromCharCode(0xE053) + "\\n?", "g");
         const litList = new RegExp("^\\s*(?:[-*+" + IR_LIST_GLYPHS + "]|\\d{1,3}[.)])\\s+\\S");
         const items = rep ? rep.items : [];
         const named = new Set(items.filter((it) => it.kind === "matter" && it.data && it.data.via === "heading").map((it) => it.where.secId));
@@ -43187,9 +43201,9 @@
         state.sections.forEach((s) => {
           let c = String(s.content || "");
           const asIs = [];
-          if (lit.size && c.indexOf(":::") !== -1) {
+          if (c.indexOf(":::") !== -1) {
             const held = [];
-            c = holdRawContainers(c.replace(/\r\n?/g, "\n"), held).replace(litHeld, (m0, k) => { const body = held[+k], key = litKey(body); if (!lit.get(key)) return body; lit.set(key, lit.get(key) - 1); asIs.push(body); return ""; });
+            c = holdRawContainers(c.replace(/\r\n?/g, "\n"), held).replace(litHeld, (m0, k) => { asIs.push(held[+k]); return ""; });
           }
           /* a page with no text is the book's only where its heading is the file's: a Part, a chapter not yet written, a
              named page the file opened with its heading (BEUK:importtally) */
@@ -43239,7 +43253,7 @@
             if (/^:::/.test(v)) return;
             R.paragraphs++; irTallyItem(R, "paragraphs", lines[0] || ""); lines.slice(1).forEach((l) => irTallyItem(R, "joined", l));
           });
-          /* BEUK:notelabels — a fenced block stored as a log: its text as it is, and its lines as irTallyText counts a fenced block's */
+          /* BEUK:notelabels — a raw container's text as it is, and its lines as irTallyText counts them */
           asIs.forEach((body) => {
             push(body);
             const ls = body.split("\n");
@@ -43338,7 +43352,7 @@
         if (!rep) { IR_ASIDE = null; return null; }
         const aside = IR_ASIDE || {};
         IR_ASIDE = null;
-        const book = irTallyBook(rep, aside[String.fromCharCode(0) + "literal"]);
+        const book = irTallyBook(rep);
         const tally = { v: 3, counted: !!(src && src.counted), file: null, book: irTallyN(book.text), aside: {}, unaccounted: null, marks: null, rows: [] };
         /* what the import never reads is set aside as the file holds it: page headers and footers, comments and tracked deletions of a Word or OpenDocument file */
         if (src && src.counted && src.own) Object.keys(src.own).forEach((k) => { if (src.own[k]) aside[k] = (aside[k] || "") + "\n" + src.own[k]; });
@@ -45451,8 +45465,6 @@
             const body = lines.slice(open + 1, i);
             if (body.some((l) => noteMarkRe().test(l)) && !body.some((l) => isContainerMarkLine(l))) {
               literalOpen.add(open); literalClose.add(i);
-              /* the tally's book side counts this block as its file side counts a fenced block's lines: as they are (irTallyBook) */
-              if (IR_ASIDE) { const k = String.fromCharCode(0) + "literal"; (IR_ASIDE[k] = IR_ASIDE[k] || []).push(body.join("\n")); }
             }
             open = -1;
           });
