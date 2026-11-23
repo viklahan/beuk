@@ -337,9 +337,9 @@ describe('the full account: the same report, part by part', () => {
     expect(ids.length, 'no item twice').toBe(new Set(ids).size);
     expect([...ids].sort(), 'every item in, a row out').toEqual(rep.items.map((it) => it.id).sort());
     const PART: Record<string, string[]> = {
-      look: ['mdImage', 'noteOrphan', 'refOrphan', 'txtMarks', 'pdfHyphenAsk', 'pdfHyphenAskAll', 'pdfDashKept', 'pdfNoText', 'pdfBadGlyphs', 'pdfBadGlyphsMany', 'pdfRtl', 'pdfSpacedUnsure'],
+      look: ['mdImage', 'noteOrphan', 'refOrphan', 'txtMarks', 'pdfHyphenAsk', 'pdfHyphenAskAll', 'pdfDashKept', 'pdfTableUnsure', 'pdfNoText', 'pdfBadGlyphs', 'pdfBadGlyphsMany', 'pdfRtl', 'pdfSpacedUnsure'],
       looks: ['mono', 'smallcaps', 'strike', 'underline', 'subsup', 'headers', 'fmtHeading', 'textbox', 'lists', 'nestedList', 'emphasis'],
-      aside: ['bareHeading', 'break', 'comments', 'emptyHeading', 'links', 'mammoth', 'markup', 'toc', 'tracked', 'txtRules', 'lifted', 'pdfHeads', 'pdfToc', 'pdfHalfTitle', 'pdfTiny', 'pdfRotated', 'pdfLinks'],
+      aside: ['pdfTableHeads', 'bareHeading', 'break', 'comments', 'emptyHeading', 'links', 'mammoth', 'markup', 'toc', 'tracked', 'txtRules', 'lifted', 'pdfHeads', 'pdfToc', 'pdfHalfTitle', 'pdfTiny', 'pdfRotated', 'pdfLinks'],
       typography: ['typography', 'typographyAll'],
       filed: ['chapter', 'demoted', 'matter'],
       read: ['pdfLimits', 'pdfStyles', 'pdfSmallCaps', 'pdfSpaced', 'pdfHyphens', 'pdfHyphenOpen', 'pdfColumns'],

@@ -46666,7 +46666,7 @@
       const IR_PARTS = ["count", "look", "aside", "looks", "typography", "filed", "read", "notes", "book"];
       const IR_LOOK_KINDS = ["mono", "smallcaps", "strike", "underline", "subsup", "headers", "fmtHeading", "textbox", "lists", "nestedList", "emphasis"]; /* not pdfSmallCaps: the book keeps those letters as the PDF has them (0230712), so nothing of the look is said to be left behind */
       /* pdfDashKept: a dash at a line's end the PDF's text does not settle, for the writer to look at (it has no button) */
-      const IR_PART_OF = { mdImage: "look", noteOrphan: "look", refOrphan: "look", txtMarks: "look", pdfHyphenAskAll: "look", pdfHyphenAsk: "look", pdfDashKept: "look",
+      const IR_PART_OF = { mdImage: "look", noteOrphan: "look", refOrphan: "look", txtMarks: "look", pdfHyphenAskAll: "look", pdfHyphenAsk: "look", pdfDashKept: "look", pdfTableUnsure: "look", /* a table whose rows the page does not settle: named for the writer to look at */
         pdfNoText: "look", pdfBadGlyphs: "look", pdfBadGlyphsMany: "look", pdfRtl: "look", pdfSpacedUnsure: "look", /* each asks the writer to check something: a page with no text layer, glyphs with no letter, a page read right to left, spaced capitals not parted with certainty */
         lifted: "aside", /* a title-page line taken as the book's credit: set aside, with the button that puts it back */
         imageDropped: "notes", imageLost: "notes", tablePics: "notes", table: "notes", pdfImagesLost: "notes", pdfBackdrops: "notes", pdfMasks: "notes", pdfDupImages: "notes" };
