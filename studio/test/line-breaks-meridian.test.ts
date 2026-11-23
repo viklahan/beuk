@@ -63,7 +63,8 @@ const PINNED: Record<string, Counts> = {
 
 type File = { path: string; content: string };
 const brs = (html: string) => (html.match(/<br\s*\/?>/g) || []).length;
-const LIST = /^(?:[-*•]\s+|\d{1,3}[.)]\s+)/;
+/* a list's first line, by the marks the book's list reads: since the lists kept the writer's own bullets (◆ ◇ ❧ ▸ in this book), a list opens on more than "-", "*" and "•" */
+const LIST = /^(?:[-*+•‣⁃■-➿]\s+|\d{1,3}[.)]\s+)/;
 /* the blocks of a section's text the book reads as paragraphs (outside every fence but a centred or right-set one) */
 function paragraphs(content: string): string[] {
   const out: string[] = [];
