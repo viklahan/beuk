@@ -307,7 +307,7 @@ describe('the full account: the same report, part by part', () => {
     /* the kinds, read from the code that makes them (every `kind: "…", group: "…"` of the page), with the two the PDF reader picks between,
        a Word note no reference points to, and the three a report saved before 2026-11-22 can still hold */
     const made = new Map<string, string>();
-    for (const m of HTML.matchAll(/kind: "([A-Za-z]+)", group: "([a-z]+)"/g)) made.set(m[1] + '/' + m[2], m[2]);
+    for (const m of HTML.matchAll(/kind: "([A-Za-z0-9]+)", group: "([a-z]+)"/g)) made.set(m[1] + '/' + m[2], m[2]);
     for (const k of ['pdfBadGlyphs/dropped', 'pdfBadGlyphsMany/dropped', 'typography/typography', 'typographyAll/typography', 'emphasis/dropped']) made.set(k, k.split('/')[1]);
     expect(made.size, 'the kinds were read from the page').toBeGreaterThan(60);
     const data = { n: 2, em: 1, strong: 1, type: 'epigraph', via: 'shape', field: 'title', kept: 'A', offered: 'B', code: 'en', status: 'applied', found: 1, mapped: 1, orphans: 0, ins: 1, del: 1, q: 1, d: 1, e: 1, level: 2, text: 'x',
