@@ -348,6 +348,33 @@ test('render unit: paragraph indexes follow the studio block split', () => {
   assert.deepEqual(Object.keys(images), ['img-chart']);
 });
 
+/* The owner, 2026-11-22: "We do not change anything from what the writer gives us." and "just switch, remove it
+   everywhere." The reading copy still ran a tidier of its own: "..." became an ellipsis and "--" or "---" a dash, on
+   the one page a writer hands to other people. It sets what the book stores, as every other surface does. */
+test('render unit: the reading copy sets the writer\'s characters as stored — no dash or ellipsis of Beuk\'s', () => {
+  const doc = {
+    meta: { title: 'As Given', author: 'A. Writer', language: 'en' },
+    sections: [
+      {
+        id: 'sec-g',
+        kind: 'body',
+        type: 'chapter',
+        number: '1',
+        title: 'The Quay',
+        content: '"Go," she said -- \'now\'... It ran 1914-1918, and it\'s done---almost.\n\nWait ... what?\n\n---\n\nAfter the break.',
+      },
+    ],
+  };
+  const { snapshot } = renderSnapshot(doc, 'x');
+  const html = snapshot.sections.map((s) => s.html).join('');
+  const text = html.replace(/<[^>]+>/g, ' ').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/\s+/g, ' ');
+  assert.ok(text.includes('"Go," she said -- \'now\'... It ran 1914-1918, and it\'s done---almost.'), 'the first paragraph as typed: ' + text);
+  assert.ok(text.includes('Wait ... what?'), 'an ellipsis typed with spaces round it stays as typed: ' + text);
+  assert.equal(/[—…]/.test(text), false, 'no dash or ellipsis the writer did not type: ' + text);
+  // a line of hyphens alone is still the book's scene break (structure, not a character of the text)
+  assert.match(html, /class="scene-break"/);
+});
+
 test('render unit: a redaction ("||words||") never reaches the reading copy — a bar of full blocks instead', () => {
   const doc = {
     meta: { title: 'Exhibit', author: 'A. Writer', language: 'en' },

@@ -65,13 +65,15 @@ function str(v: unknown, max = 2000): string {
   return typeof v === 'string' ? v.slice(0, max) : '';
 }
 
-/** The studio's beautifier minus its quote curling (kept as typed). */
+/** The structure of the stored text, and no character of it changed: line ends, runs of spaces, a scene-break line,
+ *  blank lines. (The name is from when this was the studio's beautifier minus its quote curling.) */
 function tidy(text: string): string {
   let s = String(text ?? '').replace(/\r\n?/g, '\n');
   s = s.replace(/[ \t]+/g, ' ');
   s = s.replace(/^[ \t]*([*#]{3,}|-{3,}|_{3,})[ \t]*$/gm, '***');
-  s = s.replace(/[ \t]*\.\.\.([ \t]+)?/g, (_m, trail) => '…' + (trail ? ' ' : ''));
-  s = s.replace(/---/g, '—').replace(/--/g, '—');
+  /* The owner, 2026-11-22: "We do not change anything from what the writer gives us." This page went on turning
+     "..." into an ellipsis and "--" or "---" into a dash after every other surface had stopped (the studio's
+     structureText is the same steps with no tidying). The reading copy sets the characters the book stores. */
   s = s.split('\n').map((l) => l.replace(/\s+$/g, '')).join('\n');
   s = s.replace(/\n{3,}/g, '\n\n');
   return s.trim();
