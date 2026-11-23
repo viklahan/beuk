@@ -267,18 +267,88 @@ describe('a footnote keeps the label the writer typed; the number a reader sees 
     expect(figures(g)).toMatchObject({ counted: true, unaccounted: 8 });
   }, 120_000);
 
-  /* A corner where a "[^label]" the writer typed is not a note's mark to the writer, measured and pinned as it is
-     (OPEN): the book stores it as typed, and the page reads it as a mark, because the stored text has nothing to tell
-     it apart by. (On main the same was already so for a number: a "[^1]" typed in a code block was LINKED to
-     whichever note Beuk had numbered 1.) */
-  it('a "[^label]" typed inside a fenced code block is stored as typed and read as a mark', async () => {
-    const fence = await importFile('fence.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\ncode [^1] and [^x] stay\n```', '[^x]: X.'));
-    expect(stored(fence, '1')).toEqual(['Text[^x] here.', 'code [^1] and [^x] stay', '[^x]: X.']);
-    // the code line's "[^1]" is the writer's own number, a mark with no note; its "[^x]" reads as the note "x"
-    expect(page(fence, chapter(fence, '1')).marks).toEqual(['[2]', '~[1]', '[2]']);
-    expect(items(fence, 'refOrphan').map((it) => it.data!.n)).toEqual(['1']);
-    // the tally says so: the file counts the code line's "1" and "x", the book takes both for marks
-    expect(figures(fence)).toEqual({ counted: true, unaccounted: 2, same: false, fileOnly: [['1', 1], ['x', 1]], bookOnly: [] });
+  /* The owner's rule, ruled on 2026-11-22 after the first pass: text inside a fenced code block is the writer's literal
+     text. A "[^1]" or "[^label]" there is never read as a mark: not at import, not in the tally, not at display.
+     (Main LINKED a fenced "[^1]" to whichever note Beuk had numbered 1; the first pass of this branch reported it as
+     a mark with no note. Both were wrong.)
+     The book's text has one form for text that is the writer's to the character: the log container (a typewriter
+     face, every line as typed, no mark of the book's read in it). A fenced block that holds something the book would
+     read as a note's mark is stored as one. A fenced block that holds none is stored as it always was: its lines as
+     paragraphs, the typewriter face counted as left out. */
+  it('a fenced code block that holds a "[^1]" or a "[^label]" is the writer\'s literal text: stored as typed in a log container, read as no mark at import, in the tally or on any surface', async () => {
+    const g = await importFile('fence.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\ncode [^1] and [^x] stay\n```', 'More[^1] text.', '[^x]: X.', '[^1]: One.'));
+    // stored: the code line to the character, between the container's marks where the fence's stood
+    expect(stored(g, '1')).toEqual(['Text[^x] here.', '::: log\ncode [^1] and [^x] stay\n:::', 'More[^1] text.', '[^x]: X.', '[^1]: One.']);
+    // at import: two notes, two marks, nothing lost and nothing named as a mark with no note
+    expect(items(g, 'notes')[0]!.data).toMatchObject({ found: 2, refs: 2, mapped: 2, orphans: 0 });
+    expect(items(g, 'refOrphan')).toEqual([]);
+    // shown: the writer's 1 is 1 and "x" takes 2; the code line is untouched by the numbering
+    expect(shown(g, '1')).toEqual(['Text[^2] here.', '::: log\ncode [^1] and [^x] stay\n:::', 'More[^1] text.', '[^2]: X.', '[^1]: One.']);
+    // the typeset page: the two marks of the text, and the code line as typed (main raised its "[^1]" and linked it to a note)
+    const p = page(g, chapter(g, '1'));
+    expect(p.marks).toEqual(['[2]', '[1]']);
+    expect(p.html).toContain('<div class="log"><p class="lg" dir="ltr">code [^1] and [^x] stay</p></div>');
+    // the Word export and the narration script
+    const docx = String(g.api.buildDocxDocumentXml!());
+    expect(docx).toContain('code [^1] and [^x] stay');
+    expect((docx.match(/>\[1\]<\/w:t>/g) || []).length).toBe(1);
+    expect((docx.match(/>\[2\]<\/w:t>/g) || []).length).toBe(1);
+    const lines = g.api.acxSectionLines!(chapter(g, '1')) as { k: string; n?: string; text: string; typed?: boolean }[];
+    expect(lines.filter((l) => l.k === 'para').map((l) => String(g.api.acxPlainInline!(l.text, l.typed)))).toEqual(['Text [NOTE 2] here.', 'code [^1] and [^x] stay', 'More [NOTE 1] text.']);
+    expect(lines.filter((l) => l.k === 'note').map((l) => l.n)).toEqual(['2', '1']);
+    // the Markdown export writes the container as the book stores it
+    expect(String(g.api.buildMarkdown!())).toContain('::: log\ncode [^1] and [^x] stay\n:::');
+    // the tally: the code line's characters are counted on both sides ("1" and "x" among them), and it is no mark on either
+    expect(row(g, 'noteRefs')).toEqual({ file: 2, book: 2, why: [] });
+    expect(row(g, 'noteDefs')).toEqual({ file: 2, book: 2, why: [] });
+    // paragraphs: the code line is one on each side (the file's other two are its two definitions' lines, which the book holds as notes: the row's own reason)
+    expect(row(g, 'paragraphs')).toMatchObject({ file: 5, book: 3 });
+    expect(row(g, 'paragraphs').why.map((y) => y[0])).not.toContain('none');
+    expect(figures(g)).toEqual(CLEAR);
+  }, 120_000);
+
+  it('a fenced block keeps its lines, its indents and its empty line; a bare "[0]" in one is code, not a note\'s number; a file whose notes are all numbers is held the same way', async () => {
+    const g = await importFile('code.md', null, md('# Chapter 1: Dawn', 'Text[^1] here.', '```js\nif (a[0]) {\n    b = "[^1]";\n\n}\n```', '[^1]: One.'));
+    expect(chapter(g, '1').content).toBe('Text[^1] here.\n\n::: log\nif (a[0]) {\n    b = "[^1]";\n\n}\n:::\n\n[^1]: One.');
+    const p = page(g, chapter(g, '1'));
+    expect(p.marks).toEqual(['[1]']);
+    expect(p.html).not.toMatch(/<sup class="endnote-ref">\[0\]/);
+    expect(items(g, 'notes')[0]!.data).toMatchObject({ found: 1, refs: 1, mapped: 1, orphans: 0 });
+    expect(items(g, 'refOrphan')).toEqual([]);
+    expect(figures(g)).toEqual(CLEAR);
+  }, 120_000);
+
+  it('a fenced block that holds no mark is stored as it always was: its lines as text, no container, the typewriter face counted as left out', async () => {
+    const g = await importFile('plain-code.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\nplain code line\n```', '[^x]: X.'));
+    expect(stored(g, '1')).toEqual(['Text[^x] here.', 'plain code line', '[^x]: X.']);
+    expect(items(g, 'mono').map((it) => it.data!.n)).toEqual([1]);
+    expect(figures(g)).toEqual(CLEAR);
+    // and the block that is held as a log is not counted as a typewriter face left out: the log sets it in one
+    const held = await importFile('held-code.md', null, md('# Chapter 1: Dawn', 'Text[^x] here.', '```\ncode [^x] line\n```', '[^x]: X.'));
+    expect(items(held, 'mono')).toEqual([]);
+  }, 240_000);
+
+  it('a log the writer typed as one in a Markdown file: nothing in it is a mark or a definition at import or on the page', async () => {
+    const g = await importFile('typed-log.md', null, md('# Chapter 1: Dawn', 'Text[^x].', '::: log\n09:14 [^x] raw [^1] and [^nope]\n[^y]: no definition here\n:::', '[^x]: X.'));
+    expect(stored(g, '1')).toEqual(['Text[^x].', '::: log\n09:14 [^x] raw [^1] and [^nope]\n[^y]: no definition here\n:::', '[^x]: X.']);
+    expect(items(g, 'notes')[0]!.data).toMatchObject({ found: 1, refs: 1, mapped: 1, orphans: 0 });
+    expect(items(g, 'refOrphan')).toEqual([]);
+    expect(items(g, 'noteOrphan')).toEqual([]);
+    const p = page(g, chapter(g, '1'));
+    expect(p.marks).toEqual(['[1]']);
+    expect(p.html).toContain('09:14 [^x] raw [^1] and [^nope]');
+  }, 120_000);
+
+  /* An inline code span (`…` between backticks). The book's stored text has NO notion of one: the import takes the
+     backticks off, keeps the words and counts the typewriter face as left out (irMdMarkup), so nothing in the book
+     says where the span was. A mark inside one is therefore still read as a mark, at import and on the page. Measured
+     and pinned as it is (OPEN): it is not what the rule asks of a fenced block, and it cannot be had without the
+     book's text gaining a mark for a code span. */
+  it('OPEN — an inline code span: the stored text has no notion of one, so a mark inside it is still read as a mark', async () => {
+    const g = await importFile('span.md', null, md('# Chapter 1: Dawn', 'Write `[^x]` to mark a note, as here[^x], and `a[1]` for the first.', '[^x]: X.'));
+    expect(stored(g, '1')).toEqual(['Write [^x] to mark a note, as here[^x], and a[1] for the first.', '[^x]: X.']);
+    expect(page(g, chapter(g, '1')).marks).toEqual(['[2]', '[2]', '~[1]']);
+    expect(items(g, 'mono').map((it) => it.data!.n)).toEqual([2]);
   }, 120_000);
 
   it('a note marked only from inside another note\'s text is kept where it stood as its words (as before); its mark there, which now answers to no note, stays as typed', async () => {

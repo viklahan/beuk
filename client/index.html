@@ -43150,8 +43150,16 @@
         return { rows: R, parts: P, own: { tiny: P.tiny.join("\n") }, pdf: { pages: ext.numPages, unread } };
       }
       /* ---- in the book ---- */
-      function irTallyBook(rep) {
+      function irTallyBook(rep, literal) {
         const R = irTallyRows(), parts = [];
+        /* BEUK:notelabels — the fenced code blocks this import stored as log containers (irPlainTextPrep hands their text over):
+           each is the writer's to the character, so the book's side counts it as the file's side counts a fenced block's
+           lines, as they are: no mark of the book's is taken out of it, and its lines are the paragraphs the file's side
+           counts. A log the writer typed as one is counted as it always was. */
+        const litKey = (b) => String(b).replace(/\s+/g, " ").trim(), lit = new Map();
+        (literal || []).forEach((b) => { const k = litKey(b); lit.set(k, (lit.get(k) || 0) + 1); });
+        const litHeld = new RegExp(String.fromCharCode(0xE052) + "(\\d+)" + String.fromCharCode(0xE053), "g");
+        const litList = new RegExp("^\\s*(?:[-*+" + IR_LIST_GLYPHS + "]|\\d{1,3}[.)])\\s+\\S");
         const items = rep ? rep.items : [];
         const named = new Set(items.filter((it) => it.kind === "matter" && it.data && it.data.via === "heading").map((it) => it.where.secId));
         const fallback = new Set(items.filter((it) => it.kind === "chapter" && it.data && it.data.from === "fallback").map((it) => it.where.secId));
@@ -43177,7 +43185,12 @@
         const listNums = [];
         const cleanOf = (v) => { (String(v || "").match(/^[ \t]*(?:[-•]|\d{1,3}[.)])(?=[ \t])/gm) || []).forEach((m) => listNums.push(m.trim())); return countWordsClean(v, true); };
         state.sections.forEach((s) => {
-          const c = String(s.content || "");
+          let c = String(s.content || "");
+          const asIs = [];
+          if (lit.size && c.indexOf(":::") !== -1) {
+            const held = [];
+            c = holdRawContainers(c.replace(/\r\n?/g, "\n"), held).replace(litHeld, (m0, k) => { const body = held[+k], key = litKey(body); if (!lit.get(key)) return body; lit.set(key, lit.get(key) - 1); asIs.push(body); return ""; });
+          }
           /* a page with no text is the book's only where its heading is the file's: a Part, a chapter not yet written, a
              named page the file opened with its heading (BEUK:importtally) */
           if (!/\S/.test(c) && s.type !== "part" && !(s.kind === "body" && s.type === "chapter") && !named.has(s.id)) return;
@@ -43225,6 +43238,18 @@
             if (fence) { const inner = countWordsClean(fence[2]).split("\n").filter((l) => /\S/.test(l)); R.paragraphs++; irTallyItem(R, "paragraphs", inner[0] || ""); inner.slice(1).forEach((l) => irTallyItem(R, "joined", l)); return; }
             if (/^:::/.test(v)) return;
             R.paragraphs++; irTallyItem(R, "paragraphs", lines[0] || ""); lines.slice(1).forEach((l) => irTallyItem(R, "joined", l));
+          });
+          /* BEUK:notelabels — a fenced block stored as a log: its text as it is, and its lines as irTallyText counts a fenced block's */
+          asIs.forEach((body) => {
+            push(body);
+            const ls = body.split("\n");
+            let open = false;
+            ls.forEach((l, i) => {
+              if (!l.trim()) { open = false; return; }
+              if (IR_BREAK_RE.test(l) && i > 0 && i < ls.length - 1 && !ls[i - 1].trim() && !ls[i + 1].trim()) { R.breaks++; irTallyItem(R, "breaks", l); open = false; return; }
+              if (litList.test(l)) { R.listItems++; irTallyItem(R, "listItems", l.replace(/^\s*\S+\s+/, "")); open = true; return; }
+              if (!open) { R.paragraphs++; irTallyItem(R, "paragraphs", l); open = true; } else irTallyItem(R, "joined", l);
+            });
           });
         });
         R.headings.chapters = chapters; R.headings.pages = pages; if (partHeads) R.headings.parts = partHeads;
@@ -43313,7 +43338,7 @@
         if (!rep) { IR_ASIDE = null; return null; }
         const aside = IR_ASIDE || {};
         IR_ASIDE = null;
-        const book = irTallyBook(rep);
+        const book = irTallyBook(rep, aside[String.fromCharCode(0) + "literal"]);
         const tally = { v: 3, counted: !!(src && src.counted), file: null, book: irTallyN(book.text), aside: {}, unaccounted: null, marks: null, rows: [] };
         /* what the import never reads is set aside as the file holds it: page headers and footers, comments and tracked deletions of a Word or OpenDocument file */
         if (src && src.counted && src.own) Object.keys(src.own).forEach((k) => { if (src.own[k]) aside[k] = (aside[k] || "") + "\n" + src.own[k]; });
@@ -44432,6 +44457,19 @@
         const REF = () => /\[\^([^\]\s]+)\](?!:)/g;
         const defs = [], refs = [], taken = new Set();
         let fence = false;
+        /* BEUK:notelabels — the lines of a raw container (a log) are the writer's to the character, as a fenced block's
+           are: nothing in them is a note's mark or a note's definition (rawAt: the lines that stand inside one) */
+        const rawAt = [];
+        if (String(text == null ? "" : text).indexOf(":::") !== -1) {
+          let f = false, raw = false;
+          lines.forEach((l, i) => {
+            if (/^\s*(```|~~~)/.test(l)) { f = !f; return; }
+            if (f) return;
+            const om = l.match(CONTAINER_OPEN_RE);
+            if (om || CONTAINER_CLOSE_RE.test(l)) { const k = om ? containerKind(om[1].toLowerCase()) : null; raw = !!(k && k.raw); return; }
+            rawAt[i] = raw;
+          });
+        }
         /* BEUK:tablerows — a note referenced the HTML way inside a Markdown file (<a href="#fn-8"><sup>8</sup></a>: a table
            written as HTML marks its notes so) is the same reference when the file defines a note under that very label:
            it is read as [^fn-8]. A link to anything else stays the link it is. */
@@ -44442,14 +44480,14 @@
             const A = /<a\b[^>]*\bhref\s*=\s*["']#([^"'\s>]+)["'][^>]*>\s*(?:<sup>\s*)?[\[(]?(?:\d{1,3}|[*†‡§¶])[\])]?(?:\s*<\/sup>)?\s*<\/a>/gi;
             for (let i = 0; i < lines.length; i++) {
               if (/^\s*(```|~~~)/.test(lines[i])) { fence = !fence; continue; }
-              if (!fence && lines[i].indexOf("<a") !== -1) lines[i] = lines[i].replace(A, (m, id) => { if (!labels.has(id)) return m; irAside("noteMarks", m.replace(/<[^>]*>/g, " ")); return "[^" + id + "]"; });
+              if (!fence && !rawAt[i] && lines[i].indexOf("<a") !== -1) lines[i] = lines[i].replace(A, (m, id) => { if (!labels.has(id)) return m; irAside("noteMarks", m.replace(/<[^>]*>/g, " ")); return "[^" + id + "]"; });
             }
             fence = false;
           }
         }
         for (let i = 0; i < lines.length; i++) {
           if (/^\s*(```|~~~)/.test(lines[i])) { fence = !fence; continue; }
-          if (fence) continue;
+          if (fence || rawAt[i]) continue;
           const d = DEF.exec(lines[i]);
           if (d) {
             const def = { label: d[1], from: i, text: d[2].trim(), n: 0 };
@@ -44499,7 +44537,7 @@
           if (stoodAt.has(i)) return "\n" + irSent("NOTE", stoodAt.get(i)) + "\n";
           if (taken.has(i)) return "";
           if (/^\s*(```|~~~)/.test(line)) { fence = !fence; return line; }
-          if (fence) return line;
+          if (fence || rawAt[i]) return line;
           return line.replace(REF(), () => "[^" + queue.shift().n + "]");
         });
         ir.docNotes = linked.map((d) => ({ id: "md-note-" + d.n, n: String(d.n), typed: d.label, text: d.text }))
@@ -45396,10 +45434,35 @@
       /* Markdown / plain text: the same break markers, as lines. */
       function irPlainTextPrep(raw, ir) {
         const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
+        /* BEUK:notelabels (the owner's rule, ruled 2026-11-22: text inside a fenced code block is the writer's literal
+           text; a "[^1]" or "[^label]" there is never read as a mark) — the book's text has one form for text that is
+           the writer's to the character, the log container (set in a typewriter face, every line as typed, no mark of
+           the book's read in it). A fenced block that holds something the book would read as a note's mark ("[^1]",
+           "[^salt]", a bare "[12]") is stored as one, so that no surface, count or report takes it for a mark; its
+           fence marks become the container's own. Every other fenced block is stored as it always was (its lines as
+           paragraphs, the typewriter face counted as left out). A block that holds a container mark line of its own,
+           or whose fence is never closed, cannot be held so and is stored as before. */
+        const literalOpen = new Set(), literalClose = new Set();
+        if (ir.format === "md") {
+          let open = -1;
+          lines.forEach((line, i) => {
+            if (!/^\s*(```|~~~)/.test(line)) return;
+            if (open < 0) { open = i; return; }
+            const body = lines.slice(open + 1, i);
+            if (body.some((l) => noteMarkRe().test(l)) && !body.some((l) => isContainerMarkLine(l))) {
+              literalOpen.add(open); literalClose.add(i);
+              /* the tally's book side counts this block as its file side counts a fenced block's lines: as they are (irTallyBook) */
+              if (IR_ASIDE) { const k = String.fromCharCode(0) + "literal"; (IR_ASIDE[k] = IR_ASIDE[k] || []).push(body.join("\n")); }
+            }
+            open = -1;
+          });
+        }
         let fence = false;
-        const out = lines.map((line) => {
+        const out = lines.map((line, li) => {
           if (/^\s*(```|~~~)/.test(line)) {
             fence = !fence;
+            if (literalOpen.has(li)) return "::: log";
+            if (literalClose.has(li)) return ":::";
             /* BEUK:mdimport — a Markdown file's fenced block keeps its lines as typed; the fence marks are markup,
                not prose, and the typewriter face they ask for is counted, as every format's is */
             if (ir.format === "md") { if (fence) ir.drops.mono = (ir.drops.mono || 0) + 1; return ""; }
@@ -45712,6 +45775,10 @@
            block of its own last mark, so the file's pairing is still read from where the definitions stand. Every
            other note's definition goes to the section's foot, as it always did. */
         const typed = !!ir.mdNoteLabels;
+        /* BEUK:notelabels — a section's text with what stands in a raw container (a log; a fenced code block stored as
+           one, irPlainTextPrep) taken out: it is the writer's to the character, and nothing in it is a note's mark,
+           so the report counts none there and names none as a mark with no note */
+        const outsideRaw = (content) => { const c = String(content || ""); return c.indexOf(":::") === -1 ? c : holdRawContainers(c.replace(/\r\n?/g, "\n"), []); };
         const hostOf = (nt) => { const re = new RegExp("\\[\\^" + nt.n + "\\](?!:)"); return importSecs.find((s) => re.test(String(s.content || ""))) || null; };
         const twice = new Set();
         if (typed) { const one = new Set(); ir.docNotes.forEach((nt) => { if (nt.stood || !nt.n) return; const h = hostOf(nt); if (!h) return; const k = h.id + " " + nt.typed; if (one.has(k)) twice.add(k); else one.add(k); }); }
@@ -45760,14 +45827,15 @@
           const defined = new Set(ir.docNotes.filter((nt) => nt.n).map((nt) => nt.n));
           state.sections.forEach((s) => {
             const re = /\[\^(\d{1,3})\](?!:)/g; let m;
-            while ((m = re.exec(String(s.content || "")))) if (!defined.has(m[1]) && importIds.has(s.id)) noteStats.orphanRefs.push(m[1]);
+            const c = outsideRaw(s.content);
+            while ((m = re.exec(c))) if (!defined.has(m[1]) && importIds.has(s.id)) noteStats.orphanRefs.push(m[1]);
           });
         } else {
           /* Markdown notes are already Beuk's own [^n] syntax: count
              them and check each definition shares a section with its
              reference — the renderer links notes within a section. */
           importSecs.forEach((s) => {
-            const c = String(s.content || "");
+            const c = outsideRaw(s.content);
             const refs = new Set(), defs = new Set(); let m;
             const rr = /\[\^(\d{1,3})\](?!:)/g; while ((m = rr.exec(c))) refs.add(m[1]);
             const dr = /^\[\^?(\d{1,3})\]:/gm; while ((m = dr.exec(c))) defs.add(m[1]);
@@ -54497,7 +54565,7 @@
       const acxRound = (n, d) => { const f = Math.pow(10, d); return Math.round(n * f) / f; };
       /* The spoken words of a line: markup and bracketed narrator notes out. */
       const acxSpoken = (text) => String(text || "").replace(noteMarkRe(), " ") /* BEUK:notelabels — no mark is a spoken word, with a note or without */.replace(/\[(NOTE|IMAGE|PAUSE|PRONUNCIATION|NARRATOR)[^\]]*\]/g, " ").replace(/\*\*|\*/g, "");
-      const acxPlainInline = (text) => String(text || "").replace(mdLinkRe(), "$1").replace(ACX_NOTE_MARK, (m, n) => " [NOTE " + noteLabelOf(n) + "]").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*\n]+)\*/g, "$1").replace(/ {2,}/g, " ").trim();
+      const acxPlainInline = (text, typed) => String(text || "").replace(mdLinkRe(), "$1").replace(ACX_NOTE_MARK, (m, n) => (typed ? m /* BEUK:notelabels — a log's line: nothing in it is a note's mark */ : " [NOTE " + noteLabelOf(n) + "]")).replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*\n]+)\*/g, "$1").replace(/ {2,}/g, " ").trim();
       function acxSectionSkipReason(s) {
         const own = state.audio.include[s.id];
         if (own === false) return "user";
@@ -54535,9 +54603,19 @@
         const notes = {};
         const shown = notesAsShown(s); /* BEUK:notelabels — each note under the number it shows in the book */
         collectDocxNotesFrom(shown).forEach((n) => { notes[n.n] = unredactForReading(n.text, t("tool.redactSpoken")); }); /* BEUK:documents — a note's redaction is said, never read */
-        const text = stripContainerMarks(spokenContainerText(structureText(shown || ""))); /* container markers are markup: the narrator reads the words */
+        /* BEUK:notelabels — what stands in a raw container (a log; a fenced code block stored as one) is the writer's to the
+           character: it is held aside while the section's marks are read, and each run of its lines is a paragraph of
+           the script in which nothing is a note's mark (typed: true). It was read like any paragraph, so a "[12]" in a
+           log came out "[NOTE 12]" with a footnote line after it. */
+        const rawHeld = [];
+        const structured = structureText(shown || "");
+        const heldRe = new RegExp("^" + String.fromCharCode(0xE052) + "(\\d+)" + String.fromCharCode(0xE053) + "$");
+        const text = stripContainerMarks(spokenContainerText(structured.indexOf(":::") === -1 ? structured : holdRawContainers(structured, rawHeld))) /* container markers are markup: the narrator reads the words */
+          .replace(new RegExp(heldRe.source, "gm"), (m0) => "\n\n" + m0 + "\n\n");
         let breakIdx = 0;
         text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).forEach((block) => {
+          const hm = heldRe.exec(block);
+          if (hm) { unredactForReading(rawHeld[+hm[1]], t("tool.redactSpoken")).split(/\n\s*\n/).map((b) => b.split("\n").map((l) => l.trim()).filter(Boolean).join(" ")).filter(Boolean).forEach((run) => lines.push({ k: "para", text: run, typed: true })); return; }
           if (NOTE_DEF_RE.test(block)) return;
           const tok = parseImageLine(block);
           if (tok) { lines.push({ k: "image", text: tok.alt || "", missingAlt: !tok.alt }); return; }
@@ -54779,7 +54857,7 @@
         if (l.k === "note") return "[NARRATOR DECISION — footnote " + l.n + ": “" + acxPlainInline(l.text) + "” — read it here, fold it into the narration, or leave it out; ACX gives no rule for notes.]";
         if (l.k === "pron") return "[PRONUNCIATION: " + l.word + (l.soundsLike ? " — sounds like “" + l.soundsLike + "”" : "") + (l.ipa ? " — IPA /" + l.ipa.replace(/^\/|\/$/g, "") + "/" : "") + "]";
         if (l.k === "quote") return "[QUOTED PASSAGE] " + acxPlainInline(l.text);
-        return acxPlainInline(l.text);
+        return acxPlainInline(l.text, l.typed);
       }
       function acxFileTxt(f) {
         return f.lines.map(acxLineTxt).join("\n\n") + "\n";
@@ -54791,7 +54869,7 @@
         const parts = lines.map((l) => {
           if (l.k === "head") return docxPara(l.text, "Heading1");
           if (l.k === "sub") return docxPara("", "Normal", { rawRuns: docxRun(l.text, { i: true }) });
-          if (l.k === "para") return docxPara("", "Normal", { rawRuns: acxDocxRunsWithNotes(l.text) });
+          if (l.k === "para") return docxPara("", "Normal", { rawRuns: l.typed ? docxRun(acxPlainInline(l.text, true), {}) /* BEUK:notelabels — a log's line: nothing in it is raised as a note's mark */ : acxDocxRunsWithNotes(l.text) });
           if (l.k === "quote") return docxPara("", "Quote", { rawRuns: docxRun("[QUOTED PASSAGE] ", { b: true }) + acxDocxRunsWithNotes(l.text) });
           if (l.k === "pause") return docxPara("", "Normal", { align: "center", rawRuns: docxRun("[PAUSE — scene break]", { b: true }) });
           return docxPara("", "Caption", { rawRuns: docxRun(acxLineTxt(l), { b: l.k === "pron" || l.k === "direction", i: true }) });
