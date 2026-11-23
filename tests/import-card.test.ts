@@ -29,7 +29,7 @@ const HOLDS: Record<string, string[]> = {
   'ir.acc.title': [], 'ir.acc.see': [], 'ir.acc.undo': [], 'ir.acc.file': ['{file}', '{when}'], 'ir.acc.intro': [], 'ir.acc.asGiven': ['{button}'], 'ir.acc.introParts': [],
   'ir.acc.h.count': [], 'ir.acc.h.look': [], 'ir.acc.h.aside': [], 'ir.acc.h.looks': [], 'ir.acc.h.filed': [], 'ir.acc.h.notes': [], 'ir.acc.h.book': [], 'ir.acc.c.looks': [], 'ir.acc.c.filed': [], 'ir.acc.c.book': [],
   'ir.acc.differ': [], 'ir.acc.why': [], 'ir.acc.wholeTally': [], 'ir.acc.asideN': ['{n}'], 'ir.acc.asideNPlural': ['{n}'], 'ir.acc.noneUn': [], 'ir.acc.same': ['{n}'], 'ir.acc.samePlural': ['{n}'], 'ir.acc.words': ['{n}'], 'ir.acc.wordsPlural': ['{n}'],
-  'ir.acc.nChars': ['{n}'], 'ir.acc.nCharsPlural': ['{n}'], 'ir.acc.picsWhy': [], 'ir.acc.notesWhy': [], 'ir.acc.showLines': [], 'ir.acc.hideLines': [], 'ir.acc.looksLede': [],
+  'ir.acc.nChars': ['{n}'], 'ir.acc.nCharsPlural': ['{n}'], 'ir.acc.picsWhy': [], 'ir.acc.notesWhy': [], 'ir.acc.notesLooseWhy': [], 'ir.acc.h.read': [], 'ir.acc.showLines': [], 'ir.acc.hideLines': [], 'ir.acc.looksLede': [],
   'ir.acc.filedChapters': ['{n}'], 'ir.acc.filedChaptersPlural': ['{n}'], 'ir.acc.filedPages': ['{n}'], 'ir.acc.filedPagesPlural': ['{n}'], 'ir.acc.filedAs': ['{type}', '{zone}'],
   'ir.acc.zone.front': [], 'ir.acc.zone.body': [], 'ir.acc.zone.back': [], 'ir.acc.via.heading': [], 'ir.acc.via.chapterHead': ['{chapter}'], 'ir.acc.via.shape': [], 'ir.acc.change': [],
 };

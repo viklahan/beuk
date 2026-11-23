@@ -173,24 +173,37 @@ describe('the card: the verdict panel first', () => {
     expect(q('.ir-vact [data-irpart="count"]', panel), 'a link to the list in the full account').not.toBeNull();
   }, 120_000);
 
-  it('a count that differs with no named reason puts the panel in the differs state: a file with no headings, whose book has one', async () => {
+  it('a count that differs with no named reason puts the panel in the differs state: said once, with how many rows there are and each row\'s two figures', async () => {
     fresh();
-    const rep = await importFile('no-headings.md', null, 'The caravan left at dawn.\n\nThe pans lay white under the sun.\n'); // Markdown: a text file marks no headings, and its tally has no row for them
-    const un = rep.tally.rows.filter((r) => r.file !== r.book && r.why.some((y) => y.k === 'none'));
-    expect(un.map((r) => [r.key, r.file, r.book, r.why]), 'the tally itself: one heading in the book that the file does not have, not explained').toEqual([['headings', 0, 1, [{ k: 'none', n: 1, side: -1 }]]]);
-    expect({ unaccounted: rep.tally.unaccounted, same: rep.tally.chars.same }).toEqual({ unaccounted: 0, same: true });
+    await importFile('rows.md', null, '# Chapter 1\n\nThe caravan left at dawn.\n\n# Chapter 2\n\n' + LAST + '\n');
+    expect(boxClass().contains('ir-differs'), 'every row explained: all clear').toBe(false);
+    /* a row the tally could not explain, set in by hand as main's own test of this line does (import-tally-said.test.ts: since
+       d8135f6 no import made here leaves one): 25 scene breaks in the file, 1 in the book, 1 set aside, 23 unexplained */
+    const d = doc();
+    d.importReport.tally.rows.push({ key: 'breaks', file: 25, book: 1, why: [{ k: 'aside', row: 'titlePage', n: 1, side: 1 }, { k: 'none', n: 23, side: 1 }] });
+    api.applyBookDoc(d as never);
+    api.irOpenReport();
     expect(txt($('irH'))).toBe('Your book is in, with 1 count to check.');
     const panel = q('.ir-verdict', card())!;
     expect(panel.classList.contains('differs')).toBe(true);
-    expect(txt(q('.ir-vhead p', panel))).toBe('Headings: 0 in your file, 1 in your book (1 in the book not explained).');
-    // the characters themselves all agree, and the panel still says so
-    expect(qa('.ir-vsay', panel).map(txt)).toContain('Every character of your file is in your book.');
-    // the full account: the row stands in the table of counts that differ, with its reason
+    const said = '1 count in the tally differs between your file and your book, and Beuk found no reason for it.';
+    expect(said).toBe(t('ir.tally.cardRows', { n: 1 }));
+    expect(txt(q('.ir-vhead p', panel))).toBe(said);
+    expect(txt(card()).split(said).length - 1, 'said once on the card').toBe(1);
+    expect(qa('.ir-vsay', panel).map(txt)).toEqual(['Scene breaks and ornaments: 25 in your file, 1 in your book (23 in the file not explained).', 'Every character of your file is in your book.']);
+    // the full account: the row stands in the table of counts that differ, with every one of its reasons, marked
     q('.ir-vact [data-irpart="count"]', panel)!.click();
     expect(boxClass().contains('ir-card-view')).toBe(false);
-    const row = qa('#ir-g-count .ir-ctable .ir-trow', account()).find((r) => txt(q('.ir-tname', r)) === 'Headings')!;
-    expect(qa('span.num', row).map(txt)).toEqual(['0', '1']);
-    expect(txt(q('.ir-twhy', row))).toBe('1 in the book not explained');
+    const row = qa('#ir-g-count .ir-ctable .ir-trow', account()).find((r) => txt(q('.ir-tname', r)) === 'Scene breaks and ornaments')!;
+    expect(qa('span.num', row).map(txt)).toEqual(['25', '1']);
+    expect(qa('.ir-twhy span', row).map(txt)).toEqual([t('ir.tally.y.aside', { n: '1', what: t('ir.tally.b.titlePage') }), '23 in the file not explained']);
+    expect(row.classList.contains('gold')).toBe(true);
+    // two rows: the plural, and the title counts them
+    d.importReport.tally.rows.push({ key: 'listItems', file: 9, book: 4, why: [{ k: 'none', n: 5, side: 1 }] });
+    api.applyBookDoc(d as never);
+    api.irOpenReport();
+    expect(txt($('irH'))).toBe('Your book is in, with 2 counts to check.');
+    expect(txt(q('.ir-vhead p', card()))).toBe('2 counts in the tally differ between your file and your book, and Beuk found no reason for them.');
   }, 120_000);
 });
 
@@ -203,16 +216,14 @@ describe('what the old screen filed under "Dropped or not supported" is named fo
     expect(rep.items.filter((it) => it.kind === 'mdImage').map((it) => it.data.n)).toEqual([1]);
     const orphans = rep.items.filter((it) => it.kind === 'noteOrphan');
     expect(orphans.length).toBe(1);
-    /* three things: the picture, the note, and a count the tally itself leaves unexplained. The note nothing marks stands in
-       the book as a paragraph, and the tally (2026-11-22) has no reason for that paragraph: "1 in the book not explained".
-       The card shows what the tally says and does not explain it away. */
-    const para = rep.tally.rows.find((r) => r.key === 'paragraphs')!;
-    expect(para.why.filter((y) => y.k === 'none')).toEqual([{ k: 'none', n: 1, side: -1 }]);
-    expect(txt($('irH'))).toBe('Your book is in, with 3 things to check.');
+    /* the picture and the note; and whatever count the tally itself leaves unexplained is one more thing, never explained away by the card
+       (before main's d8135f6 the note's own paragraph was such a row: "1 in the book not explained") */
+    const open = rep.tally.rows.filter((r) => r.file !== r.book && r.why.some((y) => y.k === 'none'));
+    expect(txt($('irH'))).toBe('Your book is in, with ' + (2 + open.length) + ' things to check.');
     const panel = q('.ir-verdict', card())!;
     expect(panel.classList.contains('differs')).toBe(true);
     const said = [txt(q('.ir-vhead p', panel)), ...qa('.ir-vsay', panel).map(txt)];
-    expect(said).toContain('Paragraphs: ' + para.file + ' in your file, ' + para.book + ' in your book (1 in the book not explained).');
+    if (open.length) expect(said).toContain(t('ir.tally.cardRows', { count: open.length, n: String(open.length) }));
     expect(said).toContain('Every character of your file is in your book.');
     expect(said).toContain('Your file names 1 picture it does not contain.');
     expect(said).toContain('Your book keeps each pointer and its description, and has no picture to show. Add the pictures from the image library, or import the folder as a zip.');
@@ -290,6 +301,55 @@ describe('the full account: the same report, part by part', () => {
     expect(txt(account())).not.toContain('Can\'t be undone on its own');
   }, 120_000);
 
+  it('a report holding every kind of item the import can make: each is one row of the account, in its part, with its words', async () => {
+    fresh();
+    await importFile('breaks.txt', null, BREAKS);
+    /* the kinds, read from the code that makes them (every `kind: "…", group: "…"` of the page), with the two the PDF reader picks between,
+       a Word note no reference points to, and the three a report saved before 2026-11-22 can still hold */
+    const made = new Map<string, string>();
+    for (const m of HTML.matchAll(/kind: "([A-Za-z]+)", group: "([a-z]+)"/g)) made.set(m[1] + '/' + m[2], m[2]);
+    for (const k of ['pdfBadGlyphs/dropped', 'pdfBadGlyphsMany/dropped', 'typography/typography', 'typographyAll/typography', 'emphasis/dropped']) made.set(k, k.split('/')[1]);
+    expect(made.size, 'the kinds were read from the page').toBeGreaterThan(60);
+    const data = { n: 2, em: 1, strong: 1, type: 'epigraph', via: 'shape', field: 'title', kept: 'A', offered: 'B', code: 'en', status: 'applied', found: 1, mapped: 1, orphans: 0, ins: 1, del: 1, q: 1, d: 1, e: 1, level: 2, text: 'x',
+      reason: 'title', from: 'h1', heading: 'H', message: 'm', what: 'cols', max: 9, name: 'p.png', marker: '***', rows: [['a', 'b']], cols: 2, lines: ['a | b'], at: [], words: ['a-'], why: 'neither' };
+    const extra: Partial<Item>[] = [...made.keys()].map((k) => ({ kind: k.split('/')[0], group: k.split('/')[1], before: 'before words', after: 'after words', data: { ...data } }));
+    extra.push({ kind: 'noteOrphan', group: 'dropped', before: 'A loose note, whole.', data: { n: '', loose: 'footnote' } });
+    const rep = withItems(extra);
+    $('btnIrEvery').click();
+    const rows = qa('[data-irid]', account());
+    const ids = rows.map((r) => r.getAttribute('data-irid'));
+    expect(ids.length, 'no item twice').toBe(new Set(ids).size);
+    expect([...ids].sort(), 'every item in, a row out').toEqual(rep.items.map((it) => it.id).sort());
+    const PART: Record<string, string[]> = {
+      look: ['mdImage', 'noteOrphan', 'refOrphan', 'txtMarks', 'pdfHyphenAsk', 'pdfHyphenAskAll', 'pdfDashKept', 'pdfNoText', 'pdfBadGlyphs', 'pdfBadGlyphsMany', 'pdfRtl', 'pdfSpacedUnsure'],
+      looks: ['mono', 'smallcaps', 'strike', 'underline', 'subsup', 'headers', 'fmtHeading', 'textbox', 'lists', 'nestedList', 'emphasis'],
+      aside: ['bareHeading', 'break', 'comments', 'emptyHeading', 'links', 'mammoth', 'markup', 'toc', 'tracked', 'txtRules', 'lifted', 'pdfHeads', 'pdfToc', 'pdfHalfTitle', 'pdfTiny', 'pdfRotated', 'pdfLinks'],
+      typography: ['typography', 'typographyAll'],
+      filed: ['chapter', 'demoted', 'matter'],
+      read: ['pdfLimits', 'pdfStyles', 'pdfSmallCaps', 'pdfSpaced', 'pdfHyphens', 'pdfHyphenOpen', 'pdfColumns'],
+      notes: ['notes', 'image', 'imageDropped', 'imageLost', 'table', 'tableLimit', 'tablePics', 'picAltJoined', 'pdfImagesLost', 'pdfBackdrops', 'pdfMasks', 'pdfDupImages'],
+      book: ['language', 'meta', 'metaKept', 'glued', 'frontmatter', 'rtfUtf8'],
+    };
+    const partOf = (r: Element) => (r.closest('.ir-part') as HTMLElement).id.replace('ir-g-', '');
+    const where: Record<string, string> = {};
+    for (const r of rows) where[rep.items.find((it) => it.id === r.getAttribute('data-irid'))!.kind] = partOf(r);
+    for (const [part, kinds] of Object.entries(PART)) for (const k of kinds) expect(where[k], k + ' stands in ' + part).toBe(part);
+    /* a kind the page makes that this test does not name still has its row (the line above it holds every item); here they are, so a new one is seen */
+    const named = new Set(Object.values(PART).flat());
+    expect([...new Set([...made.keys()].map((k) => k.split('/')[0]))].filter((k) => !named.has(k)), 'kinds the import makes that this test places in no part by name').toEqual([]);
+    // each says its own words: main's new kinds among them
+    const said = (kind: string, loose = false) => txt(rows.find((r) => { const it = rep.items.find((x) => x.id === r.getAttribute('data-irid'))!; return it.kind === kind && !!(it.data as Rec).loose === loose; })!);
+    expect(said('pdfHyphenOpen')).toContain(t('ir.k.pdfHyphenOpenPlural', { n: 2 }));
+    expect(said('pdfDashKept')).toContain(t('ir.k.pdfDashKeptPlural', { n: 2 }));
+    expect(rows.find((r) => rep.items.find((x) => x.id === r.getAttribute('data-irid'))!.kind === 'pdfDashKept')!.querySelector('button'), 'a dash the PDF does not settle has no button').toBeNull();
+    expect(said('bareHeading')).toContain(t('ir.k.bareHeadingPlural', { n: 2 }));
+    expect(said('pdfSmallCaps')).toContain(t('ir.k.pdfSmallCapsPlural', { n: 2 }));
+    expect(said('picAltJoined')).toContain(t('ir.k.picAltJoinedPlural', { n: 2 }));
+    expect(said('noteOrphan', true)).toBe('A loose note, whole.');
+    expect(txt(q('#ir-g-look', account()))).toContain('A note of a Word file that no reference points to has no place of its own in the text. Its text is kept in your book as a paragraph, at the end of the book\'s text.');
+    expect(txt(q('#ir-g-read .ir-ph', account()))).toBe('How Beuk read your PDF');
+  }, 120_000);
+
   it('its title, its opening lines, the links to its parts, the parts in their order, and no empty part', async () => {
     fresh();
     await importFile('breaks.txt', null, BREAKS);
@@ -298,7 +358,7 @@ describe('the full account: the same report, part by part', () => {
     expect(txt($('irH'))).toBe('The full account');
     expect(txt($('irFile'))).toMatch(/^breaks\.txt, imported \d{4}-\d{2}-\d{2}$/);
     expect(txt($('irSub'))).toBe('Your file beside your book, count by count. Beuk changed none of your characters: no quote, dash or ellipsis was changed. Auto-Format in the editor tidies them when you want it. What follows is what it set aside, what a Beuk book cannot show, and where it filed each page.');
-    const order = ['count', 'look', 'aside', 'looks', 'typography', 'filed', 'notes', 'book'];
+    const order = ['count', 'look', 'aside', 'looks', 'typography', 'filed', 'read', 'notes', 'book'];
     const ids = () => qa('.ir-part', account()).map((p) => p.id.replace('ir-g-', ''));
     expect(ids(), 'only the parts this import has something in, in order').toEqual(['count', 'aside', 'filed', 'book']); // book: the title read from the file's name
     expect(qa('.ir-chip', account()).map((a) => a.getAttribute('href'))).toEqual(ids().map((p) => '#ir-g-' + p));
@@ -306,7 +366,7 @@ describe('the full account: the same report, part by part', () => {
     expect(qa('.ir-chip', account()).map(txt)).toEqual(['The count', 'Set aside 17 characters', 'Where pages were filed', 'Book details 1']);
     expect(qa('.ir-ph', account()).map(txt)).toEqual(['The count', 'Set aside: 17 characters', 'Where Beuk filed your pages', 'Book details Beuk read from your file']);
     // every part, when each has something
-    withItems([{ kind: 'mdImage', group: 'dropped', data: { n: 2 } }, { kind: 'underline', group: 'dropped', data: { n: 3 } }, { kind: 'typography', group: 'typography', data: { q: 1, d: 0, e: 0 } }, { kind: 'notes', group: 'notes', data: { found: 1, mapped: 1, orphans: 0 } }, { kind: 'zzBook', group: 'book', data: {} }]);
+    withItems([{ kind: 'mdImage', group: 'dropped', data: { n: 2 } }, { kind: 'underline', group: 'dropped', data: { n: 3 } }, { kind: 'typography', group: 'typography', data: { q: 1, d: 0, e: 0 } }, { kind: 'pdfLimits', group: 'structure', data: {} }, { kind: 'notes', group: 'notes', data: { found: 1, mapped: 1, orphans: 0 } }, { kind: 'zzBook', group: 'book', data: {} }]);
     $('btnIrEvery').click();
     expect(ids()).toEqual(order);
     // a report whose import did tidy typography does not say it changed none of the characters

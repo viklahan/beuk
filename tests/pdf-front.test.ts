@@ -58,7 +58,8 @@ test('pdf front: a PDF novel comes in with exactly its chapters (BEUK:chapfix)',
   assert.ok(lay.includes(String.raw`\s+[\p{L}\p{N}]+(?:[-‐–][\p{L}\p{N}]+)*\.?$/iu;`), 'a chapter label takes a hyphenated number');
   assert.match(lay, /if \(sentence\(whole\)\) return true;/, 'a sentence wrapped over its lines is read whole');
   assert.match(lay, /else if \(centred \|\| inset\)/, 'a set-in block keeps its lines together');
-  assert.match(lay, /if \(insetOn\) \{/, '... over a page turn too');
+  /* BEUK:pdfparas — the page-turn line now also lets a block in the text's own size run on (setInOn); the inset rule this pins is still the first half of it */
+  assert.match(lay, /if \(insetOn \|\| setInOn\) \{/, '... over a page turn too');
   const c = SELF_CHECK_CASES.find((x) => x.id === 'import.chapfix.pdf-ledger-lines');
   assert.ok(c && c.kind === 'client-only' && c.reason && html.includes('{ id: "import.chapfix.pdf-ledger-lines"'));
 });
