@@ -44566,10 +44566,27 @@
           sup.parentNode.removeChild(sup);
           irAsideDelta("noteMarks", was, irTallyDomText(el, null));
         }
+        /* BEUK:notemarks — the note's own mark ("*", "†", "a"), where the note prints it raised before its words */
+        let ledMark = false;
+        const sup2 = nt.mark && !led ? all("sup")[0] : null;
+        if (sup2 && leads(sup2) && irNoteMarkLabel(sup2.textContent) === nt.mark) {
+          ledMark = true;
+          const was = irTallyDomText(el, null);
+          sup2.parentNode.removeChild(sup2);
+          irAsideDelta("noteMarks", was, irTallyDomText(el, null));
+        }
         const r = irRunsToMd(irInlineRuns(el, ir), ir, false);
         ir.carried.em += r.em; ir.carried.strong += r.strong;
         let txt = r.md;
         if (led) txt = txt.replace(/^[.:)\]]\s*/, "");
+        if (ledMark) txt = txt.replace(/^[.:)\]]\s*/, "");
+        /* "* The pans…", "[*] …", "a. …": the mark typed before the note's words. A mark (no letter and no digit) is read with a
+           space after it; a name is read only with a point or a bracket of its own, never as the note's first word. */
+        if (nt.mark && !led && !ledMark) {
+          const q = nt.mark.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const m2 = (noteIsMark(nt.mark) ? new RegExp("^(?:[\\[(]" + q + "[\\])][.:]?|" + q + "[.:)]?)(?:\\s+|$)") : new RegExp("^(?:[\\[(]" + q + "[\\])][.:]?|" + q + "[.:)])(?:\\s+|$)")).exec(txt);
+          if (m2) { const was = txt; txt = txt.slice(m2[0].length); irAsideDelta("noteMarks", was.replace(/\*+/g, ""), txt.replace(/\*+/g, "")); }
+        }
         /* "3. The coast road…", "[3] …", "**3.** …": the number the note prints before its words (once: never a number its words open with) */
         const m = led ? null : /^(\*{1,3})?\s*([\[(]?)(\d{1,3})([\])]?[.:]?)(?=\s|\*|$)\s*/.exec(txt);
         if (m && (nt.n ? String(Number(m[3])) === nt.n : !!(m[2] || m[4]))) {
@@ -44636,6 +44653,8 @@
             if (k == null) return;
             if (!said && !bareMark.test(a.textContent)) return;
             if (!notes[k].n) notes[k].n = epubNoteNumber(a.textContent);
+            /* BEUK:notemarks — a reference that shows no number of one to three digits shows a mark of the writer's ("*", "†", a letter): it is the note's label */
+            if (!notes[k].n && !notes[k].mark) { const own = irNoteMarkLabel(a.textContent); if (own) notes[k].mark = own; }
             const host = a.parentNode && epubTag(a.parentNode) === "sup" && a.parentNode.childNodes.length === 1 ? a.parentNode : a;
             irAside("noteMarks", host.textContent);
             host.parentNode.replaceChild(pg.doc.createTextNode(irSent("FN", k)), host);
@@ -44927,8 +44946,32 @@
           const num = new Map(), used = new Set();
           (all.match(/\[\^\d{1,3}\]/g) || []).forEach((x) => used.add(x.slice(2, -1)));
           order.forEach((k) => { const n = notes[k].n; if (n && !used.has(n)) { used.add(n); num.set(k, n); } });
+          /* ==== BEUK:notemarks, an EPUB ==== A note whose reference shows a mark of the writer's ("*", "†") keeps that mark as
+             its label. (It took the next free number, and its "*" stayed at the head of its text.) A mark may stand
+             for several notes of one section: each mark means its own note in order (noteBookShown), the notes set
+             at the section's foot in the order they are first marked. Where the page's own pairing could not be read
+             back that way (one of those notes is marked again after another of them), only the first keeps the mark.
+             A mark that is a name (a letter) is kept by the first note that carries it, and is shown under a number
+             as a name is. Every note that could not keep what its reference shows (a number another note of the
+             section has; a mark, as just said) takes the next free number as before, and is now named in the report;
+             so is a name. A note with no text on the page keeps no mark. */
+          const said = (k, why, n) => (ir.noteMarkNotes = ir.noteMarkNotes || []).push(Object.assign({ why, mark: notes[k].n || notes[k].mark, text: notes[k].text, piece: p }, n ? { n } : {}));
+          const marksHere = [];
+          order.forEach((k) => { const mk = notes[k].mark; if (!num.has(k) && mk && !notes[k].missing && notes[k].text && marksHere.indexOf(mk) === -1) marksHere.push(mk); });
+          marksHere.forEach((mk) => {
+            const mine = order.filter((k) => !num.has(k) && notes[k].mark === mk && !notes[k].missing && notes[k].text);
+            if (/^\d+$/.test(mk)) { if (!used.has(mk)) { used.add(mk); num.set(mine[0], mk); } return; }
+            let keep = mine.slice(0, 1);
+            if (noteIsMark(mk) && mine.length > 1) {
+              const seq = [];
+              { const re = fnRe(); let m; while ((m = re.exec(all))) if (mine.indexOf(Number(m[1])) !== -1) seq.push(Number(m[1])); }
+              if (seq.every((k, i) => k === mine[Math.min(i, mine.length - 1)])) keep = mine;
+            }
+            keep.forEach((k) => { num.set(k, mk); if (!noteIsMark(mk)) said(k, "name"); });
+          });
+          /* ==== /BEUK:notemarks, an EPUB ==== */
           let next = 1;
-          order.forEach((k) => { if (num.has(k)) return; while (used.has(String(next))) next++; used.add(String(next)); num.set(k, String(next)); });
+          order.forEach((k) => { if (num.has(k)) return; while (used.has(String(next))) next++; used.add(String(next)); num.set(k, String(next)); if ((notes[k].n || notes[k].mark) && !notes[k].missing && notes[k].text) said(k, "taken", String(next)); });
           let had = false;
           tablesIn(tx).forEach((tb) => { const renum = (c) => String(c).replace(fnRe(), (m, k) => (num.has(Number(k)) ? "[^" + num.get(Number(k)) + "]" : "")); tb.rows = tb.rows.map((r) => r.map(renum)); tb.caption = renum(tb.caption || ""); });
           const lines = tx.replace(fnRe(), (m, k) => (num.has(Number(k)) ? "[^" + num.get(Number(k)) + "]" : "")).split("\n").map((line) => {
@@ -46919,11 +46962,18 @@
             const rr = /\[\^(\d{1,3})\](?!:)/g; while ((m = rr.exec(c))) refs.add(m[1]);
             const dr = /^\[\^?(\d{1,3})\]:/gm; while ((m = dr.exec(c))) defs.add(m[1]);
             noteStats.refs += refs.size; noteStats.found += defs.size;
+            /* BEUK:notemarks — notes under a label that is no number (a mark, "*", may stand for several notes of the section: each definition is a note) */
+            const ownRefs = new Map(), ownDefs = new Map();
+            const or = /\[\^(?!\d+\])([^\]\s]+)\](?!:)/g; while ((m = or.exec(c))) ownRefs.set(m[1], (ownRefs.get(m[1]) || 0) + 1);
+            const od = /^\[\^(?!\d+\])([^\]\s]+)\]:/gm; while ((m = od.exec(c))) ownDefs.set(m[1], (ownDefs.get(m[1]) || 0) + 1);
+            ownDefs.forEach((n, label) => { const marked = Math.min(n, ownRefs.get(label) || 0); noteStats.found += n; noteStats.refs += marked; noteStats.mapped += marked; for (let k = marked; k < n; k++) noteStats.orphanNotes.push({ n: label, text: "", secId: s.id }); });
+            ownRefs.forEach((n, label) => { if (!ownDefs.has(label)) noteStats.orphanRefs.push(label); });
             defs.forEach((n) => { if (refs.has(n)) noteStats.mapped++; else noteStats.orphanNotes.push({ n, text: "", secId: s.id }); });
             refs.forEach((n) => { if (!defs.has(n)) noteStats.orphanRefs.push(n); });
           });
           /* BEUK:epubimport — an EPUB's note that no reference in the text points to (its mark stood in a table that was left out, say) is kept as a plain paragraph where it stood: found, not linked, and named */
           (ir.epubNoteOrphans || []).forEach((o) => { noteStats.found++; noteStats.orphanNotes.push({ n: o.n, text: o.text, secId: o.piece && o.piece._placed ? o.piece._placed.id : null }); });
+          (ir.noteMarkNotes || []).forEach((o) => markNotes.push({ why: o.why, mark: o.mark, n: o.n, text: o.text, secId: o.piece && o.piece._placed ? o.piece._placed.id : null })); /* BEUK:notemarks */
         }
         /* BEUK:notelabels — a Markdown file's notes go into the book under the labels the file typed. The numbers
            irMdNotes gave them were the import's own working marks; none reaches a page. Each is written back as its
@@ -79327,7 +79377,8 @@
               if (!/^\| Depth at the bar\[\^3\] \| six \|$/m.test(one) || /* BEUK:tableimport — a row of its table block */ !/^\[\^3\]: Fathoms, not metres\.$/m.test(one) || /^\[3\] /m.test(one)) bad.push("the note marked in a table's cell is not linked in its row: " + JSON.stringify(one.slice(-220)));
               if (!/^\[4\] A note nothing points to\.$/m.test(one)) bad.push("the unmatched note was not kept as a plain paragraph: " + JSON.stringify(one.slice(-220)));
               if (!/had turned\.\[\^1\] See the first note again\.\[\^2\]/.test(two) || !/^\[\^1\]: A north wind, by the vane\.$/m.test(two)) bad.push("chapter 2's note 1 is not its own: " + JSON.stringify(two.slice(0, 200)));
-              if (!/came inland\.\[\^3\]/.test(two) || !/^\[\^3\]: A note the page keeps at its own foot\.$/m.test(two) || count(two, /A note the page keeps/g) !== 1) bad.push("the note marked only by its reference was not lifted: " + JSON.stringify(two.slice(-200)));
+              /* BEUK:notemarks — its reference shows "*", and so does the book (it was "[^3]", the next free number) */
+              if (!/came inland\.\[\^\*\]/.test(two) || !/^\[\^\*\]: A note the page keeps at its own foot\.$/m.test(two) || count(two, /A note the page keeps/g) !== 1) bad.push("the note marked only by its reference was not lifted under its own mark: " + JSON.stringify(two.slice(-200)));
               if (/^\[\^2\]:/m.test(two)) bad.push("a note was invented for the reference that has none");
               const nt = rep.items.find((it) => it.kind === "notes");
               const d = nt ? nt.data : {};

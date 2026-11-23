@@ -523,14 +523,15 @@ describe('notes from formats with no typed label: what each stores and shows tod
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('EPUB: a note keeps the number its page showed (5, 9); a mark that is no number ("*") takes the next free number, its "*" left in the note\'s text', async () => {
+  it('EPUB: a note keeps the number its page showed (5, 9), and a mark that is no number ("*") is the note\'s label (BEUK:notemarks; test/import-epub-note-marks.test.ts)', async () => {
     const body = '<h1>Chapter 1: Dawn</h1><p>The caravan left<a epub:type="noteref" href="#fn5" id="r5"><sup>5</sup></a> at dawn, and<a epub:type="noteref" href="#fna" id="ra"><sup>*</sup></a> on, and<a epub:type="noteref" href="#fn9" id="r9"><sup>9</sup></a>.</p>'
       + '<aside epub:type="footnote" id="fn5"><p>5. Salt, by the sack.</p></aside><aside epub:type="footnote" id="fna"><p>* The pans of the coast.</p></aside><aside epub:type="footnote" id="fn9"><p>9. Nine.</p></aside>';
     const g = await importFile('notes.epub', await epub([{ title: 'Chapter 1: Dawn', body }]), '');
-    // The writer's 5 and 9 are what the book shows. OPEN: the writer's "*" is shown as "[1]" (the mark itself gone from the text, the "*" that opens the note kept).
+    // The writer's 5, * and 9 are what the book shows. (Measured 2026-11-22, before BEUK:notemarks: the "*" shown as "[1]", the mark itself gone
+    // from the text and the "*" that opens the note kept in its words.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^5] at dawn, and[^1] on, and[^9].', '[^5]: Salt, by the sack.', '[^1]: * The pans of the coast.', '[^9]: Nine.'],
-      marks: ['[5]', '[1]', '[9]'], notes: ['[5] Salt, by the sack.', '[1] * The pans of the coast.', '[9] Nine.'] });
+      stored: ['The caravan left[^5] at dawn, and[^*] on, and[^9].', '[^5]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^9]: Nine.'],
+      marks: ['[5]', '[*]', '[9]'], notes: ['[5] Salt, by the sack.', '[*] The pans of the coast.', '[9] Nine.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
