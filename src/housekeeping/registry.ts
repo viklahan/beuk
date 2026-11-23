@@ -3261,7 +3261,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.md.footnote-labels',
     title:
-      'Markdown footnotes under any label become Beuk notes, numbered in order of first reference and set in the section of their reference; a reference without a note and a note without a reference are reported; a file already numbered is left as typed',
+      'Markdown footnotes under any label are stored under the label the writer typed, set in the section of their reference and shown under a number worked out in order of first reference; a reference without a note and a note without a reference are reported by the label; a file of numbers is left as typed',
     kind: 'client-only',
     reason: 'The Markdown reader (BEUK:mdimport) and the import report run in the studio; the server never sees the file.',
   },

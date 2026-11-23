@@ -55,7 +55,7 @@ export const WRAP_CLOSURE: readonly string[] = [
   'imRealTitle', 'imageTokensIn', 'langPack', 'lucideKey', 'mdLinkRe', 'normalizeCoverRecipe',
   'normalizeCustomFont', 'normalizeScenes', 'normalizeSection', 'normalizeWrap', 'normalizeWrapBack',
   'normalizeWrapBg', 'normalizeWrapColor', 'normalizeWrapFont', 'normalizeWrapIcon', 'normalizeWrapSpine',
-  'olCleanTag', 'olSectionFields', 'olTagKey', 'paintCoverBackground', 'paintCoverScene',
+  'noteLeadRe', 'noteMarkRe', 'olCleanTag', 'olSectionFields', 'olTagKey', 'paintCoverBackground', 'paintCoverScene',
   'paintCoverTexture', 'paintPanelBackground', 'parseImageLine', 'printBaseFontPt', 'printMargins',
   'printMarginsAuto', 'printPageEstimate', 'printPictureBookOn', 'printTextArea', 'renderCoverCanvas',
   'renderWrapCanvas', 'sectionProseWords', 'sectionWords', 'sectionWordsMemo', 'slug', 'spineDirection', 't',

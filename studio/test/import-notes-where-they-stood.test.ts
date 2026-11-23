@@ -74,11 +74,12 @@ describe('a note the file defines and never marks stays where the file wrote it,
     const { rep, secs } = await importText('unmarked.md', md);
     const c1 = chapter(secs, '1'), c2 = chapter(secs, '2');
     // each chapter: its text, the unmarked note where its definition stood, the marked note linked (Beuk sets a linked note's definition at the section's end)
-    expect(blocks(c1)).toEqual(['The caravan left[^1] at dawn.', 'Sent from Vienna, unmarked.', 'The last line of dawn.', '[^1]: Salt, by the sack.']);
-    expect(blocks(c2)).toEqual(['The pans lay white[^2].', 'Sent from Graz, unmarked.', '[^2]: The pans of the coast.']);
-    // no number made up for an unmarked note, anywhere in the book
+    // BEUK:notelabels — under the label the file typed: these two lines held "[^1]" and "[^2]", the numbers the import used to write over the labels
+    expect(blocks(c1)).toEqual(['The caravan left[^salt] at dawn.', 'Sent from Vienna, unmarked.', 'The last line of dawn.', '[^salt]: Salt, by the sack.']);
+    expect(blocks(c2)).toEqual(['The pans lay white[^pans].', 'Sent from Graz, unmarked.', '[^pans]: The pans of the coast.']);
+    // no number made up for any note, anywhere in the book
     const all = secs.map((s) => s.content).join('\n');
-    expect(all.match(/\[\^?[34]\]/g) || [], 'a number the file never wrote').toEqual([]);
+    expect(all.match(/\[\^?\d+\]/g) || [], 'a number the file never wrote').toEqual([]);
     expect(all).not.toMatch(/telex-[ab]/);
     // the report: one item per unmarked note, by the writer's own label and the chapter it stands in
     const orphans = rep.items.filter((it) => it.kind === 'noteOrphan');
@@ -246,9 +247,12 @@ describe('a note the file defines and never marks stays where the file wrote it,
     const where = stations.map((code) => secs.filter((s) => s.content.indexOf('Teletype Provenance (' + code + ')') !== -1).map((s) => s.id));
     expect(where).toEqual(chapters.map((c) => [c.id]));
     expect(chapters.map((c) => (c.content.match(/Teletype Provenance \(/g) || []).length)).toEqual(new Array(12).fill(1));
-    // no number made up for them: the book's note numbers stop at 109
+    // no number made up for them. BEUK:notelabels — nor for any other note: the book stores the file's own labels
+    // ("[^fn-1]" …), 109 of them marked and defined, and no "[^n]" of Beuk's (this line asked that the numbers stop at 109)
     const all = secs.map((s) => s.content).join('\n');
-    expect((all.match(/\[\^?(\d{1,3})\]/g) || []).map((x) => Number(x.replace(/\D/g, ''))).filter((n) => n > 109)).toEqual([]);
+    expect(all.match(/\[\^\d+\]/g) || []).toEqual([]);
+    expect(new Set(all.match(/\[\^fn-\d+\](?!:)/g) || []).size).toBe(109);
+    expect((all.match(/^\[\^fn-\d+\]:/gm) || []).length).toBe(109);
     expect(all).not.toMatch(/\[1(?:1\d|20|21)\] \*\*Teletype/);
     // the report names each by the writer's own label and its chapter
     const orphans = rep.items.filter((it) => it.kind === 'noteOrphan');
