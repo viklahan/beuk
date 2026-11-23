@@ -1,3 +1,4 @@
+import { NOTE_DEF_BLOCK_RE, NOTE_DEF_RE, noteLabelOf, noteNumberRe, notesAsShown } from '../book/notes.js';
 import { sanitizeHtml } from './sanitize.js';
 
 /**
@@ -115,8 +116,11 @@ function inline(text: string, notes: NoteCtx): string {
   s = esc(s);
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
-  s = s.replace(/\[\^(\d{1,3})\]|\[(\d{1,3})\]/g, (_m, a: string, b: string) => {
-    const n = a || b;
+  /* BEUK:notelabels — the section's text arrives with each label that has a note written as the number it shows
+     (notesAsShown). A mark still under a name here is one no note answers: it is no note, and stays the writer's
+     text exactly as typed. A number with no note is raised as it always was. */
+  s = s.replace(noteNumberRe(), (_m, cap: string) => {
+    const n = noteLabelOf(cap);
     if (notes.defined.has(n)) {
       const idAttr = notes.seen.has(n) ? '' : ` id="${notes.prefix}fnref${n}"`;
       notes.seen.add(n);
@@ -165,15 +169,15 @@ interface RawSection {
   scenes: Array<{ at: number; imageId: string; alt: string; caption: string }>;
 }
 
-function sectionBody(sec: RawSection, index: number, ctx: RenderCtx): string {
-  const text = tidy(sec.content);
+function sectionBody(sec: RawSection, index: number, ctx: RenderCtx, shown: string): string {
+  const text = tidy(shown);
   if (!text) return '';
   const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
   const prefix = `s${index}-`;
   const defined = new Set<string>();
   for (const b of blocks) {
-    const dm = /^\[\^?(\d{1,3})\]:/.exec(b);
-    if (dm) defined.add(dm[1]);
+    const dm = NOTE_DEF_RE.exec(b);
+    if (dm) defined.add(noteLabelOf(dm[1]));
   }
   const notes: NoteCtx = { prefix, defined, seen: new Set() };
   const endnotes: Array<{ n: string; text: string; p: number }> = [];
@@ -190,9 +194,9 @@ function sectionBody(sec: RawSection, index: number, ctx: RenderCtx): string {
       out.push(`<div class="scene-break" data-p="${p}">❦</div>`);
       return;
     }
-    const note = /^\[\^?(\d{1,3})\]:\s*([\s\S]+)$/.exec(block);
+    const note = NOTE_DEF_BLOCK_RE.exec(block);
     if (note) {
-      endnotes.push({ n: note[1], text: note[2], p });
+      endnotes.push({ n: noteLabelOf(note[1]), text: note[2], p });
       return;
     }
     const lines = block.split('\n');
@@ -307,9 +311,12 @@ export function renderSnapshot(
   const meta = (doc.meta && typeof doc.meta === 'object' ? doc.meta : doc) as Record<string, unknown>;
   const ctx: RenderCtx = { images: collectImages(doc), used: new Set() };
   const sections: SnapshotSection[] = [];
-  normalizeSections(doc).forEach((sec, index) => {
+  const all = normalizeSections(doc);
+  /* BEUK:notelabels — the notes are numbered through the whole book, as the studio numbers them (every section, in order) */
+  const shown = notesAsShown(all.map((sec) => sec.content));
+  all.forEach((sec, index) => {
     if (!sec.included || SKIP_TYPES.has(sec.type)) return;
-    let body = sectionBody(sec, index, ctx);
+    let body = sectionBody(sec, index, ctx, shown[index] ?? sec.content);
     const plate =
       sec.plateId && sec.plateAlt.trim() ? figure(sec.plateId, sec.plateAlt, 'plate', ctx) : '';
     if (!body && !plate) return; // nothing to read

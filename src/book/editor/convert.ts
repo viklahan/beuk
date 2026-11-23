@@ -33,8 +33,10 @@ const CONTAINER_OPEN_RE = /^[ \t]*:::[ \t]+([A-Za-z][A-Za-z0-9-]*)(?:[ \t]+(.*?)
 const CONTAINER_CLOSE_RE = /^[ \t]*:::[ \t]*$/;
 const SCENE_BREAK_SRC_RE = /^[ \t]*([*#]{3,}|-{3,}|_{3,}|#)[ \t]*$/;
 const ORNAMENT_RE = /^(\*\*\*|❦|⁂)$/;
-const NOTE_DEF_LINE_RE = /^\[\^?\d{1,3}\]:/;
-const NOTE_DEF_RE = /^\[(\^?)(\d{1,3})\]:(\s*)([\s\S]+)$/;
+/* BEUK:notelabels — a note keeps the label the writer typed: "[^label]" under any label (no space, no "]"), or the
+   bare "[12]" of one to three digits (client/index.html noteMarkRe and NOTE_DEF_RE). */
+const NOTE_DEF_LINE_RE = /^\[(?:\^[^\]\s]+|\d{1,3})\]:/;
+const NOTE_DEF_RE = /^\[(\^[^\]\s]+|\d{1,3})\]:(\s*)([\s\S]+)$/;
 const IMAGE_LINE_RE = /^!\[([^\]]*)\]\(img:([A-Za-z0-9-]+)(\|full)?(?:([ \t]+)(["“”])([^"“”\n]*)(["“”]))?\)$/;
 const LIST_BULLET = /^[-*•]\s+/;
 const LIST_NUMBER = /^(\d{1,3})[.)]\s+/;
@@ -43,7 +45,7 @@ const REDACT_RE = /\|\|(?=[^|\s])([^|\n]*?[^|\s])\|\|/g;
 const LINK_RE = /(?<!!)\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)[^\s()<>]+(?:\([^\s()<>]*\)[^\s()<>]*)*)\)/gi;
 const STRONG_RE = /\*\*([^*]+)\*\*/g;
 const EM_RE = /\*([^*\n]+)\*/g;
-const REF_RE = /\[\^(\d{1,3})\]|\[(\d{1,3})\]/g;
+const REF_RE = /\[(?:\^[^\]\s]+|\d{1,3})\]/g;
 const NOTE_LINK_RE = /\[([^\]]+)\]\(note:([a-z0-9-]+)\)/g;
 
 /** Container kinds whose content 1.0 sets as ordinary blocks (CONTAINER_KINDS center/right: cx.blocks(seg.text)). Other kinds are rawBlock. */
@@ -319,7 +321,7 @@ function buildBlock(B: string, stats?: ConvertStats): Node {
   const single = lines.length === 1;
   if (single && (ORNAMENT_RE.test(B) || SCENE_BREAK_SRC_RE.test(B))) return S.node('sceneBreak', { raw: B });
   const nd = NOTE_DEF_RE.exec(B);
-  if (nd) return S.node('footnoteDef', { caret: nd[1] === '^', n: nd[2], gap: nd[3] }, inlineNodes(nd[4]!, false));
+  if (nd) { const caret = nd[1]!.startsWith('^'); return S.node('footnoteDef', { caret, n: caret ? nd[1]!.slice(1) : nd[1], gap: nd[2] }, inlineNodes(nd[3]!, false)); }
   if (single) {
     const im = IMAGE_LINE_RE.exec(B);
     if (im) {

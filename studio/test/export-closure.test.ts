@@ -42,7 +42,7 @@ function byName(statements: readonly ts.Statement[], sf: ts.SourceFile): Map<str
 describe("wave 5a: the browser's EPUB code is 1.0's, the same text as the server's EPUB_CLOSURE (constraint 52)", () => {
   it('every EPUB_CLOSURE name the browser does not supply is lifted, and every EPUB_ROOT is a root of the browser closure', () => {
     const epub = epubList('EPUB_CLOSURE');
-    expect(epub.length).toBe(317); // + looseListBlocks (BEUK:looselists: a list parted by blank lines is read as one list); 301 + picDataSrc (wave 7b, 1.0 fix 3d34720) + PLATE_FITS, plateFitOf, bookHasWholePlate (BEUK:platefit) + the table block's 9 (BEUK:table: TABLE_BAR_RE, TABLE_NUM_RE, tableCellBare, tableCellHtml, tableCellShort, tableHasHeader, tableNumericCols, tableParts, tableRowCells) + countWordsClean, wordsOfClean (BEUK:importtally: countWordsRaw split, its result unchanged)
+    expect(epub.length).toBe(329); // 317 + the note labels' 12 (BEUK:notelabels: NOTE_DEF_RE, NOTE_NAMED_RE, noteBookShown, noteDefLabel, noteDefOf, noteLabelOf, noteLeadRe, noteMarkRe, noteMarksIn, noteNumberRe, notesAsShown, notesShownCache: a note is read by the label the writer typed, and the typeset page shows the number worked out from it); + looseListBlocks (BEUK:looselists: a list parted by blank lines is read as one list); 301 + picDataSrc (wave 7b, 1.0 fix 3d34720) + PLATE_FITS, plateFitOf, bookHasWholePlate (BEUK:platefit) + the table block's 9 (BEUK:table: TABLE_BAR_RE, TABLE_NUM_RE, tableCellBare, tableCellHtml, tableCellShort, tableHasHeader, tableNumericCols, tableParts, tableRowCells) + countWordsClean, wordsOfClean (BEUK:importtally: countWordsRaw split, its result unchanged)
     const browserOwn = epub.filter((n) => SUPPLIED_BY_BROWSER.test(n));
     expect(browserOwn.sort()).toEqual(['$', 'UI_PLURAL_FORMS', 'UI_STRINGS', 't', 'tCountForm', 'uiLangState', 'uiPluralCategory', 'uiPluralRulesCache'].sort());
     expect(CLOSURE_SUPPLIED).toEqual(expect.arrayContaining(['t', 'UI_STRINGS', 'uiLangState', '$']));
@@ -75,7 +75,7 @@ describe("wave 5a: the browser's EPUB code is 1.0's, the same text as the server
       if (s.get(n) !== b.get(n)) unequal.push(n);
     }
     expect(unequal).toEqual([]);
-    expect(epub.length).toBe(309); // + looseListBlocks (BEUK:looselists); 293 + picDataSrc (wave 7b, 1.0 fix 3d34720) + PLATE_FITS, plateFitOf, bookHasWholePlate (BEUK:platefit) + the table block's 9 (BEUK:table: TABLE_BAR_RE, TABLE_NUM_RE, tableCellBare, tableCellHtml, tableCellShort, tableHasHeader, tableNumericCols, tableParts, tableRowCells) + countWordsClean, wordsOfClean (BEUK:importtally)
+    expect(epub.length).toBe(321); // 309 + the note labels' 12 (BEUK:notelabels); + looseListBlocks (BEUK:looselists); 293 + picDataSrc (wave 7b, 1.0 fix 3d34720) + PLATE_FITS, plateFitOf, bookHasWholePlate (BEUK:platefit) + the table block's 9 (BEUK:table: TABLE_BAR_RE, TABLE_NUM_RE, tableCellBare, tableCellHtml, tableCellShort, tableHasHeader, tableNumericCols, tableParts, tableRowCells) + countWordsClean, wordsOfClean (BEUK:importtally)
     expect(b.get('buildEpubBlob')).toBe(s.get('buildEpubBlob'));
     expect(b.get('buildEpubBlob')).toMatch(/new JSZip\(\)/);
   });
