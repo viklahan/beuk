@@ -65,6 +65,36 @@
       "name": "a definition on a line of a container is a definition; one set in from the margin in the middle of a paragraph is not, so its label has no note and stays as typed",
       "sections": ["::: texts\nAna: Meet me at the pier[^p]\n[^p]: The north pier.\n:::\n\nA line\n  [^q]: not a note, and[^q] is marked twice."],
       "shown": ["::: texts\nAna: Meet me at the pier[^1]\n[^1]: The north pier.\n:::\n\nA line\n  [^q]: not a note, and[^q] is marked twice."]
+    },
+    {
+      "name": "BEUK:notemarks — a mark of the writer's (a label with no letter and no digit) is shown as typed and takes no number: it is handed on keyed (the mark, U+E080, its place among the section's notes of that mark); a name beside it takes the next number as if the mark were not there",
+      "sections": ["One[^1] two[^*] three[^†] four[^salt].\n\n[^1]: First.\n\n[^*]: Star.\n\n[^†]: Dagger.\n\n[^salt]: Salt."],
+      "shown": ["One[^1] two[^*\uE0801] three[^†\uE0801] four[^2].\n\n[^1]: First.\n\n[^*\uE0801]: Star.\n\n[^†\uE0801]: Dagger.\n\n[^2]: Salt."]
+    },
+    {
+      "name": "BEUK:notemarks — two notes of one mark, both marked in one paragraph: each mark means its own note, in order",
+      "sections": ["Left[^*] and on[^*].\n\n[^*]: The first.\n\n[^*]: The second."],
+      "shown": ["Left[^*\uE0801] and on[^*\uE0802].\n\n[^*\uE0801]: The first.\n\n[^*\uE0802]: The second."]
+    },
+    {
+      "name": "BEUK:notemarks — one mark through a chapter: the definitions that stand together answer the marks waiting before them (two marks and one definition: a note marked twice; two marks and two definitions: one each); a mark with no definition after it means the last before",
+      "sections": ["One[^*] and again[^*].\n\n[^*]: First.\n\nTwo[^*] three[^*].\n\n[^*]: Second.\n\n[^*]: Third.\n\nAfter the last[^*]."],
+      "shown": ["One[^*\uE0801] and again[^*\uE0801].\n\n[^*\uE0801]: First.\n\nTwo[^*\uE0802] three[^*\uE0803].\n\n[^*\uE0802]: Second.\n\n[^*\uE0803]: Third.\n\nAfter the last[^*\uE0803]."]
+    },
+    {
+      "name": "BEUK:notemarks — a mark in a chapter that does not define it means the next definition on through the book, else the last one before; the count that tells notes apart starts again in every chapter",
+      "sections": ["Early[^*].", "Here[^*] and[^*].\n\n[^*]: A.\n\n[^*]: B.", "Late[^*]."],
+      "shown": ["Early[^*\uE0801].", "Here[^*\uE0801] and[^*\uE0802].\n\n[^*\uE0801]: A.\n\n[^*\uE0802]: B.", "Late[^*\uE0802]."]
+    },
+    {
+      "name": "BEUK:notemarks — the line between a mark and a name: a mark no note answers is the writer's text, as typed; a mark of several characters is a mark; a letter, a digit beside a letter, a name that holds a mark's character are names and take numbers",
+      "sections": ["Lost[^*] and[^**] kept[^‡], names[^a] and[^1a] and[^fn-7] and[^x*].\n\n[^**]: Two stars.\n\n[^‡]: Double dagger.\n\n[^a]: A.\n\n[^1a]: One a.\n\n[^fn-7]: Seven.\n\n[^x*]: X star."],
+      "shown": ["Lost[^*] and[^**\uE0801] kept[^‡\uE0801], names[^1] and[^2] and[^3] and[^4].\n\n[^**\uE0801]: Two stars.\n\n[^‡\uE0801]: Double dagger.\n\n[^1]: A.\n\n[^2]: One a.\n\n[^3]: Seven.\n\n[^4]: X star."]
+    },
+    {
+      "name": "BEUK:notemarks — a number the writer typed is kept from every name and is no concern of a mark; a mark inside a log is the writer's text",
+      "sections": ["A[^*] b[^salt] c[^1].\n\n::: log\n09:14 [^*] raw\n:::\n\n[^*]: Star.\n\n[^salt]: Salt.\n\n[^1]: One."],
+      "shown": ["A[^*\uE0801] b[^2] c[^1].\n\n::: log\n09:14 [^*] raw\n:::\n\n[^*\uE0801]: Star.\n\n[^2]: Salt.\n\n[^1]: One."]
     }
   ]
 }

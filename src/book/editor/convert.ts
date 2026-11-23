@@ -257,7 +257,13 @@ function inlineNodes(s: string, joinLines: boolean): Node[] {
   const outer = maskRanges(masked, links);
 
   // 3. emphasis, 4. footnote refs, 5. note links (left raw)
-  emph(outer, 0, n, joinLines, flags, links.length ? new Set(links.map(([x, y]) => x + ':' + y)) : null);
+  /* BEUK:notemarks — a note's mark that holds a "*" ("[^*]": a mark of the writer's, shown as typed) is set aside
+     while the emphasis is read, as 1.0's inlineMd sets a note's mark aside: its "*" is the mark, never the opening
+     or the close of an italic. (This model reads one block at a time and cannot know whether a note answers the
+     mark; 1.0 sets aside only a mark a note answers.) */
+  const starRefs: [number, number][] = [];
+  if (outer.indexOf('[^') !== -1 && outer.indexOf('*') !== -1) for (const m of outer.matchAll(REF_RE)) if (m[0].indexOf('*') !== -1) starRefs.push([m.index, m.index + m[0].length]);
+  emph(starRefs.length ? maskRanges(outer, starRefs) : outer, 0, n, joinLines, flags, links.length ? new Set(links.map(([x, y]) => x + ':' + y)) : null);
   if (outer.indexOf('[') !== -1) {
     for (const m of outer.matchAll(REF_RE)) for (let i = m.index; i < m.index + m[0].length; i++) flags[i]! |= F_REF;
     if (outer.indexOf('](note:') !== -1) for (const m of outer.matchAll(NOTE_LINK_RE)) for (let i = m.index; i < m.index + m[0].length; i++) flags[i]! |= F_RAW;

@@ -10,6 +10,12 @@
      - a mark under a label that is no number and that no definition anywhere in the book answers is no note (the
        owner, 2026-11-22: Beuk does not invent a number for something that is not a note): it takes no number and
        is set exactly as typed. A NUMBER with no note is raised as it always was ("[n]", linked to nothing).
+   BEUK:notemarks — a label with no letter and no digit in it ("*", "†", "‡") is a MARK of the writer's: it is shown
+   as typed and takes no number. Two notes of one mark in a section are told apart in order (the studio's rule:
+   the definitions that stand together answer the marks waiting before them, the first definition the first mark;
+   marks left over mean the last of them; a mark with none after it means the last before). Each such note is
+   handed on as "[^" + mark + NOTE_KEY + k + "]" (k: its place among the section's notes of that mark), so a
+   surface pairs it as it pairs a number; noteMarkShown is what a reader sees and noteIdOf the id it makes.
    The beta-reader reading copy (src/shares/render.ts) is the one server surface that sets a note's number itself;
    every other one runs the studio's own code. The two copies are held to one table of cases,
    tests/fixtures/note-labels.json (tests/note-labels.test.ts here, studio/test/note-labels-as-typed.test.ts there). */
@@ -18,7 +24,18 @@
 export const noteMarkRe = (): RegExp => /\[(\^[^\]\s]+|\d{1,3})\]/g;
 /** A mark as a surface sets one, once the text has come through notesAsShown: under a number ("[^12]", or the bare
  *  "[12]"); $1 as noteMarkRe's. A mark still under a name there is one no note answers: the writer's text. */
-export const noteNumberRe = (): RegExp => /\[(\^\d+|\d{1,3})\]/g;
+export const noteNumberRe = (): RegExp => /\[(\^\d+|\^[^\]\s]+\uE080\d+|\d{1,3})\]/g;
+/** BEUK:notemarks — parts a mark of the writer's from the count that tells two notes of one mark apart in a section: never stored, never shown. */
+export const NOTE_KEY = '\uE080';
+/** A label that is a mark: no letter and no digit in it. */
+export const noteIsMark = (label: string): boolean => /^[^\p{L}\p{N}\s\]\uE080]+$/u.test(label);
+/** What a reader sees for a label a surface was handed: the number, or the writer's mark. */
+export const noteMarkShown = (label: string): string => { const at = label.indexOf(NOTE_KEY); return at < 0 ? label : label.slice(0, at); };
+/** The part of an id a label makes: a number as it is; a mark by its characters' code points ("m2a-1" for the first "*"). */
+export const noteIdOf = (label: string): string => {
+  const at = label.indexOf(NOTE_KEY);
+  return at < 0 ? label : 'm' + Array.from(label.slice(0, at)).map((ch) => ch.codePointAt(0)!.toString(16)).join('-') + '-' + label.slice(at + 1);
+};
 /** A definition opens the block: "[^label]:" (or "[12]:"). */
 export const NOTE_DEF_RE = /^\[(\^[^\]\s]+|\d{1,3})\]:/;
 /** A definition block whole: $1 "^label" or the bare number, $2 its text. */
@@ -89,8 +106,25 @@ export function notesAsShown(contents: readonly string[]): string[] {
   });
   /* the note a mark means; undefined where no definition anywhere in the book answers its label: that mark is no
      note, takes no number and is left exactly as typed */
+  /* BEUK:notemarks — a mark of the writer's in a section that defines it: each mark its own note, in order */
+  const own = new Map<Mark, Mark>();
+  defsOf.forEach((by, si) => by.forEach((defs, label) => {
+    if (!noteIsMark(label)) return;
+    defs.forEach((d, k) => { d.shown = label + NOTE_KEY + (k + 1); });
+    const seq = marks[si]!.filter((m) => m.label === label);
+    let waiting: Mark[] = [], last: Mark | null = null, i = 0;
+    while (i < seq.length) {
+      if (!seq[i]!.def) { waiting.push(seq[i++]!); continue; }
+      const run: Mark[] = [];
+      while (i < seq.length && seq[i]!.def) run.push(seq[i++]!);
+      waiting.forEach((m, k) => own.set(m, run[Math.min(k, run.length - 1)]!));
+      waiting = []; last = run[run.length - 1]!;
+    }
+    waiting.forEach((m) => own.set(m, last!));
+  }));
   const noteOf = (si: number, mi: number, label: string): Note | undefined => {
     const here = defsOf[si]!.get(label);
+    if (here && own.has(marks[si]![mi]!)) return own.get(marks[si]![mi]!);
     if (here) return here.find((d) => d.mi! >= mi) ?? here[here.length - 1]!;
     for (let j = si + 1; j < defsOf.length; j++) { const d = defsOf[j]!.get(label); if (d) return d[0]!; }
     for (let j = si - 1; j >= 0; j--) { const d = defsOf[j]!.get(label); if (d) return d[d.length - 1]!; }

@@ -67,3 +67,34 @@ test('the EPUB: a book under the writer\'s labels builds the very chapter pages 
   assert.match(all, /<p class="endnote" id="s\d+-fn4" epub:type="endnote">[\s\S]*?First\.<\/p><p class="endnote" id="s\d+-fn5" epub:type="endnote">[\s\S]*?Second\.<\/p>/);
   assert.match(all, /<p class="endnote" id="s\d+-fn6" epub:type="endnote">/);
 });
+
+/* BEUK:notemarks — a note under a mark of the writer's ("*", "†": a label with no letter and no digit) is shown under
+   that mark, and takes no number. Two "*" notes of one chapter are two notes, each mark linked to its own; the ids
+   are made from the mark's code points, so they are names an EPUB allows and no two are alike. Made-up text. */
+test('the EPUB: a note the writer marked "*" is shown as "*", each mark linked to its own note by an id an EPUB allows', async () => {
+  const sb = loadEpubClosure(html, CLIENT);
+  const marked = bookWith([
+    'The caravan left[^1] at dawn, and[^*] on *in a hurry*, and[^†] again, and[^*] once more, by[^salt] the gate.\n\n[^1]: Salt, by the sack.\n\n[^*]: The pans of the coast.\n\n[^†]: The dagger note.\n\n[^*]: The second star.\n\n[^salt]: The gate has its own.',
+    'Noon[^*] and lost[^‡].\n\n[^*]: The star of noon.',
+  ]);
+  const out = await sb.files(epubState(marked, 'generic'), { lang: 'en' });
+  const all = pages(out.files);
+  const one = all.find((p) => p[1].includes('The second star.'))![1], two = all.find((p) => p[1].includes('The star of noon.'))![1];
+  const marks = (x: string) => [...x.matchAll(/<a class="noteref" epub:type="noteref"(?: id="[^"]*")? href="#s\d+-([^"]*)"><sup class="endnote-ref">([^<]*)<\/sup><\/a>/g)].map((m) => [m[2], m[1]]);
+  // the writer's 1, the writer's marks as typed, and the one name ("salt") under 2, the next number, as if the marks were not there
+  assert.deepEqual(marks(one), [['[1]', 'fn1'], ['[*]', 'fnm2a-1'], ['[†]', 'fnm2020-1'], ['[*]', 'fnm2a-2'], ['[2]', 'fn2']]);
+  assert.deepEqual([...one.matchAll(/<p class="endnote" id="s\d+-([^"]*)" epub:type="endnote"><a class="note-back" href="#s\d+-([^"]*)"[^>]*><sup>([^<]*)<\/sup><\/a> ([^<]*)/g)].map((m) => [m[1], m[2], m[3], m[4]]), [
+    ['fn1', 'fnref1', '[1]', 'Salt, by the sack.'], ['fnm2a-1', 'fnrefm2a-1', '[*]', 'The pans of the coast.'], ['fnm2020-1', 'fnrefm2020-1', '[†]', 'The dagger note.'],
+    ['fnm2a-2', 'fnrefm2a-2', '[*]', 'The second star.'], ['fn2', 'fnref2', '[2]', 'The gate has its own.']]);
+  // the next chapter's "*" starts again; its "‡", which no note answers, is the writer's text as typed
+  assert.deepEqual(marks(two), [['[*]', 'fnm2a-1']]);
+  assert.match(two, / lost\[\^‡\]\.<\/p>/);
+  assert.deepEqual([...one.matchAll(/<em>([^<]*)<\/em>/g)].map((m) => m[1]), ['in a hurry']);
+  for (const [name, page] of all) {
+    const ids = [...page.matchAll(/ id="([^"]*)"/g)].map((m) => m[1]!);
+    assert.equal(new Set(ids).size, ids.length, `${name}: an id used twice`);
+    for (const id of ids) assert.match(id, /^[A-Za-z_][A-Za-z0-9._-]*$/, `${name}: "${id}" is no name an XML id allows`);
+    for (const h of [...page.matchAll(/ href="#([^"]*)"/g)].map((m) => m[1]!)) assert.ok(ids.includes(h), `${name}: a link to "#${h}", which is on no page`);
+    assert.equal(page.includes('\uE080'), false, `${name}: the working key reached a page`);
+  }
+});
