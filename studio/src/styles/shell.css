@@ -322,6 +322,10 @@ body.zen .pane-fold { display: none; }
 /* wave 2a (B6): headings, quotes and lists as 1.0's preview sets them, quietly */
 .ms-editor .ms-heading { margin: .4em 0 .9em; font-size: 1.15em; font-weight: 600; }
 .ms-editor h3.ms-heading { font-size: 1.02em; }
+/* BEUK:headdepths: the three depths below (h4, h5, h6), the text's size, told apart by their cut as the page tells them */
+.ms-editor h4.ms-heading, .ms-editor h5.ms-heading, .ms-editor h6.ms-heading { font-size: 1em; }
+.ms-editor h5.ms-heading, .ms-editor h6.ms-heading { font-style: italic; }
+.ms-editor h6.ms-heading { font-weight: 400; }
 .ms-editor .ms-quote { margin: 0 0 .9em; padding-inline-start: 14px; border-inline-start: 3px solid var(--line-2); font-style: italic; }
 .ms-editor .ms-quote .ms-qline { margin: 0; }
 .ms-editor .ms-list { margin: 0 0 .9em; padding-inline-start: 1.6em; }

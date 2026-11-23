@@ -4904,8 +4904,7 @@ milestone — no server changes needed.
 After every import (`.docx`, `.md`, `.txt`) the studio opens a
 **"Here's what we changed"** report, grouped and counted, with
 before/after snippets. It records chapter splits (and the heading or
-line each came from — Heading 2 is reported as promoted, Heading 3–6
-as demoted to body text), front matter carved out by shape (copyright,
+line each came from), front matter carved out by shape (copyright,
 epigraph, dedication, title-page lines), scene breaks (including spaced
 markers such as `* * *`, now read as breaks), smartened quotes/dashes/
 ellipses per section, footnotes (Word notes are linked as Beuk `[^n]`
@@ -4939,7 +4938,8 @@ plain text, and writes the formatting back in Beuk's own marks:
 italic → `*words*`, bold → `**words**`, bold italic → `***words***`,
 and a link to a web (`http://`, `https://`) or mail (`mailto:`) address
 → `[words](address)` (the links markup the rest of the studio renders).
-This holds in body paragraphs, demoted subheadings (Heading 3–6), quote
+This holds in body paragraphs, headings below a chapter's first
+sub-heading (see "Heading levels" below), quote
 paragraphs (the quote's lines kept together as one `> ` block), list
 items and footnotes. A paragraph in Word's Quote style (and Beuk's own
 Quote Attribution, written under it by the Word export) is mapped to a
@@ -4984,6 +4984,41 @@ emphasis around its span so the XHTML stays well-formed
 import read Word with the same Mammoth options and the same run walk,
 so their text keeps italic, bold and links too (they have no import
 report, so nothing is counted there) — `import.docx.other-paths-formatting`.
+
+### Heading levels: a heading stays a heading, at its own depth (BEUK:headlevels, BEUK:headdepths)
+
+A section's stored text holds a heading inside it as a block that opens
+on one `#` for each depth and a space: `# ` (the page's `h2`) to `##### `
+(its `h6`). Five is as deep as a page goes under the section's own `h1`;
+six `#` is a paragraph.
+
+Every reader of heading levels (Markdown and text, Word, OpenDocument,
+RTF, web pages, EPUB) asks one function, `irHeadDepths`. It ranks the
+levels the file uses (a file of Heading 1, 3 and 5 has three levels; Word
+and RTF name nine and OpenDocument ten, and each is read at the level the
+file gave it), asks `irSubHeadings` which second-level headings are
+sub-headings, and gives every heading a depth: 0 where it opens a section,
+otherwise its rank less the rank of the heading that opened its section.
+A heading the parser then sets inside the chapter before it (an unnumbered
+heading between two numbered chapters) takes the headings under it one
+depth further down. The readers hand such a heading on with `irSubHold`
+and `irFinish` writes its line.
+
+Only a depth of six or more cannot be kept (seven levels of heading in
+use in one file). That heading is set as a paragraph and listed in the
+import report ("Heading 7 became body text"); its button sets it as a
+`##### ` heading.
+
+Each surface sets a stored heading by its depth: `contentBlocksToHtml`
+(preview, EPUB, standalone page, print interior) writes `h2` to `h6` with
+the class `inhead`; the Word export uses Heading 2 to Heading 6; the
+Markdown export writes two levels below (`###` to `######`; the fifth
+depth shares Markdown's sixth level with the fourth, so it reads back as
+the fourth); the 2.0 editor's `heading` node has `level` 1 to 5; the share
+page writes `h3` to `h6`. The rules that size `h4` to `h6` are written
+into an exported stylesheet only for a book that holds such a heading.
+A PDF marks no levels: its reader finds headings by type size and hands
+each on at one depth. Tests: `studio/test/heading-levels-as-given.test.ts`.
 
 ### The book's title, subtitle and author on import (BEUK:importmeta)
 
@@ -5386,6 +5421,53 @@ import).
   the same number of lines, set with no space between them, in a table that
   has a taller gap elsewhere and a hyphenated word over a line's end (its
   band is read as one row: nothing on the page tells its rows apart).
+- **Footnotes** are linked where the page shows them (BEUK:pdfnotes, in
+  `pdfLayout`, before and after the flow). A PDF holds no note: only a
+  raised number in the text (a digit run 15% smaller than the piece it
+  stands against, its baseline raised a quarter of the line's size) and a
+  block of text that opens on the same number.
+  - *A note's text* opens on a number and a stop or bracket (`7. …`,
+    `7) …`) or on the number raised and small; it is set smaller than the
+    text (three hundredths of the text's size or more, measured to the
+    twentieth of a point: `zx`, since `size` is rounded to the half point
+    and notes at 9.8 against 10.2 are both 10); and it stands where notes
+    stand: at the foot of a page (every line from it to the page's last is
+    small, and the first that opens on a number opens on one a raised mark
+    of that page carries), or in a run of such lines, over page turns, from
+    a line that opens on a number a raised mark before it carries down to a
+    heading (or a heading's own label line) or the end of the book. Inside
+    such a place a line begins a note where its number is greater than the
+    note before it and a raised mark carries it or it is the next number.
+  - *Which mark carries which note* is settled after the flow: a foot note
+    by the raised marks of its number on its own page, above it; a note of
+    a chapter's run by the marks of its number in its own chapter that have
+    no nearer note after them (numbers that begin again in every chapter
+    pair chapter by chapter); a note of a run in a part of the book with no
+    marks of its own (notes at the book's end) only where one chapter alone
+    has marks of that number left and it is the one such note.
+  - A linked mark becomes `[^n]` against its word, in a paragraph or a
+    table's cell; the note's text is handed to `irFinish` as a Word file's
+    is (`ir.docNotes`, set in the section its mark stands in) under a
+    working number, written back as the number the PDF shows
+    (`ir.mdNoteLabels`, BEUK:notelabels). The mark's digits and the number
+    the note opens on are counted in the tally's `noteMarks` row; the
+    tally's file side counts the notes the pages show and the marks that
+    carry one.
+  - A raised number with no such note stays the number it was. A note no
+    raised number marks stays a paragraph where it stood, its number with
+    it, and is named (`noteOrphan`). A note cut by the page turn goes on
+    in the lines above the next page's own notes where they stand under a
+    rule or the note had left its sentence open; otherwise they stay text
+    and `pdfNoteUnsure` names the note. A rule of characters over a page's
+    notes is set aside (`noteRules`, `pdfNoteRules`).
+  Not read: a note under a bare number and a space (`7 Text`: a turned
+  line opens so too), except under Beuk's own NOTES label (BEUK:pdfback);
+  notes under a sign (an asterisk, a dagger); notes at the text's own size;
+  notes at the book's end whose numbers begin again in every chapter; pages
+  in columns; a raised number inside a line set in a typewriter face (a log
+  holds its lines as typed); a drawn rule, and the PDF's own links from a
+  mark to its note and back (`pdfExtract` reads text only). A return arrow
+  printed after a note's text is the PDF's text and stays in the note.
 - **Right to left.** A line mostly in a right-to-left script (Hebrew,
   Arabic, Syriac, Thaana, N'Ko) is read from its right edge, and its
   column's paragraph rules are mirrored (the indent at the right, the
@@ -5406,9 +5488,10 @@ import).
   picture; its words, if any, not read — run OCR first). Password-protected
   and unreadable files get their own message.
 
-The report adds what only a PDF import knows: the layout caveat (footnotes
-arrive as plain text where they stood; drawings made of lines are not
-imported), italic/bold counts, rejoined hyphens, columned pages, small-cap
+The report adds what only a PDF import knows: the layout caveat (a footnote
+is linked where the page shows its raised number and its note under the
+same number, any other arrives as plain text where it stood; drawings made
+of lines are not imported), italic/bold counts, rejoined hyphens, columned pages, small-cap
 openings, running heads left out (each distinct line with its count), pages read
 right to left, pages with no text layer, unreadable glyphs, contents pages, the
 half-title, backgrounds, decorations, stencils, repeats, rotated text and

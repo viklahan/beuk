@@ -3219,7 +3219,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.headlevels.depth-is-relative',
     title:
-      'One book whatever levels its headings skip: a web page of h1 chapters and h3 sections comes in as the Word file of Heading 1 and Heading 2 does, a title over second-level chapters keeps their third-level sections inside them (web page and markdown), and a deeper heading is reported with the level the file gave it',
+      'One book whatever levels its headings skip: a web page of h1 chapters and h3 sections comes in as the Word file of Heading 1 and Heading 2 does, a title over second-level chapters keeps their third-level sections inside them (web page and markdown), and a heading under a section\'s own is kept as a heading one depth down',
     kind: 'client-only',
     reason: 'The readers and the heading rule (BEUK:headlevels) run in the studio; the server never sees an import.',
   },
@@ -3441,7 +3441,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.report.docx-honest',
     title:
-      'Import report (Word): a table is kept as a table block where it stood (plain rows instead on undo, then out again), footnotes link as notes, images land in the library with alt text, demoted headings, comments, tracked changes, headers, lists and converter warnings are all listed',
+      'Import report (Word): a table is kept as a table block where it stood (plain rows instead on undo, then out again), footnotes link as notes, images land in the library with alt text, a heading below a sub-heading is kept as a heading, and comments, tracked changes, headers, lists and converter warnings are all listed',
     kind: 'client-only',
     reason: 'Word conversion (Mammoth.js) and the report are client-side; the server never sees the .docx.',
   },

@@ -151,12 +151,13 @@ export const rtfP = (s: string) => rw('pard') + rw('s0') + ' ' + rtfEsc(s) + rw(
 export const rtfH = (s: string) => rw('pard') + rw('s1') + ' ' + rtfEsc(s) + rw('par') + '\n';
 export const rtfDoc = (body: string) => '{' + rw('rtf1') + rw('ansi') + rw('deff0') + '{' + rw('fonttbl') + '{' + rw('f0') + ' Times;}}{' + rw('stylesheet') + '{' + rw('s0') + ' Normal;}{' + rw('s1') + rw('outlinelevel0') + ' heading 1;}}\n' + body + '}';
 
-export type PdfLine = { text?: string; size?: number; x?: number; gap?: number; page?: boolean; runs?: { text: string; size?: number; mark?: boolean }[] };
+export type PdfLine = { text?: string; size?: number; x?: number; gap?: number; page?: boolean; y?: number; runs?: { text: string; size?: number; mark?: boolean; rise?: number }[] };
 /** The bullets a `mark` run may be: Helvetica holds none of them, so the PDF sets each from a font of its own whose
  *  ToUnicode map says which character the code is (as a real PDF's embedded font does). */
 const PDF_MARKS: Record<string, [string, string]> = { '●': ['80', '25CF'], '■': ['81', '25A0'], '◆': ['82', '25C6'] };
 /** a PDF set in Helvetica, line by line down each page ({ page: true } starts a new page; `runs` sets pieces of several sizes on one line;
- *  a run marked `mark` is one of PDF_MARKS) */
+ *  a run marked `mark` is one of PDF_MARKS; a run with a `rise` stands that share of the line's size above its baseline, as a note's number
+ *  or an exponent does; a line with a `y` stands at that height above the page's foot, wherever the lines before it left off) */
 export async function pdf(lines: PdfLine[], width = 620): Promise<Uint8Array> {
   const doc = await pdfLib.PDFDocument.create();
   const font = await doc.embedFont(pdfLib.StandardFonts.Helvetica);
@@ -169,7 +170,8 @@ export async function pdf(lines: PdfLine[], width = 620): Promise<Uint8Array> {
   for (const l of lines) {
     if (l.page) { pg = doc.addPage([width, H]); y = H - 70; continue; }
     const size = l.size || 11;
-    if (y < 60) { pg = doc.addPage([width, H]); y = H - 70; }
+    if (l.y != null) y = l.y;
+    else if (y < 60) { pg = doc.addPage([width, H]); y = H - 70; }
     if (l.runs) {
       let x = l.x == null ? 60 : l.x;
       for (const r of l.runs) {
@@ -177,7 +179,7 @@ export async function pdf(lines: PdfLine[], width = 620): Promise<Uint8Array> {
           pg.node.setFontDictionary(pdfLib.PDFName.of('FMark'), markFont);
           pg.pushOperators(pdfLib.beginText(), pdfLib.setFontAndSize('FMark', r.size || size), pdfLib.moveText(x, y), pdfLib.showText(pdfLib.PDFHexString.of(PDF_MARKS[r.text]![0])), pdfLib.endText());
           x += font.widthOfTextAtSize('•', r.size || size);
-        } else { pg.drawText(r.text, { x, y, size: r.size || size, font }); x += font.widthOfTextAtSize(r.text, r.size || size); }
+        } else { pg.drawText(r.text, { x, y: y + (r.rise || 0) * size, size: r.size || size, font }); x += font.widthOfTextAtSize(r.text, r.size || size); }
       }
     }
     else pg.drawText(l.text || '', { x: l.x == null ? 60 : l.x, y, size, font });
