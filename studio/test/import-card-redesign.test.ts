@@ -342,7 +342,7 @@ describe('the full account: the same report, part by part', () => {
       aside: ['pdfTableHeads', 'pdfNoteRules', 'bareHeading', 'break', 'comments', 'emptyHeading', 'links', 'mammoth', 'markup', 'toc', 'tracked', 'txtRules', 'lifted', 'pdfHeads', 'pdfToc', 'pdfHalfTitle', 'pdfTiny', 'pdfRotated', 'pdfLinks'],
       typography: ['typography', 'typographyAll'],
       filed: ['chapter', 'demoted', 'matter'],
-      read: ['pdfLimits', 'pdfStyles', 'pdfSmallCaps', 'pdfSpaced', 'pdfHyphens', 'pdfHyphenOpen', 'pdfColumns'],
+      read: ['pdfLimits', 'pdfStyles', 'pdfSmallCaps', 'pdfSpaced', 'pdfHyphens', 'pdfHyphenOpen', 'pdfHyphenDigit', 'pdfColumns'],
       notes: ['notes', 'image', 'imageDropped', 'imageLost', 'table', 'tableLimit', 'tablePics', 'picAltJoined', 'pdfImagesLost', 'pdfBackdrops', 'pdfMasks', 'pdfDupImages'],
       book: ['language', 'meta', 'metaKept', 'glued', 'frontmatter', 'rtfUtf8'],
     };

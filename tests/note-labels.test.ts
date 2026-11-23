@@ -60,9 +60,9 @@ test('the reading copy: a NUMBER with no note is raised as it always was ("[3]",
 
 test('the reading copy: a label defined in two chapters is two notes; a chapter left out of the book still takes its numbers, as in the studio', () => {
   const doc = book([
-    { id: 'c1', content: 'One[^a].\n\n[^a]: The harbour\'s note.' },
-    { id: 'cut', content: 'Cut[^b].\n\n[^b]: Not shipped.', included: false },
-    { id: 'c3', content: 'Two[^a].\n\n[^a]: The crossing\'s note.' },
+    { id: 'c1', content: 'One[^aa].\n\n[^aa]: The harbour\'s note.' },
+    { id: 'cut', content: 'Cut[^bb].\n\n[^bb]: Not shipped.', included: false },
+    { id: 'c3', content: 'Two[^aa].\n\n[^aa]: The crossing\'s note.' },
   ]);
   const { snapshot } = renderSnapshot(doc, 'x');
   assert.deepEqual(snapshot.sections.map((s) => s.id), ['c1', 'c3']);
@@ -83,7 +83,7 @@ test('the reading copy: a book whose labels are all numbers reads exactly as it 
 test('the editor\'s model: a definition and a mark under any label are a note\'s, written back exactly as typed; a bare [word] is text', () => {
   const types = (text: string) => { const out: string[] = []; toDoc(text).forEach((n) => out.push(n.type.name)); return out; };
   const runs = (text: string) => { const out: [string, string[]][] = []; toDoc(text).firstChild!.forEach((n) => out.push([n.text ?? '', n.marks.map((m) => m.type.name)])); return out; };
-  for (const text of ['The caravan left[^salt] at dawn.\n\n[^salt]: Salt, by the sack.', '[^fn.2-a]:   spaced', '[^007]: Bond.\n[^x]: X.', 'A [word] and a [12] and a [^2024].', '[word]: no definition', '[^a b]: a label has no space']) {
+  for (const text of ['The caravan left[^salt] at dawn.\n\n[^salt]: Salt, by the sack.', '[^fn.2-a]:   spaced', '[^007]: Bond.\n[^xx]: X.', 'A [word] and a [12] and a [^2024].', '[word]: no definition', '[^a b]: a label has no space']) {
     assert.equal(toText(toDoc(text)), text);
   }
   assert.deepEqual(types('The caravan left[^salt] at dawn.\n\n[^salt]: Salt, by the sack.'), ['paragraph', 'footnoteDef']);
@@ -91,7 +91,7 @@ test('the editor\'s model: a definition and a mark under any label are a note\'s
   assert.deepEqual([def.type.name, def.attrs.n, def.attrs.caret, def.attrs.gap], ['footnoteDef', 'fn.2-a', true, '   ']);
   const bare = toDoc('[12]: bare').firstChild!;
   assert.deepEqual([bare.type.name, bare.attrs.n, bare.attrs.caret], ['footnoteDef', '12', false]);
-  assert.deepEqual(types('[^007]: Bond.\n[^x]: X.'), ['footnoteDef', 'footnoteDef']);
+  assert.deepEqual(types('[^007]: Bond.\n[^xx]: X.'), ['footnoteDef', 'footnoteDef']);
   assert.deepEqual(runs('left[^salt] at *dawn[^fn-9]*, a [word], a [12].'), [['left', []], ['[^salt]', ['footnoteRef']], [' at ', []], ['dawn', ['em']], ['[^fn-9]', ['em', 'footnoteRef']], [', a [word], a ', []], ['[12]', ['footnoteRef']], ['.', []]]);
   assert.deepEqual(types('[word]: no definition'), ['paragraph']);
   assert.deepEqual(types('[^a b]: a label has no space'), ['paragraph']);

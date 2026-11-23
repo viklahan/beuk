@@ -57,7 +57,7 @@ describe('a hyphen left open at a line\'s end ("pre-" before "and post-war")', (
      cell's first word: two cells side by side are not a piece set open with a space and a word after it. In that
      book the code's column is so narrow that the reader does not part the two cells (21 points between them), and
      the rows are too wordy for it to call them a table: what tells is the gap, wider than the line's own size. */
-  it('a table cell that ends on the piece, beside the next cell, is not the piece set open: the code stays whole and is listed as before', async () => {
+  it('a table cell that ends on the piece, beside the next cell, is not the piece set open: the code stays whole, and is named in the account as a hyphen beside a digit (it was listed with "VIE04-10" offered)', async () => {
     const g = await importFile('open-cells.pdf', await pdf([
       ...pg('One', ['The clerk filed the sheet under the station code VIE-', '04-10 with the others that came in that year.']),
       { page: true }, { text: 'Chapter Two', size: 20, gap: 40 },
@@ -75,7 +75,8 @@ describe('a hyphen left open at a line\'s end ("pre-" before "and post-war")', (
     ]), '');
     expect(first(g, 0)).toContain('station code VIE-04-10 with the others');
     expect(item(g, 'pdfHyphenOpen')).toEqual([]);
-    expect(asked(g).filter((a) => /VIE/.test(String(a[0])))).toEqual([['VIE-04-10', 'VIE04-10', 'neither']]);
+    expect(asked(g).filter((a) => /VIE/.test(String(a[0])))).toEqual([]); /* BEUK:hyphendigits */
+    expect(item(g, 'pdfHyphenDigit').map((i) => (i.words as string[]).filter((w) => /VIE/.test(w)))).toEqual([['VIE-04-10']]);
   }, 120_000);
 });
 

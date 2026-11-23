@@ -136,8 +136,10 @@ describe('a note the writer marked "*" shows "*", in the text and at the note, o
     for (const l of ['1', '007', '2024']) expect(await one(l), l).toEqual(['[' + l + ']', '[' + l + '] Note.']);
     // a mark (no letter and no digit): as typed
     for (const l of ['*', '**', '***', '†', '‡', '§', '¶', '‖', '#', '*†', '+', '~']) expect(await one(l), l).toEqual(['[' + l + ']', '[' + l + '] Note.']);
-    // a name (a letter, or a digit beside something else): a number, as before
-    for (const l of ['a', 'A', 'i', 'salt', 'fn-7', '1a', '7*', 'x*', '1.2', 'é', 'ⅳ', '¹', '注']) expect(await one(l), l).toEqual(['[1]', '[1] Note.']);
+    // BEUK:noteletters — one letter, of any case and any script: as typed (V, 2026-11-23: "Show letter"). Before: a number.
+    for (const l of ['a', 'A', 'i', 'é', '注', 'б']) expect(await one(l), l).toEqual(['[' + l + ']', '[' + l + '] Note.']);
+    // a name (two letters or more, a digit beside something else, a numeral that is no digit): a number, as before
+    for (const l of ['ab', 'ii', 'salt', 'fn-7', '1a', '7*', 'x*', '1.2', 'ⅳ', '¹']) expect(await one(l), l).toEqual(['[1]', '[1] Note.']);
   }, 240_000);
 
   it('a mark no note answers is the writer\'s text, exactly as typed, on every surface; its "*" opens no italic', async () => {

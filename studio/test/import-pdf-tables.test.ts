@@ -116,21 +116,32 @@ describe('a table whose rows the page shows by its spacing is read as a grid', (
     expect(tablesIn(shown)).toEqual([rows.map(whole)]);
     expect(asked(shown)).toEqual([]);
     expect(figures(shown)).toEqual(CLEAR);
-    // they stand nowhere else: kept as the page has them, no space added, and each listed for the writer like any other
+    // they stand nowhere else: kept as the page has them, no space added. A hyphen beside a digit is named in the
+    // account and no longer offered joined (BEUK:hyphendigits: it was listed, with "VIE04-A" and "GRZ02-B" offered)
     const bare = await importFile('codes-bare.pdf', await pdf([
       ...chapter('One', [...fill(3), ...table(), ...fill(6)]),
       { page: true }, ...chapter('Two', fill(8)),
     ]), '');
     expect(tablesIn(bare)).toEqual([rows.map(whole)]);
-    expect(asked(bare)).toEqual([['VIE-04-A', 'VIE04-A', 'neither'], ['GRZ-02-B', 'GRZ02-B', 'neither']]);
+    expect(asked(bare)).toEqual([]);
+    expect(bare.rep.items.filter((i) => i.kind === 'pdfHyphenDigit').map((i) => (i.data || {}).words)).toEqual([['VIE-04-A', 'GRZ-02-B']]);
     expect(figures(bare)).toEqual(CLEAR);
+    // codes of letters only, standing nowhere else, are still listed for the writer like any other word
+    const lrows = [narrow('Code', 'Event', 'Time'), narrow('VIE-|ANN', 'Primary inspection held at the first district office', '00:45'), narrow('GRZ-|SID', 'Second inspection held at the siding office', '01:10')];
+    const letters = await importFile('codes-letters.pdf', await pdf([
+      ...chapter('One', [...fill(3), ...row(lrows[0]), ...row(lrows[1]), ...row(lrows[2], 30), ...fill(6)]),
+      { page: true }, ...chapter('Two', fill(8)),
+    ]), '');
+    expect(tablesIn(letters)).toEqual([lrows.map(whole)]);
+    expect(asked(letters)).toEqual([['VIE-ANN', 'VIEANN', 'neither'], ['GRZ-SID', 'GRZSID', 'neither']]);
+    expect(letters.rep.items.filter((i) => i.kind === 'pdfHyphenDigit')).toEqual([]);
     // "Join it" finds the word alone in its cell, by the cell's own bars
-    const ask = bare.rep.items.find((i) => i.kind === 'pdfHyphenAsk') as unknown as { id: string };
-    expect(bare.api.irUndoItem(ask.id)).toMatchObject({ ok: true });
-    const after = (bare.api.snapshotBookDoc() as { sections: { type: string; content: string }[] }).sections.filter((s) => s.type === 'chapter')[0].content;
-    expect(after).toContain('| VIE04-A | Primary inspection held at the first district office | 00:45 |');
-    expect(after).toContain('| GRZ-02-B |');
-  }, 240_000);
+    const ask = letters.rep.items.find((i) => i.kind === 'pdfHyphenAsk') as unknown as { id: string };
+    expect(letters.api.irUndoItem(ask.id)).toMatchObject({ ok: true });
+    const after = (letters.api.snapshotBookDoc() as { sections: { type: string; content: string }[] }).sections.filter((s) => s.type === 'chapter')[0].content;
+    expect(after).toContain('| VIEANN | Primary inspection held at the first district office | 00:45 |');
+    expect(after).toContain('| GRZ-SID |');
+  }, 360_000);
 
   it('a word the typesetter broke at the end of a cell\'s line is joined where the PDF writes it joined elsewhere, and the hyphen taken off is counted', async () => {
     const cut = cells('VIE-04', 'Vienna office', ['the ledgers were kept by the har-', 'bour master and his clerk']);

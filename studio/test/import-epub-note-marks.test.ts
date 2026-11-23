@@ -76,16 +76,24 @@ describe('an EPUB\'s note keeps the mark its reference shows', () => {
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
-  it('a number two notes of one chapter both show: the later one takes the next free number, as before, and is now named; a letter is kept as the label, shown under a number, and named', async () => {
-    const g = await importFile('twice.epub', await book('<p>One' + ref('a', '5') + ' two' + ref('b', '5') + ' three' + ref('c', 'a') + '.</p>' + fn('a', '5. ', 'The first 5.') + fn('b', '5. ', 'The second 5.') + fn('c', 'a. ', 'The lettered note.')), '');
+  /* BEUK:noteletters — V, 2026-11-23: "Show letter". Before, the letter was kept as the label and shown under 2. */
+  it('a number two notes of one chapter both show: the later one takes the next free number, as before, and is now named; one letter is shown as the book shows it and not named; two letters are a name, shown under a number, and named', async () => {
+    const file = async (mark: string) => importFile('twice.epub', await book('<p>One' + ref('a', '5') + ' two' + ref('b', '5') + ' three' + ref('c', mark) + '.</p>' + fn('a', '5. ', 'The first 5.') + fn('b', '5. ', 'The second 5.') + fn('c', mark + '. ', 'The lettered note.')), '');
+    const g = await file('a');
     const b = both(g);
     dump('epub-twice', { b, items: items(g, 'noteMark') });
     expect(b.stored).toEqual(['One[^5] two[^1] three[^a].', '[^5]: The first 5.', '[^1]: The second 5.', '[^a]: The lettered note.']);
-    // "a" is a name: the next number no numbered note of the book uses, 2
-    expect(b.marks).toEqual(['[5]', '[1]', '[2]']);
-    expect(items(g, 'noteMark').map((it) => [it.data, it.before]).sort()).toEqual([[{ why: 'name', mark: 'a' }, 'The lettered note.'], [{ why: 'taken', mark: '5', n: '1' }, 'The second 5.']].sort());
+    expect(b.marks).toEqual(['[5]', '[1]', '[a]']);
+    expect(items(g, 'noteMark').map((it) => [it.data, it.before])).toEqual([[{ why: 'taken', mark: '5', n: '1' }, 'The second 5.']]);
     expect(figures(g)).toEqual(CLEAR);
-  }, 120_000);
+    const n = await file('ab');
+    const nb = both(n);
+    expect(nb.stored).toEqual(['One[^5] two[^1] three[^ab].', '[^5]: The first 5.', '[^1]: The second 5.', '[^ab]: The lettered note.']);
+    // "ab" is a name: the next number no numbered note of the book uses, 2
+    expect(nb.marks).toEqual(['[5]', '[1]', '[2]']);
+    expect(items(n, 'noteMark').map((it) => [it.data, it.before]).sort()).toEqual([[{ why: 'name', mark: 'ab' }, 'The lettered note.'], [{ why: 'taken', mark: '5', n: '1' }, 'The second 5.']].sort());
+    expect(figures(n)).toEqual(CLEAR);
+  }, 240_000);
 
   it('a tally whose totals differ still gives its reasons: marked notes in a paragraph, and a note of the book that nothing marks', async () => {
     /* the marks stand past the paragraph's first six words, which is what a row pairs a paragraph by */
