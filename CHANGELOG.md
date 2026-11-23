@@ -30,7 +30,6 @@ to make well.
 - **The manuscript's title keeps its letters.** The submission manuscript shows your title in capitals without rewriting it.
 - **A PDF keeps your paragraphs.** A letter or quotation set in from the margin came in as one paragraph for every line, and a paragraph was cut after any line that opened on a dash. Both now come in as the paragraphs you wrote.
 - **Headings and page names as you typed them.** "TWENTY-ONE" stays "TWENTY-ONE", and "Acknowledgements" is no longer respelled "Acknowledgments".
-- **A line break inside a paragraph is kept.** Shift+Enter in Word, and its like in a web page, RTF or OpenDocument file, came in as a space. It is stored as the break you made.
 - **Your list numbers on every page.** A list numbered 3, 7, 9 now shows 3, 7, 9 in the preview, the EPUB and the Word export.
 - **A list with space between its items is still a list.** Items parted by blank lines in a Markdown or text file came in as paragraphs that began with an asterisk.
 - **A Word footnote nothing points to is kept**, and the report names it.
