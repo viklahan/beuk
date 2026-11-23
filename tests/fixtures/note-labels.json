@@ -1,0 +1,70 @@
+{
+  "about": "BEUK:notelabels — one table of made-up books for the two copies of the note numbering: the studio's (client/index.html noteBookShown, read by studio/test/note-labels-as-typed.test.ts) and the server's (src/book/notes.ts, read by tests/note-labels.test.ts). `sections` is each section's stored text; `shown` is that text as a reader is shown its notes: every label that is not a number written as the number it takes. Written by hand from the rule, not taken from either copy's output.",
+  "cases": [
+    {
+      "name": "labels that are no numbers take 1, 2 … in the order they are first marked through the book",
+      "sections": ["The caravan left[^salt] at dawn.\n\n[^salt]: Salt, by the sack.", "The pans lay white[^pans].\n\n[^pans]: The pans of the coast."],
+      "shown": ["The caravan left[^1] at dawn.\n\n[^1]: Salt, by the sack.", "The pans lay white[^2].\n\n[^2]: The pans of the coast."]
+    },
+    {
+      "name": "a book of numbers is handed back exactly as stored, whatever order they stand in",
+      "sections": ["One[^2] two[^1].\n\n[^1]: First.\n\n[^2]: Second.", "Three[^1] and a bare one.[7]\n\n[^1]: Again from one."],
+      "shown": ["One[^2] two[^1].\n\n[^1]: First.\n\n[^2]: Second.", "Three[^1] and a bare one.[7]\n\n[^1]: Again from one."]
+    },
+    {
+      "name": "mixed: a number shows as typed, and a named note takes the next number the writer has not used",
+      "sections": ["One[^1] two[^salt] three[^3] four[^pans].\n\n[^1]: First.\n\n[^salt]: Salt.\n\n[^3]: Third.\n\n[^pans]: Pans."],
+      "shown": ["One[^1] two[^2] three[^3] four[^4].\n\n[^1]: First.\n\n[^2]: Salt.\n\n[^3]: Third.\n\n[^4]: Pans."]
+    },
+    {
+      "name": "mixed across chapters: a number used anywhere in the book is never given to a named note",
+      "sections": ["Early[^salt].\n\n[^salt]: Salt.", "Late[^1] and[^2].\n\n[^1]: One.\n\n[^2]: Two."],
+      "shown": ["Early[^3].\n\n[^3]: Salt.", "Late[^1] and[^2].\n\n[^1]: One.\n\n[^2]: Two."]
+    },
+    {
+      "name": "a label defined in two chapters is two notes, each chapter's own",
+      "sections": ["One[^a].\n\n[^a]: The harbour's note.", "Two[^a].\n\n[^a]: The crossing's note."],
+      "shown": ["One[^1].\n\n[^1]: The harbour's note.", "Two[^2].\n\n[^2]: The crossing's note."]
+    },
+    {
+      "name": "a label defined twice in one section: a mark means the next definition at or after it, else the last one before",
+      "sections": ["One[^a] and again[^a].\n\n[^a]: First.\n\nTwo[^a].\n\n[^a]: Second.\n\nAfter the last[^a]."],
+      "shown": ["One[^1] and again[^1].\n\n[^1]: First.\n\nTwo[^2].\n\n[^2]: Second.\n\nAfter the last[^2]."]
+    },
+    {
+      "name": "a label with punctuation; a label that is a number with leading zeros shows as typed and keeps 7 from every named note",
+      "sections": ["A[^fn.2-a] b[^007] c[^x] d[^y] e[^z] f[^p] g[^q] h[^r] i[^s] j[^t].\n\n[^fn.2-a]: Dotted.\n\n[^007]: Bond.\n\n[^x]: X.\n\n[^y]: Y.\n\n[^z]: Z.\n\n[^p]: P.\n\n[^q]: Q.\n\n[^r]: R.\n\n[^s]: S.\n\n[^t]: T."],
+      "shown": ["A[^1] b[^007] c[^2] d[^3] e[^4] f[^5] g[^6] h[^8] i[^9] j[^10].\n\n[^1]: Dotted.\n\n[^007]: Bond.\n\n[^2]: X.\n\n[^3]: Y.\n\n[^4]: Z.\n\n[^5]: P.\n\n[^6]: Q.\n\n[^8]: R.\n\n[^9]: S.\n\n[^10]: T."]
+    },
+    {
+      "name": "a number of four digits is a label like any other number: it shows as typed",
+      "sections": ["In[^2024] and[^salt].\n\n[^2024]: The year.\n\n[^salt]: Salt."],
+      "shown": ["In[^2024] and[^1].\n\n[^2024]: The year.\n\n[^1]: Salt."]
+    },
+    {
+      "name": "a mark under a label that no note anywhere in the book answers is no note: it stays exactly as typed and takes no number; a later chapter's mark of an earlier chapter's note shows that note's number; a note nothing marks takes its number where it stands",
+      "sections": ["Dawn[^fn-9] broke[^note] twice[^fn-9], and lost[^nowhere].\n\n[^fn-9]: The first note.\n\n[^note]: The second.", "Rain[^fn_3] came, see[^note] and[^nowhere].\n\n[^spare]: Nobody points here.\n\n[^fn_3]: The third note."],
+      "shown": ["Dawn[^1] broke[^2] twice[^1], and lost[^nowhere].\n\n[^1]: The first note.\n\n[^2]: The second.", "Rain[^3] came, see[^2] and[^nowhere].\n\n[^4]: Nobody points here.\n\n[^3]: The third note."]
+    },
+    {
+      "name": "a number with no note is left as typed too (the page raises it as it always did); it still keeps its number from every named note",
+      "sections": ["Lost[^5] and found[^salt] and[^nope].\n\n[^salt]: Salt."],
+      "shown": ["Lost[^5] and found[^1] and[^nope].\n\n[^1]: Salt."]
+    },
+    {
+      "name": "a mark inside a note's own text is a mark, numbered where it stands (here the first mark in the text); a definition written before its mark is found",
+      "sections": ["[^b]: Stands first, see[^a].\n\nText[^b] here.\n\n[^a]: Marked only from a note."],
+      "shown": ["[^2]: Stands first, see[^1].\n\nText[^2] here.\n\n[^1]: Marked only from a note."]
+    },
+    {
+      "name": "a log is the writer's to the character; a bare [word] is the writer's word; a bare [12] is a note's number",
+      "sections": ["Text[^a] and [word] and [12].\n\n::: log\n09:14 [^a] raw [^b]\n:::\n\n[^a]: A."],
+      "shown": ["Text[^1] and [word] and [12].\n\n::: log\n09:14 [^a] raw [^b]\n:::\n\n[^1]: A."]
+    },
+    {
+      "name": "a definition on a line of a container is a definition; one set in from the margin in the middle of a paragraph is not, so its label has no note and stays as typed",
+      "sections": ["::: texts\nAna: Meet me at the pier[^p]\n[^p]: The north pier.\n:::\n\nA line\n  [^q]: not a note, and[^q] is marked twice."],
+      "shown": ["::: texts\nAna: Meet me at the pier[^1]\n[^1]: The north pier.\n:::\n\nA line\n  [^q]: not a note, and[^q] is marked twice."]
+    }
+  ]
+}

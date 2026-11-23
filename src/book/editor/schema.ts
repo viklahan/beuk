@@ -38,7 +38,7 @@ const nodes: Record<string, NodeSpec> = {
   /** Running text: 1.0's paragraph (lines joined by "\n" in the text). */
   paragraph: { group: 'block', content: 'text*', marks: '_', whitespace: 'pre', attrs: { ...blockAttrs } },
 
-  /** A note definition, "[^n]: text" or "[n]: text". `n` is the digits as written, `gap` the whitespace after the colon. */
+  /** A note definition, "[^label]: text" or "[n]: text". `n` is the label as written (BEUK:notelabels: any label after a caret, digits in the bare form), `gap` the whitespace after the colon. */
   footnoteDef: {
     group: 'block', content: 'text*', marks: '_', whitespace: 'pre',
     attrs: { ...blockAttrs, n: { default: '1' }, caret: { default: true }, gap: { default: ' ' } },

@@ -124,8 +124,10 @@ describe('a heading with nothing under it is kept as the writer wrote it: a chap
     await importFile('outline.md', null, md(CASES[1][1]));
     lastModule!.api.irRenderReport();
     const card = (document.body.textContent || '').replace(/\s+/g, ' ');
-    expect(card).toContain('outline.md5chapters');
-    for (const [n, h] of [[1, 'The Road'], [5, 'The Dusk']] as [number, string][]) expect(card).toContain(n + h + '0');
+    expect((document.getElementById('irFile')!.textContent || '')).toBe('outline.md');
+    expect(card).toContain('The book Beuk found: 5 chapters');
+    for (const [n, h] of [[1, 'The Road'], [4, 'The Wind']] as [number, string][]) expect(card).toContain(n + h + '0');
+    expect(card).toContain('Show all 5 chapters');
     /* the card's sentence says what Beuk found, never "read 0 words" of a file with words in it; the studio's own count
        (pages with text) stays what it is */
     expect(card).toContain('Beuk found 5 chapters in your file, with no text under them yet.');

@@ -147,6 +147,30 @@ test('/account counts a Japanese book by characters, an English one by words', a
   }
 });
 
+/* BEUK:notelabels — a note keeps the label the writer typed, and a note's mark is no word under any label: the
+   shelf's rough count drops "[^salt]" as it drops "[^1]" (it counted "salt" as a word, once for the mark and once
+   for the definition). A bare "[word]" is the writer's word and is counted. */
+test('/account: a note mark is no word, whatever its label', async () => {
+  const db = await createTestDb();
+  const s = await start(db);
+  try {
+    const c = new Client(s.base);
+    await registerUser(c, 'labels@example.com');
+    const doc = (content: string) => ({ ...BOOK, sections: [{ id: 'k1', kind: 'body', type: 'chapter', title: 'One', content }] });
+    // The caravan left at dawn. + Salt, by the sack. = 9 words
+    assert.equal((await c.post('/api/manuscripts', { title: 'Named', doc: doc('The caravan left[^salt] at dawn.\n\n[^salt]: Salt, by the sack.') })).status, 201);
+    assert.equal((await c.post('/api/manuscripts', { title: 'Numbered', doc: doc('The caravan left[^1] at dawn.[12]\n\n[^1]: Salt, by the sack.') })).status, 201);
+    // … and "word" is one more
+    assert.equal((await c.post('/api/manuscripts', { title: 'Bracketed', doc: doc('The caravan left[^fn.2-a] at [word] dawn.\n\n[^fn.2-a]: Salt, by the sack.') })).status, 201);
+    const { text: html } = await page(c, s.base, '/account');
+    // each title's own count: the first "about N words" after it
+    const count = (title: string) => (new RegExp(title + '(?:(?!about \\d+ words)[\\s\\S])*about (\\d+) words').exec(html) || [])[1];
+    assert.deepEqual([count('Named'), count('Numbered'), count('Bracketed')], ['9', '9', '10']);
+  } finally {
+    await s.close();
+  }
+});
+
 async function userId(db: Db, email: string): Promise<string> {
   const r = await db.query<{ id: string }>('select id from users where email = $1', [email]);
   assert.ok(r.rows[0], `no user ${email}`);

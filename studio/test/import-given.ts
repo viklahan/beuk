@@ -153,6 +153,11 @@ export async function pdf(lines: PdfLine[], width = 620): Promise<Uint8Array> {
   }
   return doc.save();
 }
+/** how wide a text stands in the face pdf() sets (Helvetica) at a size: a made-up page can break its lines where a measure would */
+export async function pdfWidths(): Promise<(s: string, size: number) => number> {
+  const font = await (await pdfLib.PDFDocument.create()).embedFont(pdfLib.StandardFonts.Helvetica);
+  return (s, size) => font.widthOfTextAtSize(s, size);
+}
 /** a paragraph's lines for a PDF page, wrapped at about `at` characters */
 export function pdfPara(text: string, at = 62): PdfLine[] {
   const out: PdfLine[] = [];

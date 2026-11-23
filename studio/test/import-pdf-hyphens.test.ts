@@ -401,12 +401,13 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     g.api.initImportReport();
     g.api.irRenderReport();
     const modal = () => document.querySelector('.ir-modal')!;
-    const group = () => document.getElementById('ir-g-structure') as HTMLDetailsElement;
+    const group = () => document.getElementById('ir-f-hyph') as HTMLDetailsElement; /* the fold of the words, under "For you to look at" */
     const row = (id: string) => Array.from(document.querySelectorAll('#irBody [data-irid]')).find((r) => r.getAttribute('data-irid') === id) as HTMLElement;
     expect(modal().classList.contains('ir-card-view'), 'the report opens on the card').toBe(true);
-    expect(group().open, 'a group of more than six lines opens shut').toBe(false);
+    expect(group().open, 'a list of more than six words opens shut after its first three').toBe(false);
+    expect(group().closest('#ir-g-look'), 'the words stand under "For you to look at"').not.toBeNull();
     (document.querySelector('.ir-card [data-irhyph]') as HTMLElement).click();
-    expect(modal().classList.contains('ir-card-view'), 'the button goes to the list').toBe(false);
+    expect(modal().classList.contains('ir-card-view'), 'the button goes to the full account').toBe(false);
     expect(group().open, 'and opens the group the words are in').toBe(true);
     expect((row(every.id).textContent || '').replace(/\s+/g, ' ')).toContain('Words that end a line of the PDF on a hyphen its text does not settle: 8. Each is listed here, kept as the page shows it.');
     expect(row(every.id).compareDocumentPosition(row(g.asks[0].id)) & 4, 'it stands before the first word (4: the word follows it)').toBe(4);
@@ -423,7 +424,7 @@ describe('a PDF\'s hyphen at a line\'s end is settled by the book\'s own text, a
     const g = await importPdf(book(MANY, ['The pans lay white under the sun.']));
     g.api.initImportReport();
     g.api.irRenderReport();
-    const group = () => document.getElementById('ir-g-structure') as HTMLDetailsElement;
+    const group = () => document.getElementById('ir-f-hyph') as HTMLDetailsElement; /* the fold of the words, under "For you to look at" */
     const row = (id: string) => Array.from(document.querySelectorAll('#irBody [data-irid]')).find((r) => r.getAttribute('data-irid') === id) as HTMLElement;
     (document.querySelector('.ir-card [data-irhyph]') as HTMLElement).click();
     expect(group().open, 'the card\'s button opens the group').toBe(true);

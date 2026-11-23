@@ -123,6 +123,8 @@ const SECTIONS_SQL = `case jsonb_typeof(m.doc->'sections')
 /** A rough word count, computed in the database so a page view never
  *  pulls whole books (pictures included) into the app. It follows the
  *  studio's countWords (client/index.html): picture and footnote markers
+ *  (BEUK:notelabels — a note mark under any label the writer typed,
+ *  "[^salt]", or the bare "[12]" of one to three digits)
  *  and the characters # > * _ [ ] ^ are dropped, the rest split on
  *  whitespace; for Japanese, Chinese and Thai books the characters are
  *  counted, less spaces and punctuation; covers, part dividers, plates and
@@ -140,7 +142,7 @@ const ROUGH_WORDS_SQL = String.raw`(select coalesce(sum(
     cross join lateral (select regexp_replace(regexp_replace(regexp_replace(
         coalesce(s->>'content', s->>'text', ''),
         '!\[[^]]*\]\([^)]*\)', ' ', 'g'),
-        '\[\^?[0-9]{1,3}\]:?', ' ', 'g'),
+        '\[(\^[^][:space:]]+|[0-9]{1,3})\]:?', ' ', 'g'),
         '[][#>*_^]', ' ', 'g') as clean) t
     where coalesce(s->>'type', '') not in ('cover', 'part', 'frontispiece', 'toc'))`;
 

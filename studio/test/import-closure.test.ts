@@ -32,8 +32,8 @@ export const WAVE6 = {
   book: ['parseManuscript', 'splitSegments', 'placeMatterPieces', 'copyrightMetaFrom', 'imApplyIdentity', 'replaceBodyChapters', 'importFoundList', 'renderImportSummary',
     'lastImportFound', 'offerDetectedLanguage', 'applyDetectedLanguage', 'snapshotBookDoc'],
   sandbox: ['importSandboxed', 'manuscriptFileToBookDoc', 'boxSetExpandPick', 'manuscriptFileToVolume'],
-  report: ['IR_REC', 'irBegin', 'irAbort', 'irFinish', 'normalizeImportReport', 'IR_UNDO', 'irUndoItem', 'irUndoAllAvailability', 'irUndoAll', 'irDismiss', 'IR_GROUPS',
-    'irItemLabel', 'IR_HINT', 'irRenderReport', 'irOpenReport', 'irCloseReport', 'irSyncReopen', 'irOnLangChange', 'initImportReport'],
+  report: ['IR_REC', 'irBegin', 'irAbort', 'irFinish', 'normalizeImportReport', 'IR_UNDO', 'irUndoItem', 'irUndoAllAvailability', 'irUndoAll', 'irDismiss', 'IR_PARTS', 'irPartOf',
+    'irItemLabel', 'IR_HINT', 'irVerdict', 'irCardHtml', 'irAccountHtml', 'irRenderReport', 'irOpenReport', 'irCloseReport', 'irSyncReopen', 'irOnLangChange', 'initImportReport'],
 };
 /** What 1.0's import reaches outside it: 2.0's own (src/import/import.ts, src/closure/index.ts). */
 export const IMPORT_SUPPLIED = ['applyBookDoc', 'restoreSnapshot', 'applySampleBookSync', 'deskIsUntouchedSample', 'renderSampleButton', 'refreshLangHint'];

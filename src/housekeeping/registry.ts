@@ -3198,7 +3198,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.card.opens-on-the-book',
     title:
-      'The import report opens on the book that came in (chapters, the sections inside them, the pages around them, and three plain lines of what Beuk did); every change one by one is a step behind it, and a label opens its section',
+      'The import report opens on a card that answers first (the verdict panel with its three figures and a row for each kind set aside, then the book Beuk found), with nothing on it red; the full account is a step behind it with every item of the report as one row, and a page opens its section',
     kind: 'client-only',
     reason: 'The import report (BEUK:importcard) is drawn in the studio from the book on the desk; the server never sees an import.',
   },
@@ -3261,7 +3261,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.md.footnote-labels',
     title:
-      'Markdown footnotes under any label become Beuk notes, numbered in order of first reference and set in the section of their reference; a reference without a note and a note without a reference are reported; a file already numbered is left as typed',
+      'Markdown footnotes under any label are stored under the label the writer typed, set in the section of their reference and shown under a number worked out in order of first reference; a reference without a note and a note without a reference are reported by the label; a file of numbers is left as typed',
     kind: 'client-only',
     reason: 'The Markdown reader (BEUK:mdimport) and the import report run in the studio; the server never sees the file.',
   },
@@ -3434,7 +3434,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.report.names-the-file',
     title:
-      "The import report names the kind of file that was imported (never a Word file for Markdown, text or OpenDocument), and the summary's count of things left out is the list's",
+      "The import report names the kind of file that was imported (never a Word file for Markdown, text or OpenDocument), and the card's count of looks the book does not carry is the full account's",
     kind: 'client-only',
     reason: 'The import report (BEUK:importreport, BEUK:importcard) is drawn in the studio; the server never sees an import.',
   },
