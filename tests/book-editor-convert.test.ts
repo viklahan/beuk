@@ -83,7 +83,7 @@ const COVERAGE_FLOOR: Record<string, { blocks: number; raw: number }> = {
   'real/lantern-coast-print.json': { blocks: 264, raw: 0 },
   'real/lunas-beach-standalone.json': { blocks: 36, raw: 0 },
   'real/oz-14-glinda.json': { blocks: 1114, raw: 0 },
-  'real/reads-you.json': { blocks: 61, raw: 16 },
+  'real/reads-you.json': { blocks: 59, raw: 16 }, // 61 blocks until BEUK:listmarkstyped: its three paragraphs that each open on "☐" are one list now (two blocks fewer, the same 16 raw)
   'real/salt-road-book-one.json': { blocks: 20, raw: 1 },
   'real/salt-road-standalone.json': { blocks: 36, raw: 5 },
   'real/valois-02-chicot.json': { blocks: 7402, raw: 0 },

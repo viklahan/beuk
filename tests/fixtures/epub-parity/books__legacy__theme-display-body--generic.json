@@ -17,7 +17,7 @@
   {
    "path": "OEBPS/Styles/blitz.css",
    "binary": false,
-   "sha256": "ca84f5ea416d030c3028b17a783f39f399fedc7197ca64739fb42420ad840135"
+   "sha256": "755fb19b9e9f24d86a8c3c050648b42022d79eceec69dea82a02ab399d177028"
   },
   {
    "path": "OEBPS/Text/titlepage.xhtml",
@@ -62,7 +62,7 @@
   {
    "path": "OEBPS/Text/chapter_07.xhtml",
    "binary": false,
-   "sha256": "36bacf390f6fd3e919d1de8b68750d1b180573bff6b87628928bd202de53b932"
+   "sha256": "6585ec8b955cb5170de48bded7cd770c5b2d8bd97d51e083722ac7c7f5f4b0ad"
   },
   {
    "path": "OEBPS/Text/chapter_08.xhtml",
