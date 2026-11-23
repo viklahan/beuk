@@ -43,6 +43,7 @@ async function bookOf(contents: string[]): Promise<{ api: Api; secs: Sec[] }> {
   return { api: g.api, secs: (g.api.snapshotBookDoc!() as { sections: Sec[] }).sections };
 }
 const items = (g: Got, kind: string) => g.rep.items.filter((it) => it.kind === kind);
+const noteRows = (g: Got) => (g.tally.rows as { key: string; file: number; book: number; why?: { k: string; n: number }[] }[]).filter((r) => r.key === 'noteRefs' || r.key === 'noteDefs').map((r) => [r.key, r.file, r.book, (r.why || []).map((y) => [y.k, y.n])]);
 
 beforeAll(async () => {
   await setupImport('note-marks-as-shown', ['contentBlocksToHtml', 'inlineMd', 'notesAsShown', 'buildMarkdown', 'buildDocxDocumentXml', 'msPlan', 'msDocumentXml', 'acxSectionLines', 'acxPlainInline', 'acxLineTxt', 'acxDocxXml', 'countWords', 'countWordsClean', 'insCleanText', 'nextFootnoteNumber', 'chopMergePlan']);
@@ -188,6 +189,8 @@ describe('Markdown: a file that marks its notes "*" is stored as typed and each 
     expect(items(g, 'noteOrphan')).toEqual([]);
     expect(items(g, 'refOrphan')).toEqual([]);
     expect(figures(g)).toEqual(CLEAR);
+    // the two "*" marks of the one paragraph are two references, on both sides of the tally
+    expect(noteRows(g)).toEqual([['noteRefs', 6, 6, []], ['noteDefs', 6, 6, []]]);
   }, 120_000);
 
   it('one mark through a chapter, each note typed after its own paragraph; a note marked twice; the file exported and read again is the same book', async () => {

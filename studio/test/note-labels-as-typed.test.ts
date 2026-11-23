@@ -470,7 +470,7 @@ describe('notes from formats with no typed label: what each stores and shows tod
   const WREF = (id: number, custom?: string) => '<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteReference ' + (custom ? 'w:customMarkFollows="1" ' : '') + 'w:id="' + id + '"/>' + (custom ? '<w:t>' + custom + '</w:t>' : '') + '</w:r>';
   const WT = (s: string) => '<w:r><w:t xml:space="preserve">' + s + '</w:t></w:r>';
 
-  it('Word: automatic footnotes are numbered in order (Word draws those numbers itself); a custom mark ("*", "†") stays as text beside the number Beuk adds', async () => {
+  it('Word: automatic footnotes are numbered in order among themselves (Word draws those numbers itself); a custom mark ("*", "†") is the note\'s label, with no number of Beuk\'s beside it (BEUK:notemarks; test/import-word-note-marks.test.ts)', async () => {
     const body = wp('Chapter 1: Dawn', true) + '<w:p>' + WT('The caravan left') + WREF(2) + WT(' at dawn, and') + WREF(3, '*') + WT(' on, and') + WREF(4, '†') + WT(' again, and') + WREF(5) + WT('.') + '</w:p>';
     const notes = '<?xml version="1.0" encoding="UTF-8"?><w:footnotes ' + W_NS + '><w:footnote w:type="separator" w:id="0"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>'
       + '<w:footnote w:id="2"><w:p><w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteRef/></w:r>' + WT(' Salt, by the sack.') + '</w:p></w:footnote>'
@@ -478,10 +478,11 @@ describe('notes from formats with no typed label: what each stores and shows tod
       + '<w:footnote w:id="4"><w:p>' + WT('†') + WT(' The dagger note.') + '</w:p></w:footnote>'
       + '<w:footnote w:id="5"><w:p><w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteRef/></w:r>' + WT(' The last, automatic again.') + '</w:p></w:footnote></w:footnotes>';
     const g = await importFile('notes.docx', await docx(body, { 'word/footnotes.xml': notes }), '');
-    // OPEN: Word shows the writer "1, *, †, 2". The book shows "[1], [2]*, [3]†, [4]": the writer's marks are kept as text, a number of Beuk's stands beside each, and the last automatic note is 4 where Word drew 2.
+    // Word shows the writer "1, *, †, 2", and so does the book. (Measured 2026-11-22, before BEUK:notemarks: "[1], [2]*, [3]†, [4]": the writer's
+    // marks kept as text, a number of Beuk's beside each, and the last automatic note 4 where Word drew 2.)
     expect(both(g)).toEqual({
-      stored: ['The caravan left[^1] at dawn, and[^2]* on, and[^3]† again, and[^4].', '[^1]: Salt, by the sack.', '[^2]: * The pans of the coast.', '[^3]: † The dagger note.', '[^4]: The last, automatic again.'],
-      marks: ['[1]', '[2]', '[3]', '[4]'], notes: ['[1] Salt, by the sack.', '[2] * The pans of the coast.', '[3] † The dagger note.', '[4] The last, automatic again.'] });
+      stored: ['The caravan left[^1] at dawn, and[^*] on, and[^†] again, and[^2].', '[^1]: Salt, by the sack.', '[^*]: The pans of the coast.', '[^†]: The dagger note.', '[^2]: The last, automatic again.'],
+      marks: ['[1]', '[*]', '[†]', '[2]'], notes: ['[1] Salt, by the sack.', '[*] The pans of the coast.', '[†] The dagger note.', '[2] The last, automatic again.'] });
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);
 
