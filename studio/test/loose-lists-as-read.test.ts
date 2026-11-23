@@ -57,13 +57,19 @@ describe('a list whose items are parted by blank lines is read as the list it is
 
   it('plain text: an item line that ends a block of text lines is the first item of the list that goes on after it; an item\'s own further lines stay its own', async () => {
     const g = await importFile('loose.txt', null, TXT);
-    /* stored as typed: the text lines, the item line under them, the blank lines, the one-space indent */
-    expect(one(g)).toContain('He packed, and the list was short\nand it ran so:\n * a lantern\n\n * a coil of rope\n\n * the ledger that he would\nnot leave behind');
+    /* stored as typed: the text lines, the item line under them, the blank lines, the one-space indent.
+       BEUK:textlines — this file's paragraphs stand on one long line each, so a short line of a paragraph that another
+       line follows is a line the writer ended, and is stored marked as one (BS, a backslash straight before the
+       newline) and set as a line break: "…the list was short" / "and it ran so:". Until that rule both pins below
+       held a bare newline and one flowing line. No mark is written before a line that is a list's item, nor inside
+       an item ("the ledger that he would" / "not leave behind" stays the item's own two lines). */
+    const BS = String.fromCharCode(92);
+    expect(one(g)).toContain('He packed, and the list was short' + BS + '\nand it ran so:\n * a lantern\n\n * a coil of rope\n\n * the ledger that he would\nnot leave behind');
     const page = pageOf(g, 'lantern');
-    expect(page).toContain('<p>He packed, and the list was short and it ran so:</p>\n<ul class="book-list"><li>a lantern</li><li>a coil of rope</li><li>the ledger that he would not leave behind</li></ul>');
+    expect(page).toContain('<p>He packed, and the list was short<br/>and it ran so:</p>\n<ul class="book-list"><li>a lantern</li><li>a coil of rope</li><li>the ledger that he would not leave behind</li></ul>');
     expect(page).toContain('<p>Then, in order:</p>\n<ol class="book-list"><li>first the quay</li><li>then the pans</li><li>then home</li></ol>');
-    /* no list follows: the line stays a line of its paragraph */
-    expect(page).toContain('<p>A paragraph whose last line opens on a mark  * and nothing follows it as a list</p>'); /* its lines closed up as any paragraph's are: the line's own leading space after the joining one */
+    /* no list follows: the line stays a line of its paragraph, and a line of its own, as the writer ended the one before it */
+    expect(page).toContain('<p>A paragraph whose last line opens on a mark<br/> * and nothing follows it as a list</p>');
     expect(wordItems(g)).toEqual(['a lantern', 'a coil of rope', 'the ledger that he would not leave behind', 'first the quay', 'then the pans', 'then home']);
     expect(figures(g)).toEqual(CLEAR);
   }, 120_000);

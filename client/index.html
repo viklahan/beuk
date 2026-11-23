@@ -30610,15 +30610,28 @@
       function lineBreakMarksOff(content) {
         const text = String(content == null ? "" : content);
         if (text.indexOf(LINE_BREAK_MARK) === -1) return text;
-        const offBlock = (b) => {
+        /* `read`: the run's blocks as the book reads them (looseListBlocks). A block that is an item of a list whose
+           items are parted by blank lines is a list's item, and keeps its backslash; one whose last line is such a
+           list's first item is a paragraph up to that line. */
+        const offBlock = (b, read) => {
           if (b.indexOf(LINE_BREAK_MARK) === -1) return b;
           const v = b.trim(), lines = v.split("\n");
           if (/^\[\^?\d{1,3}\]:/.test(v) || /^##? /.test(v) || lines.some((l) => parseImageLine(l)) || listItemsOf(lines)) return b;
-          return b.split(LINE_BREAK_MARK).join("\n");
+          if (read.has(v)) return b.split(LINE_BREAK_MARK).join("\n");
+          const lead = lines.slice(0, -1).join("\n");
+          return read.has(lead) ? b.replace(lead, () => lead.split(LINE_BREAK_MARK).join("\n")) : b;
         };
         const out = [];
         let run = [], flow = true;
-        const flush = () => { if (run.length) out.push(flow ? run.join("\n").split(/(\n\s*\n)/).map((b, i) => (i % 2 ? b : offBlock(b))).join("") : run.join("\n")); run = []; };
+        const flush = () => {
+          if (!run.length) return;
+          if (flow) {
+            const ps = run.join("\n").split(/(\n\s*\n)/);
+            const read = new Set(looseListBlocks(ps.filter((b, i) => !(i % 2)).map((b) => b.trim()).filter(Boolean)));
+            out.push(ps.map((b, i) => (i % 2 ? b : offBlock(b, read))).join(""));
+          } else out.push(run.join("\n"));
+          run = [];
+        };
         text.split("\n").forEach((l) => {
           const om = l.match(CONTAINER_OPEN_RE);
           if (om) { flush(); out.push(l); const k = om[1].toLowerCase(); flow = k === "center" || k === "right" || k === "sideways" || k === "upside-down" || (k === "columns" && !/\bhanging\b/i.test(om[2] || "")); return; }
@@ -44849,14 +44862,16 @@
         const text = String(content == null ? "" : content);
         const ends = ir && ir.lineEnds && ir.lineEnds.size ? ir.lineEnds : null, isMd = !!ir && ir.format === "md";
         if (text.indexOf("\n") === -1 || (!ends && (isMd || text.indexOf(LINE_BREAK_MARK) === -1))) return text;
-        const markBlock = (b, next) => {
+        /* `read`: the run's blocks as the book reads them (looseListBlocks: items parted by blank lines are one list, and
+           a block's last line may be that list's first item). A block is marked only where it stands there as the
+           paragraph it is: whole, or all but its last line. A block that is an item of a list gets no mark (a list's
+           item keeps no break, and would show the backslash). */
+        const markBlock = (b, read) => {
           const v = b.trim(), ls = v.split("\n");
           if (ls.length < 2 || /^\[\^?\d{1,3}\]:/.test(v) || /^##? /.test(v) || /^(\*\*\*|❦|⁂)$/.test(v) || ls.some((l) => parseImageLine(l)) || listItemsOf(ls)) return b;
           const quote = ls.every((l) => l.startsWith(">"));
-          /* a block the book reads as an item of the list that follows it (looseListBlocks), whole or by its last line: no mark there */
-          const loose = next && !quote ? looseListBlocks([v, next]) : null;
-          if (loose && loose.length === 1) return b;
-          const lastIsItem = !!loose && loose[0] !== v;
+          const lastIsItem = !read.has(v);
+          if (lastIsItem && !read.has(ls.slice(0, -1).join("\n"))) return b;
           let typed = 0, unsure = 0;
           const out = ls.map((l, i) => {
             if (i === ls.length - 1) return l;
@@ -44875,7 +44890,11 @@
         let run = [], flow = true;
         const flush = () => {
           if (!run.length) return;
-          if (flow) { const ps = run.join("\n").split(/(\n\s*\n)/); out.push(ps.map((b, i) => (i % 2 ? b : markBlock(b, i + 2 < ps.length ? ps[i + 2].trim() : ""))).join("")); }
+          if (flow) {
+            const ps = run.join("\n").split(/(\n\s*\n)/);
+            const read = new Set(looseListBlocks(ps.filter((b, i) => !(i % 2)).map((b) => b.trim()).filter(Boolean)));
+            out.push(ps.map((b, i) => (i % 2 ? b : markBlock(b, read))).join(""));
+          }
           else out.push(run.join("\n"));
           run = [];
         };
@@ -54438,8 +54457,10 @@
                 if (c1.indexOf("*first light*") === -1) bad.push("italics lost");
                 if (!/^\*\*\*$/m.test(c1)) bad.push("the # scene break did not come back as a scene break");
                 if (c1.indexOf("████") === -1) bad.push("the redaction did not stay blacked out");
-                /* the Word import reads a verse stanza's line breaks as spaces (as it does for Beuk's own Word export): its words come back in order */
-                if (!/The tide runs east,\s+the tide runs west\./.test(c1)) bad.push("the verse's words did not come back");
+                /* BEUK:breaksshown — the Word import keeps a verse stanza's line breaks as the line breaks the writer made, marked (a
+                   backslash straight before the newline): its lines come back as lines. (They came back as spaces until
+                   BEUK:breaksgiven, and as bare newlines, which no surface showed, until this.) */
+                if (c1.indexOf("The tide runs east,\\\nthe tide runs west.") === -1) bad.push("the verse's words did not come back");
                 if (/Margaret Quillon|about 100 words|The Tide Ledger/i.test(chs.map((s) => s.content).join("\n"))) bad.push("the title page came in as prose"); /* BEUK:asgiven — the file holds the title as stored now (set in capitals by w:caps), so that is what would stand in the prose */
                 const end = chs[chs.length - 1] ? String(chs[chs.length - 1].content || "") : "";
                 if (!/She left at dawn\./.test(end)) bad.push("the last chapter's text is missing");
