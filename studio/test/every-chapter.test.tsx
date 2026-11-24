@@ -440,6 +440,7 @@ describe('the dialog', () => {
     expect(E['everych.scope']).toMatch(/Front and back matter are not changed/);
     const rows = [...document.querySelectorAll('#modalEveryChapter .everych-row')].map((li) => li.getAttribute('data-row'));
     expect(rows).toEqual(EVERY);
+    expect(EVERY.map((r) => document.querySelector(`label[for="everyCh-${r}"]`)!.textContent)).toEqual(['Chapter backdrop', 'Drop cap', 'Small-caps lead-in', 'Plate fit']);
     for (const r of EVERY) {
       expect(box(r).type).toBe('checkbox');
       expect(box(r).checked, r).toBe(false);
@@ -616,15 +617,28 @@ describe('its words in every language', () => {
   const keys = Object.keys(E).filter((k) => k.startsWith('everych.'));
   const holes = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join(' ');
 
-  it('22 keys in each of the 13 packs, each with English\'s placeholders, none empty, no exclamation mark', () => {
-    expect(keys.length).toBe(22);
+  it('23 keys in each of the 13 packs, each with English\'s placeholders, none empty, no exclamation mark', () => {
+    expect(keys.length).toBe(23);
     expect(Object.keys(packs).length).toBe(13);
     for (const [lang, pack] of Object.entries(packs)) {
       for (const k of keys) {
         expect(typeof pack[k] === 'string' && pack[k]!.trim().length > 0, `${lang} ${k}`).toBe(true);
         expect(holes(pack[k]!), `${lang} ${k}`).toBe(holes(E[k]!));
         expect(/[!！]/.test(pack[k]!), `${lang} ${k}`).toBe(false);
+        // a draft is a translation, not the English left in place ("{setting}: {n}" is the one string that is only its marks)
+        if (lang !== 'en' && k !== 'everych.doneItem') expect(pack[k], `${lang} ${k} is still the English`).not.toBe(E[k]);
       }
+    }
+  });
+
+  it('docs/strings-pending-signoff.md lists every key as a draft, and approves none', () => {
+    const doc = readFileSync(path.resolve(__dirname, '../../docs/strings-pending-signoff.md'), 'utf8');
+    expect(doc.toLowerCase()).toContain('not approved');
+    for (const k of keys) expect(doc, k).toContain('### `' + k + '`');
+    // each key's twelve drafts stand there as the packs hold them
+    for (const [lang, pack] of Object.entries(packs)) {
+      if (lang === 'en') continue;
+      for (const k of keys) expect(doc, `${lang} ${k}`).toContain('`' + pack[k] + '`');
     }
   });
 

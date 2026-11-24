@@ -50,7 +50,7 @@ export type Said = { key: UiKey } | { text: string };
 
 export type RowDef = {
   id: RowId;
-  /** The row's name (the chapter settings' own label for it). */
+  /** The row's name (the chapter settings' own label for it, where that says enough by itself). */
   label: UiKey;
   /** The section keys this row reads and may write; nothing else of a section is ever touched. */
   keys: readonly string[];
@@ -125,7 +125,7 @@ export const ROWS: readonly RowDef[] = [
   {
     /* The fit of a plate, onto chapters that have a plate only: a chapter without one has nothing to fit. */
     id: 'plateFit',
-    label: 'editor.plateFit',
+    label: 'everych.plateFit', // "Plate fit": the settings' own label is "Fit", which says enough only under the plate row
     keys: ['plateId', 'plateFit'],
     offered: (src, x) => pictureIn(src.plateId, x) !== null,
     reaches: (target, x) => pictureIn(target.plateId, x) !== null,
