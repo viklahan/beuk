@@ -66,7 +66,38 @@
 .proof-off { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
 .proof-modal > .modal-actions { margin-block-start: 14px; }
 
+/* ---------- The proof a page at a time (src/export/pages.ts): the dialog fills the window ---------- */
+.modal-back:has(> .proof-paged) { padding: 0; }
+.modal.proof-modal.proof-paged { max-width: none; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; padding: 14px 18px; overflow: hidden; }
+.proof-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; flex: 0 0 auto; margin-block-end: 6px; }
+.proof-head > h2 { margin: 0; flex: 1 1 auto; min-width: 0; }
+.proof-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; flex: 0 0 auto; }
+.proof-view { display: inline-flex; gap: 4px; }
+.proof-paged > .m-sub { margin-block: 0 10px; }
+/* the frame's place; in pages, the line that a link out of the book was stopped is laid over the page's foot (presses
+   pass through it to the page) */
+.proof-stage { position: relative; display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.proof-over {
+  position: absolute; inset-block-end: 10px; inset-inline: 0; margin: 0 auto; width: fit-content; max-width: min(100% - 24px, 38rem);
+  box-sizing: border-box; padding: 8px 12px; background: var(--panel-2); color: var(--ink-2); border: 1px solid var(--line-2);
+  border-radius: 9px; box-shadow: var(--shadow); pointer-events: none;
+}
+/* a page, book-shaped: the standalone page's own measure of 38em of text between its 1.4em margins, never wider */
+.proof-paged.is-pages .proof-frame { align-self: center; max-width: 40.75rem; }
+.proof-paged.is-scroll .proof-frame { align-self: center; max-width: 1040px; }
+.proof-foot { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; margin-block-start: 10px; }
+.proof-foot > .modal-actions { margin: 0; margin-inline-start: auto; flex: 0 0 auto; }
+.proof-pager { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; }
+.proof-slider { flex: 1 1 auto; min-width: 48px; accent-color: var(--accent); }
+.proof-count { flex: 0 0 auto; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.proof-pager .tb-btn[aria-disabled="true"] { opacity: .5; }
+@media (forced-colors: active) { .proof-view .tb-btn[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -2px; } }
+
 @media (max-width: 700px) {
+  .modal.proof-modal.proof-paged { padding: 10px 12px; }
+  .proof-paged.is-pages .proof-frame, .proof-paged.is-scroll .proof-frame { max-width: none; }
+  .proof-paged .proof-lbl { display: none; }
+  .proof-pager { gap: 6px; }
   .exp-proof .fmt-actions .tb-btn { flex: 1 1 auto; justify-content: center; }
   .exg-head { padding-inline: 2px; }
   .modal-back:has(> .proof-modal) { padding: 0; }
