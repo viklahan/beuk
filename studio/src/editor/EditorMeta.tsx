@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type * as Y from 'yjs';
 import { escKey } from '@book/editor/index.js';
+import { EveryChapter } from '../chapters/EveryChapter';
 import { useLocale } from '../i18n/LocaleProvider';
 import { ArtRows } from '../pictures/ArtRows';
 import { sectionKey } from '../pictures/pictures';
@@ -23,7 +24,11 @@ import { previewIfLoaded } from '../preview/preview';
      heads all read the section, so they follow it (1.0's renderSidebar / renderPreview are React's re-render here);
    - chRunHead "input" (BEUK:headfit): runHead as typed when it has a letter, else the key is removed; the field's
      placeholder is the title (the head falls back to it);
-   - tglDropCap / tglSmallCaps (bindSwitch): the opposite of what the switch shows. */
+   - tglDropCap / tglSmallCaps (bindSwitch): the opposite of what the switch shows.
+
+   Not 1.0's (2026-11-24): after the art rows, "Use on every chapter…" (src/chapters/EveryChapter.tsx) copies this
+   chapter's backdrop, drop cap, lead-in or plate fit to every other chapter. It stands inside #bodyArtRows, so it
+   shows for exactly the sections those rows show for. */
 
 type Rec = Record<string, unknown>;
 
@@ -154,6 +159,7 @@ export function EditorMeta({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unkn
             <button className="switch" id="tglSmallCaps" aria-pressed={smallCaps ? 'true' : 'false'} aria-label={t('editor.smallCapsAria')} onClick={() => write({ smallCaps: !smallCaps })} />
           </div>
           <ArtRows ydoc={ydoc} section={section} />
+          <EveryChapter ydoc={ydoc} section={section} />
         </div>
       )}
     </div>
