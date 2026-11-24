@@ -4,6 +4,13 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-24 — One chapter's settings on every chapter
+
+- **Use on every chapter.** A chapter's settings now end with a button, Use on every chapter. It copies that chapter's backdrop (the picture and its strength together), its drop cap, its small-caps lead-in or the fit of its plate to every other chapter in one step. You tick what to copy; nothing is ticked for you.
+- **It says what would change first.** Each setting shows this chapter's value and the exact number of other chapters that would change. Every chapter means every section in the body of the book except Part dividers, and chapters left out of the export are included. Front and back matter are never changed, the fit goes only to chapters that have a plate, and no text is touched.
+- **Getting the old settings back.** The chapters that change lose the setting they had. The message that follows offers Undo for ten seconds, and a snapshot named "Before a chapter change" is saved in History first. Restoring from a snapshot also brings back the text as it was then.
+- Not copied, on purpose: a chapter's number, title, subtitle and running head, its plate picture and alt text, and scene pictures. Each of those describes one chapter.
+
 ## 2026-11-24 — The whole book before you export, and a shorter Export
 
 - **Read the whole book before you export it.** Export now opens with an offer. Read the whole book on screen shows the book from its first page to its last in one scrolling view. Turn the print pages opens the Print Interior View, and closing it brings you back to Export. It is an offer: every export works without it.
