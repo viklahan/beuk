@@ -5,6 +5,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { ySyncPluginKey } from '@tiptap/y-tiptap';
 import { LINE_BLOCKS, canApplyMark, normalizeBlock } from '@book/editor/index.js';
 import { markToBook, toBook, toEditor } from './bridge';
+import { poemPlugin, poemState } from './poem';
 
 /* How the book's text behaves in the editor (Part B's contract):
 
@@ -23,7 +24,9 @@ import { markToBook, toBook, toEditor } from './bridge';
      a mark removes the mark and its new line together. In any other block
      (a heading, a list's item, a quotation's line, a note) Shift-Enter is
      the plain "\n" it was: the page reads no mark there, and would show
-     the backslash.
+     the backslash. BEUK:poemmode — and so it is in a chapter that is a poem
+     (poem.ts): every new line of a poem is a line on the page already, so
+     no mark is written there either.
    - Normalising: Part B's normalizeBlock(parent, index) runs, in
      appendTransaction, on the blocks local edits touched, so the page always
      shows the form the text reads back as. It skips remote (ySync)
@@ -302,7 +305,8 @@ export const BookBehaviour = Extension.create<BehaviourOptions>({
       const { state, view } = this.editor;
       const parent = state.selection.$from.parent;
       if (!parent.isTextblock) return false;
-      view.dispatch(state.tr.insertText(parent.type.name === 'paragraph' ? LINE_BREAK : '\n').scrollIntoView());
+      // BEUK:poemmode: in a poem a new line is kept as it is; the mark is for prose
+      view.dispatch(state.tr.insertText(parent.type.name === 'paragraph' && !poemState(state).on ? LINE_BREAK : '\n').scrollIntoView());
       return true;
     };
     /* straight after a mark: the mark and its new line go together (one alone would leave a backslash on the page) */
@@ -323,5 +327,5 @@ export const BookBehaviour = Extension.create<BehaviourOptions>({
       'Mod-i': () => toggleBookMark(this.editor, 'em', this.options.onRefuse) || true,
     };
   },
-  addProseMirrorPlugins: () => [normalizePlugin(), breakMarkPlugin()],
+  addProseMirrorPlugins: () => [normalizePlugin(), breakMarkPlugin(), poemPlugin()],
 });

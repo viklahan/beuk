@@ -4,6 +4,7 @@ import './styles/dialogs.css';
 import './styles/history.css';
 import './styles/sidebar.css';
 import './styles/toolbar.css';
+import './styles/poem.css';
 import './styles/tour.css';
 import './styles/insights.css';
 import './styles/notebook.css';
