@@ -5896,8 +5896,10 @@ screen, shouldn't we show them the actual book on full screen, like they
 can flip the entire book." Of which book: "Both, gives complete view of
 the book in each format before printing. We can have this feature for only
 paid subscribers, rest get the view as we have now?" He approved this
-table, and that nothing near the buttons speaks of plans: an account
-without these views simply gets the others, with no lock, badge or line.
+table. Nothing near the buttons speaks of plans: an account without these
+views simply gets the others, with no lock, badge or line. That silence is
+the building session's call, not a ruling of his: he asked "do we have to
+say it comes with a paid plan?", was told no, and went on. His to overturn.
 
 | Who | What they get |
 |---|---|

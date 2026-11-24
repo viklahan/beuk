@@ -17,8 +17,10 @@ import { cloudFacts } from '../closure/index';
    absent while no answer for a signed-in account is held. No second request is made for this.
 
    The rule: signed in, AND an answer is held, AND it does not list 'proof.pages'. Signed out, no answer yet, an answer
-   without the list: the views as they were. Nothing is said about plans near the buttons either way (V's decision):
-   an account that does not have the page-by-page views simply gets the others.
+   without the list: the views as they were. Nothing is said about plans near the buttons either way:
+   an account that does not have the page-by-page views simply gets the others. (V asked, 2026-11-24, "do we have to
+   say it comes with a paid plan?"; the building session answered no and left it out. Not a ruling of his; his to
+   overturn.)
 
    A soft lock, said plainly: both views are drawn in this browser from the book already on the desk, so there is
    nothing for the server to refuse. This decides what the studio offers; it is not a control someone determined

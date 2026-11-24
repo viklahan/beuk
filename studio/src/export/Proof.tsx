@@ -50,7 +50,8 @@ import { exportRun } from './state';
    - 1.0's own Hardcover view, full screen, the book open at its first spread (src/export/hardcover.ts); the button
      then reads "Flip through the printed book". Where the preview pane is not on screen, the button is the one above.
    For everyone else nothing here is different: the same words, the same frame, the same dialog, and nothing near the
-   buttons speaks of plans (V's decision). */
+   buttons speaks of plans (V asked, 2026-11-24, "do we have to say it comes with a paid plan?"; the building session
+   answered no and left it out. Not a ruling of his; his to overturn). */
 
 type Shown = { kind: 'preparing' } | { kind: 'book'; url: string } | { kind: 'empty' } | { kind: 'failed'; error: string };
 /** What the dialog says under the frame: a link out of the book was stopped ("off": the reader is where they were), or
