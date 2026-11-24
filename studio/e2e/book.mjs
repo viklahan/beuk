@@ -127,6 +127,25 @@ async function watch(page) {
   openGroupsFirst(page);
   return page;
 }
+/* A section of the export modal standing alone under Store-ready, the modal held to the top of the window (1.0's page
+   and 2.0's alike), for the regions compared pixel for pixel: `id` names an element in the section. exportTogether
+   puts back what exportAlone hid. */
+const exportAlone = (p, id) => p.evaluate((id) => {
+  const keep = document.getElementById(id).closest('.fmt-sec');
+  const back = document.getElementById('modalExport');
+  back.style.alignItems = 'flex-start';
+  const hidden = [];
+  const hide = (el) => { if (el !== keep && el.style.display !== 'none') { hidden.push(el); el.style.display = 'none'; } };
+  back.querySelectorAll('.fmt-sec').forEach(hide);
+  // 1.0's EPUB block: loose parts of the modal, not a .fmt-sec (in 2.0 it stands in the E-book group, closed)
+  for (let el = back.querySelector('.modal > h3'); el && !el.classList.contains('fmt-sec'); el = el.nextElementSibling) hide(el);
+  window.__exportHidden = hidden;
+}, id);
+const exportTogether = (p) => p.evaluate(() => {
+  (window.__exportHidden || []).forEach((el) => { el.style.display = ''; });
+  window.__exportHidden = [];
+  document.getElementById('modalExport').style.alignItems = '';
+});
 /* The export screen's groups (src/export/groups.ts, 2026-11-23): its formats stand in six groups, all closed when the
    screen opens, so a control inside one is not in view until its group is open. Every step here that needs a control in
    view (a click, a fill, a choice, a file, a wait for it to show) first opens the group that holds it, as a writer does:
@@ -5689,22 +5708,7 @@ async function wave5cScreens(origin) {
         // so what stands above a section is no longer what stands above it in 1.0's one column, and with it the
         // subpixel row the region is cut at (wave 5b's note): alone, what stands above is alike again (2.0's own parts
         // there, the proof and the groups' headers, are whole pixels tall).
-        const alone = (p, id) => p.evaluate((id) => {
-          const keep = document.getElementById(id).closest('.fmt-sec');
-          const back = document.getElementById('modalExport');
-          back.style.alignItems = 'flex-start';
-          const hidden = [];
-          const hide = (el) => { if (el !== keep && el.style.display !== 'none') { hidden.push(el); el.style.display = 'none'; } };
-          back.querySelectorAll('.fmt-sec').forEach(hide);
-          // 1.0's EPUB block: loose parts of the modal, not a .fmt-sec (in 2.0 it stands in the E-book group, closed)
-          for (let el = back.querySelector('.modal > h3'); el && !el.classList.contains('fmt-sec'); el = el.nextElementSibling) hide(el);
-          window.__w5cHidden = hidden;
-        }, id);
-        const together = (p) => p.evaluate(() => {
-          (window.__w5cHidden || []).forEach((el) => { el.style.display = ''; });
-          window.__w5cHidden = [];
-          document.getElementById('modalExport').style.alignItems = '';
-        });
+        const alone = exportAlone, together = exportTogether;
         // and in a window tall enough that neither modal scrolls: 2.0's is the taller one (the proof and the groups'
         // headers stand above the section) and scrolled here where 1.0's did not, and a modal whose content is a
         // fraction of a pixel tall (1.0's 18.75px lines) stops its scroll between two pixel rows
@@ -8756,6 +8760,10 @@ async function wave7bScreens(srv) {
         // 1.0's desk holds the same book, linked to the same shelf copy (the same account)
         await one.evaluate(([b, i]) => { applyBookDoc(JSON.parse(JSON.stringify(b))); cloud.linkedId = i; cloud.linkState = 'linked'; cloudDirty = false; renderCloudChrome(); }, [book, id]);
         const shot = async (p, sel) => {
+          // (2026-11-23) in 2.0 the archive and the share section stand in the export screen's last group, closed when
+          // the screen opens: it is opened first (1.0's page has no groups, and the other regions are not in one)
+          const opened = await p.evaluate((s) => { try { return !!(window.beukExport && window.beukExport.reveal && window.beukExport.reveal(s)); } catch (e) { return false; } }, sel);
+          if (opened) await p.$eval(sel, (x) => x.scrollIntoView());
           await p.waitForTimeout(400);
           const el = await p.$(sel);
           return el ? el.screenshot({ animations: 'disabled' }) : null;
@@ -9533,8 +9541,16 @@ async function lockcopyScreens(srv) {
           await p.check('#lockDocxOn');
           await p.evaluate(() => document.fonts.ready);
           await p.waitForTimeout(3800);
+          // (2026-11-23, the export screen's groups) the Word section standing alone, in a window tall enough that
+          // neither modal scrolls: wave 5c's note (what stands above it is alike again, and no scroll stops between
+          // two pixel rows)
+          await p.setViewportSize({ width: 1280, height: 2400 });
+          await exportAlone(p, 'btnDownloadDocx');
           await p.locator('#lockDocx').scrollIntoViewIfNeeded();
+          await p.waitForTimeout(200);
           shots[app + ' fieldset'] = await p.locator('#lockDocx').screenshot();
+          await exportTogether(p);
+          await p.setViewportSize({ width: 1280, height: 800 });
           await lcPrintReadyDone(p, app);
           await p.click('#printReadyNote [data-pr-locked]');
           await p.waitForSelector('#modalLockPdf.open');
