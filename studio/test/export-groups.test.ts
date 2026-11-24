@@ -291,6 +291,12 @@ describe('what shows, moves to or focuses a part of the screen opens its group',
     $('printReadyNote').textContent = 'Your print-ready PDF is ready.';
     await tick();
     expect(openIds()).toEqual(['print']);
+    // an answer the writer asked for again opens its group with the same words too (the store check's "Validate",
+    // pressed with another group open: 1.0's runValidation writes the same summary)
+    $('validateResults').innerHTML = '<div class="val-summary">2 errors</div>';
+    $('validateResults').style.display = '';
+    await tick();
+    expect(openIds()).toEqual(['ebook']);
     // a result cleared or hidden opens nothing (1.0's renderPlatformPresets empties the validator's and the audit's)
     head('files').click();
     $('validateResults').style.display = 'none';

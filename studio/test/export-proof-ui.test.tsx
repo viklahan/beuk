@@ -215,6 +215,14 @@ describe('the export screen: a proof first, then the formats in groups', { timeo
     expect(await blob.text()).toBe(want);
     // what this view is, said in the dialog
     expect(document.querySelector('#modalProof .m-sub')!.textContent).toBe(t('proof.note'));
+    // Tab stays inside: the dialog stack's list is the frame and Close; the stop before the frame (not in that list)
+    // takes a Shift+Tab that leaves the frame backwards and hands it to Close
+    const { focusablesIn } = await import('../src/shell/Dialog');
+    expect(focusablesIn(document.querySelector('#modalProof .modal') as HTMLElement).map((e) => e.id || e.tagName)).toEqual(['IFRAME', 'btnProofClose']);
+    const guard = document.querySelector<HTMLElement>('#modalProof .proof-guard')!;
+    expect([guard.getAttribute('aria-hidden'), guard.tabIndex, guard.nextElementSibling]).toEqual(['true', 0, f]);
+    await act(async () => void guard.focus());
+    expect(document.activeElement).toBe($('btnProofClose'));
     // on the dialog stack: the export screen stays open under it; Escape closes only the proof; focus returns to its button
     expect(isOpen()).toBe(true);
     await act(async () => void fireEvent.keyDown(document, { key: 'Escape' }));

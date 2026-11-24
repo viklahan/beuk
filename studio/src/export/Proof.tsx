@@ -188,7 +188,14 @@ export function ExportProof({ onBack }: { onBack: () => void }) {
           {t('proof.note')}
         </p>
         {shown.kind === 'book' ? (
-          <iframe key={frameNo} className="proof-frame" title={t('proof.frame')} sandbox="" referrerPolicy="no-referrer" src={shown.url} tabIndex={0} onLoad={onLoad} />
+          <>
+            {/* Tab stays in the dialog: the keys pressed inside the frame never reach this page, so Shift+Tab out of the
+                frame's first link would land on whatever stands before the frame in the page (the export screen, under
+                this dialog). This stop takes that step and hands it to Close, the dialog's last control. It is not in
+                the dialog stack's own list (aria-hidden), so Tab from Close still goes to the frame. */}
+            <span className="proof-guard" tabIndex={0} aria-hidden="true" onFocus={() => document.getElementById('btnProofClose')?.focus()} />
+            <iframe key={frameNo} className="proof-frame" title={t('proof.frame')} sandbox="" referrerPolicy="no-referrer" src={shown.url} tabIndex={0} onLoad={onLoad} />
+          </>
         ) : (
           <p className="proof-state" role={shown.kind === 'failed' ? 'alert' : 'status'}>
             {shown.kind === 'preparing' ? t('proof.preparing') : shown.kind === 'empty' ? t('proof.empty') : t('proof.failed', { error: shown.error })}

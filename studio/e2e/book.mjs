@@ -124,7 +124,32 @@ async function watch(page) {
       else csp.errors.push(`${page.url()}: ${m.text()}`);
     }
   });
+  openGroupsFirst(page);
   return page;
+}
+/* The export screen's groups (src/export/groups.ts, 2026-11-23): its formats stand in six groups, all closed when the
+   screen opens, so a control inside one is not in view until its group is open. Every step here that needs a control in
+   view (a click, a fill, a choice, a file, a wait for it to show) first opens the group that holds it, as a writer does:
+   window.beukExport.reveal(selector), the studio's own seam. Nothing happens on 1.0's page (it has no groups), for a
+   selector outside the export screen, or for one that is not CSS. */
+function openGroupsFirst(page) {
+  const reveal = (sel) => page.evaluate((s) => { try { return !!(window.beukExport && window.beukExport.reveal && window.beukExport.reveal(s)); } catch (e) { return false; } }, sel).catch(() => false);
+  for (const m of ['click', 'dblclick', 'fill', 'selectOption', 'setInputFiles', 'check', 'uncheck', 'hover', 'focus', 'press', 'type']) {
+    const own = page[m].bind(page);
+    page[m] = async (sel, ...rest) => {
+      if (typeof sel === 'string') await reveal(sel);
+      return own(sel, ...rest);
+    };
+  }
+  const wait = page.waitForSelector.bind(page);
+  page.waitForSelector = async (sel, opts) => {
+    // a wait for it to SHOW: once it is in the page, its group is opened, then the wait is the page's own
+    if (typeof sel === 'string' && (!opts || !opts.state || opts.state === 'visible')) {
+      await wait(sel, { ...(opts || {}), state: 'attached' });
+      await reveal(sel);
+    }
+    return wait(sel, opts);
+  };
 }
 async function harvestCsp(page) {
   try {

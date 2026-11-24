@@ -4,16 +4,14 @@
    src/styles: logical properties, and colours only from the tokens (test/look.test.ts). */
 
 /* ---------- The proof: the whole book, offered before any export ---------- */
-.exp-proof {
-  display: flex; gap: 14px; align-items: center; justify-content: space-between;
-  border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; margin: 0 0 12px;
-}
+.exp-proof { border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; margin: 0 0 12px; }
 .exp-proof:empty { display: none; }
-.exp-proof-txt { min-width: 0; }
-.exp-proof h3 { margin: 0 0 3px; font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+/* line heights in whole pixels, here and in the groups' headers: what stands under them (1.0's own sections) then
+   starts on the same pixel row it starts on in 1.0's modal, so its text is drawn the same (e2e: the regions beside 1.0's) */
+.exp-proof h3 { margin: 0 0 3px; font-size: 14.5px; font-weight: 700; line-height: 20px; display: flex; align-items: center; gap: 8px; }
 .exp-proof h3 svg { width: 16px; height: 16px; color: var(--accent); flex: 0 0 auto; }
-.exp-proof p { font-size: 12.5px; color: var(--muted); margin: 0; line-height: 1.5; }
-.exp-proof .fmt-actions { flex: 0 0 auto; justify-content: flex-end; }
+.exp-proof p { font-size: 12.5px; color: var(--muted); margin: 0; line-height: 19px; }
+.exp-proof .fmt-actions { margin-block-start: 10px; }
 .exp-proof .tb-btn { white-space: normal; text-align: start; }
 /* 1.0's Store-ready entry sits straight under it: the two read as a pair */
 .exp-proof + .st-entry { margin-block-end: 14px; }
@@ -32,12 +30,13 @@
 .exg-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .exg-icon { width: 17px; height: 17px; color: var(--accent); flex: 0 0 auto; }
 .exg-txt { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
-.exg-title { font-size: 14.5px; font-weight: 700; line-height: 1.3; }
-.exg-sub { font-size: 12.5px; font-weight: 400; color: var(--muted); line-height: 1.45; }
+.exg-title { font-size: 14.5px; font-weight: 700; line-height: 19px; }
+.exg-sub { font-size: 12.5px; font-weight: 400; color: var(--muted); line-height: 18px; }
 .exg-chev { width: 16px; height: 16px; color: var(--muted); flex: 0 0 auto; transition: transform .15s ease-out; }
 .exg.open .exg-chev { transform: rotate(180deg); }
 .exg.open > .exg-h .exg-head { background: var(--panel); }
-.exg-body { padding: 12px 6px 20px; }
+/* no inline padding: 1.0's sections keep the width they have in 1.0's modal */
+.exg-body { padding: 12px 0 20px; }
 .exg-body[hidden] { display: none; }
 /* 1.0 rules a line above every section; the first of an open group already has the header above it */
 .exg-body > .fmt-sec:first-child { border-block-start: 0; margin-block-start: 0; padding-block-start: 0; }
@@ -50,7 +49,8 @@
 }
 
 /* ---------- The proof's dialog: one tall frame ---------- */
-.modal.proof-modal { display: flex; flex-direction: column; max-width: 980px; height: 88dvh; }
+/* border-box: its height is the window's share it names, padding included (1.0's .modal is content-box) */
+.modal.proof-modal { display: flex; flex-direction: column; box-sizing: border-box; max-width: 1040px; height: 92dvh; max-height: 92dvh; }
 .proof-modal > h2, .proof-modal > .m-sub, .proof-modal > .modal-actions, .proof-modal > .proof-off { flex: 0 0 auto; }
 .proof-modal > .m-sub { margin-block-end: 12px; }
 .proof-frame { flex: 1 1 auto; min-height: 0; width: 100%; box-sizing: border-box; border: 1px solid var(--line-2); border-radius: 9px; }
@@ -59,15 +59,14 @@
   border: 1px dashed var(--line-2); border-radius: 9px; font-size: 14px; color: var(--ink-2); line-height: 1.55;
   text-align: center; overflow-wrap: anywhere; overflow-y: auto;
 }
+/* the stop before the frame that keeps Shift+Tab inside the dialog: there, never seen */
+.proof-guard { position: fixed; inset-block-start: 0; inset-inline-start: 0; width: 1px; height: 1px; overflow: hidden; opacity: 0; outline: none; }
 .proof-off { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
 .proof-modal > .modal-actions { margin-block-start: 14px; }
 
 @media (max-width: 700px) {
-  .exp-proof { flex-direction: column; align-items: stretch; }
-  .exp-proof .fmt-actions { justify-content: flex-start; }
   .exp-proof .fmt-actions .tb-btn { flex: 1 1 auto; justify-content: center; }
   .exg-head { padding-inline: 2px; }
-  .exg-body { padding-inline: 2px; }
   .modal-back:has(> .proof-modal) { padding: 0; }
   .modal.proof-modal { max-width: none; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; padding: 16px; }
 }

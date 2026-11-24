@@ -13,9 +13,10 @@ import type { UiKey } from '../i18n/strings';
      display) hides its header too, and shows it again when 1.0 shows the part.
    - COMPLETENESS GUARD: a part of the modal no group claims (a section 1.0 gains later) is never hidden: it stays in
      view, ungrouped, after the groups, and unclassified() names it (test/export-groups.test.ts fails on it).
-   - What shows, scrolls to or focuses a part of the modal opens that part's group: 1.0's result panels when new words
-     are written into them (RESULTS), 1.0's scroll to the trim sizes (SCROLLS: preflightJumpTo), 1.0's focus of the new
-     share link's field (FOCUSES: betaCopy). What 1.0 draws as the screen opens opens nothing. */
+   - What shows, scrolls to or focuses a part of the modal opens that part's group: 1.0's result panels when a result is
+     written into them (ANSWERS: each time; NOTES: when the words are new), 1.0's scroll to the trim sizes (SCROLLS:
+     preflightJumpTo), 1.0's focus of the new share link's field (FOCUSES: betaCopy). What 1.0 draws as the screen
+     opens opens nothing. */
 
 export type GroupId = 'ebook' | 'print' | 'files' | 'audio' | 'boxset' | 'archive';
 type GroupDef = { id: GroupId; title: UiKey; sub: UiKey; icon: string; claims: readonly string[] };
@@ -39,9 +40,14 @@ export const EXPORT_FIXED: readonly string[] = ['#expH', '[data-i18n="exp.sub"]'
 /** 1.0's EPUB block has one part with no name of its own: the paragraph straight after its heading. */
 const EPUB_HEAD = '[data-i18n="exp.epubH"]';
 
-/** 1.0's result panels: new words written into one, or one shown, opens its group (its text is what is compared, so
- *  the same words drawn again — a list re-read, a poll with nothing new — leave the screen as it is). */
-export const RESULTS: readonly string[] = ['validateResults', 'a11yResults', 'preflightResults', 'printReadyNote', 'archiveNote', 'epubCheckResult'];
+/** 1.0's result panels that are written only when the writer asks (runValidation, runA11yCheck, runPrintPreflight: a
+ *  button in the group, or the store check's "Validate" from outside it): every answer written opens the group, the
+ *  same words as last time too (the writer asked again). 1.0's renderPlatformPresets empties two of them: an emptied
+ *  panel opens nothing. */
+export const ANSWERS: readonly string[] = ['validateResults', 'a11yResults', 'preflightResults'];
+/** 1.0's panels that are also drawn again unasked (the archive's list re-read, the print-ready PDF's poll, EPUBCheck's
+ *  poll): one opens its group when it is shown with NEW words; the same words drawn again leave the screen as it is. */
+export const NOTES: readonly string[] = ['printReadyNote', 'archiveNote', 'epubCheckResult'];
 /** Elements 1.0 scrolls to (scrollIntoView) inside the modal: preflightJumpTo's #trimGrid, in both closures. */
 export const SCROLLS: readonly string[] = ['trimGrid'];
 /** Elements 1.0 focuses inside the modal from outside a click on them: betaCopy's #betaNewUrl (drawn anew each time). */
@@ -228,19 +234,27 @@ export function groupExport(back: HTMLElement): ExportGroups {
   };
   patch();
 
-  /* ---- 1.0's result panels: new words, shown, open their group ---- */
+  /* ---- 1.0's result panels: a result written, shown, opens its group ---- */
   const said = new Map<string, string>();
-  /** The panels' words as they stand; `act`: open the group of one whose words are new. */
-  const readResults = (act: boolean): void => {
-    for (const id of RESULTS) {
+  const wordsOf = (el: HTMLElement | null): string => (el && shown(el) ? (el.textContent || '').trim() : '');
+  /** The panels as they stand after `records`; `act`: open the group of an answer just written, or of a note whose
+   *  words are new. */
+  const readResults = (act: boolean, records: MutationRecord[]): void => {
+    for (const id of ANSWERS) {
       const el = box.querySelector<HTMLElement>('#' + id);
-      const now = el && shown(el) ? (el.textContent || '').trim() : '';
+      if (!act || !el || !wordsOf(el)) continue;
+      // written into (its children or their text), or shown (its own style or hidden attribute)
+      if (records.some((r) => (r.type === 'attributes' ? r.target === el : el.contains(r.target)))) reveal(el);
+    }
+    for (const id of NOTES) {
+      const el = box.querySelector<HTMLElement>('#' + id);
+      const now = wordsOf(el);
       const was = said.get(id) ?? '';
       said.set(id, now);
       if (act && now && now !== was) reveal(el);
     }
   };
-  readResults(false);
+  readResults(false, []);
 
   let wasOpen = back.classList.contains('open');
   const watch = new MutationObserver((records) => {
@@ -251,8 +265,8 @@ export function groupExport(back: HTMLElement): ExportGroups {
     if (isOpen && !wasOpen) {
       // the screen opens: every group closed, and what 1.0 drew on the way in is not news
       open(null);
-      readResults(false);
-    } else readResults(isOpen);
+      readResults(false, records);
+    } else readResults(isOpen, records);
     wasOpen = isOpen;
   });
   watch.observe(back, { attributes: true, attributeFilter: ['class', 'style', 'hidden'], childList: true, characterData: true, subtree: true });
