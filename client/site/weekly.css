@@ -143,6 +143,12 @@
 .shorts .story > p:not(.kick){font-size:15.5px;line-height:1.5;text-align:justify;hyphens:auto;margin-bottom:.7em}
 .shorts .story .why{margin-bottom:0}
 @media(max-width:760px){.shorts{grid-template-columns:minmax(0,1fr)}.shorts .story:nth-child(n){padding:16px 0 18px;border-right:0;border-bottom:1px solid var(--hair)}.shorts .story:last-child{border-bottom:0}.shorts .story > p:not(.kick){text-align:left}}
+/* the leader: the paper's opinion, set in italic inside a hairline box; the sentence it sets apart stands upright */
+.shorts .leader{outline:1px solid var(--hair);outline-offset:-8px}
+.shorts .leader:nth-child(n){padding:22px 20px 24px}
+.shorts .leader > p:not(.kick),.article.leader .cols p{font-style:italic}
+.shorts .leader > p em,.article.leader .cols p em{font-style:normal}
+.shorts .leader > p:last-child{margin-bottom:0}
 .takeaway{border:2px solid var(--news);margin-top:26px;position:relative}
 .paper .takeaway{padding:16px 18px 18px}
 .takeaway::before{content:"";position:absolute;inset:3px;border:1px solid var(--news);pointer-events:none}

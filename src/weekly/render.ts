@@ -21,7 +21,8 @@ import type { Issue, Story, StoryBlock, WeeklyContent } from './content.js';
  * Elsewhere" in its right; one that does not keeps the forecast and late
  * news. Under the dateline rule, the issue bar: previous, next, "No. n of
  * N", "All issues" (the stand) and, on a back issue, the newest. Short stories print
- * whole under the lead, then the takeaway box, the Sources foot and the
+ * whole under the lead, the leader (the paper's opinion) after them in the
+ * same grid, then the takeaway box, the Sources foot and the
  * shelf of all issues (#issues). Every issue closes on the same imprint.
  *
  * The printed edition link appears only when that issue's PDF is on the
@@ -147,9 +148,9 @@ function frontStory(s: Story): string {
             </article>`;
 }
 
-/** A short story, whole: its paragraphs with their links, and its "Why it matters". */
+/** A short story, whole: its paragraphs with their links, and its "Why it matters". The leader is set the same way, marked as the leader. */
 function shortStory(s: Story): string {
-  return `<article class="story short">
+  return `<article class="story short${s.place === 'leader' ? ' leader' : ''}">
               <p class="kick">${esc(s.section)}</p>
               <h3><a href="${esc(storyUrl(s))}">${esc(s.title)}</a></h3>
               ${blocksHtml(s.blocks, false)}
@@ -210,7 +211,7 @@ export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue)
               : ''
           }
         </div>
-        ${issue.shorts.length ? `<section class="shorts" aria-label="More news">${issue.shorts.map(shortStory).join('')}</section>` : ''}
+        ${issue.shorts.length + issue.leaders.length ? `<section class="shorts" aria-label="More news">${[...issue.shorts, ...issue.leaders].map(shortStory).join('')}</section>` : ''}
         ${issue.fold.length ? `<section class="fold" aria-label="Below the fold">${issue.fold.map(frontStory).join('')}</section>` : ''}
         ${issue.takeaways.map(takeaway).join('')}
         ${
@@ -251,7 +252,7 @@ export const TILE_INSIDE = 4;
 function standTile(issue: Issue, latest: boolean): string {
   const lead = issue.lead;
   const opening = lead.blocks.find((b) => b.kind === 'p');
-  const inside = [...issue.front, ...issue.shorts, ...issue.fold].slice(0, TILE_INSIDE);
+  const inside = [...issue.front, ...issue.shorts, ...issue.fold, ...issue.leaders].slice(0, TILE_INSIDE);
   const pic = lead.image ? `
               <img class="t-pic" src="${esc(imageUrl(lead))}" alt="" loading="lazy" />` : '';
   const more = latest
@@ -316,7 +317,7 @@ export function renderStand(config: Config, weekly: WeeklyContent): string {
 }
 
 export function renderStory(config: Config, issue: Issue, s: Story): string {
-  const stories = [issue.lead, ...issue.front, ...issue.shorts, ...issue.fold];
+  const stories = [issue.lead, ...issue.front, ...issue.shorts, ...issue.fold, ...issue.leaders];
   const next = stories[stories.indexOf(s) + 1];
   const blocks = s.blocks;
   // The picture sits after the first subhead (or the second paragraph), the way a column carries it.
@@ -327,7 +328,7 @@ export function renderStory(config: Config, issue: Issue, s: Story): string {
           <a class="m" href="${issueUrl(issue.number)}">Beuk Weekly</a>
           <span>Vol. ${esc(issue.volume)} · No. ${issue.number} · ${esc(weekLabel(issue.week))}</span>
         </header>
-        <article class="article">
+        <article class="article${s.place === 'leader' ? ' leader' : ''}">
           <p class="kick">${esc(s.section)}</p>
           <h2>${esc(s.title)}</h2>
           ${s.deck ? `<p class="deck">${esc(s.deck)}</p>` : ''}
