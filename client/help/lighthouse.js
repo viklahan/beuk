@@ -6,7 +6,8 @@
    goes dark when the server does not answer. Each part the server reports is
    a named buoy: green up, orange needs a look (not set up included), red
    dead. Hover or tap a buoy for the server's own words; drag to turn the
-   view a little; the button sends a shooting star.
+   view a little, right-drag to pan and tilt it; the button sends a
+   shooting star.
 
    Kind to the machine: drawn only while the scene is on screen and the tab
    is visible, polled every 30 s only while visible, one still frame at a
@@ -65,8 +66,11 @@
   var scene = new T.Scene();
   var camera = new T.PerspectiveCamera(38, 2, 0.1, 600);
   var camAngle = 0, camTarget = 0, camDist = 27;
+  // How far a drag may go: the turn either side, and the camera's rise and fall (it never goes under the water).
+  var YAW_MAX = 0.6, TILT_MIN = -3.5, TILT_MAX = 9;
+  var camTilt = 0, tiltTarget = 0;
   function placeCamera() {
-    camera.position.set(Math.sin(camAngle) * camDist, 6.2 + (camDist - 27) * 0.08, Math.cos(camAngle) * camDist);
+    camera.position.set(Math.sin(camAngle) * camDist, 6.2 + (camDist - 27) * 0.08 + camTilt, Math.cos(camAngle) * camDist);
     camera.lookAt(0, 3.6, 0);
   }
 
@@ -544,10 +548,42 @@
     tip.textContent = ''; var hb = document.createElement('b'); hb.textContent = p.name + ' · ' + (s === 'off' ? 'not set up' : WORD[s]); tip.appendChild(hb); tip.appendChild(document.createTextNode(tipText(p)));
     tip.classList.add('show');
   }
-  var drag = null;
-  renderer.domElement.addEventListener('pointermove', function (ev) { kick(); if (drag !== null) camTarget = Math.max(-0.6, Math.min(0.6, drag.a + (ev.clientX - drag.x) * -0.004)); pick(ev); });
-  renderer.domElement.addEventListener('pointerdown', function (ev) { drag = { x: ev.clientX, a: camTarget }; pick(ev); });
-  window.addEventListener('pointerup', function () { drag = null; });
+  /* Left button (or a finger) turns the view; the right button pans and
+     tilts it, as on the Aris hero. The browser's own menu stays out of the
+     scene, and the pointer is captured so a drag that leaves the canvas
+     still ends when the button lifts.
+
+     The menu belongs to the press, not to the place the button lifts: on
+     Windows the browser opens it where the right button comes up, so a tilt
+     that ends above or below the scene opened it there, on the page. A
+     right press on the scene therefore owes one menu, stopped wherever it
+     lands; the debt lapses shortly after the button lifts, so a right click
+     elsewhere on the page keeps its menu. */
+  var drag = null, cvs = renderer.domElement;
+  var menuOwed = false, menuLapse = 0, MENU_LAPSE_MS = 500;
+  cvs.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+  window.addEventListener('contextmenu', function (ev) { if (menuOwed) { menuOwed = false; clearTimeout(menuLapse); ev.preventDefault(); } }, true);
+  function dragOver() {
+    drag = null;
+    if (menuOwed) { clearTimeout(menuLapse); menuLapse = setTimeout(function () { menuOwed = false; }, MENU_LAPSE_MS); }
+  }
+  cvs.addEventListener('pointermove', function (ev) {
+    kick();
+    if (drag !== null) {
+      camTarget = Math.max(-YAW_MAX, Math.min(YAW_MAX, drag.a + (ev.clientX - drag.x) * -0.004));
+      if (drag.tilt) tiltTarget = Math.max(TILT_MIN, Math.min(TILT_MAX, drag.t + (ev.clientY - drag.y) * 0.03));
+    }
+    pick(ev);
+  });
+  cvs.addEventListener('pointerdown', function (ev) {
+    if (ev.button !== 0 && ev.button !== 2) return;
+    try { cvs.setPointerCapture(ev.pointerId); } catch (x) { /* synthetic */ }
+    drag = { x: ev.clientX, y: ev.clientY, a: camTarget, t: tiltTarget, tilt: ev.button === 2 };
+    if (ev.button === 2) { clearTimeout(menuLapse); menuOwed = true; }
+    pick(ev);
+  });
+  window.addEventListener('pointerup', dragOver);
+  window.addEventListener('pointercancel', dragOver);
   renderer.domElement.addEventListener('pointerleave', function () { tip.classList.remove('show'); hovered = null; });
 
   /* ---------------- loop ---------------- */
@@ -561,7 +597,7 @@
     queued = false;
     var t = clock.getElapsedTime(), dt = Math.min(t - last, 0.05); last = t;
     var tm = reduce ? 0 : t;
-    camAngle += (camTarget - camAngle) * 0.08; placeCamera();
+    camAngle += (camTarget - camAngle) * 0.08; camTilt += (tiltTarget - camTilt) * 0.08; placeCamera();
     skyU.uTime.value = tm; seaU.uTime.value = tm;
     var up = mode !== 'down';
     if (up && !reduce) sweep += (mode === 'warn' ? 0.95 : 0.55) * dt;
@@ -613,7 +649,7 @@
       tip.style.left = ((v.x + 1) / 2 * host.clientWidth) + 'px'; tip.style.top = ((1 - v.y) / 2 * host.clientHeight) + 'px';
     }
     renderer.render(scene, camera);
-    if (!reduce || meteor || Math.abs(camTarget - camAngle) > 0.001) kick();
+    if (!reduce || meteor || Math.abs(camTarget - camAngle) > 0.001 || Math.abs(tiltTarget - camTilt) > 0.01) kick();
   }
   if (window.IntersectionObserver) new IntersectionObserver(function (es) { onScreen = es[es.length - 1].isIntersecting; kick(); }).observe(host);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { poll(); kick(); } });
