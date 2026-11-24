@@ -512,11 +512,12 @@ export function ExportProof({ onBack, closeExport, shown: screenOpen }: { onBack
                   <Icon name={pg?.rtl ? 'ChevronRight' : 'ChevronLeft'} />
                   <span className="proof-lbl">{t('proof.prev')}</span>
                 </button>
-                <input className="proof-slider" id="proofSlider" type="range" min={1} max={count} step={1} value={page} aria-label={t('proof.slider')} aria-valuetext={pageOf} onChange={(e) => pager.current?.go(Number(e.currentTarget.value))} />
+                <input className="proof-slider" id="proofSlider" type="range" min={1} max={count} step={1} value={page} disabled={!pg} aria-label={t('proof.slider')} aria-valuetext={pg ? pageOf : undefined} onChange={(e) => pager.current?.go(Number(e.currentTarget.value))} />
                 <span className="proof-count" id="proofCount" role="status" aria-live="polite" dir={dir}>
-                  {pageOf}
+                  {/* no number until the book is in the frame and counted: "Page 1 of 1" over a book still loading would be untrue */}
+                  {pg ? pageOf : ''}
                 </span>
-                <button className="tb-btn" id="btnProofNext" type="button" aria-disabled={page >= count} aria-label={t('proof.next')} title={t('proof.next')} onClick={() => pager.current?.turn('next')}>
+                <button className="tb-btn" id="btnProofNext" type="button" aria-disabled={!pg || page >= count} aria-label={t('proof.next')} title={t('proof.next')} onClick={() => pager.current?.turn('next')}>
                   <span className="proof-lbl">{t('proof.next')}</span>
                   <Icon name={pg?.rtl ? 'ChevronLeft' : 'ChevronRight'} />
                 </button>

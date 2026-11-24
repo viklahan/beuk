@@ -237,6 +237,9 @@ describe('"Read the whole book on screen", for an account that has the page-by-p
     expect([$('btnProofPages').textContent, $('btnProofPages').getAttribute('aria-pressed'), $('btnProofScroll').textContent, $('btnProofScroll').getAttribute('aria-pressed')]).toEqual([t('proof.viewPages'), 'true', t('proof.viewScroll'), 'false']);
     // jsdom has no element full screen, so the button is not offered (the dialog already fills the window)
     expect($('btnProofFull')).toBeNull();
+    // until the book is in the frame and counted there is no number to say: "Page 1 of 1" over a book still loading
+    // would be untrue (seen in Chromium on a long book, 2026-11-24)
+    expect([$('proofCount').textContent, ($('proofSlider') as HTMLInputElement).disabled, $('btnProofNext').getAttribute('aria-disabled')]).toEqual(['', true, 'true']);
     const { doc, body } = await bookArrives(f);
     expect(pagingStyles(doc)).toBe(1);
     expect(doc.querySelectorAll('script').length).toBe(0);
