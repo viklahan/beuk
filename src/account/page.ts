@@ -104,7 +104,7 @@ export function signedOutPage(config: Config): string {
 }
 
 /** What pauses after the trial, and what never does (src/access.ts). */
-const PAUSED_LIST = 'the store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new beta-reader links, server EPUBCheck and PDF/X checks, and saving new files to your archive';
+const PAUSED_LIST = 'the store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new beta-reader links, server EPUBCheck and PDF/X checks, saving new files to your archive, and the page-by-page views of the whole book in Export';
 const ALWAYS_OPEN = 'Writing, typesetting and preview, the books already on your shelf (they keep saving), the backup file, Word and Markdown, your archive downloads, the reading links you already have, Download all my data, and deleting your account';
 
 function planSection(plan: AccountPlan, billingReturn: 'success' | 'cancelled' | null): string {

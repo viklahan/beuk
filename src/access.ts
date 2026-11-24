@@ -40,7 +40,10 @@ import { findAccessGrant } from './oauth/model.js';
  * happens, only the stamp is skipped), and turning on two-step sign-in
  * (twoStep.setup: start + enable; two-step already on stays on, and
  * signing in with it, turning it off and new recovery codes are never
- * paused). export.epub is the server-built store-ready
+ * paused), and the page-by-page views of the whole book in Export
+ * (proof.pages, below: a lock the studio keeps, with no route). The
+ * whole book on screen as one scroll, and the Print Interior View, stay
+ * open with the preview. export.epub is the server-built store-ready
  * EPUB (POST /api/epub, Step 3 part 3); export.wrap is the server-built
  * cover wrap (POST /api/wrap, part 4).
  */
@@ -88,10 +91,22 @@ export const PAUSABLE_FEATURES = {
   'export.wrap': 'cover wraps',
   'authorship.stamp': 'new authorship stamps',
   'twoStep.setup': 'turning on two-step sign-in',
+  // V, 2026-11-24: in Export, the e-book a page at a time and the printed
+  // book as an open hardcover (studio/src/export/Proof.tsx) are for an
+  // account in its trial or with a plan, and for every signed-in account
+  // while billing is off. proof.pages has NO route in ACCESS_RULES: both
+  // views are drawn in the browser from the book already on the desk, so
+  // there is no request for the server to refuse. The server only names
+  // the key in `locked` (GET /api/auth/me) and the studio chooses which
+  // view to show. That makes it a soft lock: it decides what the studio
+  // offers, and it is not something this server can enforce.
+  'proof.pages': 'the page-by-page views of the whole book in Export',
 } as const;
 export type PausableFeature = keyof typeof PAUSABLE_FEATURES;
 
-/** Route → feature. Mounted in src/app.ts in front of the routers. */
+/** Route → feature. Mounted in src/app.ts in front of the routers.
+ *  A feature with no route here is one the studio alone keeps
+ *  (proof.pages, above). */
 export const ACCESS_RULES: ReadonlyArray<{ method: 'POST'; path: string; feature: PausableFeature }> = [
   { method: 'POST', path: '/api/manuscripts', feature: 'shelf.add' },
   { method: 'POST', path: '/api/shares', feature: 'shares.create' },

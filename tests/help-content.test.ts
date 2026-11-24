@@ -242,6 +242,15 @@ const CORRECTED_2026_11_24: [string, string, string][] = [
   ["epub-error-decoder", "save the EPUB to Your Archive in the Export dialog, and choose Run EPUBCheck beside it.", "save the EPUB to Your Archive (under Archive and sharing in the Export dialog), and choose Run EPUBCheck beside it."],
 ];
 
+// 2026-11-24 (the proof of the whole book: studio/src/export/Proof.tsx, pages.ts, hardcover.ts; V 2026-11-23 "Don't we
+// need to show a complete book from start to end before exporting", 2026-11-24 "shouldn't we show them the actual book
+// on full screen, like they can flip the entire book"): the guide says what the two buttons at the top of the Export
+// dialog open, for a signed-in account and for everyone else. An addition, in place, before "What it checks". Applied
+// after the lists above.
+const ADDED_2026_11_24: [string, string, string][] = [
+  ["check-your-book", "and choose Run EPUBCheck beside it. What it checks The mimetype entry", "and choose Run EPUBCheck beside it. See the whole book first At the top of the Export dialog, See the whole book first offers two ways to go through the book from its first page to its last. Neither is required: every export works without them. Read the whole book on screen shows the e-book's sections, notes and pictures in the order the EPUB has them, with the same stylesheet. Signed in, it opens a page at a time and fills the window: turn with the arrow keys, Page Down and Page Up, the space bar, Home and End, a press on the left or right third of the page, a swipe, or the buttons and the slider under the page. Where the browser allows it, Full screen uses the whole screen. Scroll shows the book as one long page. The page numbers belong to that window: an e-reader sets its own page size and type. Signed out, or while your account is paused, it opens as that one long page. Turn the print pages opens the Print Interior View. Signed in, with the preview pane showing, the button reads Flip through the printed book and opens the print edition as an open hardcover, full screen, at its first pages. Leave full screen and you are back in the Export dialog. Signed out, or while your account is paused, it stays Turn the print pages . What it checks The mimetype entry"],
+];
+
 test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 pages), with the two edits the spec asks for and the 2026-10-26 additions', async () => {
   const db = await createTestDb();
   const server = await startTestServer(db);
@@ -276,7 +285,7 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
       }
       // 2026-10-26: the features added since H1 (removing a picture, the preview keeping its place,
       // the title read from the manuscript, Split at cursor, the Cover Maker), each added in place.
-      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15, ...ADDED_2026_11_20, ...CORRECTED_2026_11_22, ...CORRECTED_2026_11_24]) if (s === slug) {
+      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15, ...ADDED_2026_11_20, ...CORRECTED_2026_11_22, ...CORRECTED_2026_11_24, ...ADDED_2026_11_24]) if (s === slug) {
         assert.ok(expected.includes(from), `${slug}: the addition's anchor is in the fixture`);
         expected = expected.replace(from, to);
       }

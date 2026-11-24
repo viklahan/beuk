@@ -4,6 +4,13 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-24 — The whole book, a page at a time
+
+- **Read the whole book a page at a time.** Signed in, Read the whole book on screen now opens the book in pages that fill the window. Turn with the arrow keys, Page Down and Page Up, the space bar, a press on the left or right third of the page, a swipe, or the buttons and the slider under the page. Every section starts on a new page, a full-page picture has a page to itself, and a link inside the book turns to the page that holds what it names. Full screen is one button, or F.
+- **What the pages are.** They are the same reading view as before, cut to this window: the page Standalone HTML downloads, not the EPUB. The page numbers belong to this window, because an e-reader sets its own page size and type. Scroll gives the one long page back.
+- **Flip through the printed book.** Signed in, with the preview showing, the second button opens the print edition as an open hardcover, full screen, from its first pages. Leave full screen and you are back in Export.
+- Signed out, or while an account is paused, both buttons open what they opened before.
+
 ## 2026-11-24 — The whole book before you export, and a shorter Export
 
 - **Read the whole book before you export it.** Export now opens with an offer. Read the whole book on screen shows the book from its first page to its last in one scrolling view. Turn the print pages opens the Print Interior View, and closing it brings you back to Export. It is an offer: every export works without it.

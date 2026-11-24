@@ -454,12 +454,14 @@ describe('the words of the export screen (drafts in 12 languages, for V to sign 
   const KEYS = [
     ...EXPORT_GROUPS.flatMap((g) => [g.title, g.sub]),
     'proof.h', 'proof.sub', 'proof.read', 'proof.print', 'proof.title', 'proof.note', 'proof.preparing', 'proof.empty', 'proof.failed', 'proof.frame', 'proof.linkOff', 'proof.linkBack',
+    // the page-by-page views (2026-11-24: src/export/pages.ts, hardcover.ts)
+    'proof.flip', 'proof.pagesNote', 'proof.view', 'proof.viewPages', 'proof.viewScroll', 'proof.prev', 'proof.next', 'proof.slider',
   ];
   const PACKS = path.join(import.meta.dirname, '..', 'src', 'generated', 'packs');
   const pack = (code: string): Record<string, string> => JSON.parse(readFileSync(path.join(PACKS, `${code}.json`), 'utf8'));
   const holes = (s: string): string[] => [...s.matchAll(/\{[A-Za-z]+\}/g)].map((m) => m[0]).sort();
-  it('there are 24, all in the English pack, and nothing else is under expg. or proof.', () => {
-    expect(KEYS.length).toBe(24);
+  it('there are 32, all in the English pack, and nothing else is under expg. or proof.', () => {
+    expect(KEYS.length).toBe(32);
     expect(Object.keys(en).filter((k) => k.startsWith('expg.') || k.startsWith('proof.')).sort()).toEqual([...KEYS].sort());
   });
   it("the proof's words say what its links do: inside the book they work, out of it they are off; only the fallback speaks of the first page", () => {
@@ -474,7 +476,7 @@ describe('the words of the export screen (drafts in 12 languages, for V to sign 
   it('every interface language has every key, as text of its own, with the English placeholders', () => {
     const e = pack('en');
     // the same letters as English in some languages (the word is the same there)
-    const SAME: Record<string, string[]> = { it: ['expg.ebook'], pl: ['expg.ebook'] };
+    const SAME: Record<string, string[]> = { it: ['expg.ebook'], pl: ['expg.ebook'], fr: ['proof.viewPages'] };
     for (const code of meta.order) {
       const p = pack(code);
       for (const k of KEYS) {

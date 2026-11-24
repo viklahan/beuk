@@ -6374,6 +6374,404 @@ async function proofChecks(origin) {
   }
 }
 
+/* ---- the page-by-page views of the whole book (2026-11-24): proofPagesChecks (E2E_ONLY=proof, after proofChecks) ----
+   Who gets them is the server's answer to GET /api/auth/me, mirrored by the studio (src/export/entitled.ts). Here that
+   answer is given by a route on the context, as the earlier waves give /api/health and the session: open (billing off),
+   trial, paused, signed out. As in proofChecks the context is a bare one and nothing is evaluated inside the frame: it
+   runs no script, and the page around it reads it through frame.contentDocument, as the studio does.
+   - open and trial get the book in pages; paused and signed out get the one long scroll and the Print Interior View;
+   - in pages: more than one page; every section starts a page; no box stands above or below its page; the keys, the
+     buttons and a press on the outer thirds land where the counter says; a note's link lands on the page that shows the
+     note and its way back returns; a resize keeps the place; the switch gives the scroll back in the same frame; full
+     screen; Escape closes;
+   - "Flip through the printed book" opens 1.0's Hardcover view full screen, and leaving it brings the export screen
+     back with focus on the button;
+   - the paging of The Three Musketeers is timed and the number is printed. */
+const PROOF_ME = {
+  open: { user: { id: 'u1', email: 'w@example.org' }, access: { state: 'open', daysLeft: 0, locked: [] } },
+  trial: { user: { id: 'u1', email: 'w@example.org' }, access: { state: 'trial', daysLeft: 9, locked: [] } },
+  // every key the server lists while an account is paused (src/access.ts PAUSABLE_FEATURES)
+  paused: { user: { id: 'u1', email: 'w@example.org' }, access: { state: 'paused', daysLeft: 0, locked: ['shelf.add', 'shares.create', 'jobs.run', 'archive.upload', 'export.epub', 'export.print', 'export.wrap', 'authorship.stamp', 'twoStep.setup', 'proof.pages'] } },
+  out: { user: null },
+};
+async function proofPagesOpen(origin, who, file, viewport = { width: 1280, height: 800 }) {
+  const ctx = await browser.newContext({ viewport, acceptDownloads: true, deviceScaleFactor: 1, serviceWorkers: 'block' });
+  await ctx.route('**/api/**', (route) => {
+    const u = new URL(route.request().url());
+    const json = (status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+    if (u.pathname === '/api/health') return json(200, { ok: true });
+    if (u.pathname === '/api/auth/me') return json(200, PROOF_ME[who]);
+    return json(404, { error: 'not here' });
+  });
+  const opened = [];
+  ctx.on('page', (p) => opened.push(p));
+  const page = await watch(await ctx.newPage());
+  await page.goto(origin + '/studio/');
+  await page.evaluate(() => { try { localStorage.setItem('beuk.tour.v1', 'done'); } catch (e) { /* no storage */ } });
+  await page.reload();
+  await page.waitForSelector('#topbar');
+  await page.evaluate(() => {
+    window.__csp = [];
+    document.addEventListener('securitypolicyviolation', (e) => window.__csp.push({ directive: e.violatedDirective, blocked: e.blockedURI }));
+    window.__blobs = {};
+    const make = URL.createObjectURL;
+    URL.createObjectURL = function (b) { const u = make.call(URL, b); window.__blobs[u] = b; return u; };
+  });
+  await openBackup(page, file);
+  await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExport')?.getAttribute('aria-disabled') === null, null, { timeout: 120_000 });
+  // the studio has asked who is signed in and mirrored the answer (signed out: nothing is kept)
+  if (who !== 'out') await page.waitForFunction(() => document.documentElement.hasAttribute('data-plan-locked'), null, { timeout: 30_000 });
+  else await page.waitForTimeout(1500);
+  await w5aOpenModal(page);
+  return { ctx, page, opened };
+}
+/** The proof opened: its frame holds the book. */
+async function proofPagesRead(page) {
+  await page.click('#btnProofRead');
+  await page.waitForFunction(() => { const fr = document.querySelector('#modalProof iframe'); return !!fr && !!fr.contentDocument && fr.contentDocument.querySelectorAll('section.book-section').length > 0; }, null, { timeout: 180_000 });
+  await page.evaluate(() => { const fr = document.querySelector('#modalProof iframe'); window.__proofLoads = 0; fr.addEventListener('load', () => { window.__proofLoads++; }); window.__proofFrame = fr; });
+  await page.waitForTimeout(300);
+}
+/** What the page around the frame sees of the proof. */
+const proofPagesSeen = (page) => page.evaluate(() => {
+  const m = document.querySelector('#modalProof .modal'), fr = document.querySelector('#modalProof iframe');
+  if (!m || !fr) return { open: !!m };
+  const d = fr.contentDocument, b = d.body, r = fr.getBoundingClientRect(), mr = m.getBoundingClientRect();
+  const st = window.beukProof ? window.beukProof.state() : null;
+  return {
+    open: true, cls: m.className, state: st, mode: window.beukProof ? window.beukProof.mode() : null, counter: document.getElementById('proofCount')?.textContent ?? null, slider: document.getElementById('proofSlider')?.value ?? null,
+    styles: d.querySelectorAll('style[data-beuk-pages]').length, scripts: d.scripts.length, scrollLeft: b.scrollLeft, step: b.getBoundingClientRect().width, scrollTop: Math.round(d.scrollingElement.scrollTop),
+    tall: d.scrollingElement.scrollHeight > d.scrollingElement.clientHeight + 4, frame: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)], modal: [Math.round(mr.x), Math.round(mr.y), Math.round(mr.width), Math.round(mr.height)], win: [innerWidth, innerHeight],
+    note: document.getElementById('proofNote').textContent, off: document.querySelector('#modalProof .proof-off')?.textContent ?? null, sameFrame: fr === window.__proofFrame, loads: window.__proofLoads,
+    active: document.activeElement ? document.activeElement.id || document.activeElement.tagName : null, full: document.fullscreenElement === m, exportOpen: document.getElementById('modalExport').classList.contains('open'),
+    sandbox: fr.getAttribute('sandbox'), guard: !!document.querySelector('#modalProof .proof-guard'),
+  };
+});
+/** Every section's first and last page, where its first box stands in its page, and every box that stands outside its
+ *  page's own height or width: read from the page around the frame. */
+const proofPagesBoxes = (page) => page.evaluate(() => {
+  const d = document.querySelector('#modalProof iframe').contentDocument, b = d.body, cs = d.defaultView.getComputedStyle(b);
+  const step = b.getBoundingClientRect().width, pad = parseFloat(cs.paddingLeft), padT = parseFloat(cs.paddingTop), padB = parseFloat(cs.paddingBottom), rtl = cs.direction === 'rtl';
+  const dist = (r) => (rtl ? step - r.right - b.scrollLeft : r.left + b.scrollLeft);
+  const pageOf = (r) => Math.max(1, Math.floor((dist(r) + pad - 1) / step) + 1);
+  const rows = Array.from(d.querySelectorAll('section.book-section')).map((s, i) => { const rs = s.getClientRects(); return { i, start: pageOf(rs[0]), end: pageOf(rs[rs.length - 1]), x: Math.round((dist(rs[0]) - (pageOf(rs[0]) - 1) * step - pad) * 100) / 100, top: Math.round(rs[0].top - padT) }; });
+  const shared = rows.filter((r, i) => i > 0 && r.start <= rows[i - 1].end).map((r) => r.i);
+  const offEdge = rows.filter((r) => Math.abs(r.x) > 0.6).map((r) => [r.i, r.x]);
+  const low = b.clientHeight - padB;
+  let boxes = 0;
+  const outside = [];
+  for (const el of b.querySelectorAll('*')) for (const r of el.getClientRects()) {
+    if (r.width === 0 && r.height === 0) continue;
+    boxes++;
+    const at = dist(r) - (pageOf(r) - 1) * step; // from the page's own starting edge
+    if (r.top < padT - 1 || r.bottom > low + 1 || at < -1 || at + r.width > step + 1) { if (outside.length < 6) outside.push([el.tagName + '.' + String(el.className).slice(0, 30), Math.round(r.top), Math.round(r.bottom), Math.round(at), Math.round(r.width), pageOf(r)]); else outside.push(0); }
+  }
+  return { step, pad, pageHeight: Math.round(low - padT), sections: rows.length, last: rows.length ? rows[rows.length - 1].end : 0, shared, offEdge, starts: rows.map((r) => r.start).join(' '), boxes, outside: outside.length, outsideFirst: outside.filter(Boolean), scrollHeight: b.scrollHeight, clientHeight: b.clientHeight };
+});
+async function proofPagesChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const en = JSON.parse(readFileSync(path.join(STUDIO, 'src', 'generated', 'packs', 'en.json'), 'utf8'));
+  const pageOfWords = (n, of) => en['preview.pageOf'].replace('{page}', String(n)).replace('{count}', String(of));
+  const errors0 = csp.errors.length;
+
+  /* -- who gets which view -- */
+  for (const who of ['paused', 'out']) {
+    const { ctx, page } = await proofPagesOpen(origin, who, f.file);
+    try {
+      const words = await page.evaluate(() => [document.getElementById('btnProofRead').textContent, document.getElementById('btnProofPrint').textContent, document.querySelector('.exp-proof').textContent]);
+      await proofPagesRead(page);
+      const s = await proofPagesSeen(page);
+      check(words[0] === en['proof.read'] && words[1] === en['proof.print'] && !/plan|paid|trial|subscri|upgrade|locked/i.test(words[2]) && s.cls === 'modal wide proof-modal' && s.state === null && s.styles === 0 && s.scripts === 0 && s.tall && s.guard && s.note === en['proof.note'] && s.counter === null && s.sandbox === 'allow-same-origin',
+        `proof pages (${who}): the views as they were: "${words[0]}" / "${words[1]}", nothing near them about plans; the dialog is "${s.cls}", one long scroll (${s.tall}), no paging style (${s.styles}), ${s.scripts} script(s), no counter, the note as it was`);
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(300);
+      await page.click('#btnProofPrint');
+      await page.waitForFunction(() => document.getElementById('modalPrintView')?.classList.contains('open'), null, { timeout: 60_000 });
+      const pv = await page.evaluate(() => ({ device: window.beukPreview.state().device, full: !!document.fullscreenElement, exportOpen: document.getElementById('modalExport').classList.contains('open') }));
+      check(pv.device !== 'hardcover' && !pv.full && !pv.exportOpen, `proof pages (${who}): the second button opens the Print Interior View as before (the preview's device stays ${pv.device}, nothing full screen)`);
+      const reports = await page.evaluate(() => window.__csp.slice());
+      check(reports.length === 0, `proof pages (${who}): the served policy reported nothing (${reports.length})`);
+    } finally {
+      await ctx.close();
+    }
+  }
+  {
+    const { ctx, page } = await proofPagesOpen(origin, 'trial', f.file);
+    try {
+      const words = await page.evaluate(() => [document.getElementById('btnProofRead').textContent, document.getElementById('btnProofPrint').textContent, document.querySelector('.exp-proof').textContent]);
+      await proofPagesRead(page);
+      const s = await proofPagesSeen(page);
+      check(words[0] === en['proof.read'] && words[1] === en['proof.flip'] && !/plan|paid|trial|subscri|upgrade|locked/i.test(words[2]) && /proof-paged is-pages/.test(s.cls) && !!s.state && s.state.count > 1 && s.styles === 1 && s.scripts === 0,
+        `proof pages (trial): the book in pages: "${words[0]}" / "${words[1]}", nothing near them about plans; ${s.state && s.state.count} pages, ${s.styles} paging style, ${s.scripts} script(s)`);
+    } finally {
+      await ctx.close();
+    }
+  }
+
+  /* -- billing off, signed in: the whole walk -- */
+  const { ctx, page, opened } = await proofPagesOpen(origin, 'open', f.file);
+  try {
+    const words = await page.evaluate(() => [document.getElementById('btnProofRead').textContent, document.getElementById('btnProofPrint').textContent]);
+    check(words[0] === en['proof.read'] && words[1] === en['proof.flip'], `proof pages (open): the buttons read "${words[0]}" and "${words[1]}"`);
+    await proofPagesRead(page);
+    let s = await proofPagesSeen(page);
+    const same = await page.evaluate(async () => { const fr = document.querySelector('#modalProof iframe'); return (await window.__blobs[fr.getAttribute('src')].text()) === window.beukExport.run((api) => api.buildStandaloneHtml()); });
+    check(s.sandbox === 'allow-same-origin' && same && s.scripts === 0 && s.styles === 1,
+      `proof pages: the same frame (sandbox="${s.sandbox}") of exactly buildStandaloneHtml()'s string (${same}); the page around it added ${s.styles} style and ${s.scripts} script`);
+    check(s.modal[0] === 0 && s.modal[1] === 0 && s.modal[2] === s.win[0] && s.modal[3] === s.win[1] && s.frame[2] <= 652 && Math.abs(s.frame[0] + s.frame[2] / 2 - s.win[0] / 2) <= 1,
+      `proof pages: the dialog fills the window (${s.modal.join(',')} of ${s.win.join('x')}); the page is ${s.frame[2]} px wide, ${s.frame[3]} px tall, centred (its middle at ${s.frame[0] + s.frame[2] / 2})`);
+    check(s.note === en['proof.note'] + ' ' + en['proof.pagesNote'], `proof pages: the note says what the view is, and that the page numbers are this window's ("${s.note.slice(-88)}")`);
+    const count = s.state.count;
+    check(count > 1 && s.state.page === 1 && s.counter === pageOfWords(1, count) && s.scrollLeft === 0, `proof pages: ${count} pages on the Lantern Coast in this window; it opens on "${s.counter}"`);
+    const boxes = await proofPagesBoxes(page);
+    check(boxes.sections > 0 && boxes.shared.length === 0 && boxes.offEdge.length === 0 && boxes.last === count,
+      `proof pages: each of the ${boxes.sections} sections starts on a page of its own, at the page's edge (sharing a page: [${boxes.shared}], off the edge: ${JSON.stringify(boxes.offEdge)}); first pages ${boxes.starts}; the last section ends on page ${boxes.last} of ${count}`);
+    check(boxes.outside === 0 && boxes.scrollHeight <= boxes.clientHeight,
+      `proof pages: none of ${boxes.boxes} boxes stands above, below or beside its page (${boxes.outside}${boxes.outside ? ': ' + JSON.stringify(boxes.outsideFirst) : ''}); the page is ${boxes.pageHeight} px of text tall and nothing reaches below it (scroll height ${boxes.scrollHeight} of ${boxes.clientHeight})`);
+
+    // the keys with the focus on the dialog, then the buttons
+    const walk = async (keys) => { const out = []; for (const k of keys) { await page.keyboard.press(k); const x = await proofPagesSeen(page); out.push([k, x.state.page, x.counter, x.scrollLeft, x.step]); } return out; };
+    const landed = (rows, pages) => rows.every(([, p, c, left, step], i) => p === pages[i] && c === pageOfWords(pages[i], count) && Math.abs(left - (pages[i] - 1) * step) < 1);
+    // (a press on the note puts the focus on the dialog's own box: on a button, Space would press the button)
+    await page.click('#proofNote');
+    const onBox = await page.evaluate(() => document.activeElement === document.querySelector('#modalProof .modal'));
+    let rows = await walk(['ArrowRight', 'ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp', 'Space', 'Shift+Space', 'End', 'ArrowRight', 'Home', 'ArrowLeft']);
+    check(onBox && landed(rows, [2, 3, 2, 3, 2, 3, 2, count, count, 1, 1]), `proof pages: the keys with the focus on the dialog itself (${onBox}): ${rows.map((r) => r[0] + '>' + r[1]).join(' ')}; each time the counter and the book's place agree`);
+    await page.focus('#btnProofPages');
+    rows = await walk(['Space', 'ArrowRight', 'ArrowLeft']);
+    check(landed(rows, [1, 2, 1]), `proof pages: with the focus on a button Space presses the button and turns nothing, and the arrows still turn: ${rows.map((r) => r[0] + '>' + r[1]).join(' ')}`);
+    await page.click('#btnProofNext');
+    await page.click('#btnProofNext');
+    await page.click('#btnProofPrev');
+    s = await proofPagesSeen(page);
+    check(s.state.page === 2 && s.counter === pageOfWords(2, count) && s.slider === '2', `proof pages: Next, Next, Previous lands on "${s.counter}" (the slider at ${s.slider})`);
+    await page.focus('#proofSlider');
+    rows = await walk(['End', 'Home', 'ArrowRight', 'ArrowRight']);
+    check(landed(rows, [count, 1, 2, 3]), `proof pages: the slider's own keys: ${rows.map((r) => r[0] + '>' + r[1]).join(' ')}`);
+
+    // a real press in the book: the middle third does nothing, the outer thirds turn; then the keys in the frame
+    const fb = await (await page.$('#modalProof iframe')).boundingBox();
+    const pressAt = async (fx) => { await page.mouse.click(fb.x + fb.width * fx, fb.y + fb.height - 14); await page.waitForTimeout(80); return (await proofPagesSeen(page)).state.page; };
+    const taps = [await pressAt(0.5), await pressAt(0.9), await pressAt(0.9), await pressAt(0.1)];
+    s = await proofPagesSeen(page);
+    check(taps.join(',') === '3,4,5,4' && s.active === 'IFRAME', `proof pages: a press in the middle of the page turns nothing, in the right third on, in the left third back (from page 3: ${taps.join(', ')}); the focus is in the book (${s.active})`);
+    rows = await walk(['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp', 'Space', 'Shift+Space', 'End', 'Home']);
+    check(landed(rows, [5, 4, 5, 4, 5, 4, count, 1]), `proof pages: the keys with the focus in the book: ${rows.map((r) => r[0] + '>' + r[1]).join(' ')}`);
+
+    // a note's link: the page that shows the note; its way back: the page it was pressed on
+    const link = await page.evaluate(() => {
+      const d = document.querySelector('#modalProof iframe').contentDocument;
+      const a = Array.from(d.querySelectorAll('a[href^="#"]')).find((x) => { const t = d.getElementById(x.getAttribute('href').slice(1)); return x.getAttribute('href').length > 1 && t && t.querySelector('a[href^="#"]'); });
+      if (!a) return null;
+      const t = d.getElementById(a.getAttribute('href').slice(1));
+      return { href: a.getAttribute('href'), back: t.querySelector('a[href^="#"]').getAttribute('href') };
+    });
+    check(!!link, `proof pages: the book has a note's link and its way back to press (${link && link.href} / ${link && link.back})`);
+    if (link) {
+      /** Where the element a link names stands: its page, and its place in the window (null while it is on another page). */
+      const where = (hash) => page.evaluate((hash) => {
+        const fr = document.querySelector('#modalProof iframe'), d = fr.contentDocument, b = d.body, cs = d.defaultView.getComputedStyle(b);
+        const el = hash.startsWith('a[') ? d.querySelector(hash) : d.getElementById(hash.slice(1));
+        const r = el.getClientRects()[0], step = b.getBoundingClientRect().width, pad = parseFloat(cs.paddingLeft);
+        const pageOf = Math.max(1, Math.floor((r.left + b.scrollLeft + pad - 1) / step) + 1);
+        const inView = r.left >= 0 && r.right <= step + 1 && r.top >= 0 && r.bottom <= b.clientHeight;
+        const fb = fr.getBoundingClientRect();
+        return { page: pageOf, inView, x: fb.x + fr.clientLeft + r.x + r.width / 2, y: fb.y + fr.clientTop + r.y + r.height / 2 };
+      }, hash);
+      const refSel = `a[href="${link.href}"]`;
+      const refPage = (await where(refSel)).page, notePage = (await where(link.href)).page;
+      await page.focus('#btnProofPages');
+      await page.keyboard.press('Home');
+      for (let i = 1; i < refPage; i++) await page.keyboard.press('ArrowRight');
+      const ref = await where(refSel);
+      await page.mouse.click(ref.x, ref.y);
+      await page.waitForTimeout(200);
+      s = await proofPagesSeen(page);
+      const note = await where(link.href);
+      check(ref.inView && s.state.page === notePage && note.inView && s.counter === pageOfWords(notePage, count) && s.sameFrame && s.loads === 0 && s.off === null,
+        `proof pages: the note's link (${link.href}), pressed on page ${refPage}, turns to page ${s.state.page}, which shows the note (${note.inView}; the note is on page ${notePage}); the frame is not loaded again (${s.loads})`);
+      const backSel = `a[href="${link.back}"]`;
+      const back = await where(backSel);
+      await page.mouse.click(back.x, back.y);
+      await page.waitForTimeout(200);
+      s = await proofPagesSeen(page);
+      const refNow = await where(refSel);
+      check(s.state.page === refPage && refNow.inView, `proof pages: the note's way back (${link.back}) returns to page ${s.state.page}, which shows the mark (${refNow.inView})`);
+    }
+
+    // a link out of the book: stopped, the same page, the dialog says so
+    const out = await page.evaluate(() => {
+      const fr = document.querySelector('#modalProof iframe'), d = fr.contentDocument, b = d.body, cs = d.defaultView.getComputedStyle(b);
+      const a = d.querySelector('a[href]:not([href^="#"])');
+      if (!a) return null;
+      const r = a.getClientRects()[0], step = b.getBoundingClientRect().width, pad = parseFloat(cs.paddingLeft);
+      return { href: a.getAttribute('href'), page: Math.max(1, Math.floor((r.left + b.scrollLeft + pad - 1) / step) + 1) };
+    });
+    check(!!out, `proof pages: the book has a link out of it to press (${out && out.href})`);
+    if (out) {
+      await page.focus('#btnProofPages');
+      await page.keyboard.press('Home');
+      for (let i = 1; i < out.page; i++) await page.keyboard.press('ArrowRight');
+      const at = await page.evaluate(() => { const fr = document.querySelector('#modalProof iframe'); const r = fr.contentDocument.querySelector('a[href]:not([href^="#"])').getClientRects()[0]; const fb = fr.getBoundingClientRect(); return { x: fb.x + fr.clientLeft + r.x + r.width / 2, y: fb.y + fr.clientTop + r.y + r.height / 2 }; });
+      const pagesBefore = opened.length;
+      await page.mouse.click(at.x, at.y);
+      await page.waitForTimeout(700);
+      s = await proofPagesSeen(page);
+      check(s.state.page === out.page && s.state.count === count && s.off === en['proof.linkOff'] && s.sameFrame && s.loads === 0 && opened.length === pagesBefore,
+        `proof pages: a link out of the book (${out.href}) is stopped: still page ${s.state.page} of ${s.state.count} (the line does not make the page shorter), the dialog says "${s.off}", no page opened (${opened.length - pagesBefore}), the frame not loaded again (${s.loads})`);
+      await page.keyboard.press('ArrowLeft');
+      s = await proofPagesSeen(page);
+      check(s.off === null && s.state.page === out.page - 1, `proof pages: the line goes with the next turn (page ${s.state.page}, the line: ${s.off})`);
+    }
+
+    // a resize keeps the place: the words at the top of the page are on the page shown afterwards
+    await page.focus('#btnProofPages');
+    await page.keyboard.press('Home');
+    const mid = Math.ceil(count * 0.6);
+    for (let i = 1; i < mid; i++) await page.keyboard.press('ArrowRight');
+    const mark = await page.evaluate(() => {
+      const d = document.querySelector('#modalProof iframe').contentDocument, b = d.body, cs = d.defaultView.getComputedStyle(b);
+      let r = null;
+      for (let y = parseFloat(cs.paddingTop) + 3; y < b.clientHeight && !(r && r.startContainer.nodeType === 3); y += 14) r = d.caretRangeFromPoint(parseFloat(cs.paddingLeft) + 3, y);
+      window.__proofMark = r;
+      return { page: window.beukProof.state().page, count: window.beukProof.state().count, words: (r.startContainer.nodeValue || '').slice(r.startOffset, r.startOffset + 36) };
+    });
+    const markNow = () => page.evaluate(() => {
+      const d = document.querySelector('#modalProof iframe').contentDocument, b = d.body, r = window.__proofMark;
+      const rr = d.createRange();
+      rr.setStart(r.startContainer, r.startOffset);
+      rr.setEnd(r.startContainer, Math.min((r.startContainer.nodeValue || '').length, r.startOffset + 1));
+      const box = rr.getClientRects()[0], step = b.getBoundingClientRect().width;
+      return { inPage: !!box && box.left >= 0 && box.right <= step + 1 && box.top >= 0 && box.bottom <= b.clientHeight, top: box ? Math.round(box.top) : null };
+    });
+    await page.setViewportSize({ width: 900, height: 620 });
+    await page.waitForTimeout(500);
+    s = await proofPagesSeen(page);
+    let m = await markNow();
+    const small = await proofPagesBoxes(page);
+    check(mark.page === mid && s.state.count !== mark.count && m.inPage && s.counter === pageOfWords(s.state.page, s.state.count) && Math.abs(s.scrollLeft - (s.state.page - 1) * s.step) < 1,
+      `proof pages: a smaller window (900x620) pages the book again (${mark.count} -> ${s.state.count} pages); the words that stood at the top of page ${mark.page} ("${mark.words}") are on the page shown, "${s.counter}" (${m.inPage})`);
+    check(small.shared.length === 0 && small.offEdge.length === 0 && small.outside === 0 && small.last === s.state.count,
+      `proof pages: in the smaller window every section still starts a page and no box of ${small.boxes} stands outside its page (sharing: [${small.shared}], outside: ${small.outside}${small.outside ? ' ' + JSON.stringify(small.outsideFirst) : ''})`);
+
+    // the switch: the scroll in the same frame, at the same words; and the pages again
+    await page.click('#btnProofScroll');
+    await page.waitForTimeout(300);
+    s = await proofPagesSeen(page);
+    m = await markNow();
+    const bodyNow = await page.evaluate(async () => { const fr = document.querySelector('#modalProof iframe'); const d = fr.contentDocument; const want = new DOMParser().parseFromString(await window.__blobs[fr.getAttribute('src')].text(), 'text/html'); return { same: d.documentElement.outerHTML === want.documentElement.outerHTML, styles: d.querySelectorAll('style').length, wantStyles: want.querySelectorAll('style').length }; });
+    check(/proof-paged is-scroll/.test(s.cls) && s.mode === 'scroll' && s.state === null && s.styles === 0 && s.scripts === 0 && s.tall && s.sameFrame && s.loads === 0 && s.counter === null && s.note === en['proof.note'] && bodyNow.same && m.top !== null && m.top >= 0 && m.top < 60,
+      `proof pages: Scroll is the one long scroll in the same frame (not loaded again: ${s.loads}); the paging style is gone and the frame's document is what the standalone page parses to (${bodyNow.same}; ${bodyNow.styles} of ${bodyNow.wantStyles} style elements); the note is as it was; the same words are at the top (${m.top} px down)`);
+    await page.click('#btnProofPages');
+    await page.waitForTimeout(300);
+    s = await proofPagesSeen(page);
+    m = await markNow();
+    check(/proof-paged is-pages/.test(s.cls) && s.styles === 1 && s.scripts === 0 && !!s.state && m.inPage, `proof pages: Pages again: "${s.counter}", the same words on the page shown (${m.inPage}), ${s.scripts} script(s) in the frame`);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.waitForTimeout(500);
+    s = await proofPagesSeen(page);
+    m = await markNow();
+    check(s.state.count === count && m.inPage, `proof pages: the window as it was: ${s.state.count} pages again, the same words on the page shown ("${s.counter}", ${m.inPage})`);
+
+    // full screen: the button, then F with the focus in the book
+    const canFull = await page.evaluate(() => !!document.getElementById('btnProofFull'));
+    if (canFull) {
+      await page.click('#btnProofFull');
+      await page.waitForFunction(() => document.fullscreenElement === document.querySelector('#modalProof .modal'), null, { timeout: 10_000 }).catch(() => undefined);
+      await page.waitForTimeout(400);
+      s = await proofPagesSeen(page);
+      const inFull = s.full;
+      const pressed = await page.evaluate(() => document.getElementById('btnProofFull').getAttribute('aria-pressed'));
+      m = await markNow();
+      const fb2 = await (await page.$('#modalProof iframe')).boundingBox();
+      await page.mouse.click(fb2.x + fb2.width / 2, fb2.y + fb2.height / 2);
+      await page.keyboard.press('f');
+      await page.waitForFunction(() => !document.fullscreenElement, null, { timeout: 10_000 }).catch(() => undefined);
+      await page.waitForTimeout(400);
+      s = await proofPagesSeen(page);
+      check(inFull && pressed === 'true' && m.inPage && !s.full && s.open, `proof pages: "Full screen" puts the dialog full screen (${inFull}, pressed ${pressed}), the place kept (${m.inPage}); F with the focus in the book leaves it (${!s.full}) and the dialog stays open (${s.open})`);
+      // Escape in full screen, where the key reaches the page (it does in this headless browser; a browser that keeps
+      // Escape to itself leaves full screen on its own): the first leaves full screen and closes nothing, by the focus
+      // in the book and by the focus on the dialog
+      const escapes = [];
+      for (const where of ['in the book', 'on the dialog']) {
+        await page.focus('#btnProofPages');
+        await page.keyboard.press('f');
+        await page.waitForFunction(() => document.fullscreenElement === document.querySelector('#modalProof .modal'), null, { timeout: 10_000 }).catch(() => undefined);
+        await page.waitForTimeout(300);
+        const was = (await proofPagesSeen(page)).full;
+        if (where === 'in the book') await page.mouse.click(fb2.x + fb2.width / 2, fb2.y + fb2.height / 2);
+        else await page.click('#proofNote');
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.fullscreenElement, null, { timeout: 10_000 }).catch(() => undefined);
+        await page.waitForTimeout(300);
+        const now = await proofPagesSeen(page);
+        escapes.push([where, was, now.open === true && !now.full]);
+      }
+      check(escapes.every(([, was, ok]) => was && ok), `proof pages: F with the focus on a button enters full screen; Escape then leaves full screen and the proof stays open: ${escapes.map(([w, was, ok]) => `${w} (full ${was}, left and still open ${ok})`).join('; ')}`);
+    } else note('proof pages: this browser offers no element full screen, so the dialog has no Full screen button; not checked');
+
+    // Escape with the focus in the book closes the proof, and only the proof
+    const fb3 = await (await page.$('#modalProof iframe')).boundingBox();
+    await page.mouse.click(fb3.x + fb3.width / 2, fb3.y + fb3.height / 2);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    const closed = await page.evaluate(() => ({ open: !!document.getElementById('modalProof'), exportOpen: document.getElementById('modalExport').classList.contains('open'), active: document.activeElement ? document.activeElement.id : null }));
+    check(!closed.open && closed.exportOpen && closed.active === 'btnProofRead', `proof pages: Escape with the focus in the book closes the proof (${!closed.open}), leaves the export screen open (${closed.exportOpen}), focus on ${closed.active}`);
+
+    // "Flip through the printed book": 1.0's Hardcover view, full screen; leaving it brings the export screen back
+    const hc = () => page.evaluate(() => { const st = document.getElementById('previewStage'); const h = window.beukPreview.get('hc'); return { exportOpen: document.getElementById('modalExport').classList.contains('open'), printView: !!document.getElementById('modalPrintView')?.classList.contains('open'), device: window.beukPreview.state().device, open: h.open, spread: h.spread, counter: document.getElementById('hcCounter').textContent, full: document.fullscreenElement === st || st.classList.contains('fs-immersive'), native: document.fullscreenElement === st, book: !!document.querySelector('#hcStage #hcPages'), active: document.activeElement ? document.activeElement.id || document.activeElement.tagName : null }; });
+    const deviceBefore = (await hc()).device;
+    await page.click('#btnProofPrint');
+    await page.waitForFunction(() => { const st = document.getElementById('previewStage'); return document.fullscreenElement === st || st.classList.contains('fs-immersive'); }, null, { timeout: 15_000 }).catch(() => undefined);
+    await page.waitForTimeout(600);
+    let h = await hc();
+    check(!h.exportOpen && !h.printView && h.device === 'hardcover' && h.full && h.open && h.spread === 0 && h.book,
+      `proof pages: "${words[1]}" closes the export screen (${!h.exportOpen}) and opens 1.0's Hardcover view full screen (${h.full}; the browser's own full screen: ${h.native}), the book open at its first spread ("${h.counter}"); the Print Interior View is not opened (${!h.printView})`);
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(900);
+    const turned = await hc();
+    check(turned.spread === 1 && turned.counter !== h.counter, `proof pages: the right arrow turns the hardcover's page ("${h.counter}" -> "${turned.counter}")`);
+    await page.keyboard.press('Escape'); // 1.0's own key for leaving full screen
+    await page.waitForFunction(() => document.getElementById('modalExport').classList.contains('open'), null, { timeout: 15_000 }).catch(() => undefined);
+    await page.waitForTimeout(500);
+    h = await hc();
+    check(h.exportOpen && !h.full && h.device === deviceBefore && h.active === 'btnProofPrint',
+      `proof pages: leaving full screen (Escape) brings the export screen back (${h.exportOpen}) with focus on ${h.active}, and the preview is on ${h.device} again (it was ${deviceBefore})`);
+
+    const reports = await page.evaluate(() => window.__csp.slice());
+    check(reports.length === 0, `proof pages: the served policy reported nothing through all of the above (${reports.length}${reports.length ? ': ' + JSON.stringify(reports.slice(0, 4)) : ''})`);
+  } finally {
+    await ctx.close();
+  }
+
+  /* -- a long book: The Three Musketeers, paged and timed -- */
+  {
+    const { ctx, page } = await proofPagesOpen(origin, 'open', DUMAS.file);
+    try {
+      const t0 = Date.now();
+      await page.click('#btnProofRead');
+      await page.waitForFunction(() => !!window.beukProof && !!window.beukProof.state(), null, { timeout: 300_000 });
+      const all = Date.now() - t0;
+      const s = await proofPagesSeen(page);
+      const words = await page.evaluate(() => window.beukExport.run((api) => api.buildStandaloneHtml()).replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length);
+      const boxes = await proofPagesBoxes(page);
+      const turns = await page.evaluate(() => {
+        const b = document.querySelector('#modalProof iframe').contentDocument.body, n = window.beukProof.state().count, out = [];
+        for (const key of ['End', 'Home', 'PageDown']) { const t = performance.now(); document.querySelector('#modalProof .modal').dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })); void b.offsetHeight; out.push(Math.round((performance.now() - t) * 10) / 10); }
+        return { ms: out, page: window.beukProof.state().page, count: n };
+      });
+      note(`proof pages, The Three Musketeers (${words} words by a whitespace count of the standalone page's text; 1280x800): paged into ${s.state.count} pages in ${s.state.ms.toFixed(1)} ms (the style added and the pages counted); ${all} ms from the press to the first page shown (building the page and loading the frame included); End, Home, PageDown took ${turns.ms.join(', ')} ms`);
+      check(s.state.count > 100 && s.scripts === 0 && boxes.shared.length === 0 && boxes.offEdge.length === 0 && boxes.last === s.state.count && boxes.outside === 0,
+        `proof pages, The Three Musketeers: ${s.state.count} pages; each of ${boxes.sections} sections starts a page at the page's edge, the last on page ${boxes.last} (sharing: [${boxes.shared}], off the edge: ${JSON.stringify(boxes.offEdge.slice(0, 4))}); none of ${boxes.boxes} boxes stands outside its page (${boxes.outside}${boxes.outside ? ' ' + JSON.stringify(boxes.outsideFirst) : ''})`);
+      check(turns.page === 2, `proof pages, The Three Musketeers: End, Home, PageDown land on page ${turns.page}`);
+    } finally {
+      await ctx.close();
+    }
+  }
+  check(csp.errors.length === errors0, `proof pages: no console error and no uncaught page error through the block (${csp.errors.length - errors0}${csp.errors.length > errors0 ? ': ' + csp.errors.slice(errors0, errors0 + 3).join(' | ') : ''})`);
+}
+
 async function wave5dChecks(origin) {
   const only = (process.env.W5D_PARTS || 'parity,downloads,hostile,gate,shelf,screens,latency').split(',');
   if (only.includes('parity')) await wave5dParity(origin);
@@ -10498,6 +10896,7 @@ try {
   if (run('wave5c')) await wave5cChecks(srv.origin);
   if (run('wave5d')) await wave5dChecks(srv.origin);
   if (run('proof')) await proofChecks(srv.origin);
+  if (run('proof')) await proofPagesChecks(srv.origin);
   if (run('wave6')) await wave6Checks(srv.origin);
   if (run('wave7a')) await wave7aChecks();
   if (run('wave7b')) await wave7bChecks();

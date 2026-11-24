@@ -284,7 +284,9 @@ export function ExportModal() {
 
   /* The proof's "Turn the print pages": 1.0's Print Interior View closed the export screen as it opened; when that view
      closes, the screen is opened again as the top bar's Export opens it (1.0's own #btnExport listener), with focus on
-     the button the writer pressed. The top bar's Export holds the focus first, so the screen's close returns it there. */
+     the button the writer pressed. The top bar's Export holds the focus first, so the screen's close returns it there.
+     (The same way back serves "Flip through the printed book": there the proof closes the export screen itself, as the
+     stack's close does, before 1.0's Hardcover view goes full screen: src/export/hardcover.ts.) */
   const refocus = useRef<string | null>(null);
   const backFromPrint = () => {
     if (!built || backs.current.modal?.classList.contains('open')) return;
@@ -317,7 +319,7 @@ export function ExportModal() {
         return open[k] && back ? createPortal(<StackEntry key={k} box={box(k)} onClose={() => stackClose(k)} />, back) : null;
       })}
       <LockPdfStack />
-      {proofHost ? createPortal(<ExportProof onBack={backFromPrint} />, proofHost) : null}
+      {proofHost ? createPortal(<ExportProof onBack={backFromPrint} closeExport={() => stackClose('modal')} shown={open.modal} />, proofHost) : null}
     </>
   );
 }

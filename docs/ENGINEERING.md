@@ -4811,7 +4811,7 @@ V's decision (2026-10-26): re-decided 2026-10-30: an account from day one, a fre
 
 - **The trial clock** (migration 016): `users.trial_ends_at` is stamped at sign-up (now + TRIAL_DAYS). Changing TRIAL_DAYS later never moves a trial that has already started. Accounts made before 016 got `created_at + 7 days`; migration 021 (21-day trial) re-dated them to `created_at + 21 days` (it only lengthens) and cleared `trial_reminder_sent_at` on the rows it moved, so they get a reminder for the new end. To give every existing account a fresh trial on the day billing is switched on, run once: `update users set trial_ends_at = now() + interval '21 days' where trial_ends_at < now() + interval '21 days';`
 - **Access** (`src/access.ts`, the only place it is decided): `open` (billing off), `trial`, `subscribed` (Stripe active or trialing), `grace` (past_due within BILLING_GRACE_DAYS: everything stays open, with a calm notice), `paused` (trial over and no granting subscription).
-- **What pauses** (ACCESS_RULES, answered with 402 `{error, paused:true, feature, exportOpen:false, ownWordsOpen:true}`; `error` is plain words naming what stays open): adding new books to the shelf (`POST /api/manuscripts`), new beta-reader links and refreshing a link's copy (`POST /api/shares`, `/api/shares/:id/republish`), server EPUBCheck (`POST /api/jobs/epubcheck`, `jobs.run`), the server-made print-ready PDF (`POST /api/jobs/pdfx`, `export.print`), and saving to the export archive (`POST /api/exports`). Two more features are declared in `PAUSABLE_FEATURES` and have no route yet (they arrive when the server builds these files): `export.epub` (store-ready EPUB) and `export.wrap` (cover wrap).
+- **What pauses** (ACCESS_RULES, answered with 402 `{error, paused:true, feature, exportOpen:false, ownWordsOpen:true}`; `error` is plain words naming what stays open): adding new books to the shelf (`POST /api/manuscripts`), new beta-reader links and refreshing a link's copy (`POST /api/shares`, `/api/shares/:id/republish`), server EPUBCheck (`POST /api/jobs/epubcheck`, `jobs.run`), the server-made print-ready PDF (`POST /api/jobs/pdfx`, `export.print`), and saving to the export archive (`POST /api/exports`). Two more features are declared in `PAUSABLE_FEATURES` and have no route yet (they arrive when the server builds these files): `export.epub` (store-ready EPUB) and `export.wrap` (cover wrap). One feature has no route and never will: `proof.pages`, the page-by-page views of the whole book in Export (2026-11-24). Both views are drawn in the browser, so there is no request to refuse; the server only names the key in `locked` and the studio chooses what to show (see "the proof of the whole book", below). The trial-ending email builds its list from the same table, so it names it too.
 - **What never pauses** (NEVER_PAUSED, each one tested): writing, typesetting and preview, and the own-words exports in the studio (the backup file, Word and Markdown; they never ask the server); opening, listing, **saving** and deleting books already on the shelf (on some browsers the device copy can be cleared, so the shelf copy keeps following the writing); archive downloads; job results; managing and closing reading links; readers reading and commenting on existing links; Download all my data; Delete my account.
 - **Checkout** (`POST /api/billing/checkout`, the one price in STRIPE_PRICE_ID): inside the trial it passes `subscription_data[trial_end]` = Beuk's trial end, so the first charge waits for the end of the trial the writer already has. There is no second trial on top. Stripe requires that date at least 48 hours away, so with under 49 hours left the plan starts now. `BILLING_AUTOMATIC_TAX=true` adds `automatic_tax[enabled]=true`, and for a customer Stripe already has, `customer_update[address]=auto`. Success and cancel return to `/account?billing=success|cancelled`; the page waits for verified webhooks and never assumes the payment went through.
 - **Manage billing** (`POST /api/billing/portal`): a Stripe Customer Portal session for the customer this server linked from a verified webhook (never an id from the client), returning to `/account`. Answers 409 when there is no billing account yet.
@@ -5891,15 +5891,178 @@ that an e-reader shows the book as pages with its own contents menu, and
 that the typefaces can differ. It does not speak of plates or of the cover
 line.
 
-**Words.** 24 keys in `client/index.html` (`EXPORTPROOF_STRINGS`): 12
-`expg.*` (each group's name and one line) and 12 `proof.*`. English is the
-source; the 12 other languages are drafts awaiting V's sign-off, listed in
-`docs/strings-pending-signoff.md` section 3.
+**The page-by-page views (2026-11-24).** V: "For read the whole book on
+screen, shouldn't we show them the actual book on full screen, like they
+can flip the entire book." Of which book: "Both, gives complete view of
+the book in each format before printing. We can have this feature for only
+paid subscribers, rest get the view as we have now?" He approved this
+table. Nothing near the buttons speaks of plans: an account without these
+views simply gets the others, with no lock, badge or line. That silence is
+the building session's call, not a ruling of his: he asked "do we have to
+say it comes with a paid plan?", was told no, and went on. His to overturn.
+
+| Who | What they get |
+|---|---|
+| Billing off (state `open`), signed in | the page-by-page views |
+| In the trial | the page-by-page views |
+| Subscribed, or in payment grace | the page-by-page views |
+| Trial ended, not paying (`paused`) | the views above, unchanged |
+| Signed out | the views above, unchanged |
+
+- **The rule** (`studio/src/export/entitled.ts`): signed in, AND an answer
+  from the server is held, AND it does not list `proof.pages`. The server
+  is the judge: `PAUSABLE_FEATURES` in `src/access.ts` has the key, so
+  `GET /api/auth/me` lists it in `access.locked` while an account is
+  paused. No answer yet, an answer without the list, signed out: the views
+  as they were.
+- **The mirror.** 1.0's `lockAccessNote` (`client/index.html`) is the one
+  function every `/api/auth/me` answer the studio takes passes through
+  (the shelf's boot, a sign-in in this tab through `lockAccessRefresh`, an
+  account change heard from another tab, a sign-out). It now also writes
+  `data-plan-locked` on `<html>`: the keys, space-separated; empty while
+  nothing is locked; absent while no answer is held. The studio follows
+  the attribute, so the buttons change with the account without a reload,
+  and no second request is made. 1.0's `lockPlanNote` (the plan line)
+  never writes it: its answer carries no list.
+- **It is a soft lock.** Both views are drawn in the browser from the book
+  already on the desk. There is no route in `ACCESS_RULES` and nothing for
+  the server to refuse. The lock decides what the studio offers.
+- **What the held answer can miss** (read from the code, not run): the
+  list is whatever the last `/api/auth/me` said. A trial that ends while
+  the page stays open keeps the page-by-page views until the next answer
+  (a reload, a sign-in). With no network at start, `bootCloud` stops at
+  the failed `/api/health` probe and never asks who is signed in, so the
+  studio holds no account and no answer: the views as they were, even for
+  a writer who was signed in last time. If the network drops after the
+  answer was taken, the answer is still held and the views stay.
+- **The e-book in pages** (`studio/src/export/pages.ts`). The same frame,
+  the same string, no script. The page around the frame adds one
+  `<style data-beuk-pages>` to the frame's document. It makes the `<body>`
+  one CSS column the frame's size (`column-count: 1`, `column-fill: auto`,
+  a fixed height, `overflow: hidden`), so the rest of the book lies in
+  further columns to the side, and a page is turned by setting the body's
+  `scrollLeft` to a whole number of frame widths. The side padding is the
+  standalone page's own 1.4em and the gap is twice that, both rounded to
+  whole pixels, and the frame's width is read to the fraction: with a
+  fractional padding the gap and the padding round differently and every
+  page lands a little further off (a long book has hundreds).
+- **Every section starts a page.** The standalone page's own rule,
+  `section.book-section + section.book-section { page-break-before:
+  always; margin-top: 3em }`, is more specific than a plain
+  `section.book-section` rule and asks for a page break, which columns on
+  a screen do not honour. Measured in Chromium with only
+  `break-before: column` added: the half title and the title page shared
+  page 2, and the copyright page and the epigraph shared page 3. The
+  paging style sets the break and the margin with `!important`.
+- **Pictures.** `img, svg, video, canvas` get `max-height` of the page
+  (less one pixel) and `object-fit: contain`, so a tall cover or figure is
+  shown whole. 1.0's `.plate-page` (`height: 100%`, of an e-reader's page)
+  is given the page's height: the plate has a page of its own and fills
+  it as 1.0's stylesheet says (`cover` for a plate that fills, `contain`
+  for a "whole" plate).
+- **The last page can always be reached.** `body::after` is one empty
+  column after the book, so the last page's place is inside the scroll
+  range whether or not a browser counts the body's end padding. The count
+  is read from where the last section's last box stands, not from the
+  scroll width, so the spacer is never a page.
+- **Turning.** Arrows (mirrored in a right-to-left book: the direction is
+  the framed body's computed `direction`; 1.0's preview reads its own
+  flow's `dir` for the same purpose, `previewTurnSign`), PageDown / PageUp, Space / Shift+Space, Home / End; a
+  press on the outer third of the page on either side (1.0's hardcover
+  uses the same thirds; the middle third does nothing, so words can be
+  selected); a swipe on touch; two buttons and a slider. The keys are
+  heard in the frame's own document and, with the focus on the dialog, in
+  the page's. Space on a focused button presses the button. The counter
+  is a polite live region and uses the preview's own words
+  (`preview.pageOf`).
+- **Links.** A link inside the book turns to the page that holds what it
+  names (the browser's own jump would stop at an arbitrary offset). A
+  link out of the book is stopped as before; in pages its line is laid
+  over the page's foot and goes with the next turn, because a line under
+  the frame makes the page shorter and pages the whole book again for one
+  sentence. Tab to a link on another page turns to that page.
+- **The place is kept by content.** At every turn the place at the top of
+  the page is taken as a point in the text (`caretPositionFromPoint`, or
+  `caretRangeFromPoint`). After a resize, or full screen, the pages are
+  counted again and the page that now holds that point is shown. The same
+  point carries the reader between Pages and Scroll.
+- **Pages / Scroll.** A switch in the dialog's bar. Scroll takes the style
+  away: the frame is the one long scroll again, its document what the
+  standalone page parses to. Each opening starts in Pages. The note gains
+  one sentence in Pages (`proof.pagesNote`: the page numbers are this
+  window's) and is otherwise the note above.
+- **Full screen.** The Fullscreen API on the dialog's box, by a button and
+  by F. Where the browser has none the button is not drawn: the dialog
+  already fills the window. Escape leaves full screen first and the next
+  Escape closes the proof: a browser that keeps Escape to itself does the
+  first on its own, and where the key reaches the page the page does it.
+- **Flip through the printed book** (`studio/src/export/hardcover.ts`).
+  1.0's own Hardcover view, driven by its own controls and nothing copied:
+  `#hcFull` first (1.0's `fsToggle` on `#previewStage`, inside the
+  writer's click, because a browser grants full screen only to a fresh
+  press; where it has none 1.0 fills the window), then the device bar's
+  Hardcover button, then 1.0's `hcSetOpen(true, instant)` and `hcTurn`
+  back to the first spread. When the reader leaves full screen the
+  preview gets back the device it had and the export screen is opened
+  again with focus on the button. The view needs the preview pane on
+  screen: the shell always mounts it, but it is not shown while the right
+  column is folded, on a narrow screen with another tab up, or in Zen.
+  There the button keeps "Turn the print pages" and opens the Print
+  Interior View.
+- **Decisions of the session that built it** (not rulings of V's; his to
+  overturn): the Pages / Scroll switch and its default; the page's size
+  (the standalone page's own 38em measure between its 1.4em margins, so
+  40.75rem with them, full width on a phone); a plate filling its page as
+  1.0's stylesheet says rather than always shown whole; the hardcover
+  opening at the first spread, not at the chapter on the desk; full
+  screen asked for before the device is switched; the stopped-link line
+  laid over the page in Pages; the note kept in view (it costs the page
+  some height on a phone); no section name beside the counter (left out
+  rather than guessed); the mirror kept on `<html>` beside 1.0's own.
+- **Verified** (Chromium 149, `E2E_ONLY=proof`, 2026-11-24): open and
+  trial get pages, paused and signed out get the scroll and the Print
+  Interior View; on the Lantern Coast each of 14 sections starts a page
+  and no box stands outside its page, at 1280x800 and 900x620; the keys,
+  buttons, slider and presses; a note's link and its way back; the place
+  across a resize, the switch and full screen; the hardcover there and
+  back; no console error and no policy report. The Three Musketeers
+  (229,841 words by a whitespace count of the standalone page's text)
+  paged into 926 pages (the page 652x639 px) in 154, 162, 167 and 203 ms
+  on four runs, with every one of 74 sections starting a page and none of
+  10,819 boxes outside its page. On the same book the press that opens
+  the hardcover (787 printed pages) took 530 ms on its one run, and full
+  screen followed 20 ms later.
+- **Not verified.** Firefox and Safari (neither is installed on the bench
+  that built this): the column and scroll arithmetic, negative
+  `scrollLeft` in a right-to-left book, `caretPositionFromPoint`, and
+  full screen are unmeasured there. A browser with a window: every run
+  was headless Chromium, where Escape reaches the page; that a browser
+  with a window leaves full screen on Escape by itself is its documented
+  behaviour, not something measured here. The hardcover where there is no
+  element full screen (1.0 fills the window: run in jsdom only). A real
+  touch swipe (the rule is unit
+  tested; no touch device was used). A right-to-left book in the e2e (it
+  was measured once in Chromium on the Lantern Coast forced to
+  `dir="rtl"`, and is unit tested). A book whose text holds an unbreakable
+  box taller than the page that is not a picture (a very long text
+  bubble, for one): it would be cut at the page's foot in Pages, and
+  Scroll shows it whole; none is in the fixture books.
+
+**Words.** 32 keys in `client/index.html` (`EXPORTPROOF_STRINGS`): 12
+`expg.*` (each group's name and one line) and 20 `proof.*` (the last 8 are
+the page-by-page views'). English is the source; the 12 other languages
+are drafts awaiting V's sign-off, listed in
+`docs/strings-pending-signoff.md` sections 3 and 4.
 
 **Tests.** `studio/test/export-groups.test.ts` (the grouping on 1.0's own
-markup, the guards) and `studio/test/export-proof-ui.test.tsx` (in the
-studio). In Chromium, `studio/e2e/book.mjs`: `E2E_ONLY=proof` drives the
-proof with a real mouse and keys under the served policy, and waves 5a to
+markup, the guards), `studio/test/export-proof-ui.test.tsx` (in the
+studio, signed out), `studio/test/export-pages.test.ts` (the arithmetic,
+the keys, the frame driven in jsdom with its boxes said by the test) and
+`studio/test/export-proof-pages-ui.test.tsx` (who gets the views, the
+paged dialog, the hardcover and its fallback). In Chromium,
+`studio/e2e/book.mjs`: `E2E_ONLY=proof` drives the proof with a real mouse
+and keys under the served policy, signed out and then as each kind of
+account, and waves 5a to
 5d, 7b and lockcopy open a control's group before acting on it. Their
 regions compared with 1.0's pixel for pixel are taken with the section
 standing alone in a window tall enough that neither modal scrolls, because
