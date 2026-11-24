@@ -14,6 +14,8 @@ import { useToast } from '../shell/Toasts';
 import { guardRoots } from '../style/session';
 import { toastIcon } from '../style/StyleTab';
 import { exportBegin, exportBody, exportLinger, exportReset, exportResume, exportRun, exportUi, loadSerialize } from './state';
+import { groupExport, type ExportGroups, type GroupId } from './groups';
+import { ExportProof } from './Proof';
 import { printWire } from '../print/print';
 import { importUi, importWire } from '../import/import';
 
@@ -29,7 +31,11 @@ import { importUi, importWire } from '../import/import';
    1.0's listeners run inside the export session (src/export/state.ts): every event on either dialog opens it before
    1.0's listener runs and the event's arrival back at the window closes it, so a handler runs on 1.0's (corrected)
    state of the open book and only a preset chosen is written. Every HTML string 1.0 writes into the dialogs goes
-   through the Style session's cleaner (guardRoots). */
+   through the Style session's cleaner (guardRoots).
+
+   The screen, short (V, 2026-11-23): once the markup is placed its parts are moved, the very nodes, into six groups with
+   one open at a time (src/export/groups.ts), and the proof of the whole book is offered above them (src/export/Proof.tsx:
+   an offer, never a gate). 1.0's markup and handlers are as they were. */
 
 /** The modal's sections that belong to later waves (their buttons reach inert stand-ins): hidden. The archive (wave 7) is
  *  hidden by 1.0 itself until a shelf is linked. (Wave 5b: the print preflight and the print interior are 1.0's own now,
@@ -108,6 +114,8 @@ importUi.jszip = loadJszip;
 /** Whether the modal's markup is in place and wired (the top bar's opener waits for it). Announced on the window. */
 let built = false;
 let opener: HTMLButtonElement | null = null;
+/** The open book's export screen in its groups (null before the modal is built). */
+let grouped: ExportGroups | null = null;
 export const exportBuilt = (): boolean => built;
 export const EXPORT_BUILT_EVENT = 'beuk:export';
 function setBuilt(v: boolean): void {
@@ -139,6 +147,8 @@ export function ExportModal() {
   const backs = useRef<Backs>(NO_BACKS);
   const closure = useRef<Closure | null>(null);
   const [open, setOpen] = useState<Record<Dlg, boolean>>(CLOSED);
+  // where the proof's block is drawn: the place the grouping makes under the modal's title
+  const [proofHost, setProofHost] = useState<HTMLElement | null>(null);
   exportUi.toast = (msg, icon) => toast(msg, toastIcon(icon));
   if (!host.current && typeof document !== 'undefined') {
     host.current = document.createElement('div');
@@ -168,6 +178,15 @@ export function ExportModal() {
         const ms = el.querySelector<HTMLElement>('#modalManuscript')!;
         const store = el.querySelector<HTMLElement>('#modalStore')!;
         backs.current = { modal, insp, acx, ms, store };
+        // the screen in its groups, before 1.0 wires it (the nodes are moved, never made again: initExport finds each by
+        // its id) and before the icons and words are given, so the groups' headers get theirs with everything else
+        const groups = groupExport(modal);
+        grouped = groups;
+        off.push(() => {
+          groups.destroy();
+          if (grouped === groups) grouped = null;
+        });
+        setProofHost(groups.proofHost);
         hideLater(modal);
         drawIcons(el);
         translateCover(c, el);
@@ -245,6 +264,7 @@ export function ExportModal() {
       off.forEach((f) => f());
       backs.current = NO_BACKS;
       setOpen(CLOSED);
+      setProofHost(null);
       el.innerHTML = '';
       el.remove();
       exportReset();
@@ -262,6 +282,25 @@ export function ExportModal() {
     if (backs.current.modal.classList.contains('open')) exportRun((cc) => cc.api.renderPlatformPresets());
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* The proof's "Turn the print pages": 1.0's Print Interior View closed the export screen as it opened; when that view
+     closes, the screen is opened again as the top bar's Export opens it (1.0's own #btnExport listener), with focus on
+     the button the writer pressed. The top bar's Export holds the focus first, so the screen's close returns it there. */
+  const refocus = useRef<string | null>(null);
+  const backFromPrint = () => {
+    if (!built || backs.current.modal?.classList.contains('open')) return;
+    refocus.current = 'btnProofPrint';
+    const top = document.getElementById('btnExport');
+    if (top && top !== opener) top.focus({ preventScroll: true });
+    exportOpen();
+    if (!backs.current.modal?.classList.contains('open')) refocus.current = null;
+  };
+  useEffect(() => {
+    if (!open.modal || !refocus.current) return;
+    const to = document.getElementById(refocus.current);
+    refocus.current = null;
+    to?.focus({ preventScroll: true });
+  }, [open.modal]);
+
   const box = (k: Dlg) => ({ get current() { return backs.current[k]?.querySelector<HTMLElement>('.modal') ?? null; } });
   // locked review copy (task 4): the stack's close (Escape) of the export modal and the manuscript dialog empties their
   // password fields, as 1.0's Escape handler does (BEUK:lockcopy: lockFieldsClear, 1.0's own)
@@ -278,6 +317,7 @@ export function ExportModal() {
         return open[k] && back ? createPortal(<StackEntry key={k} box={box(k)} onClose={() => stackClose(k)} />, back) : null;
       })}
       <LockPdfStack />
+      {proofHost ? createPortal(<ExportProof onBack={backFromPrint} />, proofHost) : null}
     </>
   );
 }
@@ -333,5 +373,9 @@ export const exportSeam = {
   },
   /** The body 1.0's buildEpub posts for the open book (1.0's serializeBook on the export's state). */
   body: (lang: string) => exportBody(lang),
+  /** The export screen's groups: open one by its id (null closes them all), or the one that holds an element; which is open. */
+  group: (id: GroupId | null): void => grouped?.open(id),
+  reveal: (selector: string): boolean => !!grouped && grouped.reveal(document.querySelector(selector)),
+  openGroup: (): GroupId | null => grouped?.openId() ?? null,
   ready: true,
 };
