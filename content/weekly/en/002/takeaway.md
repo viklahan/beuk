@@ -2,14 +2,12 @@
 title: If You're Shipping a Book This Month
 section: Takeaway
 place: takeaway
-deck: Five instructions from the composing room
+deck: Four instructions from the composing room
 ---
-Check the Audible royalties column before judging your October — most KENP cliffs are money that moved rooms.
+Trying Spotify’s audiobook tool? Listen to the whole book and set pronunciation rules for every name before you publish.
 
-Save dated copies of every KDP report until the October fund statement lands.
+Leave your em dashes alone. Edit for the reader, not for a detector.
 
-Publishing wide? Confirm your Kobo Plus enrollment — three more countries came online October 28.
+Start a one-page log of the AI tools that touched this book and what each did.
 
-Keep audio rights flexible: regional storefronts are multiplying, and exclusive deals can't follow them.
-
-Make no Select enrollment decisions until the first Kindle+ payout shows its arithmetic.
+Open your EPUB’s accessibility metadata and check that it describes the file you are actually shipping.

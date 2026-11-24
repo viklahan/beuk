@@ -4113,7 +4113,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       const problems = checkWeeklyContent(w);
       assert(problems.length === 0, problems.join('; '));
       if (!w.latest) throw new NotConfigured('no issue under content/weekly/en yet');
-      return `${w.issues.length} issue(s); latest No. ${w.latest.number}, ${w.latest.week}: ${w.latest.banner}`;
+      return `${w.issues.length} issue(s); latest Edition ${w.latest.number}, ${w.latest.week}: ${w.latest.banner}`;
     },
   },
   {
