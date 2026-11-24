@@ -5836,8 +5836,9 @@ gate. Nothing waits on it and nothing is disabled by it.
   note's in-page link loads the studio's own address into the frame
   (measured in Chromium).
 - The frame is `sandbox="allow-same-origin"` and nothing more: no script,
-  no form, no pop-up, no navigation of the page around it. V's decision,
-  2026-11-24: the book is already drawn in the studio's own page by the
+  no form, no pop-up, no navigation of the page around it. Decided in the
+  session that built it, 2026-11-24 (not a ruling of V's; his to
+  overturn): the book is already drawn in the studio's own page by the
   preview, so a frame of the same book that runs no script adds no
   exposure. With the same origin, a link inside the book (a note and its
   way back) is the browser's own in-page jump, and the page can listen in

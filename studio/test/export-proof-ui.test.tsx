@@ -226,7 +226,7 @@ describe('the export screen: a proof first, then the formats in groups', { timeo
     await waitFor(() => expect(frame()).not.toBeNull());
     expect(state()).toBeNull();
     const f = frame()!;
-    // the frame: sandboxed, with the studio's own origin and nothing else allowed (V, 2026-11-24): no script, no form,
+    // the frame: sandboxed, with the studio's own origin and nothing else allowed (the building session's call, 2026-11-24): no script, no form,
     // no pop-up, no navigation of the page around it. Named for a screen reader.
     expect(f.hasAttribute('sandbox')).toBe(true);
     expect(f.getAttribute('sandbox')).toBe('allow-same-origin');

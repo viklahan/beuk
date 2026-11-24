@@ -15,8 +15,8 @@ import { exportRun } from './state';
      for frames (Caddyfile: frame-src 'self' blob:), and not from srcdoc: measured in Chromium under that policy, in a
      sandboxed srcdoc frame a note's in-page link loads the studio's own address into the frame.
 
-     The frame is sandbox="allow-same-origin" and nothing more (V's decision, 2026-11-24, reversing the first brief's
-     "no same-origin"): no script runs in it, no form is sent, no pop-up opens, the page around it is never navigated.
+     The frame is sandbox="allow-same-origin" and nothing more (decided in the session that built it, 2026-11-24, reversing that session's
+     own first brief of "no same-origin"; not a ruling of V's, and his to overturn): no script runs in it, no form is sent, no pop-up opens, the page around it is never navigated.
      The reasoning: the book is already drawn in the studio's own page, on the studio's origin, by the preview, so a
      frame of the same book that runs no script adds no exposure; and the same origin is what makes the proof usable:
      - a link inside the book (a note and its way back, the contents list: an address that is the page's own plus
