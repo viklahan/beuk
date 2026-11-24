@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-23 (the export screen: section 3). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -409,3 +409,396 @@ keys and 32 `auth.*` plus 10 `backup.*` keys in all, most of them long since sig
 are the pending ones. The reports are the list.
 
 Total still waiting: 22 (this task) + 11 + 20 + 21 + 6 + 1 = 81 keys, counting each key once however many languages it has.
+(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 23 keys. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
+
+## 3. The export screen: its groups and the proof (23 keys, 2026-11-23)
+
+Studio 2.0's export screen now offers a proof of the whole book first and puts the formats in six groups
+(`studio/src/export/groups.ts`, `studio/src/export/Proof.tsx`). Its 23 new keys are in `client/index.html` `UI_STRINGS`
+(the `BEUK:exportproof` block, `EXPORTPROOF_STRINGS`): 12 `expg.*` keys (each group's name and its one line) and 11 `proof.*` keys.
+English is the source. The 12 other languages below are drafts written by Claude: not approved, not read by a native speaker.
+
+How the drafts were made:
+
+- The one placeholder (`{error}` in `proof.failed`) is kept byte for byte; `studio/test/export-proof-ui.test.tsx` checks it in every language.
+- Words follow the neighbouring 1.0 strings in each language: the shelf, the archive, the box set, beta readers, the submission
+  manuscript, trim size, the print check, and the name of "Standalone HTML" (`exp.htmlH`), which `proof.note` quotes.
+- The address form follows each language's shelf strings (for example *tú* in Spanish, *vous* in French, *Sie* in German, *u* in Dutch).
+- Quote marks follow each language's 1.0 strings.
+- No exclamation marks anywhere (a test checks it).
+
+Points worth a look when you read them:
+
+- `expg.ebook` is the same letters as English in **it** and **pl** ("E-book (EPUB)"): the word is the same there.
+- `expg.archive` ("Archive and sharing"): **ru** says "Архив и доступ для читателей" (archive and access for readers), because a bare noun for "sharing" reads oddly there; **es** says "Archivo y compartir".
+- `proof.note` is the one long string. It says what the view is and where it differs from the EPUB (pages, the reader's own contents menu, typefaces, links off). If the English changes, all 12 change.
+- **de** uses the *Sie* form (the shelf strings do; the beta-reader strings in the 1.0 pack use *du*).
+- **ja** and **zh-Hans** call a section セクション / 章节; check them against the word you want for "section" there.
+
+### `expg.ebook`
+
+- **en** (source): E-book (EPUB)
+- **es** Español: `Libro electrónico (EPUB)`
+- **fr** Français: `Livre numérique (EPUB)`
+- **de** Deutsch: `E-Book (EPUB)`
+- **it** Italiano: `E-book (EPUB)`
+- **pt** Português: `Livro eletrónico (EPUB)`
+- **nl** Nederlands: `E-boek (EPUB)`
+- **pl** Polski: `E-book (EPUB)`
+- **ru** Русский: `Электронная книга (EPUB)`
+- **tr** Türkçe: `E-kitap (EPUB)`
+- **ar** العربية: `كتاب إلكتروني (EPUB)`
+- **ja** 日本語: `電子書籍（EPUB）`
+- **zh-Hans** 简体中文: `电子书（EPUB）`
+
+### `expg.ebookSub`
+
+- **en** (source): Choose the store, check the package and download the EPUB.
+- **es** Español: `Elige la tienda, comprueba el paquete y descarga el EPUB.`
+- **fr** Français: `Choisissez la boutique, vérifiez le paquet et téléchargez l'EPUB.`
+- **de** Deutsch: `Shop wählen, Paket prüfen und das EPUB herunterladen.`
+- **it** Italiano: `Scegli lo store, controlla il pacchetto e scarica l'EPUB.`
+- **pt** Português: `Escolha a loja, verifique o pacote e transfira o EPUB.`
+- **nl** Nederlands: `Kies de winkel, controleer het pakket en download de EPUB.`
+- **pl** Polski: `Wybierz sklep, sprawdź pakiet i pobierz EPUB.`
+- **ru** Русский: `Выберите магазин, проверьте пакет и скачайте EPUB.`
+- **tr** Türkçe: `Mağazayı seçin, paketi denetleyin ve EPUB'ı indirin.`
+- **ar** العربية: `اختر المتجر، وافحص الحزمة، ونزّل ملف EPUB.`
+- **ja** 日本語: `ストアを選び、パッケージを確認して、EPUBをダウンロードします。`
+- **zh-Hans** 简体中文: `选择书店，检查文件包，下载 EPUB。`
+
+### `expg.print`
+
+- **en** (source): Print
+- **es** Español: `Impresión`
+- **fr** Français: `Impression`
+- **de** Deutsch: `Druck`
+- **it** Italiano: `Stampa`
+- **pt** Português: `Impressão`
+- **nl** Nederlands: `Druk`
+- **pl** Polski: `Druk`
+- **ru** Русский: `Печать`
+- **tr** Türkçe: `Baskı`
+- **ar** العربية: `الطباعة`
+- **ja** 日本語: `印刷`
+- **zh-Hans** 简体中文: `印刷`
+
+### `expg.printSub`
+
+- **en** (source): Trim size, margins, the print check and the print-ready PDF.
+- **es** Español: `Tamaño de corte, márgenes, la comprobación previa y el PDF listo para imprimir.`
+- **fr** Français: `Format de coupe, marges, contrôle prépresse et PDF prêt à imprimer.`
+- **de** Deutsch: `Beschnittformat, Ränder, Druckvorstufen-Prüfung und das druckfertige PDF.`
+- **it** Italiano: `Formato di taglio, margini, controllo prestampa e PDF pronto per la stampa.`
+- **pt** Português: `Tamanho de corte, margens, verificação pré-impressão e o PDF pronto para impressão.`
+- **nl** Nederlands: `Snijformaat, marges, de drukvoorcontrole en de drukklare pdf.`
+- **pl** Polski: `Format cięcia, marginesy, kontrola przeddrukowa i PDF gotowy do druku.`
+- **ru** Русский: `Обрезной формат, поля, предпечатная проверка и PDF, готовый к печати.`
+- **tr** Türkçe: `Kesim boyutu, kenar boşlukları, baskı öncesi kontrol ve baskıya hazır PDF.`
+- **ar** العربية: `حجم القص، والهوامش، والفحص قبل الطباعة، وملف PDF الجاهز للطباعة.`
+- **ja** 日本語: `仕上がりサイズ、余白、印刷プリフライト、印刷用PDF。`
+- **zh-Hans** 简体中文: `裁切尺寸、页边距、印前检查和可印刷 PDF。`
+
+### `expg.files`
+
+- **en** (source): Manuscript and other files
+- **es** Español: `Manuscrito y otros archivos`
+- **fr** Français: `Manuscrit et autres fichiers`
+- **de** Deutsch: `Manuskript und andere Dateien`
+- **it** Italiano: `Manoscritto e altri file`
+- **pt** Português: `Manuscrito e outros ficheiros`
+- **nl** Nederlands: `Manuscript en andere bestanden`
+- **pl** Polski: `Maszynopis i inne pliki`
+- **ru** Русский: `Рукопись и другие файлы`
+- **tr** Türkçe: `Müsvedde ve diğer dosyalar`
+- **ar** العربية: `المخطوطة وملفات أخرى`
+- **ja** 日本語: `原稿とその他のファイル`
+- **zh-Hans** 简体中文: `稿件和其他文件`
+
+### `expg.filesSub`
+
+- **en** (source): Markdown, a web page, Word and the submission manuscript.
+- **es** Español: `Markdown, una página web, Word y el manuscrito para envío.`
+- **fr** Français: `Markdown, une page web, Word et le manuscrit de soumission.`
+- **de** Deutsch: `Markdown, eine Webseite, Word und das Einsendungsmanuskript.`
+- **it** Italiano: `Markdown, una pagina web, Word e il manoscritto per l'invio.`
+- **pt** Português: `Markdown, uma página web, Word e o manuscrito para submissão.`
+- **nl** Nederlands: `Markdown, een webpagina, Word en het inzendmanuscript.`
+- **pl** Polski: `Markdown, strona internetowa, Word i maszynopis do wysyłki.`
+- **ru** Русский: `Markdown, веб-страница, Word и рукопись для подачи.`
+- **tr** Türkçe: `Markdown, bir web sayfası, Word ve gönderim müsveddesi.`
+- **ar** العربية: `Markdown، وصفحة ويب، وWord، ومخطوطة التقديم.`
+- **ja** 日本語: `Markdown、ウェブページ、Word、投稿用原稿。`
+- **zh-Hans** 简体中文: `Markdown、网页、Word 和投稿稿件。`
+
+### `expg.audio`
+
+- **en** (source): Audiobook script
+- **es** Español: `Guion de audiolibro`
+- **fr** Français: `Script de livre audio`
+- **de** Deutsch: `Hörbuch-Skript`
+- **it** Italiano: `Copione per audiolibro`
+- **pt** Português: `Guião de audiolivro`
+- **nl** Nederlands: `Luisterboekscript`
+- **pl** Polski: `Skrypt audiobooka`
+- **ru** Русский: `Сценарий аудиокниги`
+- **tr** Türkçe: `Sesli kitap metni`
+- **ar** العربية: `نص الكتاب الصوتي`
+- **ja** 日本語: `オーディオブック台本`
+- **zh-Hans** 简体中文: `有声书脚本`
+
+### `expg.audioSub`
+
+- **en** (source): Narrator scripts in ACX order.
+- **es** Español: `Guiones para el narrador en el orden de ACX.`
+- **fr** Français: `Des scripts de narration dans l'ordre ACX.`
+- **de** Deutsch: `Sprecherskripte in ACX-Reihenfolge.`
+- **it** Italiano: `Copioni per il narratore nell'ordine ACX.`
+- **pt** Português: `Guiões para o narrador na ordem ACX.`
+- **nl** Nederlands: `Vertellersscripts in ACX-volgorde.`
+- **pl** Polski: `Skrypty dla lektora w kolejności ACX.`
+- **ru** Русский: `Сценарии для чтеца в порядке ACX.`
+- **tr** Türkçe: `ACX sırasına göre anlatıcı metinleri.`
+- **ar** العربية: `نصوص للراوي بترتيب ACX.`
+- **ja** 日本語: `ACXの順序で並べたナレーター用台本。`
+- **zh-Hans** 简体中文: `按 ACX 顺序排列的朗读者脚本。`
+
+### `expg.boxset`
+
+- **en** (source): Box set
+- **es** Español: `Estuche`
+- **fr** Français: `Coffret`
+- **de** Deutsch: `Box-Set`
+- **it** Italiano: `Cofanetto`
+- **pt** Português: `Conjunto`
+- **nl** Nederlands: `Boxset`
+- **pl** Polski: `Zestaw`
+- **ru** Русский: `Бокс-сет`
+- **tr** Türkçe: `Kutu seti`
+- **ar** العربية: `مجموعة صندوقية`
+- **ja** 日本語: `ボックスセット`
+- **zh-Hans** 简体中文: `套装`
+
+### `expg.boxsetSub`
+
+- **en** (source): Several books in one EPUB.
+- **es** Español: `Varios libros en un solo EPUB.`
+- **fr** Français: `Plusieurs livres dans un seul EPUB.`
+- **de** Deutsch: `Mehrere Bücher in einem EPUB.`
+- **it** Italiano: `Più libri in un solo EPUB.`
+- **pt** Português: `Vários livros num só EPUB.`
+- **nl** Nederlands: `Meerdere boeken in één EPUB.`
+- **pl** Polski: `Kilka książek w jednym EPUB.`
+- **ru** Русский: `Несколько книг в одном EPUB.`
+- **tr** Türkçe: `Tek bir EPUB içinde birkaç kitap.`
+- **ar** العربية: `عدة كتب في ملف EPUB واحد.`
+- **ja** 日本語: `複数の本を1つのEPUBに。`
+- **zh-Hans** 简体中文: `多本书合为一个 EPUB。`
+
+### `expg.archive`
+
+- **en** (source): Archive and sharing
+- **es** Español: `Archivo y compartir`
+- **fr** Français: `Archive et partage`
+- **de** Deutsch: `Archiv und Teilen`
+- **it** Italiano: `Archivio e condivisione`
+- **pt** Português: `Arquivo e partilha`
+- **nl** Nederlands: `Archief en delen`
+- **pl** Polski: `Archiwum i udostępnianie`
+- **ru** Русский: `Архив и доступ для читателей`
+- **tr** Türkçe: `Arşiv ve paylaşım`
+- **ar** العربية: `الأرشيف والمشاركة`
+- **ja** 日本語: `保管庫と共有`
+- **zh-Hans** 简体中文: `存档与分享`
+
+### `expg.archiveSub`
+
+- **en** (source): Finished files kept on your shelf, and reading links for beta readers.
+- **es** Español: `Archivos terminados guardados en tu estantería y enlaces de lectura para lectores beta.`
+- **fr** Français: `Les fichiers terminés gardés sur votre étagère, et les liens de lecture pour vos bêta-lecteurs.`
+- **de** Deutsch: `Fertige Dateien in Ihrem Regal und Leselinks für Testleser.`
+- **it** Italiano: `I file finiti conservati nella tua libreria e i link di lettura per i beta reader.`
+- **pt** Português: `Ficheiros terminados guardados na sua estante e ligações de leitura para leitores beta.`
+- **nl** Nederlands: `Afgeronde bestanden op uw boekenplank, en leeslinks voor proeflezers.`
+- **pl** Polski: `Gotowe pliki przechowywane na twojej półce oraz linki do czytania dla betaczytelników.`
+- **ru** Русский: `Готовые файлы на вашей полке и ссылки для чтения для бета-читателей.`
+- **tr** Türkçe: `Rafınızda saklanan bitmiş dosyalar ve beta okurlar için okuma bağlantıları.`
+- **ar** العربية: `الملفات المنجزة المحفوظة على رفّك، وروابط القراءة للقرّاء التجريبيين.`
+- **ja** 日本語: `本棚に保管した完成ファイルと、ベータ読者向けの閲覧リンク。`
+- **zh-Hans** 简体中文: `保存在你书架上的成品文件，以及给试读读者的阅读链接。`
+
+### `proof.h`
+
+- **en** (source): See the whole book first
+- **es** Español: `Mira primero el libro entero`
+- **fr** Français: `Voir d'abord le livre en entier`
+- **de** Deutsch: `Erst das ganze Buch ansehen`
+- **it** Italiano: `Guarda prima il libro intero`
+- **pt** Português: `Veja primeiro o livro inteiro`
+- **nl** Nederlands: `Bekijk eerst het hele boek`
+- **pl** Polski: `Najpierw zobacz całą książkę`
+- **ru** Русский: `Сначала посмотрите книгу целиком`
+- **tr** Türkçe: `Önce kitabın tamamına bakın`
+- **ar** العربية: `شاهد الكتاب كاملًا أولًا`
+- **ja** 日本語: `まず本全体を見る`
+- **zh-Hans** 简体中文: `先看完整本书`
+
+### `proof.sub`
+
+- **en** (source): You can go through the whole book, first page to last, before you export it. Every export works without this.
+- **es** Español: `Puedes recorrer el libro entero, de la primera página a la última, antes de exportarlo. Todas las exportaciones funcionan sin este paso.`
+- **fr** Français: `Vous pouvez parcourir le livre en entier, de la première page à la dernière, avant de l'exporter. Tous les exports fonctionnent sans cette étape.`
+- **de** Deutsch: `Sie können das ganze Buch von der ersten bis zur letzten Seite durchgehen, bevor Sie es exportieren. Jeder Export funktioniert auch ohne diesen Schritt.`
+- **it** Italiano: `Puoi scorrere il libro intero, dalla prima pagina all'ultima, prima di esportarlo. Ogni esportazione funziona anche senza questo passaggio.`
+- **pt** Português: `Pode percorrer o livro inteiro, da primeira página à última, antes de o exportar. Todas as exportações funcionam sem este passo.`
+- **nl** Nederlands: `U kunt het hele boek doorlopen, van de eerste tot de laatste pagina, voordat u het exporteert. Elke export werkt ook zonder deze stap.`
+- **pl** Polski: `Możesz przejrzeć całą książkę, od pierwszej strony do ostatniej, zanim ją wyeksportujesz. Każdy eksport działa także bez tego kroku.`
+- **ru** Русский: `Перед экспортом можно пройти всю книгу от первой страницы до последней. Любой экспорт работает и без этого шага.`
+- **tr** Türkçe: `Dışa aktarmadan önce kitabın tamamını ilk sayfadan son sayfaya kadar gözden geçirebilirsiniz. Her dışa aktarma bu adım olmadan da çalışır.`
+- **ar** العربية: `يمكنك تصفّح الكتاب كاملًا، من صفحته الأولى إلى الأخيرة، قبل تصديره. كل تصدير يعمل من دون هذه الخطوة.`
+- **ja** 日本語: `書き出す前に、最初のページから最後のページまで本全体を通して確認できます。確認しなくても、どの書き出しも使えます。`
+- **zh-Hans** 简体中文: `导出之前，你可以把整本书从第一页看到最后一页。不看也可以，任何导出都照常可用。`
+
+### `proof.read`
+
+- **en** (source): Read the whole book on screen
+- **es** Español: `Leer el libro entero en pantalla`
+- **fr** Français: `Lire le livre en entier à l'écran`
+- **de** Deutsch: `Das ganze Buch am Bildschirm lesen`
+- **it** Italiano: `Leggi il libro intero a schermo`
+- **pt** Português: `Ler o livro inteiro no ecrã`
+- **nl** Nederlands: `Het hele boek op het scherm lezen`
+- **pl** Polski: `Przeczytaj całą książkę na ekranie`
+- **ru** Русский: `Прочитать всю книгу на экране`
+- **tr** Türkçe: `Kitabın tamamını ekranda oku`
+- **ar** العربية: `اقرأ الكتاب كاملًا على الشاشة`
+- **ja** 日本語: `本全体を画面で読む`
+- **zh-Hans** 简体中文: `在屏幕上通读整本书`
+
+### `proof.print`
+
+- **en** (source): Turn the print pages
+- **es** Español: `Pasar las páginas impresas`
+- **fr** Français: `Tourner les pages imprimées`
+- **de** Deutsch: `Die Druckseiten durchblättern`
+- **it** Italiano: `Sfoglia le pagine di stampa`
+- **pt** Português: `Folhear as páginas de impressão`
+- **nl** Nederlands: `Door de drukpagina's bladeren`
+- **pl** Polski: `Przewracaj strony do druku`
+- **ru** Русский: `Листать печатные страницы`
+- **tr** Türkçe: `Baskı sayfalarını çevir`
+- **ar** العربية: `قلّب صفحات الطباعة`
+- **ja** 日本語: `印刷ページをめくる`
+- **zh-Hans** 简体中文: `翻看印刷页面`
+
+### `proof.title`
+
+- **en** (source): The whole book, first page to last
+- **es** Español: `El libro entero, de la primera página a la última`
+- **fr** Français: `Le livre en entier, de la première page à la dernière`
+- **de** Deutsch: `Das ganze Buch, von der ersten bis zur letzten Seite`
+- **it** Italiano: `Il libro intero, dalla prima pagina all'ultima`
+- **pt** Português: `O livro inteiro, da primeira página à última`
+- **nl** Nederlands: `Het hele boek, van de eerste tot de laatste pagina`
+- **pl** Polski: `Cała książka, od pierwszej strony do ostatniej`
+- **ru** Русский: `Вся книга, от первой страницы до последней`
+- **tr** Türkçe: `Kitabın tamamı, ilk sayfadan son sayfaya`
+- **ar** العربية: `الكتاب كاملًا، من الصفحة الأولى إلى الأخيرة`
+- **ja** 日本語: `本全体、最初のページから最後のページまで`
+- **zh-Hans** 简体中文: `整本书，从第一页到最后一页`
+
+### `proof.note`
+
+- **en** (source): This is the page “Standalone HTML” downloads: the EPUB's sections, notes and pictures, in the same order, with the same stylesheet. An e-reader shows them as pages with its own contents menu, and the typefaces here can differ from the EPUB's. Links are switched off in this view.
+- **es** Español: `Esta es la página que descarga «HTML independiente»: las secciones, las notas y las imágenes del EPUB, en el mismo orden y con la misma hoja de estilo. Un lector electrónico las muestra en páginas con su propio menú de contenido, y las tipografías de aquí pueden ser distintas de las del EPUB. En esta vista los enlaces están desactivados.`
+- **fr** Français: `Voici la page que télécharge « HTML autonome » : les sections, les notes et les images de l'EPUB, dans le même ordre, avec la même feuille de style. Une liseuse les présente en pages avec son propre menu de sommaire, et les polices affichées ici peuvent différer de celles de l'EPUB. Les liens sont désactivés dans cette vue.`
+- **de** Deutsch: `Dies ist die Seite, die „Eigenständiges HTML“ herunterlädt: die Abschnitte, Anmerkungen und Bilder des EPUB, in derselben Reihenfolge und mit demselben Stylesheet. Ein E-Reader zeigt sie als Seiten mit eigenem Inhaltsmenü, und die Schriften hier können von denen im EPUB abweichen. Links sind in dieser Ansicht abgeschaltet.`
+- **it** Italiano: `Questa è la pagina che «HTML autonomo» scarica: le sezioni, le note e le immagini dell'EPUB, nello stesso ordine e con lo stesso foglio di stile. Un e-reader le mostra in pagine con il suo menu dei contenuti, e i caratteri qui possono essere diversi da quelli dell'EPUB. In questa vista i link sono disattivati.`
+- **pt** Português: `Esta é a página que «HTML autónomo» transfere: as secções, as notas e as imagens do EPUB, pela mesma ordem e com a mesma folha de estilo. Um leitor de livros eletrónicos mostra-as em páginas com o seu próprio menu de conteúdos, e os tipos de letra aqui podem ser diferentes dos do EPUB. Nesta vista as ligações estão desligadas.`
+- **nl** Nederlands: `Dit is de pagina die “Zelfstandige HTML” downloadt: de secties, noten en afbeeldingen van de EPUB, in dezelfde volgorde en met hetzelfde stijlblad. Een e-reader toont ze als pagina's met een eigen inhoudsmenu, en de lettertypen hier kunnen afwijken van die in de EPUB. Links zijn in deze weergave uitgeschakeld.`
+- **pl** Polski: `To jest strona, którą pobiera „Samodzielny HTML”: sekcje, przypisy i ilustracje z EPUB, w tej samej kolejności i z tym samym arkuszem stylów. Czytnik pokazuje je jako strony z własnym menu spisu treści, a kroje pisma tutaj mogą różnić się od tych w EPUB. W tym widoku linki są wyłączone.`
+- **ru** Русский: `Это страница, которую скачивает «Автономный HTML»: разделы, примечания и иллюстрации EPUB в том же порядке и с той же таблицей стилей. Читалка показывает их постранично, со своим меню оглавления, а шрифты здесь могут отличаться от шрифтов в EPUB. Ссылки в этом виде отключены.`
+- **tr** Türkçe: `Bu, “Bağımsız HTML”nin indirdiği sayfadır: EPUB'ın bölümleri, notları ve resimleri, aynı sırayla ve aynı stil sayfasıyla. Bir e-okuyucu bunları kendi içindekiler menüsüyle sayfalar hâlinde gösterir; buradaki yazı tipleri EPUB'dakilerden farklı olabilir. Bu görünümde bağlantılar kapalıdır.`
+- **ar** العربية: `هذه هي الصفحة التي ينزّلها «HTML مستقل»: أقسام ملف EPUB وحواشيه وصوره، بالترتيب نفسه وبورقة الأنماط نفسها. يعرضها القارئ الإلكتروني صفحاتٍ مع قائمة محتوياته الخاصة، وقد تختلف الخطوط هنا عن خطوط ملف EPUB. الروابط معطّلة في هذا العرض.`
+- **ja** 日本語: `これは「単独HTML」がダウンロードするページです。EPUBと同じセクション、注、画像が、同じ順序、同じスタイルシートで並びます。電子書籍リーダーはこれをページに分け、独自の目次メニューを付けます。ここでの書体はEPUBと異なる場合があります。この表示ではリンクは無効です。`
+- **zh-Hans** 简体中文: `这就是“独立 HTML”下载的页面：EPUB 的各个章节、注释和图片，顺序相同，样式表相同。电子书阅读器会把它们分页显示，并带有自己的目录菜单；这里的字体可能与 EPUB 中的不同。此视图中的链接已关闭。`
+
+### `proof.preparing`
+
+- **en** (source): Preparing the book…
+- **es** Español: `Preparando el libro…`
+- **fr** Français: `Préparation du livre…`
+- **de** Deutsch: `Das Buch wird vorbereitet…`
+- **it** Italiano: `Preparazione del libro…`
+- **pt** Português: `A preparar o livro…`
+- **nl** Nederlands: `Het boek wordt voorbereid…`
+- **pl** Polski: `Przygotowywanie książki…`
+- **ru** Русский: `Книга готовится…`
+- **tr** Türkçe: `Kitap hazırlanıyor…`
+- **ar** العربية: `جارٍ تجهيز الكتاب…`
+- **ja** 日本語: `本を準備しています…`
+- **zh-Hans** 简体中文: `正在准备这本书…`
+
+### `proof.empty`
+
+- **en** (source): There is nothing to show yet: every section of this book is empty or left out of the book.
+- **es** Español: `Todavía no hay nada que mostrar: todas las secciones de este libro están vacías o fuera del libro.`
+- **fr** Français: `Il n'y a encore rien à montrer : toutes les sections de ce livre sont vides ou laissées hors du livre.`
+- **de** Deutsch: `Es gibt noch nichts zu zeigen: Jeder Abschnitt dieses Buchs ist leer oder nicht ins Buch aufgenommen.`
+- **it** Italiano: `Non c'è ancora niente da mostrare: tutte le sezioni di questo libro sono vuote o escluse dal libro.`
+- **pt** Português: `Ainda não há nada para mostrar: todas as secções deste livro estão vazias ou fora do livro.`
+- **nl** Nederlands: `Er is nog niets te tonen: elke sectie van dit boek is leeg of buiten het boek gelaten.`
+- **pl** Polski: `Nie ma jeszcze nic do pokazania: każda sekcja tej książki jest pusta albo pominięta w książce.`
+- **ru** Русский: `Показывать пока нечего: все разделы этой книги пусты или не включены в книгу.`
+- **tr** Türkçe: `Henüz gösterilecek bir şey yok: bu kitabın her bölümü boş ya da kitabın dışında bırakılmış.`
+- **ar** العربية: `لا شيء يُعرض بعد: كل أقسام هذا الكتاب فارغة أو مستبعدة من الكتاب.`
+- **ja** 日本語: `まだ表示するものがありません。この本のセクションはすべて空か、本から外されています。`
+- **zh-Hans** 简体中文: `还没有可显示的内容：这本书的每个章节都是空的，或未收入书中。`
+
+### `proof.failed`
+
+- **en** (source): The book could not be prepared. The error was: {error}
+- **es** Español: `No se pudo preparar el libro. El error fue: {error}`
+- **fr** Français: `Le livre n'a pas pu être préparé. L'erreur était : {error}`
+- **de** Deutsch: `Das Buch konnte nicht vorbereitet werden. Der Fehler war: {error}`
+- **it** Italiano: `Non è stato possibile preparare il libro. L'errore era: {error}`
+- **pt** Português: `Não foi possível preparar o livro. O erro foi: {error}`
+- **nl** Nederlands: `Het boek kon niet worden voorbereid. De fout was: {error}`
+- **pl** Polski: `Nie udało się przygotować książki. Błąd: {error}`
+- **ru** Русский: `Не удалось подготовить книгу. Ошибка: {error}`
+- **tr** Türkçe: `Kitap hazırlanamadı. Hata şuydu: {error}`
+- **ar** العربية: `تعذّر تجهيز الكتاب. الخطأ: {error}`
+- **ja** 日本語: `本を準備できませんでした。エラー：{error}`
+- **zh-Hans** 简体中文: `无法准备这本书。错误：{error}`
+
+### `proof.frame`
+
+- **en** (source): The whole book
+- **es** Español: `El libro entero`
+- **fr** Français: `Le livre en entier`
+- **de** Deutsch: `Das ganze Buch`
+- **it** Italiano: `Il libro intero`
+- **pt** Português: `O livro inteiro`
+- **nl** Nederlands: `Het hele boek`
+- **pl** Polski: `Cała książka`
+- **ru** Русский: `Вся книга`
+- **tr** Türkçe: `Kitabın tamamı`
+- **ar** العربية: `الكتاب كاملًا`
+- **ja** 日本語: `本全体`
+- **zh-Hans** 简体中文: `整本书`
+
+### `proof.linkOff`
+
+- **en** (source): A link was pressed. Links are switched off in this view, so the book is shown again from its first page.
+- **es** Español: `Se pulsó un enlace. En esta vista los enlaces están desactivados, así que el libro se muestra otra vez desde su primera página.`
+- **fr** Français: `Un lien a été activé. Les liens sont désactivés dans cette vue ; le livre est donc affiché de nouveau depuis sa première page.`
+- **de** Deutsch: `Ein Link wurde angeklickt. Links sind in dieser Ansicht abgeschaltet, deshalb wird das Buch wieder ab der ersten Seite gezeigt.`
+- **it** Italiano: `È stato premuto un link. In questa vista i link sono disattivati, quindi il libro viene mostrato di nuovo dalla prima pagina.`
+- **pt** Português: `Foi premida uma ligação. Nesta vista as ligações estão desligadas, por isso o livro é mostrado de novo a partir da primeira página.`
+- **nl** Nederlands: `Er is op een link gedrukt. Links zijn in deze weergave uitgeschakeld, dus het boek wordt opnieuw vanaf de eerste pagina getoond.`
+- **pl** Polski: `Naciśnięto link. W tym widoku linki są wyłączone, więc książka jest znów pokazana od pierwszej strony.`
+- **ru** Русский: `Была нажата ссылка. Ссылки в этом виде отключены, поэтому книга снова показана с первой страницы.`
+- **tr** Türkçe: `Bir bağlantıya basıldı. Bu görünümde bağlantılar kapalıdır; bu yüzden kitap yeniden ilk sayfasından gösteriliyor.`
+- **ar** العربية: `ضُغط رابط. الروابط معطّلة في هذا العرض، لذا يُعرض الكتاب من جديد من صفحته الأولى.`
+- **ja** 日本語: `リンクが押されました。この表示ではリンクは無効のため、本を最初のページからもう一度表示しています。`
+- **zh-Hans** 简体中文: `有链接被点击。此视图中的链接已关闭，因此这本书从第一页重新显示。`
