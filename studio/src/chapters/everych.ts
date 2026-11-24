@@ -257,7 +257,7 @@ export type Undone = {
   /** Chapters given back every setting they had. */
   restored: number;
   /** Chapters where a setting was changed again since (or the chapter is gone): left as they are. */
-  left: number;
+  skipped: number;
 };
 
 /** Put back what `rec` wrote: each key returns to the exact value it had (a key the chapter did not store is removed
@@ -287,5 +287,5 @@ export function undoEvery(c: Closure, rec: Applied): Undone | null {
     });
   }
   rec.done = true;
-  return { restored: touched.size - left.size, left: left.size };
+  return { restored: touched.size - left.size, skipped: left.size };
 }

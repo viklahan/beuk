@@ -86,8 +86,8 @@ export function EveryChapter({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<un
     }
     if (pending === rec) pending = null;
     if (!r) return;
-    if (r.left === 0) toast(t('chop.undone'), 'Undo2');
-    else toast(t('everych.undonePart', { n: r.left, snap: t('history.auto.chapterop') }), 'History');
+    if (r.skipped === 0) toast(t('chop.undone'), 'Undo2');
+    else toast(t('everych.undonePart', { n: r.skipped, snap: t('history.auto.chapterop') }), 'History');
   };
   const apply = () => {
     settleActiveEditor(); // the open chapter's pending normalisation first, so the snapshot's text is settled

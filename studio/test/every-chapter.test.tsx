@@ -338,7 +338,7 @@ describe('Undo', () => {
     const rec = applyToEvery(c, y, 'c1', EVERY)!;
     expect(secs(y)).not.toEqual(before.sections);
     const n = updates(y);
-    expect(undoEvery(c, rec)).toEqual({ restored: 3, left: 0 });
+    expect(undoEvery(c, rec)).toEqual({ restored: 3, skipped: 0 });
     expect(n.count).toBe(1);
     const after = exportBook(y);
     expect(noHistory(after)).toEqual(noHistory(before));
@@ -355,7 +355,7 @@ describe('Undo', () => {
     const rec = applyToEvery(c, y, 'c1', EVERY)!;
     const c5 = sectionList(y).find((m) => m instanceof Y.Map && m.get('id') === 'c5') as Y.Map<unknown>;
     c5.set('backdropStrength', 'strong'); // the writer's own later choice
-    expect(undoEvery(c, rec)).toEqual({ restored: 2, left: 1 });
+    expect(undoEvery(c, rec)).toEqual({ restored: 2, skipped: 1 });
     expectOnly(before, secs(y), { c5: { backdropStrength: 'strong', smallCaps: true } });
     expect(live(c, y).state.history.map((h) => h.id)).toEqual([rec.snapId]);
   });
@@ -364,7 +364,7 @@ describe('Undo', () => {
     const y = onDoc();
     const rec = applyToEvery(c, y, 'c1', ['dropCap'])!;
     removeSection(y, keyOfId(y, 'c4')!);
-    expect(undoEvery(c, rec)).toEqual({ restored: 1, left: 1 });
+    expect(undoEvery(c, rec)).toEqual({ restored: 1, skipped: 1 });
     expect(byId(secs(y)).c3!.dropCap).toBe(true);
     expect(secs(y).map((s) => s.id)).not.toContain('c4');
     const y2 = onDoc();
