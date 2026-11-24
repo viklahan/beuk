@@ -44,11 +44,11 @@ Write in plain text with light marks; the preview page-turns the typeset result 
   </tr>
   <tr>
     <td><img src="client/site/shots/insights.webp" alt="Story Insights: chapter rhythm, cadence, dialogue share, crutch words, names on stage"></td>
-    <td><img src="client/site/shots/export.webp" alt="Export dialog with store presets and the Store-ready report"></td>
+    <td><img src="client/site/shots/export.webp" alt="Export dialog as it opens: the offer to read the whole book first, the Store-ready report, and the formats in six groups"></td>
   </tr>
   <tr>
     <td align="center"><sub><strong>Story Insights</strong> — rhythm, cadence, dialogue share, crutch words, echoes, a heatmap of the names your book keeps returning to. Computed on your device, never guessed.</sub></td>
-    <td align="center"><sub><strong>Export</strong> — store presets for EPUB, print, Word, Markdown, ACX, and the Store-ready? pass/fail report.</sub></td>
+    <td align="center"><sub><strong>Export</strong> — the whole book to read first, then store presets for EPUB, print, Word, Markdown, ACX, and the Store-ready? pass/fail report.</sub></td>
   </tr>
 </table>
 
