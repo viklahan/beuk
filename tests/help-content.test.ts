@@ -234,6 +234,11 @@ const CORRECTED_2026_11_22: [string, string, string][] = [
 // writer to a control now names the group to open first (the groups' own English names: expg.ebook, expg.boxset,
 // expg.archive). Corrections, not additions: each replaces a passage that no longer says where the control is. Applied
 // after the lists above.
+// 2026-11-24 (BEUK:poemmode): Poem Mode, named where the guide lists the verse mark: a whole chapter that is a poem
+// needs no mark. One sentence added in place.
+const ADDED_2026_11_24_POEM: [string, string, string][] = [
+  ["footnotes-and-images", "the toolbar buttons type these for you.", "the toolbar buttons type these for you. A chapter that is a poem from its first line to its last needs no mark at all: the P button at the start of the toolbar turns Poem Mode on for the chapter, so that every new line is a line of the poem and a blank line starts a new stanza, centred or left. Turning it off again changes none of your words."],
+];
 const CORRECTED_2026_11_24: [string, string, string][] = [
   ["box-sets", "Open the Export dialog and find the Box Set section.", "Open the Export dialog, then Box set ."],
   ["box-sets", "Pick a platform preset if the set is headed", "Pick a platform preset (under E-book (EPUB) ) if the set is headed"],
@@ -276,7 +281,7 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
       }
       // 2026-10-26: the features added since H1 (removing a picture, the preview keeping its place,
       // the title read from the manuscript, Split at cursor, the Cover Maker), each added in place.
-      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15, ...ADDED_2026_11_20, ...CORRECTED_2026_11_22, ...CORRECTED_2026_11_24]) if (s === slug) {
+      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15, ...ADDED_2026_11_20, ...CORRECTED_2026_11_22, ...CORRECTED_2026_11_24, ...ADDED_2026_11_24_POEM]) if (s === slug) {
         assert.ok(expected.includes(from), `${slug}: the addition's anchor is in the fixture`);
         expected = expected.replace(from, to);
       }

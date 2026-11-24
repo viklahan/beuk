@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { beforeAll, describe, expect, it } from 'vitest';
-import { freshApi, setupImport, standInCanvas, type Api, type Rec, type Sec } from './import-given';
+import { epub, freshApi, importFile, setupImport, standInCanvas, written, type Api, type Rec, type Sec } from './import-given';
 
 /* BEUK:poemmode — a chapter marked as a poem in the files a writer takes
    away besides the EPUB: the Word export, the submission manuscript, the
@@ -125,6 +125,19 @@ describe('a poem chapter in the files a writer takes away', () => {
     expect(centred.stored).toBe(POEM);
     expect(left.stored).toBe(POEM);
     expect(marked.stored).toBe(MARKED);
+  });
+});
+
+describe('a known limit, written down: a poem brought back from an EPUB', () => {
+  it('arrives as a verse block inside an ordinary chapter (the import reads the verse markup, not the poem\'s classes): the lines are kept, the mode is not', async () => {
+    const body = '<h1>Tide</h1><div class="verse poem poem-center"><p class="stanza"><span class="vl">The tide comes in on quiet feet.</span><br/><span class="vl">It counts the stones along the street.</span></p><p class="stanza"><span class="vl">The gulls wake up and start to call.</span></p></div>';
+    const got = await importFile('tide.epub', await epub([{ title: 'Tide', body }]), '');
+    const secs = written(got) as (Sec & Rec)[];
+    const ch = secs.find((s) => String(s.content).includes('quiet feet'))!;
+    expect(ch).toBeTruthy();
+    expect(ch.content).toBe('::: verse\nThe tide comes in on quiet feet.\nIt counts the stones along the street.\n\nThe gulls wake up and start to call.\n:::');
+    expect('mode' in ch).toBe(false);
+    expect('verseAlign' in ch).toBe(false);
   });
 });
 
