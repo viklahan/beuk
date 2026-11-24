@@ -4639,7 +4639,7 @@ School home shows the latest issue as a band.
 - **An issue** is a folder, `content/weekly/en/NNN/`: `issue.md` (volume,
   week, banner + bannerDeck, the lead story's slug, the two ears) and one
   Markdown file per story with its `place` — `lead`, `front`, `brief`,
-  `fold`, `notice`, `short` or `takeaway`. Pictures sit in the same folder and are served at
+  `fold`, `notice`, `short`, `takeaway` or `leader`. Pictures sit in the same folder and are served at
   `/school/weekly/<n>/img/<file>`. Format: `src/weekly/content.ts`.
 - **A news issue** (2026-11-20) adds to the same folder format: stories
   with `place: short` print whole on the front page under the lead, links
@@ -4655,9 +4655,16 @@ School home shows the latest issue as a band.
   reading keeps its forecast and late news. Optional `tagline`, `price`
   and `note` set the line under the masthead, a dateline entry and the
   line under the dateline.
+- **The leader** (No. 6, 2026-11-23) is the paper's own opinion: one
+  `place: leader` story, printed whole after the short stories in the same
+  grid (boxed, in italic; a sentence marked `*…*` stands upright) and with
+  a page of its own. It is kept apart from the news: `checkWeeklyContent`
+  refuses a leader whose `section` does not say "Opinion", one that links
+  nothing it answers, one that carries a "Why it matters" box, and a
+  second leader in the same issue.
 - **The shelf** runs in date order: No. 1 (19 Oct 2026), No. 2 (26 Oct),
   No. 3 (the School issue, week of 2 Nov, first published as No. 1), No. 4
-  (9 Nov), No. 5 (16 Nov). A renumbered issue says `formerly: <n>`; its
+  (9 Nov), No. 5 (16 Nov), No. 6 (23 Nov). A renumbered issue says `formerly: <n>`; its
   stories' addresses under the old number redirect (301) to the new ones.
   The next issue is the next folder; `/school/weekly` and the School
   home's band follow the highest number without being told.

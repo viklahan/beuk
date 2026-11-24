@@ -17,22 +17,30 @@ async function getPage(base: string, p: string, redirect: RequestRedirect = 'fol
   return { status: res.status, html: await res.text(), headers: res.headers };
 }
 
-/* The shelf (V, 2026-11-20): five issues in date order. The School issue,
-   first published as No. 1, is No. 3; four news issues stand round it. */
-const SHELF: Record<number, { week: string; lead: string; shorts: string[] }> = {
+const between = (html: string, start: string, end: string) => {
+  const i = html.indexOf(start);
+  assert.ok(i >= 0, `${start} is on the page`);
+  return html.slice(i, html.indexOf(end, i) + end.length);
+};
+
+/* The shelf (V, 2026-11-20): the issues in date order. The School issue,
+   first published as No. 1, is No. 3; the news issues stand round it.
+   No. 6 (23 Nov) is the first to carry a leader, the paper's opinion column. */
+const SHELF: Record<number, { week: string; lead: string; shorts: string[]; leader?: string }> = {
   1: { week: '2026-10-19', lead: 'kindle-plus', shorts: ['acx-deadline', 'etsy-sweetens-the-season', 'epubcheck-540', 'youtube-clears-its-throat'] },
   2: { week: '2026-10-26', lead: 'wide-side-widening', shorts: ['amazon-dust', 'audiobook-house-in-the-andes', 'eighty-bookstores', 'tools-get-cheaper'] },
   4: { week: '2026-11-09', lead: 'what-harpercollins-told-indies', shorts: ['year-of-the-niche', 'norways-price-fence', 'audiobooks-at-35000-feet'] },
   5: { week: '2026-11-16', lead: 'royalty-math', shorts: ['sixty-four-million', 'three-more-flags', 'two-paris-houses', 'epub-34-at-the-door'] },
+  6: { week: '2026-11-23', lead: 'vellum-blinks-twice', shorts: ['settlement-checks-in-the-mail', 'ten-percent-of-the-random-house', 'a-receipt-not-a-license'], leader: 'the-scandals-will-end' },
 };
 
 test('weekly content: the School issue is No. 3, parses clean, its lead is named, every front and fold story has a summary, every picture is on disk', () => {
   const w = loadWeeklyContent('en');
   assert.deepEqual(checkWeeklyContent(w), []);
-  assert.equal(w.issues.length, 5);
-  assert.deepEqual(w.issues.map((i) => i.number), [1, 2, 3, 4, 5]);
+  assert.equal(w.issues.length, 6);
+  assert.deepEqual(w.issues.map((i) => i.number), [1, 2, 3, 4, 5, 6]);
   assert.deepEqual(w.issues.map((i) => i.week), [...w.issues.map((i) => i.week)].sort(), 'the numbers follow the dates');
-  assert.equal(w.latest!.number, 5);
+  assert.equal(w.latest!.number, 6);
   const one = w.issueByNumber.get(3)!;
   assert.equal(one.formerly, 1, 'it says which number it was first published under');
   assert.equal(one.weather, null, 'no weather reading was taken for it, so none is shown');
@@ -59,6 +67,7 @@ test('weekly content: each news issue has its lead, its short stories in order, 
       assert.equal(s.blocks.filter((b) => b.kind === 'why').length, 1, `${s.slug} says why it matters, once`);
       assert.ok(s.blocks.some((b) => b.kind === 'p' && /<a href="https:\/\//.test(b.html)), `${s.slug} links its source`);
     }
+    assert.deepEqual(issue.leaders.map((s) => s.slug), want.leader ? [want.leader] : [], 'its leader, when it carries one');
     assert.equal(issue.takeaways.length, 1);
     assert.equal(issue.takeaways[0].title, "If You're Shipping a Book This Month");
     assert.equal(issue.takeaways[0].blocks.length, 5);
@@ -85,6 +94,32 @@ test('weekly content: each news issue has its lead, its short stories in order, 
   // No. 5's Kobo story points back at No. 4's Book Report story, the "deep dive" it names.
   const flags = w.issueByNumber.get(5)!.storyBySlug.get('three-more-flags')!;
   assert.ok(flags.blocks.some((b) => b.kind === 'p' && b.html.includes('<a href="/school/weekly/4/year-of-the-niche">last week\'s deep dive</a>')));
+});
+
+/* The leader (No. 6, 2026-11-23): the paper's own opinion, kept apart from the news. It says it is
+   opinion in its kicker, links what it answers, stands once in an issue, and is not news: no "Why it matters". */
+test('weekly content: a leader is opinion, labelled so, linked to what it answers, one to an issue', () => {
+  const w = loadWeeklyContent('en');
+  const six = w.issueByNumber.get(6)!;
+  const leader = six.leaders[0];
+  assert.equal(leader.place, 'leader');
+  assert.match(leader.section, /opinion/i, 'the kicker says it is opinion');
+  assert.ok(leader.hasPage, 'a leader has a page of its own');
+  assert.equal(leader.blocks.filter((b) => b.kind === 'why').length, 0, 'opinion carries no "Why it matters"');
+  assert.ok(!six.shorts.includes(leader), 'it is not counted among the news');
+  assert.ok(leader.blocks.some((b) => b.kind === 'p' && b.html.includes('<em>We think she is right about the quiet')), 'the sentence set apart in the column stays set apart');
+
+  const src = (front: string, body: string) => `---\ntitle: T\n${front}\nplace: leader\n---\n${body}\n`;
+  const withLeaders = (...stories: ReturnType<typeof parseStory>[]): WeeklyContent => ({ ...w, issues: w.issues.map((i) => (i === six ? { ...six, leaders: stories } : i)) });
+  const good = parseStory(src('section: The Leader · Opinion', 'We answer [a piece](https://example.org/a).'), '/x/good.md', 6);
+  assert.deepEqual(checkWeeklyContent(withLeaders(good)), []);
+  const unlabelled = parseStory(src('section: The Leader', 'We answer [a piece](https://example.org/a).'), '/x/unlabelled.md', 6);
+  assert.deepEqual(checkWeeklyContent(withLeaders(unlabelled)), ['/x/unlabelled.md: a leader is opinion and its section must say so']);
+  const unlinked = parseStory(src('section: The Leader · Opinion', 'We answer nobody in particular.'), '/x/unlinked.md', 6);
+  assert.deepEqual(checkWeeklyContent(withLeaders(unlinked)), ['/x/unlinked.md: a leader links what it answers']);
+  const dressed = parseStory(src('section: The Leader · Opinion', 'We answer [a piece](https://example.org/a).\n\n:: It matters.'), '/x/dressed.md', 6);
+  assert.deepEqual(checkWeeklyContent(withLeaders(dressed)), ['/x/dressed.md: a leader is not news and carries no "Why it matters"']);
+  assert.deepEqual(checkWeeklyContent(withLeaders(good, good)), ['issue 6: one leader to an issue']);
 });
 
 test('weekly content: a weather reading without a source is a problem; an icon is plain shapes or it is refused', () => {
@@ -119,15 +154,23 @@ test('weekly pages: front page, a story, a picture; briefs have no page; unknown
   const db = await createTestDb();
   const s = await startTestServer(db);
   try {
-    // /school/weekly is the stand (V, 2026-11-21); the latest issue, No. 5 today, is at its own number.
-    const front = await getPage(s.base, '/school/weekly/5');
+    // /school/weekly is the stand (V, 2026-11-21); the latest issue, No. 6 today, is at its own number.
+    const front = await getPage(s.base, '/school/weekly/6');
     assert.equal(front.status, 200);
     assert.match(front.html, /<h1>Beuk Weekly<\/h1>/);
-    assert.match(front.html, /class="banner" href="\/school\/weekly\/5\/royalty-math">Amazon Rewires the Royalty Math<\/a>/);
-    assert.match(front.html, /<span>Vol\. I · No\. 5<\/span>/);
-    assert.match(front.html, /Week of 16 November 2026/);
+    assert.match(front.html, /class="banner" href="\/school\/weekly\/6\/vellum-blinks-twice">Vellum Blinks Twice<\/a>/);
+    assert.match(front.html, /<span>Vol\. I · No\. 6<\/span>/);
+    assert.match(front.html, /Week of 23 November 2026/);
     assert.match(front.html, /<section class="issues" id="issues" aria-labelledby="issues-h">\s*<h2 id="issues-h">All issues<\/h2>/);
-    for (const n of [1, 2, 3, 4]) assert.ok(front.html.includes(`<li><a href="/school/weekly/${n}"><span class="is-no">No. ${n}</span>`), `the latest issue lists No. ${n}`);
+    for (const n of [1, 2, 3, 4, 5]) assert.ok(front.html.includes(`<li><a href="/school/weekly/${n}"><span class="is-no">No. ${n}</span>`), `the latest issue lists No. ${n}`);
+    // The leader stands whole after the news, in the same grid, marked as the leader; its own page opens.
+    const shortsHtml = between(front.html, '<section class="shorts"', '</section>');
+    assert.deepEqual([...shortsHtml.matchAll(/<article class="story short( leader)?">/g)].map((m) => Boolean(m[1])), [false, false, false, true], 'three news stories, then the leader');
+    assert.match(shortsHtml, /<article class="story short leader">\s*<p class="kick">The Leader · Opinion<\/p>\s*<h3><a href="\/school\/weekly\/6\/the-scandals-will-end">The Scandals Will End\. The Scoring Won't\.<\/a><\/h3>/);
+    const leaderPage = await getPage(s.base, '/school/weekly/6/the-scandals-will-end');
+    assert.equal(leaderPage.status, 200);
+    assert.match(leaderPage.html, /<p class="kick">The Leader · Opinion<\/p>/);
+    assert.ok(!leaderPage.html.includes('Why it matters'), 'opinion is not dressed as news on its own page either');
     const three = await getPage(s.base, '/school/weekly/3');
     assert.equal(three.status, 200);
     assert.match(three.html, /class="banner" href="\/school\/weekly\/3\/school-opens">Beuk School Opens Its Doors<\/a>/);
@@ -192,7 +235,7 @@ test('weekly pages: front page, a story, a picture; briefs have no page; unknown
       }
     }
     // Every issue, the School one too, closes on the same imprint.
-    for (const n of [1, 2, 3, 4, 5]) {
+    for (const n of [1, 2, 3, 4, 5, 6]) {
       const html = (await getPage(s.base, `/school/weekly/${n}`)).html;
       assert.match(html, /<footer class="imprint">\s*<span>Printed and published by Beuk<\/span>\s*<span>Free every week<\/span>\s*<span>Printed on recycled electrons<\/span>\s*<\/footer>/);
     }
@@ -216,6 +259,7 @@ test('weekly pages: front page, a story, a picture; briefs have no page; unknown
     assert.match(xml, /\/school\/weekly<\/loc>/);
     assert.match(xml, /\/school\/weekly\/3\/inside-the-ramp<\/loc>/);
     assert.match(xml, /\/school\/weekly\/5\/epub-34-at-the-door<\/loc>/);
+    assert.match(xml, /\/school\/weekly\/6\/the-scandals-will-end<\/loc>/, 'a leader has a page, so it is in the sitemap');
     assert.ok(!xml.includes('/takeaway<'), 'a takeaway has no page, so no sitemap entry');
     assert.ok(!xml.includes('brief-'), 'briefs have no page, so no sitemap entry');
   } finally {
@@ -224,12 +268,6 @@ test('weekly pages: front page, a story, a picture; briefs have no page; unknown
 });
 
 /* Findability (V, 2026-11-21: "I don't see all the weeklies"): every issue is one click from every other. */
-
-const between = (html: string, start: string, end: string) => {
-  const i = html.indexOf(start);
-  assert.ok(i >= 0, `${start} is on the page`);
-  return html.slice(i, html.indexOf(end, i) + end.length);
-};
 
 test('weekly navigation: every issue page has the issue bar under the dateline and the whole shelf, its own issue marked, prev/next exactly when they exist', async () => {
   const w = loadWeeklyContent('en');
@@ -291,8 +329,9 @@ test('weekly navigation degrades: one issue has no bar and no shelf and stands a
   assert.match(soloStand, /<li class="tile latest">\s*<a href="\/school\/weekly\/1">/, 'and it is the large one');
   assert.match(soloStand, /<span>One issue on the stand<\/span>/);
 
-  // Seven issues: the five real ones and two more, renumbered copies.
-  const seven = shelfOf([...w.issues, { ...w.issueByNumber.get(4)!, number: 6 }, { ...w.issueByNumber.get(5)!, number: 7 }]);
+  // Seven issues: the six real ones and one more, a renumbered copy.
+  assert.equal(w.issues.length, 6, 'this test adds one issue to the six on the shelf');
+  const seven = shelfOf([...w.issues, { ...w.issueByNumber.get(5)!, number: 7 }]);
   const four = renderIssue(config, seven, seven.issueByNumber.get(4)!);
   const bar = between(four, '<nav class="issue-bar"', '</nav>');
   assert.ok(bar.includes('href="/school/weekly/3" rel="prev">‹ No. 3<'));
@@ -318,7 +357,7 @@ test('the stand: /school/weekly shows every issue as a tile, the newest first an
     assert.equal(page.html.split('<h1>').length - 1, 1);
     assert.match(page.html, /<h1>Beuk Weekly<\/h1>/);
     assert.match(page.html, /<a href="\/school\/weekly" aria-current="page">Beuk Weekly<\/a>/, 'the Beuk Weekly tab is current');
-    assert.match(page.html, /<span>Five issues on the stand<\/span>/);
+    assert.match(page.html, /<span>Six issues on the stand<\/span>/);
     assert.ok(!page.html.includes('class="banner"') && !page.html.includes('issue-bar'), 'it is the stand, not an issue');
 
     const stand = between(page.html, '<ol class="stand"', '</ol>');
@@ -340,7 +379,7 @@ test('the stand: /school/weekly shows every issue as a tile, the newest first an
       assert.equal(t.includes('class="t-inside"'), n === newest.number, `No. ${n}: the other headlines only on the large tile`);
       assert.equal(t.includes(`<span class="t-open">Read No. ${n}</span>`), n === newest.number);
     }
-    const inside = [...newest.front, ...newest.shorts, ...newest.fold].slice(0, TILE_INSIDE);
+    const inside = [...newest.front, ...newest.shorts, ...newest.fold, ...newest.leaders].slice(0, TILE_INSIDE);
     assert.ok(inside.length > 0, 'the newest issue has other stories to name');
     assert.ok(tiles[0].includes(`<ul>${inside.map((x) => `<li>${escapeHtml(x.title)}</li>`).join('')}</ul>`), 'their titles, in the issue\'s own order');
     // every tile's issue opens
@@ -365,5 +404,5 @@ test('Housekeeping self-check: Beuk Weekly content parses clean', async () => {
   const { testConfig } = await import('./helpers.js');
   const ctx = buildCheckContext(await createTestDb(), testConfig());
   const detail = await SELF_CHECK_CASES.find((c) => c.id === 'weekly.content.parses-clean')!.run!(ctx);
-  assert.match(detail, /5 issue\(s\); latest No\. 5, 2026-11-16: Amazon Rewires the Royalty Math/);
+  assert.match(detail, /6 issue\(s\); latest No\. 6, 2026-11-23: Vellum Blinks Twice/);
 });
