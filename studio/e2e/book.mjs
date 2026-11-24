@@ -6690,6 +6690,25 @@ async function proofPagesChecks(origin) {
       await page.waitForTimeout(400);
       s = await proofPagesSeen(page);
       check(inFull && pressed === 'true' && m.inPage && !s.full && s.open, `proof pages: "Full screen" puts the dialog full screen (${inFull}, pressed ${pressed}), the place kept (${m.inPage}); F with the focus in the book leaves it (${!s.full}) and the dialog stays open (${s.open})`);
+      // Escape in full screen, where the key reaches the page (it does in this headless browser; a browser that keeps
+      // Escape to itself leaves full screen on its own): the first leaves full screen and closes nothing, by the focus
+      // in the book and by the focus on the dialog
+      const escapes = [];
+      for (const where of ['in the book', 'on the dialog']) {
+        await page.focus('#btnProofPages');
+        await page.keyboard.press('f');
+        await page.waitForFunction(() => document.fullscreenElement === document.querySelector('#modalProof .modal'), null, { timeout: 10_000 }).catch(() => undefined);
+        await page.waitForTimeout(300);
+        const was = (await proofPagesSeen(page)).full;
+        if (where === 'in the book') await page.mouse.click(fb2.x + fb2.width / 2, fb2.y + fb2.height / 2);
+        else await page.click('#proofNote');
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.fullscreenElement, null, { timeout: 10_000 }).catch(() => undefined);
+        await page.waitForTimeout(300);
+        const now = await proofPagesSeen(page);
+        escapes.push([where, was, now.open === true && !now.full]);
+      }
+      check(escapes.every(([, was, ok]) => was && ok), `proof pages: F with the focus on a button enters full screen; Escape then leaves full screen and the proof stays open: ${escapes.map(([w, was, ok]) => `${w} (full ${was}, left and still open ${ok})`).join('; ')}`);
     } else note('proof pages: this browser offers no element full screen, so the dialog has no Full screen button; not checked');
 
     // Escape with the focus in the book closes the proof, and only the proof

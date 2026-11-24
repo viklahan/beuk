@@ -242,8 +242,20 @@ export function ExportProof({ onBack, closeExport, shown: screenOpen }: { onBack
       e.preventDefault();
       pager.current.turn(act);
     };
+    // Escape in full screen, where the key reaches the page at all: it leaves full screen and closes nothing (heard
+    // before the dialog stack's own listener, which would close the proof)
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !proofBox() || fullScreenEl() !== proofBox()) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      fullRef.current();
+    };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    document.addEventListener('keydown', onEsc, true);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('keydown', onEsc, true);
+    };
   }, [open, paged]);
   // the e2e's seam: where the paged book stands
   useEffect(() => {
@@ -275,6 +287,12 @@ export function ExportProof({ onBack, closeExport, shown: screenOpen }: { onBack
       }
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       e.preventDefault();
+      // full screen: the first Escape only leaves it (a browser that keeps that key to itself has done so already and
+      // this never hears it); the next one closes the proof
+      if (live.current.paged && proofBox() && fullScreenEl() === proofBox()) {
+        fullRef.current();
+        return;
+      }
       show(false);
     });
     // a link that leaves the book is stopped where it is pressed; one inside the book is the browser's own jump
