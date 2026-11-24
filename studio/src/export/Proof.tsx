@@ -11,21 +11,52 @@ import { exportRun } from './state';
    - "Read the whole book on screen" opens a dialog on the dialog stack holding, in one scrolling frame, exactly what
      1.0's buildStandaloneHtml() returns for the open book (the page "Standalone HTML" downloads), built in the export
      session (src/export/state.ts) as every export is. The string is handed to the frame as it is: not parsed, not
-     tidied, not drawn again. The frame is sandboxed with nothing allowed (no script, no same-origin) and is filled from
-     a blob: address, which the served Content-Security-Policy allows for frames (Caddyfile: frame-src 'self' blob:).
-     A blob: address and not srcdoc, measured in Chromium under that policy: in a sandboxed srcdoc frame a note's
-     in-page link loads the studio's own address into the frame; from a blob: address the same link does nothing and the
-     book stays.
-     Links are therefore off in this view (the dialog says so). A link that leaves the book (an outside address) would
-     put the browser's blocked page in the frame: the frame's second load is that, so the book is framed again and the
-     dialog says why. Never a blank frame: while the page is built the dialog says so, a book with no section in it is
-     said in words, and so is an error.
+     tidied, not drawn again. The frame is filled from a blob: address, which the served Content-Security-Policy allows
+     for frames (Caddyfile: frame-src 'self' blob:), and not from srcdoc: measured in Chromium under that policy, in a
+     sandboxed srcdoc frame a note's in-page link loads the studio's own address into the frame.
+
+     The frame is sandbox="allow-same-origin" and nothing more (V's decision, 2026-11-24, reversing the first brief's
+     "no same-origin"): no script runs in it, no form is sent, no pop-up opens, the page around it is never navigated.
+     The reasoning: the book is already drawn in the studio's own page, on the studio's origin, by the preview, so a
+     frame of the same book that runs no script adds no exposure; and the same origin is what makes the proof usable:
+     - a link inside the book (a note and its way back, the contents list: an address that is the page's own plus
+       "#...") is the browser's own in-page jump and lands on its target. With no same-origin the same press did
+       nothing (Chromium: "Not allowed to load local resource").
+     - the page can listen inside the frame. Keys pressed and links pressed in a frame never reach the page around it;
+       a listener this page puts on frame.contentDocument does hear them, though the frame runs no script (measured,
+       Chromium 149). So Escape with the focus in the book closes the proof, as it does anywhere else in the dialog;
+       and a link that LEAVES the book (an outside address, a file beside it, a mail address; by the left button, the
+       middle one, or Enter) is stopped before the browser follows it: the reader keeps their place, the dialog says
+       links out of the book are off here, and nothing is asked of the network (no blocked-frame report either).
+     - what still gets through (nothing known does; a refresh written into the page would) shows as the frame's second
+       load: the book is framed again from its first page and the dialog says why. Never a blank frame: while the page
+       is built the dialog says so, a book with no section in it is said in words, and so is an error.
    - "Turn the print pages" is 1.0's own Print Interior View: a click on 1.0's #btnOpenSpreads, nothing new. 1.0 closes
      the export screen as the view opens (openPrintInteriorView), and that is unchanged; when the view opened from here
      closes, the export screen is opened again (onBack), so the writer ends where they started. */
 
 type Shown = { kind: 'preparing' } | { kind: 'book'; url: string } | { kind: 'empty' } | { kind: 'failed'; error: string };
+/** What the dialog says under the frame: a link out of the book was stopped ("off": the reader is where they were), or
+ *  the frame left the book and it was framed again ("back": from its first page). */
+type Notice = null | 'off' | 'back';
 type Rec = Record<string, unknown>;
+const XLINK = 'http://www.w3.org/1999/xlink';
+
+/** Whether the link `a`, pressed in the book's document, stays in the book: it has no address, or its address is the
+ *  page's own with (or without) a "#..." part. Anything else leaves: another page, a file, a mail address. */
+function staysInBook(a: Element, doc: Document): boolean {
+  const raw = a.getAttribute('href') ?? a.getAttributeNS(XLINK, 'href');
+  if (raw === null) return true;
+  if (raw.trim().startsWith('#')) return true;
+  try {
+    const to = new URL(raw, doc.baseURI), here = new URL(doc.URL);
+    to.hash = '';
+    here.hash = '';
+    return to.href === here.href;
+  } catch {
+    return false;
+  }
+}
 
 /** 1.0's standalone page for the open book, in the export session; null when no section is in the book. */
 function buildProof(): string | null {
@@ -59,7 +90,7 @@ export function ExportProof({ onBack }: { onBack: () => void }) {
   const [shown, setShown] = useState<Shown>({ kind: 'preparing' });
   // a new number is a new frame element: the book framed again after the frame went somewhere else
   const [frameNo, setFrameNo] = useState(0);
-  const [linkOff, setLinkOff] = useState(false);
+  const [notice, setNotice] = useState<Notice>(null);
   const loads = useRef(0);
   const url = useRef<string | null>(null);
   const release = () => {
@@ -70,7 +101,7 @@ export function ExportProof({ onBack }: { onBack: () => void }) {
   /** Open or close the dialog; either way it starts from "preparing" (never yesterday's frame for a moment). */
   const show = (on: boolean) => {
     setShown({ kind: 'preparing' });
-    setLinkOff(false);
+    setNotice(null);
     setOpen(on);
   };
   useEffect(() => {
@@ -95,13 +126,43 @@ export function ExportProof({ onBack }: { onBack: () => void }) {
     };
   }, [open]);
 
-  const onLoad = () => {
+  /** The book has arrived in `f`: this page listens in the frame's own document (see the header). */
+  const listen = (f: HTMLIFrameElement) => {
+    let doc: Document | null = null;
+    try {
+      doc = f.contentDocument;
+    } catch {
+      doc = null;
+    }
+    if (!doc) return;
+    const book = doc;
+    // Escape with the focus in the book: the dialog stack's own listener is on this page's document and never hears it
+    book.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      e.preventDefault();
+      show(false);
+    });
+    // a link that leaves the book is stopped where it is pressed; one inside the book is the browser's own jump
+    const onLink = (e: Event) => {
+      const at = e.target as Element | null;
+      const a = at && typeof at.closest === 'function' ? at.closest('a, area') : null;
+      if (!a || staysInBook(a, book)) return;
+      e.preventDefault();
+      setNotice('off');
+    };
+    book.addEventListener('click', onLink);
+    book.addEventListener('auxclick', onLink);
+  };
+  const onLoad = (e: { currentTarget: HTMLIFrameElement }) => {
     loads.current++;
-    if (loads.current < 2) return; // the book itself
-    // the frame loaded something else (a link in the book was followed): the book again, and the reason in words
+    if (loads.current < 2) {
+      listen(e.currentTarget); // the book itself
+      return;
+    }
+    // the frame loaded something else (nothing above stopped it): the book again, and the reason in words
     loads.current = 0;
     setFrameNo((n) => n + 1);
-    setLinkOff(true);
+    setNotice('back');
   };
 
   /* ---- 1.0's Print Interior View, and the way back ---- */
@@ -189,21 +250,21 @@ export function ExportProof({ onBack }: { onBack: () => void }) {
         </p>
         {shown.kind === 'book' ? (
           <>
-            {/* Tab stays in the dialog: the keys pressed inside the frame never reach this page, so Shift+Tab out of the
-                frame's first link would land on whatever stands before the frame in the page (the export screen, under
-                this dialog). This stop takes that step and hands it to Close, the dialog's last control. It is not in
-                the dialog stack's own list (aria-hidden), so Tab from Close still goes to the frame. */}
+            {/* Tab stays in the dialog: the browser itself walks the Tab order through the frame's links, so Shift+Tab
+                from the frame's first link would land on whatever stands before the frame in the page (the export
+                screen, under this dialog). This stop takes that step and hands it to Close, the dialog's last control.
+                It is not in the dialog stack's own list (aria-hidden), so Tab from Close still goes to the frame. */}
             <span className="proof-guard" tabIndex={0} aria-hidden="true" onFocus={() => document.getElementById('btnProofClose')?.focus()} />
-            <iframe key={frameNo} className="proof-frame" title={t('proof.frame')} sandbox="" referrerPolicy="no-referrer" src={shown.url} tabIndex={0} onLoad={onLoad} />
+            <iframe key={frameNo} className="proof-frame" title={t('proof.frame')} sandbox="allow-same-origin" referrerPolicy="no-referrer" src={shown.url} tabIndex={0} onLoad={onLoad} />
           </>
         ) : (
           <p className="proof-state" role={shown.kind === 'failed' ? 'alert' : 'status'}>
             {shown.kind === 'preparing' ? t('proof.preparing') : shown.kind === 'empty' ? t('proof.empty') : t('proof.failed', { error: shown.error })}
           </p>
         )}
-        {linkOff ? (
+        {notice ? (
           <p className="proof-off" role="status">
-            {t('proof.linkOff')}
+            {t(notice === 'off' ? 'proof.linkOff' : 'proof.linkBack')}
           </p>
         ) : null}
         <div className="modal-actions">

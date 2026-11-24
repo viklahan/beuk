@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-23 (the export screen: section 3). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-24 (the export screen: section 3, the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -409,14 +409,20 @@ keys and 32 `auth.*` plus 10 `backup.*` keys in all, most of them long since sig
 are the pending ones. The reports are the list.
 
 Total still waiting: 22 (this task) + 11 + 20 + 21 + 6 + 1 = 81 keys, counting each key once however many languages it has.
-(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 23 keys. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
+(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
 
-## 3. The export screen: its groups and the proof (23 keys, 2026-11-23)
+## 3. The export screen: its groups and the proof (24 keys, 2026-11-23; the proof's link words changed 2026-11-24)
 
-Studio 2.0's export screen now offers a proof of the whole book first and puts the formats in six groups
-(`studio/src/export/groups.ts`, `studio/src/export/Proof.tsx`). Its 23 new keys are in `client/index.html` `UI_STRINGS`
-(the `BEUK:exportproof` block, `EXPORTPROOF_STRINGS`): 12 `expg.*` keys (each group's name and its one line) and 11 `proof.*` keys.
+Studio 2.0's export screen offers a proof of the whole book first and puts the formats in six groups
+(`studio/src/export/groups.ts`, `studio/src/export/Proof.tsx`). Its 24 keys are in `client/index.html` `UI_STRINGS`
+(the `BEUK:exportproof` block, `EXPORTPROOF_STRINGS`): 12 `expg.*` keys (each group's name and its one line) and 12 `proof.*` keys.
 English is the source. The 12 other languages below are drafts written by Claude: not approved, not read by a native speaker.
+
+Changed on 2026-11-24, when the proof's frame was given the studio's own origin (links inside the book work; links that leave it are stopped):
+
+- `proof.note`: its last sentence was "Links are switched off in this view." It now says links inside the book work and links that leave the book are off. All 12 drafts were reworded with it.
+- `proof.linkOff`: it used to say the book was shown again from its first page. It now says the link leaves the book, such links are off, and the reader is where they were. All 12 drafts were written again.
+- `proof.linkBack` is new (all 13 packs): the words for the one case where the book IS shown again from its first page (the frame left the book in a way nothing stopped).
 
 How the drafts were made:
 
@@ -431,7 +437,8 @@ Points worth a look when you read them:
 
 - `expg.ebook` is the same letters as English in **it** and **pl** ("E-book (EPUB)"): the word is the same there.
 - `expg.archive` ("Archive and sharing"): **ru** says "Архив и доступ для читателей" (archive and access for readers), because a bare noun for "sharing" reads oddly there; **es** says "Archivo y compartir".
-- `proof.note` is the one long string. It says what the view is and where it differs from the EPUB (pages, the reader's own contents menu, typefaces, links off). If the English changes, all 12 change.
+- `proof.note` is the one long string. It says what the view is and where it differs from the EPUB (pages, the reader's own contents menu, typefaces) and what links do here. If the English changes, all 12 change.
+- `proof.linkOff` ends "You are still where you were." Each language says this in its own address form (**de** "Sie sind noch an derselben Stelle", **nl** "U bent nog waar u was", **ja** speaks of the place being read).
 - **de** uses the *Sie* form (the shelf strings do; the beta-reader strings in the 1.0 pack use *du*).
 - **ja** and **zh-Hans** call a section セクション / 章节; check them against the word you want for "section" there.
 
@@ -709,19 +716,19 @@ Points worth a look when you read them:
 
 ### `proof.note`
 
-- **en** (source): This is the page “Standalone HTML” downloads: the EPUB's sections, notes and pictures, in the same order, with the same stylesheet. An e-reader shows them as pages with its own contents menu, and the typefaces here can differ from the EPUB's. Links are switched off in this view.
-- **es** Español: `Esta es la página que descarga «HTML independiente»: las secciones, las notas y las imágenes del EPUB, en el mismo orden y con la misma hoja de estilo. Un lector electrónico las muestra en páginas con su propio menú de contenido, y las tipografías de aquí pueden ser distintas de las del EPUB. En esta vista los enlaces están desactivados.`
-- **fr** Français: `Voici la page que télécharge « HTML autonome » : les sections, les notes et les images de l'EPUB, dans le même ordre, avec la même feuille de style. Une liseuse les présente en pages avec son propre menu de sommaire, et les polices affichées ici peuvent différer de celles de l'EPUB. Les liens sont désactivés dans cette vue.`
-- **de** Deutsch: `Dies ist die Seite, die „Eigenständiges HTML“ herunterlädt: die Abschnitte, Anmerkungen und Bilder des EPUB, in derselben Reihenfolge und mit demselben Stylesheet. Ein E-Reader zeigt sie als Seiten mit eigenem Inhaltsmenü, und die Schriften hier können von denen im EPUB abweichen. Links sind in dieser Ansicht abgeschaltet.`
-- **it** Italiano: `Questa è la pagina che «HTML autonomo» scarica: le sezioni, le note e le immagini dell'EPUB, nello stesso ordine e con lo stesso foglio di stile. Un e-reader le mostra in pagine con il suo menu dei contenuti, e i caratteri qui possono essere diversi da quelli dell'EPUB. In questa vista i link sono disattivati.`
-- **pt** Português: `Esta é a página que «HTML autónomo» transfere: as secções, as notas e as imagens do EPUB, pela mesma ordem e com a mesma folha de estilo. Um leitor de livros eletrónicos mostra-as em páginas com o seu próprio menu de conteúdos, e os tipos de letra aqui podem ser diferentes dos do EPUB. Nesta vista as ligações estão desligadas.`
-- **nl** Nederlands: `Dit is de pagina die “Zelfstandige HTML” downloadt: de secties, noten en afbeeldingen van de EPUB, in dezelfde volgorde en met hetzelfde stijlblad. Een e-reader toont ze als pagina's met een eigen inhoudsmenu, en de lettertypen hier kunnen afwijken van die in de EPUB. Links zijn in deze weergave uitgeschakeld.`
-- **pl** Polski: `To jest strona, którą pobiera „Samodzielny HTML”: sekcje, przypisy i ilustracje z EPUB, w tej samej kolejności i z tym samym arkuszem stylów. Czytnik pokazuje je jako strony z własnym menu spisu treści, a kroje pisma tutaj mogą różnić się od tych w EPUB. W tym widoku linki są wyłączone.`
-- **ru** Русский: `Это страница, которую скачивает «Автономный HTML»: разделы, примечания и иллюстрации EPUB в том же порядке и с той же таблицей стилей. Читалка показывает их постранично, со своим меню оглавления, а шрифты здесь могут отличаться от шрифтов в EPUB. Ссылки в этом виде отключены.`
-- **tr** Türkçe: `Bu, “Bağımsız HTML”nin indirdiği sayfadır: EPUB'ın bölümleri, notları ve resimleri, aynı sırayla ve aynı stil sayfasıyla. Bir e-okuyucu bunları kendi içindekiler menüsüyle sayfalar hâlinde gösterir; buradaki yazı tipleri EPUB'dakilerden farklı olabilir. Bu görünümde bağlantılar kapalıdır.`
-- **ar** العربية: `هذه هي الصفحة التي ينزّلها «HTML مستقل»: أقسام ملف EPUB وحواشيه وصوره، بالترتيب نفسه وبورقة الأنماط نفسها. يعرضها القارئ الإلكتروني صفحاتٍ مع قائمة محتوياته الخاصة، وقد تختلف الخطوط هنا عن خطوط ملف EPUB. الروابط معطّلة في هذا العرض.`
-- **ja** 日本語: `これは「単独HTML」がダウンロードするページです。EPUBと同じセクション、注、画像が、同じ順序、同じスタイルシートで並びます。電子書籍リーダーはこれをページに分け、独自の目次メニューを付けます。ここでの書体はEPUBと異なる場合があります。この表示ではリンクは無効です。`
-- **zh-Hans** 简体中文: `这就是“独立 HTML”下载的页面：EPUB 的各个章节、注释和图片，顺序相同，样式表相同。电子书阅读器会把它们分页显示，并带有自己的目录菜单；这里的字体可能与 EPUB 中的不同。此视图中的链接已关闭。`
+- **en** (source): This is the page “Standalone HTML” downloads: the EPUB's sections, notes and pictures, in the same order, with the same stylesheet. An e-reader shows them as pages with its own contents menu, and the typefaces here can differ from the EPUB's. Links inside the book work here; links that leave the book are off.
+- **es** Español: `Esta es la página que descarga «HTML independiente»: las secciones, las notas y las imágenes del EPUB, en el mismo orden y con la misma hoja de estilo. Un lector electrónico las muestra en páginas con su propio menú de contenido, y las tipografías de aquí pueden ser distintas de las del EPUB. Los enlaces dentro del libro funcionan aquí; los que salen del libro están desactivados.`
+- **fr** Français: `Voici la page que télécharge « HTML autonome » : les sections, les notes et les images de l'EPUB, dans le même ordre, avec la même feuille de style. Une liseuse les présente en pages avec son propre menu de sommaire, et les polices affichées ici peuvent différer de celles de l'EPUB. Les liens internes au livre fonctionnent ici ; ceux qui sortent du livre sont désactivés.`
+- **de** Deutsch: `Dies ist die Seite, die „Eigenständiges HTML“ herunterlädt: die Abschnitte, Anmerkungen und Bilder des EPUB, in derselben Reihenfolge und mit demselben Stylesheet. Ein E-Reader zeigt sie als Seiten mit eigenem Inhaltsmenü, und die Schriften hier können von denen im EPUB abweichen. Links innerhalb des Buchs funktionieren hier; Links, die aus dem Buch hinausführen, sind abgeschaltet.`
+- **it** Italiano: `Questa è la pagina che «HTML autonomo» scarica: le sezioni, le note e le immagini dell'EPUB, nello stesso ordine e con lo stesso foglio di stile. Un e-reader le mostra in pagine con il suo menu dei contenuti, e i caratteri qui possono essere diversi da quelli dell'EPUB. I link interni al libro qui funzionano; quelli che escono dal libro sono disattivati.`
+- **pt** Português: `Esta é a página que «HTML autónomo» transfere: as secções, as notas e as imagens do EPUB, pela mesma ordem e com a mesma folha de estilo. Um leitor de livros eletrónicos mostra-as em páginas com o seu próprio menu de conteúdos, e os tipos de letra aqui podem ser diferentes dos do EPUB. As ligações dentro do livro funcionam aqui; as que saem do livro estão desligadas.`
+- **nl** Nederlands: `Dit is de pagina die “Zelfstandige HTML” downloadt: de secties, noten en afbeeldingen van de EPUB, in dezelfde volgorde en met hetzelfde stijlblad. Een e-reader toont ze als pagina's met een eigen inhoudsmenu, en de lettertypen hier kunnen afwijken van die in de EPUB. Links binnen het boek werken hier; links die het boek verlaten zijn uitgeschakeld.`
+- **pl** Polski: `To jest strona, którą pobiera „Samodzielny HTML”: sekcje, przypisy i ilustracje z EPUB, w tej samej kolejności i z tym samym arkuszem stylów. Czytnik pokazuje je jako strony z własnym menu spisu treści, a kroje pisma tutaj mogą różnić się od tych w EPUB. Linki wewnątrz książki tutaj działają; linki prowadzące poza książkę są wyłączone.`
+- **ru** Русский: `Это страница, которую скачивает «Автономный HTML»: разделы, примечания и иллюстрации EPUB в том же порядке и с той же таблицей стилей. Читалка показывает их постранично, со своим меню оглавления, а шрифты здесь могут отличаться от шрифтов в EPUB. Ссылки внутри книги здесь работают; ссылки, ведущие за пределы книги, отключены.`
+- **tr** Türkçe: `Bu, “Bağımsız HTML”nin indirdiği sayfadır: EPUB'ın bölümleri, notları ve resimleri, aynı sırayla ve aynı stil sayfasıyla. Bir e-okuyucu bunları kendi içindekiler menüsüyle sayfalar hâlinde gösterir; buradaki yazı tipleri EPUB'dakilerden farklı olabilir. Kitabın içindeki bağlantılar burada çalışır; kitabın dışına çıkan bağlantılar kapalıdır.`
+- **ar** العربية: `هذه هي الصفحة التي ينزّلها «HTML مستقل»: أقسام ملف EPUB وحواشيه وصوره، بالترتيب نفسه وبورقة الأنماط نفسها. يعرضها القارئ الإلكتروني صفحاتٍ مع قائمة محتوياته الخاصة، وقد تختلف الخطوط هنا عن خطوط ملف EPUB. الروابط داخل الكتاب تعمل هنا؛ أما الروابط التي تخرج من الكتاب فمعطّلة.`
+- **ja** 日本語: `これは「単独HTML」がダウンロードするページです。EPUBと同じセクション、注、画像が、同じ順序、同じスタイルシートで並びます。電子書籍リーダーはこれをページに分け、独自の目次メニューを付けます。ここでの書体はEPUBと異なる場合があります。本の中のリンクはここで使えます。本の外へ出るリンクは無効です。`
+- **zh-Hans** 简体中文: `这就是“独立 HTML”下载的页面：EPUB 的各个章节、注释和图片，顺序相同，样式表相同。电子书阅读器会把它们分页显示，并带有自己的目录菜单；这里的字体可能与 EPUB 中的不同。书内的链接在这里可用；通往书外的链接已关闭。`
 
 ### `proof.preparing`
 
@@ -789,16 +796,32 @@ Points worth a look when you read them:
 
 ### `proof.linkOff`
 
-- **en** (source): A link was pressed. Links are switched off in this view, so the book is shown again from its first page.
-- **es** Español: `Se pulsó un enlace. En esta vista los enlaces están desactivados, así que el libro se muestra otra vez desde su primera página.`
-- **fr** Français: `Un lien a été activé. Les liens sont désactivés dans cette vue ; le livre est donc affiché de nouveau depuis sa première page.`
-- **de** Deutsch: `Ein Link wurde angeklickt. Links sind in dieser Ansicht abgeschaltet, deshalb wird das Buch wieder ab der ersten Seite gezeigt.`
-- **it** Italiano: `È stato premuto un link. In questa vista i link sono disattivati, quindi il libro viene mostrato di nuovo dalla prima pagina.`
-- **pt** Português: `Foi premida uma ligação. Nesta vista as ligações estão desligadas, por isso o livro é mostrado de novo a partir da primeira página.`
-- **nl** Nederlands: `Er is op een link gedrukt. Links zijn in deze weergave uitgeschakeld, dus het boek wordt opnieuw vanaf de eerste pagina getoond.`
-- **pl** Polski: `Naciśnięto link. W tym widoku linki są wyłączone, więc książka jest znów pokazana od pierwszej strony.`
-- **ru** Русский: `Была нажата ссылка. Ссылки в этом виде отключены, поэтому книга снова показана с первой страницы.`
-- **tr** Türkçe: `Bir bağlantıya basıldı. Bu görünümde bağlantılar kapalıdır; bu yüzden kitap yeniden ilk sayfasından gösteriliyor.`
-- **ar** العربية: `ضُغط رابط. الروابط معطّلة في هذا العرض، لذا يُعرض الكتاب من جديد من صفحته الأولى.`
-- **ja** 日本語: `リンクが押されました。この表示ではリンクは無効のため、本を最初のページからもう一度表示しています。`
-- **zh-Hans** 简体中文: `有链接被点击。此视图中的链接已关闭，因此这本书从第一页重新显示。`
+- **en** (source): That link leaves the book, and links out of the book are off in this view. You are still where you were.
+- **es** Español: `Ese enlace sale del libro, y en esta vista los enlaces que salen del libro están desactivados. Sigues donde estabas.`
+- **fr** Français: `Ce lien sort du livre, et les liens qui sortent du livre sont désactivés dans cette vue. Vous êtes toujours au même endroit.`
+- **de** Deutsch: `Dieser Link führt aus dem Buch hinaus, und solche Links sind in dieser Ansicht abgeschaltet. Sie sind noch an derselben Stelle.`
+- **it** Italiano: `Quel link esce dal libro, e in questa vista i link che escono dal libro sono disattivati. Sei ancora dove eri.`
+- **pt** Português: `Essa ligação sai do livro, e nesta vista as ligações que saem do livro estão desligadas. Continua onde estava.`
+- **nl** Nederlands: `Die link verlaat het boek, en links die het boek verlaten zijn in deze weergave uitgeschakeld. U bent nog waar u was.`
+- **pl** Polski: `Ten link prowadzi poza książkę, a w tym widoku takie linki są wyłączone. Jesteś nadal w tym samym miejscu.`
+- **ru** Русский: `Эта ссылка ведёт за пределы книги, а такие ссылки в этом виде отключены. Вы остались на том же месте.`
+- **tr** Türkçe: `Bu bağlantı kitabın dışına çıkıyor ve bu görünümde kitabın dışına çıkan bağlantılar kapalıdır. Hâlâ bulunduğunuz yerdesiniz.`
+- **ar** العربية: `هذا الرابط يخرج من الكتاب، والروابط التي تخرج من الكتاب معطّلة في هذا العرض. ما زلت في مكانك.`
+- **ja** 日本語: `このリンクは本の外へ出ます。この表示では本の外へ出るリンクは無効です。読んでいた場所はそのままです。`
+- **zh-Hans** 简体中文: `这个链接通往书外，而此视图中通往书外的链接已关闭。你仍在原来的位置。`
+
+### `proof.linkBack`
+
+- **en** (source): The view left the book, so the book is shown again from its first page.
+- **es** Español: `La vista salió del libro, así que el libro se muestra otra vez desde su primera página.`
+- **fr** Français: `La vue a quitté le livre ; le livre est donc affiché de nouveau depuis sa première page.`
+- **de** Deutsch: `Die Ansicht hat das Buch verlassen, deshalb wird das Buch wieder ab der ersten Seite gezeigt.`
+- **it** Italiano: `La vista è uscita dal libro, quindi il libro viene mostrato di nuovo dalla prima pagina.`
+- **pt** Português: `A vista saiu do livro, por isso o livro é mostrado de novo a partir da primeira página.`
+- **nl** Nederlands: `De weergave heeft het boek verlaten, dus het boek wordt opnieuw vanaf de eerste pagina getoond.`
+- **pl** Polski: `Widok opuścił książkę, więc książka jest znów pokazana od pierwszej strony.`
+- **ru** Русский: `Вид ушёл из книги, поэтому книга снова показана с первой страницы.`
+- **tr** Türkçe: `Görünüm kitaptan çıktı; bu yüzden kitap yeniden ilk sayfasından gösteriliyor.`
+- **ar** العربية: `خرج العرض من الكتاب، لذا يُعرض الكتاب من جديد من صفحته الأولى.`
+- **ja** 日本語: `表示が本から離れたため、本を最初のページからもう一度表示しています。`
+- **zh-Hans** 简体中文: `视图离开了这本书，因此这本书从第一页重新显示。`

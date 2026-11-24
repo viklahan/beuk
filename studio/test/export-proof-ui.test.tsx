@@ -212,7 +212,7 @@ describe('the export screen: a proof first, then the formats in groups', { timeo
     expect($('trimGrid').closest('[hidden]')).toBeNull();
   });
 
-  it("\"Read the whole book on screen\" frames exactly 1.0's buildStandaloneHtml(), with no script and no same-origin, on the dialog stack", async () => {
+  it("\"Read the whole book on screen\" frames exactly 1.0's buildStandaloneHtml(), in a frame that runs no script, on the dialog stack", async () => {
     const { made, revoked } = blobs();
     await studioWith(LANTERN());
     await openExport();
@@ -226,9 +226,10 @@ describe('the export screen: a proof first, then the formats in groups', { timeo
     await waitFor(() => expect(frame()).not.toBeNull());
     expect(state()).toBeNull();
     const f = frame()!;
-    // the frame: sandboxed with nothing allowed (no script, no same-origin), named for a screen reader
+    // the frame: sandboxed, with the studio's own origin and nothing else allowed (V, 2026-11-24): no script, no form,
+    // no pop-up, no navigation of the page around it. Named for a screen reader.
     expect(f.hasAttribute('sandbox')).toBe(true);
-    expect(f.getAttribute('sandbox')).toBe('');
+    expect(f.getAttribute('sandbox')).toBe('allow-same-origin');
     expect(f.hasAttribute('srcdoc')).toBe(false);
     expect(f.getAttribute('title')).toBe(t('proof.frame'));
     // what it holds is 1.0's standalone page for the open book, to the character, as an HTML document
@@ -289,24 +290,102 @@ describe('the export screen: a proof first, then the formats in groups', { timeo
     expect(frame()).toBeNull();
   });
 
-  it('a link followed inside the frame never leaves it blank: the book is framed again, and the dialog says why', async () => {
-    const { made } = blobs();
+  /** A frame's <body> (jsdom leaves a frame it could not load with no <html> at all: made here). */
+  function bodyOf(f: HTMLIFrameElement): HTMLElement {
+    const doc = f.contentDocument!;
+    if (!doc.body) {
+      const html = doc.documentElement ?? doc.appendChild(doc.createElement('html'));
+      html.appendChild(doc.createElement('body'));
+    }
+    return doc.body;
+  }
+  /** The proof open with the book "arrived" in its frame: jsdom loads no frame, so a small page with the book's kinds of
+   *  link is written into the frame's document, then the frame's load is fired, as the browser fires it. */
+  async function proofWithLinks() {
+    const got = blobs();
     await studioWith(LANTERN());
     await openExport();
     await click($('btnProofRead'));
     await waitFor(() => expect(frame()).not.toBeNull());
-    const first = frame()!;
+    const f = frame()!;
+    const doc = f.contentDocument!;
+    bodyOf(f).innerHTML =
+      '<p id="top">One<a id="ref" href="#s9-fn1"><sup>1</sup></a> <a id="toc" href="#ch2">Chapter Two</a> <a id="hash" href="#">top</a></p>' +
+      '<p><a id="out" class="ext-link" href="https://example.org/a"><em id="deep">a site</em></a> <a id="rel" href="chapter2.html">a file</a> <a id="mail" href="mailto:a@example.org">mail</a></p>' +
+      '<p id="plain">Plain words.</p><p id="s9-fn1">A note <a id="backref" href="#top">back</a></p>';
+    await act(async () => void fireEvent.load(f)); // the book arrives
+    return { f, doc, ...got };
+  }
+  const off = () => document.querySelector('#modalProof .proof-off');
+
+  it('a link inside the book is left to work; a link that leaves the book is stopped, the reader keeps their place, and the dialog says so', async () => {
+    const { f, doc } = await proofWithLinks();
+    expect(off()).toBeNull();
+    // inside the book: a note's reference, the contents list, a note's way back, a bare "#": nothing is stopped
+    for (const id of ['ref', 'toc', 'backref', 'hash']) {
+      const ev = new (doc.defaultView as unknown as typeof globalThis).MouseEvent('click', { bubbles: true, cancelable: true });
+      await act(async () => void doc.getElementById(id)!.dispatchEvent(ev));
+      expect(ev.defaultPrevented, id).toBe(false);
+    }
+    expect(off()).toBeNull();
+    // out of the book: an outside address (pressed on a word inside the link), a file beside it, a mail address;
+    // by the left button and by the middle one
+    for (const [id, type] of [['deep', 'click'], ['rel', 'click'], ['mail', 'click'], ['out', 'auxclick']] as const) {
+      const ev = new (doc.defaultView as unknown as typeof globalThis).MouseEvent(type, { bubbles: true, cancelable: true, button: type === 'auxclick' ? 1 : 0 });
+      await act(async () => void doc.getElementById(id)!.dispatchEvent(ev));
+      expect(ev.defaultPrevented, id).toBe(true);
+      expect(off()!.textContent, id).toBe(t('proof.linkOff'));
+      expect(off()!.getAttribute('role')).toBe('status');
+    }
+    // a press on plain words stops nothing
+    const plain = new (doc.defaultView as unknown as typeof globalThis).MouseEvent('click', { bubbles: true, cancelable: true });
+    await act(async () => void doc.getElementById('plain')!.dispatchEvent(plain));
+    expect(plain.defaultPrevented).toBe(false);
+    // the reader keeps their place: the same frame, the same document, never framed again
+    expect(frame()).toBe(f);
+    expect(f.contentDocument).toBe(doc);
+    expect(doc.getElementById('s9-fn1')).not.toBeNull();
+    expect(isOpen('modalProof')).toBe(true);
+  });
+
+  it('Escape with the focus inside the frame closes the proof, and only the proof; focus returns to its button', async () => {
+    const { f, doc, revoked } = await proofWithLinks();
+    // another key pressed inside the frame closes nothing
+    await act(async () => void fireEvent.keyDown(doc.getElementById('plain')!, { key: 'a' }));
+    await act(async () => void fireEvent.keyDown(doc.getElementById('plain')!, { key: 'Enter' }));
+    expect(isOpen('modalProof')).toBe(true);
+    // the reader clicked into the book: the page's focused element is the frame, and the key is pressed in the frame's
+    // document, which the page's own key listener (the dialog stack's) never hears
+    f.focus();
+    expect(document.activeElement).toBe(f);
+    const esc = new (doc.defaultView as unknown as typeof globalThis).KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    await act(async () => void doc.getElementById('plain')!.dispatchEvent(esc));
+    expect($('modalProof')).toBeNull();
+    expect(esc.defaultPrevented).toBe(true);
+    expect(isOpen()).toBe(true);
+    expect(document.activeElement).toBe($('btnProofRead'));
+    expect(revoked).toEqual([f.getAttribute('src')]);
+  });
+
+  it('if the frame still leaves the book, it is never left blank: the book is framed again, and the dialog says why', async () => {
+    const { f: first, made } = await proofWithLinks();
     const url = first.getAttribute('src')!;
-    await act(async () => void fireEvent.load(first)); // the book arrives
     expect(frame()).toBe(first);
-    expect(document.querySelector('#modalProof .proof-off')).toBeNull();
-    await act(async () => void fireEvent.load(first)); // the frame went somewhere else (a link in the book)
+    expect(off()).toBeNull();
+    await act(async () => void fireEvent.load(first)); // the frame loaded something else (nothing here stopped it)
     const again = frame()!;
     expect(again).not.toBe(first);
     expect(again.getAttribute('src')).toBe(url);
-    expect(again.getAttribute('sandbox')).toBe('');
+    expect(again.getAttribute('sandbox')).toBe('allow-same-origin');
     expect(made.size).toBe(1);
-    expect(document.querySelector('#modalProof .proof-off')!.textContent).toBe(t('proof.linkOff'));
+    expect(off()!.textContent).toBe(t('proof.linkBack'));
+    // the book framed again is listened to as the first was: a link out of it is stopped there too
+    bodyOf(again).innerHTML = '<a id="out2" href="https://example.org/b">out</a>';
+    await act(async () => void fireEvent.load(again));
+    const ev = new (again.contentDocument!.defaultView as unknown as typeof globalThis).MouseEvent('click', { bubbles: true, cancelable: true });
+    await act(async () => void again.contentDocument!.getElementById('out2')!.dispatchEvent(ev));
+    expect(ev.defaultPrevented).toBe(true);
+    expect(off()!.textContent).toBe(t('proof.linkOff'));
   });
 
   it("\"Turn the print pages\" is 1.0's Print Interior View; closing it brings the writer back to the export screen", async () => {
@@ -374,14 +453,23 @@ describe('the export screen: a proof first, then the formats in groups', { timeo
 describe('the words of the export screen (drafts in 12 languages, for V to sign off)', () => {
   const KEYS = [
     ...EXPORT_GROUPS.flatMap((g) => [g.title, g.sub]),
-    'proof.h', 'proof.sub', 'proof.read', 'proof.print', 'proof.title', 'proof.note', 'proof.preparing', 'proof.empty', 'proof.failed', 'proof.frame', 'proof.linkOff',
+    'proof.h', 'proof.sub', 'proof.read', 'proof.print', 'proof.title', 'proof.note', 'proof.preparing', 'proof.empty', 'proof.failed', 'proof.frame', 'proof.linkOff', 'proof.linkBack',
   ];
   const PACKS = path.join(import.meta.dirname, '..', 'src', 'generated', 'packs');
   const pack = (code: string): Record<string, string> => JSON.parse(readFileSync(path.join(PACKS, `${code}.json`), 'utf8'));
   const holes = (s: string): string[] => [...s.matchAll(/\{[A-Za-z]+\}/g)].map((m) => m[0]).sort();
-  it('there are 23, all in the English pack, and nothing else is under expg. or proof.', () => {
-    expect(KEYS.length).toBe(23);
+  it('there are 24, all in the English pack, and nothing else is under expg. or proof.', () => {
+    expect(KEYS.length).toBe(24);
     expect(Object.keys(en).filter((k) => k.startsWith('expg.') || k.startsWith('proof.')).sort()).toEqual([...KEYS].sort());
+  });
+  it("the proof's words say what its links do: inside the book they work, out of it they are off; only the fallback speaks of the first page", () => {
+    const e = en as Record<string, string>;
+    expect(e['proof.note']).toMatch(/Links inside the book work/);
+    expect(e['proof.note']).toMatch(/links that leave (it|the book) are off/);
+    expect(e['proof.note']).not.toMatch(/switched off in this view/);
+    expect(e['proof.linkOff']).not.toMatch(/first page/);
+    expect(e['proof.linkOff']).toMatch(/where you were/);
+    expect(e['proof.linkBack']).toMatch(/first page/);
   });
   it('every interface language has every key, as text of its own, with the English placeholders', () => {
     const e = pack('en');
