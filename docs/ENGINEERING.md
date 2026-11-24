@@ -4622,6 +4622,8 @@ records against; `CHROME` points at a Chromium if the Playwright cache has
 none; `VOICE` picks the Kokoro voice (default `af_heart`). A `do:` command
 whose control the studio does not show **fails that lesson** and writes
 nothing for it, so a lesson can never narrate a button that isn't there.
+Each lesson starts in a fresh browser, so a lesson's first step has to
+open what it shows (`click "Export"`, then the group: `click "Print"`).
 Re-run after a studio change that moves a control. Then copy
 `./school-media` to the same folder beside `docker-compose.yml` on the box
 (e.g. `rsync -a school-media/ box:/opt/beuk/school-media/`); compose
@@ -5771,6 +5773,137 @@ Not changed here: the device autosave still serializes the whole book
 800 ms after the last keystroke (a separate piece of work: saving only
 what changed), and the hardcover print model is still whole-book when it
 does run.
+
+## Studio: the export screen in groups, and the proof of the whole book (2.0)
+
+V, 2026-11-23: "Don't we need to show a complete book from start to end
+before exporting" and "the export screen is getting longer and longer".
+Both are the 2.0 layer's (`studio/src/export/groups.ts`, `Proof.tsx`,
+`studio/src/styles/export.css`, wired in `ExportModal.tsx`). 1.0's export
+markup and its handlers in `client/index.html` are unchanged; that file
+gains only the words (`BEUK:exportproof`, below). No export makes a
+different file.
+
+**The groups.** Once 1.0's `#modalExport` markup is placed, its parts are
+moved, the very nodes, never cloned, into six groups, so every id and
+every listener 1.0's `initExport` puts on them is as it was:
+
+| Group | 1.0's parts in it |
+|---|---|
+| E-book (EPUB) | the platform presets block (loose siblings in 1.0: heading, line, grid, detail, tree, check list, Build and Inspect), Structural Validation, Accessibility |
+| Print | Print Preflight, Print Interior |
+| Manuscript and other files | Markdown, Standalone HTML, Word, Submission Manuscript |
+| Audiobook script | ACX |
+| Box set | Box Set |
+| Archive and sharing | `#archiveSec`, and the share section the cloud module injects after it (`betaInjectDom`) |
+
+- Each header is a real `<button>` with `aria-expanded` and
+  `aria-controls`. All are closed each time the screen opens; opening one
+  closes the others; nothing is stored.
+- The title, its line, Store-ready? and Close stay outside the groups.
+- A group none of whose parts shows hides its header too (the archive
+  before a shelf is linked), and shows it when 1.0 shows the part.
+- **Completeness guard.** A part of the modal no group claims (a section
+  1.0 gains later) is never hidden: it stays in view after the groups, and
+  `studio/test/export-groups.test.ts` fails naming it. Classify it in
+  `EXPORT_GROUPS` or `EXPORT_FIXED`; do not change the test.
+- **What 1.0 shows or moves to opens its group.** The validator's, the
+  audit's and the preflight's panels on every answer written (`ANSWERS`);
+  the print-ready note, the archive note and EPUBCheck's result when their
+  words are new (`NOTES`: they are also redrawn unasked); the scroll to the
+  trim sizes (`SCROLLS`, 1.0's `preflightJumpTo`); the focus of a new share
+  link's field (`FOCUSES`, 1.0's `betaCopy`). What 1.0 draws as the screen
+  opens opens nothing. A second guard in the same test lists every
+  `scrollIntoView` and `.focus(` in 1.0's lifted code by the declaration
+  it stands in; a new one fails until it is read and, if it reaches into
+  the export modal, named in `SCROLLS` or `FOCUSES`.
+- A group adds no inline padding and its header is whole pixels tall, and
+  the first section of a group loses only the margin above it: each of
+  1.0's sections keeps the box it has in 1.0's modal.
+- Seam for the e2e: `window.beukExport.group(id | null)`,
+  `.reveal(selector)`, `.openGroup()`.
+
+**The proof.** Under the title, above Store-ready?: an offer, never a
+gate. Nothing waits on it and nothing is disabled by it.
+
+- **Read the whole book on screen** opens a dialog on the dialog stack
+  that frames exactly the string 1.0's `buildStandaloneHtml()` returns for
+  the open book, built in the export session. The string is not parsed,
+  tidied or drawn again. While it is built the dialog says so; a book with
+  no section in it is said in words; so is an error.
+- The frame is filled from a `blob:` address (the served policy allows it:
+  `frame-src 'self' blob:`), not `srcdoc`: in a sandboxed `srcdoc` frame a
+  note's in-page link loads the studio's own address into the frame
+  (measured in Chromium).
+- The frame is `sandbox="allow-same-origin"` and nothing more: no script,
+  no form, no pop-up, no navigation of the page around it. V's decision,
+  2026-11-24: the book is already drawn in the studio's own page by the
+  preview, so a frame of the same book that runs no script adds no
+  exposure. With the same origin, a link inside the book (a note and its
+  way back) is the browser's own in-page jump, and the page can listen in
+  the frame's document: a listener the page puts on
+  `frame.contentDocument` fires though the frame runs no script (measured,
+  Chromium 149). So Escape with the focus in the book closes the proof, and
+  a link that leaves the book (left button, middle button or Enter) is
+  stopped where it is pressed: the reader keeps their place, the dialog
+  says links out of the book are off, and nothing is requested. If the
+  frame still loads something else, the book is framed again from its
+  first page and the dialog says why.
+- A hidden stop before the frame keeps Shift+Tab in the dialog: the
+  browser itself walks the Tab order through the frame's links, and
+  without the stop Shift+Tab from the first link lands on the export
+  screen under the dialog (measured).
+- **Turn the print pages** clicks 1.0's `#btnOpenSpreads`. 1.0 closes the
+  export screen as the Print Interior View opens, and that is unchanged;
+  when a view opened from this button closes, the export screen is opened
+  again with focus on the button. 1.0's own button behaves as before.
+
+**The proof is the standalone page, not the EPUB.** Compared on the
+fixture books (`epubFiles()` beside `buildStandaloneHtml()`; the server
+builds the store-ready EPUB with the same 1.0 code,
+`src/book/epub/closure.ts`): every section that is in the book is in both,
+in the same order, with the same words, notes and pictures, and both
+stylesheets begin with `buildBookCss("")`. They differ in this:
+
+- The EPUB has `nav.xhtml`, `toc.ncx` and `package.opf` with its
+  metadata; the page has none of them.
+- The EPUB sets a section's plate on a page of its own, before the
+  section; the page sets it at the head of the section.
+- The EPUB embeds uploaded faces, the script faces a book's language
+  needs and the display faces its headings use (`epubFonts`); the page
+  embeds uploaded faces only, so the proof shows the device's fonts for
+  the rest.
+- The page adds four lines of its own to the stylesheet (page width,
+  space between sections, full-bleed pictures, print).
+- A cover section with no cover picture is left out of the EPUB; the page
+  shows 1.0's line "No cover image yet." for it.
+
+The dialog's own paragraph (`proof.note`) says that the view is that page,
+that an e-reader shows the book as pages with its own contents menu, and
+that the typefaces can differ. It does not speak of plates or of the cover
+line.
+
+**Words.** 24 keys in `client/index.html` (`EXPORTPROOF_STRINGS`): 12
+`expg.*` (each group's name and one line) and 12 `proof.*`. English is the
+source; the 12 other languages are drafts awaiting V's sign-off, listed in
+`docs/strings-pending-signoff.md` section 3.
+
+**Tests.** `studio/test/export-groups.test.ts` (the grouping on 1.0's own
+markup, the guards) and `studio/test/export-proof-ui.test.tsx` (in the
+studio). In Chromium, `studio/e2e/book.mjs`: `E2E_ONLY=proof` drives the
+proof with a real mouse and keys under the served policy, and waves 5a to
+5d, 7b and lockcopy open a control's group before acting on it. Their
+regions compared with 1.0's pixel for pixel are taken with the section
+standing alone in a window tall enough that neither modal scrolls, because
+what stands above a section is no longer what stands above it in 1.0's
+one column.
+
+**School and Help.** A lesson or guide that walks the export screen names
+the group to open before the control inside it. In a lesson's `do:` line
+that is one more command, for example `click "Print"`: the recorder takes
+the first visible control whose text is exactly, then starts with, then
+contains the words, and on the screen as it opens only the Print group's
+header starts with "Print".
 
 ## What is deliberately NOT here yet
 

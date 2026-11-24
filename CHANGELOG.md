@@ -4,6 +4,13 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-24 — The whole book before you export, and a shorter Export
+
+- **Read the whole book before you export it.** Export now opens with an offer. Read the whole book on screen shows the book from its first page to its last in one scrolling view. Turn the print pages opens the Print Interior View, and closing it brings you back to Export. It is an offer: every export works without it.
+- **What the reading view is.** It is the page Standalone HTML downloads: the same sections, notes and pictures as the EPUB, in the same order, with the same stylesheet. It is not the EPUB itself. An e-reader shows the book as pages with its own contents menu, the EPUB sets a full-page picture on a page of its own, and the EPUB carries its heading faces and the faces for scripts such as Devanagari and Arabic, where this view uses the fonts your device has. Links inside the book work there, a note and its way back; links that leave the book are off.
+- **Export is shorter.** The formats now stand in six groups: E-book (EPUB), Print, Manuscript and other files, Audiobook script, Box set, and Archive and sharing. Only the group you open is shown. Store-ready? and Close are always in view. Nothing was removed, and no export makes a different file than before.
+- Help and the School lessons that walk through Export now name the group to open.
+
 ## 2026-11-14 — Imports that keep their cover and stay out of your way
 
 - **An EPUB arrives with its cover.** Importing an EPUB used to leave its cover behind, even one Beuk had made itself, so a book you took out and brought back came in bare. The cover the EPUB declares now becomes your book's cover (JPG or PNG).
