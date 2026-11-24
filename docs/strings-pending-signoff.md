@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-24 (the export screen: section 3, the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-24 (section 4: the page-by-page views of the whole book; earlier the same day, section 3: the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -409,7 +409,7 @@ keys and 32 `auth.*` plus 10 `backup.*` keys in all, most of them long since sig
 are the pending ones. The reports are the list.
 
 Total still waiting: 22 (this task) + 11 + 20 + 21 + 6 + 1 = 81 keys, counting each key once however many languages it has.
-(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
+(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys and section 4 adds 8. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
 
 ## 3. The export screen: its groups and the proof (24 keys, 2026-11-23; the proof's link words changed 2026-11-24)
 
@@ -825,3 +825,157 @@ Points worth a look when you read them:
 - **ar** العربية: `خرج العرض من الكتاب، لذا يُعرض الكتاب من جديد من صفحته الأولى.`
 - **ja** 日本語: `表示が本から離れたため、本を最初のページからもう一度表示しています。`
 - **zh-Hans** 简体中文: `视图离开了这本书，因此这本书从第一页重新显示。`
+
+## 4. The page-by-page views of the whole book (8 keys, 2026-11-24)
+
+For an account in its trial or with a plan (and for every signed-in account while billing is off), the proof's two buttons open
+the e-book a page at a time and the printed book as an open hardcover (`studio/src/export/pages.ts`, `hardcover.ts`,
+`entitled.ts`). Their 8 new keys are in the same block of `client/index.html` (`BEUK:exportproof`, `EXPORTPROOF_STRINGS`),
+after `proof.linkBack`. English is the source. The 12 other languages below are drafts written by Claude: not approved, not
+read by a native speaker.
+
+Three more strings on that dialog are NOT new and are not listed here: the counter is `preview.pageOf` (the preview's own
+"Page {page} of {count}") and the full-screen button is `fs.enter` / `fs.exit` (1.0's own). They are used as they stand in
+all 13 packs.
+
+Points worth a look when you read them:
+
+- None of these words speaks of plans, trials or payment. An account without the page-by-page views sees none of them.
+- `proof.flip` replaces `proof.print` on the same button when the Hardcover view can be opened. **tr** says "turn the pages of
+  the printed book" (`Basılı kitabın sayfalarını çevir`): no short verb for "flip through" was found that reads plainly.
+- `proof.pagesNote` is shown after `proof.note`, only while the book is in pages. It says the page numbers are this window's.
+- `proof.viewPages` is the same letters as English in **fr** ("Pages"): the word is the same there.
+- `proof.viewScroll`: **de** and **nl** say "Scrollen"; **es** "Desplazamiento", **fr** "Défilement", **pt** "Deslocamento".
+  **zh-Hans** `proof.viewPages` is 分页 (paged), not 页面, so the two sides of the switch read as two ways of showing.
+- `proof.view` is the switch's name for a screen reader; it is not drawn.
+- `proof.prev` / `proof.next` are the two buttons' words; on a narrow screen only their arrows are drawn and these are the
+  buttons' names.
+- `proof.slider` is the slider's name for a screen reader; it is not drawn.
+
+### `proof.flip`
+
+- **en** (source): Flip through the printed book
+- **es** Español: `Hojear el libro impreso`
+- **fr** Français: `Feuilleter le livre imprimé`
+- **de** Deutsch: `Das gedruckte Buch durchblättern`
+- **it** Italiano: `Sfoglia il libro stampato`
+- **pt** Português: `Folhear o livro impresso`
+- **nl** Nederlands: `Door het gedrukte boek bladeren`
+- **pl** Polski: `Przekartkuj drukowaną książkę`
+- **ru** Русский: `Пролистать печатную книгу`
+- **tr** Türkçe: `Basılı kitabın sayfalarını çevir`
+- **ar** العربية: `تصفّح الكتاب المطبوع`
+- **ja** 日本語: `印刷版の本をめくる`
+- **zh-Hans** 简体中文: `翻阅印刷版的书`
+
+### `proof.pagesNote`
+
+- **en** (source): Page numbers here belong to this window: an e-reader sets its own page size and type.
+- **es** Español: `Los números de página de aquí son de esta ventana: un lector electrónico fija su propio tamaño de página y de letra.`
+- **fr** Français: `Les numéros de page affichés ici valent pour cette fenêtre : une liseuse fixe sa propre taille de page et de caractères.`
+- **de** Deutsch: `Die Seitenzahlen hier gelten für dieses Fenster: Ein E-Reader legt seine eigene Seitengröße und Schrift fest.`
+- **it** Italiano: `I numeri di pagina qui valgono per questa finestra: un e-reader stabilisce da sé la dimensione della pagina e del carattere.`
+- **pt** Português: `Os números de página aqui são desta janela: um leitor de livros eletrónicos define o seu próprio tamanho de página e de letra.`
+- **nl** Nederlands: `De paginanummers hier horen bij dit venster: een e-reader bepaalt zijn eigen paginaformaat en letter.`
+- **pl** Polski: `Numery stron tutaj dotyczą tego okna: czytnik sam ustala rozmiar strony i pisma.`
+- **ru** Русский: `Номера страниц здесь относятся к этому окну: читалка сама задаёт размер страницы и шрифта.`
+- **tr** Türkçe: `Buradaki sayfa numaraları bu pencereye aittir: bir e-okuyucu sayfa boyutunu ve yazıyı kendi belirler.`
+- **ar** العربية: `أرقام الصفحات هنا تخص هذه النافذة: القارئ الإلكتروني يحدد حجم صفحته وخطه بنفسه.`
+- **ja** 日本語: `ここでのページ番号はこのウィンドウでのものです。電子書籍リーダーはページの大きさと文字を独自に決めます。`
+- **zh-Hans** 简体中文: `这里的页码只属于这个窗口：电子书阅读器会自行决定页面大小和字体。`
+
+### `proof.view`
+
+- **en** (source): How the book is shown
+- **es** Español: `Cómo se muestra el libro`
+- **fr** Français: `Affichage du livre`
+- **de** Deutsch: `Darstellung des Buchs`
+- **it** Italiano: `Come viene mostrato il libro`
+- **pt** Português: `Como o livro é mostrado`
+- **nl** Nederlands: `Hoe het boek wordt getoond`
+- **pl** Polski: `Sposób wyświetlania książki`
+- **ru** Русский: `Как показана книга`
+- **tr** Türkçe: `Kitabın gösterilme biçimi`
+- **ar** العربية: `طريقة عرض الكتاب`
+- **ja** 日本語: `本の表示方法`
+- **zh-Hans** 简体中文: `书的显示方式`
+
+### `proof.viewPages`
+
+- **en** (source): Pages
+- **es** Español: `Páginas`
+- **fr** Français: `Pages`
+- **de** Deutsch: `Seiten`
+- **it** Italiano: `Pagine`
+- **pt** Português: `Páginas`
+- **nl** Nederlands: `Pagina's`
+- **pl** Polski: `Strony`
+- **ru** Русский: `Страницы`
+- **tr** Türkçe: `Sayfalar`
+- **ar** العربية: `صفحات`
+- **ja** 日本語: `ページ`
+- **zh-Hans** 简体中文: `分页`
+
+### `proof.viewScroll`
+
+- **en** (source): Scroll
+- **es** Español: `Desplazamiento`
+- **fr** Français: `Défilement`
+- **de** Deutsch: `Scrollen`
+- **it** Italiano: `Scorrimento`
+- **pt** Português: `Deslocamento`
+- **nl** Nederlands: `Scrollen`
+- **pl** Polski: `Przewijanie`
+- **ru** Русский: `Прокрутка`
+- **tr** Türkçe: `Kaydırma`
+- **ar** العربية: `تمرير`
+- **ja** 日本語: `スクロール`
+- **zh-Hans** 简体中文: `滚动`
+
+### `proof.prev`
+
+- **en** (source): Previous page
+- **es** Español: `Página anterior`
+- **fr** Français: `Page précédente`
+- **de** Deutsch: `Vorherige Seite`
+- **it** Italiano: `Pagina precedente`
+- **pt** Português: `Página anterior`
+- **nl** Nederlands: `Vorige pagina`
+- **pl** Polski: `Poprzednia strona`
+- **ru** Русский: `Предыдущая страница`
+- **tr** Türkçe: `Önceki sayfa`
+- **ar** العربية: `الصفحة السابقة`
+- **ja** 日本語: `前のページ`
+- **zh-Hans** 简体中文: `上一页`
+
+### `proof.next`
+
+- **en** (source): Next page
+- **es** Español: `Página siguiente`
+- **fr** Français: `Page suivante`
+- **de** Deutsch: `Nächste Seite`
+- **it** Italiano: `Pagina successiva`
+- **pt** Português: `Página seguinte`
+- **nl** Nederlands: `Volgende pagina`
+- **pl** Polski: `Następna strona`
+- **ru** Русский: `Следующая страница`
+- **tr** Türkçe: `Sonraki sayfa`
+- **ar** العربية: `الصفحة التالية`
+- **ja** 日本語: `次のページ`
+- **zh-Hans** 简体中文: `下一页`
+
+### `proof.slider`
+
+- **en** (source): Go to a page
+- **es** Español: `Ir a una página`
+- **fr** Français: `Aller à une page`
+- **de** Deutsch: `Zu einer Seite gehen`
+- **it** Italiano: `Vai a una pagina`
+- **pt** Português: `Ir para uma página`
+- **nl** Nederlands: `Naar een pagina gaan`
+- **pl** Polski: `Przejdź do strony`
+- **ru** Русский: `Перейти к странице`
+- **tr** Türkçe: `Bir sayfaya git`
+- **ar** العربية: `انتقل إلى صفحة`
+- **ja** 日本語: `ページへ移動`
+- **zh-Hans** 简体中文: `跳到某一页`
