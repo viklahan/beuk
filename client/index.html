@@ -61572,6 +61572,11 @@
           htLine2: typeof s.htLine2 === "string" ? s.htLine2 : "",
           tocHeading: typeof s.tocHeading === "string" ? s.tocHeading : null,
           ...(typeof s.runHead === "string" && s.runHead.trim() ? { runHead: s.runHead } : {}), /* BEUK:headfit — present only when set */
+          /* BEUK:poemmode — Poem Mode, a chapter set as verse: mode "verse" is stored only for a poem (absent, or
+             anything else, reads as prose) and verseAlign "left" only when the writer chose left (absent reads as
+             centred). Both are how the chapter is READ: the text itself is never rewritten by either. */
+          ...(s.mode === "verse" ? { mode: "verse" } : {}),
+          ...(s.verseAlign === "left" ? { verseAlign: "left" } : {}),
           scenes: normalizeScenes(s.scenes),
           ...olSectionFields(s) /* BEUK:outline — synopsis, status, tags, pov: only the ones it has */
         };

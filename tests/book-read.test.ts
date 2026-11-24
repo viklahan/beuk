@@ -276,6 +276,47 @@ test('read: section.plateFit is kept when fill or whole, dropped with a bad-enum
   assert.ok(untouched.book.sections.every((x) => !('plateFit' in x)), 'a book without the field gains none');
 });
 
+/* BEUK:poemmode — Poem Mode is two optional fields on a section: mode ("verse" for a poem; absent reads as prose)
+   and verseAlign ("left"; absent reads as centred). Each is kept only as that one value; anything else is dropped,
+   and a book without them is read untouched (an old book is prose, and gains no key). The text is never a party
+   to either. */
+test('read: section.mode is kept only as "verse" and section.verseAlign only as "left"; anything else is dropped with a bad-enum warning; neither is ever added', () => {
+  const b = real();
+  assert.ok(b.sections.length >= 6);
+  assert.ok(b.sections.every((x: Record<string, unknown>) => !('mode' in x) && !('verseAlign' in x)), 'the stored fixture predates the fields');
+  const contents = b.sections.map((x: Record<string, unknown>) => x.content);
+  b.sections[0].mode = 'verse';
+  b.sections[1].mode = 'verse';
+  b.sections[1].verseAlign = 'left';
+  b.sections[2].mode = 'prose';
+  b.sections[2].verseAlign = 'center';
+  b.sections[3].mode = 'poem';
+  b.sections[3].verseAlign = 'right';
+  b.sections[4].mode = true;
+  b.sections[4].verseAlign = null;
+  b.sections[5].verseAlign = 'left'; // remembered on a chapter that is prose now: kept
+  const r = readBook(b);
+  const sec = (i: number) => r.book.sections[i] as Record<string, unknown>;
+  assert.equal(sec(0).mode, 'verse');
+  assert.equal('verseAlign' in sec(0), false, 'a centred poem stores no alignment');
+  assert.equal(sec(1).mode, 'verse');
+  assert.equal(sec(1).verseAlign, 'left');
+  for (const i of [2, 3, 4]) {
+    assert.equal('mode' in sec(i), false, `sections[${i}].mode is dropped`);
+    assert.equal('verseAlign' in sec(i), false, `sections[${i}].verseAlign is dropped`);
+    assert.ok(r.warnings.some((w) => w.code === 'bad-enum' && w.path === `sections[${i}].mode`), `sections[${i}].mode`);
+    assert.ok(r.warnings.some((w) => w.code === 'bad-enum' && w.path === `sections[${i}].verseAlign`), `sections[${i}].verseAlign`);
+  }
+  assert.deepEqual(r.preserved.find((p) => p.path === 'sections[2].mode'), { path: 'sections[2].mode', raw: 'prose', used: undefined });
+  assert.deepEqual(r.preserved.find((p) => p.path === 'sections[3].verseAlign'), { path: 'sections[3].verseAlign', raw: 'right', used: undefined });
+  assert.equal('mode' in sec(5), false);
+  assert.equal(sec(5).verseAlign, 'left');
+  assert.deepEqual(r.book.sections.map((x) => x.content), contents, 'the text of every section is untouched');
+  assert.ok(!r.warnings.some((w) => /^sections\[[015]\]\.(mode|verseAlign)$/.test(w.path)), 'the kept values raise nothing');
+  const untouched = readBook(real());
+  assert.ok(untouched.book.sections.every((x) => !('mode' in x) && !('verseAlign' in x)), 'a book without the fields gains none: it reads as prose');
+});
+
 test('read: an unknown top-level key is kept and reported', () => {
   const b = real();
   b.futureThing = { a: 1 };

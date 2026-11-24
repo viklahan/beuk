@@ -131,6 +131,49 @@ test('model: editing one chapter changes only that section\'s content; every oth
   assert.equal(after.sections[4].content, 7);
 });
 
+/* BEUK:poemmode — a poem chapter's two fields (mode "verse", verseAlign "left") are section attributes like any
+   other: they go into the Y.Doc, come back in the exported book, and survive the backup file (JSON) and a second
+   open. Setting and removing them never touches the chapter's text. */
+test('model: Poem Mode fields survive save and open, and setting or removing them leaves every text byte for byte', () => {
+  const env = JSON.parse(readFileSync(fixturePath('real', 'reads-you.json'), 'utf8')) as Rec;
+  const { ydoc } = importBook(structuredClone(env.book));
+  const original = exportAny(ydoc);
+  assert.ok((original.sections as Rec[]).every((s) => !('mode' in s) && !('verseAlign' in s)), 'the fixture predates the fields: prose');
+  const [a, b] = contentIndexes(original);
+  assert.ok(a !== undefined && b !== undefined);
+  ydoc.transact(() => {
+    (sectionAt(ydoc, a!) as Y.Map<unknown>).set('mode', 'verse');
+    const mb = sectionAt(ydoc, b!) as Y.Map<unknown>;
+    mb.set('mode', 'verse');
+    mb.set('verseAlign', 'left');
+  });
+  const saved = exportAny(ydoc);
+  const expect = structuredClone(original);
+  expect.sections[a!].mode = 'verse';
+  expect.sections[b!].mode = 'verse';
+  expect.sections[b!].verseAlign = 'left';
+  assert.deepStrictEqual(saved, expect, 'only the fields were added');
+  assert.deepStrictEqual((saved.sections as Rec[]).map((s) => s.content), (original.sections as Rec[]).map((s) => s.content));
+
+  // the backup file and a second open
+  const reopened = exportAny(importBook(JSON.parse(JSON.stringify(saved))).ydoc);
+  assert.deepStrictEqual(reopened, saved);
+  const read = readBook(JSON.parse(JSON.stringify(saved)));
+  assert.equal(read.status, 'ok');
+  assert.ok(!read.warnings.some((w) => /\.(mode|verseAlign)$/.test(w.path)), 'the fields read without a warning');
+
+  // Poem Mode off again: the mode goes, the alignment is remembered, the text is what it was
+  ydoc.transact(() => {
+    (sectionAt(ydoc, a!) as Y.Map<unknown>).delete('mode');
+    (sectionAt(ydoc, b!) as Y.Map<unknown>).delete('mode');
+  });
+  const off = exportAny(ydoc);
+  const expectOff = structuredClone(original);
+  expectOff.sections[b!].verseAlign = 'left';
+  assert.deepStrictEqual(off, expectOff);
+  assert.equal(JSON.stringify(off.sections[a!]), JSON.stringify(original.sections[a!]), 'a double toggle leaves the section exactly as it was');
+});
+
 test('model: two concurrent edits to different chapters merge', () => {
   const env = JSON.parse(readFileSync(fixturePath('real', 'valois-02-chicot.json'), 'utf8')) as Rec;
   const docA = importBook(env.book).ydoc;
