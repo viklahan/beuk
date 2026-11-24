@@ -6196,6 +6196,184 @@ async function wave5dScreens(origin) {
   }
 }
 
+/* ---- the proof of the whole book (2026-11-24): proofChecks (E2E_ONLY=proof) ----
+   "Read the whole book on screen" (src/export/Proof.tsx) in a real browser, under the served policy. The frame is
+   sandbox="allow-same-origin" and runs no script, so NOTHING here is evaluated inside it: the harness's own init
+   scripts and frame evaluations are scripts too, and a frame that runs none logs each as "Blocked script execution"
+   (measured: with neither, the console is silent). The context is a bare one, and the frame is read from the page
+   around it, through frame.contentDocument, as the studio itself reads it. The mouse and the keys are real.
+   - the frame holds exactly buildStandaloneHtml()'s string, and none of the book's would-be scripts ran;
+   - a note's link lands on its note and the note's way back lands on its reference (the frame is not loaded again);
+   - Escape with the focus in the book (a real click in the frame first) closes the proof, and only the proof;
+   - a link out of the book, by the left button, the middle button and Enter: the frame, its address and the reader's
+     place are as they were, the dialog says so, no page opens, and the policy reports nothing;
+   - Tab and Shift+Tab, all the way round, never leave the dialog. */
+async function proofChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const en = JSON.parse(readFileSync(path.join(STUDIO, 'src', 'generated', 'packs', 'en.json'), 'utf8'));
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true, deviceScaleFactor: 1 });
+  const opened = [];
+  ctx.on('page', (p) => opened.push(p));
+  try {
+    const page = await watch(await ctx.newPage());
+    await page.goto(origin + '/studio/');
+    await page.evaluate(() => { try { localStorage.setItem('beuk.tour.v1', 'done'); } catch (e) { /* no storage */ } });
+    await page.reload();
+    await page.waitForSelector('#topbar');
+    // the page's own listeners, put there after it loaded (no init script in this context: see above)
+    await page.evaluate(() => {
+      window.__csp = [];
+      document.addEventListener('securitypolicyviolation', (e) => window.__csp.push({ directive: e.violatedDirective, blocked: e.blockedURI }));
+      window.__blobs = {};
+      const make = URL.createObjectURL;
+      URL.createObjectURL = function (b) { const u = make.call(URL, b); window.__blobs[u] = b; return u; };
+    });
+    await openBackup(page, f.file);
+    await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExport')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+    await w5aOpenModal(page);
+    const openProof = async () => {
+      await page.click('#btnProofRead');
+      await page.waitForFunction(() => { const fr = document.querySelector('#modalProof iframe'); return !!fr && !!fr.contentDocument && fr.contentDocument.querySelectorAll('section.book-section').length > 0; }, null, { timeout: 60_000 });
+      await page.evaluate(() => { const fr = document.querySelector('#modalProof iframe'); window.__proofLoads = 0; fr.addEventListener('load', () => { window.__proofLoads++; }); window.__proofFrame = fr; });
+      await page.waitForTimeout(300);
+    };
+    /** The frame as the page around it sees it. */
+    const seen = () => page.evaluate(() => {
+      const fr = document.querySelector('#modalProof iframe');
+      const d = fr && fr.contentDocument;
+      return {
+        open: !!document.getElementById('modalProof'), sameFrame: fr === window.__proofFrame, loads: window.__proofLoads,
+        url: d ? d.URL.replace(/^blob:.*?([#]|$)/, 'blob$1') : null, scroll: d ? Math.round(d.scrollingElement.scrollTop) : null,
+        off: document.querySelector('#modalProof .proof-off')?.textContent ?? null,
+        active: document.activeElement ? document.activeElement.id || document.activeElement.tagName : null,
+        exportOpen: document.getElementById('modalExport').classList.contains('open'),
+      };
+    });
+    /** Where an element of the book stands in the window (it is brought into the frame's view first, from the page). */
+    const point = (sel, nth = 0) => page.evaluate(([sel, nth]) => {
+      const fr = document.querySelector('#modalProof iframe');
+      const el = fr.contentDocument.querySelectorAll(sel)[nth];
+      if (!el) return null;
+      el.scrollIntoView({ block: 'center' });
+      const fb = fr.getBoundingClientRect(), b = el.getBoundingClientRect();
+      return { x: fb.x + fr.clientLeft + b.x + b.width / 2, y: fb.y + fr.clientTop + b.y + b.height / 2, href: el.getAttribute('href') };
+    }, [sel, nth]);
+    /** Whether the element a link names stands in the frame's view. */
+    const inView = (hash) => page.evaluate((hash) => {
+      const fr = document.querySelector('#modalProof iframe');
+      const el = fr.contentDocument.getElementById(hash.slice(1));
+      if (!el) return 'no such element';
+      const b = el.getBoundingClientRect();
+      return b.bottom > 0 && b.top < fr.clientHeight ? 'in view (top ' + Math.round(b.top) + ' of ' + fr.clientHeight + ')' : 'out of view (top ' + Math.round(b.top) + ' of ' + fr.clientHeight + ')';
+    }, hash);
+
+    await openProof();
+    const facts = await page.evaluate(async () => {
+      const fr = document.querySelector('#modalProof iframe');
+      const d = fr.contentDocument;
+      const want = window.beukExport.run((api) => api.buildStandaloneHtml());
+      return {
+        sandbox: fr.getAttribute('sandbox'), src: fr.getAttribute('src').slice(0, 5), same: (await window.__blobs[fr.getAttribute('src')].text()) === want,
+        sections: d.querySelectorAll('section.book-section').length, wantSections: want.split('<section class="book-section">').length - 1,
+        scripts: d.scripts.length, inBook: d.querySelectorAll('a[href^="#"]').length, out: d.querySelectorAll('a[href]:not([href^="#"])').length,
+        note: document.querySelector('#modalProof .m-sub').textContent,
+      };
+    });
+    check(facts.sandbox === 'allow-same-origin' && facts.src === 'blob:' && facts.same && facts.sections === facts.wantSections && facts.sections > 0 && facts.scripts === 0,
+      `proof: the frame (sandbox="${facts.sandbox}", ${facts.src}) holds exactly buildStandaloneHtml()'s string (${facts.same}), ${facts.sections} of ${facts.wantSections} sections, ${facts.scripts} script element(s); ${facts.inBook} link(s) inside the book, ${facts.out} out of it`);
+    check(facts.note === en['proof.note'], `proof: the dialog says what the view is and what its links do ("${facts.note.slice(-70)}")`);
+
+    // 1a: a note's link, pressed with the mouse, lands on its note; the note's way back lands on its reference
+    const ref = await point('a[href^="#"]');
+    check(!!ref && ref.href.length > 1, `proof: the book has a link of its own to press (${ref && ref.href})`);
+    if (ref) {
+      const before = await seen();
+      await page.mouse.click(ref.x, ref.y);
+      await page.waitForTimeout(500);
+      const after = await seen();
+      const where = await inView(ref.href);
+      check(after.sameFrame && after.loads === 0 && after.url === 'blob' + ref.href && /^in view/.test(where) && after.off === null,
+        `proof 1a: a link inside the book (${ref.href}) lands on its target: ${where}; the frame's address ends ${after.url}, scrolled ${before.scroll} -> ${after.scroll}, not loaded again (${after.loads}), no notice ("${after.off}")`);
+      const backSel = 'a[href^="#"]';
+      const backs = await page.evaluate(([sel, hash]) => { const d = document.querySelector('#modalProof iframe').contentDocument; const target = d.getElementById(hash.slice(1)); const list = Array.from(d.querySelectorAll(sel)); return target ? list.findIndex((a) => target.contains(a)) : -1; }, [backSel, ref.href]);
+      if (backs !== -1) {
+        const bk = await point(backSel, backs);
+        await page.mouse.click(bk.x, bk.y);
+        await page.waitForTimeout(500);
+        const a2 = await seen();
+        const w2 = await inView(bk.href);
+        check(a2.sameFrame && a2.loads === 0 && a2.url === 'blob' + bk.href && /^in view/.test(w2), `proof 1a: the note's way back (${bk.href}) lands on its reference: ${w2}; address ends ${a2.url}, scroll ${a2.scroll}`);
+      } else note('proof 1a: the note pressed has no link back inside it; not checked');
+    }
+
+    // 1b: a real click in the middle of the frame, then Escape
+    const box = await (await page.$('#modalProof iframe')).boundingBox();
+    await page.evaluate(() => { document.querySelector('#modalProof iframe').contentDocument.querySelector('section.book-section p').scrollIntoView({ block: 'center' }); });
+    await page.mouse.click(box.x + box.width / 2, box.y + 12);
+    await page.waitForTimeout(200);
+    const focused = await seen();
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    const closed = await seen();
+    check(focused.active === 'IFRAME' && !closed.open && closed.exportOpen && closed.active === 'btnProofRead',
+      `proof 1b: Escape with the focus inside the frame (the page's focused element: ${focused.active}) closes the proof (${!closed.open}), leaves the export screen open (${closed.exportOpen}), and focus is on ${closed.active}`);
+
+    // 1c: a link out of the book: left button, middle button, Enter
+    await openProof();
+    const out = await point('a[href]:not([href^="#"])');
+    check(!!out, `proof 1c: the book has a link out of it to press (${out && out.href})`);
+    if (out) {
+      const pagesBefore = opened.length;
+      const b0 = await seen();
+      const tries = [];
+      await page.mouse.click(out.x, out.y);
+      await page.waitForTimeout(900);
+      tries.push(['left button', await seen()]);
+      await page.mouse.click(out.x, out.y, { button: 'middle' });
+      await page.waitForTimeout(900);
+      tries.push(['middle button', await seen()]);
+      await page.evaluate(() => { document.querySelector('#modalProof iframe').contentDocument.querySelector('a[href]:not([href^="#"])').focus(); });
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(900);
+      tries.push(['Enter', await seen()]);
+      for (const [how, a] of tries) {
+        check(a.open && a.sameFrame && a.loads === 0 && a.url === b0.url && a.scroll === b0.scroll && a.off === en['proof.linkOff'],
+          `proof 1c: a link out of the book (${out.href}) by the ${how}: the same frame (${a.sameFrame}), not loaded again (${a.loads}), address ${a.url} (was ${b0.url}), scroll ${a.scroll} (was ${b0.scroll}), the dialog says "${a.off}"`);
+      }
+      check(opened.length === pagesBefore, `proof 1c: no page or tab was opened (${opened.length - pagesBefore})`);
+    }
+
+    // 1d: Tab and Shift+Tab, all the way round
+    const links = await page.evaluate(() => document.querySelector('#modalProof iframe').contentDocument.querySelectorAll('a[href]').length);
+    const walk = async (key, n) => {
+      const path = [];
+      for (let i = 0; i < n; i++) {
+        await page.keyboard.press(key);
+        path.push(await page.evaluate(() => { const a = document.activeElement; const d = a && a.tagName === 'IFRAME' ? a.contentDocument : null; const inner = d && d.activeElement && d.activeElement !== d.body ? d.activeElement.getAttribute('href') || d.activeElement.tagName : ''; return (a && a.closest('#modalProof') ? '' : 'OUTSIDE:') + (a ? a.id || a.className || a.tagName : 'none') + (inner ? '>' + inner : ''); }));
+      }
+      return path;
+    };
+    await page.focus('#btnProofClose');
+    const fw = await walk('Tab', links + 4);
+    await page.focus('#btnProofClose');
+    const bw = await walk('Shift+Tab', links + 4);
+    const round = (p) => p.filter((x) => x === 'btnProofClose').length >= 1 && p.some((x) => x.startsWith('proof-frame'));
+    check(!fw.some((x) => x.startsWith('OUTSIDE')) && !bw.some((x) => x.startsWith('OUTSIDE')) && round(fw) && round(bw),
+      `proof 1d: Tab (${links + 4} presses from Close: ${fw.join(' | ')}) and Shift+Tab (${bw.join(' | ')}) go round the frame's ${links} link(s) and Close, never outside the dialog`);
+
+    // 1f: what the policy reported, through all of the above
+    const reports = await page.evaluate(() => window.__csp.slice());
+    check(reports.length === 0, `proof 1f: the served policy reported nothing (${reports.length}${reports.length ? ': ' + JSON.stringify(reports.slice(0, 4)) : ''})`);
+    await page.focus('#btnProofClose');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    const end = await seen();
+    check(!end.open && end.exportOpen && end.active === 'btnProofRead', `proof: Escape with the focus on Close closes the proof too (focus on ${end.active})`);
+  } finally {
+    await ctx.close();
+  }
+}
+
 async function wave5dChecks(origin) {
   const only = (process.env.W5D_PARTS || 'parity,downloads,hostile,gate,shelf,screens,latency').split(',');
   if (only.includes('parity')) await wave5dParity(origin);
@@ -10319,6 +10497,7 @@ try {
   if (run('wave5b')) await wave5bChecks(srv.origin);
   if (run('wave5c')) await wave5cChecks(srv.origin);
   if (run('wave5d')) await wave5dChecks(srv.origin);
+  if (run('proof')) await proofChecks(srv.origin);
   if (run('wave6')) await wave6Checks(srv.origin);
   if (run('wave7a')) await wave7aChecks();
   if (run('wave7b')) await wave7bChecks();
