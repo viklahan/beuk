@@ -6025,9 +6025,11 @@ without these views simply gets the others, with no lock, badge or line.
   across a resize, the switch and full screen; the hardcover there and
   back; no console error and no policy report. The Three Musketeers
   (229,841 words by a whitespace count of the standalone page's text)
-  paged into 926 pages (the page 652x639 px) in 154 and 162 ms on two
-  runs, with every one of 74 sections starting a page and none of 10,819
-  boxes outside its page.
+  paged into 926 pages (the page 652x639 px) in 154, 162, 167 and 203 ms
+  on four runs, with every one of 74 sections starting a page and none of
+  10,819 boxes outside its page. On the same book the press that opens
+  the hardcover (787 printed pages) took 530 ms on its one run, and full
+  screen followed 20 ms later.
 - **Not verified.** Firefox and Safari (neither is installed on the bench
   that built this): the column and scroll arithmetic, negative
   `scrollLeft` in a right-to-left book, `caretPositionFromPoint`, and
