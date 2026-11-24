@@ -337,7 +337,7 @@ test('decideAccess: open while billing is off; subscription, grace, trial, pause
   assert.equal(decideAccess(true, gone, grace), 'grace');
 });
 
-test('the rules are data: nine features, twelve gated POST routes, and the never-paused list does not overlap', () => {
+test('the rules are data: ten features, twelve gated POST routes, and the never-paused list does not overlap', () => {
   assert.deepEqual(
     ACCESS_RULES.map((r) => `${r.method} ${r.path}`),
     [
@@ -356,8 +356,12 @@ test('the rules are data: nine features, twelve gated POST routes, and the never
     ],
   );
   assert.deepEqual(Object.keys(PAUSABLE_FEATURES).sort(), [
-    'archive.upload', 'authorship.stamp', 'export.epub', 'export.print', 'export.wrap', 'jobs.run', 'shares.create', 'shelf.add', 'twoStep.setup',
+    'archive.upload', 'authorship.stamp', 'export.epub', 'export.print', 'export.wrap', 'jobs.run', 'proof.pages', 'shares.create', 'shelf.add', 'twoStep.setup',
   ]);
+  // proof.pages (the page-by-page views of the whole book in Export) is drawn in the browser: it has no route, so the
+  // server names it in `locked` and cannot enforce it. Every other feature has at least one route.
+  assert.deepEqual(Object.keys(PAUSABLE_FEATURES).filter((f) => !ACCESS_RULES.some((r) => r.feature === f)), ['proof.pages']);
+  assert.equal(PAUSABLE_FEATURES['proof.pages'], 'the page-by-page views of the whole book in Export');
   // The three store-ready export features each have their route: export.print (the pdfx job,
   // Step 3 part 2), export.epub (POST /api/epub, part 3) and export.wrap (POST /api/wrap, part 4).
   assert.deepEqual(
@@ -448,7 +452,7 @@ test('gating matrix: trial active, subscribed, past_due inside grace → open; e
     // Download all my data is open in every state, paused included.
     assert.equal((await w.c.download('/api/account/export')).status, 200, `${k.name}: Download all my data`);
   }
-  assert.equal(Object.keys(PAUSABLE_FEATURES).length, 9, 'paused locks all nine');
+  assert.equal(Object.keys(PAUSABLE_FEATURES).length, 10, 'paused locks all ten');
 });
 
 test('billing off: /api/auth/me reports an open state, no trial days and nothing locked', async () => {
@@ -690,6 +694,13 @@ test('trial-ending email: once per account, 3 days before, only with email + bil
   assert.match(msgs[0].subject, /Your Beuk trial ends on/);
   assert.match(msgs[0].text, /\/account/);
   assert.match(msgs[0].text, /the backup file, Word and Markdown/);
+  // What pauses is read from PAUSABLE_FEATURES, so the mail names the page-by-page views too (the last of the list).
+  assert.ok(
+    msgs[0].text.includes(
+      'What pauses is adding new books to your shelf, new beta-reader links, server EPUBCheck checks, saving new files to your export archive, store-ready EPUB files, print-ready PDFs, cover wraps, new authorship stamps, turning on two-step sign-in and the page-by-page views of the whole book in Export.',
+    ),
+    'the mail names everything that pauses',
+  );
   assert.doesNotMatch(msgs[0].text, COPY_BANNED);
   assert.ok(!/[$€£]\s?\d|per month/i.test(msgs[0].text), 'no price while no label is set');
   assert.ok(!/!/.test(msgs[0].text), 'no exclamation marks');
