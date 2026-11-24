@@ -150,6 +150,27 @@ function openGroupsFirst(page) {
     }
     return wait(sel, opts);
   };
+  // a locator's own steps too (a region's screenshot, a scroll to it): the group of the element it finds is opened first
+  const openFor = (l) => l.evaluate((el) => {
+    const g = el && el.closest ? el.closest('#modalExport [data-exg]') : null;
+    if (g && window.beukExport && window.beukExport.group && g.querySelector('.exg-head').getAttribute('aria-expanded') !== 'true') window.beukExport.group(g.getAttribute('data-exg'));
+  }, undefined, { timeout: 2000 }).catch(() => undefined);
+  const wrap = (l) => {
+    for (const m of ['screenshot', 'scrollIntoViewIfNeeded', 'click', 'fill', 'selectOption', 'hover', 'check', 'boundingBox']) {
+      const own = l[m].bind(l);
+      l[m] = async (...a) => {
+        await openFor(l);
+        return own(...a);
+      };
+    }
+    for (const m of ['locator', 'first', 'last', 'nth']) {
+      const own = l[m].bind(l);
+      l[m] = (...a) => wrap(own(...a));
+    }
+    return l;
+  };
+  const locator = page.locator.bind(page);
+  page.locator = (...a) => wrap(locator(...a));
 }
 async function harvestCsp(page) {
   try {
@@ -5217,6 +5238,11 @@ async function wave5bScreens(origin) {
             const keep = document.getElementById('trimGrid').closest('.fmt-sec');
             const pf = document.getElementById('preflightResults').closest('.fmt-sec');
             document.querySelectorAll('#modalExport .fmt-sec').forEach((x) => { if (x !== keep && x !== pf) x.style.display = 'none'; });
+            // (2026-11-23, the export screen's groups) in 2.0 the EPUB block stands in the E-book group, closed while
+            // Print is open; in 1.0 it is loose parts of the modal, not a .fmt-sec, above the print section: hidden
+            // there too, so what stands above is alike again. 2.0's modal has no such loose heading: nothing happens.
+            const loose = document.querySelector('#modalExport .modal > h3');
+            for (let el = loose; el && !el.classList.contains('fmt-sec'); el = el.nextElementSibling) el.style.display = 'none';
           });
           await p.waitForTimeout(300);
         }
@@ -5658,16 +5684,45 @@ async function wave5cScreens(origin) {
           await p.waitForTimeout(3800); // toasts gone (wave 5d: the store-ready entry is shown in both, as 1.0 has it)
         }
         const secOf = (p, id) => p.locator('#' + id).locator('xpath=ancestor::div[contains(@class,"fmt-sec")]');
+        // (2026-11-23, the export screen's groups) each section is compared standing alone under Store-ready, in both
+        // apps, the modal held to the top of the window. In 2.0 the sections stand in groups with one open at a time,
+        // so what stands above a section is no longer what stands above it in 1.0's one column, and with it the
+        // subpixel row the region is cut at (wave 5b's note): alone, what stands above is alike again (2.0's own parts
+        // there, the proof and the groups' headers, are whole pixels tall).
+        const alone = (p, id) => p.evaluate((id) => {
+          const keep = document.getElementById(id).closest('.fmt-sec');
+          const back = document.getElementById('modalExport');
+          back.style.alignItems = 'flex-start';
+          const hidden = [];
+          const hide = (el) => { if (el !== keep && el.style.display !== 'none') { hidden.push(el); el.style.display = 'none'; } };
+          back.querySelectorAll('.fmt-sec').forEach(hide);
+          // 1.0's EPUB block: loose parts of the modal, not a .fmt-sec (in 2.0 it stands in the E-book group, closed)
+          for (let el = back.querySelector('.modal > h3'); el && !el.classList.contains('fmt-sec'); el = el.nextElementSibling) hide(el);
+          window.__w5cHidden = hidden;
+        }, id);
+        const together = (p) => p.evaluate(() => {
+          (window.__w5cHidden || []).forEach((el) => { el.style.display = ''; });
+          window.__w5cHidden = [];
+          document.getElementById('modalExport').style.alignItems = '';
+        });
+        // and in a window tall enough that neither modal scrolls: 2.0's is the taller one (the proof and the groups'
+        // headers stand above the section) and scrolled here where 1.0's did not, and a modal whose content is a
+        // fraction of a pixel tall (1.0's 18.75px lines) stops its scroll between two pixel rows
+        for (const p of [one, two]) await p.setViewportSize({ width: 1280, height: 2400 });
         for (const id of ['btnDownloadDocx', 'btnMsOpen', 'btnAcxOpen', 'boxSetList']) {
           const la = secOf(one, id), lb = secOf(two, id);
+          for (const p of [one, two]) await alone(p, id);
           await la.scrollIntoViewIfNeeded();
           await lb.scrollIntoViewIfNeeded();
+          await two.waitForTimeout(200);
           const [sa, sb] = [await la.screenshot(), await lb.screenshot()];
+          for (const p of [one, two]) await together(p);
           writeFileSync(path.join(OUT, `w5c-sec-${id}-${tag}-one.png`), sa);
           writeFileSync(path.join(OUT, `w5c-sec-${id}-${tag}-two.png`), sb);
           const d = await pixelDiff(diffPage, sa, sb);
           check(d.ratio <= PIXEL_TOLERANCE, `wave5c screenshots ${tag}: the section of #${id} differs in ${(d.ratio * 100).toFixed(2)}% of pixels [${d.size}] (max ${PIXEL_TOLERANCE * 100}%)`);
         }
+        for (const p of [one, two]) await p.setViewportSize({ width: 1280, height: 800 });
         for (const [opener, modal] of [['#btnMsOpen', 'modalManuscript'], ['#btnAcxOpen', 'modalAcx']]) {
           for (const p of [one, two]) {
             if (!(await p.evaluate(() => document.getElementById('modalExport').classList.contains('open')))) await w5aOpenModal(p, '#btnExport');

@@ -54,6 +54,10 @@ beforeEach(() => {
   exportReset();
   cloudFacts.available = false;
   cloudFacts.user = null;
+  // (one test changes the interface language: 1.0's words are English again for the next)
+  setClosureT(t);
+  setClosureLang('en');
+  document.documentElement.setAttribute('dir', 'ltr');
 });
 afterEach(async () => {
   cleanup();
@@ -169,6 +173,27 @@ describe('the export screen: a proof first, then the formats in groups', { timeo
     await click($('btnCloseExport'));
     expect(isOpen()).toBe(false);
     await openExport();
+    expect(openIds()).toEqual([]);
+  });
+
+  it('a change of interface language gives the groups and the proof their words in it (Arabic: the page turns right to left)', async () => {
+    await studioWith(LANTERN());
+    await openExport();
+    const ar = JSON.parse(readFileSync(path.join(import.meta.dirname, '..', 'src', 'generated', 'packs', 'ar.json'), 'utf8')) as Record<string, string>;
+    await click($('btnUiLang'));
+    await click(document.querySelector('#uiLangMenu [data-lang="ar"]'));
+    await waitFor(() => expect(head('ebook').querySelector('.exg-title')!.textContent).toBe(ar['expg.ebook']), { timeout: 20_000 });
+    for (const g of EXPORT_GROUPS) {
+      expect(head(g.id).querySelector('.exg-title')!.textContent, g.id).toBe(ar[g.title]);
+      expect(head(g.id).querySelector('.exg-sub')!.textContent, g.id).toBe(ar[g.sub]);
+    }
+    expect(document.querySelector('.exp-proof h3')!.textContent).toBe(ar['proof.h']);
+    expect($('btnProofRead').textContent).toBe(ar['proof.read']);
+    expect($('btnProofPrint').textContent).toBe(ar['proof.print']);
+    expect(document.documentElement.getAttribute('dir')).toBe('rtl');
+    // 1.0's own words in the modal followed too, and the screen is still open, its groups as they were
+    expect($('btnCloseExport').textContent).toBe(ar['exp.close']);
+    expect(isOpen()).toBe(true);
     expect(openIds()).toEqual([]);
   });
 

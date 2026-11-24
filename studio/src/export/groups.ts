@@ -24,7 +24,7 @@ type GroupDef = { id: GroupId; title: UiKey; sub: UiKey; icon: string; claims: r
 /** The groups, in the screen's order. A part of the modal (a child of its .modal) belongs to the first group one of
  *  whose `claims` it is or holds. */
 export const EXPORT_GROUPS: readonly GroupDef[] = [
-  // the EPUB block is loose siblings in 1.0, not a .fmt-sec: its heading, the line under it (EPUB_LEAD), the presets,
+  // the EPUB block is loose siblings in 1.0, not a .fmt-sec: its heading, the line under it (see EPUB_HEAD), the presets,
   // their detail, the package tree, the check list, Build and Inspect; then the validator and the accessibility audit
   { id: 'ebook', title: 'expg.ebook', sub: 'expg.ebookSub', icon: 'book-down',
     claims: ['[data-i18n="exp.epubH"]', '#platformGrid', '#platformDetail', '#exportTree', '#platformCheck', '#btnBuildEpub', '#btnValidate', '#btnA11y'] },

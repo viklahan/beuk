@@ -35,11 +35,13 @@
 .exg-chev { width: 16px; height: 16px; color: var(--muted); flex: 0 0 auto; transition: transform .15s ease-out; }
 .exg.open .exg-chev { transform: rotate(180deg); }
 .exg.open > .exg-h .exg-head { background: var(--panel); }
-/* no inline padding: 1.0's sections keep the width they have in 1.0's modal */
-.exg-body { padding: 12px 0 20px; }
+/* 1.0's sections keep their own box in a group, as wide and as tall as in 1.0's modal and drawn the same: no inline
+   padding here, and the first section of a group loses only the margin above its top rule */
+.exg-body { padding: 0 0 20px; }
 .exg-body[hidden] { display: none; }
-/* 1.0 rules a line above every section; the first of an open group already has the header above it */
-.exg-body > .fmt-sec:first-child { border-block-start: 0; margin-block-start: 0; padding-block-start: 0; }
+.exg-body > .fmt-sec:first-child { margin-block-start: 0; }
+/* the E-book group starts with 1.0's loose heading, which brings no space of its own */
+[data-exg="ebook"] > .exg-body { padding-block-start: 14px; }
 /* 1.0's Close keeps its distance from the last group */
 .exg-list + .modal-actions { margin-block-start: 18px; }
 @media (prefers-reduced-motion: reduce) { .exg-chev { transition: none; } }

@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import markup from '../src/generated/export-markup.json';
 import en from '../src/generated/packs/en.json';
-import { EXPORT_GROUPS, groupExport, type ExportGroups } from '../src/export/groups';
+import { EXPORT_GROUPS, FOCUSES, SCROLLS, groupExport, type ExportGroups } from '../src/export/groups';
 
 /* The export screen's groups (src/export/groups.ts), on 1.0's own markup (src/generated/export-markup.json: #modalExport,
    verbatim). The modal's nodes are MOVED into six groups, never made again: every id is the node it was, a listener put
@@ -355,5 +357,62 @@ describe('what shows, moves to or focuses a part of the screen opens its group',
     await tick();
     expect(openIds()).toEqual([]);
     groups = null;
+  });
+});
+
+/* COMPLETENESS GUARD for the paths above. 1.0's code reaches into the export modal from outside a click on the element
+   itself in two ways the groups must hear of: it scrolls to an element (scrollIntoView) and it focuses one (.focus()).
+   Every such call in 1.0's lifted code (the closures the studio ships) is listed here by the top-level declaration it
+   stands in, with what it reaches. A call this list does not have fails the test. When that happens: read the call. If
+   it scrolls to or focuses an element INSIDE #modalExport, name the element in SCROLLS or FOCUSES (src/export/groups.ts)
+   so its group opens first, and add a test above; then add the declaration here. Do not just add the name. */
+describe("COMPLETENESS GUARD: 1.0's scrolls and focuses are all known", () => {
+  const GEN = path.join(import.meta.dirname, '..', 'src', 'generated');
+  const FILES = ['closure.js', 'closure-print.js', 'closure-cloud.js', 'closure-preview.js', 'closure-sample.js', 'closure-serialize.js'];
+  /** Each place `what` is written in 1.0's lifted code, as "<file>: <the top-level declaration it stands in>" (once each). */
+  function sites(what: string): string[] {
+    const out = new Set<string>();
+    for (const f of FILES) {
+      const src = readFileSync(path.join(GEN, f), 'utf8');
+      const tops = [...src.matchAll(/^(?:async function|function|const|let|var|class) ([A-Za-z_$][\w$]*)/gm)].map((m) => ({ at: m.index!, name: m[1]! }));
+      let i = -1;
+      while ((i = src.indexOf(what, i + 1)) !== -1) {
+        let name = '?';
+        for (const t of tops) {
+          if (t.at <= i) name = t.name;
+          else break;
+        }
+        out.add(f + ': ' + name);
+      }
+    }
+    return [...out];
+  }
+
+  it('scrollIntoView: the import card (not the export modal), and the trim sizes (SCROLLS)', () => {
+    expect(sites('scrollIntoView')).toEqual([
+      'closure.js: irGoTo', // the import card's own rows (#irBody): not in the export modal
+      'closure.js: preflightJumpTo', // #trimGrid, from the store check's print link: SCROLLS
+      'closure-print.js: preflightJumpTo', // #trimGrid, from the preflight's "fix" link: SCROLLS
+    ]);
+    expect(SCROLLS).toEqual(['trimGrid']);
+  });
+
+  it('.focus(): one reaches into the export modal, the new share link (FOCUSES); every other is another dialog, the editor, or a frame', () => {
+    expect(sites('.focus(').sort()).toEqual([
+      // the story bible's card, menu and fields; the editor's text area (#editorArea) after a toolbar action
+      'closure.js: bibleCardEl', 'closure.js: bibleRefreshMore', 'closure.js: bibleMarkMenuEl', 'closure.js: bibleMarkPopEl', 'closure.js: bibleMarkClose', 'closure.js: bibleMarkOpen',
+      'closure.js: bibleMarkSave', 'closure.js: bibleNewEntry', 'closure.js: bibleOnField',
+      'closure.js: insertAtCursor', 'closure.js: wrapSelection', 'closure.js: redactSelection', 'closure.js: applyList', 'closure.js: applyContainer', 'closure.js: applyBlockquote', 'closure.js: applyAttribution',
+      'closure.js: initImportReport', // the import card's own button
+      'closure.js: initCoverMaker', // the cover maker's stage
+      'closure.js: a11yJumpTo', // #editorArea, after it CLOSES the export modal
+      'closure.js: lockPdfOpen', 'closure-print.js: lockPdfOpen', // #lockPdfPw, in its own dialog (#modalLockPdf)
+      'closure.js: passwordAsk', // the password dialog's own field
+      'closure.js: zenGoTo', 'closure.js: setZenMode', 'closure.js: dictBegin', // the editor
+      'closure-print.js: initPrint', // the print frame's own window, before it prints
+      'closure-cloud.js: openAuth', 'closure-cloud.js: twoStepFocus', 'closure-cloud.js: authorshipRecordOpen', // the sign-in and authorship dialogs
+      'closure-cloud.js: betaCopy', // #betaNewUrl, inside the share section in the archive group: FOCUSES
+    ].sort());
+    expect(FOCUSES).toEqual(['betaNewUrl']);
   });
 });
