@@ -55,3 +55,16 @@ test('lighthouse: the scene reads the live status, maps it to three colours, and
   assert.match(src, /function placeTags\(\)/, 'buoy names give way to each other instead of overlapping');
   assert.match(src, /never cut off at the frame's edge/, 'a name near the edge stays inside the scene');
 });
+
+test('lighthouse: the right button pans and tilts the scene, and the browser menu stays out of it', () => {
+  const src = lighthouseJs();
+  assert.match(src, /addEventListener\('contextmenu', function \(ev\) \{ ev\.preventDefault\(\); \}\)/, 'a right click on the scene opens no browser menu');
+  assert.match(src, /ev\.button === 2/, 'the right button is its own gesture');
+  assert.match(src, /setPointerCapture/, 'a drag that leaves the scene still ends when the button lifts');
+  assert.match(src, /TILT_MIN = [\d.-]+, TILT_MAX = [\d.-]+/, 'the tilt is bounded: the camera never goes under the water');
+  // On Windows the menu opens where the right button LIFTS, which after a tilt is often outside the canvas: the page
+  // listens too, before any element does, and only for the one menu a right press on the scene owes.
+  assert.match(src, /window\.addEventListener\('contextmenu', function \(ev\) \{ if \(menuOwed\) \{[^}]*ev\.preventDefault\(\); \} \}, true\)/, 'a right-drag that ends outside the scene opens no browser menu either');
+  assert.match(src, /if \(ev\.button === 2\) \{ clearTimeout\(menuLapse\); menuOwed = true; \}/, 'only a right press on the scene arms it');
+  assert.match(src, /menuLapse = setTimeout\(function \(\) \{ menuOwed = false; \}, MENU_LAPSE_MS\)/, 'it lapses after the button lifts, so a right click elsewhere keeps its menu');
+});
