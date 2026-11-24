@@ -42,6 +42,10 @@ import { repoRoot } from '../warmth/pages.js';
  *   takeaway  the numbered box that closes a news issue: title, optional
  *           deck (the line under it), one paragraph per instruction; no
  *           page of its own
+ *   leader  the paper's own opinion (No. 6, 2026-11-23), printed whole
+ *           after the short stories, with a page of its own. It is not
+ *           news: its section says "Opinion", it links what it answers,
+ *           it carries no "Why it matters", and an issue has one at most
  * plus optional deck, summary (the front-page text for front/fold stories),
  * frontHead (the lead's headline on the front page, under the banner),
  * image + caption, order.
@@ -52,8 +56,8 @@ import { repoRoot } from '../warmth/pages.js';
  */
 
 export const WEEKLY_LANGS = ['en'] as const;
-export type WeeklyPlace = 'lead' | 'front' | 'brief' | 'fold' | 'notice' | 'short' | 'takeaway';
-const PLACES: WeeklyPlace[] = ['lead', 'front', 'brief', 'fold', 'notice', 'short', 'takeaway'];
+export type WeeklyPlace = 'lead' | 'front' | 'brief' | 'fold' | 'notice' | 'short' | 'takeaway' | 'leader';
+const PLACES: WeeklyPlace[] = ['lead', 'front', 'brief', 'fold', 'notice', 'short', 'takeaway', 'leader'];
 
 export type StoryBlock =
   | { kind: 'p'; html: string; text: string }
@@ -78,7 +82,7 @@ export interface Story {
   blocks: StoryBlock[];
   words: number;
   readMinutes: number;
-  /** Lead, front, fold and short stories have a page; briefs, notices and takeaways do not. */
+  /** Lead, front, fold and short stories and the leader have a page; briefs, notices and takeaways do not. */
   hasPage: boolean;
   file: string;
 }
@@ -113,6 +117,7 @@ export interface Issue {
   notices: Story[];
   shorts: Story[];
   takeaways: Story[];
+  leaders: Story[];
   sourcesHead: string | null;
   sources: { html: string; text: string }[];
   storyBySlug: Map<string, Story>;
@@ -194,7 +199,7 @@ export function parseStory(source: string, file: string, issue: number): Story {
     blocks,
     words,
     readMinutes: Math.max(1, Math.ceil(words / 200)),
-    hasPage: place === 'lead' || place === 'front' || place === 'fold' || place === 'short',
+    hasPage: place === 'lead' || place === 'front' || place === 'fold' || place === 'short' || place === 'leader',
     file,
   };
 }
@@ -300,6 +305,7 @@ export function loadWeeklyContent(lang: (typeof WEEKLY_LANGS)[number] = 'en'): W
       notices: by('notice'),
       shorts: by('short'),
       takeaways: by('takeaway'),
+      leaders: by('leader'),
       sourcesHead: sources.head,
       sources: sources.items,
       storyBySlug,
@@ -317,6 +323,13 @@ export function checkWeeklyContent(c: WeeklyContent): string[] {
     if (issue.number !== i + 1) problems.push(`issue ${issue.number}: issues are numbered 001, 002, … without gaps`);
     if (issue.weather && !issue.sources.length) problems.push(`issue ${issue.number}: a weather reading needs its source in the issue's sources`);
     if (issue.formerly !== null && issue.formerly === issue.number) problems.push(`issue ${issue.number}: formerly names its own number`);
+    // Opinion is kept apart from the news: said in its kicker, tied to what it answers, never dressed as a news story.
+    if (issue.leaders.length > 1) problems.push(`issue ${issue.number}: one leader to an issue`);
+    for (const s of new Set(issue.leaders)) {
+      if (!/\bopinion\b/i.test(s.section)) problems.push(`${s.file}: a leader is opinion and its section must say so`);
+      if (!s.blocks.some((b) => b.kind !== 'sub' && /<a href="/.test(b.html))) problems.push(`${s.file}: a leader links what it answers`);
+      if (s.blocks.some((b) => b.kind === 'why')) problems.push(`${s.file}: a leader is not news and carries no "Why it matters"`);
+    }
     for (const s of issue.storyBySlug.values()) {
       if (s.image && !existsSync(path.join(issue.dir, s.image))) problems.push(`${s.file}: image ${s.image} is not in the issue folder`);
       if ((s.place === 'front' || s.place === 'fold') && !s.summary) problems.push(`${s.file}: a ${s.place} story needs a summary for the front page`);
