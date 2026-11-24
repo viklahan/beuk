@@ -14,6 +14,7 @@ weatherIcon: weather.svg
 ---
 ## Sources — fetched in full, November 23, 2026
 
+- [Vellum blog — Vellum 4.2: Introducing Automation (Nov. 4; the page is also dated Nov. 18)](https://blog.vellum.pub/2026/11/vellum-4-2-introducing-automation/)
 - [Vellum blog — We've Removed Vellum Automation (Nov. 5; updated Nov. 18)](https://blog.vellum.pub/2026/11/weve-removed-vellum-automation/)
 - [Vellum blog — Moving Forward with Automation (Nov. 18)](https://blog.vellum.pub/2026/11/moving-forward-with-automation/)
 - [Indie Author Magazine — Vellum Gives Authors the Option to Automatically Update Formats Across Titles—Again (Nov. 20)](https://indieauthormagazine.com/vellum-gives-authors-the-option-to-automatically-update-formats-across-titles-again/)
