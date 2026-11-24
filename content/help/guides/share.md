@@ -4,7 +4,7 @@ title: Beta-reader share links
 blurb: Send a read-only link, collect comments, and what a reader sees when a link is revoked or expires.
 group: keep
 audience: [reader, shipping]
-updated: 2026-11-15
+updated: 2026-11-24
 readMinutes: 3
 related: [saving, exports-and-archive]
 new: true
@@ -15,7 +15,7 @@ What you're doing: sending beta readers a frozen, read-only copy of a book on yo
 
 ## Steps
 
-1. Signed in, with the book on your shelf, open **Export** and find **Share with beta readers**.
+1. Signed in, with the book on your shelf, open **Export**, then **Archive and sharing**, and find **Share with beta readers**.
 2. Create a link: choose when it expires, whether comments are on, and whether readers are asked for their name. Copy it with the copy button.
    tech: `POST /api/shares` returns the token once; the server stores only its SHA-256, like a session token.
 3. Want to know who is reading? In the link's list of readers, add a reader by name, with an expiry: each named reader gets a link of their own, which you can copy or close by name. Once a named link exists, **Close the open link** shuts the shared one; the named links stay open.

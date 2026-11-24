@@ -19,6 +19,7 @@ import './generated/style.css';
 import './generated/preview.css';
 import './generated/cover.css';
 import './generated/export.css';
+import './styles/export.css';
 import './generated/local.css';
 import './generated/print.css';
 import './generated/import.css';

@@ -4,8 +4,8 @@ title: Check your book (the validator)
 blurb: Thirteen plain-language checks over your export before a store ever sees it.
 group: ship
 audience: [shipping, hand-edit]
-updated: 2026-10-25
-readMinutes: 2
+updated: 2026-11-24
+readMinutes: 3
 related: [epub-error-decoder, platform-presets, exports-and-archive]
 sourced-from: steps 1–3, What it checks, Warnings — the pre-H1 client/help/check-your-book.html, verbatim; step 4 and the honest limit — client/index.html "Your Archive" section (Save this EPUB, Run EPUBCheck) and README.md "Jobs (M5)"; tech lines — client/index.html PLATFORM_PRESETS, validateEpubPackage, README.md "API (M1–M5)"; panes — captured 2026-10-25 from the studio at commit bb992b4 and the bundled EPUBCheck 5.2.1 (see each pane's source line)
 ---
@@ -14,7 +14,7 @@ What you're doing: giving your export a once-over with the same scepticism a sto
 
 ## Steps
 
-1. Open the **Export** dialog and pick the preset you'll actually ship.
+1. Open the **Export** dialog, then **E-book (EPUB)**, and pick the preset you'll actually ship.
    tech: Presets change the package itself: KDP and Nook add a legacy guide to the OPF; Apple Books adds `META-INF/com.apple.ibooks.display-options.xml`. The validator checks the files of the preset you picked.
    pane: package
    highlight: the-lantern-coast-kdp.epub | META-INF/container.xml
@@ -26,7 +26,7 @@ What you're doing: giving your export a once-over with the same scepticism a sto
    tech: Each line that is not a pass carries its BEUK- code, linked to its entry in the error dictionary.
    pane: validator
    highlight: ✗ Malformed markup | ! No ISBN
-4. For the full, official check, sign in, save the EPUB to **Your Archive** in the Export dialog, and choose **Run EPUBCheck** beside it.
+4. For the full, official check, sign in, save the EPUB to **Your Archive** (under **Archive and sharing** in the Export dialog), and choose **Run EPUBCheck** beside it.
    tech: `POST /api/jobs/epubcheck {exportId}` → `201 {job}`; the studio then reads `GET /api/jobs/:id` until the job is done or failed. Each message in the result carries a `beuk` code.
    pane: job
    highlight: "passed": false | "beuk"
@@ -59,7 +59,7 @@ A missing cover, a missing description, or using the book's own identifier becau
 
 ## Panes
 
-### validator | What you see | Export → Validate This Book
+### validator | What you see | Export → E-book (EPUB) → Validate This Book
 source: The studio's real results for the sample book The Lantern Coast, Amazon KDP preset, after one closing </p> was removed from chapter_01.xhtml on purpose to show a failing line — captured 2026-10-25 from validateEpubPackage at commit bb992b4. Icons are shown as ✗ ! ✓; each BEUK- code is the one the studio now shows beside that line.
 ```
 1 error to fix before this book ships.

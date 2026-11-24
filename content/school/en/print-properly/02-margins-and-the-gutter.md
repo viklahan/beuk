@@ -6,9 +6,9 @@ guide: print-interiors
 A printed book is bound, and the binding swallows part of every page. The inside margin, the gutter, has to be wide enough that no word disappears into it.
 
 ## Steps
-1. Find **Margins, running head & page numbers**. With **Margins** on **Auto — stepped for the binding**, the gutter grows with the page count, following KDP and IngramSpark guidance: 0.625 in up to 150 pages, stepping up to 1.125 in past 700.
-   say: Find the margins. On Auto, the inside margin grows as the book gets longer, the way K D P and IngramSpark ask, so a long book never loses words into the binding.
-   do: show "Margins, running head"
+1. In **Export**, under **Print**, find **Margins, running head & page numbers**. With **Margins** on **Auto — stepped for the binding**, the gutter grows with the page count, following KDP and IngramSpark guidance: 0.625 in up to 150 pages, stepping up to 1.125 in past 700.
+   say: In Export, under Print, find the margins. On Auto, the inside margin grows as the book gets longer, the way K D P and IngramSpark ask, so a long book never loses words into the binding.
+   do: click "Export"; wait 1; click "Print"; wait 1; show "Margins, running head"
 2. Choose **Custom** to set the inside, outside, top and bottom margins yourself. **Reset — back to Auto** returns to the stepped margins.
    say: If you need different margins, choose Custom and set each one yourself. Reset takes you back to Auto at any time.
    do: show "Margins, running head"

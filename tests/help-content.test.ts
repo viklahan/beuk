@@ -229,6 +229,18 @@ const CORRECTED_2026_11_22: [string, string, string][] = [
   ["import-a-manuscript", "The importer has a smart sanitizer. Straight quotes become proper curly quotes, double hyphens become em dashes, three dots become an ellipsis, and the invisible clutter Word tucks into documents (Mso styles, stray spans, XML declarations) is stripped away — while real formatting (paragraphs, emphasis, headings, scene breaks) is kept.", "Not your quotes, dashes or dots. Beuk keeps them as your file gives them: straight quotes stay straight, a double hyphen stays a double hyphen, and three dots stay three dots. What it tidies is what sits around the words. A run of spaces between words becomes one space, extra blank lines are taken out, and the hidden styling a word processor stores with the text (fonts, colours, style names) is left behind, while real formatting (paragraphs, emphasis, headings, scene breaks) is kept. If you want curly quotes, em dashes and ellipses, press Auto-Format in the editor. It changes the section you have open, and only when you press it."],
   ["footnotes-and-images", "And one thing needs no mark at all: Auto-Format. Straight quotes become smart quotes, double hyphens become em-dashes, three dots become an ellipsis — the preview and the exported EPUB always use the polished text.", "And one thing has no mark at all: the Auto-Format button in the editor. Press it and, in the section you have open, straight quotes become smart quotes, double hyphens become em-dashes and three dots become an ellipsis. Nothing else makes that change for you: the preview, the EPUB, the print interior and the Word and Markdown files set your quotes, hyphens and dots as they stand in the editor."],
 ];
+// 2026-11-24 (the export screen's groups: studio/src/export/groups.ts, V 2026-11-23 "the export screen is getting longer
+// and longer"): the Export dialog's formats stand in six groups with only the opened one shown, so a step that sends the
+// writer to a control now names the group to open first (the groups' own English names: expg.ebook, expg.boxset,
+// expg.archive). Corrections, not additions: each replaces a passage that no longer says where the control is. Applied
+// after the lists above.
+const CORRECTED_2026_11_24: [string, string, string][] = [
+  ["box-sets", "Open the Export dialog and find the Box Set section.", "Open the Export dialog, then Box set ."],
+  ["box-sets", "Pick a platform preset if the set is headed", "Pick a platform preset (under E-book (EPUB) ) if the set is headed"],
+  ["check-your-book", "Open the Export dialog and pick the preset you'll actually ship.", "Open the Export dialog, then E-book (EPUB) , and pick the preset you'll actually ship."],
+  ["check-your-book", "save the EPUB to Your Archive in the Export dialog, and choose Run EPUBCheck beside it.", "save the EPUB to Your Archive (under Archive and sharing in the Export dialog), and choose Run EPUBCheck beside it."],
+  ["epub-error-decoder", "save the EPUB to Your Archive in the Export dialog, and choose Run EPUBCheck beside it.", "save the EPUB to Your Archive (under Archive and sharing in the Export dialog), and choose Run EPUBCheck beside it."],
+];
 
 test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 pages), with the two edits the spec asks for and the 2026-10-26 additions', async () => {
   const db = await createTestDb();
@@ -264,7 +276,7 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
       }
       // 2026-10-26: the features added since H1 (removing a picture, the preview keeping its place,
       // the title read from the manuscript, Split at cursor, the Cover Maker), each added in place.
-      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15, ...ADDED_2026_11_20, ...CORRECTED_2026_11_22]) if (s === slug) {
+      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30, ...ADDED_2026_10_31, ...ADDED_2026_11_15, ...ADDED_2026_11_20, ...CORRECTED_2026_11_22, ...CORRECTED_2026_11_24]) if (s === slug) {
         assert.ok(expected.includes(from), `${slug}: the addition's anchor is in the fixture`);
         expected = expected.replace(from, to);
       }

@@ -6,9 +6,9 @@ guide: print-interiors
 The print view is for you. The file you upload to KDP or IngramSpark is a different one: the print-ready PDF that Beuk's server makes from your book.
 
 ## Steps
-1. **Download print-ready PDF** starts it. Beuk's server sets the book at your trim, with bleed if you turned it on, and gives you the file when it is done. It needs an account and a connection.
-   say: Download print-ready PDF. Beuk's server sets your book at the trim you chose, with bleed if you turned it on, and hands you the file to upload. You need to be signed in and online.
-   do: show "Download print-ready PDF"
+1. In **Export**, under **Print**, **Download print-ready PDF** starts it. Beuk's server sets the book at your trim, with bleed if you turned it on, and gives you the file when it is done. It needs an account and a connection.
+   say: In Export, under Print, choose Download print-ready PDF. Beuk's server sets your book at the trim you chose, with bleed if you turned it on, and hands you the file to upload. You need to be signed in and online.
+   do: click "Export"; wait 1; click "Print"; wait 1; show "Download print-ready PDF"
 2. Some printers, IngramSpark among them, prefer **PDF/X-1a**. Beuk's server converts the interior and reads the result back; Beuk never calls a file PDF/X unless the converted file itself says so.
    say: Some printers, IngramSpark among them, prefer a version called P D F slash X. Beuk's server converts the interior for them, and checks that the converted file really is one.
    do: show "Download print-ready PDF"

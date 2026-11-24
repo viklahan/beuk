@@ -6,9 +6,9 @@ guide: check-your-book
 A store's ingestion check reads your file with no patience at all. Beuk can read it the same way first, so a problem shows up on your desk, not in a rejection email.
 
 ## Steps
-1. Open **Export** and pick the preset you'll actually ship. The checks look at that preset's files.
-   say: Open Export, and pick the preset you will actually ship. The checks look at that preset's files, not some generic version of your book.
-   do: click "Export"; wait 1; click "Amazon KDP"; wait 1
+1. Open **Export**, then **E-book (EPUB)**, and pick the preset you'll actually ship. The checks look at that preset's files.
+   say: Open Export, then E-book, and pick the preset you will actually ship. The checks look at that preset's files, not some generic version of your book.
+   do: click "Export"; wait 1; click "E-book (EPUB)"; wait 1; click "Amazon KDP"; wait 1
 2. For a print book, **Store-ready?** runs one pass-or-fail report against KDP's and IngramSpark's published print rules.
    say: For a print book, Store ready runs one report against the published print rules of KDP and IngramSpark: trim, margins, bleed, fonts, picture resolution, and the cover's spine and barcode area.
    do: show "Store-ready?"

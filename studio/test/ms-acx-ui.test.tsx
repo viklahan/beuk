@@ -122,7 +122,12 @@ describe('the submission manuscript and the ACX script in the studio (F5, F6)', 
     expect($('btnMsOpen').textContent).toBe(t('ms.open'));
     expect($('btnAcxOpen').textContent).toBe(t('acx.open'));
     const order = Array.from(document.querySelectorAll('#modalExport .fmt-sec h3')).map((h) => h.getAttribute('data-i18n'));
-    expect(order.slice(order.indexOf('exp.docxH'), order.indexOf('exp.docxH') + 4)).toEqual(['exp.docxH', 'ms.secH', 'acx.secH', 'exp.printH']);
+    // the export screen's groups (src/export/groups.ts, 2026-11-23) keep 1.0's order inside each: the manuscript follows
+    // Word in "Manuscript and other files", the ACX script is the next group; the print interior, which 1.0 has after
+    // them, now stands earlier, in the Print group, so the box set follows
+    expect(order.slice(order.indexOf('exp.docxH'), order.indexOf('exp.docxH') + 4)).toEqual(['exp.docxH', 'ms.secH', 'acx.secH', 'exp.boxsetH']);
+    expect(order.indexOf('exp.printH')).toBe(order.indexOf('exp.preflightH') + 1);
+    expect([$('btnDownloadDocx'), $('btnMsOpen'), $('btnAcxOpen')].map((b) => b.closest('[data-exg]')?.getAttribute('data-exg'))).toEqual(['files', 'files', 'audio']);
     // one control, one meaning: each label once in the studio
     for (const k of ['ms.open', 'acx.open', 'ms.download', 'acx.download']) expect(document.querySelectorAll(`[data-i18n="${k}"]`).length, k).toBe(1);
     await click($('btnMsOpen'));

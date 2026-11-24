@@ -4,7 +4,7 @@ title: Print interiors & trim sizes
 blurb: Paperback pages from the same manuscript — twenty-four trim sizes, gutters, preflight, and honest notes about PDF/X.
 group: ship
 audience: [shipping]
-updated: 2026-11-15
+updated: 2026-11-24
 readMinutes: 4
 related: [exports-and-archive]
 sourced-from: client/index.html TRIM_SIZES and TRIM_GROUPS (the twenty-four trims, their groups and notes, KDP's page range per trim), printMarginsAuto (the gutter steps), the print export strings (exp.printH, exp.rectoTitle, exp.downloadPrintHtml, exp.largePrintTitle, exp.preflightBtn), preflight.intro, covermk.wrap.pdfNote and store.running; README "Jobs (M5)" for the server PDF/X job
@@ -14,7 +14,7 @@ What you're doing: turning the same manuscript into a paginated paperback interi
 
 ## Steps
 
-1. Open the **Export** dialog and find **Print Interior — Print Preview and Print-Ready PDF**.
+1. Open the **Export** dialog, then **Print**, and find **Print Interior — Print Preview and Print-Ready PDF**.
 2. Choose a trim size. There are twenty-four, grouped the way the printers group them: **Pocket & mass-market** (4.25 × 7 to 5.06 × 7.81 in), **Trade paperback** (5.25 × 8 to 6.69 × 9.61 in, including 6 × 9 and A5), **Large & illustrated** (7 × 10 to US Letter and A4) and **Square & landscape** (8 × 8 to 11 × 8.5 in). Each says what it usually suits, and the ones only IngramSpark prints say so.
 3. Decide on chapter openings: **Chapters open on a recto page** starts every chapter on a right-hand page, the trade hardback convention. Off, chapters simply start on the next page.
 4. If pictures run to the page edge, turn on **Bleed**: the print-ready PDF's pages grow 0.125 in on the top, bottom and outer edge, as KDP and IngramSpark ask, and full-page plates and spread backdrops run out into it. It is off until you turn it on; the print settings and the store check suggest it when the book has plates or backdrops.

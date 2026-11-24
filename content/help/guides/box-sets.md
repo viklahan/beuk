@@ -4,7 +4,7 @@ title: Build a box set
 blurb: Several books, one volume: dividers, title pages, and a single table of contents.
 group: ship
 audience: [shipping]
-updated: 2026-11-15
+updated: 2026-11-24
 readMinutes: 2
 related: [import-a-manuscript, platform-presets]
 ---
@@ -13,9 +13,9 @@ What you're doing: binding several finished books into one omnibus EPUB — a tr
 
 ## Steps
 
-1. Open the **Export** dialog and find the **Box Set** section. The book in the studio is always **Book One**.
+1. Open the **Export** dialog, then **Box set**. The book in the studio is always **Book One**.
 2. Use **Add a Book…** to bring in the next volumes as manuscripts (`.docx`, `.pdf`, `.epub`, `.md`, `.txt`, or `.rtf`), or as Beuk backup files (`.beuk-backup.json`), which bring each book whole: its cover and every picture. A zip of manuscripts opens into its files, and a locked Word file or PDF asks for its password. Each book is listed under its own title, with its chapter and word counts; any book can be removed again.
-3. Pick a platform preset if the set is headed for a particular store — it applies to the combined package.
+3. Pick a platform preset (under **E-book (EPUB)**) if the set is headed for a particular store — it applies to the combined package.
 4. Choose **Build Box Set .epub**. Beuk assembles one volume: a divider and title page for each book, then its sections in order, book by book.
 
 ## Explanation
