@@ -5,9 +5,9 @@ blurb: Thirteen plain-language checks over your export before a store ever sees 
 group: ship
 audience: [shipping, hand-edit]
 updated: 2026-11-24
-readMinutes: 3
+readMinutes: 4
 related: [epub-error-decoder, platform-presets, exports-and-archive]
-sourced-from: steps 1–3, What it checks, Warnings — the pre-H1 client/help/check-your-book.html, verbatim; step 4 and the honest limit — client/index.html "Your Archive" section (Save this EPUB, Run EPUBCheck) and README.md "Jobs (M5)"; tech lines — client/index.html PLATFORM_PRESETS, validateEpubPackage, README.md "API (M1–M5)"; panes — captured 2026-10-25 from the studio at commit bb992b4 and the bundled EPUBCheck 5.2.1 (see each pane's source line)
+sourced-from: steps 1–3, What it checks, Warnings — the pre-H1 client/help/check-your-book.html, verbatim; step 4 and the honest limit — client/index.html "Your Archive" section (Save this EPUB, Run EPUBCheck) and README.md "Jobs (M5)"; tech lines — client/index.html PLATFORM_PRESETS, validateEpubPackage, README.md "API (M1–M5)"; panes — captured 2026-10-25 from the studio at commit bb992b4 and the bundled EPUBCheck 5.2.1 (see each pane's source line); See the whole book first — studio/src/export/Proof.tsx, pages.ts, hardcover.ts and entitled.ts, and the proof.* words in client/index.html EXPORTPROOF_STRINGS, 2026-11-24
 ---
 
 What you're doing: giving your export a once-over with the same scepticism a store's ingestion machine will use — before it ever leaves your desk.
@@ -32,6 +32,13 @@ What you're doing: giving your export a once-over with the same scepticism a sto
    highlight: "passed": false | "beuk"
 
 ## Explanation
+
+### See the whole book first
+
+At the top of the **Export** dialog, **See the whole book first** offers two ways to go through the book from its first page to its last. Neither is required: every export works without them.
+
+- **Read the whole book on screen** shows the e-book's sections, notes and pictures in the order the EPUB has them, with the same stylesheet. Signed in, it opens a page at a time and fills the window: turn with the arrow keys, Page Down and Page Up, the space bar, Home and End, a press on the left or right third of the page, a swipe, or the buttons and the slider under the page. Where the browser allows it, **Full screen** uses the whole screen. **Scroll** shows the book as one long page. The page numbers belong to that window: an e-reader sets its own page size and type. Signed out, or while your account is paused, it opens as that one long page.
+- **Turn the print pages** opens the Print Interior View. Signed in, with the preview pane showing, the button reads **Flip through the printed book** and opens the print edition as an open hardcover, full screen, at its first pages. Leave full screen and you are back in the Export dialog. Signed out, or while your account is paused, it stays **Turn the print pages**.
 
 ### What it checks
 
