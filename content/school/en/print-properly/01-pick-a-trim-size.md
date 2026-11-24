@@ -6,9 +6,9 @@ guide: print-interiors
 The trim size is the size of the finished page. It decides how many pages your book has, what it costs to print, and where it sits on a shelf, so it comes first.
 
 ## Steps
-1. Open **Export** and find **Print Interior — Print Preview and Print-Ready PDF**.
-   say: Open Export, and scroll to the print interior section. Everything about the paperback lives here.
-   do: click "Export"; wait 1; show "Print Interior"
+1. Open **Export**, then **Print**, and find **Print Interior — Print Preview and Print-Ready PDF**.
+   say: Open Export, then open Print, and find the print interior section. Everything about the paperback lives here.
+   do: click "Export"; wait 1; click "Print"; wait 1; show "Print Interior"
 2. Choose a trim size. There are twenty-four, grouped the way printers group them: **Pocket & mass-market**, **Trade paperback**, **Large & illustrated** and **Square & landscape**. Each one says what it usually suits, and the ones only IngramSpark prints say so.
    say: Choose a trim size. There are twenty-four, in four groups, from pocket paperbacks to square picture books. Each one says what it usually suits. For a novel, a trade paperback such as six by nine inches is the usual choice.
    do: show "Trade paperback"; show "6 × 9 in"

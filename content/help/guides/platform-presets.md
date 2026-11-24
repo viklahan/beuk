@@ -4,7 +4,7 @@ title: Export for a store (presets)
 blurb: Eleven presets, one manuscript: Kindle, Apple Books, Kobo, Google Play, libraries, aggregators and more — and what actually differs.
 group: ship
 audience: [shipping]
-updated: 2026-10-28
+updated: 2026-11-24
 readMinutes: 3
 related: [check-your-book, epub-error-decoder]
 sourced-from: client/index.html PLATFORM_PRESETS (names, sub-lines, file-name suffixes and each preset's detail text) and the comment above it (accessibility metadata is in every package; no identifier is invented)
@@ -14,7 +14,7 @@ What you're doing: producing the edition of your EPUB that a particular store mo
 
 ## Steps
 
-1. Open the **Export** dialog. Under **EPUB 3.2 — Platform Presets**, choose where the book is going: **Generic EPUB**, **Amazon KDP**, **Apple Books**, **Kobo**, **Nook**, **Draft2Digital**, **OverDrive**, **Smashwords**, **Tolino**, **Scribd** or **Google Play**.
+1. Open the **Export** dialog, then **E-book (EPUB)**. Under **EPUB 3.2 — Platform Presets**, choose where the book is going: **Generic EPUB**, **Amazon KDP**, **Apple Books**, **Kobo**, **Nook**, **Draft2Digital**, **OverDrive**, **Smashwords**, **Tolino**, **Scribd** or **Google Play**.
 2. Read the preset's detail panel — it says exactly what changes for that store, in plain words.
 3. Download. The Beuk server builds the file, so you need to be signed in and online. The filename carries the preset (`your-book-kdp.epub`, `your-book-apple-books.epub`, `your-book-google-play.epub`…) so a folder of exports never confuses you. Generic EPUB has no suffix.
 4. Run the [validator](/help/check-your-book) on the preset you picked — it checks the package you actually ship, not a generic one.
