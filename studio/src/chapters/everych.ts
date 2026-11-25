@@ -23,6 +23,12 @@ import { storedImages } from '../pictures/pictures';
    "fill"; a strength that is none of 1.0's four is "whisper"; a picture id that is not in the book's library is no
    picture. A chapter is changed only when what it shows differs, and then only the keys that differ are set.
 
+   POEMS (Poem Mode, src/editor/poem.ts: a chapter whose `mode` is "verse"). A poem takes no drop cap and no lead-in,
+   its settings do not show those two switches, and Poem Mode leaves what they store as it is. So those two rows are
+   not offered when the chapter copied from is a poem (there is no shown value to copy), and they never reach a poem
+   (nothing it shows would change, and what it stores is not this feature's to overwrite). The backdrop and the plate
+   fit, which a poem does show, go to a poem as to any chapter. When a poem is left out, the count line says so.
+
    NOT OFFERED, on purpose: the chapter's number, title, subtitle and running head, the plate picture and its alt
    text (each describes one chapter), and scene pictures (each belongs to one break in one chapter's text).
 
@@ -66,6 +72,9 @@ export type RowDef = {
    *  ({n} of {total}), that all of them already hold the value, and that there is none to reach. A row without
    *  these says everych.count / everych.same. */
   counted?: { count: UiKey; same: UiKey; none: UiKey };
+  /** `counted`'s words only while the row leaves some other chapter out; when it reaches them all it says what a
+   *  row without `counted` says. */
+  countedWhenLeft?: boolean;
   /** One more line under the count, when the row's own changes call for it (a string with one {n}); else null. */
   note?: (changes: readonly Change[], x: Ctx) => { key: UiKey; n: number } | null;
 };
@@ -80,15 +89,22 @@ const strengthOf = (v: unknown, x: Ctx): string => (typeof v === 'string' && x.s
 const fitOf = (v: unknown): 'fill' | 'whole' => (v === 'whole' ? 'whole' : 'fill');
 const STRENGTH_KEYS: Record<string, UiKey> = { whisper: 'editor.bdWhisper', soft: 'editor.bdSoft', strong: 'editor.bdStrong', spread: 'editor.bdSpread' };
 
-/** An on/off switch of a chapter that reads as on unless the section says false. */
+/** The chapter is a poem, as Poem Mode reads it (src/editor/poem.ts poemOn; every section here is a chapter). */
+const isPoem = (s: Rec): boolean => s.mode === 'verse';
+
+/** An on/off switch of a chapter that reads as on unless the section says false. A poem shows no such switch and sets
+ *  neither (see POEMS above): the row is not offered from a poem and does not reach one. `mode` is read, never
+ *  written. */
 const switchRow = (id: RowId, key: string, label: UiKey): RowDef => ({
   id,
   label,
-  keys: [key],
-  offered: () => true,
-  reaches: () => true,
+  keys: [key, 'mode'],
+  offered: (src) => !isPoem(src),
+  reaches: (target) => !isPoem(target),
   patch: (src, target) => ((src[key] !== false) === (target[key] !== false) ? {} : { [key]: src[key] !== false }),
   said: (src) => [{ key: src[key] !== false ? 'everych.on' : 'everych.off' }],
+  counted: { count: 'everych.proseCount', same: 'everych.proseSame', none: 'everych.proseNone' },
+  countedWhenLeft: true,
 });
 
 export const ROWS: readonly RowDef[] = [
@@ -145,8 +161,8 @@ export function ctxOf(c: Closure, ydoc: Y.Doc): Ctx {
 }
 
 /** The count line a row shows: the key and its numbers. */
-export function countWords(row: RowDef, p: { reach: number; changes: number }): { key: UiKey; n?: number; total?: number } {
-  const w = row.counted;
+export function countWords(row: RowDef, p: { reach: number; changes: number; left?: number }): { key: UiKey; n?: number; total?: number } {
+  const w = row.counted && (!row.countedWhenLeft || (p.left ?? 0) > 0) ? row.counted : undefined;
   if (w && p.reach === 0) return { key: w.none };
   if (p.changes === 0) return { key: w ? w.same : 'everych.same' };
   return { key: w ? w.count : 'everych.count', n: p.changes, total: p.reach };
@@ -169,6 +185,8 @@ export type RowPlan = {
   reach: number;
   /** How many of them would change. */
   changes: number;
+  /** How many other chapters this row leaves out (it cannot reach them): the others less `reach`. */
+  left: number;
   /** The row's own extra line (RowDef.note), when it has one to say. */
   note: { key: UiKey; n: number } | null;
 };
@@ -212,7 +230,8 @@ export function planFor(ydoc: Y.Doc, sourceId: string, x: Ctx): Plan | null {
   const targets = others.map(read);
   const rows = ROWS.filter((r) => r.offered(src, x)).map((r): RowPlan => {
     const mine = changes.filter((ch) => ch.row === r.id);
-    return { id: r.id, said: r.said(src, x), reach: targets.filter((t) => r.reaches(t, x)).length, changes: chaptersIn(changes, r.id).size, note: r.note ? r.note(mine, x) : null };
+    const reach = targets.filter((t) => r.reaches(t, x)).length;
+    return { id: r.id, said: r.said(src, x), reach, changes: chaptersIn(changes, r.id).size, left: others.length - reach, note: r.note ? r.note(mine, x) : null };
   });
   return { others: others.length, rows };
 }

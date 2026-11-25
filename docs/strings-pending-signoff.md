@@ -409,7 +409,7 @@ keys and 32 `auth.*` plus 10 `backup.*` keys in all, most of them long since sig
 are the pending ones. The reports are the list.
 
 Total still waiting: 22 (this task) + 11 + 20 + 21 + 6 + 1 = 81 keys, counting each key once however many languages it has.
-(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys and section 4 adds 7 and section 5 adds 23. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
+(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys, section 4 adds 7 and section 5 adds 26. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
 
 ## 3. The export screen: its groups and the proof (24 keys, 2026-11-23; the proof's link words changed 2026-11-24)
 
@@ -969,11 +969,11 @@ Points worth a look when you read them:
 - **ja** 日本語: `韻文 — ここでは不要です。この章全体が詩なので、改行はすべてそのまま保たれます`
 - **zh-Hans** 简体中文: `诗行 — 这里不需要：整章都是一首诗，所以每个换行都已保留`
 
-## 5. "Use on every chapter" (23 keys, 2026-11-24)
+## 5. "Use on every chapter" (26 keys, 2026-11-24)
 
 At the end of a chapter's settings the studio offers "Use on every chapter…": that chapter's backdrop, drop cap,
 small-caps lead-in or plate fit copied to every other chapter (`studio/src/chapters/EveryChapter.tsx`, `everych.ts`).
-Its 23 keys are in `client/index.html` `UI_STRINGS` (the `BEUK:everychapter` block, `EVERYCHAPTER_STRINGS`), all `everych.*`.
+Its 26 keys are in `client/index.html` `UI_STRINGS` (the `BEUK:everychapter` block, `EVERYCHAPTER_STRINGS`), all `everych.*`.
 English is the source. The 12 other languages below are drafts written by Claude: not approved, not read by a native speaker.
 
 How the drafts were made:
@@ -1379,3 +1379,58 @@ Points worth a look when you read them:
 - **ar** العربية: `تم التراجع، ما عدا الفصول التي تغيّرت مجددًا منذ ذلك الحين: {n}. تُركت كما هي، وما زالت اللقطة «{snap}» في السجلّ تحفظ الإعدادات السابقة.`
 - **ja** 日本語: `元に戻しました。ただし、その後さらに変更された章（{n} 章）はそのままにしました。履歴のスナップショット「{snap}」に以前の設定が残っています。`
 - **zh-Hans** 简体中文: `已撤销，但此后又有改动的章节除外：{n} 章。它们保持原样，历史记录中的快照“{snap}”仍保存着之前的设置。`
+
+### The three keys about poems
+
+Added the same day, once Poem Mode was on main. A poem takes no drop cap and no lead-in, so those two rows are not
+offered from a poem and never change one. When a poem is left out, the row's count line uses these three keys in
+place of `everych.count` and `everych.same`. Each draft is that language's `everych.count` with one sentence after
+it, and uses the noun for a poem that its Poem Mode strings use (section 4).
+
+### `everych.proseCount`
+
+- **en** (source): Other chapters that would change: {n} of {total}. Poems are left as they are.
+- **es** Español: `Otros capítulos que cambiarían: {n} de {total}. Los poemas se dejan como están.`
+- **fr** Français: `Autres chapitres qui changeraient : {n} sur {total}. Les poèmes restent tels quels.`
+- **de** Deutsch: `Andere Kapitel, die sich ändern würden: {n} von {total}. Gedichte bleiben, wie sie sind.`
+- **it** Italiano: `Altri capitoli che cambierebbero: {n} su {total}. Le poesie restano come sono.`
+- **pt** Português: `Outros capítulos que mudariam: {n} de {total}. Os poemas ficam como estão.`
+- **nl** Nederlands: `Andere hoofdstukken die zouden veranderen: {n} van {total}. Gedichten blijven zoals ze zijn.`
+- **pl** Polski: `Inne rozdziały, które by się zmieniły: {n} z {total}. Wiersze zostają bez zmian.`
+- **ru** Русский: `Другие главы, которые изменятся: {n} из {total}. Стихотворения остаются как есть.`
+- **tr** Türkçe: `Değişecek diğer bölümler: {n} / {total}. Şiirler olduğu gibi kalır.`
+- **ar** العربية: `الفصول الأخرى التي ستتغيّر: {n} من {total}. القصائد تبقى كما هي.`
+- **ja** 日本語: `変更されるほかの章：{total} 章中 {n} 章。詩はそのままです。`
+- **zh-Hans** 简体中文: `将更改的其他章节：{total} 章中的 {n} 章。诗歌保持不变。`
+
+### `everych.proseSame`
+
+- **en** (source): Every other chapter that is not a poem already has this.
+- **es** Español: `Todos los demás capítulos que no son poemas ya lo tienen así.`
+- **fr** Français: `Tous les autres chapitres qui ne sont pas des poèmes ont déjà ce réglage.`
+- **de** Deutsch: `Alle anderen Kapitel, die keine Gedichte sind, haben das bereits.`
+- **it** Italiano: `Tutti gli altri capitoli che non sono poesie sono già così.`
+- **pt** Português: `Todos os outros capítulos que não são poemas já estão assim.`
+- **nl** Nederlands: `Elk ander hoofdstuk dat geen gedicht is, heeft dit al.`
+- **pl** Polski: `Wszystkie pozostałe rozdziały, które nie są wierszami, już to mają.`
+- **ru** Русский: `Во всех остальных главах, кроме стихотворений, уже так.`
+- **tr** Türkçe: `Şiir olmayan diğer bütün bölümlerde zaten böyle.`
+- **ar** العربية: `كل الفصول الأخرى التي ليست قصائد على هذا الإعداد بالفعل.`
+- **ja** 日本語: `詩ではないほかの章はすべて、すでにこの設定です。`
+- **zh-Hans** 简体中文: `其他不是诗歌的章节都已是这个设置。`
+
+### `everych.proseNone`
+
+- **en** (source): Every other chapter is a poem, and poems are left as they are.
+- **es** Español: `Todos los demás capítulos son poemas, y los poemas se dejan como están.`
+- **fr** Français: `Tous les autres chapitres sont des poèmes, et les poèmes restent tels quels.`
+- **de** Deutsch: `Alle anderen Kapitel sind Gedichte, und Gedichte bleiben, wie sie sind.`
+- **it** Italiano: `Tutti gli altri capitoli sono poesie, e le poesie restano come sono.`
+- **pt** Português: `Todos os outros capítulos são poemas, e os poemas ficam como estão.`
+- **nl** Nederlands: `Elk ander hoofdstuk is een gedicht, en gedichten blijven zoals ze zijn.`
+- **pl** Polski: `Wszystkie pozostałe rozdziały są wierszami, a wiersze zostają bez zmian.`
+- **ru** Русский: `Все остальные главы — стихотворения, а стихотворения остаются как есть.`
+- **tr** Türkçe: `Diğer bütün bölümler şiir; şiirler olduğu gibi kalır.`
+- **ar** العربية: `كل الفصول الأخرى قصائد، والقصائد تبقى كما هي.`
+- **ja** 日本語: `ほかの章はすべて詩です。詩はそのままです。`
+- **zh-Hans** 简体中文: `其他章节都是诗歌，诗歌保持不变。`

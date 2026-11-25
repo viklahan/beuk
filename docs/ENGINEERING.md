@@ -6158,12 +6158,22 @@ key, the section keys it may write, `offered`, `reaches`, `patch` and
 that does not reach every chapter) and one more line of its own (`note`).
 The dialog, the counts, the write and the Undo are driven from it, and
 `EveryChapter.tsx` names no row. One more shared setting is one more entry
-there, plus its id in `RowId`: a per-chapter Poem Mode switch (being built
-on another branch) would be `switchRow('poem', '<its key>', '<its label
-key>')` if it reads as on unless the section says false, or a four-line
-entry of its own if it reads the other way.
+there, plus its id in `RowId`. Poem Mode itself is not a row: whether a
+chapter is a poem is not offered for copying.
 
-**Words.** 23 keys in `client/index.html` (`EVERYCHAPTER_STRINGS`,
+**Poems.** Poem Mode (above) came to main the same day, on its own branch,
+and the two met in the merge. A chapter whose `mode` is `verse` takes no
+drop cap and no lead-in, its settings do not show those two switches, and
+Poem Mode leaves what they store as it is. So the drop cap and lead-in
+rows are not offered when the chapter copied from is a poem, and they
+never write to a poem (`isPoem` in `everych.ts`; `mode` is read, never
+written). The backdrop and the plate fit, which a poem does show, go to a
+poem as to any chapter. When a row leaves a poem out its count is of the
+chapters that are not poems, and its line says so (`everych.proseCount`,
+`everych.proseSame`, `everych.proseNone`); a book with no poem reads as it
+did before. A row's `left` is how many other chapters it leaves out.
+
+**Words.** 26 keys in `client/index.html` (`EVERYCHAPTER_STRINGS`,
 `everych.*`). Every count stands after a colon, so no key needs a plural
 form in any language. English is the source; the 12 other languages are
 drafts awaiting V's sign-off, listed in `docs/strings-pending-signoff.md`
@@ -6181,8 +6191,11 @@ row not picked changing nothing; one update per write and per Undo; the
 snapshot; a failed write changing nothing; Undo whole, Undo with a chapter
 changed since, with a chapter deleted, and on a book that is gone; the
 dialog (unticked, disabled, named and described, Escape, Cancel, a click
-outside, focus back on the button, the messages); the 23 keys in 13 packs
-and their place in the sign-off list. In Chromium, `studio/e2e/book.mjs`
+outside, focus back on the button, the messages); poems (the two rows
+never reach one and are not offered from one, the counts leave poems out
+and still equal what the write changes, the count line names poems only
+when one is left out); the 26 keys in 13 packs and their place in the
+sign-off list. In Chromium, `studio/e2e/book.mjs`
 `E2E_ONLY=everyChapter` on the production build under the served policy:
 on the Lantern Coast a picture is uploaded as one chapter's backdrop and
 set to Spread, another chapter's plate is taken away, the dialog is opened

@@ -8,7 +8,7 @@ import { exportBook, importBook, keyOfId, removeSection, sectionAt, sectionList 
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
-import { applyToEvery, chaptersOf, ctxOf, planFor, ROWS, undoEvery, type RowId } from '../src/chapters/everych';
+import { applyToEvery, chaptersOf, countWords, ctxOf, planFor, ROWS, undoEvery, type RowId } from '../src/chapters/everych';
 import { loadClosure, setClosureLang, setClosureT, type Closure } from '../src/closure/index';
 import { EditorMeta } from '../src/editor/EditorMeta';
 import { live } from '../src/history/history';
@@ -374,6 +374,87 @@ describe('Undo', () => {
   });
 });
 
+/* Poem Mode (src/editor/poem.ts): a chapter whose `mode` is "verse" takes no drop cap and no lead-in, its settings do
+   not show those two switches, and what they store is left as it is. So those two rows are not offered from a poem
+   and never reach one; the backdrop and the plate fit, which a poem does show, go to a poem as to any chapter. */
+const POEMS = (...ids: string[]): Rec => {
+  const book = BOOK();
+  for (const s of book.sections as Rec[]) if (ids.includes(String(s.id))) s.mode = 'verse';
+  return book;
+};
+const rowOf = (id: RowId) => ROWS.find((r) => r.id === id)!;
+
+describe('poems', () => {
+  it('the drop cap and the lead-in never reach a poem: it is not counted, and its stored switches stay as they are', () => {
+    const y = onDoc(POEMS('c3'));
+    const plan = planFor(y, 'c1', ctxOf(c, y))!;
+    expect(plan.others).toBe(4);
+    expect(plan.rows.map((r) => [r.id, r.changes, r.reach, r.left])).toEqual([
+      ['backdrop', 3, 4, 0], // a poem shows a backdrop: c3 is reached and changes
+      ['dropCap', 1, 3, 1], // c4; c3 would have changed, and is a poem
+      ['smallCaps', 1, 3, 1], // c5; c3 would have changed, and is a poem
+      ['plateFit', 1, 2, 2], // a poem shows its plate: c3 is the one that changes
+    ]);
+    const before = secs(y);
+    applyToEvery(c, y, 'c1', EVERY);
+    expectOnly(before, secs(y), {
+      c3: { backdropId: 'p1', backdropStrength: 'soft', plateFit: 'whole' }, // dropCap true and smallCaps false, as stored
+      c4: { backdropId: 'p1', backdropStrength: 'soft', dropCap: false },
+      c5: { backdropStrength: 'soft', smallCaps: true },
+    });
+    expect(byId(secs(y)).c3).toMatchObject({ mode: 'verse', dropCap: true, smallCaps: false });
+  });
+
+  it('from a poem the drop cap and the lead-in are not offered, and asking for them all the same writes nothing', () => {
+    const y = onDoc(POEMS('c3'));
+    expect(planFor(y, 'c3', ctxOf(c, y))!.rows.map((r) => r.id)).toEqual(['backdrop', 'plateFit']);
+    const before = exportBook(y);
+    const n = updates(y);
+    const rec = applyToEvery(c, y, 'c3', ['dropCap', 'smallCaps'])!;
+    expect(rec.changes).toEqual([]);
+    expect(rec.snapId).toBeNull();
+    expect(n.count).toBe(0);
+    expect(exportBook(y)).toEqual(before);
+  });
+
+  it('each count is still the number of chapters the write then changes', () => {
+    for (const from of ['c1', 'c2', 'c3', 'c4', 'c5']) {
+      const plan = planFor(onDoc(POEMS('c3', 'c4')), from, ctxOf(c, onDoc(POEMS('c3', 'c4'))))!;
+      for (const r of plan.rows) {
+        const y = onDoc(POEMS('c3', 'c4'));
+        const before = byId(secs(y));
+        applyToEvery(c, y, from, [r.id]);
+        const after = byId(secs(y));
+        const changed = Object.keys(before).filter((id) => JSON.stringify(before[id]) !== JSON.stringify(after[id]));
+        expect(changed.length, `${from} ${r.id}`).toBe(r.changes);
+        expect(r.reach + r.left, `${from} ${r.id}`).toBe(plan.others);
+      }
+    }
+  });
+
+  it('the count line names poems only when a poem is left out', () => {
+    const line = (book: Rec, row: RowId) => {
+      const y = onDoc(book);
+      return countWords(rowOf(row), planFor(y, 'c1', ctxOf(c, y))!.rows.find((r) => r.id === row)!);
+    };
+    // no poem in the book: the words every row has always had
+    expect(line(BOOK(), 'dropCap')).toEqual({ key: 'everych.count', n: 2, total: 4 });
+    // one poem among the others
+    expect(line(POEMS('c3'), 'dropCap')).toEqual({ key: 'everych.proseCount', n: 1, total: 3 });
+    const same = POEMS('c3');
+    for (const s of same.sections as Rec[]) if (s.id === 'c4') s.dropCap = false;
+    expect(line(same, 'dropCap')).toEqual({ key: 'everych.proseSame' });
+    // every other chapter a poem
+    expect(line(POEMS('c2', 'c3', 'c4', 'c5'), 'dropCap')).toEqual({ key: 'everych.proseNone' });
+    expect(line(POEMS('c2', 'c3', 'c4', 'c5'), 'smallCaps')).toEqual({ key: 'everych.proseNone' });
+    // the backdrop reaches poems, so its words never change
+    expect(line(POEMS('c3'), 'backdrop')).toEqual({ key: 'everych.count', n: 3, total: 4 });
+    expect(E['everych.proseCount']).toBe('Other chapters that would change: {n} of {total}. Poems are left as they are.');
+    expect(E['everych.proseSame']).toBe('Every other chapter that is not a poem already has this.');
+    expect(E['everych.proseNone']).toBe('Every other chapter is a poem, and poems are left as they are.');
+  });
+});
+
 /* ---- the button and its dialog ---- */
 
 const $ = (id: string) => document.getElementById(id) as HTMLInputElement | null;
@@ -609,6 +690,22 @@ describe('the dialog', () => {
     act(() => void c3.set('dropCap', false));
     expect(desc('dropCap')).toContain('1 of 4');
   });
+
+  it('a book with a poem: the drop cap row says poems are left; in the poem\'s own settings the two rows are absent', async () => {
+    const y = onDoc(POEMS('c3'));
+    await mount(y, 'c1');
+    await openDialog();
+    expect(desc('dropCap')).toBe('This chapter: Off' + 'Other chapters that would change: 1 of 3. Poems are left as they are.');
+    expect(desc('smallCaps')).toBe('This chapter: On' + 'Other chapters that would change: 1 of 3. Poems are left as they are.');
+    expect(desc('backdrop')).toContain('Other chapters that would change: 3 of 4');
+    cleanup();
+    await mount(y, 'c3');
+    // the poem's settings show neither switch (Poem Mode), and the dialog offers neither row
+    expect($('tglDropCap')).toBeNull();
+    expect($('tglSmallCaps')).toBeNull();
+    await openDialog();
+    expect([...document.querySelectorAll('#modalEveryChapter .everych-row')].map((li) => li.getAttribute('data-row'))).toEqual(['backdrop', 'plateFit']);
+  });
 });
 
 describe('its words in every language', () => {
@@ -617,8 +714,8 @@ describe('its words in every language', () => {
   const keys = Object.keys(E).filter((k) => k.startsWith('everych.'));
   const holes = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join(' ');
 
-  it('23 keys in each of the 13 packs, each with English\'s placeholders, none empty, no exclamation mark', () => {
-    expect(keys.length).toBe(23);
+  it('26 keys in each of the 13 packs, each with English\'s placeholders, none empty, no exclamation mark', () => {
+    expect(keys.length).toBe(26);
     expect(Object.keys(packs).length).toBe(13);
     for (const [lang, pack] of Object.entries(packs)) {
       for (const k of keys) {
@@ -644,7 +741,7 @@ describe('its words in every language', () => {
 
   it('every count stands after a colon or in "n of total", so no key needs a plural form', () => {
     expect(keys.filter((k) => k.endsWith('Plural'))).toEqual([]);
-    for (const k of ['everych.count', 'everych.plateCount', 'everych.platePair', 'everych.undonePart', 'everych.doneItem']) expect(E[k], k).toMatch(/: \{n\}/);
+    for (const k of ['everych.count', 'everych.plateCount', 'everych.proseCount', 'everych.platePair', 'everych.undonePart', 'everych.doneItem']) expect(E[k], k).toMatch(/: \{n\}/);
   });
 
   it('the dialog in Arabic: every row and the action carry that pack\'s words', async () => {
