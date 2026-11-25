@@ -4,7 +4,7 @@ title: Footnotes, endnotes & images
 blurb: Notes that link both ways, pictures that sit properly, and words for readers who can't see them.
 group: write
 audience: [new, hand-edit]
-updated: 2026-11-22
+updated: 2026-11-24
 readMinutes: 5
 related: [check-your-book, typeset-a-chapter]
 ---
@@ -46,7 +46,7 @@ Every button in the editor simply types a small mark for you. If you ever write 
 4. `[^1]` in the text, with its note defined on its own line as `[^1]: the note itself` — a linked endnote.
 5. `- ` at the start of each line — a bulleted list; `1. ` — a numbered list.
 6. `[words](https://…)` — a web link (a `mailto:` address works too).
-7. `::: verse` on a line of its own, then the lines, then `:::` — a block set apart. Other kinds include `center`, `right`, `letter`, `texts`, `transcript`, `log` and `margin`; the toolbar buttons type these for you.
+7. `::: verse` on a line of its own, then the lines, then `:::` — a block set apart. Other kinds include `center`, `right`, `letter`, `texts`, `transcript`, `log` and `margin`; the toolbar buttons type these for you. A chapter that is a poem from its first line to its last needs no mark at all: the **P** button at the start of the toolbar turns Poem Mode on for the chapter, so that every new line is a line of the poem and a blank line starts a new stanza, centred or left. Turning it off again changes none of your words.
 8. `||words||` — redacted: readers see bars in place of the words, never the words themselves.
 9. An image sits on its own line, placed by **Insert Image** from the book's library.
 

@@ -18,6 +18,8 @@ import { closureIfLoaded, loadClosure } from '../closure/index';
 import { SceneBar } from '../pictures/SceneBar';
 import { SectionImages } from '../pictures/SectionImages';
 import { StarterBar } from './StarterBar';
+import { PoemStrip, usePoem } from './PoemMode';
+import { setEditorPoem } from './poem';
 import { ySyncPluginKey } from '@tiptap/y-tiptap';
 import { noteWriting } from '../goals/goals';
 import { afterLocalEdit, LangBar, leaveSection, WordBar } from '../environment/EditorEnv';
@@ -57,6 +59,14 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
   const showArea = useShowArea(fragment, sectionMap);
   const showAreaRef = useRef(showArea);
   showAreaRef.current = showArea;
+  /* BEUK:poemmode — the chapter's Poem Mode, as its section stores it. The page takes a class for the layout (the
+     stylesheet does the rest: the paragraph's new lines are already lines here), and the editor is told, so that
+     Shift-Enter writes a plain new line and an empty poem shows its starter lines (poem.ts). */
+  const poem = usePoem(sectionMap);
+  const ghost = poem.on ? [t('poem.ghost1'), t('poem.ghost2'), t('poem.ghost3')].join('\n') : '';
+  useEffect(() => {
+    if (editor) setEditorPoem(editor, { on: poem.on, ghost });
+  }, [editor, poem.on, ghost]);
 
   useEffect(() => {
     if (!host.current) return;
@@ -119,13 +129,14 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
   return (
     <>
       {ydoc && sectionMap && <EditorMeta ydoc={ydoc} section={sectionMap} />}
-      <EditorToolbar ref={bar} editor={editor} marks={marks} onMark={press} sectionType={sectionType} sectionTexts={sectionTexts} ydoc={ydoc} />
+      <EditorToolbar ref={bar} editor={editor} marks={marks} onMark={press} sectionType={sectionType} sectionTexts={sectionTexts} ydoc={ydoc} sectionMap={sectionMap} poem={poem} />
+      {ydoc && sectionMap && showArea && <PoemStrip ydoc={ydoc} section={sectionMap} poem={poem} dir={dir} />}
       {ydoc && sectionMap && <SceneBar editor={editor} ydoc={ydoc} sectionId={sectionMap.get('id')} sectionType={sectionType} />}
       <LangBar />
       <WordBar sectionId={sectionMap ? sectionMap.get('id') : undefined} hidden={!showArea} />
       {ydoc && sectionMap && <StarterBar editor={editor} ydoc={ydoc} section={sectionMap} />}
       {ydoc && sectionMap && <GenEditor ydoc={ydoc} section={sectionMap} />}
-      <div className="ms-page ms-editing" id="manuscript" dir={dir} lang={lang} data-section={section} ref={host} style={showArea ? undefined : { display: 'none' }} />
+      <div className={'ms-page ms-editing' + (poem.on ? ' ms-poem ms-poem-' + poem.align : '')} id="manuscript" dir={dir} lang={lang} data-section={section} ref={host} style={showArea ? undefined : { display: 'none' }} />
       {ydoc && <SectionImages editor={editor} ydoc={ydoc} sectionType={sectionType} />}
     </>
   );

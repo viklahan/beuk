@@ -175,6 +175,11 @@ const Section = obj({
   htLine1: strOrNull, htLine2: str, tocHeading: strOrNull,
   // the print running head's short form; present only when set (BEUK:headfit)
   runHead: str.optional(),
+  // Poem Mode (BEUK:poemmode): how the chapter is read, never a change to its text. Each present only when set:
+  // mode "verse" for a poem (absent reads as prose), verseAlign "left" when the writer chose left (absent reads as centred).
+  // enforced on load: normalizeSection keeps mode only when it is "verse" and verseAlign only when it is "left"
+  mode: z.enum(['verse']).optional(),
+  verseAlign: z.enum(['left']).optional(),
   scenes: z.array(Scene),
   // outline fields: present only when set (CI:32939)
   synopsis: str.optional(),

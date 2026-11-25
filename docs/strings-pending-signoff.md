@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-24 (the export screen: section 3, the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-24 (Poem Mode: section 4; the export screen: section 3, the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -409,7 +409,7 @@ keys and 32 `auth.*` plus 10 `backup.*` keys in all, most of them long since sig
 are the pending ones. The reports are the list.
 
 Total still waiting: 22 (this task) + 11 + 20 + 21 + 6 + 1 = 81 keys, counting each key once however many languages it has.
-(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
+(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys and section 4 adds 7. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
 
 ## 3. The export screen: its groups and the proof (24 keys, 2026-11-23; the proof's link words changed 2026-11-24)
 
@@ -825,3 +825,146 @@ Points worth a look when you read them:
 - **ar** العربية: `خرج العرض من الكتاب، لذا يُعرض الكتاب من جديد من صفحته الأولى.`
 - **ja** 日本語: `表示が本から離れたため、本を最初のページからもう一度表示しています。`
 - **zh-Hans** 简体中文: `视图离开了这本书，因此这本书从第一页重新显示。`
+
+## 4. Poem Mode (7 keys, 2026-11-24)
+
+Poem Mode marks a chapter as a poem (`studio/src/editor/PoemMode.tsx`, `poem.ts`). Its 7 keys are in `client/index.html` `UI_STRINGS`
+(the `BEUK:poemmode` block, `POEMMODE_STRINGS`). English is the source. The 12 other languages below are drafts written by Claude:
+not approved, not read by a native speaker.
+
+What each one is:
+
+- `poem.mode`: the name of the P button in the editor's toolbar (its tooltip and what a screen reader says) and the label of the strip under the toolbar. The stylesheet shows the label in capitals where the script has them.
+- `poem.alignAria`: what a screen reader calls the Centred / Left choice. It is never shown on screen.
+- `poem.titlePh`: the placeholder of the chapter-title field while a poem has no text yet. A placeholder only: it is never written to the book.
+- `poem.ghost1`, `poem.ghost2`, `poem.ghost3`: the three starter lines shown in an empty poem, one under the other. They read on from one another, so each language keeps the ellipsis at the end of the first, at both ends of the second and at the start of the third (a test checks that). They are never written to the book.
+- `tool.verseInPoem`: the tooltip of the Verse tool while it is switched off in a poem. It opens with the language's own name for the Verse tool (`tool.verse`) and a dash, as `tool.verseTitle` does.
+
+Not new, and so not on this list: the two choices themselves use the cover maker's existing words, `creator.alignCenter` and `creator.alignLeft`
+(and `creator.alignRight` in a right-to-left book, where a "left" poem ranges at the right). The letter on the button is a "P" in every language.
+
+How the drafts were made:
+
+- The address form follows each language's neighbouring strings (*tú* in Spanish, *vous* in French, *Sie* in German, *tu* in Italian, *u* in Dutch, the polite forms in Portuguese, Russian and Turkish).
+- The Enter key is named as each language's existing strings name it (`insights.tipOpen`, `ol.kbdHint`): *Intro*, *Entrée*, *Eingabe*, *Invio*, and *Enter* elsewhere.
+- No exclamation marks and no placeholders anywhere (a test checks both).
+
+Points worth a look when you read them:
+
+- "Poem" against "verse": the Verse tool already has a name in each language (`tool.verse`: *Verso*, *Vers*, *Versi*, *Wiersz*, *Стихи*, *Şiir*, *شعر*, *韻文*, *诗行*). `poem.mode` uses the word for a poem (*poema*, *poème*, *Gedicht*, *poesia*, *gedicht*, *wiersz*, *стихотворение*, *şiir*, *قصيدة*, *詩*, *诗歌*). In **pl** and **tr** the two are the same word, so `tool.verseInPoem` reads a little doubled there ("Wiersz — … rozdział jest wierszem", "Şiir — … bir şiir").
+- "Line" against "verse line": the starter lines say *verso*, *vers*, *wers* and *dize* in **es**, **fr**, **it**, **pt**, **pl** and **tr**, and "line" (*Zeile*, *regel*, *строка*, *سطر*, *行*) in **de**, **nl**, **ru**, **ar**, **ja** and **zh-Hans**.
+- "Stanza": *estrofa*, *strophe*, *Strophe*, *strofa*, *estrofe*, *strofe*, *strofa*, *строфа*, *kıta*, *مقطع*, *連*, *节*. Check **ar**, **ja** and **zh-Hans** against the word you want.
+- `poem.titlePh` in **pl** says "give your poem a title" (*Nadaj tytuł*), because "name" reads oddly there.
+- **de** `poem.ghost2` names the key *Eingabe*, as the other German strings do.
+
+### `poem.mode`
+
+- **en** (source): Poem Mode
+- **es** Español: `Modo poema`
+- **fr** Français: `Mode poème`
+- **de** Deutsch: `Gedichtmodus`
+- **it** Italiano: `Modalità poesia`
+- **pt** Português: `Modo poema`
+- **nl** Nederlands: `Gedichtmodus`
+- **pl** Polski: `Tryb wiersza`
+- **ru** Русский: `Режим стихотворения`
+- **tr** Türkçe: `Şiir Modu`
+- **ar** العربية: `وضع القصيدة`
+- **ja** 日本語: `詩モード`
+- **zh-Hans** 简体中文: `诗歌模式`
+
+### `poem.alignAria`
+
+- **en** (source): How the lines of the poem are set
+- **es** Español: `Cómo se colocan los versos del poema`
+- **fr** Français: `Disposition des vers du poème`
+- **de** Deutsch: `Ausrichtung der Gedichtzeilen`
+- **it** Italiano: `Come sono disposti i versi della poesia`
+- **pt** Português: `Como ficam dispostos os versos do poema`
+- **nl** Nederlands: `Hoe de regels van het gedicht worden gezet`
+- **pl** Polski: `Układ wersów wiersza`
+- **ru** Русский: `Как выровнены строки стихотворения`
+- **tr** Türkçe: `Şiirin dizelerinin hizalanması`
+- **ar** العربية: `طريقة محاذاة أسطر القصيدة`
+- **ja** 日本語: `詩の行の揃え方`
+- **zh-Hans** 简体中文: `诗行的对齐方式`
+
+### `poem.titlePh`
+
+- **en** (source): Name your poem
+- **es** Español: `Ponle nombre a tu poema`
+- **fr** Français: `Donnez un nom à votre poème`
+- **de** Deutsch: `Geben Sie Ihrem Gedicht einen Namen`
+- **it** Italiano: `Dai un nome alla tua poesia`
+- **pt** Português: `Dê um nome ao seu poema`
+- **nl** Nederlands: `Geef uw gedicht een naam`
+- **pl** Polski: `Nadaj tytuł swojemu wierszowi`
+- **ru** Русский: `Дайте название своему стихотворению`
+- **tr** Türkçe: `Şiirinize bir ad verin`
+- **ar** العربية: `سمِّ قصيدتك`
+- **ja** 日本語: `詩に名前をつけましょう`
+- **zh-Hans** 简体中文: `给你的诗起个名字`
+
+### `poem.ghost1`
+
+- **en** (source): Write your first line here…
+- **es** Español: `Escribe aquí tu primer verso…`
+- **fr** Français: `Écrivez ici votre premier vers…`
+- **de** Deutsch: `Schreiben Sie hier Ihre erste Zeile…`
+- **it** Italiano: `Scrivi qui il tuo primo verso…`
+- **pt** Português: `Escreva aqui o seu primeiro verso…`
+- **nl** Nederlands: `Schrijf hier uw eerste regel…`
+- **pl** Polski: `Napisz tutaj pierwszy wers…`
+- **ru** Русский: `Напишите здесь первую строку…`
+- **tr** Türkçe: `İlk dizenizi buraya yazın…`
+- **ar** العربية: `اكتب سطرك الأول هنا…`
+- **ja** 日本語: `ここに最初の行を書きます…`
+- **zh-Hans** 简体中文: `在这里写下第一行…`
+
+### `poem.ghost2`
+
+- **en** (source): …press Enter for the next one…
+- **es** Español: `…pulsa Intro para el siguiente…`
+- **fr** Français: `…appuyez sur Entrée pour le suivant…`
+- **de** Deutsch: `…drücken Sie Eingabe für die nächste…`
+- **it** Italiano: `…premi Invio per il successivo…`
+- **pt** Português: `…prima Enter para o seguinte…`
+- **nl** Nederlands: `…druk op Enter voor de volgende…`
+- **pl** Polski: `…naciśnij Enter, aby zacząć następny…`
+- **ru** Русский: `…нажмите Enter, чтобы начать следующую…`
+- **tr** Türkçe: `…sonraki dize için Enter’a basın…`
+- **ar** العربية: `…واضغط Enter للسطر التالي…`
+- **ja** 日本語: `…Enter キーで次の行へ…`
+- **zh-Hans** 简体中文: `…按 Enter 写下一行…`
+
+### `poem.ghost3`
+
+- **en** (source): …and a blank line starts a new stanza.
+- **es** Español: `…y una línea en blanco empieza una estrofa nueva.`
+- **fr** Français: `…et une ligne vide commence une nouvelle strophe.`
+- **de** Deutsch: `…und eine Leerzeile beginnt eine neue Strophe.`
+- **it** Italiano: `…e una riga vuota inizia una nuova strofa.`
+- **pt** Português: `…e uma linha em branco começa uma nova estrofe.`
+- **nl** Nederlands: `…en een lege regel begint een nieuwe strofe.`
+- **pl** Polski: `…a pusta linia zaczyna nową strofę.`
+- **ru** Русский: `…а пустая строка начинает новую строфу.`
+- **tr** Türkçe: `…boş bir satır da yeni bir kıta başlatır.`
+- **ar** العربية: `…وسطر فارغ يبدأ مقطعًا جديدًا.`
+- **ja** 日本語: `…空行を入れると、新しい連が始まります。`
+- **zh-Hans** 简体中文: `…空一行就开始新的一节。`
+
+### `tool.verseInPoem`
+
+- **en** (source): Verse — not needed here: this whole chapter is a poem, so every line break is kept already
+- **es** Español: `Verso — aquí no hace falta: todo el capítulo es un poema, así que cada salto de línea ya se conserva`
+- **fr** Français: `Vers — inutile ici : tout le chapitre est un poème, chaque retour à la ligne est donc déjà gardé`
+- **de** Deutsch: `Vers — hier nicht nötig: Das ganze Kapitel ist ein Gedicht, jeder Zeilenumbruch bleibt also schon erhalten`
+- **it** Italiano: `Versi — qui non serve: tutto il capitolo è una poesia, quindi ogni a capo è già conservato`
+- **pt** Português: `Verso — aqui não é preciso: o capítulo inteiro é um poema, por isso cada quebra de linha já é mantida`
+- **nl** Nederlands: `Vers — hier niet nodig: het hele hoofdstuk is een gedicht, dus elke regelafbreking blijft al behouden`
+- **pl** Polski: `Wiersz — tutaj niepotrzebny: cały rozdział jest wierszem, więc każdy podział wiersza jest już zachowany`
+- **ru** Русский: `Стихи — здесь не нужно: вся глава уже стихотворение, поэтому каждый перенос строки сохраняется`
+- **tr** Türkçe: `Şiir — burada gerekmez: bölümün tamamı bir şiir, bu yüzden her satır sonu zaten korunuyor`
+- **ar** العربية: `شعر — لا حاجة إليه هنا: الفصل كله قصيدة، ولذلك فكل فاصل أسطر محفوظ أصلًا`
+- **ja** 日本語: `韻文 — ここでは不要です。この章全体が詩なので、改行はすべてそのまま保たれます`
+- **zh-Hans** 简体中文: `诗行 — 这里不需要：整章都是一首诗，所以每个换行都已保留`
