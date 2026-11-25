@@ -161,8 +161,8 @@ export function ctxOf(c: Closure, ydoc: Y.Doc): Ctx {
 }
 
 /** The count line a row shows: the key and its numbers. */
-export function countWords(row: RowDef, p: { reach: number; changes: number; left?: number }): { key: UiKey; n?: number; total?: number } {
-  const w = row.counted && (!row.countedWhenLeft || (p.left ?? 0) > 0) ? row.counted : undefined;
+export function countWords(row: RowDef, p: { reach: number; changes: number; spared?: number }): { key: UiKey; n?: number; total?: number } {
+  const w = row.counted && (!row.countedWhenLeft || (p.spared ?? 0) > 0) ? row.counted : undefined;
   if (w && p.reach === 0) return { key: w.none };
   if (p.changes === 0) return { key: w ? w.same : 'everych.same' };
   return { key: w ? w.count : 'everych.count', n: p.changes, total: p.reach };
@@ -186,7 +186,7 @@ export type RowPlan = {
   /** How many of them would change. */
   changes: number;
   /** How many other chapters this row leaves out (it cannot reach them): the others less `reach`. */
-  left: number;
+  spared: number;
   /** The row's own extra line (RowDef.note), when it has one to say. */
   note: { key: UiKey; n: number } | null;
 };
@@ -231,7 +231,7 @@ export function planFor(ydoc: Y.Doc, sourceId: string, x: Ctx): Plan | null {
   const rows = ROWS.filter((r) => r.offered(src, x)).map((r): RowPlan => {
     const mine = changes.filter((ch) => ch.row === r.id);
     const reach = targets.filter((t) => r.reaches(t, x)).length;
-    return { id: r.id, said: r.said(src, x), reach, changes: chaptersIn(changes, r.id).size, left: others.length - reach, note: r.note ? r.note(mine, x) : null };
+    return { id: r.id, said: r.said(src, x), reach, changes: chaptersIn(changes, r.id).size, spared: others.length - reach, note: r.note ? r.note(mine, x) : null };
   });
   return { others: others.length, rows };
 }

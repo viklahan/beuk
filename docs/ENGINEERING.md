@@ -6171,7 +6171,7 @@ written). The backdrop and the plate fit, which a poem does show, go to a
 poem as to any chapter. When a row leaves a poem out its count is of the
 chapters that are not poems, and its line says so (`everych.proseCount`,
 `everych.proseSame`, `everych.proseNone`); a book with no poem reads as it
-did before. A row's `left` is how many other chapters it leaves out.
+did before. A row's `spared` is how many other chapters it leaves out (not `left`: the studio's look guard reads that name as a physical CSS side).
 
 **Words.** 26 keys in `client/index.html` (`EVERYCHAPTER_STRINGS`,
 `everych.*`). Every count stands after a colon, so no key needs a plural

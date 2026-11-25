@@ -389,7 +389,7 @@ describe('poems', () => {
     const y = onDoc(POEMS('c3'));
     const plan = planFor(y, 'c1', ctxOf(c, y))!;
     expect(plan.others).toBe(4);
-    expect(plan.rows.map((r) => [r.id, r.changes, r.reach, r.left])).toEqual([
+    expect(plan.rows.map((r) => [r.id, r.changes, r.reach, r.spared])).toEqual([
       ['backdrop', 3, 4, 0], // a poem shows a backdrop: c3 is reached and changes
       ['dropCap', 1, 3, 1], // c4; c3 would have changed, and is a poem
       ['smallCaps', 1, 3, 1], // c5; c3 would have changed, and is a poem
@@ -427,7 +427,7 @@ describe('poems', () => {
         const after = byId(secs(y));
         const changed = Object.keys(before).filter((id) => JSON.stringify(before[id]) !== JSON.stringify(after[id]));
         expect(changed.length, `${from} ${r.id}`).toBe(r.changes);
-        expect(r.reach + r.left, `${from} ${r.id}`).toBe(plan.others);
+        expect(r.reach + r.spared, `${from} ${r.id}`).toBe(plan.others);
       }
     }
   });
