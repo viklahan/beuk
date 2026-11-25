@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as Y from 'yjs';
 import { BODY, escKey } from '@book/editor/index.js';
+import { EveryChapter } from '../chapters/EveryChapter';
 import { useLocale } from '../i18n/LocaleProvider';
 import { ArtRows } from '../pictures/ArtRows';
 import { sectionKey } from '../pictures/pictures';
@@ -25,6 +26,10 @@ import { usePoem } from './PoemMode';
    - chRunHead "input" (BEUK:headfit): runHead as typed when it has a letter, else the key is removed; the field's
      placeholder is the title (the head falls back to it);
    - tglDropCap / tglSmallCaps (bindSwitch): the opposite of what the switch shows.
+
+   Not 1.0's (2026-11-24): after the art rows, "Use on every chapter…" (src/chapters/EveryChapter.tsx) copies this
+   chapter's backdrop, drop cap, lead-in or plate fit to every other chapter. It stands inside #bodyArtRows, so it
+   shows for exactly the sections those rows show for.
 
    BEUK:poemmode — while the chapter is a poem (PoemMode.tsx) the drop cap and the small-caps lead-in are not set (a
    poem opens on its first line as it is), so their two switches are not shown; what they store is left as it is,
@@ -190,6 +195,7 @@ export function EditorMeta({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unkn
             </>
           )}
           <ArtRows ydoc={ydoc} section={section} />
+          <EveryChapter ydoc={ydoc} section={section} />
         </div>
       )}
     </div>

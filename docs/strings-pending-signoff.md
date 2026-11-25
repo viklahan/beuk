@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-24 (Poem Mode: section 4; the export screen: section 3, the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -409,7 +409,7 @@ keys and 32 `auth.*` plus 10 `backup.*` keys in all, most of them long since sig
 are the pending ones. The reports are the list.
 
 Total still waiting: 22 (this task) + 11 + 20 + 21 + 6 + 1 = 81 keys, counting each key once however many languages it has.
-(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys and section 4 adds 7. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
+(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys, section 4 adds 7 and section 5 adds 26. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
 
 ## 3. The export screen: its groups and the proof (24 keys, 2026-11-23; the proof's link words changed 2026-11-24)
 
@@ -968,3 +968,469 @@ Points worth a look when you read them:
 - **ar** العربية: `شعر — لا حاجة إليه هنا: الفصل كله قصيدة، ولذلك فكل فاصل أسطر محفوظ أصلًا`
 - **ja** 日本語: `韻文 — ここでは不要です。この章全体が詩なので、改行はすべてそのまま保たれます`
 - **zh-Hans** 简体中文: `诗行 — 这里不需要：整章都是一首诗，所以每个换行都已保留`
+
+## 5. "Use on every chapter" (26 keys, 2026-11-24)
+
+At the end of a chapter's settings the studio offers "Use on every chapter…": that chapter's backdrop, drop cap,
+small-caps lead-in or plate fit copied to every other chapter (`studio/src/chapters/EveryChapter.tsx`, `everych.ts`).
+Its 26 keys are in `client/index.html` `UI_STRINGS` (the `BEUK:everychapter` block, `EVERYCHAPTER_STRINGS`), all `everych.*`.
+English is the source. The 12 other languages below are drafts written by Claude: not approved, not read by a native speaker.
+
+How the drafts were made:
+
+- Placeholders (`{n}`, `{total}`, `{value}`, `{snap}`, `{list}`, `{setting}`, `{error}`) are kept byte for byte;
+  `studio/test/every-chapter.test.tsx` checks it in every language, and that no string has an exclamation mark.
+- No plural forms. Every count stands after a colon ("Other chapters that would change: {n} of {total}"), so one string
+  fits every count in every language, Polish, Russian and Arabic included. No key has a `Plural` twin.
+- Words follow the neighbouring 1.0 strings in each language: chapter, section, Part dividers (`chop.mergePart`),
+  the body, front and back matter (`side.groupBody`, `side.groupFront`, `side.groupBack`), the export
+  (`side.includeInExport`), backdrop, opening plate, settings (`set.title`), snapshot and History (`chop.undoChanged`),
+  Undo (`chop.undo`). The address form and the quote marks follow each language's 1.0 strings.
+- `everych.back` quotes the name History gives the snapshot through `{snap}`, which the studio fills with that
+  language's own `history.auto.chapterop` ("Before a chapter change"), so the two cannot drift.
+- Three of the dialog's four row names are not new keys: they are the chapter settings' own labels (`editor.backdrop`,
+  `editor.dropCap`, `editor.smallCaps`). The fourth is new, `everych.plateFit` ("Plate fit"): the settings' own label
+  there is "Fit" (`editor.plateFit`), which says enough only under the plate row; each draft joins that language's
+  words for the fit and for the plate. The values are the pickers' own words (`editor.backdropNone`,
+  `editor.bdWhisper` …, `editor.plateFitFill`, `editor.plateFitWhole`). Cancel is `set.cancel`, Undo is `chop.undo`,
+  and a complete Undo says `chop.undone`.
+- `everych.failed` follows each language's `proof.failed` ("… The error was: {error}").
+
+Points worth a look when you read them:
+
+- `everych.on` / `everych.off` stand after "This chapter:" for the drop cap and the lead-in. **es**, **fr**, **it**, **pt**
+  use the masculine form (Activado, Activé, Attivato, Ativado), as for "the setting"; the drop cap is feminine in
+  French and Spanish (la lettrine, la letra capital), so a neutral pair may read better there. **de** "Ein / Aus",
+  **nl** "Aan / Uit", **ru** "Вкл. / Выкл.", **ja** "オン / オフ", **zh-Hans** "开 / 关".
+- **tr** uses "bölüm" for both a chapter and a section, as the 1.0 pack does, so `everych.scope` reads "Tüm bölümler,
+  kısım ayırıcıları dışında kitabın gövdesindeki her bölümdür".
+- **de** `everych.scope` names the front and back matter by the sidebar's own group names there ("Frontmatter", "Anhang").
+- **nl** `everych.scope` says "Het voormateriaal en de secties achterin" (the sidebar's group is "Achterin").
+- **ja** and **zh-Hans** put the total before the count ("{total} 章中 {n} 章", "{total} 章中的 {n} 章").
+- `everych.platePair` is the one sentence about print: a plate faces its chapter's opening page, so the plate and the
+  copied backdrop are side by side. If the English changes, all 12 change.
+- `everych.doneItem` ("{setting}: {n}") is joined with " · " into `everych.done`'s `{list}`; **fr** keeps its space
+  before the colon, **ja** and **zh-Hans** use the full-width colon.
+
+### `everych.open`
+
+- **en** (source): Use on every chapter…
+- **es** Español: `Usar en todos los capítulos…`
+- **fr** Français: `Appliquer à tous les chapitres…`
+- **de** Deutsch: `Für alle Kapitel übernehmen…`
+- **it** Italiano: `Usa in tutti i capitoli…`
+- **pt** Português: `Usar em todos os capítulos…`
+- **nl** Nederlands: `Gebruiken voor elk hoofdstuk…`
+- **pl** Polski: `Użyj we wszystkich rozdziałach…`
+- **ru** Русский: `Применить ко всем главам…`
+- **tr** Türkçe: `Tüm bölümlerde kullan…`
+- **ar** العربية: `استخدام في كل الفصول…`
+- **ja** 日本語: `すべての章に使う…`
+- **zh-Hans** 简体中文: `用于所有章节…`
+
+### `everych.title`
+
+- **en** (source): Use this chapter's settings on every chapter
+- **es** Español: `Usar los ajustes de este capítulo en todos los capítulos`
+- **fr** Français: `Appliquer les réglages de ce chapitre à tous les chapitres`
+- **de** Deutsch: `Einstellungen dieses Kapitels für alle Kapitel übernehmen`
+- **it** Italiano: `Usa le impostazioni di questo capitolo in tutti i capitoli`
+- **pt** Português: `Usar as definições deste capítulo em todos os capítulos`
+- **nl** Nederlands: `De instellingen van dit hoofdstuk voor elk hoofdstuk gebruiken`
+- **pl** Polski: `Użyj ustawień tego rozdziału we wszystkich rozdziałach`
+- **ru** Русский: `Применить настройки этой главы ко всем главам`
+- **tr** Türkçe: `Bu bölümün ayarlarını tüm bölümlerde kullan`
+- **ar** العربية: `استخدام إعدادات هذا الفصل في كل الفصول`
+- **ja** 日本語: `この章の設定をすべての章に使う`
+- **zh-Hans** 简体中文: `把本章的设置用于所有章节`
+
+### `everych.scope`
+
+- **en** (source): Every chapter means every section in the body of the book except Part dividers. Chapters not included in the export are changed too. Front and back matter are not changed.
+- **es** Español: `Todos los capítulos son todas las secciones del cuerpo del libro, salvo los separadores de parte. Los capítulos no incluidos en la exportación también cambian. Las páginas iniciales y finales no cambian.`
+- **fr** Français: `Tous les chapitres, c'est-à-dire toutes les sections du corps du livre, sauf les séparateurs de partie. Les chapitres non inclus dans l'export sont modifiés eux aussi. Les pages liminaires et finales ne sont pas modifiées.`
+- **de** Deutsch: `Alle Kapitel heißt: jeder Abschnitt im Hauptteil des Buchs außer den Teil-Trennern. Kapitel, die nicht in den Export aufgenommen sind, werden ebenfalls geändert. Frontmatter und Anhang werden nicht geändert.`
+- **it** Italiano: `Tutti i capitoli significa tutte le sezioni del corpo del libro, tranne i divisori di parte. Cambiano anche i capitoli non inclusi nell'esportazione. Le pagine iniziali e finali non cambiano.`
+- **pt** Português: `Todos os capítulos são todas as secções do corpo do livro, exceto os divisores de parte. Os capítulos não incluídos na exportação também são alterados. As páginas iniciais e finais não são alteradas.`
+- **nl** Nederlands: `Elk hoofdstuk betekent: elke sectie in de hoofdtekst van het boek, behalve deelscheidingen. Hoofdstukken die niet in de export zijn opgenomen, worden ook gewijzigd. Het voormateriaal en de secties achterin worden niet gewijzigd.`
+- **pl** Polski: `Wszystkie rozdziały to każda sekcja w treści głównej książki oprócz separatorów części. Rozdziały nieuwzględnione w eksporcie też się zmieniają. Materiały wstępne i końcowe się nie zmieniają.`
+- **ru** Русский: `Все главы — это все разделы основного текста книги, кроме разделителей частей. Главы, не включённые в экспорт, тоже изменяются. Начальные и заключительные страницы не изменяются.`
+- **tr** Türkçe: `Tüm bölümler, kısım ayırıcıları dışında kitabın gövdesindeki her bölümdür. Dışa aktarıma dahil edilmeyen bölümler de değişir. Ön ve arka sayfalar değişmez.`
+- **ar** العربية: `كل الفصول تعني كل قسم في متن الكتاب ما عدا فواصل الأجزاء. الفصول غير المضمّنة في التصدير تتغيّر أيضًا. الصفحات الأولى والأخيرة لا تتغيّر.`
+- **ja** 日本語: `「すべての章」とは、本文にあるセクションのうち、部の区切りを除くすべてです。書き出しに含めていない章も変更されます。前付けと後付けは変更されません。`
+- **zh-Hans** 简体中文: `“所有章节”指正文中的每一节，部分隔页除外。未包含在导出中的章节也会更改。前置页和后置页不会更改。`
+
+### `everych.pick`
+
+- **en** (source): Settings to copy from this chapter
+- **es** Español: `Ajustes que se copian de este capítulo`
+- **fr** Français: `Réglages à copier depuis ce chapitre`
+- **de** Deutsch: `Einstellungen, die aus diesem Kapitel kopiert werden`
+- **it** Italiano: `Impostazioni da copiare da questo capitolo`
+- **pt** Português: `Definições a copiar deste capítulo`
+- **nl** Nederlands: `Instellingen die uit dit hoofdstuk worden gekopieerd`
+- **pl** Polski: `Ustawienia kopiowane z tego rozdziału`
+- **ru** Русский: `Настройки, которые копируются из этой главы`
+- **tr** Türkçe: `Bu bölümden kopyalanacak ayarlar`
+- **ar** العربية: `الإعدادات التي تُنسخ من هذا الفصل`
+- **ja** 日本語: `この章からコピーする設定`
+- **zh-Hans** 简体中文: `从本章复制的设置`
+
+### `everych.here`
+
+- **en** (source): This chapter: {value}
+- **es** Español: `Este capítulo: {value}`
+- **fr** Français: `Ce chapitre : {value}`
+- **de** Deutsch: `Dieses Kapitel: {value}`
+- **it** Italiano: `Questo capitolo: {value}`
+- **pt** Português: `Este capítulo: {value}`
+- **nl** Nederlands: `Dit hoofdstuk: {value}`
+- **pl** Polski: `Ten rozdział: {value}`
+- **ru** Русский: `Эта глава: {value}`
+- **tr** Türkçe: `Bu bölüm: {value}`
+- **ar** العربية: `هذا الفصل: {value}`
+- **ja** 日本語: `この章：{value}`
+- **zh-Hans** 简体中文: `本章：{value}`
+
+### `everych.count`
+
+- **en** (source): Other chapters that would change: {n} of {total}
+- **es** Español: `Otros capítulos que cambiarían: {n} de {total}`
+- **fr** Français: `Autres chapitres qui changeraient : {n} sur {total}`
+- **de** Deutsch: `Andere Kapitel, die sich ändern würden: {n} von {total}`
+- **it** Italiano: `Altri capitoli che cambierebbero: {n} su {total}`
+- **pt** Português: `Outros capítulos que mudariam: {n} de {total}`
+- **nl** Nederlands: `Andere hoofdstukken die zouden veranderen: {n} van {total}`
+- **pl** Polski: `Inne rozdziały, które by się zmieniły: {n} z {total}`
+- **ru** Русский: `Другие главы, которые изменятся: {n} из {total}`
+- **tr** Türkçe: `Değişecek diğer bölümler: {n} / {total}`
+- **ar** العربية: `الفصول الأخرى التي ستتغيّر: {n} من {total}`
+- **ja** 日本語: `変更されるほかの章：{total} 章中 {n} 章`
+- **zh-Hans** 简体中文: `将更改的其他章节：{total} 章中的 {n} 章`
+
+### `everych.same`
+
+- **en** (source): Every other chapter already has this.
+- **es** Español: `Todos los demás capítulos ya lo tienen así.`
+- **fr** Français: `Tous les autres chapitres ont déjà ce réglage.`
+- **de** Deutsch: `Alle anderen Kapitel haben das bereits.`
+- **it** Italiano: `Tutti gli altri capitoli sono già così.`
+- **pt** Português: `Todos os outros capítulos já estão assim.`
+- **nl** Nederlands: `Elk ander hoofdstuk heeft dit al.`
+- **pl** Polski: `Wszystkie pozostałe rozdziały już to mają.`
+- **ru** Русский: `Во всех остальных главах уже так.`
+- **tr** Türkçe: `Diğer bütün bölümlerde zaten böyle.`
+- **ar** العربية: `كل الفصول الأخرى على هذا الإعداد بالفعل.`
+- **ja** 日本語: `ほかの章はすべて、すでにこの設定です。`
+- **zh-Hans** 简体中文: `其他章节都已是这个设置。`
+
+### `everych.plateCount`
+
+- **en** (source): Other chapters with a plate that would change: {n} of {total}
+- **es** Español: `Otros capítulos con lámina que cambiarían: {n} de {total}`
+- **fr** Français: `Autres chapitres avec une planche qui changeraient : {n} sur {total}`
+- **de** Deutsch: `Andere Kapitel mit Tafel, die sich ändern würden: {n} von {total}`
+- **it** Italiano: `Altri capitoli con una tavola che cambierebbero: {n} su {total}`
+- **pt** Português: `Outros capítulos com gravura que mudariam: {n} de {total}`
+- **nl** Nederlands: `Andere hoofdstukken met een plaat die zouden veranderen: {n} van {total}`
+- **pl** Polski: `Inne rozdziały z planszą, które by się zmieniły: {n} z {total}`
+- **ru** Русский: `Другие главы с вклейкой, которые изменятся: {n} из {total}`
+- **tr** Türkçe: `Levhası olup değişecek diğer bölümler: {n} / {total}`
+- **ar** العربية: `الفصول الأخرى ذات اللوحة التي ستتغيّر: {n} من {total}`
+- **ja** 日本語: `変更される、口絵のあるほかの章：{total} 章中 {n} 章`
+- **zh-Hans** 简体中文: `将更改的其他带插图章节：{total} 章中的 {n} 章`
+
+### `everych.plateSame`
+
+- **en** (source): Every other chapter with a plate already has this.
+- **es** Español: `Todos los demás capítulos con lámina ya lo tienen así.`
+- **fr** Français: `Tous les autres chapitres avec une planche ont déjà ce réglage.`
+- **de** Deutsch: `Alle anderen Kapitel mit Tafel haben das bereits.`
+- **it** Italiano: `Tutti gli altri capitoli con una tavola sono già così.`
+- **pt** Português: `Todos os outros capítulos com gravura já estão assim.`
+- **nl** Nederlands: `Elk ander hoofdstuk met een plaat heeft dit al.`
+- **pl** Polski: `Wszystkie pozostałe rozdziały z planszą już to mają.`
+- **ru** Русский: `Во всех остальных главах с вклейкой уже так.`
+- **tr** Türkçe: `Levhası olan diğer bütün bölümlerde zaten böyle.`
+- **ar** العربية: `كل الفصول الأخرى ذات اللوحة على هذا الإعداد بالفعل.`
+- **ja** 日本語: `口絵のあるほかの章はすべて、すでにこの設定です。`
+- **zh-Hans** 简体中文: `其他带插图的章节都已是这个设置。`
+
+### `everych.plateNone`
+
+- **en** (source): No other chapter has a plate.
+- **es** Español: `Ningún otro capítulo tiene lámina.`
+- **fr** Français: `Aucun autre chapitre n'a de planche.`
+- **de** Deutsch: `Kein anderes Kapitel hat eine Tafel.`
+- **it** Italiano: `Nessun altro capitolo ha una tavola.`
+- **pt** Português: `Nenhum outro capítulo tem gravura.`
+- **nl** Nederlands: `Geen ander hoofdstuk heeft een plaat.`
+- **pl** Polski: `Żaden inny rozdział nie ma planszy.`
+- **ru** Русский: `Ни в одной другой главе нет вклейки.`
+- **tr** Türkçe: `Başka hiçbir bölümde levha yok.`
+- **ar** العربية: `لا يوجد فصل آخر له لوحة.`
+- **ja** 日本語: `口絵のある章はほかにありません。`
+- **zh-Hans** 简体中文: `没有其他章节带有卷首插图。`
+
+### `everych.platePair`
+
+- **en** (source): Chapters with an opening plate that would get this backdrop: {n}. In print a plate faces its chapter's opening page, so the plate and the backdrop are side by side.
+- **es** Español: `Capítulos con lámina de apertura que recibirían este fondo: {n}. En la impresión, la lámina queda frente a la página de apertura de su capítulo, así que la lámina y el fondo quedan uno junto al otro.`
+- **fr** Français: `Chapitres avec une planche d'ouverture qui recevraient cet arrière-plan : {n}. À l'impression, la planche fait face à la page d'ouverture de son chapitre : la planche et l'arrière-plan sont donc côte à côte.`
+- **de** Deutsch: `Kapitel mit Eröffnungstafel, die diesen Hintergrund bekämen: {n}. Im Druck steht die Tafel der Eröffnungsseite ihres Kapitels gegenüber, Tafel und Hintergrund stehen also nebeneinander.`
+- **it** Italiano: `Capitoli con una tavola di apertura che riceverebbero questo sfondo: {n}. In stampa la tavola sta di fronte alla pagina di apertura del suo capitolo, quindi la tavola e lo sfondo sono affiancati.`
+- **pt** Português: `Capítulos com gravura de abertura que receberiam este fundo: {n}. Na impressão, a gravura fica de frente para a página de abertura do seu capítulo, por isso a gravura e o fundo ficam lado a lado.`
+- **nl** Nederlands: `Hoofdstukken met een openingsplaat die deze achtergrond zouden krijgen: {n}. In druk staat de plaat tegenover de openingspagina van het hoofdstuk, dus de plaat en de achtergrond staan naast elkaar.`
+- **pl** Polski: `Rozdziały z planszą otwierającą, które dostałyby to tło: {n}. W druku plansza leży naprzeciw strony otwierającej swój rozdział, więc plansza i tło znajdą się obok siebie.`
+- **ru** Русский: `Главы со вступительной вклейкой, которые получат этот фон: {n}. В печати вклейка стоит напротив первой страницы своей главы, поэтому вклейка и фон окажутся рядом.`
+- **tr** Türkçe: `Açılış levhası olup bu arka planı alacak bölümler: {n}. Baskıda levha, bölümünün açılış sayfasının karşısında durur; yani levha ile arka plan yan yana gelir.`
+- **ar** العربية: `الفصول ذات لوحة الافتتاح التي ستحصل على هذه الخلفية: {n}. في الطباعة تقابل اللوحةُ صفحةَ افتتاح فصلها، فتكون اللوحة والخلفية متجاورتين.`
+- **ja** 日本語: `この背景が付くことになる、口絵のある章：{n} 章。印刷では口絵はその章の最初のページと向かい合うので、口絵と背景が隣り合います。`
+- **zh-Hans** 简体中文: `将获得这个背景且带有卷首插图的章节：{n} 章。印刷时，插图与该章的开篇页相对，因此插图和背景会并排出现。`
+
+### `everych.alone`
+
+- **en** (source): This book has no other chapter.
+- **es** Español: `Este libro no tiene ningún otro capítulo.`
+- **fr** Français: `Ce livre n'a pas d'autre chapitre.`
+- **de** Deutsch: `Dieses Buch hat kein anderes Kapitel.`
+- **it** Italiano: `Questo libro non ha altri capitoli.`
+- **pt** Português: `Este livro não tem mais nenhum capítulo.`
+- **nl** Nederlands: `Dit boek heeft geen ander hoofdstuk.`
+- **pl** Polski: `Ta książka nie ma innego rozdziału.`
+- **ru** Русский: `В этой книге нет других глав.`
+- **tr** Türkçe: `Bu kitapta başka bölüm yok.`
+- **ar** العربية: `لا يوجد في هذا الكتاب فصل آخر.`
+- **ja** 日本語: `この本にほかの章はありません。`
+- **zh-Hans** 简体中文: `这本书没有其他章节。`
+
+### `everych.replace`
+
+- **en** (source): A chapter that changes loses the setting it has now. Only the ticked settings are copied; no text is changed.
+- **es** Español: `Un capítulo que cambia pierde el ajuste que tiene ahora. Solo se copian los ajustes marcados; no se cambia ningún texto.`
+- **fr** Français: `Un chapitre qui change perd le réglage qu'il a maintenant. Seuls les réglages cochés sont copiés ; aucun texte n'est modifié.`
+- **de** Deutsch: `Ein Kapitel, das sich ändert, verliert die Einstellung, die es jetzt hat. Nur die angekreuzten Einstellungen werden kopiert; kein Text wird geändert.`
+- **it** Italiano: `Un capitolo che cambia perde l'impostazione che ha ora. Si copiano solo le impostazioni spuntate; nessun testo viene modificato.`
+- **pt** Português: `Um capítulo que muda perde a definição que tem agora. Só são copiadas as definições assinaladas; nenhum texto é alterado.`
+- **nl** Nederlands: `Een hoofdstuk dat verandert, verliest de instelling die het nu heeft. Alleen de aangevinkte instellingen worden gekopieerd; er wordt geen tekst gewijzigd.`
+- **pl** Polski: `Rozdział, który się zmienia, traci ustawienie, które ma teraz. Kopiowane są tylko zaznaczone ustawienia; żaden tekst się nie zmienia.`
+- **ru** Русский: `Глава, которая изменяется, теряет настройку, которая у неё сейчас. Копируются только отмеченные настройки; текст не изменяется.`
+- **tr** Türkçe: `Değişen bir bölüm şu anki ayarını kaybeder. Yalnızca işaretlenen ayarlar kopyalanır; hiçbir metin değişmez.`
+- **ar** العربية: `الفصل الذي يتغيّر يفقد إعداده الحالي. لا تُنسخ إلا الإعدادات المحدَّدة؛ ولا يتغيّر أي نص.`
+- **ja** 日本語: `変更される章は、いまの設定を失います。コピーされるのはチェックを入れた設定だけで、本文は変更されません。`
+- **zh-Hans** 简体中文: `被更改的章节会失去它现在的设置。只复制勾选的设置；不更改任何文字。`
+
+### `everych.back`
+
+- **en** (source): Undo is offered in the message that follows, for a few seconds. A snapshot of the book as it is now is also saved in History first, named “{snap}”; restoring from a snapshot also brings back the text as it was then.
+- **es** Español: `El mensaje que aparece después ofrece Deshacer durante unos segundos. Antes se guarda además en el Historial una instantánea del libro tal como está ahora, llamada «{snap}»; restaurar desde una instantánea también devuelve el texto tal como estaba entonces.`
+- **fr** Français: `Le message qui suit propose Annuler pendant quelques secondes. Un instantané du livre tel qu'il est maintenant est aussi enregistré d'abord dans l'Historique, sous le nom « {snap} » ; restaurer depuis un instantané ramène aussi le texte tel qu'il était alors.`
+- **de** Deutsch: `Die Meldung danach bietet einige Sekunden lang Rückgängig an. Außerdem wird zuerst ein Schnappschuss des Buchs in seinem jetzigen Stand im Verlauf gespeichert, unter dem Namen „{snap}“; beim Wiederherstellen aus einem Schnappschuss kommt auch der Text so zurück, wie er damals war.`
+- **it** Italiano: `Il messaggio che segue offre Annulla per alcuni secondi. Prima viene anche salvata nella Cronologia un'istantanea del libro com'è ora, con il nome «{snap}»; ripristinare da un'istantanea riporta anche il testo com'era allora.`
+- **pt** Português: `A mensagem que se segue oferece Anular durante alguns segundos. Antes disso é também guardado no Histórico um instantâneo do livro como está agora, com o nome «{snap}»; restaurar a partir de um instantâneo traz também de volta o texto como estava então.`
+- **nl** Nederlands: `De melding die volgt biedt enkele seconden Ongedaan maken aan. Daarvóór wordt ook een momentopname van het boek zoals het nu is in Geschiedenis bewaard, met de naam ‘{snap}’; herstellen vanuit een momentopname brengt ook de tekst terug zoals die toen was.`
+- **pl** Polski: `Komunikat, który pojawi się potem, przez kilka sekund oferuje Cofnij. Wcześniej w Historii zapisywana jest też migawka książki w obecnym stanie, o nazwie „{snap}”; przywrócenie z migawki przywraca także tekst taki, jaki był wtedy.`
+- **ru** Русский: `Сообщение, которое появится после этого, несколько секунд предлагает «Отменить». Кроме того, сначала в Истории сохраняется снимок книги в её нынешнем виде под названием «{snap}»; восстановление из снимка возвращает и текст таким, каким он был тогда.`
+- **tr** Türkçe: `Ardından çıkan ileti birkaç saniye boyunca Geri al seçeneğini sunar. Ayrıca önce kitabın şimdiki hâlinin bir anlık görüntüsü “{snap}” adıyla Geçmiş’e kaydedilir; bir anlık görüntüden geri yüklemek metni de o zamanki hâline döndürür.`
+- **ar** العربية: `الرسالة التي تظهر بعد ذلك تعرض «تراجع» لبضع ثوانٍ. وتُحفظ أولًا في السجلّ لقطة من الكتاب كما هو الآن باسم «{snap}»؛ والاستعادة من لقطة تعيد النص أيضًا كما كان حينها.`
+- **ja** 日本語: `このあと表示されるメッセージで、数秒のあいだ「元に戻す」を選べます。また、先に現在の本のスナップショットが「{snap}」という名前で履歴に保存されます。スナップショットから復元すると、本文もそのときの状態に戻ります。`
+- **zh-Hans** 简体中文: `随后出现的消息会在几秒钟内提供“撤销”。此外，会先把现在的书保存为历史记录中的一份快照，名为“{snap}”；从快照恢复时，文字也会回到当时的样子。`
+
+### `everych.apply`
+
+- **en** (source): Use on every chapter
+- **es** Español: `Usar en todos los capítulos`
+- **fr** Français: `Appliquer à tous les chapitres`
+- **de** Deutsch: `Für alle Kapitel übernehmen`
+- **it** Italiano: `Usa in tutti i capitoli`
+- **pt** Português: `Usar em todos os capítulos`
+- **nl** Nederlands: `Gebruiken voor elk hoofdstuk`
+- **pl** Polski: `Użyj we wszystkich rozdziałach`
+- **ru** Русский: `Применить ко всем главам`
+- **tr** Türkçe: `Tüm bölümlerde kullan`
+- **ar** العربية: `استخدام في كل الفصول`
+- **ja** 日本語: `すべての章に使う`
+- **zh-Hans** 简体中文: `用于所有章节`
+
+### `everych.on`
+
+- **en** (source): On
+- **es** Español: `Activado`
+- **fr** Français: `Activé`
+- **de** Deutsch: `Ein`
+- **it** Italiano: `Attivato`
+- **pt** Português: `Ativado`
+- **nl** Nederlands: `Aan`
+- **pl** Polski: `Włączone`
+- **ru** Русский: `Вкл.`
+- **tr** Türkçe: `Açık`
+- **ar** العربية: `مفعَّل`
+- **ja** 日本語: `オン`
+- **zh-Hans** 简体中文: `开`
+
+### `everych.off`
+
+- **en** (source): Off
+- **es** Español: `Desactivado`
+- **fr** Français: `Désactivé`
+- **de** Deutsch: `Aus`
+- **it** Italiano: `Disattivato`
+- **pt** Português: `Desativado`
+- **nl** Nederlands: `Uit`
+- **pl** Polski: `Wyłączone`
+- **ru** Русский: `Выкл.`
+- **tr** Türkçe: `Kapalı`
+- **ar** العربية: `معطَّل`
+- **ja** 日本語: `オフ`
+- **zh-Hans** 简体中文: `关`
+
+### `everych.plateFit`
+
+- **en** (source): Plate fit
+- **es** Español: `Ajuste de la lámina`
+- **fr** Français: `Cadrage de la planche`
+- **de** Deutsch: `Einpassung der Tafel`
+- **it** Italiano: `Adattamento della tavola`
+- **pt** Português: `Ajuste da gravura`
+- **nl** Nederlands: `Passing van de plaat`
+- **pl** Polski: `Dopasowanie planszy`
+- **ru** Русский: `Размещение вклейки`
+- **tr** Türkçe: `Levhanın sığdırılması`
+- **ar** العربية: `ملاءمة اللوحة`
+- **ja** 日本語: `口絵の収め方`
+- **zh-Hans** 简体中文: `插图的适应方式`
+
+### `everych.done`
+
+- **en** (source): Other chapters changed. {list}
+- **es** Español: `Otros capítulos cambiados. {list}`
+- **fr** Français: `Autres chapitres modifiés. {list}`
+- **de** Deutsch: `Andere Kapitel geändert. {list}`
+- **it** Italiano: `Altri capitoli modificati. {list}`
+- **pt** Português: `Outros capítulos alterados. {list}`
+- **nl** Nederlands: `Andere hoofdstukken gewijzigd. {list}`
+- **pl** Polski: `Inne rozdziały zmienione. {list}`
+- **ru** Русский: `Другие главы изменены. {list}`
+- **tr** Türkçe: `Diğer bölümler değiştirildi. {list}`
+- **ar** العربية: `تغيّرت فصول أخرى. {list}`
+- **ja** 日本語: `ほかの章を変更しました。{list}`
+- **zh-Hans** 简体中文: `已更改其他章节。{list}`
+
+### `everych.doneItem`
+
+- **en** (source): {setting}: {n}
+- **es** Español: `{setting}: {n}`
+- **fr** Français: `{setting} : {n}`
+- **de** Deutsch: `{setting}: {n}`
+- **it** Italiano: `{setting}: {n}`
+- **pt** Português: `{setting}: {n}`
+- **nl** Nederlands: `{setting}: {n}`
+- **pl** Polski: `{setting}: {n}`
+- **ru** Русский: `{setting}: {n}`
+- **tr** Türkçe: `{setting}: {n}`
+- **ar** العربية: `{setting}: {n}`
+- **ja** 日本語: `{setting}：{n}`
+- **zh-Hans** 简体中文: `{setting}：{n}`
+
+### `everych.nothing`
+
+- **en** (source): Every other chapter already had these settings. Nothing was changed.
+- **es** Español: `Todos los demás capítulos ya tenían estos ajustes. No se cambió nada.`
+- **fr** Français: `Tous les autres chapitres avaient déjà ces réglages. Rien n'a été modifié.`
+- **de** Deutsch: `Alle anderen Kapitel hatten diese Einstellungen bereits. Nichts wurde geändert.`
+- **it** Italiano: `Tutti gli altri capitoli avevano già queste impostazioni. Non è stato modificato nulla.`
+- **pt** Português: `Todos os outros capítulos já tinham estas definições. Nada foi alterado.`
+- **nl** Nederlands: `Elk ander hoofdstuk had deze instellingen al. Er is niets gewijzigd.`
+- **pl** Polski: `Wszystkie pozostałe rozdziały miały już te ustawienia. Nic nie zostało zmienione.`
+- **ru** Русский: `Во всех остальных главах уже были эти настройки. Ничего не изменено.`
+- **tr** Türkçe: `Diğer bütün bölümlerde bu ayarlar zaten vardı. Hiçbir şey değiştirilmedi.`
+- **ar** العربية: `كل الفصول الأخرى كانت على هذه الإعدادات بالفعل. لم يتغيّر شيء.`
+- **ja** 日本語: `ほかの章はすべて、すでにこの設定でした。何も変更していません。`
+- **zh-Hans** 简体中文: `其他章节都已是这些设置。没有任何更改。`
+
+### `everych.failed`
+
+- **en** (source): The settings could not be copied. Nothing was changed. The error was: {error}
+- **es** Español: `No se pudieron copiar los ajustes. No se cambió nada. El error fue: {error}`
+- **fr** Français: `Les réglages n'ont pas pu être copiés. Rien n'a été modifié. L'erreur était : {error}`
+- **de** Deutsch: `Die Einstellungen konnten nicht kopiert werden. Nichts wurde geändert. Der Fehler war: {error}`
+- **it** Italiano: `Non è stato possibile copiare le impostazioni. Non è stato modificato nulla. L'errore era: {error}`
+- **pt** Português: `Não foi possível copiar as definições. Nada foi alterado. O erro foi: {error}`
+- **nl** Nederlands: `De instellingen konden niet worden gekopieerd. Er is niets gewijzigd. De fout was: {error}`
+- **pl** Polski: `Nie udało się skopiować ustawień. Nic nie zostało zmienione. Błąd: {error}`
+- **ru** Русский: `Не удалось скопировать настройки. Ничего не изменено. Ошибка: {error}`
+- **tr** Türkçe: `Ayarlar kopyalanamadı. Hiçbir şey değiştirilmedi. Hata şuydu: {error}`
+- **ar** العربية: `تعذّر نسخ الإعدادات. لم يتغيّر شيء. الخطأ: {error}`
+- **ja** 日本語: `設定をコピーできませんでした。何も変更していません。エラー：{error}`
+- **zh-Hans** 简体中文: `无法复制这些设置。没有任何更改。错误：{error}`
+
+### `everych.undonePart`
+
+- **en** (source): Undone, except chapters changed again since: {n}. They are left as they are, and the snapshot “{snap}” in History still holds the earlier settings.
+- **es** Español: `Deshecho, salvo los capítulos que volvieron a cambiar desde entonces: {n}. Se dejan como están, y la instantánea «{snap}» del Historial conserva los ajustes anteriores.`
+- **fr** Français: `Annulé, sauf pour les chapitres modifiés de nouveau depuis : {n}. Ils sont laissés tels quels, et l'instantané « {snap} » de l'Historique garde les réglages précédents.`
+- **de** Deutsch: `Rückgängig gemacht, außer bei Kapiteln, die seitdem erneut geändert wurden: {n}. Sie bleiben, wie sie sind, und der Schnappschuss „{snap}“ im Verlauf enthält noch die früheren Einstellungen.`
+- **it** Italiano: `Annullato, tranne che per i capitoli modificati di nuovo nel frattempo: {n}. Restano come sono, e l'istantanea «{snap}» nella Cronologia conserva le impostazioni precedenti.`
+- **pt** Português: `Anulado, exceto nos capítulos alterados de novo entretanto: {n}. Ficam como estão, e o instantâneo «{snap}» no Histórico ainda guarda as definições anteriores.`
+- **nl** Nederlands: `Ongedaan gemaakt, behalve bij hoofdstukken die sindsdien opnieuw zijn gewijzigd: {n}. Die blijven zoals ze zijn, en de momentopname ‘{snap}’ in Geschiedenis bewaart nog de eerdere instellingen.`
+- **pl** Polski: `Cofnięto, z wyjątkiem rozdziałów zmienionych ponownie od tego czasu: {n}. Zostają bez zmian, a migawka „{snap}” w Historii nadal przechowuje wcześniejsze ustawienia.`
+- **ru** Русский: `Отменено, кроме глав, которые с тех пор изменились снова: {n}. Они оставлены как есть, а снимок «{snap}» в Истории по-прежнему хранит прежние настройки.`
+- **tr** Türkçe: `Geri alındı; o zamandan beri yeniden değiştirilen bölümler hariç: {n}. Onlar olduğu gibi bırakıldı ve Geçmiş’teki “{snap}” anlık görüntüsü önceki ayarları hâlâ saklıyor.`
+- **ar** العربية: `تم التراجع، ما عدا الفصول التي تغيّرت مجددًا منذ ذلك الحين: {n}. تُركت كما هي، وما زالت اللقطة «{snap}» في السجلّ تحفظ الإعدادات السابقة.`
+- **ja** 日本語: `元に戻しました。ただし、その後さらに変更された章（{n} 章）はそのままにしました。履歴のスナップショット「{snap}」に以前の設定が残っています。`
+- **zh-Hans** 简体中文: `已撤销，但此后又有改动的章节除外：{n} 章。它们保持原样，历史记录中的快照“{snap}”仍保存着之前的设置。`
+
+### The three keys about poems
+
+Added the same day, once Poem Mode was on main. A poem takes no drop cap and no lead-in, so those two rows are not
+offered from a poem and never change one. When a poem is left out, the row's count line uses these three keys in
+place of `everych.count` and `everych.same`. Each draft is that language's `everych.count` with one sentence after
+it, and uses the noun for a poem that its Poem Mode strings use (section 4).
+
+### `everych.proseCount`
+
+- **en** (source): Other chapters that would change: {n} of {total}. Poems are left as they are.
+- **es** Español: `Otros capítulos que cambiarían: {n} de {total}. Los poemas se dejan como están.`
+- **fr** Français: `Autres chapitres qui changeraient : {n} sur {total}. Les poèmes restent tels quels.`
+- **de** Deutsch: `Andere Kapitel, die sich ändern würden: {n} von {total}. Gedichte bleiben, wie sie sind.`
+- **it** Italiano: `Altri capitoli che cambierebbero: {n} su {total}. Le poesie restano come sono.`
+- **pt** Português: `Outros capítulos que mudariam: {n} de {total}. Os poemas ficam como estão.`
+- **nl** Nederlands: `Andere hoofdstukken die zouden veranderen: {n} van {total}. Gedichten blijven zoals ze zijn.`
+- **pl** Polski: `Inne rozdziały, które by się zmieniły: {n} z {total}. Wiersze zostają bez zmian.`
+- **ru** Русский: `Другие главы, которые изменятся: {n} из {total}. Стихотворения остаются как есть.`
+- **tr** Türkçe: `Değişecek diğer bölümler: {n} / {total}. Şiirler olduğu gibi kalır.`
+- **ar** العربية: `الفصول الأخرى التي ستتغيّر: {n} من {total}. القصائد تبقى كما هي.`
+- **ja** 日本語: `変更されるほかの章：{total} 章中 {n} 章。詩はそのままです。`
+- **zh-Hans** 简体中文: `将更改的其他章节：{total} 章中的 {n} 章。诗歌保持不变。`
+
+### `everych.proseSame`
+
+- **en** (source): Every other chapter that is not a poem already has this.
+- **es** Español: `Todos los demás capítulos que no son poemas ya lo tienen así.`
+- **fr** Français: `Tous les autres chapitres qui ne sont pas des poèmes ont déjà ce réglage.`
+- **de** Deutsch: `Alle anderen Kapitel, die keine Gedichte sind, haben das bereits.`
+- **it** Italiano: `Tutti gli altri capitoli che non sono poesie sono già così.`
+- **pt** Português: `Todos os outros capítulos que não são poemas já estão assim.`
+- **nl** Nederlands: `Elk ander hoofdstuk dat geen gedicht is, heeft dit al.`
+- **pl** Polski: `Wszystkie pozostałe rozdziały, które nie są wierszami, już to mają.`
+- **ru** Русский: `Во всех остальных главах, кроме стихотворений, уже так.`
+- **tr** Türkçe: `Şiir olmayan diğer bütün bölümlerde zaten böyle.`
+- **ar** العربية: `كل الفصول الأخرى التي ليست قصائد على هذا الإعداد بالفعل.`
+- **ja** 日本語: `詩ではないほかの章はすべて、すでにこの設定です。`
+- **zh-Hans** 简体中文: `其他不是诗歌的章节都已是这个设置。`
+
+### `everych.proseNone`
+
+- **en** (source): Every other chapter is a poem, and poems are left as they are.
+- **es** Español: `Todos los demás capítulos son poemas, y los poemas se dejan como están.`
+- **fr** Français: `Tous les autres chapitres sont des poèmes, et les poèmes restent tels quels.`
+- **de** Deutsch: `Alle anderen Kapitel sind Gedichte, und Gedichte bleiben, wie sie sind.`
+- **it** Italiano: `Tutti gli altri capitoli sono poesie, e le poesie restano come sono.`
+- **pt** Português: `Todos os outros capítulos são poemas, e os poemas ficam como estão.`
+- **nl** Nederlands: `Elk ander hoofdstuk is een gedicht, en gedichten blijven zoals ze zijn.`
+- **pl** Polski: `Wszystkie pozostałe rozdziały są wierszami, a wiersze zostają bez zmian.`
+- **ru** Русский: `Все остальные главы — стихотворения, а стихотворения остаются как есть.`
+- **tr** Türkçe: `Diğer bütün bölümler şiir; şiirler olduğu gibi kalır.`
+- **ar** العربية: `كل الفصول الأخرى قصائد، والقصائد تبقى كما هي.`
+- **ja** 日本語: `ほかの章はすべて詩です。詩はそのままです。`
+- **zh-Hans** 简体中文: `其他章节都是诗歌，诗歌保持不变。`

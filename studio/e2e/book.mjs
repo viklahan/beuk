@@ -10467,6 +10467,286 @@ async function importlockChecks() {
   }
 }
 
+/* ---- "Use on every chapter…" (2026-11-24; src/chapters/EveryChapter.tsx, everych.ts) ----
+   On the Lantern Coast (five chapters of the body: a prologue and four chapters, each with its own plate and backdrop):
+   one chapter is given a new backdrop (a picture uploaded there, striped so a screenshot shows it) at Spread, and one
+   other chapter has its plate taken away, by the chapter settings' own controls. Then, by keyboard: the button, the
+   dialog, a row ticked, Escape (nothing changes); again, and used. Read back from the exported book: every chapter's stored backdrop and strength, and nothing else moved.
+   Seen: the preview on another chapter, on the chapter with no plate, and the print pages (a Spread beside a plate,
+   and a Spread with no plate). Then a second use and its Undo. No page error and no CSP violation in the block. */
+async function everyChapterChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ viewport: { width: 1600, height: 1000 } });
+  const shot = async (name, target) => {
+    const file = path.join(OUT, `every-chapter-${name}.png`);
+    writeFileSync(file, await target.screenshot());
+    note(`everyChapter: screenshot ${file}`);
+  };
+  try {
+    const page = await openNext(ctx, origin);
+    const e0 = csp.errors.length;
+    await openBackup(page, f.file);
+    const idx = (id) => f.book.sections.findIndex((s) => s.id === id);
+    const body = f.book.sections.filter((s) => s.kind === 'body' && s.type !== 'part').map((s) => s.id);
+    const FROM = 'sample-sec-9', OTHER = 'sample-sec-10', BARE = 'sample-sec-12';
+    check(body.length === 5 && body.includes(FROM) && body.includes(OTHER) && body.includes(BARE), `everyChapter: the fixture has ${body.length} chapters in its body`);
+    // a picture a screenshot can show: diagonal stripes over a gradient, drawn in the page, uploaded as a PNG file
+    const pic = { name: 'harbour-stripes.png', data: await page.evaluate(() => {
+      const cv = document.createElement('canvas');
+      cv.width = 600;
+      cv.height = 900;
+      const g = cv.getContext('2d');
+      const grad = g.createLinearGradient(0, 0, 600, 900);
+      grad.addColorStop(0, '#0b3d91');
+      grad.addColorStop(1, '#e07a1f');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 600, 900);
+      g.strokeStyle = 'rgba(255,255,255,.85)';
+      g.lineWidth = 14;
+      for (let x = -900; x < 600; x += 70) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 900, 900); g.stroke(); }
+      return cv.toDataURL('image/png').split(',')[1];
+    }) };
+    const settings = async (id) => {
+      await choose(page, idx(id));
+      await page.waitForSelector('#chBackdrop', { timeout: 60_000 });
+      await page.waitForSelector('#btnEveryChapter', { timeout: 60_000 });
+    };
+
+    // one chapter loses its plate; another gets the picture, at Spread: both by the chapter settings' own controls
+    await settings(BARE);
+    await page.selectOption('#chPlate', '');
+    await settings(FROM);
+    const had = await page.$eval('#chBackdrop', (x) => x.value);
+    await page.setInputFiles('#bdFileInput', { name: pic.name, mimeType: 'image/png', buffer: Buffer.from(pic.data, 'base64') });
+    await page.waitForFunction((was) => { const v = document.getElementById('chBackdrop').value; return !!v && v !== was; }, had, { timeout: 30_000 });
+    await page.selectOption('#chBackdropStrength', 'spread');
+    const mid = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape'); // the local pill's popover
+    const secOf = (book, id) => book.sections.find((s) => s.id === id);
+    const PIC = secOf(mid, FROM).backdropId;
+    check(PIC !== had && mid.images.some((im) => im.id === PIC && im.name === pic.name && im.data === pic.data), `everyChapter: the uploaded picture "${pic.name}" is in the book's library (${pic.data.length} characters of base64) and is this chapter's backdrop`);
+    check(secOf(mid, FROM).backdropId === PIC && secOf(mid, FROM).backdropStrength === 'spread' && secOf(mid, BARE).plateId === null,
+      `everyChapter: set by hand first — "${secOf(mid, FROM).title}" has the backdrop ${secOf(mid, FROM).backdropId} at ${secOf(mid, FROM).backdropStrength}; "${secOf(mid, BARE).title}" has no plate (${secOf(mid, BARE).plateId})`);
+    check(body.filter((id) => id !== FROM).every((id) => secOf(mid, id).backdropId !== PIC), 'everyChapter: no other chapter has that backdrop yet');
+
+    // the button: at the end of the chapter's settings, reached and pressed by keyboard
+    await settings(FROM);
+    const place = await page.evaluate(() => {
+      const b = document.getElementById('btnEveryChapter'), last = document.getElementById('chBackdropStrength');
+      return { text: b.textContent, after: !!(last.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING), inRows: !!b.closest('#bodyArtRows'), tab: b.tabIndex };
+    });
+    check(place.text === 'Use on every chapter…' && place.after && place.inRows && place.tab === 0, `everyChapter: the button "${place.text}" stands after the art rows, in the Tab order (${JSON.stringify(place)})`);
+    await page.locator('#btnEveryChapter').scrollIntoViewIfNeeded();
+    await shot('1-button', page.locator('#editorMeta'));
+    await page.focus('#btnEveryChapter');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#modalEveryChapter [role="dialog"]');
+    const seen = () => page.evaluate(() => {
+      const dlg = document.querySelector('#modalEveryChapter [role="dialog"]');
+      const said = (id) => (document.getElementById(id) ? document.getElementById(id).textContent : null);
+      return {
+        title: said(dlg.getAttribute('aria-labelledby')), scope: said(dlg.getAttribute('aria-describedby')),
+        rows: [...dlg.querySelectorAll('.everych-row')].map((li) => {
+          const box = li.querySelector('input[type="checkbox"]');
+          return { row: li.getAttribute('data-row'), checked: box.checked, label: dlg.querySelector(`label[for="${box.id}"]`).textContent, described: [...document.getElementById(box.getAttribute('aria-describedby')).children].map((x) => x.textContent) };
+        }),
+        apply: document.getElementById('btnEveryChApply').disabled, active: document.activeElement ? document.activeElement.id : null,
+        warn: said('everyChReplace'),
+      };
+    });
+    const d0 = await seen();
+    check(d0.title === "Use this chapter's settings on every chapter" && /except Part dividers/.test(d0.scope) && /Front and back matter are not changed/.test(d0.scope), `everyChapter: the dialog is named "${d0.title}" and says its scope ("${d0.scope}")`);
+    check(JSON.stringify(d0.rows.map((r) => [r.row, r.checked])) === JSON.stringify([['backdrop', false], ['dropCap', false], ['smallCaps', false], ['plateFit', false]]) && d0.apply === true && d0.active === 'everyCh-backdrop',
+      `everyChapter: four rows, none ticked, the action disabled, focus on the first checkbox (${JSON.stringify(d0.rows.map((r) => [r.row, r.checked]))}, disabled ${d0.apply}, focus ${d0.active})`);
+    const bd = d0.rows[0].described;
+    check(bd[0] === `This chapter: ${pic.name} · Spread — across the gutter` && bd[1] === 'Other chapters that would change: 4 of 4' && bd[2].startsWith('Chapters with an opening plate that would get this backdrop: 3.'),
+      `everyChapter: the backdrop row says ${JSON.stringify(bd)}`);
+    check(JSON.stringify(d0.rows.slice(1).map((r) => r.described)) === JSON.stringify([['This chapter: On', 'Every other chapter already has this.'], ['This chapter: On', 'Every other chapter already has this.'], ['This chapter: Fill the page', 'Every other chapter with a plate already has this.']]),
+      `everyChapter: the other rows say what is already the same (${JSON.stringify(d0.rows.slice(1).map((r) => r.described))})`);
+    check(/loses the setting it has now/.test(d0.warn) && /Undo is offered in the message that follows/.test(d0.warn) && /named “Before a chapter change”/.test(d0.warn), `everyChapter: it says what is replaced and what brings it back ("${d0.warn}")`);
+    await page.keyboard.press('Space'); // the focused checkbox
+    const d1 = await seen();
+    check(d1.rows[0].checked && d1.apply === false, `everyChapter: Space ticks the backdrop row and the action is enabled (ticked ${d1.rows[0].checked}, disabled ${d1.apply})`);
+    await shot('2-dialog', page.locator('#modalEveryChapter .modal'));
+    // Tab walks the dialog and stays in it: four checkboxes, Cancel, the action, and round again
+    const stops = [];
+    for (let i = 0; i < 6; i++) {
+      await page.keyboard.press('Tab');
+      stops.push(await page.evaluate(() => document.activeElement.id));
+    }
+    check(JSON.stringify(stops) === JSON.stringify(['everyCh-dropCap', 'everyCh-smallCaps', 'everyCh-plateFit', 'btnEveryChCancel', 'btnEveryChApply', 'everyCh-backdrop']), `everyChapter: Tab stays in the dialog (${stops.join(' → ')})`);
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#modalEveryChapter', { state: 'detached' });
+    const backOn = await page.evaluate(() => (document.activeElement ? document.activeElement.id : null));
+    check(backOn === 'btnEveryChapter', `everyChapter: Escape closes the dialog and focus returns to the button (${backOn})`);
+    const afterEsc = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape');
+    check(JSON.stringify(afterEsc) === JSON.stringify(mid), 'everyChapter: Escape with a row ticked changes nothing (the exported book is identical)');
+    await page.focus('#btnEveryChapter'); // the export took the focus away
+
+    // again, by keyboard to the end: Enter on the button, Space on the row, Enter on the action
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#modalEveryChapter [role="dialog"]');
+    const d2 = await seen();
+    check(d2.rows.every((r) => !r.checked) && d2.apply === true, 'everyChapter: opened again, nothing is ticked');
+    await page.keyboard.press('Space');
+    await page.focus('#btnEveryChApply');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#modalEveryChapter', { state: 'detached' });
+    const told = await page.evaluate(() => ({ toast: [...document.querySelectorAll('#toasts .toast span')].map((x) => x.textContent), undo: document.querySelector('#toasts .toast .toast-action')?.textContent ?? null, active: document.activeElement ? document.activeElement.id : null }));
+    check(told.toast.includes('Other chapters changed. Chapter backdrop: 4') && told.undo === 'Undo' && told.active === 'btnEveryChapter', `everyChapter: the message says "${told.toast.join(' | ')}" with "${told.undo}", and focus is back on the button (${told.active})`);
+    await shot('3-used', page);
+
+    // every chapter's stored backdrop, read from the exported book; nothing else moved
+    const after = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape');
+    const stored = body.map((id) => [secOf(after, id).title, secOf(after, id).backdropId, secOf(after, id).backdropStrength]);
+    check(stored.every((s) => s[1] === PIC && s[2] === 'spread'), `everyChapter: every chapter of the body stores the backdrop: ${JSON.stringify(stored)}`);
+    const moved = [];
+    for (const s of mid.sections) {
+      const a = secOf(after, s.id);
+      for (const k of new Set([...Object.keys(s), ...Object.keys(a)])) if (JSON.stringify(s[k]) !== JSON.stringify(a[k])) moved.push(`${s.id}.${k}`);
+    }
+    const want = body.filter((id) => id !== FROM).flatMap((id) => [`${id}.backdropId`, `${id}.backdropStrength`]).sort();
+    check(JSON.stringify(moved.sort()) === JSON.stringify(want), `everyChapter: the only section keys that moved are the four other chapters' backdropId and backdropStrength (${moved.length} keys: ${moved.join(', ')})`);
+    check(after.sections.length === mid.sections.length && after.sections.every((s, i) => s.content === mid.sections[i].content), `everyChapter: every section's text is byte for byte what it was (${after.sections.length} sections)`);
+    const { sections: s1, history: h1, historyPool: p1, ...rest1 } = after;
+    const { sections: s0, history: h0, historyPool: p0, ...rest0 } = mid;
+    check(JSON.stringify(rest1) === JSON.stringify(rest0), 'everyChapter: nothing of the book besides its sections and its History moved');
+    check(h1.length === h0.length + 1 && h1[0].auto === 'chapterop' && !h1[0].chop, `everyChapter: History holds one more snapshot, automatic, of kind "${h1[0]?.auto}" (History ${h0.length} -> ${h1.length})`);
+
+    // seen: the preview on another chapter (it has a plate), and on the chapter with no plate
+    /* The preview on a tablet profile (the default Kindle draws in shades of grey), turned to the page the chapter
+       opens on (a plate has the page before it). The layer is the book stylesheet's own (.bd-layer: the width of the
+       chapter's heading block, at most 32em tall): it is "on the page" when most of its box lies inside the device's
+       screen. The screenshot is taken with the preview full screen, where the page is large enough to see it. */
+    await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
+    await page.locator('#deviceBar [data-device]', { hasText: 'iPad' }).first().click();
+    const preview = async (id, name) => {
+      await choose(page, idx(id));
+      await page.waitForFunction(() => !!document.querySelector('#pageFlow .bd-layer'), null, { timeout: 60_000 });
+      await page.waitForTimeout(600);
+      const look = () => page.evaluate(() => {
+        const l = document.querySelector('#pageFlow .bd-layer');
+        const cs = getComputedStyle(l), b = l.getBoundingClientRect(), w = document.getElementById('flowWrap').getBoundingClientRect();
+        const ix = Math.max(0, Math.min(b.right, w.right) - Math.max(b.left, w.left)), iy = Math.max(0, Math.min(b.bottom, w.bottom) - Math.max(b.top, w.top));
+        return {
+          cls: l.className, bg: l.style.backgroundImage || cs.backgroundImage, w: Math.round(b.width), h: Math.round(b.height), own: b.width * b.height, seen: ix * iy,
+          hidden: l.getAttribute('aria-hidden'), opacity: cs.opacity, mask: (cs.maskImage || cs.webkitMaskImage || '').slice(0, 40), page: document.getElementById('pageCounter').textContent.trim(),
+        };
+      });
+      let pv = await look();
+      for (let i = 0; i < 8 && !(pv.own > 0 && pv.seen >= pv.own * 0.6) && !(await page.$eval('#btnNextPage', (b) => b.disabled)); i++) {
+        await page.click('#btnNextPage');
+        await page.waitForTimeout(500);
+        pv = await look();
+      }
+      await page.click('#pvFull');
+      await page.waitForTimeout(700);
+      const full = await look();
+      await shot(name, page);
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(400);
+      return { ...pv, fullW: full.w, fullH: full.h, fullSeen: full.own > 0 && full.seen >= full.own * 0.6 };
+    };
+    const head = pic.data.slice(0, 80);
+    for (const [id, name] of [[OTHER, '4-preview-other-chapter'], [BARE, '5-preview-chapter-without-plate']]) {
+      const pv = await preview(id, name);
+      check(/bd-spread/.test(pv.cls) && pv.bg.includes(head) && pv.own > 0 && pv.seen >= pv.own * 0.6 && pv.fullSeen && pv.fullW > 100 && pv.fullH > 40 && pv.hidden === 'true',
+        `everyChapter: the preview of "${secOf(after, id).title}" draws the copied backdrop on "${pv.page}" (class "${pv.cls}", the picture's own bytes: ${pv.bg.includes(head)}, aria-hidden ${pv.hidden}; its box ${pv.w} × ${pv.h} px in the pane and ${pv.fullW} × ${pv.fullH} px full screen, on the device's screen both times; mask "${pv.mask}…")`);
+    }
+
+    // seen: the print pages, every spread turned — a Spread beside a plate, and a Spread on the chapter with no plate
+    await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExport')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+    await w5aOpenModal(page);
+    await page.click('#btnOpenSpreads');
+    await page.waitForFunction(() => document.getElementById('modalPrintView').classList.contains('open') && document.querySelectorAll('#pivSpread .piv-page').length > 0 && /\d/.test(document.getElementById('pivCounter').textContent), null, { timeout: 120_000 });
+    const spreads = await page.evaluate(() => Number((/of (\d+)/.exec(document.getElementById('pivCounter').textContent) || [0, 0])[1]));
+    // a layer counts where it is really drawn: where it covers part of the page it stands on
+    let paired = 0, alone = 0, shotPaired = false, shotAlone = false;
+    for (let i = 0; i < Math.min(spreads, 200); i++) {
+      const on = await page.evaluate(() => {
+        const area = (l) => {
+          const pg = l.closest('.piv-page') || document.getElementById('pivSpread');
+          const a = l.getBoundingClientRect(), b = pg.getBoundingClientRect();
+          return Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        };
+        return {
+          paired: [...document.querySelectorAll('#pivSpread .piv-bleed')].filter((l) => area(l) > 2000).length,
+          alone: [...document.querySelectorAll('#pivSpread .bd-layer.bd-spread')].filter((l) => !l.closest('.piv-paired') && getComputedStyle(l).display !== 'none' && area(l) > 2000).length,
+          label: document.getElementById('pivCounter').textContent.trim(),
+        };
+      });
+      paired += on.paired;
+      alone += on.alone;
+      if (on.paired && !shotPaired) { shotPaired = true; await shot('6-print-spread-beside-plate', page.locator('#pivSpread')); }
+      if (on.alone && !shotAlone) { shotAlone = true; note(`everyChapter: the chapter with no plate opens on "${on.label}"`); await shot('7-print-spread-without-plate', page.locator('#pivSpread')); }
+      if (i < Math.min(spreads, 200) - 1) await page.click('#btnPivNext');
+    }
+    check(spreads > 0 && paired === 4 && alone === 1, `everyChapter: the print pages turn to the end (${spreads} spreads): ${paired} openings with the backdrop laid over the leaf beside their plate, ${alone} opening with it drawn and no plate`);
+    await page.click('#btnClosePrintView');
+    await page.waitForFunction(() => !document.getElementById('modalPrintView').classList.contains('open'), null, { timeout: 10_000 });
+    if (await page.evaluate(() => document.getElementById('modalExport').classList.contains('open'))) await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.getElementById('modalExport').classList.contains('open'), null, { timeout: 10_000 });
+
+    // a second use, and its Undo from the message
+    await settings(FROM);
+    await page.click('#tglDropCap');
+    const pre = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape');
+    await page.click('#btnEveryChapter');
+    await page.waitForSelector('#modalEveryChapter [role="dialog"]');
+    const d3 = await seen();
+    check(JSON.stringify(d3.rows[1].described) === JSON.stringify(['This chapter: Off', 'Other chapters that would change: 4 of 4']) && d3.rows[0].described[1] === 'Every other chapter already has this.',
+      `everyChapter: with the drop cap off here, its row says ${JSON.stringify(d3.rows[1].described)}; the backdrop row now says "${d3.rows[0].described[1]}"`);
+    await page.click('label[for="everyCh-dropCap"]');
+    await page.click('#btnEveryChApply');
+    await page.waitForSelector('#toasts .toast .toast-action');
+    const msg = await page.$$eval('#toasts .toast span', (xs) => xs.map((x) => x.textContent));
+    await page.click('#toasts .toast .toast-action');
+    await page.waitForFunction(() => [...document.querySelectorAll('#toasts .toast span')].some((x) => x.textContent === 'Undone'), null, { timeout: 10_000 });
+    const undone = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape');
+    check(msg.includes('Other chapters changed. Drop cap: 4'), `everyChapter: the second use says "${msg.join(' | ')}"`);
+    check(JSON.stringify(undone) === JSON.stringify(pre), `everyChapter: Undo in the message gives the book back exactly, History included (${undone.history.length} snapshots, as before: ${pre.history.length})`);
+
+    // poems (Poem Mode): a chapter made a poem by its own P button shows no drop cap or lead-in switch; the dialog
+    // opened from it offers neither row, and a use from another chapter leaves the poem exactly as it was
+    await settings(OTHER);
+    await page.click('#btnPoemMode');
+    await page.waitForFunction(() => document.getElementById('btnPoemMode').getAttribute('aria-pressed') === 'true' && !document.getElementById('tglDropCap') && !document.getElementById('tglSmallCaps'), null, { timeout: 10_000 });
+    await page.click('#btnEveryChapter');
+    await page.waitForSelector('#modalEveryChapter [role="dialog"]');
+    const dPoem = await seen();
+    const poemRows = secOf(pre, OTHER).plateId ? ['backdrop', 'plateFit'] : ['backdrop'];
+    check(JSON.stringify(dPoem.rows.map((r) => r.row)) === JSON.stringify(poemRows), `everyChapter: "${secOf(pre, OTHER).title}" made a poem shows no drop cap or lead-in switch, and its dialog offers ${JSON.stringify(dPoem.rows.map((r) => r.row))}`);
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#modalEveryChapter', { state: 'detached' });
+    const poemBefore = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape');
+    await settings(FROM);
+    await page.click('#btnEveryChapter');
+    await page.waitForSelector('#modalEveryChapter [role="dialog"]');
+    const dc = (await seen()).rows.find((r) => r.row === 'dropCap');
+    check(!!dc && JSON.stringify(dc.described) === JSON.stringify(['This chapter: Off', 'Other chapters that would change: 3 of 3. Poems are left as they are.']), `everyChapter: with one chapter a poem the drop cap row says ${JSON.stringify(dc && dc.described)}`);
+    await page.click('label[for="everyCh-dropCap"]');
+    await page.click('#btnEveryChApply');
+    await page.waitForSelector('#modalEveryChapter', { state: 'detached' });
+    await page.waitForFunction(() => [...document.querySelectorAll('#toasts .toast span')].some((x) => x.textContent === 'Other chapters changed. Drop cap: 3'), null, { timeout: 10_000 });
+    const poemAfter = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape');
+    const poemSec = secOf(poemAfter, OTHER);
+    check(secOf(poemBefore, OTHER).mode === 'verse' && JSON.stringify(poemSec) === JSON.stringify(secOf(poemBefore, OTHER)), `everyChapter: the poem is exactly what it was, every key and its text (mode ${JSON.stringify(poemSec.mode)}, drop cap as stored: ${JSON.stringify(poemSec.dropCap)})`);
+    const turned = body.filter((id) => id !== FROM && id !== OTHER).map((id) => [secOf(poemAfter, id).title, secOf(poemAfter, id).dropCap]);
+    check(turned.length === 3 && turned.every(([, v]) => v === false), `everyChapter: the three chapters that are not poems now have the drop cap off (${JSON.stringify(turned)})`);
+
+    await harvestCsp(page);
+    check(csp.errors.length === e0, `everyChapter: no page error and no console error in the block (${csp.errors.length - e0}${csp.errors.length > e0 ? ': ' + csp.errors.slice(e0).join(' | ') : ''})`);
+  } finally {
+    await ctx.close();
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -10498,6 +10778,7 @@ try {
   if (run('wave5c')) await wave5cChecks(srv.origin);
   if (run('wave5d')) await wave5dChecks(srv.origin);
   if (run('proof')) await proofChecks(srv.origin);
+  if (run('everyChapter')) await everyChapterChecks(srv.origin);
   if (run('wave6')) await wave6Checks(srv.origin);
   if (run('wave7a')) await wave7aChecks();
   if (run('wave7b')) await wave7bChecks();

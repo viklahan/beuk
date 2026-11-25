@@ -6049,6 +6049,182 @@ the first visible control whose text is exactly, then starts with, then
 contains the words, and on the screen as it opens only the Print group's
 header starts with "Print".
 
+## Studio: one chapter's settings on every chapter (2.0)
+
+V, 2026-11-24: "do we have the option to allow chapter plate or backdrop
+to be applied across all the chapters?" (there was none: each is set one
+chapter at a time), then "add the backdrop on every chapter option - also
+check wherever bulk applications are necessary or helpful - we should
+provide that option." That is all he said. Every choice below was made in
+the session that built it and is his to overturn.
+
+It is the 2.0 layer's (`studio/src/chapters/everych.ts` and
+`EveryChapter.tsx`, placed by `studio/src/editor/EditorMeta.tsx`, styled in
+`studio/src/styles/pictures.css`). `client/index.html` gains only the
+words (`BEUK:everychapter`). The book format is unchanged: every value
+written is one a chapter's own settings already write. No export makes a
+different file from the same book.
+
+**What the writer sees.** At the end of a chapter's settings, after the
+art rows, a quiet button: "Use on every chapter…". It opens a dialog,
+"Use this chapter's settings on every chapter", with one checkbox row per
+setting, none ticked:
+
+| Row | What is copied | Offered when | Reaches |
+|---|---|---|---|
+| Chapter backdrop | `backdropId` and `backdropStrength`, together | always | every other chapter |
+| Drop cap | `dropCap`, on or off | always | every other chapter |
+| Small-caps lead-in | `smallCaps`, on or off | always | every other chapter |
+| Plate fit | `plateFit`, fill or whole | this chapter has a plate | other chapters that have a plate |
+
+Each row says this chapter's value in words (the picture's name and its
+strength, "No backdrop", "On", "Off", "Fill the page") and the exact
+number of other chapters that would change ("Other chapters that would
+change: 3 of 4", or "Every other chapter already has this."). Both are the
+checkbox's accessible description. The counts are read from the book as it
+stands, and read again if the book changes while the dialog is open. The
+action is disabled until a row is ticked. Cancel, Escape and a click
+outside change nothing, and focus returns to the button.
+
+**Every chapter** is every section the chapter settings show these rows
+for (1.0's `syncEditor`): a body section that is not a Part. A prologue or
+an interlude is one. A chapter left out of the export is one: it is still
+a chapter of the book. Front matter, back matter and Part dividers are
+never changed, though they store the same keys. The dialog says this in
+one line.
+
+**What is compared** is what the settings show, as 1.0 reads a section
+(`normalizeSection`, `plateFitOf`, `backdropImage`): the drop cap and the
+lead-in are on unless the section says `false`; a fit that is not `whole`
+is `fill`; a strength outside `BACKDROP_STRENGTHS` is `whisper`; a picture
+id that is not in the book's library is no picture (so an id that names
+nothing is never copied, and a chapter holding one "has no plate"). A
+chapter is changed only when what it shows differs, and then only the keys
+that differ are set. With no backdrop on the first chapter the others lose
+their picture and keep the strength they stored.
+
+**One transaction.** `applyToEvery` reads the book, takes a History
+snapshot of it as it stands (auto kind `chapterop`, as `chopRun` takes
+before a delete or a merge; it carries no `chop` record, so History names
+it "Before a chapter change", and it counts among the five such snapshots
+1.0 keeps), and writes History and then the changed keys in one Y
+transaction. History is written first because packing it is the one step
+that can fail: if it does, nothing has been written, and the message says
+so with the error. When nothing differs nothing is written and no snapshot
+is taken; the message says nothing was changed. No chapter's text is read
+for the counts, and none is written.
+
+**The way back: what is true, and nothing more.** The editor's own undo
+(Ctrl+Z) covers the open chapter's text only; it never covered chapter
+settings, and it does not cover this. Two things do:
+
+- The message that follows ("Other chapters changed. Chapter backdrop: 3
+  · Drop cap: 2") carries Undo for as long as 1.0's own Undo messages stay
+  (`CHOP_TOAST_MS`, ten seconds; it waits while pointed at or focused).
+  `undoEvery` puts back the exact value every changed key had (a key the
+  chapter did not store is removed again) in one Y transaction and removes
+  the spent snapshot. A chapter where a written key was changed again
+  since, or that is gone, is left as it is, whole; the message then says
+  how many were left and names the snapshot, which is kept. The record is
+  held in memory: it is gone with the page, and a whole other book
+  arriving takes the message down.
+- The snapshot in History. Restoring from it (one chapter, or the whole
+  book) is History's own restore: it also brings back the text as it was
+  then. The dialog says so.
+
+**A Spread backdrop.** `spread` is one of four strengths and needs
+nothing else to be valid: 1.0 keeps any strength on any body section
+(`normalizeSection`), the strength picker offers Spread on every chapter
+with a backdrop, and `backdropLayerHtml` draws `bd-spread` with or without
+a plate. So copying it cannot make a state a writer could not already make
+by hand, one chapter at a time. What it can do is put a picture beside a
+plate it was not painted for: a plate faces its chapter's opening page in
+print (`isPairedSpread`), and the sample's chapters each carry a pair, the
+two halves of one painting. When chapters with a plate would get the
+copied backdrop the row says how many, and that the plate and the
+backdrop will be side by side. Nothing is refused.
+
+**Not offered, on purpose.** The chapter's number, title, subtitle and
+running head, the plate picture and its alt text: each describes one
+chapter, and the same value on every chapter is never what a writer means
+(one plate picture before every chapter can be done, by hand, and is not
+made easy here). Scene pictures belong to one break in one chapter's text.
+Whether a section is included in the export is not a chapter setting and
+is not here either.
+
+**Rows are data.** `ROWS` in `everych.ts` is the list: a row is its label
+key, the section keys it may write, `offered`, `reaches`, `patch` and
+`said`, and optionally the words of its count line (`counted`, for a row
+that does not reach every chapter) and one more line of its own (`note`).
+The dialog, the counts, the write and the Undo are driven from it, and
+`EveryChapter.tsx` names no row. One more shared setting is one more entry
+there, plus its id in `RowId`. Poem Mode itself is not a row: whether a
+chapter is a poem is not offered for copying.
+
+**Poems.** Poem Mode (above) came to main the same day, on its own branch,
+and the two met in the merge. A chapter whose `mode` is `verse` takes no
+drop cap and no lead-in, its settings do not show those two switches, and
+Poem Mode leaves what they store as it is. So the drop cap and lead-in
+rows are not offered when the chapter copied from is a poem, and they
+never write to a poem (`isPoem` in `everych.ts`; `mode` is read, never
+written). The backdrop and the plate fit, which a poem does show, go to a
+poem as to any chapter. When a row leaves a poem out its count is of the
+chapters that are not poems, and its line says so (`everych.proseCount`,
+`everych.proseSame`, `everych.proseNone`); a book with no poem reads as it
+did before. A row's `spared` is how many other chapters it leaves out (not `left`: the studio's look guard reads that name as a physical CSS side).
+
+**Words.** 26 keys in `client/index.html` (`EVERYCHAPTER_STRINGS`,
+`everych.*`). Every count stands after a colon, so no key needs a plural
+form in any language. English is the source; the 12 other languages are
+drafts awaiting V's sign-off, listed in `docs/strings-pending-signoff.md`
+section 5. The rows' names and values are the chapter settings' own keys,
+but for "Plate fit" (`everych.plateFit`): the settings' own label there is
+"Fit", which says enough only under the plate row.
+
+**Tests.** `studio/test/every-chapter.test.tsx`: which sections are
+chapters; each row's count on a book with mixed settings, and that the
+count is the number of chapters the write then changes (from each of five
+chapters, every row); the write compared section by section, key by key,
+with every text byte for byte; the Part, front matter and back matter
+unmoved though they store the same keys; the fit only where a plate is; a
+row not picked changing nothing; one update per write and per Undo; the
+snapshot; a failed write changing nothing; Undo whole, Undo with a chapter
+changed since, with a chapter deleted, and on a book that is gone; the
+dialog (unticked, disabled, named and described, Escape, Cancel, a click
+outside, focus back on the button, the messages); poems (the two rows
+never reach one and are not offered from one, the counts leave poems out
+and still equal what the write changes, the count line names poems only
+when one is left out); the 26 keys in 13 packs and their place in the
+sign-off list. In Chromium, `studio/e2e/book.mjs`
+`E2E_ONLY=everyChapter` on the production build under the served policy:
+on the Lantern Coast a picture is uploaded as one chapter's backdrop and
+set to Spread, another chapter's plate is taken away, the dialog is opened
+and used by keyboard, every chapter's stored backdrop is read back from
+the exported book with nothing else moved, the preview is turned to the
+opening of another chapter and of the chapter with no plate, the Print
+Interior View is turned from first spread to last (four openings with the
+backdrop beside their plate, one with it and no plate), and a second use
+is undone from its message, the exported book then identical to the one
+before it, History included. Then one chapter is made a poem by its own P
+button: its settings show no drop cap or lead-in switch, the dialog opened
+from it offers neither row, and a use of the drop cap from another chapter
+says "3 of 3. Poems are left as they are.", turns the drop cap off in the
+three chapters that are not poems, and leaves the poem's section exactly
+as it was, every key and its text.
+
+**Not verified.** Firefox and Safari (neither is installed on the bench).
+What a screen reader speaks: the names and descriptions are checked as
+attributes, not heard. An EPUB or a print PDF built from a book after the
+copy: no export code changed and every value written is one a chapter's
+own settings write, but none was built and inspected for this. The dialog
+on a phone-width screen. Two tabs writing at once. The time the snapshot
+takes on a very long book (it is the same whole-book read a chapter delete
+makes). The 12 translations are drafts no native speaker has read.
+
+**Help.** No guide in `content/help/guides` describes setting a chapter's
+plate or backdrop (the three that name them speak of removing a picture,
+of empty pages and of bleed), so none was changed.
+
 ## What is deliberately NOT here yet
 
 - **Live billing** — everything is built (verified, deduplicated,
