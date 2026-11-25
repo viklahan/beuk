@@ -10710,6 +10710,36 @@ async function everyChapterChecks(origin) {
     check(msg.includes('Other chapters changed. Drop cap: 4'), `everyChapter: the second use says "${msg.join(' | ')}"`);
     check(JSON.stringify(undone) === JSON.stringify(pre), `everyChapter: Undo in the message gives the book back exactly, History included (${undone.history.length} snapshots, as before: ${pre.history.length})`);
 
+    // poems (Poem Mode): a chapter made a poem by its own P button shows no drop cap or lead-in switch; the dialog
+    // opened from it offers neither row, and a use from another chapter leaves the poem exactly as it was
+    await settings(OTHER);
+    await page.click('#btnPoemMode');
+    await page.waitForFunction(() => document.getElementById('btnPoemMode').getAttribute('aria-pressed') === 'true' && !document.getElementById('tglDropCap') && !document.getElementById('tglSmallCaps'), null, { timeout: 10_000 });
+    await page.click('#btnEveryChapter');
+    await page.waitForSelector('#modalEveryChapter [role="dialog"]');
+    const dPoem = await seen();
+    const poemRows = secOf(pre, OTHER).plateId ? ['backdrop', 'plateFit'] : ['backdrop'];
+    check(JSON.stringify(dPoem.rows.map((r) => r.row)) === JSON.stringify(poemRows), `everyChapter: "${secOf(pre, OTHER).title}" made a poem shows no drop cap or lead-in switch, and its dialog offers ${JSON.stringify(dPoem.rows.map((r) => r.row))}`);
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#modalEveryChapter', { state: 'detached' });
+    const poemBefore = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape');
+    await settings(FROM);
+    await page.click('#btnEveryChapter');
+    await page.waitForSelector('#modalEveryChapter [role="dialog"]');
+    const dc = (await seen()).rows.find((r) => r.row === 'dropCap');
+    check(!!dc && JSON.stringify(dc.described) === JSON.stringify(['This chapter: Off', 'Other chapters that would change: 3 of 3. Poems are left as they are.']), `everyChapter: with one chapter a poem the drop cap row says ${JSON.stringify(dc && dc.described)}`);
+    await page.click('label[for="everyCh-dropCap"]');
+    await page.click('#btnEveryChApply');
+    await page.waitForSelector('#modalEveryChapter', { state: 'detached' });
+    await page.waitForFunction(() => [...document.querySelectorAll('#toasts .toast span')].some((x) => x.textContent === 'Other chapters changed. Drop cap: 3'), null, { timeout: 10_000 });
+    const poemAfter = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape');
+    const poemSec = secOf(poemAfter, OTHER);
+    check(secOf(poemBefore, OTHER).mode === 'verse' && JSON.stringify(poemSec) === JSON.stringify(secOf(poemBefore, OTHER)), `everyChapter: the poem is exactly what it was, every key and its text (mode ${JSON.stringify(poemSec.mode)}, drop cap as stored: ${JSON.stringify(poemSec.dropCap)})`);
+    const turned = body.filter((id) => id !== FROM && id !== OTHER).map((id) => [secOf(poemAfter, id).title, secOf(poemAfter, id).dropCap]);
+    check(turned.length === 3 && turned.every(([, v]) => v === false), `everyChapter: the three chapters that are not poems now have the drop cap off (${JSON.stringify(turned)})`);
+
     await harvestCsp(page);
     check(csp.errors.length === e0, `everyChapter: no page error and no console error in the block (${csp.errors.length - e0}${csp.errors.length > e0 ? ': ' + csp.errors.slice(e0).join(' | ') : ''})`);
   } finally {

@@ -6205,7 +6205,12 @@ opening of another chapter and of the chapter with no plate, the Print
 Interior View is turned from first spread to last (four openings with the
 backdrop beside their plate, one with it and no plate), and a second use
 is undone from its message, the exported book then identical to the one
-before it, History included.
+before it, History included. Then one chapter is made a poem by its own P
+button: its settings show no drop cap or lead-in switch, the dialog opened
+from it offers neither row, and a use of the drop cap from another chapter
+says "3 of 3. Poems are left as they are.", turns the drop cap off in the
+three chapters that are not poems, and leaves the poem's section exactly
+as it was, every key and its text.
 
 **Not verified.** Firefox and Safari (neither is installed on the bench).
 What a screen reader speaks: the names and descriptions are checked as
