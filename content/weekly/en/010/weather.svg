@@ -1,0 +1,16 @@
+<svg viewBox="0 0 64 38" width="58" height="34" aria-hidden="true">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+    <path d="M8 30 a8 8 0 0 1 16 0"/>
+    <line x1="16" y1="15" x2="16" y2="18"/>
+    <line x1="6" y1="20" x2="8.2" y2="22.2"/>
+    <line x1="26" y1="20" x2="23.8" y2="22.2"/>
+    <line x1="4" y1="30" x2="28" y2="30"/>
+    <line x1="45" y1="6" x2="45" y2="28"/>
+    <line x1="35.5" y1="11.5" x2="54.5" y2="22.5"/>
+    <line x1="35.5" y1="22.5" x2="54.5" y2="11.5"/>
+    <line x1="42.4" y1="9.5" x2="45" y2="12"/>
+    <line x1="47.6" y1="9.5" x2="45" y2="12"/>
+    <line x1="42.4" y1="24.5" x2="45" y2="22"/>
+    <line x1="47.6" y1="24.5" x2="45" y2="22"/>
+  </g>
+</svg>

@@ -4,12 +4,12 @@ section: Takeaway
 place: takeaway
 deck: Five instructions from the composing room
 ---
-Export or screenshot your KDP reports now, dated, before October's Kindle+ fund rate lands mid-month — you will want a before.
+Swap the Kindle Unlimited badge for the Kindle+ badge on your ads and pages; phase your wording while readers learn the name.
 
-A KENP cliff is not necessarily lost money: check the Audible royalties column first, and do not unpublish or leave Select over reporting alone.
+Screenshot your KDP dashboards now, dated — the rename is moving numbers between columns and you will want a before.
 
-Open each Sponsored Products campaign and decide the off-Amazon reach setting yourself. It defaults to on.
+Audible titles: put December 31 on the calendar and do the Member Value math per title. Withdrawn earns nothing.
 
-Publishing wide? Confirm your Kobo Plus enrollment and territories — three more countries came online November 11.
+Etsy sellers: check the print-on-demand toggle on your digital listings — it is on by default.
 
 Run your EPUB through EPUBCheck 5.4.0 and clear the “outdated” warnings while they are still only warnings.

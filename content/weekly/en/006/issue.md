@@ -1,27 +1,22 @@
 ---
 volume: I
-week: 2026-11-23
-banner: Vellum Blinks Twice
-bannerDeck: The Mac formatter added an AI hookup, pulled it in a day, and has now put it back — off by default — after two weeks that split its authors down the middle
-lead: vellum-blinks-twice
+week: 2026-10-26
+banner: The Wide Side Keeps Widening
+bannerDeck: Kobo switches on three more countries — subscription growth an author can actually count, in a week when the biggest store's arithmetic stayed hidden
+lead: wide-side-widening
 tagline: The indie publisher's broadsheet
 price: Price: one honest sentence
 note: Set at the Beuk Desk; every claim below traces to a fetched source.
-weatherPlace: Nuuk, Greenland
-weatherReading: Few clouds, −8 °C
-weatherNote: at press time · sunset 4:04 p.m.
+weatherPlace: Hobart, Tasmania
+weatherReading: Showers, 15 °C
+weatherNote: observed Oct. 26
 weatherIcon: weather.svg
+formerly: 2
 ---
-## Sources — fetched in full, November 23, 2026
+## Sources — fetched in full
 
-- [Vellum blog — Vellum 4.2: Introducing Automation (Nov. 4; the page is also dated Nov. 18)](https://blog.vellum.pub/2026/11/vellum-4-2-introducing-automation/)
-- [Vellum blog — We've Removed Vellum Automation (Nov. 5; updated Nov. 18)](https://blog.vellum.pub/2026/11/weve-removed-vellum-automation/)
-- [Vellum blog — Moving Forward with Automation (Nov. 18)](https://blog.vellum.pub/2026/11/moving-forward-with-automation/)
-- [Indie Author Magazine — Vellum Gives Authors the Option to Automatically Update Formats Across Titles—Again (Nov. 20)](https://indieauthormagazine.com/vellum-gives-authors-the-option-to-automatically-update-formats-across-titles-again/)
-- [Anthropic Copyright Settlement administrator (JND) — homepage & key dates (read Nov. 23)](https://www.anthropiccopyrightsettlement.com/)
-- [Publishing Perspectives — Talking accessible ebooks with PRH's Liisa McCloy-Kelley (Nov. 17)](https://publishingperspectives.com/2026/11/every-book-available-to-reader-publishing-perspectives-talks-accessible-ebooks-with-penguin-random-houses-liisa-mccloy-kelley)
-- [Flaming Hydra — Welcome to the Phoenix Library Service (Nov. 18)](https://flaminghydra.com/welcome-to-the-phoenix-library-service/)
-- [Words & Money — Weekly Newsletter, November 20, 2026](https://www.wordsandmoney.com/the-words-money-weekly-newsletter-november-20-2026/)
-- [Jane Friedman — Why the AI Detection Scandals Will End—Probably Quite Soon (Oct. 30)](https://janefriedman.com/why-the-ai-detection-scandals-will-end-probably-quite-soon/)
-- [Ogimet — Nuuk airport (BGGH) weather observations, Nov. 23, 17:00 to 18:59 UTC (the weather ear: the 17:51 report)](https://www.ogimet.com/display_metars2.php?lang=en&lugar=BGGH&tipo=SA&ord=REV&nil=SI&fmt=txt&ano=2026&mes=11&day=23&hora=17&anof=2026&mesf=11&dayf=23&horaf=18&minf=59&send=send)
-- [timeanddate.com — Nuuk sunrise and sunset, November 2026 (the weather ear: sunset on Nov. 23)](https://www.timeanddate.com/sun/greenland/nuuk?month=11&year=2026)
+- [Inkfluence AI — Why did my KENP drop? KDP Kindle+ reporting change](https://www.inkfluenceai.com/blog/kdp-kenp-page-reads-drop-kindle-plus-2026)
+- [Inkfluence AI — Self-publishing news roundup (Kobo, GPT-6.1 Terra)](https://www.inkfluenceai.com/blog/self-publishing-news-november-2026)
+- [Good e-Reader — Kobo Plus is now available in Estonia, Lithuania and Slovenia](https://goodereader.com/blog/kobo-ereader-news/kobo-plus-is-now-available-in-estonia-lithuania-and-slovenia)
+- [Publishing Perspectives — Around the Book World (Jerziobuk, Tohan HONYAL)](https://publishingperspectives.com/2026/11/around-the-book-world-monday-november-9-2026/)
+- [Bureau of Meteorology — Hobart daily observations, October 2026 (weather ear)](https://www.bom.gov.au/climate/dwo/202610/html/IDCJDW7021.202610.shtml)

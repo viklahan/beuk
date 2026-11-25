@@ -59,7 +59,7 @@ export function weeklyRoutes(config: Config): Router {
     const story = issue?.storyBySlug.get(req.params.story);
     if (!issue || !story || !story.hasPage) {
       const n = /^\d{1,4}$/.test(req.params.n) ? Number(req.params.n) : NaN;
-      const moved = w.issues.find((i) => i.formerly === n && i.storyBySlug.get(req.params.story)?.hasPage);
+      const moved = w.issues.find((i) => i.formerly.includes(n) && i.storyBySlug.get(req.params.story)?.hasPage);
       if (moved) return res.redirect(301, `/school/weekly/${moved.number}/${req.params.story}`);
       return notFound(res, 'There is no story at that address.');
     }

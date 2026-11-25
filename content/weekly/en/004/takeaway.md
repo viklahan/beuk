@@ -2,14 +2,12 @@
 title: If You're Shipping a Book This Month
 section: Takeaway
 place: takeaway
-deck: Five instructions from the composing room
+deck: Four instructions from the composing room
 ---
-Audit your backlist before year-end: metadata, series links, covers. Two-thirds of HarperCollins' consumer revenue is old books.
+Publishing on KDP? Plan no more than two new titles per format a week, counting from the Sunday 00:00 UTC reset.
 
-Check where your audiobooks actually are. Spotify's surfaces grew again this week; exclusivity can't follow them.
+Splitting a box set or reissuing reverted rights? Space the uploads across weeks now, so launch dates don’t slip.
 
-Re-map your catalog to subgenres, not genres, and rewrite categories and keywords to match how readers now search.
+Offered an audio rights deal? Read the term and reversion clauses against this week’s prices before you agree.
 
-Planning 2027? Folk horror and dystopian fiction are forecast tailwinds — books take months, forecasts are head starts.
-
-Selling into Europe: learn which markets fence new releases out of subscriptions, and plan launch pricing à la carte there.
+A flattering email from a “publisher” or “editor”? Check the sender’s domain before you reply to anything.
