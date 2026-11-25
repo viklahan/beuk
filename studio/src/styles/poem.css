@@ -1,0 +1,86 @@
+/* ==== BEUK:poemmode ==== Poem Mode on the writer's desk (src/editor/poem.ts, PoemMode.tsx). 2.0's own: 1.0 has no
+   such mode. Colours from the desk's tokens only, logical properties only (test/look.test.ts).
+
+   A paragraph of the editor already keeps its new lines (.ms-editor is white-space: pre-wrap), and a blank line
+   already parts two paragraphs. So a poem's layout is stylesheet work on the page's class (ms-poem, with
+   ms-poem-center or ms-poem-left): nothing in the document changes. */
+
+/* ---- the P button: an italic serif P, the desk's own display face (the page's and the brand's EB Garamond) ---- */
+#insertToolbar > .tool-group[data-tg="mode"] { flex: 0 0 auto; }
+#insertToolbar > .tool-group[data-tg="mode"] > .tool-btn { flex: 0 0 auto; }
+.tool-btn.poem-btn { min-width: 36px; padding: 0 11px; }
+.tool-btn.poem-btn .poem-p { font-family: "EB Garamond", Georgia, serif; font-style: italic; font-weight: 500; font-size: 20px; line-height: 1; }
+/* pressed: the accent's soft fill and the accent as its border */
+.tool-btn.poem-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+/* a tool that is off for now (the Verse tool in a poem): still focusable, so its tooltip can say why */
+.tool-btn[aria-disabled="true"] { opacity: .45; cursor: default; }
+.tool-btn[aria-disabled="true"]:hover { background: transparent; border-color: transparent; color: var(--ink-2); }
+
+/* ---- the strip under the toolbar: the label (the desk's small letterspaced label) and Centred / Left ---- */
+.poem-strip {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px;
+  margin: -6px 0 14px; padding-block: 6px; padding-inline: 14px 6px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px;
+}
+.poem-strip-lab { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.poem-strip .seg { flex: 0 0 auto; min-width: 200px; }
+.poem-strip .seg button { padding: 6px 14px; }
+/* .seg clips what leaves it, so the focus ring is drawn inside the button */
+.poem-strip .seg button:focus-visible { outline-offset: -3px; }
+.poem-strip .seg button.active:focus-visible { outline-color: var(--accent-ink); }
+
+/* ---- the page ----
+   Type 21/19 of the prose size; a line gap 1.4 times the prose page's (1.6 x 1.4 = 2.24); between stanzas one more
+   line of space, so a stanza's first line stands twice a line gap below the last line of the stanza before. The
+   poem is one column of at most 45 characters, centred on the page: the paragraphs (stanzas) are its rows. */
+.ms-page.ms-poem .ms-editor {
+  --poem-rule: color-mix(in srgb, var(--line-2) 80%, transparent);
+  --poem-gutter: 1.5em;
+  display: grid; justify-content: center; align-content: start;
+  grid-template-columns: minmax(0, calc(45ch + 2 * var(--poem-gutter)));
+  font-size: calc(1em * 21 / 19); line-height: 2.24;
+  /* a space typed at a line's end hangs past it, so it never pulls a centred line off its centre */
+  white-space: pre-wrap;
+  hyphens: manual;
+}
+/* Centred: every line centred on the column. Left: the lines range left, and the column is only as wide as the
+   longest line (never wider than the measure), so the block as a whole stands centred on the page. */
+.ms-page.ms-poem-center .ms-editor { text-align: center; }
+.ms-page.ms-poem-left .ms-editor { text-align: start; grid-template-columns: fit-content(calc(45ch + 2 * var(--poem-gutter))); }
+/* Left: a line too long for the column turns over, and its turn-over hangs in 1.5em, as the page sets it (the book's
+   stylesheet, .verse .vl). A paragraph's lines are text parted by new-line characters, so this is text-indent's
+   "hanging each-line"; a browser that does not know it keeps the turn-over flush (the whole declaration is dropped). */
+@supports (text-indent: 1.5em hanging each-line) {
+  .ms-page.ms-poem-left .ms-editor > p { text-indent: 1.5em hanging each-line; }
+}
+/* each block of the chapter is a row of the column; the thin rule down the column's start edge is drawn row by
+   row (the space under a stanza is padding, so the rule runs on unbroken from the first line to the last) */
+.ms-page.ms-poem .ms-editor > :not(.bm-dotmark) {
+  min-width: 0; margin: 0; padding-block: 0 2.24em; padding-inline: var(--poem-gutter);
+  background-image: linear-gradient(var(--poem-rule), var(--poem-rule));
+  background-repeat: no-repeat; background-size: 1px 100%; background-position: 0 0;
+}
+.ms-page.ms-poem[dir="rtl"] .ms-editor > :not(.bm-dotmark) { background-position: 100% 0; }
+.ms-page.ms-poem .ms-editor > :not(.bm-dotmark):last-child { padding-block-end: 0; }
+/* a list keeps room for its markers inside the column */
+.ms-page.ms-poem .ms-editor > .ms-list { padding-inline-start: calc(var(--poem-gutter) + 1.6em); }
+
+/* ---- the starter lines of an empty poem ----
+   Drawn by the stylesheet from the paragraph's data-ghost (a decoration of the editor's view, poem.ts): they are
+   not in the document, so no count, preview or export can read them. They stand over the empty first line, where
+   the caret is, and go with the first character typed. */
+.ms-page.ms-poem .ms-editor > .ms-poem-ghost::after {
+  content: attr(data-ghost); display: block; white-space: pre-line;
+  margin-block-start: -2.24em; margin-block-start: -1lh;
+  color: var(--muted); font-style: italic; pointer-events: none; user-select: none;
+}
+
+@media (max-width: 560px) {
+  .ms-page.ms-poem .ms-editor { --poem-gutter: 1em; }
+  .poem-strip .seg { min-width: 0; flex: 1 1 auto; }
+}
+@media (forced-colors: active) {
+  .tool-btn.poem-btn[aria-pressed="true"] { border-color: Highlight; }
+  .ms-page.ms-poem .ms-editor { --poem-rule: CanvasText; }
+}
+/* ==== /BEUK:poemmode ==== */

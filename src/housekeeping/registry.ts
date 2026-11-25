@@ -2291,6 +2291,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The verse is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
   },
   {
+    id: 'chapter.poem',
+    title: 'Poem Mode: a chapter marked as a poem is set by the verse renderer, line for line and stanza for stanza, centred or left; its stored text is never changed; no drop cap or lead-in; the EPUB carries it and validates',
+    kind: 'client-only',
+    reason: 'The poem is typeset by the studio renderer and measured in the browser at phone width; the server builds its EPUB with that same lifted code (tests/poem-mode.test.ts).',
+  },
+  {
     id: 'chapter.align',
     title: 'Centre and right: aligned blocks in preview, print and EPUB, w:jc in the Word export, and centred/right paragraphs come in from Word as containers',
     kind: 'client-only',
@@ -4113,7 +4119,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       const problems = checkWeeklyContent(w);
       assert(problems.length === 0, problems.join('; '));
       if (!w.latest) throw new NotConfigured('no issue under content/weekly/en yet');
-      return `${w.issues.length} issue(s); latest No. ${w.latest.number}, ${w.latest.week}: ${w.latest.banner}`;
+      return `${w.issues.length} issue(s); latest Edition ${w.latest.number}, ${w.latest.week}: ${w.latest.banner}`;
     },
   },
   {

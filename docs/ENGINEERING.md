@@ -3946,6 +3946,142 @@ page stays the lines the title-page reader expects, and a centred chapter
 heading line stays a heading. Self-checks: `chapter.containers`,
 `chapter.verse`, `chapter.align`.
 
+## Poem Mode (BEUK:poemmode)
+
+Asked for by a reader aged ten: a chapter that is a poem from its first
+line to its last, without typing a fence. Work order: Poem Mode for the
+writer's desk, 2026-11-24.
+
+**The mark.** Two optional fields on the section (`docs/book-format.md`):
+`mode: "verse"`, stored only for a poem (absent, or anything else, reads as
+prose), and `verseAlign: "left"`, stored only when the writer chose left
+(absent reads as centred). Kept by `normalizeSection` in `client/index.html`
+and by the server's reader (`src/book/schema.ts`, `src/book/read.ts`: any
+other value is dropped with a `bad-enum` warning, as `plateFit` is). Nothing
+is migrated: a book made before the fields reads as prose and gains no key.
+Switching Poem Mode off removes `mode` and leaves `verseAlign`, so the
+choice is remembered. Only a body chapter can be a poem, never a Part and
+never front or back matter (`poemAlignOf` in the page, `poemCan` in the
+studio): the editor offers the mode nowhere else, and a `mode` stored on
+such a section is not read.
+
+**The text is the source of truth.** The fields say how the chapter's
+`content` is read and never change it. Read as a poem, a new line of the
+text is a line and a blank line parts two stanzas. That is what a
+`::: verse` block has always meant for the lines inside it, and it is what
+the 2.0 editor already types: Enter is a new line of the same block, a blank
+line starts a new block (`studio/src/editor/behaviour.ts`). So Poem Mode has
+no typing model of its own and no second verse markup. The one key that
+differs is Shift+Enter: in prose it writes the mark of a line break the
+page keeps (a backslash before the new line, BEUK:breaksshown); in a poem
+every new line is kept already, so it writes the plain new line. A mark
+already in the text (typed while the chapter was prose) is read as the end
+of its line and is not printed (`poemSeg`); it stays in the stored text.
+
+**The editor** (`studio/src/editor/poem.ts`, `PoemMode.tsx`,
+`studio/src/styles/poem.css`; 2.0 only, 1.0's page has no such control):
+
+- The P button, `#btnPoemMode`, opens the insert toolbar in a group of its
+  own (`data-tg="mode"`) on a chapter that can be a poem. A plain toggle
+  button: `aria-pressed`, named "Poem Mode" (`aria-label` and tooltip); the
+  italic P is `aria-hidden`. Pressed, it takes `--accent-soft` as its fill
+  and `--accent` as its border.
+- While on, the strip `#poemStrip` stands under the toolbar: the label and
+  the two-way choice `#segPoemAlign`, the desk's own `.seg` control, each
+  choice a button with `aria-pressed` (Centred first, the default; then
+  Left). In a right-to-left book the second choice is named Right, since a
+  "left" poem ranges where its lines begin; what is stored is the same.
+- Both write the section's Y map in one transaction and nothing else. They
+  show what the section stores (`usePoem` observes it), so another tab or an
+  undo is followed.
+- Layout is stylesheet work on the page's class (`ms-poem`, with
+  `ms-poem-center` or `ms-poem-left`), since a paragraph of the editor
+  already keeps its new lines: one grid column of at most 45 characters
+  centred on the page, type 21/19 of the prose size, a line height of 2.24
+  (1.4 times the prose page's 1.6; with the larger type that is 47px from
+  line to line against prose's 30.4px), one more line of space between
+  stanzas, a thin rule down the column's start edge in `--line-2` at 80%. Left: the column
+  is only as wide as the longest line (`fit-content`), so the block stands
+  centred as a whole, and a line that turns over hangs 1.5em
+  (`text-indent: 1.5em hanging each-line`, where the browser knows it).
+- The starter lines of an empty poem are a decoration of the editor's view
+  (`poemPlugin`: a class and a `data-ghost` attribute on the one empty
+  paragraph; the words are drawn by `::after`), and the title field's
+  "Name your poem" is a placeholder. Neither is in the document, so no
+  count, preview or export can read them, and one character typed removes
+  the lines. The editor's root carries the lines as `aria-placeholder`
+  meanwhile.
+- While a chapter is a poem the drop cap and small-caps switches are not
+  shown (`EditorMeta`; what they store is untouched), and the Verse tool is
+  off (`aria-disabled`, its tooltip saying why).
+
+**The page.** `contentBlocksToHtml` hands every stretch of a poem chapter's
+running text (everything outside a fence) to the verse block's own renderer,
+`CONTAINER_KINDS.verse`, as one verse block marked as the poem's (`poemSeg`).
+So stanzas, lines, scene breaks, note definitions and picture lines behave
+exactly as they do in a `::: verse` block, the chapter's first paragraph is
+never the drop-cap or lead-in paragraph, and no line is joined, justified,
+indented or hyphenated. A fenced block inside a poem chapter is set as it
+always was. `structureText(text, poem)` keeps the leading indent of a poem's
+lines, as it does inside a verse fence. The markup of one stanza:
+
+    <div class="verse poem poem-center"><p class="stanza"><span class="vl">Line one</span><br/><span class="vl">Line two</span></p></div>
+
+(`poem-left` for a left poem). This is the existing verse markup, and it
+differs from the work order's literal tags (`div.stanza`, `p.line`, "never
+`<br>`"): a stanza is a `p`, a line is a block-level `span`, and the `<br/>`
+between lines stays as the fallback for a reader that ignores the stylesheet
+(the stylesheet hides it). That was the briefing session's call, so that
+there is one verse renderer and not two.
+
+The book stylesheet (`buildBookCss`): `.verse.poem` stands at the page's own
+margin (the 1.5em a verse block is set in by has no prose to part it from
+here). `poem-center` centres every line and takes the hung turn-over off.
+`poem-left` is the verse block exactly: lines flush, a turn-over hung 1.5em,
+ragged, a stanza kept whole where it fits (`break-inside: avoid`). In print,
+in the Print Interior View and in the studio's preview a left poem's block
+is only as wide as its longest line and stands centred on the page
+(`printLayoutCss`, and the scoped rule in `buildBookCss`); the EPUB and the
+standalone page keep it at the margin, because an e-reader cannot be relied
+on to shrink a block to its lines. A right-to-left book mirrors through the
+verse block's own rules: a "left" poem ranges right.
+
+**The other surfaces.**
+
+- Word and the submission manuscript: `docxContentParas(raw, section)`
+  writes a poem's stanzas as Verse paragraphs with real line breaks, through
+  the verse block's own `docx()`. A centred poem's are centred and set flush
+  (`w:ind` left 0), so they are centred on the page and not on the Verse
+  style's inset.
+- Markdown: a poem's lines are written as the book stores them, never run
+  together (`contentToMarkdown(raw, section)`). The file does not say that
+  the chapter is a poem (Markdown has no way to), so a Markdown reader still
+  shows a stanza's lines run on.
+- The narration script: each line of a stanza is a line of the script's
+  paragraph (`poemLinesMarked`).
+- Word counts and Story Insights read the text and not the mode: the same
+  numbers with Poem Mode on and off.
+
+**Known limits of this first version.**
+
+- A stanza whose lines open with a list mark (`- `, `1. `), `>` or `#` is
+  still a list, a quotation or a heading in the editor's own model, and is
+  shown as one in the editor. The page sets it as lines of verse with the
+  marks as typed. The narration script reads such a list or heading as it
+  reads any other.
+- A Beuk EPUB imported back brings a poem home as a verse block inside a
+  prose chapter (the import reads the `verse` class), not as a chapter
+  marked as a poem.
+- No rhyme or syllable tools, no shaped (concrete) poetry, no per-poem
+  typeface, no drop cap.
+
+Tests: `tests/book-read.test.ts`, `tests/book-editor-model.test.ts`,
+`tests/poem-mode.test.ts` (the server's EPUB), `studio/test/poem-mode-data.test.ts`,
+`studio/test/poem-mode.test.tsx` (the editor), `studio/test/poem-mode-surfaces.test.ts`
+(the preview, EPUB, standalone and print pages), `studio/test/poem-mode-files.test.ts`
+(Word, the manuscript, Markdown, the narration script, the print file).
+Self-check: `chapter.poem`.
+
 ## Containers: texts and letters
 
 Two more `CONTAINER_KINDS`, for fiction:
@@ -6031,7 +6167,7 @@ entry of its own if it reads the other way.
 `everych.*`). Every count stands after a colon, so no key needs a plural
 form in any language. English is the source; the 12 other languages are
 drafts awaiting V's sign-off, listed in `docs/strings-pending-signoff.md`
-section 4. The rows' names and values are the chapter settings' own keys,
+section 5. The rows' names and values are the chapter settings' own keys,
 but for "Plate fit" (`everych.plateFit`): the settings' own label there is
 "Fit", which says enough only under the plate row.
 

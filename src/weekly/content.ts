@@ -24,8 +24,8 @@ import { repoRoot } from '../warmth/pages.js';
  * and no sources is a problem. Such an issue needs no forecast. Optional:
  * tagline (the line under the masthead, when the issue sets its own),
  * price (a dateline entry), note (one line under the dateline), and
- * formerly (the number this issue was first published under: its stories'
- * old addresses then lead to the new ones).
+ * formerly (the number, or [numbers], this issue was published under before:
+ * its stories' old addresses then lead to the new ones).
  *
  * issue.md body (optional): the Sources foot. One `## ` line is its
  * heading; every `- ` line is a source, with the same inline Markdown.
@@ -108,8 +108,8 @@ export interface Issue {
   tagline: string | null;
   price: string | null;
   note: string | null;
-  /** The number this issue was first published under, if it was renumbered. */
-  formerly: number | null;
+  /** The numbers this issue was published under before, if it was renumbered (oldest first); [] if never. */
+  formerly: number[];
   lead: Story;
   front: Story[];
   briefs: Story[];
@@ -160,6 +160,14 @@ const need = (meta: Record<string, unknown>, key: string, file: string): string 
 };
 const opt = (meta: Record<string, unknown>, key: string): string | null =>
   typeof meta[key] === 'string' && (meta[key] as string).trim() ? (meta[key] as string).trim() : null;
+
+/** `formerly: 3` or `formerly: [1, 3]`: whole numbers, each an old issue number. */
+function formerlyOf(v: unknown, file: string): number[] {
+  if (v === undefined) return [];
+  const list = Array.isArray(v) ? v.map((x) => (/^\d+$/.test(String(x)) ? Number(x) : NaN)) : [typeof v === 'number' ? v : NaN];
+  if (list.some((n) => !Number.isInteger(n) || n < 1)) throw new Error(`${file}: formerly is an issue number or a list of them`);
+  return list;
+}
 
 const SAFE_IMAGE = /^[a-z0-9][a-z0-9._-]*\.(jpg|jpeg|png|webp)$/i;
 
@@ -297,7 +305,7 @@ export function loadWeeklyContent(lang: (typeof WEEKLY_LANGS)[number] = 'en'): W
       tagline: opt(meta, 'tagline'),
       price: opt(meta, 'price'),
       note: opt(meta, 'note'),
-      formerly: typeof meta.formerly === 'number' ? meta.formerly : null,
+      formerly: formerlyOf(meta.formerly, ifile),
       lead,
       front: by('front'),
       briefs: by('brief'),
@@ -322,7 +330,7 @@ export function checkWeeklyContent(c: WeeklyContent): string[] {
   c.issues.forEach((issue, i) => {
     if (issue.number !== i + 1) problems.push(`issue ${issue.number}: issues are numbered 001, 002, … without gaps`);
     if (issue.weather && !issue.sources.length) problems.push(`issue ${issue.number}: a weather reading needs its source in the issue's sources`);
-    if (issue.formerly !== null && issue.formerly === issue.number) problems.push(`issue ${issue.number}: formerly names its own number`);
+    if (issue.formerly.includes(issue.number)) problems.push(`issue ${issue.number}: formerly names its own number`);
     // Opinion is kept apart from the news: said in its kicker, tied to what it answers, never dressed as a news story.
     if (issue.leaders.length > 1) problems.push(`issue ${issue.number}: one leader to an issue`);
     for (const s of new Set(issue.leaders)) {

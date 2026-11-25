@@ -11,6 +11,7 @@ import { useToast } from '../shell/Toasts';
 import { applyTextEdit, editorText, textArea } from './insert';
 import { ImageDialog } from '../pictures/ImageDialog';
 import { IMG_AUTO_REFUSED } from '../pictures/scene';
+import { PoemButton, type Poem } from './PoemMode';
 import {
   autoFormatEdit, footnoteEdit, footnoteNumber, linkEdit, linkWordsOf, marginEdit, marginLastName, marginWordsOf, textAction, type ToolKind,
 } from './tools';
@@ -30,7 +31,13 @@ import {
    the scene bar a new scene break opens is pictures/SceneBar.
 
    Left out, with their waves: Dictate (wave 3) and the Focus cluster — Read
-   Aloud and Zen (wave 3). */
+   Aloud and Zen (wave 3).
+
+   BEUK:poemmode — the toolbar opens with the P button (PoemMode.tsx), in a
+   group of its own, on a chapter that can be a poem. It is 2.0's own: 1.0
+   has no such button. While the chapter is a poem the Verse tool is off
+   (aria-disabled, with the reason as its tooltip): every line of the
+   chapter is kept already, so a verse block inside it would add nothing. */
 
 type Btn = { kind: ToolKind | 'bold' | 'italic'; icon: IconName; label: UiKey; title: UiKey };
 
@@ -79,7 +86,11 @@ type Props = {
   sectionTexts: () => string[];
   /** The book (Auto-Format's quotes follow its language: 1.0's curlify reads bookLang() from the state). */
   ydoc: Y.Doc | null;
+  /** BEUK:poemmode — the open section's own Y map and its Poem Mode as stored (PoemMode.tsx usePoem). */
+  sectionMap?: Y.Map<unknown> | null;
+  poem?: Poem;
 };
+const NO_POEM: Poem = { can: false, on: false, align: 'center' };
 
 function withClosure(fn: (c: ClosureApi, whole: Closure) => void): void {
   const c = closureIfLoaded();
@@ -87,7 +98,7 @@ function withClosure(fn: (c: ClosureApi, whole: Closure) => void): void {
   else void loadClosure().then((l) => fn(l.api, l));
 }
 
-export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorToolbar({ editor, marks, onMark, sectionType, sectionTexts, ydoc }, ref) {
+export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorToolbar({ editor, marks, onMark, sectionType, sectionTexts, ydoc, sectionMap = null, poem = NO_POEM }, ref) {
   const { t } = useLocale();
   const toast = useToast();
   const [fn, setFn] = useState<{ n: number } | null>(null);
@@ -125,8 +136,11 @@ export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorTo
     });
   };
 
+  const showPoem = poem.can && !!ydoc && !!sectionMap;
   const button = (b: Btn, collapse: number) => {
     const isMark = b.kind === 'bold' || b.kind === 'italic';
+    // BEUK:poemmode: in a chapter that is a poem the Verse tool is off, and says why
+    const off = b.kind === 'verse' && poem.on;
     return (
       <button
         key={b.kind}
@@ -134,10 +148,11 @@ export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorTo
         className="tool-btn"
         data-collapse={collapse}
         data-insert={b.kind}
-        title={t(b.title)}
+        title={off ? t('tool.verseInPoem') : t(b.title)}
+        aria-disabled={off ? 'true' : undefined}
         aria-pressed={isMark ? (b.kind === 'bold' ? marks.strong : marks.em) : undefined}
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => (b.kind === 'bold' ? onMark('strong') : b.kind === 'italic' ? onMark('em') : run(b.kind as ToolKind))}
+        onClick={() => (off ? undefined : b.kind === 'bold' ? onMark('strong') : b.kind === 'italic' ? onMark('em') : run(b.kind as ToolKind))}
       >
         <Icon name={b.icon} />
         <span className="tl">{t(b.label)}</span>
@@ -148,7 +163,16 @@ export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorTo
   return (
     <>
       <div className="toolbar" id="insertToolbar" role="toolbar" aria-controls="manuscript" ref={ref}>
+        {showPoem && (
+          <>
+            <div className="tool-group" data-tg="mode">
+              <PoemButton ydoc={ydoc!} section={sectionMap!} poem={poem} />
+            </div>
+            <span className="tool-break" aria-hidden="true" />
+          </>
+        )}
         <div className="tool-group" data-tg="format">
+          {showPoem && <span className="tool-sep" aria-hidden="true" />}
           {button({ kind: 'bold', icon: 'Bold', label: 'tool.bold', title: 'tool.boldTitle' }, 1)}
           {button({ kind: 'italic', icon: 'Italic', label: 'tool.italic', title: 'tool.italicTitle' }, 1)}
           {FORMAT.map((b) => button(b, 1))}

@@ -8794,6 +8794,30 @@
       };
       Object.keys(EXPORTPROOF_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], EXPORTPROOF_STRINGS[code]); });
       /* ==== /BEUK:exportproof ==== */
+      /* ==== BEUK:poemmode ==== — Studio 2.0's Poem Mode (studio/src/editor/PoemMode.tsx, poem.ts): the P button's name
+         and the strip's label (poem.mode), the name of the Centred / Left choice (poem.alignAria; the two choices
+         themselves are the cover maker's creator.alignCenter / creator.alignLeft, and creator.alignRight in a
+         right-to-left book), the starter lines of an empty poem (poem.titlePh, poem.ghost1 to 3: placeholders, never
+         written to the book), and what the Verse tool says while it is off in a poem (tool.verseInPoem). 1.0's own
+         editor does not use them. All 13 packs (the 12 beside English are drafts for V's sign-off:
+         docs/strings-pending-signoff.md) */
+      const POEMMODE_STRINGS = {
+        "en": { "poem.mode": "Poem Mode", "poem.alignAria": "How the lines of the poem are set", "poem.titlePh": "Name your poem", "poem.ghost1": "Write your first line here…", "poem.ghost2": "…press Enter for the next one…", "poem.ghost3": "…and a blank line starts a new stanza.", "tool.verseInPoem": "Verse — not needed here: this whole chapter is a poem, so every line break is kept already" },
+        "es": { "poem.mode": "Modo poema", "poem.alignAria": "Cómo se colocan los versos del poema", "poem.titlePh": "Ponle nombre a tu poema", "poem.ghost1": "Escribe aquí tu primer verso…", "poem.ghost2": "…pulsa Intro para el siguiente…", "poem.ghost3": "…y una línea en blanco empieza una estrofa nueva.", "tool.verseInPoem": "Verso — aquí no hace falta: todo el capítulo es un poema, así que cada salto de línea ya se conserva" },
+        "fr": { "poem.mode": "Mode poème", "poem.alignAria": "Disposition des vers du poème", "poem.titlePh": "Donnez un nom à votre poème", "poem.ghost1": "Écrivez ici votre premier vers…", "poem.ghost2": "…appuyez sur Entrée pour le suivant…", "poem.ghost3": "…et une ligne vide commence une nouvelle strophe.", "tool.verseInPoem": "Vers — inutile ici : tout le chapitre est un poème, chaque retour à la ligne est donc déjà gardé" },
+        "de": { "poem.mode": "Gedichtmodus", "poem.alignAria": "Ausrichtung der Gedichtzeilen", "poem.titlePh": "Geben Sie Ihrem Gedicht einen Namen", "poem.ghost1": "Schreiben Sie hier Ihre erste Zeile…", "poem.ghost2": "…drücken Sie Eingabe für die nächste…", "poem.ghost3": "…und eine Leerzeile beginnt eine neue Strophe.", "tool.verseInPoem": "Vers — hier nicht nötig: Das ganze Kapitel ist ein Gedicht, jeder Zeilenumbruch bleibt also schon erhalten" },
+        "it": { "poem.mode": "Modalità poesia", "poem.alignAria": "Come sono disposti i versi della poesia", "poem.titlePh": "Dai un nome alla tua poesia", "poem.ghost1": "Scrivi qui il tuo primo verso…", "poem.ghost2": "…premi Invio per il successivo…", "poem.ghost3": "…e una riga vuota inizia una nuova strofa.", "tool.verseInPoem": "Versi — qui non serve: tutto il capitolo è una poesia, quindi ogni a capo è già conservato" },
+        "pt": { "poem.mode": "Modo poema", "poem.alignAria": "Como ficam dispostos os versos do poema", "poem.titlePh": "Dê um nome ao seu poema", "poem.ghost1": "Escreva aqui o seu primeiro verso…", "poem.ghost2": "…prima Enter para o seguinte…", "poem.ghost3": "…e uma linha em branco começa uma nova estrofe.", "tool.verseInPoem": "Verso — aqui não é preciso: o capítulo inteiro é um poema, por isso cada quebra de linha já é mantida" },
+        "nl": { "poem.mode": "Gedichtmodus", "poem.alignAria": "Hoe de regels van het gedicht worden gezet", "poem.titlePh": "Geef uw gedicht een naam", "poem.ghost1": "Schrijf hier uw eerste regel…", "poem.ghost2": "…druk op Enter voor de volgende…", "poem.ghost3": "…en een lege regel begint een nieuwe strofe.", "tool.verseInPoem": "Vers — hier niet nodig: het hele hoofdstuk is een gedicht, dus elke regelafbreking blijft al behouden" },
+        "pl": { "poem.mode": "Tryb wiersza", "poem.alignAria": "Układ wersów wiersza", "poem.titlePh": "Nadaj tytuł swojemu wierszowi", "poem.ghost1": "Napisz tutaj pierwszy wers…", "poem.ghost2": "…naciśnij Enter, aby zacząć następny…", "poem.ghost3": "…a pusta linia zaczyna nową strofę.", "tool.verseInPoem": "Wiersz — tutaj niepotrzebny: cały rozdział jest wierszem, więc każdy podział wiersza jest już zachowany" },
+        "ru": { "poem.mode": "Режим стихотворения", "poem.alignAria": "Как выровнены строки стихотворения", "poem.titlePh": "Дайте название своему стихотворению", "poem.ghost1": "Напишите здесь первую строку…", "poem.ghost2": "…нажмите Enter, чтобы начать следующую…", "poem.ghost3": "…а пустая строка начинает новую строфу.", "tool.verseInPoem": "Стихи — здесь не нужно: вся глава уже стихотворение, поэтому каждый перенос строки сохраняется" },
+        "tr": { "poem.mode": "Şiir Modu", "poem.alignAria": "Şiirin dizelerinin hizalanması", "poem.titlePh": "Şiirinize bir ad verin", "poem.ghost1": "İlk dizenizi buraya yazın…", "poem.ghost2": "…sonraki dize için Enter’a basın…", "poem.ghost3": "…boş bir satır da yeni bir kıta başlatır.", "tool.verseInPoem": "Şiir — burada gerekmez: bölümün tamamı bir şiir, bu yüzden her satır sonu zaten korunuyor" },
+        "ar": { "poem.mode": "وضع القصيدة", "poem.alignAria": "طريقة محاذاة أسطر القصيدة", "poem.titlePh": "سمِّ قصيدتك", "poem.ghost1": "اكتب سطرك الأول هنا…", "poem.ghost2": "…واضغط Enter للسطر التالي…", "poem.ghost3": "…وسطر فارغ يبدأ مقطعًا جديدًا.", "tool.verseInPoem": "شعر — لا حاجة إليه هنا: الفصل كله قصيدة، ولذلك فكل فاصل أسطر محفوظ أصلًا" },
+        "ja": { "poem.mode": "詩モード", "poem.alignAria": "詩の行の揃え方", "poem.titlePh": "詩に名前をつけましょう", "poem.ghost1": "ここに最初の行を書きます…", "poem.ghost2": "…Enter キーで次の行へ…", "poem.ghost3": "…空行を入れると、新しい連が始まります。", "tool.verseInPoem": "韻文 — ここでは不要です。この章全体が詩なので、改行はすべてそのまま保たれます" },
+        "zh-Hans": { "poem.mode": "诗歌模式", "poem.alignAria": "诗行的对齐方式", "poem.titlePh": "给你的诗起个名字", "poem.ghost1": "在这里写下第一行…", "poem.ghost2": "…按 Enter 写下一行…", "poem.ghost3": "…空一行就开始新的一节。", "tool.verseInPoem": "诗行 — 这里不需要：整章都是一首诗，所以每个换行都已保留" }
+      };
+      Object.keys(POEMMODE_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], POEMMODE_STRINGS[code]); });
+      /* ==== /BEUK:poemmode ==== */
       /* ==== BEUK:everychapter ==== — Studio 2.0's "Use on every chapter…" (studio/src/chapters/EveryChapter.tsx, everych.ts): one chapter's
          backdrop, drop cap, lead-in or plate fit copied to every other chapter (everych.*: 23 keys). 1.0's own page does not use
          them. All 13 packs (the 12 beside English are drafts for V's sign-off: docs/strings-pending-signoff.md). Every count
@@ -29478,14 +29502,60 @@
         });
         return parts;
       }
+      /* ==== BEUK:poemmode ==== Poem Mode: a chapter the writer has marked as a poem (asked for by a reader aged ten).
+         The mark is two fields on the section (normalizeSection): mode "verse", and verseAlign "left" when the lines
+         are to range left (absent: every line centred). They say how the chapter's text is READ; the text is the
+         source of truth and no surface rewrites it. Read as a poem, a new line of the text is a line and a blank line
+         parts two stanzas: exactly what a "::: verse" block has always meant for the lines inside it. So a poem
+         chapter is set by the verse block's own renderer (CONTAINER_KINDS.verse, below), stanza for stanza and line for
+         line, and there is no second verse markup: the chapter's running text (every stretch of it outside a fence)
+         is handed to that renderer as one verse block, marked as the poem's (seg.poem: its alignment), and a fenced
+         block inside the chapter is set as it always was.
+         Only a body chapter can be a poem: never a Part, never front or back matter (the editor offers the mode
+         nowhere else, and a mode stored on such a section is not read).
+         poemAlignOf: "" for a section that is no poem, else "center" or "left".
+         poemSeg: a stretch of the chapter's running text as the verse block it is read as. A line break the writer
+         MARKED while the chapter was prose (BEUK:breaksshown: a backslash straight before the newline) is the end of
+         its line here like any other, and its backslash is not set: every line of a poem is kept already. As in a
+         paragraph, only a backslash before another line of the same stanza is a mark; one at a stanza's end is a
+         character the writer typed, and stays. */
+      function poemAlignOf(section) {
+        if (!section || section.mode !== "verse" || (section.kind || "body") !== "body" || section.type === "part") return "";
+        return section.verseAlign === "left" ? "left" : "center";
+      }
+      function poemSeg(seg, align) {
+        const src = seg.lines;
+        const lines = src.map((l, i) => (l.charAt(l.length - 1) === "\\" && i + 1 < src.length && src[i + 1].trim() ? l.slice(0, -1) : l));
+        return { kind: "verse", arg: "", lines: lines, text: lines.join("\n"), poem: align === "left" ? "left" : "center" };
+      }
+      /* A poem chapter's text for a surface that reads paragraphs and keeps only the line breaks the writer marked
+         (the narration script): every line break inside a stanza written as a marked one, so each line of the poem
+         is a line of its paragraph there too. A derived reading, never stored. A stanza that is a list or a heading
+         by its marks is left as it is (that surface reads it as it reads any list or heading); a fenced block is
+         handed on with its fence, untouched. */
+      function poemLinesMarked(text) {
+        return parseContainers(text).map((seg) => {
+          if (containerKind(seg.kind)) return "::: " + seg.kind + (seg.arg ? " " + seg.arg : "") + "\n" + seg.text + "\n:::";
+          return verseParts(poemSeg(seg, "left")).map((pt) => {
+            if (pt.block != null) return pt.block;
+            const lines = pt.lines.map((l) => l.trim());
+            return listItemsOf(lines) || /^#{1,5} /.test(lines[0]) ? lines.join("\n") : lines.join(LINE_BREAK_MARK);
+          }).join("\n\n");
+        }).join("\n\n");
+      }
+      /* ==== /BEUK:poemmode ==== */
       const CONTAINER_KINDS = {
         /* Verse: every line break is the poet's. One <p> per stanza, a
            block-level span per line (so a long line hangs its turn-over)
-           with a <br/> between for readers that ignore the stylesheet. */
+           with a <br/> between for readers that ignore the stylesheet.
+           BEUK:poemmode — a poem chapter's own text comes through here too (poemSeg): its block carries "poem" and
+           its alignment ("poem-center", "poem-left") as classes, for the stylesheet. In Word a poem's stanzas are
+           Verse paragraphs like any verse block's; a centred poem's are centred, and set flush so that they are
+           centred on the page and not on the Verse style's inset. A verse block the writer fenced carries neither. */
         verse: {
           keepLines: true, keepIndent: true,
           html(seg, cx) {
-            return '<div class="verse">' + verseParts(seg).map((pt) =>
+            return '<div class="verse' + (seg.poem ? " poem poem-" + seg.poem : "") + '">' + verseParts(seg).map((pt) =>
               pt.block != null
                 ? cx.blocks(pt.block)
                 : '<p class="stanza">' + pt.lines.map((l) => '<span class="vl">' + containerIndent(l) + cx.inline(l.trim()) + "</span>").join("<br/>") + "</p>"
@@ -29495,7 +29565,7 @@
             return verseParts(seg).map((pt) =>
               pt.block != null
                 ? cx.blocks(pt.block).join("")
-                : cx.para("Verse", pt.lines.map((l) => (containerIndent(l) ? cx.run(containerIndent(l)) : "") + cx.runs(l.trim())).join(cx.lineBreak)));
+                : cx.para("Verse", pt.lines.map((l) => (containerIndent(l) ? cx.run(containerIndent(l)) : "") + cx.runs(l.trim())).join(cx.lineBreak), seg.poem === "center" ? { align: "center", flush: true } : null));
           }
         },
         /* Centre / right: the enclosed paragraphs set as they are,
@@ -30182,6 +30252,9 @@
         return marginColumnRules(S, isRtlLang(bookLang())).concat([
           S + ".mnote.mn-float { break-inside: avoid; page-break-inside: avoid; }",
           S + ".mnote { font-family: 'Patrick Hand', " + fontStack(bodyFaceOf(state.theme.bodyFont)) + "; }",
+          /* BEUK:poemmode — a poem chapter set left: its lines range left and the block as a whole stands centred on
+             the page (only as wide as its longest line, never wider than the page) */
+          S + ".verse.poem-left { width: -moz-fit-content; width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }",
           S + ".sideways { break-before: " + brk + "; break-after: " + brk + ";" + (cols ? "" : " page-break-before: always; page-break-after: always;") + " break-inside: avoid; position: relative; width: " + inCss(W) + "; height: " + inCss(H) + "; margin: 0; padding: 0; border: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }",
           S + ".sideways .sw-in { position: absolute; top: 0; left: " + inCss(W) + "; width: " + inCss(H) + "; height: " + inCss(W) + "; box-sizing: border-box; padding: 0 0.1in; transform-origin: 0 0; transform: rotate(90deg); display: flex; flex-direction: column; justify-content: center; overflow: hidden; }",
           S + ".upside-down .ud-in { transform: rotate(180deg); }"
@@ -30274,14 +30347,16 @@
       const containerKind = (kind) => (kind && Object.prototype.hasOwnProperty.call(CONTAINER_KINDS, kind)) ? CONTAINER_KINDS[kind] : null;
       /* beautifyText folds runs of spaces; inside a keepIndent container
          the leading indent of each line is the writer's, so it is set
-         aside (as U+E001 placeholders) before the fold and put back. */
-      function holdContainerIndents(s) {
-        if (s.indexOf(":::") === -1) return s;
-        let keep = false;
+         aside (as U+E001 placeholders) before the fold and put back.
+         BEUK:poemmode — `poem`: the text is a poem chapter's, read as verse: the lines outside every fence keep
+         their indents too, as a verse block's do (structureText passes it on; every other caller leaves it out). */
+      function holdContainerIndents(s, poem) {
+        if (!poem && s.indexOf(":::") === -1) return s;
+        let keep = !!poem;
         return s.split("\n").map((l) => {
           const om = l.match(CONTAINER_OPEN_RE);
           if (om) { const k = containerKind(om[1].toLowerCase()); keep = !!(k && k.keepIndent); return l; }
-          if (CONTAINER_CLOSE_RE.test(l)) { keep = false; return l; }
+          if (CONTAINER_CLOSE_RE.test(l)) { keep = !!poem; return l; }
           if (!keep) return l;
           const m = l.match(/^[ \t]+(?=\S)/);
           return m ? "\uE001".repeat(m[0].replace(/\t/g, "    ").length) + l.slice(m[0].length) : l;
@@ -30362,20 +30437,23 @@
          trimmed: beautifyText's own steps of that kind, in its order. No character of the writer's prose is changed:
          a straight quote stays straight, "--" stays "--", "..." stays "...", a hyphen stays a hyphen. The import
          stores every text through this; the tidying itself (beautifyText: curly quotes, dashes, the ellipsis) is the
-         writer's own Polish button. */
-      function structureText(text) {
+         writer's own Polish button.
+         BEUK:poemmode — `poem` (true only where a surface sets a poem chapter: poemAlignOf): the lines outside every
+         fence keep their leading indents, as the lines of a verse block do, the first line's included. Every other
+         caller leaves it out and reads exactly what it always read. */
+      function structureText(text, poem) {
         let s = String(text == null ? "" : text);
         const rawHeld = [];
         if (s.indexOf(":::") !== -1) s = holdRawContainers(s.replace(/\r\n?/g, "\n"), rawHeld);
         s = s.replace(/\r\n?/g, "\n");
-        s = holdContainerIndents(s);
+        s = holdContainerIndents(s, poem);
         s = s.replace(/[ \t]+/g, " ");
         s = s.replace(/^[ \t]*([*#]{3,}|-{3,}|_{3,}|#)[ \t]*$/gm, "***"); /* BEUK:manuscript — a lone "#" is standard manuscript format's scene break */
         if (s.indexOf("\uE001") !== -1) s = s.replace(/\uE001/g, " ");
         s = s.split("\n").map((l) => l.replace(/\s+$/g, "")).join("\n");
         s = s.replace(/([^\n])\n(?=\[(?:\^[^\]\s]+|\d{1,3})\]:)/g, "$1\n\n"); /* BEUK:notelabels — under any label the writer typed */
         s = s.replace(/\n{3,}/g, "\n\n");
-        s = s.trim();
+        s = poem ? s.replace(/^\n+/, "").replace(/\s+$/, "") : s.trim();
         if (rawHeld.length) s = s.replace(new RegExp(String.fromCharCode(0xE052) + "(\\d+)" + String.fromCharCode(0xE053), "g"), (m, i) => rawHeld[+i]);
         return s;
       }
@@ -31116,7 +31194,8 @@
       function contentBlocksToHtml(rawContent, section, isFirst, forExport, dataMedia) {
         /* BEUK:notelabels — the notes as a reader is shown them: a label that is no number is set as the number it
            takes in the book (notesAsShown); a book of numbers is read exactly as it is stored */
-        const text = structureText(notesAsShown(section, rawContent || "")); /* BEUK:asgiven — the characters as stored: no surface tidies */
+        const poem = poemAlignOf(section); /* BEUK:poemmode — "" for prose; a poem chapter's alignment */
+        const text = structureText(notesAsShown(section, rawContent || ""), !!poem); /* BEUK:asgiven — the characters as stored: no surface tidies */
         if (!text) return forExport ? "" : '<p class="empty-note">This section has no text yet. Write in the editor to see it typeset here.</p>';
         const blocks = stripContainerMarks(text).split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
         /* Notes: definitions are collected wherever they sit in the
@@ -31309,7 +31388,17 @@
         const segs = parseContainers(text);
         segs.forEach((seg) => {
           const k = containerKind(seg.kind);
-          if (!k) { runBlocks(seg.text); return; }
+          /* BEUK:poemmode — in a poem chapter the running text is verse: each stretch of it outside a fence is set by
+             the verse block's own renderer (stanzas, lines, scene breaks, notes and pictures exactly as in a
+             "::: verse" block), so no paragraph of it is ever joined, justified, indented or given the chapter's
+             drop cap or lead-in. A fence of a kind Beuk does not know is running text too. A fenced block Beuk knows
+             is set as it always was. */
+          if (!k) {
+            if (!poem) { runBlocks(seg.text); return; }
+            const verse = CONTAINER_KINDS.verse.html(poemSeg(seg, poem), cx);
+            if (verse) out.push(verse);
+            return;
+          }
           const html = k.html(seg, cx);
           if (html) out.push(html);
         });
@@ -31548,6 +31637,20 @@
           S + ".verse p.stanza:last-child { margin-bottom: 0; }",
           S + ".verse .vl { display: block; padding-left: 1.5em; text-indent: -1.5em; }",
           S + ".verse br { display: none; }",
+          /* BEUK:poemmode — a chapter that is a poem (the verse block as the chapter's own text). It stands at the
+             page's own margin: the 1.5em a verse block is set in by, to part it from the prose around it, has no
+             prose to part it from here. "poem-left" is then the verse block exactly: the lines flush, a line's
+             turn-over hung 1.5em, ragged, no first-line indent, a stanza kept whole where it fits.
+             "poem-center": every line centred, and no hung turn-over (a centred line that turns over is centred
+             on both of its lines). Named with both classes, so these win over the right-to-left rules below
+             whichever comes first: a right-to-left book's "left" poem ranges right, as its verse does. */
+          S + ".verse.poem { margin: 1em 0; }",
+          S + ".verse.poem-center, " + S + ".verse.poem-center p.stanza { text-align: center; }",
+          S + ".verse.poem-center .vl { padding-left: 0; padding-right: 0; text-indent: 0; }",
+          /* The studio's preview (a scope) sets a "left" poem as print does (printLayoutCss): the block only as wide
+             as its longest line and centred on the page as a whole. The EPUB and the standalone page (scope "")
+             keep it at the margin: an e-reader cannot be relied on to shrink a block to its lines. */
+          ...(scope ? [S + ".verse.poem-left { width: -moz-fit-content; width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }"] : []),
           /* Centre / right: signs, notes, sign-offs, with a breath around them. */
           S + ".align-center, " + S + ".align-right { margin: 0.85em 0; }",
           S + ".align-center, " + S + ".align-center p, " + S + ".align-center h2, " + S + ".align-center h3 { text-align: center; text-indent: 0; hyphens: manual; -webkit-hyphens: manual; }",
@@ -38670,7 +38773,7 @@
         try { theme = JSON.stringify(state.theme); } catch (e) { theme = ""; }
         return [printKeys, theme, state.meta.title || "", state.meta.author || "", state.meta.language || "",
           (state.images || []).map((im) => im.id).join(","),
-          state.sections.map((s) => [s.id, s.kind, s.type, s.included ? 1 : 0, s.number || "", s.title || "", s.subtitle || "", s.runHead || "", s.plateId || "", s.plateAlt || "", s.plateFit || "", s.backdropId || "", s.backdropStrength || "", s.content || ""].join("\u0001")).join("\u0002")
+          state.sections.map((s) => [s.id, s.kind, s.type, s.included ? 1 : 0, s.number || "", s.title || "", s.subtitle || "", s.runHead || "", s.mode || "", s.verseAlign || "", s.plateId || "", s.plateAlt || "", s.plateFit || "", s.backdropId || "", s.backdropStrength || "", s.content || ""].join("\u0001")).join("\u0002")
         ].join("\u0003");
       }
       function hcEnsureModel(force) {
@@ -53823,14 +53926,20 @@
 
       /* ================= Markdown export ================= */
       const yamlQ = (s) => '"' + String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ") + '"';
-      function contentToMarkdown(raw) {
-        const text = structureText(raw || ""); /* BEUK:asgiven — the characters as stored: no surface tidies */
+      /* BEUK:poemmode — `section`: the section the text is of. A poem chapter's running text is written line for
+         line as the book stores it (a blank line between stanzas, a mark the writer typed left where it is): the
+         lines are never run together into paragraphs, as prose lines are. The file carries no sign that the
+         chapter is a poem (Markdown has none), so a Markdown reader will still show a stanza's lines run on. */
+      function contentToMarkdown(raw, section) {
+        const poem = poemAlignOf(section);
+        const text = structureText(raw || "", !!poem); /* BEUK:asgiven — the characters as stored: no surface tidies */
         if (!text) return "";
         /* Containers keep their fences ("::: verse" ... ":::", the
            fenced-div syntax Pandoc reads too); a kept-lines kind keeps
            its lines, every other kind's content exports as blocks. */
         return parseContainers(text).map((seg) => {
           const k = containerKind(seg.kind);
+          if (!k && poem) return verseParts(seg).map((pt) => (pt.block != null ? mdBlocks(pt.block) : pt.lines.join("\n"))).filter(Boolean).join("\n\n"); /* BEUK:poemmode */
           const body = containerKeepsLines(k, seg) ? containerStanzas(seg).map((st) => st.join("\n")).join("\n\n") : mdBlocks(seg.text);
           if (!seg.kind) return body;
           return "::: " + seg.kind + (seg.arg ? " " + seg.arg : "") + "\n" + body + "\n:::";
@@ -53884,7 +53993,7 @@
             if (s.type === "chapter") h = "## " + (s.number ? "Chapter " + s.number + ": " : "") + (s.title || "Untitled");
             else h = "## " + (s.title || "");
             if (s.subtitle) h += "\n\n*" + s.subtitle + "*";
-            const body = contentToMarkdown(s.content);
+            const body = contentToMarkdown(s.content, s); /* BEUK:poemmode */
             return body ? h + "\n\n" + body : h;
           }
         }
@@ -56073,7 +56182,7 @@
       function docxPara(text, style, opts) {
         opts = opts || {};
         const spaceBefore = opts.spaceBefore || opts.before; /* BEUK:documents spaceBefore, back matter before */
-        const pPr = "<w:pPr>" + (style ? '<w:pStyle w:val="' + style + '"/>' : "") + (spaceBefore ? '<w:spacing w:before="' + spaceBefore + '"/>' : "") + (opts.align ? '<w:jc w:val="' + opts.align + '"/>' : "") + "</w:pPr>";
+        const pPr = "<w:pPr>" + (style ? '<w:pStyle w:val="' + style + '"/>' : "") + (spaceBefore ? '<w:spacing w:before="' + spaceBefore + '"/>' : "") + (opts.flush ? '<w:ind w:left="0" w:firstLine="0"/>' : "") /* BEUK:poemmode — flush: no inset of the style's, no first-line indent (a centred poem's stanza) */ + (opts.align ? '<w:jc w:val="' + opts.align + '"/>' : "") + "</w:pPr>";
         const runs = opts.rawRuns != null ? opts.rawRuns : docxInlineRuns(String(text == null ? "" : text));
         return "<w:p>" + pPr + runs + "</w:p>";
       }
@@ -56119,8 +56228,12 @@
             (n.abs !== 0 && n.fmt !== "bullet" ? '<w:lvlOverride w:ilvl="0"><w:startOverride w:val="' + n.start + '"/></w:lvlOverride>' : "") + "</w:num>").join("") +
           "</w:numbering>";
       }
-      function docxContentParas(raw) {
-        const text = structureText(raw || ""); /* BEUK:asgiven — the characters as stored: no surface tidies */
+      /* BEUK:poemmode — `section`: the section the text is of, when the caller has one. A poem chapter's running
+         text is written as Verse paragraphs (a stanza each, a real line break after each line), as a verse block
+         is; without a section, or for prose, the text is read exactly as it always was. */
+      function docxContentParas(raw, section) {
+        const poem = poemAlignOf(section);
+        const text = structureText(raw || "", !!poem); /* BEUK:asgiven — the characters as stored: no surface tidies */
         if (!text) return [];
         const out = [];
         /* opts.align: a centre/right container's alignment, carried
@@ -56203,6 +56316,7 @@
         };
         parseContainers(text).forEach((seg) => {
           const k = containerKind(seg.kind);
+          if (!k && poem) { CONTAINER_KINDS.verse.docx(poemSeg(seg, poem), cx).forEach((p) => { if (p) out.push(p); }); return; } /* BEUK:poemmode */
           if (!k || !k.docx) { blocksOf(seg.text).forEach((p) => out.push(p)); return; }
           const res = k.docx(seg, cx);
           (Array.isArray(res) ? res : [res]).forEach((p) => { if (p) out.push(p); });
@@ -56242,7 +56356,7 @@
             : s.type === "part" && s.number ? "Part " + s.number + (s.title ? ": " + s.title : "") : (s.title || "");
           parts.push(docxPara(heading, "Heading1"));
           if (s.subtitle) parts.push(docxPara(s.subtitle, "Normal", { align: "center", rawRuns: docxRun(s.subtitle, { i: true }) }));
-          docxContentParas(shown).forEach((p) => parts.push(p));
+          docxContentParas(shown, s).forEach((p) => parts.push(p)); /* BEUK:poemmode — the section says whether its text is a poem */
         });
         if (notes.length) {
           parts.push(docxPageBreak());
@@ -56484,7 +56598,7 @@
             if (p === br) { out.push(hash); return; }
             p = p.replace(/<w:color w:val="[0-9A-Fa-f]{6}"\/>/g, "");
             /* a centred or right-set paragraph carries no first-line indent */
-            p = p.replace(/(<w:jc w:val="(?:center|right)"\/>)/, '<w:ind w:firstLine="0"/>$1');
+            if (p.indexOf("<w:ind ") === -1) p = p.replace(/(<w:jc w:val="(?:center|right)"\/>)/, '<w:ind w:firstLine="0"/>$1'); /* BEUK:poemmode — unless it says its own indent already (a centred poem's stanza: one w:ind, never two) */
             if (under) p = p.replace(/<w:rPr>([\s\S]*?)<\/w:rPr>/g, (m0, inner) => {
               if (inner.indexOf("<w:i/>") === -1) return m0;
               inner = inner.replace("<w:i/>", "");
@@ -56533,7 +56647,7 @@
              title page's section break), so it adds no page break */
           parts.push(msP("Heading1", docxRun(msHeading(s), {}), i === 0 ? '<w:pageBreakBefore w:val="0"/>' : ""));
           if (String(s.subtitle || "").trim()) parts.push(msP("ChapterSub", docxRun(s.subtitle.trim(), {})));
-          msDress(docxContentParas(shown)).forEach((p) => parts.push(p));
+          msDress(docxContentParas(shown, s)).forEach((p) => parts.push(p)); /* BEUK:poemmode */
         });
         parts.push(msP("MsEnd", docxRun("END", {})));
         if (notes.length) {
@@ -57071,7 +57185,8 @@
            the script in which nothing is a note's mark (typed: true). It was read like any paragraph, so a "[12]" in a
            log came out "[NOTE 12]" with a footnote line after it. */
         const rawHeld = [];
-        const structured = structureText(shown || "");
+        /* BEUK:poemmode — a poem chapter: each line of a stanza is a line of the script's paragraph (poemLinesMarked) */
+        const structured = poemAlignOf(s) ? poemLinesMarked(structureText(shown || "", true)) : structureText(shown || "");
         const heldRe = new RegExp("^" + String.fromCharCode(0xE052) + "(\\d+)" + String.fromCharCode(0xE053) + "$");
         const text = stripContainerMarks(spokenContainerText(structured.indexOf(":::") === -1 ? structured : holdRawContainers(structured, rawHeld))) /* container markers are markup: the narrator reads the words */
           .replace(new RegExp(heldRe.source, "gm"), (m0) => "\n\n" + m0 + "\n\n");
@@ -61593,6 +61708,11 @@
           htLine2: typeof s.htLine2 === "string" ? s.htLine2 : "",
           tocHeading: typeof s.tocHeading === "string" ? s.tocHeading : null,
           ...(typeof s.runHead === "string" && s.runHead.trim() ? { runHead: s.runHead } : {}), /* BEUK:headfit — present only when set */
+          /* BEUK:poemmode — Poem Mode, a chapter set as verse: mode "verse" is stored only for a poem (absent, or
+             anything else, reads as prose) and verseAlign "left" only when the writer chose left (absent reads as
+             centred). Both are how the chapter is READ: the text itself is never rewritten by either. */
+          ...(s.mode === "verse" ? { mode: "verse" } : {}),
+          ...(s.verseAlign === "left" ? { verseAlign: "left" } : {}),
           scenes: normalizeScenes(s.scenes),
           ...olSectionFields(s) /* BEUK:outline — synopsis, status, tags, pov: only the ones it has */
         };
@@ -68053,6 +68173,137 @@
                 } finally { rp.remove(); rst.remove(); }
               }
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "verse kept its line breaks and indent (beautifier too), 2 stanzas, no drop cap inside, prose after it opens the chapter; computed flush-left, unindented, a line box per line; EPUB carries it, validator errors 0; Word: 2 Verse paragraphs, real line breaks; a note definition inside verse is collected as a note (1 ref, in the endnotes, not a line) and a picture stands as a figure, in HTML and Word; RTL book: " + rtlNote);
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        /* BEUK:poemmode */
+        { id: "chapter.poem", feature: "chapter", name: "Poem Mode: a chapter marked as a poem (section.mode \"verse\") is set by the verse block's own renderer, a line for every new line and a stanza for every blank line, every line centred unless section.verseAlign is \"left\" (then flush, a turn-over hung 1.5em); the stored text is never changed; a marked line break ends its line and its backslash is not set; no drop cap, no lead-in, no first-line indent; a Part or front matter is never a poem; an empty poem exports nothing; the EPUB carries it and validates",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const NB = String.fromCharCode(160), BSL = String.fromCharCode(92);
+              /* the two fields: kept only as "verse" and "left", never added */
+              const ns = (extra) => normalizeSection(Object.assign(mkSection("body", "chapter", "P"), extra));
+              if (ns({ mode: "verse" }).mode !== "verse" || "verseAlign" in ns({ mode: "verse" })) bad.push("a centred poem is not stored as mode verse alone");
+              if (ns({ mode: "verse", verseAlign: "left" }).verseAlign !== "left" || ns({ verseAlign: "left" }).verseAlign !== "left" || "mode" in ns({ verseAlign: "left" })) bad.push("left is not kept (it is remembered while the mode is off)");
+              if (["prose", "poem", "", true, 1, null].some((v) => "mode" in ns({ mode: v })) || ["center", "right", "", true, null].some((v) => "verseAlign" in ns({ verseAlign: v }))) bad.push("a value that is not verse / left is kept");
+              if ("mode" in ns({}) || "verseAlign" in ns({})) bad.push("a section without the fields gains one");
+              if (poemAlignOf(ns({})) !== "" || poemAlignOf(ns({ mode: "verse" })) !== "center" || poemAlignOf(ns({ mode: "verse", verseAlign: "left" })) !== "left" || poemAlignOf(ns({ verseAlign: "left" })) !== "") bad.push("poemAlignOf misreads the fields");
+              if (poemAlignOf(normalizeSection(Object.assign(mkSection("body", "part", "Part"), { mode: "verse" }))) !== "" || poemAlignOf(normalizeSection(Object.assign(mkSection("front", "dedication", "D"), { mode: "verse" }))) !== "") bad.push("a Part or front matter is read as a poem");
+              /* a marked line break is the end of its line; only a backslash before another line of the stanza is a mark */
+              const ps = poemSeg({ kind: null, arg: "", lines: ["a" + BSL, "b" + BSL, "", "c" + BSL] }, "left");
+              if (JSON.stringify(ps.lines) !== JSON.stringify(["a", "b" + BSL, "", "c" + BSL]) || ps.kind !== "verse" || ps.poem !== "left") bad.push("poemSeg: " + JSON.stringify(ps));
+              /* the page: the verse block's own markup, with the poem's classes */
+              const src = "The *sea* is calm tonight," + BSL + "\n    the tide is full\n--and the moon\n\nA second stanza";
+              const centred = mkSection("body", "chapter", "Tide", { number: "1", content: src, dropCap: true, smallCaps: true, mode: "verse" });
+              const left = mkSection("body", "chapter", "Tide", { number: "2", content: src, dropCap: true, smallCaps: true, mode: "verse", verseAlign: "left" });
+              const prose = mkSection("body", "chapter", "Tide", { number: "3", content: src, dropCap: true, smallCaps: true });
+              const stanzas = '<p class="stanza"><span class="vl">The <em>sea</em> is calm tonight,</span><br/><span class="vl">' + NB.repeat(4) + 'the tide is full</span><br/><span class="vl">--and the moon</span></p><p class="stanza"><span class="vl">A second stanza</span></p></div>';
+              const hc = contentBlocksToHtml(centred.content, centred, true, true, true);
+              const hl = contentBlocksToHtml(left.content, left, true, true, true);
+              const hp = contentBlocksToHtml(prose.content, prose, true, true, true);
+              if (hc !== '<div class="verse poem poem-center">' + stanzas) bad.push("the centred poem did not set: " + JSON.stringify(hc.slice(0, 400)));
+              if (hl !== '<div class="verse poem poem-left">' + stanzas) bad.push("the left poem did not set: " + JSON.stringify(hl.slice(0, 400)));
+              if (/dropcap|class="first|small-caps|lead-in/.test(hc + hl)) bad.push("a poem took the chapter's drop cap or lead-in");
+              if (hc.indexOf(BSL) !== -1 || hl.indexOf(BSL) !== -1) bad.push("the mark's backslash was set");
+              /* the same text as prose is what it always was: one paragraph, the marked break kept, the bare new line a space */
+              if (hp.indexOf('class="verse') !== -1 || hp.indexOf('<p class="first has-dropcap">') !== 0 || !/tonight,<br\/> ?the tide is full --and the moon<\/p>/.test(hp)) bad.push("the prose twin changed: " + JSON.stringify(hp.slice(0, 300)));
+              if (centred.content !== src || left.content !== src) bad.push("setting the page changed the stored text");
+              /* what stands inside a poem: a scene break, a note, a fenced block (set as it always was), the writer's own verse block */
+              const mixedSrc = "One line[^1]\ntwo\n\n***\n\n[^1]: The note.\n\n::: center\nA sign\n:::\n\n::: verse\n  fenced\n:::\n\nLast line";
+              const mixed = mkSection("body", "chapter", "Mixed", { number: "4", content: mixedSrc, mode: "verse" });
+              const hm = contentBlocksToHtml(mixed.content, mixed, true, true, true);
+              if (!/^<div class="verse poem poem-center"><p class="stanza"><span class="vl">One line<a[^>]*class="noteref"[\s\S]*?<\/span><br\/><span class="vl">two<\/span><\/p>[\s\S]*<div class="scene-break">[\s\S]*<\/div><\/div>/.test(hm)) bad.push("a poem's note mark or scene break did not set: " + JSON.stringify(hm.slice(0, 400)));
+              if (hm.indexOf('<div class="align-center"><p>A sign</p></div>') === -1) bad.push("a fenced block inside a poem is not set as it was");
+              if (hm.indexOf('<div class="verse"><p class="stanza"><span class="vl">' + NB.repeat(2) + "fenced</span></p></div>") === -1) bad.push("the writer's own verse block inside a poem changed");
+              if (hm.indexOf('<div class="verse poem poem-center"><p class="stanza"><span class="vl">Last line</span></p></div>') === -1) bad.push("the text after a fenced block is not verse");
+              if (!/<div class="endnotes"[\s\S]*The note\./.test(hm) || /\[\^1\]:/.test(hm)) bad.push("a note definition inside a poem was not collected as a note");
+              /* an empty poem exports nothing (the editor's starter lines are never in the text) */
+              const empty = mkSection("body", "chapter", "", { number: "5", content: "", mode: "verse" });
+              if (contentBlocksToHtml(empty.content, empty, true, true, true) !== "") bad.push("an empty poem exports something");
+              /* Word: a stanza a Verse paragraph with real line breaks; a centred poem's are centred and flush; prose is prose */
+              const WV = '<w:p><w:pPr><w:pStyle w:val="Verse"/>';
+              const dc = docxContentParas(src, centred), dl = docxContentParas(src, left), dp = docxContentParas(src, prose).join("");
+              if (dc.length !== 2 || !dc.every((p) => p.indexOf(WV + '<w:ind w:left="0" w:firstLine="0"/><w:jc w:val="center"/></w:pPr>') === 0) || (dc[0].match(/<w:br\/>/g) || []).length !== 2 || dc.join("").indexOf(BSL) !== -1 || dc[0].indexOf(NB.repeat(4)) === -1) bad.push("Word, centred poem: " + JSON.stringify(dc.join("").slice(0, 400)));
+              if (dl.length !== 2 || !dl.every((p) => p.indexOf(WV + "</w:pPr>") === 0) || (dl[0].match(/<w:br\/>/g) || []).length !== 2 || dl.join("").indexOf(BSL) !== -1) bad.push("Word, left poem: " + JSON.stringify(dl.join("").slice(0, 400)));
+              if (dp.indexOf('w:val="Verse"') !== -1 || (dp.match(/<w:br\/>/g) || []).length !== 1) bad.push("Word, the prose twin changed: " + JSON.stringify(dp.slice(0, 300)));
+              if (msDress(dc).some((p) => (p.match(/<w:ind /g) || []).length !== 1)) bad.push("the submission manuscript gave a centred stanza two indents");
+              /* Markdown: a poem's lines as the book stores them (the mark too); prose lines run on, as they did */
+              if (contentToMarkdown(src, centred) !== src || contentToMarkdown(src, left) !== src) bad.push("Markdown did not write the poem's lines as stored: " + JSON.stringify(contentToMarkdown(src, centred)));
+              if (contentToMarkdown(src, prose) !== "The *sea* is calm tonight," + BSL + "\n the tide is full --and the moon\n\nA second stanza" && contentToMarkdown(src, prose) !== "The *sea* is calm tonight," + BSL + "\nthe tide is full --and the moon\n\nA second stanza") bad.push("Markdown, the prose twin changed: " + JSON.stringify(contentToMarkdown(src, prose)));
+              /* the narration script reads paragraphs: a poem's lines are marked for it, a list or a heading left alone */
+              if (poemLinesMarked("a\nb" + BSL + "\nc\n\n- x\n- y\n\n::: center\ns\n:::\n\nd\ne") !== "a" + BSL + "\nb" + BSL + "\nc\n\n- x\n- y\n\n::: center\ns\n:::\n\nd" + BSL + "\ne") bad.push("poemLinesMarked: " + JSON.stringify(poemLinesMarked("a\nb\n\n- x\n- y")));
+              /* print (and the Print Interior View): a left poem's block centred as a whole */
+              if (!printLayoutCss(".sc-x", "6x9", true).includes(".sc-x .verse.poem-left { width: -moz-fit-content; width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }")) bad.push("print does not centre a left poem's block");
+              /* the counts read the text, not the mode */
+              if (sectionWords(centred) !== sectionWords(prose) || sectionWords(left) !== sectionWords(prose)) bad.push("the word count differs with Poem Mode: " + sectionWords(centred) + " / " + sectionWords(prose));
+              /* the stylesheet: both alignments; the EPUB's (scope "") never asks an e-reader to shrink the block */
+              const css = buildBookCss("");
+              if (!css.includes(".verse.poem { margin: 1em 0; }") || !css.includes(".verse.poem-center, .verse.poem-center p.stanza { text-align: center; }") || !css.includes(".verse.poem-center .vl { padding-left: 0; padding-right: 0; text-indent: 0; }")) bad.push("the book stylesheet lacks the poem rules");
+              if (css.includes("fit-content")) bad.push("the EPUB's stylesheet relies on fit-content");
+              if (!buildBookCss(".sc-x").includes(".sc-x .verse.poem-left { width: -moz-fit-content; width: fit-content;")) bad.push("the preview does not centre a left poem's block");
+              /* As a page 390px wide sets them. */
+              const longSrc = "Short\nA line long enough that it has to turn over on a page as narrow as a phone held upright, twice if need be\nShort again";
+              const probe = (sec, cls) => {
+                const box = document.createElement("div");
+                box.className = cls; box.style.cssText = "position:absolute;left:-9999px;top:0;width:390px";
+                const st = document.createElement("style"); st.textContent = buildBookCss("." + cls);
+                box.innerHTML = contentBlocksToHtml(longSrc, sec, true, true, true);
+                document.body.appendChild(st); document.body.appendChild(box);
+                try {
+                  const vl = box.querySelectorAll(".verse.poem .vl"), long = vl[1];
+                  const rng = document.createRange(); rng.selectNodeContents(long);
+                  const rects = Array.from(rng.getClientRects()).filter((r) => r.width > 1);
+                  const tops = []; rects.forEach((r) => { if (!tops.some((t0) => Math.abs(t0.top - r.top) < 2)) tops.push(r); });
+                  const cs = getComputedStyle(long), fs = parseFloat(cs.fontSize), b = box.getBoundingClientRect();
+                  const mid = (r) => (r.left + r.right) / 2 - (b.left + b.right) / 2;
+                  const r0 = document.createRange(); r0.selectNodeContents(vl[0]);
+                  return { n: vl.length, lines: tops.length, hang: tops.length > 1 ? (tops[1].left - tops[0].left) / fs : 0, mid0: mid(r0.getBoundingClientRect()), align: cs.textAlign, indent: cs.textIndent, fs: fs,
+                    stanzaAlign: getComputedStyle(box.querySelector("p.stanza")).textAlign, hyphens: getComputedStyle(box.querySelector("p.stanza")).hyphens, ownLine: vl[1].getBoundingClientRect().top > vl[0].getBoundingClientRect().top };
+                } finally { box.remove(); st.remove(); }
+              };
+              const pl = probe(left, "sc-poem-l"), pc = probe(centred, "sc-poem-c");
+              const note = "left: " + pl.lines + " lines, turn-over hung " + (Math.round(pl.hang * 100) / 100) + "em; centred: " + pc.lines + " lines, a short line " + (Math.round(pc.mid0 * 10) / 10) + "px off centre, indent " + pc.indent;
+              if (pl.n !== 3 || !pl.ownLine || pl.lines < 2 || Math.abs(pl.hang - 1.5) > 0.06 || pl.stanzaAlign !== "left" || pl.hyphens !== "manual") bad.push("the left poem at 390px: " + JSON.stringify(pl));
+              if (pc.n !== 3 || !pc.ownLine || pc.lines < 2 || pc.align !== "center" || pc.stanzaAlign !== "center" || pc.indent !== "0px" || Math.abs(pc.mid0) > 1.5 || pc.hyphens !== "manual") bad.push("the centred poem at 390px: " + JSON.stringify(pc));
+              /* the book: saved and opened with its fields and its text; the EPUB carries both poems and validates */
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), centred, left, prose], images: [], printTrim: "6x9" });
+              /* the narration script of the book on the desk: three lines of the first stanza in a poem, two in prose (its one marked break) */
+              const said = (title, n) => acxSectionLines(state.sections.find((x) => x.number === n)).filter((l) => l.k === "para").map((l) => l.text.split(LINE_BREAK_HELD).length);
+              if (JSON.stringify(said("Tide", "1")) !== "[3,1]" || JSON.stringify(said("Tide", "2")) !== "[3,1]" || JSON.stringify(said("Tide", "3")) !== "[2,1]") bad.push("the narration script's lines: " + JSON.stringify([said("Tide", "1"), said("Tide", "2"), said("Tide", "3")]));
+              const printCss = buildPrintHtml();
+              if (!printCss.includes(".verse.poem-left { width: -moz-fit-content; width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }") || !printCss.includes('<div class="verse poem poem-left">') || !printCss.includes('<div class="verse poem poem-center">')) bad.push("the print file lacks the poems or the rule that centres a left poem's block");
+              const saved = serializeBook().sections;
+              if (saved[1].mode !== "verse" || "verseAlign" in saved[1] || saved[2].mode !== "verse" || saved[2].verseAlign !== "left" || "mode" in saved[3] || "verseAlign" in saved[3]) bad.push("the fields are not saved as set");
+              if (saved[1].content !== src || saved[2].content !== src || saved[3].content !== src) bad.push("saving changed a poem's text");
+              const files = epubFiles("generic");
+              const chaps = files.filter((f) => /Text\/.*\.xhtml/.test(f.path)).map((f) => String(f.content));
+              const val = validateEpubPackage(files);
+              const opens = '<p class="stanza"><span class="vl">The <em>sea</em> is calm tonight,</span><br/>';
+              if (!chaps.some((c) => c.includes('<div class="verse poem poem-center">' + opens)) || !chaps.some((c) => c.includes('<div class="verse poem poem-left">' + opens))) bad.push("the EPUB's chapters do not carry the two poems");
+              if (chaps.filter((c) => c.includes('class="verse')).length !== 2) bad.push("the prose chapter's page carries verse");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              /* a right-to-left book: a "left" poem ranges right, where its lines begin; a centred one is centred still */
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { language: "ar" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), centred, left], images: [], printTrim: "6x9" });
+              let rtlNote = "";
+              if (!isRtlLang(bookLang())) bad.push("an Arabic book did not read as right-to-left");
+              else {
+                const rtl = (sec, cls) => {
+                  const rp = document.createElement("div");
+                  rp.className = cls; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:400px";
+                  const rst = document.createElement("style"); rst.textContent = buildBookCss("." + cls);
+                  rp.innerHTML = contentBlocksToHtml("سطر أول قصير\nسطر ثان", sec, false, true, true);
+                  document.body.appendChild(rst); document.body.appendChild(rp);
+                  try { const l0 = rp.querySelector(".verse.poem .vl"), cs = getComputedStyle(rp.querySelector(".verse.poem p.stanza")), lcs = getComputedStyle(l0); return { align: cs.textAlign, padR: lcs.paddingRight, padL: lcs.paddingLeft }; }
+                  finally { rp.remove(); rst.remove(); }
+                };
+                const rl = rtl(left, "sc-poem-rl"), rc = rtl(centred, "sc-poem-rc");
+                rtlNote = "left poem align " + rl.align + ", pad R" + rl.padR + "; centred align " + rc.align;
+                if (rl.align !== "right" || parseFloat(rl.padR) <= 0 || rl.padL !== "0px" || rc.align !== "center" || rc.padR !== "0px" || rc.padL !== "0px") bad.push("RTL poem computed: " + JSON.stringify([rl, rc]));
+              }
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "the fields are kept only as verse / left and never added; both alignments set by the verse renderer (2 stanzas, 4 lines, the indent kept, the mark's backslash not set), the stored text untouched, no drop cap or lead-in; a note, a scene break and fenced blocks inside a poem set as they should; an empty poem exports nothing; word counts equal; at 390px " + note + "; Word: Verse paragraphs with real line breaks, a centred poem's centred and flush; Markdown writes the lines as stored; the narration script keeps each line; print centres a left poem's block; EPUB carries both poems, validator errors 0; RTL book: " + rtlNote);
             } finally {
               applyBookDoc(keepDoc);
             }

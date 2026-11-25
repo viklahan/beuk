@@ -70,6 +70,8 @@ const flat = (d: Rec): Record<string, Spec> =>
 /* Enums 1.0 enforces on load. */
 const BACKDROP_STRENGTHS = ['whisper', 'soft', 'strong', 'spread'] as const; // BACKDROP_STRENGTHS, CI:29412; normalizeSection, CI:50109
 const PLATE_FITS = ['fill', 'whole'] as const; // PLATE_FITS (BEUK:platefit); normalizeSection keeps plateFit only from this list
+const SECTION_MODES = ['verse'] as const; // BEUK:poemmode; normalizeSection keeps mode only when it is "verse" (absent reads as prose)
+const VERSE_ALIGNS = ['left'] as const; // BEUK:poemmode; normalizeSection keeps verseAlign only when it is "left" (absent reads as centred)
 const OL_STATUSES = ['todo', 'draft', 'revised', 'final'] as const; // OL_STATUSES, CI:32919; olSectionFields keeps status only from this list
 const HISTORY_AUTO = ['import', 'sample', 'restore', 'conflict', 'bookid', 'backup', 'sampleupdate', 'chapterop', 'imgremove'] as const; // normalizeHistory, CI:32192
 const STORE_IDS = ['kdp', 'ingramspark'] as const; // STORE_IDS, CI:49074
@@ -285,6 +287,9 @@ function coerceEnums(b: Rec, out: Out): void {
     if (has(s, 'backdropStrength')) normalize(s, `sections[${i}]`, { backdropStrength: { t: BACKDROP_STRENGTHS, def: 'whisper' } }, out);
     // normalizeSection (BEUK:platefit): plateFit kept only if in PLATE_FITS, else dropped (the plate then fills its page)
     if (has(s, 'plateFit')) normalize(s, `sections[${i}]`, { plateFit: { t: PLATE_FITS } }, out);
+    // normalizeSection (BEUK:poemmode): mode kept only when "verse", verseAlign only when "left"; anything else is dropped (prose, centred)
+    if (has(s, 'mode')) normalize(s, `sections[${i}]`, { mode: { t: SECTION_MODES } }, out);
+    if (has(s, 'verseAlign')) normalize(s, `sections[${i}]`, { verseAlign: { t: VERSE_ALIGNS } }, out);
     // olSectionFields: status kept only if in OL_STATUSES, else dropped
     if (has(s, 'status')) normalize(s, `sections[${i}]`, { status: { t: OL_STATUSES } }, out);
   });

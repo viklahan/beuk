@@ -11,6 +11,15 @@ to make well.
 - **Getting the old settings back.** The chapters that change lose the setting they had. The message that follows offers Undo for ten seconds, and a snapshot named "Before a chapter change" is saved in History first. Restoring from a snapshot also brings back the text as it was then.
 - Not copied, on purpose: a chapter's number, title, subtitle and running head, its plate picture and alt text, and scene pictures. Each of those describes one chapter.
 
+## 2026-11-24 — Poem Mode
+
+- **A chapter can be a poem.** A reader aged ten asked for this one. In the editor, the P button at the start of the toolbar turns Poem Mode on for the chapter you have open. Every new line you type is a line of the poem, and a blank line starts a new stanza.
+- **Centred or left.** A new poem is centred, each line on its own centre. Choose Left and the lines range left; a line too long for the page turns over, and its turn-over is set in a little, so it still reads as one line. On your desk and in print a left poem stands in the middle of the page as a block; in an e-book it starts at the margin.
+- **Your words are not changed.** Poem Mode changes how a chapter is read, never its text. Switch it off and the chapter is prose again, exactly as it was. Switch it on again and the poem is back.
+- **The book follows.** The preview, the EPUB, the print pages and the Word file set the poem line for line and stanza for stanza. A poem takes no drop cap, is never justified, and its lines are never hyphenated.
+- **A place to start.** An empty poem shows three lines that say how it works. They are a hint and never part of your book, and they go with the first letter you type.
+- Two things it does not do yet. A Markdown file keeps a poem's lines but does not say that the chapter is a poem. A poem taken out as an EPUB and brought back arrives as a verse block inside an ordinary chapter.
+
 ## 2026-11-24 — The whole book before you export, and a shorter Export
 
 - **Read the whole book before you export it.** Export now opens with an offer. Read the whole book on screen shows the book from its first page to its last in one scrolling view. Turn the print pages opens the Print Interior View, and closing it brings you back to Export. It is an offer: every export works without it.

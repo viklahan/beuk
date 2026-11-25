@@ -19,7 +19,7 @@ import type { Issue, Story, StoryBlock, WeeklyContent } from './content.js';
  * An issue that carries a weather reading wears the Beuk lockup in its
  * left ear (the site header's own mark and wordmark) and "The Weather
  * Elsewhere" in its right; one that does not keeps the forecast and late
- * news. Under the dateline rule, the issue bar: previous, next, "No. n of
+ * news. Under the dateline rule, the issue bar: previous, next, "Edition n of
  * N", "All issues" (the stand) and, on a back issue, the newest. Short stories print
  * whole under the lead, the leader (the paper's opinion) after them in the
  * same grid, then the takeaway box, the Sources foot and the
@@ -36,6 +36,16 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 export function weekLabel(week: string): string {
   const [y, m, d] = week.split('-').map(Number);
   return `Week of ${d} ${MONTHS[m - 1]} ${y}`;
+}
+/**
+ * The edition's name (V, 2026-11-24: "month, week, and edition number"):
+ * the month and year of the issue's week, which week of that month it is
+ * (the week's Monday, counted in sevens from the 1st) and its number, e.g.
+ * "November 2026 · Week 4 · Edition 10".
+ */
+export function editionLabel(issue: Pick<Issue, 'week' | 'number'>): string {
+  const [y, m, d] = issue.week.split('-').map(Number);
+  return `${MONTHS[m - 1]} ${y} · Week ${Math.ceil(d / 7)} · Edition ${issue.number}`;
 }
 const pad = (n: number) => String(n).padStart(3, '0');
 export const issueUrl = (n: number) => `/school/weekly/${n}`;
@@ -68,7 +78,7 @@ function blocksHtml(blocks: StoryBlock[], dropFirst: boolean): string {
 
 /**
  * The issue bar, under the dateline rule: the previous and next issue when
- * there is one, where this issue stands ("No. 3 of 5"), "All issues" (the
+ * there is one, where this issue stands ("Edition 3 of 5"), "All issues" (the
  * stand, /school/weekly), and on a back issue the newest one. Numbers come
  * from the issue folders, never typed.
  */
@@ -79,13 +89,13 @@ function issueBar(weekly: WeeklyContent, issue: Issue): string {
   const prev = weekly.issueByNumber.get(issue.number - 1);
   const next = weekly.issueByNumber.get(issue.number + 1);
   const parts = [
-    prev ? `<a class="ib-prev" href="${issueUrl(prev.number)}" rel="prev">‹ No. ${prev.number}</a>` : '',
-    `<span class="ib-pos"><a href="${issueUrl(issue.number)}" aria-current="page">No. ${issue.number}</a> of ${weekly.issues.length}</span>`,
+    prev ? `<a class="ib-prev" href="${issueUrl(prev.number)}" rel="prev">‹ Edition ${prev.number}</a>` : '',
+    `<span class="ib-pos"><a href="${issueUrl(issue.number)}" aria-current="page">Edition ${issue.number}</a> of ${weekly.issues.length}</span>`,
     '<a class="ib-all" href="/school/weekly">All issues</a>',
     // On the issue just before the newest, "next" and "newest" are one link, said once.
-    next && next.number !== newest.number ? `<a class="ib-next" href="${issueUrl(next.number)}" rel="next">No. ${next.number} ›</a>` : '',
+    next && next.number !== newest.number ? `<a class="ib-next" href="${issueUrl(next.number)}" rel="next">Edition ${next.number} ›</a>` : '',
     newest.number !== issue.number
-      ? `<a class="ib-new" href="${issueUrl(newest.number)}"${next?.number === newest.number ? ' rel="next"' : ''}>Newest issue: No. ${newest.number} ›</a>`
+      ? `<a class="ib-new" href="${issueUrl(newest.number)}"${next?.number === newest.number ? ' rel="next"' : ''}>Newest issue: Edition ${newest.number} ›</a>`
       : '',
   ].filter(Boolean);
   return `<nav class="issue-bar" aria-label="Beuk Weekly issues">
@@ -100,7 +110,7 @@ function issueShelf(weekly: WeeklyContent, issue: Issue): string {
     .reverse()
     .map(
       (i) =>
-        `<li${i.number === issue.number ? ' class="current"' : ''}><a href="${issueUrl(i.number)}"${i.number === issue.number ? ' aria-current="page"' : ''}><span class="is-no">No. ${i.number}</span><span class="is-week">${esc(weekLabel(i.week))}</span><span class="is-head">${esc(i.banner)}</span></a></li>`,
+        `<li${i.number === issue.number ? ' class="current"' : ''}><a href="${issueUrl(i.number)}"${i.number === issue.number ? ' aria-current="page"' : ''}><span class="is-no">Edition ${i.number}</span><span class="is-week">${esc(weekLabel(i.week))}</span><span class="is-head">${esc(i.banner)}</span></a></li>`,
     )
     .join('\n            ');
   return `<section class="issues" id="issues" aria-labelledby="issues-h">
@@ -129,7 +139,7 @@ function masthead(config: Config, weekly: WeeklyContent, issue: Issue): string {
           ${right}
         </header>
         <div class="dateline">
-          <span>Vol. ${esc(issue.volume)} · No. ${issue.number}</span>
+          <span>${esc(editionLabel(issue))}</span>
           <span>${esc(weekLabel(issue.week))}</span>
           ${issue.price ? `<span>${esc(issue.price)}</span>` : ''}
           <span>beuk.studio/school/weekly</span>
@@ -227,7 +237,7 @@ export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue)
         </footer>
         </div>`;
   return schoolPage(config, {
-    title: `Beuk Weekly, No. ${issue.number} — ${issue.banner}`,
+    title: `Beuk Weekly, Edition ${issue.number} — ${issue.banner}`,
     description: `${issue.banner}. ${issue.bannerDeck}. Beuk Weekly, ${weekLabel(issue.week)}.`,
     path: issueUrl(issue.number),
     body,
@@ -258,12 +268,12 @@ function standTile(issue: Issue, latest: boolean): string {
   const more = latest
     ? `${inside.length ? `
               <div class="t-inside"><p>Also in this issue</p><ul>${inside.map((s) => `<li>${esc(s.title)}</li>`).join('')}</ul></div>` : ''}
-              <span class="t-open">Read No. ${issue.number}</span>`
+              <span class="t-open">Read Edition ${issue.number}</span>`
     : '';
   return `<li class="tile${latest ? ' latest' : ''}">
             <a href="${issueUrl(issue.number)}">
               <span class="t-plate">Beuk Weekly</span>
-              <span class="t-date"><span>No. ${issue.number}${latest ? ' · Latest issue' : ''}</span><span>${esc(weekLabel(issue.week))}</span></span>
+              <span class="t-date"><span>Edition ${issue.number}${latest ? ' · Latest issue' : ''}</span><span>${esc(weekLabel(issue.week))}</span></span>
               <h2 class="t-banner">${esc(issue.banner)}</h2>
               <p class="t-deck">${esc(issue.bannerDeck)}</p>${latest && lead.image ? pic : ''}${opening && opening.kind === 'p' ? `
               <p class="t-lead">${esc(opening.text)}</p>` : ''}${more}
@@ -326,7 +336,7 @@ export function renderStory(config: Config, issue: Issue, s: Story): string {
   const body = `        <div class="paper">
         <header class="art-mast">
           <a class="m" href="${issueUrl(issue.number)}">Beuk Weekly</a>
-          <span>Vol. ${esc(issue.volume)} · No. ${issue.number} · ${esc(weekLabel(issue.week))}</span>
+          <span>${esc(editionLabel(issue))}</span>
         </header>
         <article class="article${s.place === 'leader' ? ' leader' : ''}">
           <p class="kick">${esc(s.section)}</p>
