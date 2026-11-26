@@ -10695,23 +10695,25 @@ async function caretChecks(origin) {
     const inA = (fn) => (A_) => A_.evaluate(fn);
     const CASES = [
       ['type a word earlier in the paragraph', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).insertContent('quick ').run(); })],
-      ['split before B', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); })],
-      ['split after B', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The brown fox ')).splitBlock().run(); })],
+      ['split before B', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); }), 'paragraph,paragraph,paragraph'],
+      ['split after B', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The brown fox ')).splitBlock().run(); }), 'paragraph,paragraph,paragraph'],
       ['bold a word earlier', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection({ from: c.at(''), to: c.at('The') }).toggleMark('strong').run(); })],
       ["bold B's word", inA(() => { const c = window.__caret; c.ed().chain().setTextSelection({ from: c.at('The '), to: c.at('The brown') }).toggleMark('strong').run(); })],
-      ['paragraph → heading', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); })],
-      ['join with the paragraph above', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('')).joinBackward().run(); })],
+      ['paragraph → heading', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); }), 'paragraph,heading'],
+      ['join with the paragraph above', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('')).joinBackward().run(); }), 'paragraph'],
       ['delete the paragraph above', inA(() => { const c = window.__caret; c.ed().chain().deleteRange(c.firstBlock()).run(); })],
       ['heading, then A undoes it', async (A_) => {
-        await A_.evaluate(() => { const c = window.__caret; c.um().stopCapturing(); c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); c.um().stopCapturing(); });
+        const mid = await A_.evaluate(() => { const c = window.__caret; c.um().stopCapturing(); c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); c.um().stopCapturing(); return c.shape(); });
+        if (mid !== 'paragraph,heading') throw new Error(`A's heading did not take effect (A's blocks ${mid})`);
         await A_.waitForTimeout(300);
         await A_.evaluate(() => { const c = window.__caret; c.um().stopCapturing(); c.ed().commands.undo(); });
-      }],
+      }, 'paragraph,paragraph'],
       ['split before B, then A joins it back', async (A_) => {
-        await A_.evaluate(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); });
+        const mid = await A_.evaluate(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); return c.shape(); });
+        if (mid !== 'paragraph,paragraph,paragraph') throw new Error(`A's split did not take effect (A's blocks ${mid})`);
         await A_.waitForTimeout(300);
         await A_.evaluate(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.blockStarting('brown')).joinBackward().run(); });
-      }],
+      }, 'paragraph,paragraph'],
       // Beuk's Enter is a "\n" in the text; two make a blank line, which splits the block once A's caret leaves it
       ["Beuk's own Enter before B (A's keyboard, twice: a blank line), then A clicks into the paragraph above", async (A_) => {
         await A_.bringToFront();
@@ -10721,13 +10723,13 @@ async function caretChecks(origin) {
         await A_.keyboard.press('Enter');
         await A_.keyboard.press('Enter');
         await A_.locator('#manuscript .ms-editor > p').first().click();
-        await caretUntil(() => A_.evaluate(() => window.__caret.shape().split(',').length === 3), 3000);
-      }],
-      ['server-shaped write (raw Yjs in A): the paragraph becomes a heading', inA(() => void window.__caret.serverWrite('heading'))],
+        if (!(await caretUntil(() => A_.evaluate(() => window.__caret.shape().split(',').length === 3), 3000))) throw new Error("A's blank line never split the block (A's blocks " + (await A_.evaluate(() => window.__caret.shape())) + ')');
+      }, 'paragraph,paragraph,paragraph'],
+      ['server-shaped write (raw Yjs in A): the paragraph becomes a heading', inA(() => void window.__caret.serverWrite('heading')), 'paragraph,heading'],
       ['server-shaped write (raw Yjs in A): the whole chapter re-sent, a word added above', inA(() => void window.__caret.serverWrite('rewrite', ' Added.'))],
     ];
 
-    for (const [name, edit] of CASES) {
+    for (const [name, edit, want] of CASES) {
       try {
         await reset(CARET_PARAS);
         await parkB();
@@ -10735,6 +10737,8 @@ async function caretChecks(origin) {
         if (!(await same())) throw new Error("B's doc never equalled A's after the edit");
         const k = await keeperB();
         const shape = await A.evaluate(() => window.__caret.shape());
+        // A's edit took effect: the blocks it must leave (cases that change the block shape)
+        if (want && shape !== want) throw new Error(`A's edit did not take effect: A's blocks ${shape}, want ${want}`);
         await B.bringToFront();
         await focused(B);
         await B.keyboard.type('#');

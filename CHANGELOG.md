@@ -6,8 +6,8 @@ to make well.
 
 ## 2026-11-26 — Your caret stays where you put it
 
-- **Two tabs on one book no longer move your caret.** When the same chapter was open in two tabs and one of them pressed Enter for a new paragraph before your caret, turned your paragraph into a heading (or undid that), or joined it with the paragraph above, the caret in the other tab jumped to another paragraph, and the next letters landed there. It now stays between the same letters.
-- **One case remains.** If the other tab joins your paragraph with the one above, or turns it into a heading, at the very moment you type a letter, that letter can be lost. A fix is next.
+- **Two tabs on one book no longer move your caret.** When the same chapter was open in two tabs and one of them pressed Enter for a new paragraph before your caret, turned your paragraph into a heading (or undid that), or joined it with the paragraph above, the caret in the other tab jumped away, to the end of the paragraph or into the line before, and the next letters landed there. It now stays between the same letters.
+- **One case remains.** If the other tab joins your paragraph with the one above, or turns it into a heading, at the very moment you type a letter, that letter can be lost, and the letters you type after it go to the end of the paragraph. A fix is next.
 
 ## 2026-11-24 — The whole book before you export, and a shorter Export
 
