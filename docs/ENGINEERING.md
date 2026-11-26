@@ -4646,11 +4646,16 @@ untouched. A book opens on four spreads (four turns) in a full-screen
 reader: arrow keys, click either half, swipe, or `/ramp#<slug>` to open one
 directly. Today, first on the shelf: *Poems of joy* (poems, 6 × 9 in), an
 author's own book. Destiny Hernandez wrote the poems and made the pictures
-with Gemini. It arrived as Beuk's PDF/X print (renderer and Ghostscript),
-password-locked, and its spreads were rendered from that file the same way.
-It opens on the third chapter's picture page beside the title page, the
-cover its author chose, which is the one spread on the Ramp paired by hand.
-Its pictures have rows in `pictures.tsv`. Then *Rain on Calder Street*
+with Gemini. It arrived as Beuk's PDF/X print, password-locked; its words
+were set from that print, unchanged, into a Beuk book file
+(`ramp-poems-of-joy.beuk-backup.json`: her theme and colour, each chapter a
+poem), and the book was printed by the renderer like the others. Its
+pictures take Rain on Calder Street's treatment: each is cropped inside its
+painted frame to the two-page shape, enlarged to 300 ppi at the trim (about
+4×) and split down the middle, the left half the chapter's plate and the
+right half its Spread backdrop. It opens on its title page alone on the
+right; its shelf cover is the first chapter's spread. Its pictures have
+rows in `pictures.tsv`. Then *Rain on Calder Street*
 (noir, 8 × 8 in), *Four Kitchens*
 (cookbook, 8.5 × 8.5 in), *The Sunken Vault* (fantasy, 6 × 9 in), *Luna's
 Beach Treasure Hunt* and *The Woolly School* (picture books, 11 × 8.5 in
@@ -4669,7 +4674,12 @@ words) is three scripts in `beuk-whole-project/10-ramp-gallery/tools/`:
 `print_and_sheet.py <dir>` sends the studio's print interior (saved from
 `buildPrintHtml()` in the browser) to Beuk's renderer through the app
 container and makes a contact sheet of every page; `spreads.py <dir> <slug>
-L-R …` renders the four chosen spreads to `client/site/ramp/<slug>/`. Then
+L-R …` renders the four chosen spreads to `client/site/ramp/<slug>/`
+(`--out <dir>` for a worktree's `client/site/ramp`). A book whose pictures
+cross the gutter (the Calder pattern) is made by `make_spread_book.py
+specs/<slug>.json` instead, and `print_ramp.mjs <repo> <book> <dir>` saves
+the print interior headlessly (the studio page's `applyBookDoc`,
+`preparePrintPress`, `buildPrintHtml`) for `print_and_sheet.py`. Then
 add the book's shelf button and its `BOOKS` entry to `ramp.html`, and its
 slug to `tests/site-pages.test.ts`. `tests/site-pages.test.ts` checks every spread
 file against the size the reader states.
