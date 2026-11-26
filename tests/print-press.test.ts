@@ -192,7 +192,7 @@ test('print: every client print.press.* self-check is registered server-side as 
   }
 });
 
-test('print: every new press string ships in all 13 locales', async () => {
+test('print: every new press string ships in all 15 locales', async () => {
   const html = await readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
   for (const key of [
     'store.c.textK.name',
@@ -208,6 +208,6 @@ test('print: every new press string ships in all 13 locales', async () => {
     'store.nc.tacFail',
   ]) {
     const n = html.split(`"${key}":`).length - 1;
-    assert.equal(n, 13, `${key} appears in ${n} locales, not 13`);
+    assert.equal(n, 15, `${key} appears in ${n} locales, not 15`);
   }
 });

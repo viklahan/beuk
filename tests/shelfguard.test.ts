@@ -26,11 +26,11 @@ test('shelfguard: every new self-check exists in the client and is registered cl
   }
 });
 
-test('shelfguard: every new string ships in all 13 locales', async () => {
+test('shelfguard: every new string ships in all 15 locales', async () => {
   const html = await clientHtml();
   for (const k of ['shelf.guardDeviceBody', 'shelf.guardKeep', 'shelf.guardReplace', 'shelf.guardSaveFirst', 'shelf.guardSaveFailed']) {
     const n = html.split(`"${k}": "`).length - 1;
-    assert.equal(n, 13, `${k} appears in ${n} locales`);
+    assert.equal(n, 15, `${k} appears in ${n} locales`);
   }
 });
 

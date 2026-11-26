@@ -48,13 +48,13 @@ test('bugs: a stale note is forgiven only when the shelf copy is the same book',
   assert.ok(rec.indexOf('bookDocsSame(m.doc, serializeBook())') < rec.indexOf('raiseConflict(m);'));
 });
 
-test('bugs: every new or changed string ships in all 13 locales', async () => {
+test('bugs: every new or changed string ships in all 15 locales', async () => {
   const html = await clientHtml();
   const keys = ['side.statsWords', 'side.statsWordsPlural', 'side.statsPages', 'side.statsPagesPlural', 'side.statsSummary',
     'editor.countSection', 'editor.countSectionPlural', 'editor.countBook', 'editor.countBookPlural', 'top.accountTitle', 'history.restoreBodyEmpty'];
   for (const k of keys) {
     const n = html.split(`"${k}": "`).length - 1;
-    assert.equal(n, 13, `${k} appears in ${n} locales`);
+    assert.equal(n, 15, `${k} appears in ${n} locales`);
   }
   for (const m of html.matchAll(/"top\.accountTitle": "([^"]+)"/g)) assert.ok(m[1].includes('{email}'), m[1]);
   for (const m of html.matchAll(/"history\.restoreBodyEmpty": "([^"]+)"/g)) assert.ok(m[1].includes('{name}'), m[1]);

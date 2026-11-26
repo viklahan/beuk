@@ -93,7 +93,7 @@ test("the landing page's numbers are the studio's", () => {
   assert.equal(trimIds.length, 24, `24 trims: ${trimIds.join(', ')}`);
   assert.match(html, /<b>24<\/b><span>Trim sizes<\/span>/);
   const packs = /const LANG_PACKS = \{([\s\S]*?)\n {6}\};/.exec(studio)?.[1] ?? '';
-  assert.equal((packs.match(/^\s+"[A-Za-z-]+":\s+\{ name:/gm) ?? []).length, 36, 'the book language list (Project Settings) has 36 entries');
+  assert.equal((packs.match(/^\s+"[A-Za-z-]+":\s+\{ name:/gm) ?? []).length, 37, 'the book language list (Project Settings) has 37 entries');
   assert.match(html, /<b>36<\/b><span>Book languages<\/span>/);
 });
 
