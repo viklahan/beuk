@@ -4644,12 +4644,19 @@ printed to PDF through `deploy/renderer` (the facing-pages pass included),
 and its spreads rendered from that PDF to WebP under `client/site/ramp/<slug>/`,
 untouched. A book opens on four spreads (four turns) in a full-screen
 reader: arrow keys, click either half, swipe, or `/ramp#<slug>` to open one
-directly. Today: *Rain on Calder Street* (noir, 8 × 8 in), *Four Kitchens*
+directly. Today, first on the shelf: *Poems of joy* (poems, 6 × 9 in), an
+author's own book. Destiny Hernandez wrote the poems and made the pictures
+with Gemini. It arrived as Beuk's PDF/X print (renderer and Ghostscript),
+password-locked, and its spreads were rendered from that file the same way.
+It opens on the third chapter's picture page beside the title page, the
+cover its author chose, which is the one spread on the Ramp paired by hand.
+Its pictures have rows in `pictures.tsv`. Then *Rain on Calder Street*
+(noir, 8 × 8 in), *Four Kitchens*
 (cookbook, 8.5 × 8.5 in), *The Sunken Vault* (fantasy, 6 × 9 in), *Luna's
 Beach Treasure Hunt* and *The Woolly School* (picture books, 11 × 8.5 in
 landscape), *Salt Road* (memoir, 6 × 9 in), *The Book That Reads You*
 (ergodic novel, 6 × 9 in) and *The Travel Guide* (photo travel book, 11 ×
-8.5 in landscape). The pictures are V's, made with AI image tools and
+8.5 in landscape). In those books the pictures are V's, made with AI image tools and
 owner-licensed; each has a row in the gallery's `pictures.tsv`, which also
 says where a picture was enlarged to print resolution. The words are written
 for the gallery; in the stories every name is invented, and the travel
