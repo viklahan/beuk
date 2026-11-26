@@ -42,6 +42,7 @@ function sizeOf(src: string): { w: number; h: number } {
   }
   return { w: 10, h: 10 };
 }
+const UNDECODABLE = new Set<string>();
 type Op = unknown[];
 type Drawn = { w: number; h: number; ops: Op[] };
 function installStandIns(): void {
@@ -95,7 +96,9 @@ function installStandIns(): void {
       this.naturalWidth = this.width = s.w;
       this.naturalHeight = this.height = s.h;
       this.__tag = s.w + 'x' + s.h + '#' + shortHash(v);
-      setTimeout(() => this.onload?.(), 0);
+      // a picture the test marks undecodable fails as a broken one does (1.0's printDecodeImage rejects)
+      if (UNDECODABLE.has(v)) setTimeout(() => this.onerror?.(), 0);
+      else setTimeout(() => this.onload?.(), 0);
     }
   };
 }
@@ -179,10 +182,10 @@ const PARA = 'The tide came in over the mud flats and the gulls rose all at once
 const many = (n: number) => Array.from({ length: n }, () => PARA).join('\n\n');
 /** A 6 x 9 book whose first chapter's plate is a 1600 x 1200 picture set across both pages; the chapter also stores a
  *  backdrop (which across takes over for the opening). */
-function acrossBook(o: { bleed?: boolean; lang?: string; trim?: string } = {}): { st: Rec; ch: Rec; src: string; bdSrc: string } {
+function acrossBook(o: { bleed?: boolean; lang?: string; trim?: string; pic?: string } = {}): { st: Rec; ch: Rec; src: string; bdSrc: string } {
   const st = on(c.api.buildEmptyBook() as Rec);
   st.images = [
-    { id: 'wide', name: 'Harbour at dusk', mediaType: 'image/png', ext: 'png', data: WIDE },
+    { id: 'wide', name: 'Harbour at dusk', mediaType: 'image/png', ext: 'png', data: o.pic || WIDE },
     { id: 'other', name: 'A gull', mediaType: 'image/png', ext: 'png', data: OTHER },
   ];
   const chs = (st.sections as Rec[]).filter((s) => s.kind === 'body');
@@ -195,7 +198,7 @@ function acrossBook(o: { bleed?: boolean; lang?: string; trim?: string } = {}): 
   st.printTrim = o.trim || '6x9';
   st.printBleed = !!o.bleed;
   st.meta.language = o.lang || 'en';
-  return { st, ch, src: 'data:image/png;base64,' + WIDE, bdSrc: 'data:image/png;base64,' + OTHER };
+  return { st, ch, src: 'data:image/png;base64,' + (o.pic || WIDE), bdSrc: 'data:image/png;base64,' + OTHER };
 }
 const printHtml = async () => {
   await a.preparePrintPress();
@@ -429,5 +432,93 @@ describe('Across both pages in print (Task 3)', () => {
     const alone = await printHtml();
     st.boxSetVolumes = [{ id: 'v2', meta: { title: 'Book Two', language: 'en' }, sections: [structuredClone(ch)], images: structuredClone(st.images) }];
     expect(await printHtml()).toBe(alone);
+  });
+
+  /* Fix round 1, finding 1: printPlacements (the preflight's images.resolution, the Store-ready check's dpi rows)
+     measures an across plate where it prints — across the open spread, (2 x 6 + 2b) x (9 + 2b) in — at its one crop's
+     pixels per inch, acrossCrop(...).ppi = crop.w / (2W + 2b):
+       3000 x 3000 on 6 x 9: narrower than the spread, so crop.w = 3000: 3000 / 12 = 250 DPI; with bleed 3000 / 12.25 =
+       244.897… DPI (the plate as fill would have read min(3000 / 6, 3000 / 9) = 333.3 and passed);
+       1408 x 768: crop.w = 1024, 1024 / 12 = 85.33 DPI.
+     The chapter's stored backdrop is not printed under across, so it is not measured. */
+  it('printPlacements: an across plate is measured across the spread at its crop ppi, and fails the 300 DPI rows; its stored backdrop is not measured', () => {
+    const head = (w: number, h: number) =>
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, w >>> 24, (w >>> 16) & 255, (w >>> 8) & 255, w & 255, h >>> 24, (h >>> 16) & 255, (h >>> 8) & 255, h & 255, 8, 2, 0, 0, 0, 0, 0, 0, 0]).toString('base64');
+    const { st, ch } = acrossBook();
+    (st.images as Rec[]).push(
+      { id: 'sq', name: 'Square', mediaType: 'image/png', ext: 'png', data: head(3000, 3000) },
+      { id: 'w2', name: 'Myra wide', mediaType: 'image/png', ext: 'png', data: head(1408, 768) },
+      { id: 'low', name: 'Small backdrop', mediaType: 'image/png', ext: 'png', data: head(100, 100) },
+    );
+    Object.assign(ch, { plateId: 'sq', backdropId: 'low', backdropStrength: 'whisper' });
+    const mine = () => (a.printPlacements() as Rec[]).filter((p) => p.section === ch);
+    // no bleed: 250 DPI over 12 x 9 in, one row only (the 100 x 100 backdrop is stored, not printed, not measured)
+    let pl = mine();
+    expect(pl.map((p) => p.img.id)).toEqual(['sq']);
+    expect(pl[0]!.dpi).toBe(250);
+    expect([pl[0]!.placedW, pl[0]!.placedH]).toEqual([12, 9]);
+    // the preflight flags it, once, at 250
+    const found = (a.auditPrintInterior() as { findings: Rec[] }).findings.filter((f) => f.id === 'images.resolution' && f.jump && f.jump.sectionId === ch.id);
+    expect(found.length).toBe(1);
+    expect(String(found[0]!.detail)).toContain('250');
+    // the Store-ready check (the main closure, on the same state) fails it, once, at 250 DPI, and is not ready
+    c.setState(st as never);
+    (c.api as Rec).storeUi.server = null;
+    const x = (c.api as Rec).storeAudit({ store: 'kdp', binding: 'paperback', ink: 'bw_white' }) as { groups: { interior: Rec[] }; verdict: string };
+    const rows = x.groups.interior.filter((r) => String(r.id).indexOf('dpi.') === 0 && r.action && r.action.sectionId === ch.id);
+    expect(rows.length).toBe(1);
+    expect(rows[0]!.status).toBe('fail');
+    expect(String(rows[0]!.evidence)).toContain('250 DPI');
+    expect(x.verdict).toBe('notReady');
+    // with bleed: 3000 / 12.25 over 12.25 x 9.25 in
+    st.printBleed = true;
+    pl = mine();
+    expect(pl.length).toBe(1);
+    expect(pl[0]!.dpi).toBe(3000 / 12.25);
+    expect(Math.round(pl[0]!.dpi * 10) / 10).toBe(244.9);
+    expect([pl[0]!.placedW, pl[0]!.placedH]).toEqual([12.25, 9.25]);
+    st.printBleed = false;
+    // 1408 x 768: 85 DPI (1024 / 12)
+    ch.plateId = 'w2';
+    pl = mine();
+    expect(pl.length).toBe(1);
+    expect(pl[0]!.dpi).toBe(1024 / 12);
+    expect(Math.round(pl[0]!.dpi)).toBe(85);
+    // back to fill: measured as before — the plate over one trim, and the stored backdrop again
+    ch.plateFit = 'fill';
+    pl = mine();
+    expect(pl.map((p) => [p.img.id, p.placedW, p.placedH])).toEqual([['w2', 6, 9], ['low', 6, 9]]);
+    expect(pl[0]!.dpi).toBe(Math.min(1408 / 6, 768 / 9));
+  });
+
+  /* Fix round 1, finding 2: when the halves cannot be baked (here the picture will not decode), the across plate is
+     printed whole inside the margins, as "Show the whole picture" prints — never the renderer's cover crop of a fill
+     plate — with no layer, the stored backdrop still not drawn, and the failure in the press report. */
+  it('a bake that fails prints the plate whole (plate-page plate-whole), never a cover crop; no layer; the stored backdrop still not drawn', async () => {
+    const broken = png(1500, 1000);
+    UNDECODABLE.add('data:image/png;base64,' + broken);
+    try {
+      const { st, ch } = acrossBook({ pic: broken });
+      const html = await printHtml();
+      const sec = sectionOf(html, st, ch);
+      expect(sec).toContain('<figure class="plate-page plate-whole"><img src="data:image/png;base64,' + broken.slice(0, 40));
+      expect(sec).toContain('alt="A harbour at dusk, wide"');
+      expect(sec).not.toContain('plate-across');
+      expect(sec).not.toMatch(/<figure class="plate-page"><img/);
+      expect(sec).not.toContain('class="bd-layer');
+      expect(sec).not.toContain(OTHER.slice(0, 200));
+      // the whole plate is fitted, not cropped, even though this book has no whole plate of its own
+      const k = /id="ps-(\d+)"/.exec(sec)![1];
+      expect(html).toContain('#ps-' + k + ' .plate-page.plate-whole img { object-fit: contain; object-position: center center; }');
+      // it still opens on a verso facing its opening
+      expect(sec).toMatch(/^<section class="print-sec chapter-sec spread-sec" id="ps-\d+" data-start="verso">/);
+      // the failure is reported, not hidden
+      const rep = a.printPressReport() as { errors: string[]; seeThroughLeft: number };
+      expect(rep.errors).toContain('the picture did not decode');
+      expect(rep.seeThroughLeft).toBeGreaterThanOrEqual(1);
+      await expect(a.printAcrossHalves(ch)).rejects.toThrow('the picture did not decode');
+    } finally {
+      UNDECODABLE.clear();
+    }
   });
 });

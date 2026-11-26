@@ -31599,10 +31599,14 @@
           /* BEUK:across — print hands in an across plate's baked halves
              (opts.across, buildPrintHtml): the verso half is the plate, the
              recto half the opening's Spread page layer, in place of the
-             chapter's own backdrop (left stored, not drawn). Halves not yet
-             baked: the plate as today, and no layer. */
+             chapter's own backdrop (left stored, not drawn). Halves not
+             baked (not yet, or the bake failed): the whole picture inside
+             the margins, as "Show the whole picture" prints it, and no
+             layer — never a crop the writer did not see. */
           const ac = (opts && opts.across) || null;
-          const plate = (opts && opts.skipPlate) ? "" : plateHtml(section, forExport, dataCover, false, ac ? ac.verso : null);
+          const plate = (opts && opts.skipPlate) ? "" : (ac && !ac.verso)
+            ? plateHtml(Object.assign({}, section, { plateFit: "whole" }), forExport, dataCover, false)
+            : plateHtml(section, forExport, dataCover, false, ac ? ac.verso : null);
           /* A backdrop wraps the opening: the art layer lies behind the
              title and the first page of text, the words above it. */
           const bd = ac ? (ac.recto ? '<div class="bd-layer bd-spread bd-page bd-baked" style="background-image:url(' + ac.recto + ')" aria-hidden="true" role="presentation"></div>' : "") : backdropLayerHtml(section, forExport, dataCover);
@@ -54948,7 +54952,7 @@
         printLayoutNow = true; /* BEUK:layout */
         try {
           pairs = state.sections.filter((s) => inBook(s) && s.type !== "cover")
-            .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (printIsDisplaySec(s) ? " display-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true, printAcrossOpts(s))))) + "\n</section>" }));
+            .map((s, k) => { const ao = printAcrossOpts(s); return { s: s, ao: ao, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (printIsDisplaySec(s) ? " display-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true, ao)))) + "\n</section>" }; });
         } finally { printNotesAtFootNow = false; printLayoutNow = false; }
         /* A Large Print edition says so in the book itself, in the
            position the typesetter controls: the colophon carries the
@@ -54973,7 +54977,12 @@
            draws it (the browser's own print, the downloaded file; the
            renderer stamps it instead), it is set so its gutter edge stays
            on the gutter and the trim shows. */
-        const acrossCss = printBleedOn() ? pairs.map((p, k) => printIsAcross(p.s) ? "#ps-" + k + " .bd-layer.bd-page.bd-baked { background-size: " + inCss(tr.w + PRINT_BLEED_IN) + " " + inCss(tr.h + 2 * PRINT_BLEED_IN) + "; background-position: " + (isRtlLang(bookLang()) ? inCss(-PRINT_BLEED_IN) : "0") + " " + inCss(-PRINT_BLEED_IN) + "; }" : "").filter(Boolean).join("\n") : "";
+        const acrossCss = [
+          ...(printBleedOn() ? pairs.map((p, k) => printIsAcross(p.s) ? "#ps-" + k + " .bd-layer.bd-page.bd-baked { background-size: " + inCss(tr.w + PRINT_BLEED_IN) + " " + inCss(tr.h + 2 * PRINT_BLEED_IN) + "; background-position: " + (isRtlLang(bookLang()) ? inCss(-PRINT_BLEED_IN) : "0") + " " + inCss(-PRINT_BLEED_IN) + "; }" : "") : []),
+          /* halves not baked: the plate is printed whole (sectionHtml), fitted
+             here even in a book whose stylesheet has no whole plate of its own */
+          ...pairs.map((p, k) => (p.ao && !p.ao.across.verso) ? "#ps-" + k + " .plate-page.plate-whole img { object-fit: contain; object-position: center center; }" : "")
+        ].filter(Boolean).join("\n");
         return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n' +
           (atFoot ? '<meta name="beuk-footnotes" content="' + esc(JSON.stringify(printFootnoteConfig())) + '"/>\n' : "") +
           (printBleedOn() ? '<meta name="beuk-bleed" content="' + esc(JSON.stringify(printBleedConfig())) + '"/>\n' : "") + /* BEUK:bleed */
@@ -58807,16 +58816,24 @@
         const mg = printMargins(tr.id, pages);
         const textW = tr.w - mg.inside - mg.outside;
         const out = [];
-        const push = (img, section, placedW, placedH) => {
+        const push = (img, section, placedW, placedH, dpiOf) => {
           const px = imagePixelSize(img);
           if (!px || !px.w || !px.h) return;
-          const dpi = placedH ? Math.min(px.w / placedW, px.h / placedH) : px.w / placedW;
+          const dpi = dpiOf ? dpiOf(px) : placedH ? Math.min(px.w / placedW, px.h / placedH) : px.w / placedW;
           out.push({ img: img, section: section, px: px, placedW: placedW, placedH: placedH || 0, dpi: dpi });
         };
         state.sections.filter((s) => inBook(s) && s.type !== "cover").forEach((s) => {
           if (s.kind === "body") {
             const plate = plateImage(s);
-            if (plate && plateFitOf(s) === "whole") {
+            const across = printIsAcross(s);
+            if (across) {
+              /* BEUK:across — one crop across both pages: it occupies the
+                 open spread (both trims, plus the bleed when it is on), at
+                 the crop's own pixels per inch (acrossCrop). The chapter's
+                 stored backdrop is not printed, so it is not counted. */
+              const b = printBleedOn() ? PRINT_BLEED_IN : 0;
+              push(plate.img, s, 2 * tr.w + 2 * b, tr.h + 2 * b, (px) => acrossCrop(px.w, px.h, tr, b, false).ppi);
+            } else if (plate && plateFitOf(s) === "whole") {
               /* BEUK:platefit — shown whole, it is fitted inside the page area: those are the inches it occupies */
               const px = imagePixelSize(plate.img);
               if (px && px.w && px.h) {
@@ -58824,7 +58841,7 @@
                 push(plate.img, s, px.w * k, px.h * k);
               }
             } else if (plate) push(plate.img, s, tr.w, tr.h);
-            const bd = backdropImage(s);
+            const bd = across ? null : backdropImage(s);
             if (bd) push(bd.img, s, tr.w, tr.h);
           }
           if (s.type === "frontispiece") {
@@ -71271,6 +71288,47 @@
                 "the across chapter prints its verso half as the plate and its recto half as the Spread page layer (its own backdrop not drawn), left to right and right to left, bleed off and on: each half its page's shape with its bleed, the verso the picture's own half edge to edge, the recto the other half strong at the gutter and faded to the page beyond; the halves are printAcrossHalves'; a 5 x 8 trim baked new halves; the fill plate beside it printed as before; counted as edge art");
             } finally {
               state.printTrim = keepTrim; state.printRecto = keepRecto; state.printBleed = keepBleed;
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "plate.across.placements", feature: "plate", name: "Across both pages, resolution: an across plate is measured where it prints — across the open spread (both trims, plus the bleed when it is on) at its one crop's pixels per inch — so a square 3000 x 3000 picture on 6 x 9 is 250 DPI (244.9 with bleed) and fails the preflight's and the Store-ready check's 300 DPI rows, a 1408 x 768 one is 85; the chapter's stored backdrop, not printed, is not measured",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepTrim = state.printTrim, keepBleed = state.printBleed, keepServer = storeUi.server;
+            try {
+              const bad = [];
+              const png = (w, h) => btoa(String.fromCharCode(137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, (w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255, (h >>> 24) & 255, (h >>> 16) & 255, (h >>> 8) & 255, h & 255, 8, 2, 0, 0, 0, 0, 0, 0, 0));
+              applyBookDoc(buildEmptyBook());
+              state.printTrim = "6x9"; state.printBleed = false; storeUi.server = null;
+              state.images = [{ id: "acsq", name: "Square.png", mediaType: "image/png", ext: "png", data: png(3000, 3000) },
+                { id: "acwide", name: "Wide.png", mediaType: "image/png", ext: "png", data: png(1408, 768) },
+                { id: "aclow", name: "Small backdrop.png", mediaType: "image/png", ext: "png", data: png(100, 100) }];
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.title = "One"; ch.content = "The harbour bell rang over the water at first light.";
+              Object.assign(ch, { plateId: "acsq", plateAlt: "A square picture", plateFit: "across", backdropId: "aclow", backdropStrength: "whisper" });
+              const mine = () => printPlacements().filter((p) => p.section === ch);
+              const near = (a, b) => Math.abs(a - b) < 1e-9;
+              let pl = mine();
+              if (!(pl.length === 1 && pl[0].img.id === "acsq")) bad.push("the across chapter is not measured as its one plate (" + pl.map((p) => p.img.id).join(",") + "): its stored backdrop must not be");
+              else if (!(near(pl[0].dpi, 250) && pl[0].placedW === 12 && pl[0].placedH === 9)) bad.push("a 3000 x 3000 across plate on 6 x 9 is not 250 DPI over 12 x 9 in (" + pl[0].dpi + ", " + pl[0].placedW + " x " + pl[0].placedH + ")");
+              const flagged = auditPrintInterior().findings.filter((f) => f.id === "images.resolution" && f.jump && f.jump.sectionId === ch.id);
+              if (flagged.length !== 1 || !flagged[0].detail.includes("250")) bad.push("the preflight does not flag the across plate at 250 DPI, once");
+              const x = storeAudit({ store: "kdp", binding: "paperback", ink: "bw_white" });
+              const rows = x.groups.interior.filter((r) => r.id.indexOf("dpi.") === 0 && r.action && r.action.sectionId === ch.id);
+              if (rows.length !== 1 || rows[0].status !== "fail" || !rows[0].evidence.includes("250 DPI")) bad.push("the Store-ready check does not fail the across plate at 250 DPI, once");
+              state.printBleed = true;
+              pl = mine();
+              if (!(pl.length === 1 && near(pl[0].dpi, 3000 / 12.25) && pl[0].placedW === 12.25 && pl[0].placedH === 9.25)) bad.push("with bleed, the 3000 x 3000 across plate is not 3000 / 12.25 DPI over 12.25 x 9.25 in (" + (pl[0] && pl[0].dpi) + ")");
+              state.printBleed = false;
+              ch.plateId = "acwide";
+              pl = mine();
+              if (!(pl.length === 1 && Math.round(pl[0].dpi) === 85)) bad.push("a 1408 x 768 across plate on 6 x 9 is not 85 DPI (" + (pl[0] && pl[0].dpi) + ")");
+              ch.plateFit = "fill";
+              if (mine().length !== 2) bad.push("switched to fill, the chapter's backdrop is not measured again");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
+                "a 3000 x 3000 across plate on 6 x 9 measured at 250 DPI over 12 x 9 in (244.9 over 12.25 x 9.25 with bleed), failing the preflight's and the Store-ready check's 300 DPI rows; 1408 x 768 at 85 DPI; the stored backdrop measured only once the fit is fill again");
+            } finally {
+              state.printTrim = keepTrim; state.printBleed = keepBleed; storeUi.server = keepServer;
               applyBookDoc(keepDoc);
             }
           } },
