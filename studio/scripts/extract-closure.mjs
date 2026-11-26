@@ -495,7 +495,9 @@ export const PRINT_ROOTS = ['initPrint', 'initPrintView', 'renderPrintControls',
   'buildBookCss', 'printHeadsConfig', 'printBaseFontPt', 'printNotesAtFoot', 'isPairedSpread', 'printMarginsAuto', 'inBook', 'fontStack', 'labelFaceOf',
   // BEUK:across — an across plate's two baked halves and their press-cache key (studio/test/across-print.test.ts; the
   // print preview reads the same halves), and the Spread fade they are baked with
-  'printAcrossHalves', 'printAcrossKey', 'spreadFadeStops'];
+  'printAcrossHalves', 'printAcrossKey', 'spreadFadeStops',
+  // BEUK:across — one leaf of the interior view, as the hardcover's spread draws it (studio/test/across-preview.test.ts)
+  'pivPageEl'];
 /** What the print module takes from its page and from the main studio (src/print/print.ts). */
 export const PRINT_SUPPLIED = ['t', 'document', 'window', 'setTimeout', 'requestAnimationFrame', 'ResizeObserver', 'UI_STRINGS', 'getUiLang', 'uiLangState',
   'fmtDateIntl', 'icons', '$', 'downloadBlob', 'samplePicsHold', 'samplePicsReady', 'Image',

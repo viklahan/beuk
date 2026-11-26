@@ -203,13 +203,15 @@ describe('Across both pages in the print preview (Task 4)', () => {
         const want = c.api.acrossCrop(1600, 1200, { w: 6, h: 9 }, bleed ? 0.125 : 0, rtl);
         expect(picDraw(drawnOf(h.verso))!.src, what).toEqual(want.verso);
         expect(picDraw(drawnOf(h.recto))!.src, what).toEqual(want.recto);
-        // the spine joins the two leaves: plate | spine | opening (LTR), opening | spine | plate (RTL)
+        // the spine joins the two leaves: plate | spine | opening (LTR), opening | spine | plate (RTL); each leaf is
+        // drawn for the side it stands on
         const kids = Array.from(spreadEl().children) as HTMLElement[];
-        expect(kids.map((k) => k.className.split(' ').slice(0, 2).join(' ')), what).toEqual(rtl
-          ? ['piv-page piv-left', 'piv-spine', 'piv-page piv-right']
-          : ['piv-page piv-left', 'piv-spine', 'piv-page piv-right']);
+        expect(kids.length, what).toBe(3);
+        expect(kids[1]!.className, what).toBe('piv-spine');
         expect(kids[rtl ? 2 : 0], what).toBe(plateEl);
         expect(kids[rtl ? 0 : 2], what).toBe(openEl);
+        expect(plateEl.classList.contains(rtl ? 'piv-right' : 'piv-left'), what).toBe(true);
+        expect(openEl.classList.contains(rtl ? 'piv-left' : 'piv-right'), what).toBe(true);
       }
     }
   });
@@ -246,6 +248,48 @@ describe('Across both pages in the print preview (Task 4)', () => {
     expect(ltr.pages.map((p) => p.getAttribute('data-page'))).toEqual([String(ltr.plate.n), String(ltr.plate.n + 1)]);
     expect(ltr.plateEl.classList.contains('piv-left')).toBe(true);
     expect(ltr.openEl.classList.contains('piv-right')).toBe(true);
+  });
+
+  /* Fix round 1, finding 1: the hardcover device's spread (hcFillSide) draws each leaf with pivPageEl on a fixed side,
+     the verso always on the left, never mirrored. A leaf drawn away from its print side must never carry a half (in
+     a right-to-left book that would be the painting reversed at the gutter): it gets the fallback. */
+  it('a leaf drawn away from its print side (the hardcover, RTL, halves cached) shows the whole-picture fallback, never a half', async () => {
+    for (const lang of ['ar', 'en']) {
+      const rtl = lang === 'ar';
+      const { st, ch, src } = acrossBook({ lang });
+      const h = await printHalves(st, ch);
+      expect(await a.printAcrossHalves(ch)).toEqual(h); // the halves are cached
+      const model = a.buildPrintViewModel() as { pages: Page[] };
+      const plate = model.pages.find((p) => p.section === ch && p.col === 0)!;
+      const opening = model.pages.find((p) => p.section === ch && p.col === 1)!;
+      const draw = (p: Page, side: string) => a.pivPageEl(p, side, model) as HTMLElement;
+      const printPlateSide = rtl ? 'right' : 'left', otherSide = rtl ? 'left' : 'right';
+      // on the wrong sides (as the hardcover draws an RTL book: verso left, recto right)
+      const wp = draw(plate, otherSide), wo = draw(opening, printPlateSide);
+      const whole = wp.querySelector<HTMLImageElement>('img.piv-plate-whole');
+      expect(whole, lang + ': the whole picture on a plate leaf off its print side').toBeTruthy();
+      expect(whole!.getAttribute('src')).toBe(src);
+      expect(wp.querySelector('.piv-plate-across, .piv-plate-full'), lang).toBeNull();
+      expect(wo.querySelector('.piv-bleed'), lang + ': no layer on an opening off its print side').toBeNull();
+      const inFlow = wo.querySelector<HTMLElement>('.piv-clip .bd-layer');
+      if (inFlow) expect(inFlow.style.display, lang + ': the in-flow layer stands down too').toBe('none');
+      // nothing of either half is drawn on these leaves: the plate leaf carries no flow at all; the opening's flow
+      // (the section's columns, the clip showing its column 1) holds print's markup — the plate figure in its column 0,
+      // out of the clip, and the opening's layer, standing down — and nothing else carries a half
+      expect(wp.innerHTML, lang).not.toContain(h.verso);
+      expect(wp.innerHTML, lang).not.toContain(h.recto);
+      const outsideFlow = (el: HTMLElement) => {
+        const copy = el.cloneNode(true) as HTMLElement;
+        copy.querySelectorAll('.piv-clip').forEach((x) => x.remove());
+        return copy.innerHTML;
+      };
+      expect(outsideFlow(wo), lang).not.toContain(h.verso);
+      expect(outsideFlow(wo), lang).not.toContain(h.recto);
+      // on their print sides, the halves
+      const rp = draw(plate, printPlateSide), ro = draw(opening, otherSide);
+      expect(rp.querySelector<HTMLImageElement>('img.piv-plate-across')!.getAttribute('src'), lang).toBe(h.verso);
+      expect(urlOf(ro.querySelector<HTMLElement>('.piv-bleed.piv-across')!.style.backgroundImage), lang).toBe(h.recto);
+    }
   });
 
   it('before the halves are baked the preview shows what print would (the whole picture inside the margins, no layer), and re-lays with the halves when they land', async () => {

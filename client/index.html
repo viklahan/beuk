@@ -55610,7 +55610,9 @@
         };
       }
       /* BEUK:across — a spread whose verso is an across chapter's plate leaf,
-         in a right-to-left book: drawn mirrored (renderPrintView). */
+         in a right-to-left book: drawn mirrored (renderPrintView). NOTE: the
+         queued fix that mirrors every RTL spread in the preview must remove
+         this across-only mirror, or the across spread is mirrored twice. */
       function pivAcrossMirrored(pr) {
         return !!(pr.left && pr.right && !pr.left.blank && pr.left.col === 0 && pr.right.section === pr.left.section &&
           printIsAcross(pr.left.section) && isRtlLang(bookLang()));
@@ -55709,9 +55711,15 @@
            whole leaf with its bleed, as the renderer stamps them. Not baked
            (not yet, or the bake failed): what print then prints — the whole
            picture inside the margins and no layer. The chapter's own
-           backdrop is never drawn for it. */
+           backdrop is never drawn for it. The halves are used only on a
+           leaf standing on its print side — the plate leaf on the left (the
+           right in a right-to-left book), the opening on the other — so no
+           caller (the hardcover's spread, which never mirrors) can show the
+           painting swapped at the gutter: a leaf on the other side gets the
+           fallback. */
         const across = !page.blank && printIsAcross(page.section);
-        const halves = across ? printAcrossCached(page.section) : null;
+        const printSide = (page.col === 0) !== isRtlLang(bookLang()) ? "left" : "right";
+        const halves = across && side === printSide ? printAcrossCached(page.section) : null;
         const pairedBd = (!across && !page.blank && page.section && page.section.kind === "body" && plateImage(page.section))
           ? backdropImage(page.section) : null;
         const pairedOpening = !!pairedBd && page.col === (plateImage(page.section) ? 1 : 0);
@@ -55784,7 +55792,7 @@
           const flow = pivSectionFlow(page.section, g);
           const fnl = model.fn && model.fn.get(page.section.id); /* BEUK:footnotes */
           if (fnl) flow.innerHTML = fnl.html;
-          if (pairedOpening || acrossOpening) {
+          if (pairedOpening || across) { /* (an across leaf: its layer is the one above, or none) */
             const inFlow = flow.querySelector(".bd-layer");
             if (inFlow) inFlow.style.display = "none";
           }
@@ -55875,7 +55883,8 @@
         /* BEUK:across — an across chapter's spread in a right-to-left book is
            drawn as it prints: its plate (the verso) on the right, the opening
            on the left, so the two halves meet at the spine. (Every other spread
-           is laid out as before.) */
+           is laid out as before. A fix mirroring every RTL spread must remove
+           this, or the across spread is mirrored twice.) */
         const mirror = pivAcrossMirrored(pr);
         const pa = mirror && !stacked ? pr.right : pr.left, pb = mirror && !stacked ? pr.left : pr.right;
         const sideOf = (p) => (p === pr.left) !== mirror ? "left" : "right";
@@ -71425,6 +71434,12 @@
                 }
                 const f = spreadOf(ch2);
                 if (!(f && f.plateEl && f.plateEl.querySelector(".piv-plate-full") && !f.plateEl.querySelector(".piv-plate-across"))) bad.push(what + ": the fill plate's leaf is not drawn as before");
+                if (rtl) {
+                  /* a leaf off its print side (the hardcover's spread: verso left, never mirrored) gets the fallback, never a half */
+                  const pg = piv.model.pages.find((p) => p.section === ch && p.col === 0);
+                  const off = pg && pivPageEl(pg, "left", piv.model);
+                  if (!(off && off.querySelector("img.piv-plate-whole") && !off.querySelector(".piv-plate-across"))) bad.push(what + ": a plate leaf drawn off its print side carries a half");
+                }
                 $("modalPrintView").classList.remove("open");
               };
               await shown("en", false);
@@ -71448,7 +71463,7 @@
               const im5 = a5 && a5.plateEl && a5.plateEl.querySelector("img.piv-plate-across");
               if (!(im5 && im5.getAttribute("src") === h5.verso && a5.openEl.querySelector(".piv-bleed.piv-across"))) bad.push("the view did not re-lay with the halves once they were baked");
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
-                "the across spread shows print's own halves (printAcrossHalves), each over its whole leaf with its bleed, the recto unmasked and the chapter's own backdrop not drawn, meeting at the spine: left to right with the plate on the left, right to left with it on the right, bleed off and on; a 5 x 8 trim opened on the whole picture without a layer and re-laid with its new halves; the fill plate's leaf drawn as before");
+                "the across spread shows print's own halves (printAcrossHalves), each over its whole leaf with its bleed, the recto unmasked and the chapter's own backdrop not drawn, meeting at the spine: left to right with the plate on the left, right to left with it on the right (a leaf drawn off its print side, as the hardcover draws it, got the whole picture), bleed off and on; a 5 x 8 trim opened on the whole picture without a layer and re-laid with its new halves; the fill plate's leaf drawn as before");
             } finally {
               $("modalPrintView").classList.remove("open");
               state.printTrim = keepTrim; state.printRecto = keepRecto; state.printBleed = keepBleed; piv.guides = keepGuides;
