@@ -71,7 +71,10 @@ describe('findInText (the caret keeper\'s rule)', () => {
     expect(findInText('abc', '', '')).toEqual([]);
   });
   it('agrees with the spike\'s full scan on 2,000 random cases', () => {
-    const bad = randomCases(2000).filter(({ s, pre, post }) => JSON.stringify(findInText(s, pre, post)) !== JSON.stringify(referenceScan(s, pre, post)));
+    const cases = randomCases(2000);
+    // not vacuous: most cases have hits to agree on (1,145 of the 2,000 with seed 1)
+    expect(cases.filter(({ s, pre, post }) => referenceScan(s, pre, post).length > 0).length).toBeGreaterThan(1000);
+    const bad = cases.filter(({ s, pre, post }) => JSON.stringify(findInText(s, pre, post)) !== JSON.stringify(referenceScan(s, pre, post)));
     expect(bad).toEqual([]);
   });
 });
