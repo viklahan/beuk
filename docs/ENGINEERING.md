@@ -531,14 +531,18 @@ right after Collaboration in `createEditor.ts`) keeps it:
   - OBSERVED (Chromium, two real tabs, 4 of 4 runs): B's "n" keydown and A's join of B's paragraph with the one
     above fell in the same millisecond; both tabs then read "broabcdefghijklmwn … dog.opqrstuvwx". The "n" is
     gone from both, the keeper reported `lost`, and B's next letters went to the block's end.
-  - OBSERVED (jsdom, the `caret-pair.ts` pair, a letter typed while A's change is undelivered): the letter is lost
-    when A joins the paragraph or turns it into a heading, with the keeper and without it.
+  - OBSERVED (jsdom, the `caret-pair.ts` pair, a letter typed while A's change is undelivered):
+    - A joins the paragraph with the one above: with the keeper the letter is lost ("…broabcdefwn … dog.xyz");
+      without it the letter survives but neighbouring letters move ("The defbroabcwn … dog.nxyz").
+    - A turns the paragraph into a heading: the letter is lost with the keeper and without it ("The broabcwn fox …
+      dog.xyz" in both). Not seen in the browser, where no keystroke coincided with the heading.
   - DERIVED: y-tiptap writes such a change as a delete-and-rebuild of the block, and Yjs drops an insert into a
-    parent another writer deleted concurrently. So main has the same exposure. It is rare: the keystroke must land
-    within milliseconds of the other tab's change.
-  - DERIVED: the keeper changes where the damage lands. Without it the writer's letters survive but in the wrong
-    place (the caret was already thrown out of the block); with it the writer stays put, and an in-flight letter
-    can vanish.
+    parent another writer deleted concurrently. So main has the same exposure (the heading case above, without the
+    keeper). How often it happens is not measured: the browser red repeats because the test lines the keystroke up
+    with the edit. From the mechanism it needs the keystroke to land within milliseconds of the other tab's change.
+  - DERIVED: the keeper changes where the damage lands. In the two-tab split-then-join run, without it the
+    writer's letters survive but in the wrong place (the caret was already thrown out of the block); with it the
+    writer stays put, and an in-flight letter can vanish.
   - The e2e check "typing through a split then join" is red on purpose, in the default `E2E_ONLY=caret` run, until
     a keystroke rescue lands: a follow-up that re-inserts a tab's own letters deleted only because their block was
     rebuilt. That rescue gates Agora Part 1.
