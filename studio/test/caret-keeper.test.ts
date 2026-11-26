@@ -261,7 +261,8 @@ describe('the caret keeper: another writer changes the paragraph B is in', () =>
     w.edA.chain().setTextSelection(at(w.edA, 'The ')).setNode('heading', { level: 2 }).run();
     const last = (w.edB.storage as unknown as { caretKeeper: { last: unknown } }).caretKeeper.last;
     expect(last).toEqual(w.results.at(-1));
-    expect(w.results.at(-1)).toMatchObject({ outcome: 'found', moved: expect.any(Boolean) });
+    expect(w.results.at(-1)).toMatchObject({ outcome: 'found', moved: true });
+    expect(w.keeperDispatches).toHaveLength(1); // the dispatch filter can see a keeper dispatch: the "no dispatch" checks elsewhere can fail
     expect(w.results.at(-1)!.searched).toBeGreaterThan(0);
   });
 });

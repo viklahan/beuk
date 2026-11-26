@@ -35,6 +35,8 @@ export function cleanupPairs(): void {
 
 const FROM_A = Symbol('from A');
 const FROM_B = Symbol('from B');
+const FROM_S = Symbol('from the server writer');
+const TO_S = Symbol('A to the server writer');
 
 export const binding = (ed: Editor): ProsemirrorBinding => (ySyncPluginKey.getState(ed.state) as { binding: ProsemirrorBinding }).binding;
 
@@ -86,7 +88,39 @@ export type Pair = {
   textA: () => string;
   /** A's block text with "|" where A resolves B's head (what Part 1's awareness would draw), or null. */
   remoteCaretInA: () => string | null;
+  /** The server writer S (client id 3): a third doc, no editor, linked to A (and so to B). It stands in for Part 1's openDirectConnection. */
+  docS: Y.Doc;
+  fragS: Y.XmlFragment;
+  /** S turns the block whose text starts with `match` into a level-2 heading (a clone, then the original deleted). */
+  serverHeading: (match: string) => void;
+  /** S re-sends the whole chapter: every block replaced by a clone, `append` added to the first. */
+  serverRewrite: (append: string) => void;
+  /** Stop delivering updates to and from B. */
+  offline: () => void;
+  /** Deliver each side's missing state to the other as one update (a sync step). Returns the ms B's applyUpdate took. */
+  online: () => number;
 };
+
+/** A copy of `el` as brand-new Yjs items (the server's rebuild). Clone BEFORE deleting: a deleted type's text reads as empty. */
+export function cloneEl(el: Y.XmlElement, name: string = el.nodeName, attrs: Record<string, unknown> = el.getAttributes(), append = ''): Y.XmlElement {
+  const n = new Y.XmlElement(name);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v as string);
+  n.insert(
+    0,
+    el.toArray().map((c) => {
+      if (c instanceof Y.XmlText) {
+        const t = new Y.XmlText();
+        t.applyDelta([...c.toDelta(), ...(append ? [{ insert: append }] : [])]);
+        return t;
+      }
+      return cloneEl(c as Y.XmlElement);
+    }),
+  );
+  return n;
+}
+
+const plainText = (el: Y.XmlElement | Y.XmlText): string =>
+  el instanceof Y.XmlText ? el.toDelta().map((o: { insert: string }) => o.insert).join('') : el.toArray().map((c) => plainText(c as Y.XmlElement | Y.XmlText)).join('');
 
 export const listeners = (doc: Y.Doc): { before: number; after: number } => {
   const obs = (doc as unknown as { _observers: Map<string, Set<unknown>> })._observers;
@@ -113,11 +147,20 @@ export function pair(paras: string[], o: { keeper?: boolean; onDocB?: (docB: Y.D
   docB.clientID = 2;
   Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA), FROM_A);
   const fragB = docB.getArray<Y.Map<unknown>>('sections').get(0).get('body') as Y.XmlFragment;
+  const docS = new Y.Doc();
+  docS.clientID = 3;
+  Y.applyUpdate(docS, Y.encodeStateAsUpdate(docA), FROM_A);
+  const fragS = docS.getArray<Y.Map<unknown>>('sections').get(0).get('body') as Y.XmlFragment;
+  let bOffline = false;
   docA.on('update', (u: Uint8Array, origin: unknown) => {
-    if (origin !== FROM_B) Y.applyUpdate(docB, u, FROM_A);
+    if (origin !== FROM_B && !bOffline) Y.applyUpdate(docB, u, FROM_A);
+    if (origin !== FROM_S) Y.applyUpdate(docS, u, TO_S);
   });
   docB.on('update', (u: Uint8Array, origin: unknown) => {
-    if (origin !== FROM_A) Y.applyUpdate(docA, u, FROM_B);
+    if (origin !== FROM_A && !bOffline) Y.applyUpdate(docA, u, FROM_B);
+  });
+  docS.on('update', (u: Uint8Array, origin: unknown) => {
+    if (origin !== TO_S) Y.applyUpdate(docA, u, FROM_S);
   });
 
   const results: KeeperResult[] = [];
@@ -170,6 +213,34 @@ export function pair(paras: string[], o: { keeper?: boolean; onDocB?: (docB: Y.D
       const $p = edA.state.doc.resolve(pos);
       const t = $p.parent.textBetween(0, $p.parent.content.size, undefined, '\uFFFC');
       return t.slice(0, $p.parentOffset) + '|' + t.slice($p.parentOffset);
+    },
+    docS,
+    fragS,
+    serverHeading: (match) =>
+      docS.transact(() => {
+        const kids = fragS.toArray() as Y.XmlElement[];
+        const i = kids.findIndex((k) => plainText(k).startsWith(match));
+        if (i < 0) throw new Error(`no block starting "${match}"`);
+        const h = cloneEl(kids[i], 'heading', { level: 2 });
+        fragS.delete(i, 1);
+        fragS.insert(i, [h]);
+      }),
+    serverRewrite: (append) =>
+      docS.transact(() => {
+        const copies = (fragS.toArray() as Y.XmlElement[]).map((k, i) => cloneEl(k, undefined, undefined, i === 0 ? append : ''));
+        fragS.delete(0, fragS.length);
+        fragS.insert(0, copies);
+      }),
+    offline: () => {
+      bOffline = true;
+    },
+    online: () => {
+      bOffline = false;
+      const t0 = performance.now();
+      Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA, Y.encodeStateVector(docB)), FROM_A);
+      const ms = performance.now() - t0;
+      Y.applyUpdate(docA, Y.encodeStateAsUpdate(docB, Y.encodeStateVector(docA)), FROM_B);
+      return ms;
     },
   };
   return w;
