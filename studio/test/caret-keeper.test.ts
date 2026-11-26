@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
 import type { Editor } from '@tiptap/core';
-import { yUndoPluginKey } from '@tiptap/y-tiptap';
+import { yUndoPluginKey, ySyncPluginKey } from '@tiptap/y-tiptap';
 import { positionMigrationStore } from '../src/editor/positionMigrations';
 import { at, blockWith, bytesWithoutKeeper, cleanupPairs, listeners, pair, posOf, stubLayout, type Pair } from './caret-pair';
 
@@ -183,6 +183,76 @@ describe('the caret keeper: another writer changes the paragraph B is in', () =>
     expect(v.results.at(-1)?.outcome).toBe('none');
     // the hook's own listener stays; the editor's are gone
     expect(listeners(v.docB)).toEqual(v.listenersBeforeB);
+  });
+
+  it("the note step throws: no throw into Yjs, the doc is not wedged (a later remote change lands, B's typing still sends)", () => {
+    const w = pair(START);
+    w.parkB('brown', 3);
+    // once: the first resolve on B's current doc is the keeper's note, in docB's beforeTransaction
+    const old = w.edB.state.doc as unknown as { resolve?: (p: number) => unknown };
+    let threw = 0;
+    old.resolve = () => {
+      delete old.resolve;
+      threw++;
+      throw new Error('the note fails');
+    };
+    expect(() => w.edA.chain().setTextSelection(at(w.edA, 'The ')).setNode('heading', { level: 2 }).run()).not.toThrow();
+    expect(threw).toBe(1);
+    expect(w.results).toHaveLength(0); // no note held: nothing kept for that change
+    expect((w.docB as unknown as { _transaction: unknown })._transaction).toBeNull();
+    expect(w.edB.state.doc.child(1).type.name).toBe('heading');
+    w.edA.chain().setTextSelection(at(w.edA, 'The ')).insertContent('quick ').run();
+    expect(w.fragB.toString()).toContain('The quick brown');
+    expect(w.edB.state.doc.child(1).textContent).toBe('The quick brown fox jumps over the dog.');
+    let sent = 0;
+    w.docB.on('update', (_u: Uint8Array, origin: unknown) => { if (origin === ySyncPluginKey) sent++; });
+    w.typeB('#');
+    expect(sent).toBeGreaterThan(0);
+    expect(w.textA()).toContain('#');
+  });
+
+  it('the after step throws (here: the onResult callback): no throw into Yjs, and later changes are kept as usual', () => {
+    const w = pair(START);
+    w.parkB('brown', 3);
+    const push = w.results.push.bind(w.results);
+    w.results.push = () => {
+      w.results.push = push;
+      throw new Error('onResult fails');
+    };
+    expect(() => w.edA.chain().setTextSelection(at(w.edA, 'The ')).setNode('heading', { level: 2 }).run()).not.toThrow();
+    expect((w.docB as unknown as { _transaction: unknown })._transaction).toBeNull();
+    w.edA.chain().setTextSelection(at(w.edA, 'The ')).insertContent('quick ').run();
+    expect(w.edB.state.doc.child(1).textContent).toBe('The quick brown fox jumps over the dog.');
+    expect(w.results.at(-1)?.outcome).toBe('alive');
+    w.typeB('#');
+    expect(w.textA()).toContain('bro#wn');
+  });
+
+  it('a remote change elsewhere in the book (another chapter, the meta) produces no result', () => {
+    const w = pair(START);
+    w.parkB('brown', 3);
+    const storage = () => (w.edB.storage as unknown as { caretKeeper: { last: unknown } }).caretKeeper.last;
+    w.edA.chain().setTextSelection(at(w.edA, 'The ')).setNode('heading', { level: 2 }).run();
+    expect(w.results).toHaveLength(1);
+    const last = storage();
+    // another chapter: a second section with its own body, then a write to that body
+    const sec2 = new Y.Map<unknown>();
+    w.docA.getArray<Y.Map<unknown>>('sections').push([sec2]);
+    const other = new Y.XmlFragment();
+    sec2.set('body', other);
+    const p = new Y.XmlElement('paragraph');
+    p.insert(0, [new Y.XmlText('Another chapter.')]);
+    other.insert(0, [p]);
+    (p.get(0) as Y.XmlText).insert(0, 'In ');
+    w.docA.getMap('meta').set('title', 'A book');
+    expect(w.docB.getArray<Y.Map<unknown>>('sections').get(1).get('body')!.toString()).toContain('In Another chapter.');
+    expect(w.docB.getMap('meta').get('title')).toBe('A book');
+    expect(w.results).toHaveLength(1);
+    expect(storage()).toBe(last);
+    // a change in B's own chapter still reports
+    w.edA.chain().setTextSelection(at(w.edA, 'The ')).insertContent('quick ').run();
+    expect(w.results).toHaveLength(2);
+    expect(storage()).toBe(w.results[1]);
   });
 
   it('the result lands in editor.storage.caretKeeper.last', () => {

@@ -115,6 +115,15 @@ function dead(doc: Y.Doc, rel: Y.RelativePosition): boolean {
   }
 }
 
+/** `t` is `frag` or lies inside it. */
+const inside = (frag: Y.XmlFragment, t: Y.AbstractType<any>): boolean => t === frag || (t._item !== null && Y.isParentOf(frag, t._item));
+
+/** `tr` changed something in `frag` (a change elsewhere in the book cannot move this editor's caret). */
+const touches = (tr: Y.Transaction, frag: Y.XmlFragment): boolean => {
+  for (const t of tr.changed.keys()) if (inside(frag, t)) return true;
+  return false;
+};
+
 /** What `tr` wrote inside `frag`: the XmlTexts it changed, plus every XmlText inside a block it created (an
  *  item is new when its clock is at or past the transaction's state vector for its client); and the empty
  *  blocks it created. An empty block holds no XmlText in Yjs (y-tiptap writes none), so it is searched as
@@ -123,7 +132,6 @@ function written(tr: Y.Transaction, frag: Y.XmlFragment): { texts: Y.XmlText[]; 
   const texts = new Set<Y.XmlText>();
   const empties = new Set<Y.XmlElement>();
   const isNew = (it: Y.Item) => it.id.clock >= (tr.beforeState.get(it.id.client) ?? 0);
-  const inFrag = (t: Y.AbstractType<any>) => t === frag || (t._item !== null && Y.isParentOf(frag, t._item));
   const add = (c: Y.AbstractType<any>) => {
     if (c instanceof Y.XmlText) texts.add(c);
     else if (c instanceof Y.XmlElement) {
@@ -137,7 +145,7 @@ function written(tr: Y.Transaction, frag: Y.XmlFragment): { texts: Y.XmlText[]; 
     }
   };
   tr.changed.forEach((_k, t) => {
-    if (!inFrag(t) || t._item?.deleted) return;
+    if (!inside(frag, t) || t._item?.deleted) return;
     if (t instanceof Y.XmlText) {
       texts.add(t);
       return;
@@ -189,25 +197,25 @@ export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStora
             onResult?.(r);
           };
 
-          const onBefore = (tr: Y.Transaction) => {
+          const keepBefore = (tr: Y.Transaction) => {
             if (held || own(tr) || onlyPositionMigrations(tr) || view.isDestroyed) return;
             const t0 = performance.now();
             const sel = view.state.selection;
             const caret = sel.head === sel.anchor;
-            held = { tr, anchor: note(sel.anchor), head: caret ? null : note(sel.head), caret, ms: 0 };
-            held.ms = performance.now() - t0;
+            const anchor = note(sel.anchor);
+            const head = caret ? null : note(sel.head);
+            held = { tr, anchor, head, caret, ms: performance.now() - t0 };
           };
 
-          const onAfter = (tr: Y.Transaction) => {
-            if (!held || held.tr !== tr) return;
-            const was = held;
-            held = null;
+          const keepAfter = (tr: Y.Transaction, was: NonNullable<typeof held>) => {
             if (onlyPositionMigrations(tr)) return; // a relayed clear of the migration maps: no fragment touched
+            const gone = !!frag._item?.deleted;
+            if (!gone && !touches(tr, frag)) return; // a change elsewhere in the book (another chapter, the meta): nothing to keep
             const t0 = performance.now();
             const done = (outcome: KeeperOutcome, moved = false, searched = 0) => report({ outcome, moved, ms: was.ms + performance.now() - t0, searched });
             if (view.composing) return done('composing');
             const b = binding();
-            if (view.isDestroyed || frag._item?.deleted || !b || (!was.anchor && !was.head)) return done('none');
+            if (view.isDestroyed || gone || !b || (!was.anchor && !was.head)) return done('none');
 
             let wrote: { texts: Y.XmlText[]; empties: Y.XmlElement[] } | null = null;
             let searched = 0;
@@ -248,6 +256,28 @@ export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStora
             if ((na === sel.anchor && nh === sel.head) || na < 0 || nh < 0 || na > max || nh > max) return done(outcome, false, searched);
             view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, na, nh)).setMeta('addToHistory', false));
             done(outcome, true, searched);
+          };
+
+          // Yjs emits both events outside its own try: a throw in beforeTransaction leaves doc._transaction set
+          // for good (every later change nests into the dead one, so nothing renders, syncs or saves), and a
+          // throw in afterTransaction comes out of the remote apply. So neither ever throws: on an error the
+          // keeper does nothing for that transaction (no note, no result, no dispatch; y-tiptap's answer stands).
+          const onBefore = (tr: Y.Transaction) => {
+            try {
+              keepBefore(tr);
+            } catch {
+              held = null;
+            }
+          };
+          const onAfter = (tr: Y.Transaction) => {
+            if (!held || held.tr !== tr) return;
+            const was = held;
+            held = null;
+            try {
+              keepAfter(tr, was);
+            } catch {
+              // nothing kept
+            }
           };
 
           doc.on('beforeTransaction', onBefore);
