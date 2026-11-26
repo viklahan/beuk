@@ -29,6 +29,10 @@
       next animation frame) over 300 keystrokes in the Dumas book's largest
       chapter; p50 and p95 printed (p95 over 16 ms is reported, with the
       profile's hottest functions, not hidden).
+   caret (E2E_ONLY=caret): two tabs on one chapter; B's caret at "bro|wn"
+      stays there through each of A's edits (and a server-shaped raw Yjs
+      write), B's "#" lands "bro#wn"; the caret keeper's cost on a
+      400-paragraph rewrite (caretChecks).
    CSP: zero securitypolicyviolation events and no page errors throughout.
    Screenshots: an open book in Paper, Candlelight and Arabic chrome next
    to 1.0 with the same book; the shell regions are diffed as part A does
@@ -10467,6 +10471,375 @@ async function importlockChecks() {
   }
 }
 
+/* ---- carets across two real tabs (Agora part 0A, task 5, 2026-11-26): caretChecks (E2E_ONLY=caret) ----
+   Two tabs of /studio/ on one book: one context, so one generation, and the tabs relay every change over its
+   BroadcastChannel (store.ts). Both are in the same chapter. Tab B parks its caret at "bro|wn"; tab A changes
+   the paragraph; B types "#" with the real keyboard; A's text must then read "bro#wn". The cases are the jsdom
+   suites' (caret-keeper.test.ts, caret-keeper-hard.test.ts), here in the production build. B's keeper result
+   (editor.storage.caretKeeper.last) is printed with each case. A build without the keeper (the negative control,
+   or main) runs the same cases: its keeper figures are then reported "no keeper on this build", neither passed
+   nor failed, and only the "bro#wn" texts are recorded. */
+const CARET_PARAS = ['Opening line above.', 'The brown fox jumps over the dog.'];
+const CARET_LOREM = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam quis.';
+const CARET_BIG = ['The brown fox jumps over the dog.', ...Array.from({ length: 400 }, (_, i) => `${i} ${CARET_LOREM}`)];
+const CARET_TYPED = 'abcdefghijklmnopqrstuvwx';
+
+/** In-page helpers, installed once per tab as window.__caret. */
+const CARET_HELPERS = () => {
+  const ed = () => document.getElementById('manuscript').beukEditor;
+  const text = () => {
+    const out = [];
+    ed().state.doc.forEach((n) => void out.push(n.textContent));
+    return out.join('\n');
+  };
+  const sig = () => JSON.stringify(ed().state.doc.toJSON());
+  const shape = () => {
+    const out = [];
+    ed().state.doc.forEach((n) => void out.push(n.type.name));
+    return out.join(',');
+  };
+  /** The position just after `prefix` in the block whose text starts "The" (caret-pair.ts's at()). */
+  const at = (prefix) => {
+    let t = null;
+    ed().state.doc.descendants((n, pos) => {
+      if (t === null && n.isText && n.text.startsWith('The')) t = pos + prefix.length;
+    });
+    if (t === null) throw new Error('no block starting "The"');
+    return t;
+  };
+  /** The position `k` letters into the first occurrence of `word`. */
+  const posOf = (word, k) => {
+    let t = null;
+    ed().state.doc.descendants((n, pos) => {
+      if (t === null && n.isText && n.text.includes(word)) t = pos + n.text.indexOf(word) + k;
+    });
+    if (t === null) throw new Error(`no "${word}" in the text`);
+    return t;
+  };
+  /** The start of the text of the first textblock whose text starts with `word`. */
+  const blockStarting = (word) => {
+    let t = null;
+    ed().state.doc.descendants((n, pos) => {
+      if (t === null && n.isTextblock && n.textContent.startsWith(word)) t = pos + 1;
+      return t === null;
+    });
+    if (t === null) throw new Error(`no block starting "${word}"`);
+    return t;
+  };
+  const firstBlock = () => {
+    let r = null;
+    ed().state.doc.forEach((n, off, i) => {
+      if (i === 0) r = { from: off, to: off + n.nodeSize };
+    });
+    return r;
+  };
+  const plugin = (name) => ed().state.plugins.find((p) => p.key.startsWith(name));
+  const um = () => plugin('y-undo$').getState(ed().state).undoManager;
+  const binding = () => plugin('y-sync$').getState(ed().state).binding;
+  const keeper = () => {
+    const s = ed().storage.caretKeeper;
+    return s ? { has: true, last: s.last } : { has: false, last: null };
+  };
+  const doc = (paras) => ({ type: 'doc', content: paras.map((t) => ({ type: 'paragraph', content: t ? [{ type: 'text', text: t }] : [] })) });
+  /** A server-shaped write: raw Yjs on this tab's own doc, outside its editor (the XmlElement / XmlText
+   *  constructors come from the existing children). "heading": the block starting "The brown" is replaced by a
+   *  level-2 heading copy; "rewrite": every block replaced by a copy, `append` added to the first. Returns the
+   *  time of the write (performance.timeOrigin-based, comparable across tabs). */
+  const serverWrite = (kind, append = '') => {
+    const b = binding();
+    const ydoc = b.doc;
+    const frag = b.type;
+    const kids = frag.toArray();
+    const XmlElement = kids[0].constructor;
+    const textCtor = (el) => {
+      for (const c of el.toArray()) {
+        if (!(c instanceof XmlElement)) return c.constructor;
+        const t = textCtor(c);
+        if (t) return t;
+      }
+      return null;
+    };
+    let XmlText = null;
+    for (const k of kids) if (!XmlText) XmlText = textCtor(k);
+    const plain = (el) => (el instanceof XmlText ? el.toDelta().map((o) => (typeof o.insert === 'string' ? o.insert : '')).join('') : el.toArray().map(plain).join(''));
+    const clone = (el, name = el.nodeName, attrs = el.getAttributes(), add = '') => {
+      const n = new XmlElement(name);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      n.insert(0, el.toArray().map((c) => {
+        if (c instanceof XmlText) {
+          const t = new XmlText();
+          t.applyDelta([...c.toDelta(), ...(add ? [{ insert: add }] : [])]);
+          return t;
+        }
+        return clone(c);
+      }));
+      return n;
+    };
+    const t0 = performance.timeOrigin + performance.now();
+    ydoc.transact(() => {
+      if (kind === 'heading') {
+        const i = kids.findIndex((k) => plain(k).startsWith('The brown'));
+        if (i < 0) throw new Error('no block starting "The brown"');
+        const h = clone(kids[i], 'heading', { level: 2 });
+        frag.delete(i, 1);
+        frag.insert(i, [h]);
+      } else {
+        const copies = kids.map((k, i) => clone(k, undefined, undefined, i === 0 ? append : ''));
+        frag.delete(0, frag.length);
+        frag.insert(0, copies);
+      }
+    }, 'e2e-server-writer');
+    return t0;
+  };
+  /** Time every remote Yjs transaction this tab applies from now on (listeners added after the keeper's, so the
+   *  end mark falls after the keeper placed the caret): window.__caretApplied = [{ t0, t1, shows }]. */
+  const timeRemote = (marker) => {
+    const ydoc = binding().doc;
+    window.__caretApplied = [];
+    let open = null;
+    const before = (tr) => {
+      if (!tr.local) open = performance.timeOrigin + performance.now();
+    };
+    const after = (tr) => {
+      if (tr.local) return;
+      window.__caretApplied.push({ t0: open, t1: performance.timeOrigin + performance.now(), shows: text().includes(marker) });
+      open = null;
+    };
+    ydoc.on('beforeTransaction', before);
+    ydoc.on('afterTransaction', after);
+    window.__caretUntime = () => {
+      ydoc.off('beforeTransaction', before);
+      ydoc.off('afterTransaction', after);
+    };
+  };
+  window.__caret = { ed, text, sig, shape, at, posOf, blockStarting, firstBlock, um, binding, keeper, doc, serverWrite, timeRemote };
+};
+
+async function caretUntil(fn, ms = 5000, step = 25) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
+    if (await fn()) return true;
+    await new Promise((r) => setTimeout(r, step));
+  }
+  return false;
+}
+
+/** A keeper result as one short phrase. */
+const keeperSays = (k, fresh) => {
+  if (!k.has) return 'no keeper on this build';
+  if (!fresh || !k.last) return 'keeper: no new result';
+  const l = k.last;
+  return `keeper ${l.outcome}${l.moved ? ', moved' : ''}, ${l.ms.toFixed(2)} ms, searched ${l.searched}`;
+};
+
+async function caretChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const book = JSON.parse(JSON.stringify(f.book));
+  const si = book.sections.findIndex((s) => s.kind === 'body');
+  book.sections[si].content = 'Opening line above.\n\nThe brown fox jumps over the dog.';
+  const file = path.join(OUT, 'caret-book.json');
+  writeFileSync(file, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book }));
+  const log = [];
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const A = await openNext(ctx, origin);
+    await openBackup(A, file);
+    const B = await openNext(ctx, origin); // same context: the same generation, so the two tabs relay
+    await B.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 });
+    await choose(A, si);
+    await choose(B, si);
+    for (const p of [A, B]) await p.evaluate(CARET_HELPERS);
+    const hasKeeper = (await B.evaluate(() => window.__caret.keeper().has));
+    note(`caret: two tabs on "${book.sections[si].title}" (section ${si}); ${hasKeeper ? 'the caret keeper is on this build' : 'NO caret keeper on this build: its figures are reported as such, not checked'}`);
+
+    const same = () => caretUntil(async () => (await A.evaluate(() => window.__caret.sig())) === (await B.evaluate(() => window.__caret.sig())));
+    /** A puts the chapter back to `paras`; B must show it. */
+    const reset = async (paras) => {
+      await A.evaluate((paras) => {
+        const c = window.__caret;
+        c.ed().commands.setContent(c.doc(paras));
+        c.um().stopCapturing();
+      }, paras);
+      const want = paras.join('\n');
+      if (!(await caretUntil(async () => (await B.evaluate(() => window.__caret.text())) === want, 10_000))) throw new Error("B's editor never showed A's reset");
+      if (!(await same())) throw new Error("B's doc never equalled A's after the reset");
+    };
+    /** B in front and focused, its caret at "bro|wn" (a keystroke sent before focus lands on <body>). */
+    const parkB = async () => {
+      await B.bringToFront();
+      await B.evaluate(() => {
+        const c = window.__caret;
+        c.ed().commands.setTextSelection(c.posOf('brown', 3));
+        c.ed().commands.focus();
+      });
+      await focused(B);
+      const got = await B.evaluate(() => {
+        const c = window.__caret;
+        c.ed().commands.setTextSelection(c.posOf('brown', 3));
+        const h = c.ed().state.selection.head;
+        window.__caretKBefore = c.keeper().last;
+        return c.ed().state.doc.textBetween(h - 3, h) + '|' + c.ed().state.doc.textBetween(h, h + 2);
+      });
+      if (got !== 'bro|wn') throw new Error(`B's caret is not at "bro|wn" before the edit (it reads "${got}")`);
+    };
+    const keeperB = () => B.evaluate(() => {
+      const k = window.__caret.keeper();
+      return { ...k, fresh: k.last !== window.__caretKBefore };
+    });
+    /** A's text around the first "#", newlines shown as ⏎. */
+    const around = (t, mark = '#') => {
+      const i = t.indexOf(mark);
+      return i < 0 ? `(no "${mark}" in "${t.slice(0, 60).replace(/\n/g, '⏎')}…")` : t.slice(Math.max(0, i - 16), i + mark.length + 10).replace(/\n/g, '⏎');
+    };
+
+    const inA = (fn) => (A_) => A_.evaluate(fn);
+    const CASES = [
+      ['type a word earlier in the paragraph', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).insertContent('quick ').run(); })],
+      ['split before B', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); })],
+      ['split after B', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The brown fox ')).splitBlock().run(); })],
+      ['bold a word earlier', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection({ from: c.at(''), to: c.at('The') }).toggleMark('strong').run(); })],
+      ["bold B's word", inA(() => { const c = window.__caret; c.ed().chain().setTextSelection({ from: c.at('The '), to: c.at('The brown') }).toggleMark('strong').run(); })],
+      ['paragraph → heading', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); })],
+      ['join with the paragraph above', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('')).joinBackward().run(); })],
+      ['delete the paragraph above', inA(() => { const c = window.__caret; c.ed().chain().deleteRange(c.firstBlock()).run(); })],
+      ['heading, then A undoes it', async (A_) => {
+        await A_.evaluate(() => { const c = window.__caret; c.um().stopCapturing(); c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); c.um().stopCapturing(); });
+        await A_.waitForTimeout(300);
+        await A_.evaluate(() => { const c = window.__caret; c.um().stopCapturing(); c.ed().commands.undo(); });
+      }],
+      ['split before B, then A joins it back', async (A_) => {
+        await A_.evaluate(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); });
+        await A_.waitForTimeout(300);
+        await A_.evaluate(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.blockStarting('brown')).joinBackward().run(); });
+      }],
+      // Beuk's Enter is a "\n" in the text; two make a blank line, which splits the block once A's caret leaves it
+      ["Beuk's own Enter before B (A's keyboard, twice: a blank line), then A clicks into the paragraph above", async (A_) => {
+        await A_.bringToFront();
+        await A_.evaluate(() => { const c = window.__caret; c.ed().commands.setTextSelection(c.at('The ')); c.ed().commands.focus(); });
+        await focused(A_);
+        await A_.evaluate(() => { const c = window.__caret; c.ed().commands.setTextSelection(c.at('The ')); });
+        await A_.keyboard.press('Enter');
+        await A_.keyboard.press('Enter');
+        await A_.locator('#manuscript .ms-editor > p').first().click();
+        await caretUntil(() => A_.evaluate(() => window.__caret.shape().split(',').length === 3), 3000);
+      }],
+      ['server-shaped write (raw Yjs in A): the paragraph becomes a heading', inA(() => void window.__caret.serverWrite('heading'))],
+      ['server-shaped write (raw Yjs in A): the whole chapter re-sent, a word added above', inA(() => void window.__caret.serverWrite('rewrite', ' Added.'))],
+    ];
+
+    for (const [name, edit] of CASES) {
+      try {
+        await reset(CARET_PARAS);
+        await parkB();
+        await edit(A);
+        if (!(await same())) throw new Error("B's doc never equalled A's after the edit");
+        const k = await keeperB();
+        const shape = await A.evaluate(() => window.__caret.shape());
+        await B.bringToFront();
+        await focused(B);
+        await B.keyboard.type('#');
+        const ok = await caretUntil(async () => (await A.evaluate(() => window.__caret.text())).includes('bro#wn'));
+        const t = await A.evaluate(() => window.__caret.text());
+        log.push({ name, ok, text: t, shape, keeper: k });
+        check(ok, `caret: ${name}: B's "#" lands at "bro#wn" (A reads "…${around(t)}…"; A's blocks ${shape}; ${keeperSays(k, k.fresh)})`);
+      } catch (e) {
+        log.push({ name, ok: false, threw: String(e && e.stack ? e.stack : e) });
+        check(false, `caret: ${name}: the case threw: ${e && e.message ? e.message : e}`);
+      }
+    }
+
+    // typing through a restructure: B types 24 letters (delay 40 ms) while A's edits run in A's page
+    const THROUGH = [
+      ['typing through a heading', [() => { const t = performance.timeOrigin + performance.now(); const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); return t; }]],
+      ['typing through a split then join', [
+        () => { const t = performance.timeOrigin + performance.now(); const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); return t; },
+        () => { const t = performance.timeOrigin + performance.now(); const c = window.__caret; c.ed().chain().setTextSelection(c.blockStarting('bro')).joinBackward().run(); return t; },
+      ]],
+    ];
+    const WANT = 'bro' + CARET_TYPED + 'wn';
+    for (const [name, edits] of THROUGH) {
+      try {
+        await reset(CARET_PARAS);
+        await parkB();
+        // the timeline: when B's page saw each key, and when A made each edit (timeOrigin-based, comparable across tabs)
+        await B.evaluate(() => {
+          window.__caretKeys = [];
+          window.__caretKeyOff?.();
+          const onKey = (e) => void window.__caretKeys.push({ key: e.key, t: performance.timeOrigin + performance.now() });
+          document.addEventListener('keydown', onKey, true);
+          window.__caretKeyOff = () => document.removeEventListener('keydown', onKey, true);
+        });
+        const typing = B.keyboard.type(CARET_TYPED, { delay: 40 });
+        const editAt = [];
+        for (const e of edits) {
+          await A.waitForTimeout(300);
+          editAt.push(await A.evaluate(e)); // each edit returns the time it began
+        }
+        await typing;
+        const keys = await B.evaluate(() => {
+          window.__caretKeyOff();
+          return window.__caretKeys;
+        });
+        const k0 = keys[0]?.t ?? 0;
+        note(`caret: ${name}: timeline from B's first key: A's edit(s) at ${editAt.map((t) => `+${(t - k0).toFixed(0)} ms`).join(', ')}; the key B typed nearest each: ${editAt.map((t) => {
+          const near = keys.reduce((b, k) => (!b || Math.abs(k.t - t) < Math.abs(b.t - t) ? k : b), null);
+          return near ? `"${near.key}" at +${(near.t - k0).toFixed(0)} ms` : 'none';
+        }).join(', ')}`);
+        const ok = await caretUntil(async () => (await A.evaluate(() => window.__caret.text())).includes(WANT));
+        const converged = await same();
+        const t = await A.evaluate(() => window.__caret.text());
+        const shape = await A.evaluate(() => window.__caret.shape());
+        const k = await keeperB();
+        log.push({ name, ok: ok && converged, text: t, shape, keeper: k });
+        check(ok && converged, `caret: ${name}: A reads "${WANT}" and both tabs hold the same doc (A reads "${t.replace(/\n/g, '⏎')}"; A's blocks ${shape}; converged ${converged}; ${keeperSays(k, k.fresh)})`);
+      } catch (e) {
+        log.push({ name, ok: false, threw: String(e && e.stack ? e.stack : e) });
+        check(false, `caret: ${name}: the case threw: ${e && e.message ? e.message : e}`);
+      }
+    }
+
+    // cost: one whole-chapter rewrite of a 400-paragraph chapter (B's block first, " Added." appended to it)
+    try {
+      await reset(CARET_BIG);
+      await parkB();
+      const chars = await B.evaluate(() => window.__caret.text().length);
+      await B.evaluate(() => window.__caret.timeRemote(' Added.'));
+      const t0 = await A.evaluate(() => window.__caret.serverWrite('rewrite', ' Added.'));
+      if (!(await caretUntil(async () => (await B.evaluate(() => window.__caretApplied.some((x) => x.shows))), 10_000))) throw new Error("B's editor never showed the rewrite");
+      const applied = await B.evaluate(() => {
+        window.__caretUntime();
+        return window.__caretApplied;
+      });
+      const shown = applied.find((x) => x.shows);
+      const whole = shown.t1 - t0;
+      const k = await keeperB();
+      const apply = shown.t0 === null ? null : shown.t1 - shown.t0;
+      const line = `rewrite of ${chars} chars (Chromium, two tabs): ${k.has && k.fresh && k.last ? `keeper ${k.last.ms.toFixed(2)} ms of` : `${keeperSays(k, k.fresh)};`} ${whole.toFixed(2)} ms from A's write to B's editor showing it (B's own apply of it ${apply === null ? 'not timed' : apply.toFixed(2) + ' ms'}; ${applied.length} remote transaction(s) in B)`;
+      note(`caret: ${line}`);
+      if (k.has) {
+        check(k.fresh && k.last?.outcome === 'found' && k.last.ms < 0.5 * whole, `caret: cost: the rewrite gives outcome "found" and the keeper's ms is under half the whole (${k.fresh && k.last ? `${k.last.outcome}, ${k.last.ms.toFixed(2)} ms < ${(0.5 * whole).toFixed(2)} ms` : 'no new result'})`);
+      } else note('caret: cost: no keeper on this build (not checked)');
+      await B.bringToFront();
+      await focused(B);
+      await B.keyboard.type('#');
+      const ok = await caretUntil(async () => (await A.evaluate(() => window.__caret.text())).includes('bro#wn'));
+      const t = await A.evaluate(() => window.__caret.text());
+      log.push({ name: 'rewrite of the 400-paragraph chapter', ok, text: t.slice(0, 80), keeper: k, whole, apply, line });
+      check(ok, `caret: rewrite of the 400-paragraph chapter: B's "#" lands at "bro#wn" (A reads "…${around(t)}…")`);
+    } catch (e) {
+      log.push({ name: 'rewrite of the 400-paragraph chapter', ok: false, threw: String(e && e.stack ? e.stack : e) });
+      check(false, `caret: rewrite of the 400-paragraph chapter: the case threw: ${e && e.message ? e.message : e}`);
+    }
+
+    note("caret: offline catch-up: covered by caret-keeper-hard.test.ts until Part 1's transport exists");
+    await harvestCsp(B);
+    await harvestCsp(A);
+  } finally {
+    writeFileSync(path.join(OUT, 'caret-e2e.json'), JSON.stringify(log, null, 1));
+    await ctx.close();
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -10508,6 +10881,7 @@ try {
   if (run('importlock')) await importlockChecks();
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
+  if (run('caret')) await caretChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
   if (run('screenshots')) await screenshots(srv.origin);
 } catch (e) {

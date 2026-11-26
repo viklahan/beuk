@@ -180,7 +180,7 @@ describe('the caret keeper: cost on a 400-paragraph chapter', () => {
     expect(w.textA()).toContain('bro#wn');
   });
 
-  it('one server rewrite of the 400-paragraph chapter: outcome found; the keeper\'s ms is below the whole applyUpdate\'s ms; both printed', () => {
+  it('one server rewrite of the 400-paragraph chapter: outcome found; the keeper\'s ms is under half the whole applyUpdate\'s ms; both printed', () => {
     const w = pair(BIG);
     w.parkB('brown', 3);
     const n0 = w.results.length;
@@ -191,7 +191,7 @@ describe('the caret keeper: cost on a 400-paragraph chapter', () => {
     expect(got).toHaveLength(1);
     expect(got[0].outcome).toBe('found');
     console.log(`[caret-keeper] rewrite of ${chars(w)} chars (Node + jsdom): keeper ${got[0].ms.toFixed(2)} ms of ${whole.toFixed(2)} ms`);
-    expect(got[0].ms).toBeLessThan(whole);
+    expect(got[0].ms).toBeLessThan(0.5 * whole);
     expect(w.remoteCaretInA()).toBe(`${BROWN} Added.`); // the word was added to this chapter's first block, B's
     w.typeB('#');
     expect(w.textA()).toContain('bro#wn');

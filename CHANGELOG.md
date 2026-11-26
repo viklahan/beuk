@@ -4,6 +4,11 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-26 — Your caret stays where you put it
+
+- **Two tabs on one book no longer move your caret.** When the same chapter was open in two tabs and one of them pressed Enter for a new paragraph before your caret, turned your paragraph into a heading (or undid that), or joined it with the paragraph above, the caret in the other tab jumped to another paragraph, and the next letters landed there. It now stays between the same letters.
+- **One rare case remains.** If the other tab joins your paragraph with the one above, or turns it into a heading, at the very moment you type a letter, that letter can be lost. A fix is next.
+
 ## 2026-11-24 — The whole book before you export, and a shorter Export
 
 - **Read the whole book before you export it.** Export now opens with an offer. Read the whole book on screen shows the book from its first page to its last in one scrolling view. Turn the print pages opens the Print Interior View, and closing it brings you back to Export. It is an offer: every export works without it.
