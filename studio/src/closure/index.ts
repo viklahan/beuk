@@ -220,7 +220,9 @@ export type ClosureApi = {
   /** BEUK:platefit — 'fill' and 'whole'. */
   PLATE_FITS: string[];
   /** The fit a section's plate is typeset with: its stored choice, 'fill' when it has none. */
-  plateFitOf: (section: unknown) => 'fill' | 'whole';
+  plateFitOf: (section: unknown) => 'fill' | 'whole' | 'across';
+  /** A section's opening plate as markup: (section, forExport, dataMedia, ownPage, acrossSrc). */
+  plateHtml: (section: unknown, forExport?: boolean, dataMedia?: boolean, ownPage?: boolean, acrossSrc?: string | null) => string;
   /** The fit a newly chosen picture is given, by its pixel size against the trim (`trimId`, else state.printTrim). */
   plateFitFor: (img: unknown, trimId?: string) => 'fill' | 'whole';
   /** Across both pages — the one two-page crop (source pixels): centred cover-crop to the open spread's shape, and its halves. */
