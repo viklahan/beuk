@@ -77,6 +77,79 @@ describe('the caret keeper: another writer changes the paragraph B is in', () =>
     expect(w.textA()).toBe(ref.textA());
   });
 
+  it('the words really deleted, and the text left begins with the same quote mark: outcome lost, the "#" lands where it lands without the keeper', () => {
+    // the final review's probe: B at the end of the second paragraph; A deletes from after "Yes," to the end of the
+    // chapter. B's words are gone; the one text the change wrote, '"Yes,"', begins with the '"' B's words end with.
+    const PARAS = ['"Yes," she said.', 'He said, "No more."'];
+    const endB = (v: Pair) => v.selectB(v.edB.state.doc.content.size - 1);
+    const del = (a: Editor) => a.chain().deleteRange({ from: posOf(a, '"Yes,"', 6), to: a.state.doc.content.size - 1 }).run();
+    const ref = pair(PARAS, { keeper: false });
+    endB(ref);
+    del(ref.edA);
+    ref.typeB('#');
+    const w = pair(PARAS);
+    endB(w);
+    expect(w.edB.state.doc.textBetween(w.edB.state.selection.head - 3, w.edB.state.selection.head)).toBe('e."');
+    del(w.edA);
+    expect(w.textA()).toBe('"Yes,"');
+    expect(w.results.at(-1)?.outcome).toBe('lost');
+    expect(w.keeperDispatches).toHaveLength(0);
+    w.typeB('#');
+    expect(w.textA()).toBe(ref.textA());
+    expect(w.textA()).not.toContain('"#Yes');
+  });
+
+  it('another afterTransaction listener, registered before the keeper, throws once: the keeper is not left stuck', () => {
+    let armed = false;
+    let threw = 0;
+    const w = pair(START, {
+      onDocB: (docB) =>
+        docB.on('afterTransaction', () => {
+          if (!armed) return;
+          armed = false;
+          threw++;
+          throw new Error('another listener fails');
+        }),
+    });
+    w.parkB('brown', 3);
+    // the throw comes out of B's applyUpdate: deliver this change by hand (online), so it reaches the test, not A
+    w.offline();
+    w.edA.chain().setTextSelection(posOf(w.edA, 'Opening', 0)).insertContent('An ').run();
+    armed = true;
+    const n = w.results.length;
+    expect(() => w.online()).toThrow('another listener fails');
+    expect(threw).toBe(1);
+    expect(w.edB.state.doc.child(0).textContent).toBe('An Opening line above.');
+    expect(w.results.length).toBe(n); // the keeper's afterTransaction listener never ran for that change
+    // the next remote change is kept as usual
+    w.edA.chain().setTextSelection(at(w.edA, 'The ')).setNode('heading', { level: 2 }).run();
+    expect(w.edB.state.doc.child(1).type.name).toBe('heading');
+    expect(w.results.length).toBe(n + 1);
+    expect(w.results.at(-1)?.outcome).toBe('found');
+    w.typeB('#');
+    expect(w.textA()).toContain('bro#wn');
+  });
+
+  it("the keeper's move is an undo boundary in B's typing (y-tiptap calls stopCapturing on a selection-only dispatch after a remote render)", () => {
+    const stops = (keeper: boolean): number => {
+      const v = pair(START, { keeper });
+      v.parkB('brown', 3);
+      const um = (yUndoPluginKey.getState(v.edB.state) as { undoManager: Y.UndoManager }).undoManager;
+      let n = 0;
+      const stop = um.stopCapturing.bind(um);
+      um.stopCapturing = () => {
+        n++;
+        stop();
+      };
+      v.edA.chain().setTextSelection(at(v.edA, 'The ')).setNode('heading', { level: 2 }).run();
+      return n;
+    };
+    const without = stops(false);
+    const withKeeper = stops(true);
+    console.log(`[caret-keeper] stopCapturing calls in B during A's heading: ${withKeeper} with the keeper, ${without} without`);
+    expect(withKeeper).toBe(without + 1);
+  });
+
   it('local typing in B produces no keeper result (own transactions are ignored)', () => {
     const w = pair(START);
     w.parkB('brown', 3);
@@ -161,7 +234,7 @@ describe('the caret keeper: another writer changes the paragraph B is in', () =>
     expect(w.remoteCaretInA()).toBe('The bro|wn fox jumps over the dog.');
   });
 
-  it('section deleted / editor destroyed under a change: no throw, no dispatch, and destroy removes both doc listeners', () => {
+  it('section deleted / editor destroyed under a change: no throw, no dispatch, and destroy removes its three doc listeners', () => {
     // the section B is editing is deleted by A
     const w = pair(START);
     w.parkB('brown', 3);

@@ -132,7 +132,9 @@ describe('the caret keeper: the harder cases', () => {
       w.parkB('brown', 3);
       for (let i = 0; i < 100; i++) {
         toHeading(w.edA);
+        expect(w.edB.state.doc.child(1).type.name).toBe('heading'); // each toggle took effect, and reached B
         undo(w.edA);
+        expect(w.edB.state.doc.child(1).type.name).toBe('paragraph');
       }
     };
     const w = pair(START);
@@ -144,7 +146,7 @@ describe('the caret keeper: the harder cases', () => {
     expect(positionMigrationStore(w.fragB)).toBeTruthy();
     expect(positionMigrationStore(w.fragB)!.size).toBe(0);
     expect(positionMigrationStore(w.fragA)?.size ?? 0).toBe(0);
-    expect(w.results.length).toBeGreaterThan(0);
+    expect(w.results.length).toBeGreaterThanOrEqual(200); // one result per heading and per undo, at least
     expect(w.remoteCaretInA()).toBe(BROWN);
     w.typeB('#');
     expect(w.textA()).toContain('bro#wn');
@@ -175,6 +177,34 @@ describe('the caret keeper: cost on a 400-paragraph chapter', () => {
     expect(got.every((r) => r.outcome === 'alive' && r.searched === 0)).toBe(true);
     const total = got.reduce((s, r) => s + r.ms, 0);
     console.log(`[caret-keeper] 200 keystrokes in a ${chars(w)}-char chapter (Node + jsdom): ${got.length} results, keeper ${total.toFixed(2)} ms in all (max ${Math.max(...got.map((r) => r.ms)).toFixed(2)} ms), whole run ${wall.toFixed(0)} ms`);
+    expect(w.remoteCaretInA()).toBe(BROWN);
+    w.typeB('#');
+    expect(w.textA()).toContain('bro#wn');
+  });
+
+  it('cost, the caret deep: B parked in paragraph 401 of 401, A types 200 letters in the first: every result is "alive" with searched === 0', () => {
+    // the note before each remote change walks the blocks before the caret (absolutePositionToRelativePosition), so
+    // this is the note's far end; the search reads nothing here (the caret's character survives every keystroke)
+    const DEEP = [...Array.from({ length: 400 }, (_, i) => `${i} ${LOREM}`), 'The brown fox jumps over the dog.'];
+    const w = pair(DEEP);
+    w.parkB('brown', 3);
+    expect(w.edB.state.selection.$head.index(0)).toBe(400);
+    let remote = 0;
+    w.docB.on('afterTransaction', (t: Y.Transaction) => {
+      if (!t.local) remote++;
+    });
+    const n0 = w.results.length;
+    w.edA.commands.setTextSelection(posOf(w.edA, '0 Lorem', 0));
+    const t0 = performance.now();
+    for (let i = 0; i < 200; i++) w.edA.view.dispatch(w.edA.state.tr.insertText('z'));
+    const wall = performance.now() - t0;
+    const got = w.results.slice(n0);
+    expect(w.textA().match(/z/g)).toHaveLength(200);
+    expect(remote).toBeGreaterThanOrEqual(200);
+    expect(got).toHaveLength(remote);
+    expect(got.filter((r) => !(r.outcome === 'alive' && r.searched === 0))).toEqual([]);
+    const total = got.reduce((s, r) => s + r.ms, 0);
+    console.log(`[caret-keeper] 200 keystrokes 400 paragraphs above B, B in the last of 401 (${chars(w)} chars, Node + jsdom): ${got.length} results, keeper ${total.toFixed(2)} ms in all (max ${Math.max(...got.map((r) => r.ms)).toFixed(2)} ms), whole run ${wall.toFixed(0)} ms`);
     expect(w.remoteCaretInA()).toBe(BROWN);
     w.typeB('#');
     expect(w.textA()).toContain('bro#wn');

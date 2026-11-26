@@ -2,16 +2,21 @@
 import { describe, expect, it } from 'vitest';
 import { CTX, findInText, nearestOf } from '../src/editor/caretKeeper';
 
-// The spike's per-offset loop (tools/agora-spike/src/caretKeeper.ts `find`), plus the empty-block rule.
+// The spike's per-offset loop (tools/agora-spike/src/caretKeeper.ts `find`), plus the empty-block rule, with the
+// final review's rule (2026-11-26): a side may match only up to an edge of s when the other side is non-empty
+// and matched in full.
 const commonSuffix = (a: string, b: string) => { let n = 0; while (n < a.length && n < b.length && a[a.length - 1 - n] === b[b.length - 1 - n]) n++; return n; };
 const commonPrefix = (a: string, b: string) => { let n = 0; while (n < a.length && n < b.length && a[n] === b[n]) n++; return n; };
 function referenceScan(s: string, pre: string, post: string): number[] {
   const hits: number[] = [];
   for (let i = 0; i <= s.length; i++) {
     const l = commonSuffix(pre, s.slice(Math.max(0, i - CTX), i));
-    if (l < pre.length && l < i) continue;
     const r = commonPrefix(post, s.slice(i, i + CTX));
-    if (r < post.length && r < s.length - i) continue;
+    const preFull = l === pre.length;
+    const postFull = r === post.length;
+    const preToStart = l === i;
+    const postToEnd = r === s.length - i;
+    if (!((preFull && postFull) || (preFull && pre.length > 0 && postToEnd) || (postFull && post.length > 0 && preToStart))) continue;
     if (l + r === 0 && !(s.length === 0 && pre === '' && post === '')) continue;
     hits.push(i);
   }
@@ -59,6 +64,13 @@ describe('findInText (the caret keeper\'s rule)', () => {
   it('really deleted words: no hit', () => {
     expect(findInText('The jumps over the dog.', 'The bro', 'wn fox jumps over the dog.')).toEqual([]);
   });
+  it('one letter at an edge of the written text is not the caret\'s words (the final review\'s probes)', () => {
+    // the caret stood at the end of a paragraph that is gone; the written text begins with the same quote mark
+    expect(findInText('"Yes," she said.', 'id quietly, "No more."', '')).toEqual([]);
+    // neither side in full: a partial left reaching the start and a partial right reaching the end
+    expect(findInText('w', 'The bro', 'wn fox jumps')).toEqual([]);
+    expect(findInText('ow', 'The bro', 'wn fox jumps')).toEqual([]);
+  });
   it('the same words twice: both hits, nearestOf picks the closer, a tie the smaller', () => {
     expect(findInText('abcd abcd', 'ab', 'cd')).toEqual([2, 7]);
     expect(nearestOf([12, 40], 30)).toBe(40);
@@ -72,7 +84,8 @@ describe('findInText (the caret keeper\'s rule)', () => {
   });
   it('agrees with the spike\'s full scan on 2,000 random cases', () => {
     const cases = randomCases(2000);
-    // not vacuous: most cases have hits to agree on (1,145 of the 2,000 with seed 1)
+    // not vacuous: most cases have hits to agree on (1,094 of the 2,000 with seed 1; 1,145 before the final
+    // review's rule, which changed the hits of 98 cases)
     expect(cases.filter(({ s, pre, post }) => referenceScan(s, pre, post).length > 0).length).toBeGreaterThan(1000);
     const bad = cases.filter(({ s, pre, post }) => JSON.stringify(findInText(s, pre, post)) !== JSON.stringify(referenceScan(s, pre, post)));
     expect(bad).toEqual([]);

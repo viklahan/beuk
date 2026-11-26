@@ -80,8 +80,8 @@ export type Pair = {
   results: KeeperResult[];
   /** Every selection-only transaction dispatched in B outside y-tiptap's renders, marked not for history: the keeper's. */
   keeperDispatches: Transaction[];
-  /** docB's beforeTransaction / afterTransaction listener counts just before B's editor was mounted. */
-  listenersBeforeB: { before: number; after: number };
+  /** docB's beforeTransaction / afterTransaction / afterAllTransactions listener counts just before B's editor was mounted. */
+  listenersBeforeB: { before: number; after: number; all: number };
   parkB: (word: string, k: number) => void;
   selectB: (anchor: number, head?: number) => void;
   typeB: (s: string) => void;
@@ -122,9 +122,9 @@ export function cloneEl(el: Y.XmlElement, name: string = el.nodeName, attrs: Rec
 const plainText = (el: Y.XmlElement | Y.XmlText): string =>
   el instanceof Y.XmlText ? el.toDelta().map((o: { insert: string }) => o.insert).join('') : el.toArray().map((c) => plainText(c as Y.XmlElement | Y.XmlText)).join('');
 
-export const listeners = (doc: Y.Doc): { before: number; after: number } => {
+export const listeners = (doc: Y.Doc): { before: number; after: number; all: number } => {
   const obs = (doc as unknown as { _observers: Map<string, Set<unknown>> })._observers;
-  return { before: obs.get('beforeTransaction')?.size ?? 0, after: obs.get('afterTransaction')?.size ?? 0 };
+  return { before: obs.get('beforeTransaction')?.size ?? 0, after: obs.get('afterTransaction')?.size ?? 0, all: obs.get('afterAllTransactions')?.size ?? 0 };
 };
 
 const mountElement = (): HTMLElement => {

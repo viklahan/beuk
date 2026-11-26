@@ -20,7 +20,18 @@ import { onlyPositionMigrations } from './positionMigrations';
 // after, if the character the caret was anchored to died, it looks only in the text that transaction
 // wrote for the same words around the same spot and puts the caret back between them. So it covers
 // another writer's edit and undo, catching up after being offline, and the server's own writes alike:
-// it reads the change, not a hint. The cost follows the change, not the chapter.
+// it reads the change, not a hint.
+//
+// The cost: the search reads only the text the change wrote (nothing at all when the caret's character
+// survived). The note, taken before every remote change (before it, the keeper cannot know what the
+// change touches), walks the chapter's blocks from the first to the caret's
+// (absolutePositionToRelativePosition), so it grows with how deep in the chapter the caret is: measured
+// in test/caret-keeper-hard.test.ts with the caret in the first and in the last of 401 blocks.
+//
+// A side effect: when the keeper moves the caret it dispatches a selection-only transaction right after
+// y-tiptap rendered the remote change (marked not for history), and y-tiptap's view update then calls the
+// UndoManager's stopCapturing. So each keeper move is an undo boundary in the writer's own typing: the
+// letters typed before it and after it are separate undo steps (test/caret-keeper.test.ts counts the call).
 //
 // The matching rule (findInText, nearestOf) is pure: no editor, no Yjs. The extension below it is wired
 // into every chapter editor right after Collaboration (createEditor.ts).
@@ -40,9 +51,11 @@ const commonPrefix = (a: string, b: string): number => {
 };
 
 // Every offset in `s` where the caret's words stand again, ascending. `pre` is the text before the
-// caret, `post` the text after (each at most CTX letters). Both sides must match in full, unless the
-// block now begins (or ends) right at the caret: that is a split or a join, not a change of words.
-// An empty block matches only a caret that stood in an empty block.
+// caret, `post` the text after (each at most CTX letters). Both sides must match in full, or one side
+// in full and not empty while the other matches only up to an edge of `s`: the block now begins (or
+// ends) right at the caret, which is a split or a join, not a change of words. A side that is empty,
+// or that matches only up to an edge, never carries a hit alone: one letter at an edge of the written
+// text is not the caret's words. An empty block matches only a caret that stood in an empty block.
 export function findInText(s: string, pre: string, post: string): number[] {
   // A hit has the full pre and post (so pre+post occurs there), or its pre match reaches the start of
   // s (so i <= CTX), or its post match reaches the end of s (so i >= s.length - CTX). These three
@@ -56,9 +69,13 @@ export function findInText(s: string, pre: string, post: string): number[] {
   const hits: number[] = [];
   for (const i of [...cand].sort((a, b) => a - b)) {
     const l = commonSuffix(pre, s.slice(Math.max(0, i - CTX), i));
-    if (l < pre.length && l < i) continue;
     const r = commonPrefix(post, s.slice(i, i + CTX));
-    if (r < post.length && r < s.length - i) continue;
+    const preFull = l === pre.length;
+    const postFull = r === post.length;
+    const preToStart = l === i; // the pre match runs up to the start of s
+    const postToEnd = r === s.length - i; // the post match runs up to the end of s
+    const ok = (preFull && postFull) || (preFull && pre.length > 0 && postToEnd) || (postFull && post.length > 0 && preToStart);
+    if (!ok) continue;
     if (l + r === 0 && !(s.length === 0 && pre === '' && post === '')) continue;
     hits.push(i);
   }
@@ -280,12 +297,22 @@ export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStora
             }
           };
 
+          // Yjs emits afterTransaction to its listeners in turn, and one that throws stops the rest: the keeper's
+          // onAfter then never runs for that transaction and `held` would keep it, so keepBefore would skip every
+          // later change. afterAllTransactions comes from Yjs's finally, after every afterTransaction of the batch
+          // (transactions started by observers included), so `held` is dropped there in any case.
+          const onAll = () => {
+            held = null;
+          };
+
           doc.on('beforeTransaction', onBefore);
           doc.on('afterTransaction', onAfter);
+          doc.on('afterAllTransactions', onAll);
           return {
             destroy: () => {
               doc.off('beforeTransaction', onBefore);
               doc.off('afterTransaction', onAfter);
+              doc.off('afterAllTransactions', onAll);
             },
           };
         },

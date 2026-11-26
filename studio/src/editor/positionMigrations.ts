@@ -8,14 +8,17 @@ import * as Y from 'yjs';
    themselves (clearPositionMigrations; tiptap PR #8694). But on every version from 3.1.0 through 3.3.1, one undo of
    a toolbar edit leaves the wrong text: test/insert.test.ts has 4 reds (14 tests, 10 pass), for example
    "**strong word** here[^1].s" where "**strong words** here[^1]." was written. The cause is Yjs 13.6.33's
-   UndoManager misplacing a character (https://github.com/yjs/yjs/issues/823, also #811 and #806; the fix PR
-   https://github.com/yjs/yjs/pull/810 is unmerged), shown in plain Yjs without y-tiptap. y-tiptap up to 3.0.12
-   hid it: its syncPositionText rewrote the edited paragraph with fresh items, and 3.1.0 removed that rewrite.
-   3.0.11 and 3.0.12 are no way out: with this hold they give 4 undo-caret reds. 3.0.10 is the only version green
-   on insert, undo-storm, undo-caret and dedupe. So the studio stays on 3.0.10, which DOES write records, and this
-   hold keeps them out of the book.
+   UndoManager misplacing a character (https://github.com/yjs/yjs/issues/823, also #811 (inferred) and #806
+   (inferred) as the same family; the fix PR https://github.com/yjs/yjs/pull/810 is unmerged), shown in plain
+   Yjs without y-tiptap. y-tiptap up to 3.0.12 hid it: its syncPositionText rewrote the edited paragraph with
+   fresh items, and 3.1.0 removed that rewrite. 3.0.11 and 3.0.12 are no way out: with this hold they give 4
+   undo-caret reds. Of the versions tested (3.0.10–3.3.1), 3.0.10 is the only one green on insert, undo-storm,
+   undo-caret and dedupe. So the studio stays on 3.0.10, which DOES write records, and this hold keeps them out
+   of the book.
    THE UPGRADE GATE: a candidate y-tiptap is taken only when test/insert.test.ts, test/undo-storm.test.ts,
-   test/undo-caret.test.ts and the caret-keeper suites are green on it.
+   test/undo-caret.test.ts, the caret-keeper*.test.ts suites and `E2E_ONLY=caret node e2e/book.mjs` are green
+   on it, before merge — E2E_ONLY=caret green except the one documented known red ("typing through a split then
+   join", docs/ENGINEERING.md), which stays red until the keystroke rescue lands. Watch yjs#810.
 
    Undo storms (studio-2 cutover, task 5): y-tiptap 3's "position migrations".
 
