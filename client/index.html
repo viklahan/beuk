@@ -1515,6 +1515,11 @@
       .piv-plate-full { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
       /* BEUK:platefit — a plate shown whole: inside the page's margins (placed by pivPageEl), never cropped */
       .piv-plate-whole { position: absolute; object-fit: contain; display: block; }
+      /* BEUK:across — an across chapter's two halves, print's own bakes (printAcrossHalves), each laid over its whole
+         leaf, bleed included, as given (never cover-cropped a second time); the recto half carries the Spread fade in
+         its pixels, so it is drawn unmasked, as print draws a baked layer (.bd-baked) */
+      .piv-plate-across { position: absolute; display: block; object-fit: fill; }
+      .piv-bleed.piv-across { background-size: 100% 100%; background-position: 0 0; -webkit-mask-image: none; mask-image: none; opacity: 1; }
       /* A paired spread (a chapter carrying both a plate and a backdrop):
          the opening leaf's backdrop leaves the clip and takes the print
          file's own geometry — full-bleed to the trim, dissolving over
@@ -55279,10 +55284,19 @@
          as today, without the layer) and the report counts it pending. */
       function printAcrossOpts(s) {
         if (!printIsAcross(s)) return undefined;
+        const out = printAcrossCached(s);
+        if (!out) { printPressState.pending += 1; return { across: {} }; }
+        return { across: out };
+      }
+      /* An across section's baked halves, { verso, recto }, from the press
+         cache for the print settings as they stand; null when they are not
+         baked (not yet, or the bake failed). Reads only: the print preview
+         and printAcrossOpts both ask it. */
+      function printAcrossCached(s) {
+        if (!printIsAcross(s)) return null;
         const p = plateImage(s);
         const hit = printPressCache.get(printAcrossKey(picDataSrc(p.img.mediaType, p.img.data)));
-        if (!hit || !hit.out) { printPressState.pending += 1; return { across: {} }; }
-        return { across: hit.out };
+        return hit && hit.out ? hit.out : null;
       }
       /* ==== /BEUK:across ==== */
       /* A picture with see-through parts, laid onto the page colour;
@@ -55498,7 +55512,7 @@
       const PIV_GAP = 96;     /* px between columns of a measure flow */
       const PIV_SPINE = 14;   /* px of binding fold between facing pages */
       const PIV_STACK_GAP = 18; /* px between pages when stacked at phone width */
-      const piv = { model: null, spread: 0, zoom: "fit", guides: true };
+      const piv = { model: null, spread: 0, zoom: "fit", guides: true, baking: null }; /* (baking: BEUK:across, pivBakeAcross) */
       function pivEnsureStyle() {
         let el = $("pivBookStyle");
         if (!el) { el = document.createElement("style"); el.id = "pivBookStyle"; document.head.appendChild(el); }
@@ -55542,7 +55556,11 @@
         flow.dir = isRtlLang(bookLang()) ? "rtl" : "ltr";
         printNotesAtFootNow = printNotesAtFoot(); /* BEUK:footnotes */
         printLayoutNow = true; /* BEUK:layout */
-        try { flow.innerHTML = printUnlink(sectionHtml(s, true, true)); /* print sets a link's words only */ } finally { printNotesAtFootNow = false; printLayoutNow = false; }
+        /* BEUK:across — an across section flows as print builds it: its baked
+           halves when they are (the plate, and the opening's Spread page layer),
+           else the whole plate and no layer; its own backdrop never drawn */
+        const acrossOpts = printIsAcross(s) ? { across: printAcrossCached(s) || {} } : undefined;
+        try { flow.innerHTML = printUnlink(sectionHtml(s, true, true, acrossOpts)); /* print sets a link's words only */ } finally { printNotesAtFootNow = false; printLayoutNow = false; }
         return flow;
       }
       function buildPrintViewModel() {
@@ -55590,6 +55608,28 @@
           left: s >= 1 && 2 * s <= P ? model.pages[2 * s - 1] : null,
           right: 2 * s + 1 <= P ? model.pages[2 * s] : null
         };
+      }
+      /* BEUK:across — a spread whose verso is an across chapter's plate leaf,
+         in a right-to-left book: drawn mirrored (renderPrintView). */
+      function pivAcrossMirrored(pr) {
+        return !!(pr.left && pr.right && !pr.left.blank && pr.left.col === 0 && pr.right.section === pr.left.section &&
+          printIsAcross(pr.left.section) && isRtlLang(bookLang()));
+      }
+      /* BEUK:across — the halves the view shows are print's own: bake any
+         across chapter's that are not yet (printAcrossHalves, into the press
+         cache). Until they land the view shows print's fallback (the whole
+         picture, no layer); when any land, it re-lays with them, on the same
+         page. A failed bake leaves the fallback standing, as print prints it,
+         and is not retried until the view is laid out again. The promise is
+         kept on piv.baking: true when the view re-laid. */
+      function pivBakeAcross() {
+        const want = state.sections.filter((s) => inBook(s) && s.type !== "cover" && printIsAcross(s) && !printAcrossCached(s));
+        if (!want.length) return Promise.resolve(false);
+        return Promise.all(want.map((s) => printAcrossHalves(s).then(() => true, () => false))).then((got) => {
+          if (!got.some(Boolean) || !$("modalPrintView").classList.contains("open") || !piv.model) return false;
+          pivRebuild(true);
+          return true;
+        });
       }
       function pivPageEl(page, side, model) {
         const g = model.g, mg = g.mg;
@@ -55663,9 +55703,31 @@
            dissolving in-flow layer, exactly as before. The opening
            column is the section's first text column — column 1 when
            a plate page leads the section, column 0 otherwise. */
-        const pairedBd = (!page.blank && page.section && page.section.kind === "body" && plateImage(page.section))
+        /* BEUK:across — an across chapter shows print's own halves
+           (printAcrossHalves, from the press cache): the verso half on the
+           plate leaf, the recto half over the opening leaf, each over its
+           whole leaf with its bleed, as the renderer stamps them. Not baked
+           (not yet, or the bake failed): what print then prints — the whole
+           picture inside the margins and no layer. The chapter's own
+           backdrop is never drawn for it. */
+        const across = !page.blank && printIsAcross(page.section);
+        const halves = across ? printAcrossCached(page.section) : null;
+        const pairedBd = (!across && !page.blank && page.section && page.section.kind === "body" && plateImage(page.section))
           ? backdropImage(page.section) : null;
         const pairedOpening = !!pairedBd && page.col === (plateImage(page.section) ? 1 : 0);
+        const acrossOpening = !!halves && page.col === 1;
+        if (acrossOpening) {
+          const lay = document.createElement("div");
+          lay.className = "piv-bleed piv-across";
+          lay.setAttribute("aria-hidden", "true");
+          lay.style.top = "0px"; lay.style.left = "0px";
+          lay.style.width = (g.pageW + bpx) + "px"; lay.style.height = (g.pageH + 2 * bpx) + "px";
+          lay.style.backgroundSize = "100% 100%"; lay.style.backgroundPosition = "0px 0px";
+          lay.style.opacity = "1";
+          lay.style.backgroundImage = "url(" + halves.recto + ")";
+          el.insertBefore(lay, el.firstChild);
+          el.classList.add("piv-paired");
+        }
         if (pairedOpening) {
           const bleed = document.createElement("div");
           bleed.className = "piv-bleed";
@@ -55691,11 +55753,17 @@
           /* The verso plate of a paired spread prints edge to edge. */
           const pl = plateImage(page.section);
           const im = document.createElement("img");
-          const whole = plateFitOf(page.section) === "whole"; /* BEUK:platefit */
-          im.className = whole ? "piv-plate-whole" : "piv-plate-full";
-          im.src = picDataSrc(pl.img.mediaType, pl.img.data);
+          const whole = plateFitOf(page.section) === "whole" || (across && !halves); /* BEUK:platefit; BEUK:across — print's fallback */
+          im.className = halves ? "piv-plate-across" : whole ? "piv-plate-whole" : "piv-plate-full";
+          im.src = halves ? halves.verso : picDataSrc(pl.img.mediaType, pl.img.data);
           im.alt = pl.alt;
-          if (whole) {
+          if (halves) {
+            /* BEUK:across — the verso half over the whole leaf, bleed included, as given */
+            im.style.left = "0px"; im.style.top = "0px";
+            im.style.width = (g.pageW + bpx) + "px"; im.style.height = (g.pageH + 2 * bpx) + "px";
+            im.style.objectFit = "fill";
+            el.insertBefore(im, host === el ? null : host);
+          } else if (whole) {
             /* Shown whole: the page area inside this page's margins, as
                the print file sets it (in the trim box when bleed is on). */
             im.style.left = mLeft + "px"; im.style.top = (mg.top * PIV_PX) + "px";
@@ -55716,7 +55784,7 @@
           const flow = pivSectionFlow(page.section, g);
           const fnl = model.fn && model.fn.get(page.section.id); /* BEUK:footnotes */
           if (fnl) flow.innerHTML = fnl.html;
-          if (pairedOpening) {
+          if (pairedOpening || acrossOpening) {
             const inFlow = flow.querySelector(".bd-layer");
             if (inFlow) inFlow.style.display = "none";
           }
@@ -55804,14 +55872,21 @@
         const stacked = pivStacked();
         spreadEl.classList.toggle("stacked", stacked);
         spreadEl.style.gap = stacked && pr.left && pr.right ? PIV_STACK_GAP + "px" : "0px";
-        if (pr.left) spreadEl.appendChild(pivPageEl(pr.left, "left", model));
+        /* BEUK:across — an across chapter's spread in a right-to-left book is
+           drawn as it prints: its plate (the verso) on the right, the opening
+           on the left, so the two halves meet at the spine. (Every other spread
+           is laid out as before.) */
+        const mirror = pivAcrossMirrored(pr);
+        const pa = mirror && !stacked ? pr.right : pr.left, pb = mirror && !stacked ? pr.left : pr.right;
+        const sideOf = (p) => (p === pr.left) !== mirror ? "left" : "right";
+        if (pa) spreadEl.appendChild(pivPageEl(pa, sideOf(pa), model));
         if (pr.left && pr.right && !stacked) {
           const sp = document.createElement("div");
           sp.className = "piv-spine";
           sp.style.height = (model.g.pageH + 2 * (model.g.bleedPx || 0)) + "px";
           spreadEl.appendChild(sp);
         }
-        if (pr.right) spreadEl.appendChild(pivPageEl(pr.right, "right", model));
+        if (pb) spreadEl.appendChild(pivPageEl(pb, sideOf(pb), model));
         const g = model.g;
         const shown = (pr.left ? 1 : 0) + (pr.right ? 1 : 0);
         let contentW, contentH;
@@ -55853,6 +55928,7 @@
         pivSyncChrome();
         piv.spread = Math.max(0, Math.min(piv.model.spreads - 1, Math.floor(anchor / 2)));
         renderPrintView();
+        piv.baking = pivBakeAcross(); /* BEUK:across */
       }
       function openPrintInteriorView() {
         if (samplePicsHold(() => openPrintInteriorView())) return; /* BEUK:slim — never without the sample's pictures */
@@ -55863,6 +55939,7 @@
         piv.model = buildPrintViewModel();
         pivSyncChrome();
         renderPrintView();
+        piv.baking = pivBakeAcross(); /* BEUK:across — print's halves, baked if they are not yet */
         icons();
         /* Webfonts arriving late change the measure; re-lay once they
            land, keeping the writer on the same page. */
@@ -71291,6 +71368,93 @@
               applyBookDoc(keepDoc);
             }
           } },
+        { id: "plate.across.preview", feature: "plate", name: "Across both pages in the Print Interior View: an across chapter's spread shows print's very halves (printAcrossHalves) — the verso half over the whole plate leaf and the recto half over the whole opening leaf, bleed included, the recto unmasked (its Spread fade is baked in, as print draws it), the chapter's own backdrop not drawn — meeting at the spine, left to right and right to left (the plate on the right), bleed off and on; before its halves are baked the view shows what print would then print (the whole picture inside the margins, no layer) and re-lays with them when they land; a fill plate's leaf beside it is drawn as before",
+          async run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepTrim = state.printTrim, keepRecto = state.printRecto, keepBleed = state.printBleed, keepGuides = piv.guides;
+            try {
+              const bad = [];
+              applyBookDoc(buildEmptyBook());
+              state.meta.title = "Across Preview Fixture"; state.meta.author = "Fixture Author";
+              state.printTrim = "6x9"; state.printRecto = true; state.printBleed = false; piv.guides = true;
+              const paint = (w, h, cols) => { const c = printCanvas(w, h); const g = c.getContext("2d"); cols.forEach((col, i) => { g.fillStyle = col; g.fillRect(i * w / cols.length, 0, w / cols.length, h); }); return c.toDataURL("image/png").split(",")[1]; };
+              const bdData = paint(40, 40, ["#00ff00"]);
+              state.images = [{ id: "acvpic", name: "Halves.png", mediaType: "image/png", ext: "png", data: paint(1600, 1200, ["#ff0000", "#0000ff"]) },
+                { id: "acvbd", name: "Green.png", mediaType: "image/png", ext: "png", data: bdData }];
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.title = "One"; ch.content = "The harbour bell rang over the water at first light.";
+              Object.assign(ch, { plateId: "acvpic", plateAlt: "Red meets blue", plateFit: "across", backdropId: "acvbd", backdropStrength: "whisper" });
+              const ch2 = mkSection("body", "chapter", "Two", { number: "2", content: "The tide turned before noon.", plateId: "acvbd", plateAlt: "A green page", plateFit: "fill" });
+              state.sections.splice(state.sections.indexOf(ch) + 1, 0, ch2);
+              const spreadOf = (s) => {
+                const pg = piv.model.pages.find((p) => p.section === s && p.col === 0);
+                if (!pg) return null;
+                piv.spread = Math.floor(pg.n / 2); renderPrintView();
+                const sp = $("pivSpread");
+                return { sp, plateEl: sp.querySelector('.piv-page[data-page="' + pg.n + '"]'), openEl: sp.querySelector('.piv-page[data-page="' + (pg.n + 1) + '"]') };
+              };
+              const near = (r1, r2) => Math.abs(r1.left - r2.left) < 1 && Math.abs(r1.top - r2.top) < 1 && Math.abs(r1.width - r2.width) < 1 && Math.abs(r1.height - r2.height) < 1;
+              const shown = async (lang, bleed) => {
+                state.meta.language = lang; state.printBleed = bleed;
+                const rtl = lang === "ar", what = (rtl ? "right to left" : "left to right") + (bleed ? ", bleed" : "");
+                await preparePrintPress();
+                const h = await printAcrossHalves(ch);
+                openPrintInteriorView();
+                await piv.baking;
+                const v = spreadOf(ch);
+                if (!v || !v.plateEl || !v.openEl) { bad.push(what + ": the across spread is not drawn"); return; }
+                const im = v.plateEl.querySelector("img.piv-plate-across");
+                if (!im || im.getAttribute("src") !== h.verso) { bad.push(what + ": the plate leaf does not show print's verso half"); return; }
+                const lay = v.openEl.querySelector(".piv-bleed.piv-across");
+                if (!lay || lay.style.backgroundImage.indexOf(h.recto) === -1) { bad.push(what + ": the opening leaf does not show print's recto half"); return; }
+                if (v.openEl.querySelectorAll(".piv-bleed").length !== 1 || v.sp.innerHTML.indexOf(bdData.slice(0, 120)) !== -1) bad.push(what + ": the chapter's own backdrop is drawn");
+                const cs = getComputedStyle(lay), mask = cs.maskImage || cs.webkitMaskImage;
+                if (!(mask === "none" && cs.opacity === "1" && cs.backgroundSize === "100% 100%")) bad.push(what + ": the recto half is not drawn whole and unmasked (mask " + mask + ", opacity " + cs.opacity + ", size " + cs.backgroundSize + ")");
+                if (getComputedStyle(im).objectFit !== "fill") bad.push(what + ": the verso half is fitted, not placed as given");
+                const pr = v.plateEl.getBoundingClientRect(), or = v.openEl.getBoundingClientRect();
+                if (!near(im.getBoundingClientRect(), pr)) bad.push(what + ": the verso half does not cover its whole leaf");
+                if (!near(lay.getBoundingClientRect(), or)) bad.push(what + ": the recto half does not cover its whole leaf");
+                if (rtl ? !(or.right <= pr.left + 0.5) : !(pr.right <= or.left + 0.5)) bad.push(what + ": the plate is not on the " + (rtl ? "right" : "left") + " of the spread");
+                const inFlow = v.openEl.querySelector(".piv-clip .bd-layer");
+                if (inFlow && getComputedStyle(inFlow).display !== "none") bad.push(what + ": the in-flow layer is drawn too");
+                if (bleed) {
+                  const pb = v.plateEl.querySelector(":scope > .piv-trimbox"), ob = v.openEl.querySelector(":scope > .piv-trimbox");
+                  const pbr = pb && pb.getBoundingClientRect(), obr = ob && ob.getBoundingClientRect();
+                  /* the trim boxes meet the spine: the bleed lies on the outer edges only */
+                  if (!(pbr && obr && (rtl ? Math.abs(pbr.left - pr.left) < 1 && Math.abs(obr.right - or.right) < 1 : Math.abs(pbr.right - pr.right) < 1 && Math.abs(obr.left - or.left) < 1))) bad.push(what + ": the trim does not meet the spine on both leaves");
+                }
+                const f = spreadOf(ch2);
+                if (!(f && f.plateEl && f.plateEl.querySelector(".piv-plate-full") && !f.plateEl.querySelector(".piv-plate-across"))) bad.push(what + ": the fill plate's leaf is not drawn as before");
+                $("modalPrintView").classList.remove("open");
+              };
+              await shown("en", false);
+              await shown("en", true);
+              await shown("ar", false);
+              await shown("ar", true);
+              /* a picture and trim not yet baked (a picture of this check's own: plate.across.print paints the same
+                 red | blue one and bakes it at 5 x 8): the view opens on print's fallback, then re-lays with the halves */
+              state.images.push({ id: "acvpic2", name: "Halves 2.png", mediaType: "image/png", ext: "png", data: paint(1600, 1200, ["#ff0000", "#00ffff"]) });
+              ch.plateId = "acvpic2";
+              state.meta.language = "en"; state.printBleed = false; state.printTrim = "5x8";
+              if (printAcrossCached(ch)) bad.push("the fallback went unexercised: this picture's halves were baked already");
+              openPrintInteriorView();
+              const waiting = piv.baking;
+              const b = spreadOf(ch);
+              const w = b && b.plateEl && b.plateEl.querySelector("img.piv-plate-whole");
+              if (!(w && w.getAttribute("src") === picDataSrc("image/png", state.images[2].data) && !b.plateEl.querySelector(".piv-plate-across") && b.openEl && !b.openEl.querySelector(".piv-bleed"))) bad.push("before its halves are baked the view does not show the whole picture without a layer");
+              await waiting;
+              const h5 = await printAcrossHalves(ch);
+              const a5 = spreadOf(ch);
+              const im5 = a5 && a5.plateEl && a5.plateEl.querySelector("img.piv-plate-across");
+              if (!(im5 && im5.getAttribute("src") === h5.verso && a5.openEl.querySelector(".piv-bleed.piv-across"))) bad.push("the view did not re-lay with the halves once they were baked");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
+                "the across spread shows print's own halves (printAcrossHalves), each over its whole leaf with its bleed, the recto unmasked and the chapter's own backdrop not drawn, meeting at the spine: left to right with the plate on the left, right to left with it on the right, bleed off and on; a 5 x 8 trim opened on the whole picture without a layer and re-laid with its new halves; the fill plate's leaf drawn as before");
+            } finally {
+              $("modalPrintView").classList.remove("open");
+              state.printTrim = keepTrim; state.printRecto = keepRecto; state.printBleed = keepBleed; piv.guides = keepGuides;
+              applyBookDoc(keepDoc);
+            }
+          } },
         { id: "plate.across.placements", feature: "plate", name: "Across both pages, resolution: an across plate is measured where it prints — across the open spread (both trims, plus the bleed when it is on) at its one crop's pixels per inch — so a square 3000 x 3000 picture on 6 x 9 is 250 DPI (244.9 with bleed) and fails the preflight's and the Store-ready check's 300 DPI rows, a 1408 x 768 one is 85; the chapter's stored backdrop, not printed, is not measured",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
@@ -80824,6 +80988,7 @@
       { const i = SELF_CHECKS.findIndex((c) => c.id === "notebook.research.csp"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); }
       /* BEUK:across — the across print check awaits the press bake: written beside the plate-fit checks, run with the awaited ones */
       { const i = SELF_CHECKS.findIndex((c) => c.id === "plate.across.print"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); }
+      { const i = SELF_CHECKS.findIndex((c) => c.id === "plate.across.preview"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); } /* (and the preview's, which awaits it too) */
       /* …and so does every import check that awaits (a zip opened, an .odt or a web page read): written beside the
          import's other checks, each is run with the checks that are awaited, where its answer can be read */
       for (let i = SELF_CHECKS.length - 1; i >= 0; i--) {
