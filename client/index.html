@@ -30833,18 +30833,23 @@
          has the rest. ppi is pixels per inch across the crop's width. */
       function acrossCrop(pxW, pxH, trim, bleedIn, rtl) {
         const spreadW = 2 * trim.w + 2 * bleedIn, spreadH = trim.h + 2 * bleedIn;
-        const shape = spreadW / spreadH;
         let w, h;
-        if (pxW / pxH > shape) { h = pxH; w = Math.min(pxW, Math.floor(pxH * shape)); }
-        else { w = pxW; h = Math.min(pxH, Math.floor(pxW / shape)); }
+        /* multiplied before divided, so float rounding never drops a pixel */
+        if (pxW * spreadH > pxH * spreadW) { h = pxH; w = Math.min(pxW, Math.floor(pxH * spreadW / spreadH)); }
+        else { w = pxW; h = Math.min(pxH, Math.floor(pxW * spreadH / spreadW)); }
         const x = Math.floor((pxW - w) / 2), y = Math.floor((pxH - h) / 2);
         const first = Math.floor(w / 2);
         const left = { x, y, w: first, h }, rest = { x: x + first, y, w: w - first, h };
         return { crop: { x, y, w, h }, verso: rtl ? rest : left, recto: rtl ? left : rest, ppi: w / spreadW };
       }
-      function plateHtml(section, forExport, dataMedia, ownPage) {
+      function plateHtml(section, forExport, dataMedia, ownPage, acrossSrc) {
         const p = plateImage(section);
         if (!p) return "";
+        /* BEUK:across — in print only (buildPrintHtml), an across plate's
+           verso half as the press baked it (printAcrossHalves): its own page
+           with its bleed, which the renderer draws as given. The class is
+           added after plate-page, like plate-whole. */
+        if (acrossSrc && !ownPage && plateFitOf(section) === "across") return '<figure class="plate-page plate-across"><img src="' + acrossSrc + '" alt="' + esc(altSaid(p.alt)) + '"/></figure>';
         const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(p.img) : picDataSrc(p.img.mediaType, p.img.data);
         const imgTag = '<img src="' + src + '" alt="' + esc(altSaid(p.alt)) + '"/>';
         const whole = plateFitOf(section) === "whole";
@@ -31591,10 +31596,16 @@
           /* The plate leads the section everywhere except the EPUB's
              chapter file, where it ships as its own XHTML ahead of
              this one (opts.skipPlate). */
-          const plate = (opts && opts.skipPlate) ? "" : plateHtml(section, forExport, dataCover, false);
+          /* BEUK:across — print hands in an across plate's baked halves
+             (opts.across, buildPrintHtml): the verso half is the plate, the
+             recto half the opening's Spread page layer, in place of the
+             chapter's own backdrop (left stored, not drawn). Halves not yet
+             baked: the plate as today, and no layer. */
+          const ac = (opts && opts.across) || null;
+          const plate = (opts && opts.skipPlate) ? "" : plateHtml(section, forExport, dataCover, false, ac ? ac.verso : null);
           /* A backdrop wraps the opening: the art layer lies behind the
              title and the first page of text, the words above it. */
-          const bd = backdropLayerHtml(section, forExport, dataCover);
+          const bd = ac ? (ac.recto ? '<div class="bd-layer bd-spread bd-page bd-baked" style="background-image:url(' + ac.recto + ')" aria-hidden="true" role="presentation"></div>' : "") : backdropLayerHtml(section, forExport, dataCover);
           const opening = chapterOpeningHtml(section, bd, forExport, dataCover) + contentBlocksToHtml(section.content, section, true, forExport, dataCover);
           if (!bd) return plate + opening;
           return plate + '<div class="ch-wrap has-backdrop">' + opening + "</div>";
@@ -54189,9 +54200,10 @@
       const PRINT_BLEED_IN = 0.125;
       function printBleedOn() { return !!state.printBleed; }
       /* The included chapters whose art prints to the page edge: a
-         plate (always a paired spread's edge-to-edge verso) or a backdrop. */
+         plate (always a paired spread's edge-to-edge verso) or a backdrop.
+         An across plate (BEUK:across) reaches the edge on both its pages. */
       function printEdgeSections() {
-        return state.sections.filter((s) => s.included && s.type !== "cover" && s.kind === "body" && ((plateImage(s) && plateFitOf(s) === "fill") /* BEUK:platefit — a whole plate stays inside the margins */ || backdropImage(s)));
+        return state.sections.filter((s) => s.included && s.type !== "cover" && s.kind === "body" && ((plateImage(s) && (plateFitOf(s) === "fill" || plateFitOf(s) === "across")) /* BEUK:platefit — a whole plate stays inside the margins */ || backdropImage(s)));
       }
       function printBleedConfig() { return { in: PRINT_BLEED_IN, rtl: isRtlLang(state.meta.language || "en") }; }
       const bleedInStr = (n) => String(Math.round(n * 1000) / 1000);
@@ -54936,7 +54948,7 @@
         printLayoutNow = true; /* BEUK:layout */
         try {
           pairs = state.sections.filter((s) => inBook(s) && s.type !== "cover")
-            .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (printIsDisplaySec(s) ? " display-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true)))) + "\n</section>" }));
+            .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (printIsDisplaySec(s) ? " display-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true, printAcrossOpts(s))))) + "\n</section>" }));
         } finally { printNotesAtFootNow = false; printLayoutNow = false; }
         /* A Large Print edition says so in the book itself, in the
            position the typesetter controls: the colophon carries the
@@ -54956,11 +54968,17 @@
            would hide the in-page plate with nothing drawn in its place;
            this rule, more specific and as important, keeps it shown. */
         const wholeCss = pairs.map((p, k) => (plateImage(p.s) && plateFitOf(p.s) === "whole") ? "#ps-" + k + " .plate-page.plate-whole img { visibility: visible !important; }" : "").filter(Boolean).join("\n");
+        /* BEUK:across — with bleed, an across recto half is baked at its page
+           plus bleed (outer edge, top, bottom). Where the document itself
+           draws it (the browser's own print, the downloaded file; the
+           renderer stamps it instead), it is set so its gutter edge stays
+           on the gutter and the trim shows. */
+        const acrossCss = printBleedOn() ? pairs.map((p, k) => printIsAcross(p.s) ? "#ps-" + k + " .bd-layer.bd-page.bd-baked { background-size: " + inCss(tr.w + PRINT_BLEED_IN) + " " + inCss(tr.h + 2 * PRINT_BLEED_IN) + "; background-position: " + (isRtlLang(bookLang()) ? inCss(-PRINT_BLEED_IN) : "0") + " " + inCss(-PRINT_BLEED_IN) + "; }" : "").filter(Boolean).join("\n") : "";
         return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n' +
           (atFoot ? '<meta name="beuk-footnotes" content="' + esc(JSON.stringify(printFootnoteConfig())) + '"/>\n' : "") +
           (printBleedOn() ? '<meta name="beuk-bleed" content="' + esc(JSON.stringify(printBleedConfig())) + '"/>\n' : "") + /* BEUK:bleed */
           (printHeadsConfig() ? '<meta name="beuk-heads" content="' + esc(JSON.stringify(printHeadsConfig())) + '"/>\n' : "") + /* BEUK:runheads */ "<title>" +
-          esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + (wholeCss ? "\n" + wholeCss : "") + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
+          esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + (wholeCss ? "\n" + wholeCss : "") + (acrossCss ? "\n" + acrossCss : "") + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
       }
       /* ==== BEUK:print ==== */
       /* Print for press. IngramSpark requires a PDF/X-1a:2001 or
@@ -55172,6 +55190,92 @@
         g.drawImage(lay, 0, 0);
         return c.toDataURL("image/jpeg", PRINT_JPEG_Q);
       }
+      /* ==== BEUK:across ==== Across both pages in print: one picture over
+         the gutter. It is cropped once (acrossCrop: centred, to the open
+         spread's shape, bleed included when bleed is on) and baked here as
+         two opaque JPEGs, each the size of its own page with its bleed (the
+         trim + 0.125 in on the outer edge, top and bottom; the trim alone
+         without bleed): the verso half edge to edge, unfaded; the recto
+         half with the Spread fade from the gutter edge (spreadFadeStops,
+         as the baked Spread layer above), at the Spread's strength. Nothing
+         stored is changed: the halves live in the press cache, keyed by
+         the picture, the trim, the bleed, the direction and the gutter
+         margin the fade is measured from — a new trim is a new key, so
+         halves cut for an old trim are never reused. The print preview
+         reads the very same halves (printAcrossHalves). */
+      function printIsAcross(s) { return !!s && s.kind === "body" && !!plateImage(s) && plateFitOf(s) === "across"; }
+      function printAcrossBox() {
+        const tr = trimSize();
+        return { w: tr.w, h: tr.h, bleed: printBleedOn() ? PRINT_BLEED_IN : 0, rtl: isRtlLang(bookLang()), inside: printMargins(tr.id).inside };
+      }
+      function printAcrossKey(src, box) {
+        const b = box || printAcrossBox();
+        return "across|" + b.w + "x" + b.h + "|bleed " + b.bleed + "|" + (b.rtl ? "rtl" : "ltr") + "|inside " + b.inside + "|" + src;
+      }
+      async function printBakeAcross(src, look, box) {
+        const alpha = look.strength.spread;
+        if (alpha == null) throw new Error("the Spread look could not be read from the book stylesheet");
+        const im = await printDecodeImage(src);
+        const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height;
+        if (!iw || !ih) throw new Error("the picture has no size");
+        const r = acrossCrop(iw, ih, { w: box.w, h: box.h }, box.bleed, box.rtl);
+        const pw = box.w + box.bleed, ph = box.h + 2 * box.bleed;
+        /* the picture's own detail, between 150 and 300 ppi (as printBakeBackdrop) */
+        const ppi = Math.max(150, Math.min(300, r.ppi));
+        const half = (rect, fade) => {
+          const c = printCanvas(pw * ppi, ph * ppi);
+          const g = c.getContext("2d");
+          g.fillStyle = PRINT_PAGE;
+          g.fillRect(0, 0, c.width, c.height);
+          if (!fade) {
+            g.drawImage(im, rect.x, rect.y, rect.w, rect.h, 0, 0, c.width, c.height);
+            return c.toDataURL("image/jpeg", PRINT_JPEG_Q);
+          }
+          const lay = printCanvas(c.width, c.height);
+          const lg = lay.getContext("2d");
+          lg.drawImage(im, rect.x, rect.y, rect.w, rect.h, 0, 0, lay.width, lay.height);
+          lg.globalCompositeOperation = "destination-in";
+          /* From the gutter edge: the left edge of a recto, the right of an RTL one. */
+          const grad = box.rtl ? lg.createLinearGradient(lay.width, 0, 0, 0) : lg.createLinearGradient(0, 0, lay.width, 0);
+          spreadFadeStops(pw, box.inside).forEach((p) => grad.addColorStop(p[0], "rgba(0,0,0," + p[1] + ")"));
+          grad.addColorStop(1, "rgba(0,0,0,0)");
+          lg.fillStyle = grad;
+          lg.fillRect(0, 0, lay.width, lay.height);
+          g.globalAlpha = alpha;
+          g.drawImage(lay, 0, 0);
+          return c.toDataURL("image/jpeg", PRINT_JPEG_Q);
+        };
+        return { verso: half(r.verso, false), recto: half(r.recto, true) };
+      }
+      /* The baked halves of a section's across plate, { verso, recto } data
+         URLs, for the print settings as they stand: from the press cache,
+         else baked into it (one bake at a time per key). */
+      function printAcrossHalves(section) {
+        const p = plateImage(section);
+        if (!p) return Promise.reject(new Error("the chapter has no opening plate"));
+        const src = picDataSrc(p.img.mediaType, p.img.data);
+        const box = printAcrossBox();
+        const key = printAcrossKey(src, box);
+        const had = printPressCache.get(key);
+        if (had && had.out) return Promise.resolve(had.out);
+        if (had && had.wait) return had.wait;
+        const wait = printBakeAcross(src, printBackdropLook(), box).then(
+          (out) => { printPressCache.set(key, { out: out }); return out; },
+          (e) => { printPressCache.set(key, { out: null, error: String((e && e.message) || e) }); throw e; });
+        printPressCache.set(key, { out: null, wait: wait });
+        return wait;
+      }
+      /* What buildPrintHtml hands sectionHtml for a section: an across
+         plate's halves when baked; when not yet, nothing (the plate prints
+         as today, without the layer) and the report counts it pending. */
+      function printAcrossOpts(s) {
+        if (!printIsAcross(s)) return undefined;
+        const p = plateImage(s);
+        const hit = printPressCache.get(printAcrossKey(picDataSrc(p.img.mediaType, p.img.data)));
+        if (!hit || !hit.out) { printPressState.pending += 1; return { across: {} }; }
+        return { across: hit.out };
+      }
+      /* ==== /BEUK:across ==== */
       /* A picture with see-through parts, laid onto the page colour;
          null when it has none (it prints as it is). */
       async function printFlattenPicture(src) {
@@ -55229,6 +55333,13 @@
           const had = printPressCache.get(key);
           if ((!had || had.error) && !seen.has(key)) { seen.add(key); settle(key, printFlattenPicture(src)); }
           return all;
+        });
+        /* BEUK:across — each across plate's two halves (printAcrossHalves keeps its own record, a failure included) */
+        state.sections.filter((s) => inBook(s) && s.type !== "cover" && printIsAcross(s)).forEach((s) => {
+          const p = plateImage(s);
+          const key = printAcrossKey(picDataSrc(p.img.mediaType, p.img.data));
+          const had = printPressCache.get(key);
+          if (!(had && had.out) && !seen.has(key)) { seen.add(key); jobs.push(printAcrossHalves(s).catch(() => undefined)); } /* (a bake in flight is awaited; a failed one tried again) */
         });
         await Promise.all(jobs);
         return printPressReport();
@@ -71103,6 +71214,66 @@
               applyBookDoc(keepDoc);
             }
           } },
+        { id: "plate.across.print", feature: "plate", name: "Across both pages in print: an across chapter's print file carries the verso half of its picture as the plate (plate-page plate-across) and the recto half as the opening's Spread page layer, the chapter's own backdrop not drawn; each half is baked at its page's size with its bleed, the verso the picture's left half (its right in a right-to-left book) edge to edge, the recto the other half fading from the gutter to the page; the halves are the ones printAcrossHalves hands out; a new trim bakes new halves; a fill plate beside it prints as before; the chapter counts as art to the page edge",
+          async run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepTrim = state.printTrim, keepRecto = state.printRecto, keepBleed = state.printBleed;
+            try {
+              const bad = [];
+              applyBookDoc(buildEmptyBook());
+              state.meta.title = "Across Fixture"; state.meta.author = "Fixture Author";
+              state.printTrim = "6x9"; state.printRecto = true; state.printBleed = false;
+              /* a 1600 x 1200 picture: its left half red, its right half blue */
+              const paint = (w, h, cols) => { const c = printCanvas(w, h); const g = c.getContext("2d"); cols.forEach((col, i) => { g.fillStyle = col; g.fillRect(i * w / cols.length, 0, w / cols.length, h); }); return c.toDataURL("image/png").split(",")[1]; };
+              state.images = [{ id: "acrpic", name: "Halves.png", mediaType: "image/png", ext: "png", data: paint(1600, 1200, ["#ff0000", "#0000ff"]) },
+                { id: "acrbd", name: "Green.png", mediaType: "image/png", ext: "png", data: paint(40, 40, ["#00ff00"]) }];
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.title = "One"; ch.content = "The harbour bell rang over the water at first light.";
+              Object.assign(ch, { plateId: "acrpic", plateAlt: "Red meets blue", plateFit: "across", backdropId: "acrbd", backdropStrength: "whisper" });
+              const ch2 = mkSection("body", "chapter", "Two", { number: "2", content: "The tide turned before noon.", plateId: "acrbd", plateAlt: "A green page", plateFit: "fill" });
+              state.sections.splice(state.sections.indexOf(ch) + 1, 0, ch2);
+              const px = (im, x, y) => { const c = printCanvas(im.naturalWidth, im.naturalHeight); const g = c.getContext("2d"); g.drawImage(im, 0, 0); return Array.from(g.getImageData(Math.round(x), Math.round(y), 1, 1).data); };
+              const red = (p) => p[0] > 200 && p[1] < 70 && p[2] < 70, blue = (p) => p[2] > 200 && p[0] < 70 && p[1] < 70, paper = (p) => p[0] > 235 && p[1] > 235 && p[2] > 235;
+              const secOf = (html, s) => { const k = state.sections.filter((x) => inBook(x) && x.type !== "cover").indexOf(s); const at = html.indexOf('id="ps-' + k + '"'); return at < 0 ? "" : html.slice(html.lastIndexOf("<section", at), html.indexOf("</section>", at)); };
+              const printed = async (lang, bleed) => {
+                state.meta.language = lang; state.printBleed = bleed;
+                await preparePrintPress();
+                const html = buildPrintHtml(), sec = secOf(html, ch), what = (lang === "ar" ? "right to left" : "left to right") + (bleed ? ", bleed" : "");
+                const v = /<figure class="plate-page plate-across"><img src="(data:image\/jpeg;base64,[^"]+)" alt="Red meets blue"\/><\/figure>/.exec(sec);
+                const r = /<div class="bd-layer bd-spread bd-page bd-baked" style="background-image:url\((data:image\/jpeg;base64,[^)]+)\)"/.exec(sec);
+                if (!/^<section class="print-sec chapter-sec spread-sec" id="ps-\d+" data-start="verso">/.test(sec)) bad.push(what + ": the across chapter is not a spread opening on a verso");
+                if (!v || !r) { bad.push(what + ": the print file lacks the across plate or its Spread page layer"); return null; }
+                if ((sec.match(/class="bd-layer/g) || []).length !== 1) bad.push(what + ": the chapter's own backdrop is drawn too");
+                const h = await printAcrossHalves(ch);
+                if (h.verso !== v[1] || h.recto !== r[1]) bad.push(what + ": printAcrossHalves does not hand out the halves the print file carries");
+                const vi = await printDecodeImage(v[1]), ri = await printDecodeImage(r[1]);
+                const tr = trimSize(), b = bleed ? PRINT_BLEED_IN : 0, rtl = lang === "ar";
+                [vi, ri].forEach((im, i) => { if (Math.abs(im.naturalWidth / im.naturalHeight - (tr.w + b) / (tr.h + 2 * b)) * im.naturalHeight > 1) bad.push(what + ": the " + (i ? "recto" : "verso") + " half is not its page's shape with its bleed (" + im.naturalWidth + " x " + im.naturalHeight + ")"); });
+                const vw = vi.naturalWidth, rw = ri.naturalWidth, mid = vi.naturalHeight / 2;
+                const mine = rtl ? blue : red, theirs = rtl ? red : blue;
+                /* (12 px in from an edge: clear of the JPEG's colour blur at the cut) */
+                if (!(mine(px(vi, 12, mid)) && mine(px(vi, vw - 12, mid)))) bad.push(what + ": the verso is not the picture's " + (rtl ? "right" : "left") + " half edge to edge");
+                const atGutter = px(ri, rtl ? rw - 12 : 12, mid), farEdge = px(ri, rtl ? 12 : rw - 12, mid);
+                if (!theirs(atGutter)) bad.push(what + ": the recto does not carry the other half at full strength at the gutter (" + atGutter + ")");
+                if (!paper(farEdge)) bad.push(what + ": the recto does not fade to the page away from the gutter (" + farEdge + ")");
+                if (!secOf(html, ch2).includes('<figure class="plate-page"><img src="data:image/png;base64,')) bad.push(what + ": the fill plate beside it does not print as before");
+                return v[1];
+              };
+              const first = await printed("en", false);
+              await printed("en", true);
+              await printed("ar", false);
+              await printed("ar", true);
+              state.meta.language = "en"; state.printBleed = false; state.printTrim = "5x8";
+              const five = await printed("en", false);
+              if (first && five && first === five) bad.push("a new trim reused the halves cut for the old one");
+              if (!printEdgeSections().includes(ch)) bad.push("the across chapter is not counted as art to the page edge");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
+                "the across chapter prints its verso half as the plate and its recto half as the Spread page layer (its own backdrop not drawn), left to right and right to left, bleed off and on: each half its page's shape with its bleed, the verso the picture's own half edge to edge, the recto the other half strong at the gutter and faded to the page beyond; the halves are printAcrossHalves'; a 5 x 8 trim baked new halves; the fill plate beside it printed as before; counted as edge art");
+            } finally {
+              state.printTrim = keepTrim; state.printRecto = keepRecto; state.printBleed = keepBleed;
+              applyBookDoc(keepDoc);
+            }
+          } },
         /* ---- Language detection: the book names its own language ---- */
         { id: "lang.detect.german-prose", feature: "lang", name: "Detection: German prose is recognised as German, confidently, from its function words",
           run() {
@@ -80593,6 +80764,8 @@
         } });
       /* BEUK:localpics — the research policy check awaits a fetch: it belongs with the checks that are awaited (in SELF_CHECKS its Promise read as a failure) */
       { const i = SELF_CHECKS.findIndex((c) => c.id === "notebook.research.csp"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); }
+      /* BEUK:across — the across print check awaits the press bake: written beside the plate-fit checks, run with the awaited ones */
+      { const i = SELF_CHECKS.findIndex((c) => c.id === "plate.across.print"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); }
       /* …and so does every import check that awaits (a zip opened, an .odt or a web page read): written beside the
          import's other checks, each is run with the checks that are awaited, where its answer can be read */
       for (let i = SELF_CHECKS.length - 1; i >= 0; i--) {
