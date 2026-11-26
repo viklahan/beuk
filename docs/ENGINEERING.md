@@ -487,6 +487,80 @@ unchanged: EPUB and print/standalone HTML carry only the writer's
 and the print renderer sets the library faces from its own installed
 TrueType files (`deploy/renderer/fonts.lock`).
 
+## Studio: carets when two writers edit one chapter (the caret keeper)
+
+When another writer's change rebuilds the paragraph a writer's caret is in (a paragraph made a heading, Enter before
+the caret, a join with the block above, an undo of one of those), y-tiptap deletes the characters the caret hangs on
+and writes the same text back as new Yjs items; its own answer for the caret is then a guess, and the caret jumps
+away: to the end of the paragraph (heading, its undo, join, a server-shaped heading) or into the line before (split,
+Beuk's Enter), as main's two-tab run shows. `studio/src/editor/caretKeeper.ts` (the `CaretKeeper` extension, wired
+into every chapter editor right after Collaboration in `createEditor.ts`) keeps it:
+
+- **What it does.** Just before each remote Yjs transaction it notes the caret (and a range's two ends) as a Yjs
+  relative position plus up to 24 letters either side; the note walks the chapter's blocks up to the caret's.
+  Just after, if the transaction touched its own chapter: if the character the caret hung on survived, Yjs's own
+  answer is used (`alive`); if it died, the keeper looks only in the text that transaction wrote for the same words
+  and puts the caret between them (`found`). Its own edits, undo and redo, the
+  position-migration clears and changes to other chapters are ignored. The result of each change it handles is in
+  `editor.storage.caretKeeper.last` (`{ outcome, moved, ms, searched }`).
+- **What it does not do.** It stores nothing and sends nothing: the book's bytes are the same with and without it.
+  It never invents a position: when the words are gone (a real deletion) the outcome is `lost` and y-tiptap's
+  answer stands. Its matching rule: the words before and after the caret both found in full, or one side found
+  in full and not empty while the other matches only up to the start or end of the written text (a split or a
+  join at the caret); one letter at an edge of the written text is never enough. During an IME composition it
+  does nothing (`composing`). It never throws into Yjs's transaction events (a throw there would stop the book
+  syncing and saving), and a throw in another listener of those events cannot leave it stuck (it drops what it
+  holds on `afterAllTransactions`).
+- **A side effect: each keeper move is an undo boundary.** The keeper's selection-only dispatch comes right after
+  y-tiptap rendered the remote change (marked not for history), and y-tiptap's view update then calls the
+  UndoManager's `stopCapturing`: the letters the writer typed before the move and after it are separate undo
+  steps. OBSERVED in `caret-keeper.test.ts` (one call in B during A's heading with the keeper, none without).
+- **What it reads of y-tiptap:** `absolutePositionToRelativePosition`, `relativePositionToAbsolutePosition`
+  and the sync binding (`ySyncPluginKey` state: `binding.mapping`).
+- **y-tiptap stays 3.0.10, with the position-migration hold** (`positionMigrations.ts`, whose header holds the
+  evidence; bisect of 2026-11-26). Every y-tiptap from 3.1.0 through 3.3.1 lets one undo of a toolbar edit move a
+  writer's character (`test/insert.test.ts`, 4 reds), because of Yjs 13.6.33's UndoManager
+  ([yjs#823](https://github.com/yjs/yjs/issues/823); #811 and #806 inferred to be the same family; the fix PR
+  [yjs#810](https://github.com/yjs/yjs/pull/810) is unmerged). y-tiptap up to 3.0.12 masked it by rewriting
+  the edited paragraph with fresh items. 3.0.11 and 3.0.12 give undo-caret reds with the hold. Of the versions
+  tested (3.0.10–3.3.1) only 3.0.10 is green on insert, undo-storm, undo-caret and dedupe. 3.0.10 writes
+  migration records; the hold keeps them out of the book.
+- **The rule: y-tiptap stays pinned exactly.** A candidate y-tiptap is taken only when `test/insert.test.ts`,
+  `test/undo-storm.test.ts`, `test/undo-caret.test.ts`, the `caret-keeper*.test.ts` suites and
+  `E2E_ONLY=caret node e2e/book.mjs` are green on it, before merge — `E2E_ONLY=caret` green except the one
+  documented known red below ("typing through a split then join"). Watch yjs#810.
+- **Measured.** jsdom (`caret-keeper-hard.test.ts`): one server rewrite of a 63,130-character, 400-paragraph
+  chapter, keeper 1.15–3.63 ms of a 10.54–27.54 ms `applyUpdate` (the test asserts under half); 200 keystrokes
+  300 paragraphs away, 200 results, all `alive`, nothing searched, 2.22–11.73 ms in all; the same with B's caret in
+  the last of 401 paragraphs (the note walks every block before it), 11.54 and 12.45 ms in all in two runs whose
+  caret-at-the-top case took 3.81 and 2.22 ms; 100 heading + undo cycles, B's doc 1,957 bytes with and without
+  the keeper, every migration map empty. Chromium, two tabs (`E2E_ONLY=caret`, five runs): the same rewrite of
+  63,123 characters, keeper 2.4–2.9 ms, against 37.9–52.9 ms from A's write to B's editor showing it (5–7%) and
+  against 15.5–18.8 ms for B's own apply of it (15–18%); the last run, 2.50 ms of 37.90 ms and of 15.80 ms. Of
+  the two-tab cases, the build without the keeper (and main, 79026c7) moved the caret in nine:
+  split before the caret, heading, join, heading then undo, split then join, Beuk's Enter (a blank line), a
+  server-shaped heading, and typing through a heading or a split then join; with the keeper all but one stay.
+- **Known red (V's ruling, 2026-11-26): a letter typed at the moment of a rebuild is lost.**
+  - OBSERVED (Chromium, two real tabs, 4 of 4 runs): B's "n" keydown and A's join of B's paragraph with the one
+    above fell in the same millisecond; both tabs then read "broabcdefghijklmwn … dog.opqrstuvwx". The "n" is
+    gone from both, the keeper reported `lost`, and B's next letters went to the block's end.
+  - OBSERVED (jsdom, the `caret-pair.ts` pair, a letter typed while A's change is undelivered):
+    - A joins the paragraph with the one above: with the keeper the letter is lost ("…broabcdefwn … dog.xyz");
+      without it the letter survives but neighbouring letters move ("The defbroabcwn … dog.nxyz").
+    - A turns the paragraph into a heading: the letter is lost with the keeper and without it ("The broabcwn fox …
+      dog.xyz" in both). Not seen in the browser, where no keystroke coincided with the heading.
+  - DERIVED: y-tiptap writes such a change as a delete-and-rebuild of the block, and Yjs drops an insert into a
+    parent another writer deleted concurrently. So main has the same exposure (the heading case above, without the
+    keeper). How often it happens is not measured: the browser red repeats because the test lines the keystroke up
+    with the edit. From the mechanism it needs the keystroke to land within milliseconds of the other tab's change.
+  - DERIVED: the keeper changes where the damage lands. In the two-tab split-then-join run, without it the
+    writer's letters survive but in the wrong place (the caret was already thrown out of the block); with it the
+    letter typed at that moment is lost, and the letters typed after it go to the end of the paragraph (OBSERVED:
+    "…klmwn … dog.opqrstuvwx").
+  - The e2e check "typing through a split then join" is red on purpose, in the default `E2E_ONLY=caret` run, until
+    a keystroke rescue lands: a follow-up that re-inserts a tab's own letters deleted only because their block was
+    rebuilt. That rescue gates Agora Part 1.
+
 ## Export archive storage (M2)
 
 Bytes are files, metadata is Postgres (`exports` table: format, optional

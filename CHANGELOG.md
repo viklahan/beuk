@@ -4,6 +4,11 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-26 — Your caret stays where you put it
+
+- **Two tabs on one book no longer move your caret.** When the same chapter was open in two tabs and one of them pressed Enter for a new paragraph before your caret, turned your paragraph into a heading (or undid that), or joined it with the paragraph above, the caret in the other tab jumped away, to the end of the paragraph or into the line before, and the next letters landed there. It now stays between the same letters.
+- **One case remains.** If the other tab joins your paragraph with the one above, or turns it into a heading, at the very moment you type a letter, that letter can be lost, and the letters you type after it go to the end of the paragraph. A fix is next.
+
 ## 2026-11-24 — One chapter's settings on every chapter
 
 - **Use on every chapter.** A chapter's settings now end with a button, Use on every chapter. It copies that chapter's backdrop (the picture and its strength together), its drop cap, its small-caps lead-in or the fit of its plate to every other chapter in one step. You tick what to copy; nothing is ticked for you.
