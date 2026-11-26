@@ -30807,10 +30807,10 @@
          of the picture, by the picture's own pixel size (read from its
          bytes, imagePixelSize) against the book's trim. A picture
          whose size cannot be read is shown whole — never cut unasked. */
-      const PLATE_FITS = ["fill", "whole"];
+      const PLATE_FITS = ["fill", "whole", "across"];
       const PLATE_FIT_FAR = 0.1;
       function plateFitOf(section) {
-        return section && section.plateFit === "whole" ? "whole" : "fill";
+        return section && PLATE_FITS.includes(section.plateFit) ? section.plateFit : "fill";
       }
       /* Whether any section (of the book, or of a box set's other volumes) asks for a whole plate. */
       function bookHasWholePlate() {
@@ -70945,6 +70945,8 @@
               if ("plateFit" in old || plateFitOf(old) !== "fill") bad.push("a section stored without the field does not read as fill, or gained the field");
               if ("plateFit" in normalizeSection({ plateFit: "cover" }) || "plateFit" in normalizeSection({ plateFit: 1 })) bad.push("a value outside fill / whole was kept");
               if (normalizeSection({ plateFit: "whole" }).plateFit !== "whole" || normalizeSection({ plateFit: "fill" }).plateFit !== "fill") bad.push("fill / whole are not kept");
+              if (normalizeSection({ plateFit: "across" }).plateFit !== "across") bad.push("across is not kept");
+              if (plateFitOf({ plateFit: "across" }) !== "across" || plateFitOf({ plateFit: "whole" }) !== "whole" || plateFitOf({ plateFit: "fill" }) !== "fill" || plateFitOf({ plateFit: "cover" }) !== "fill") bad.push("plateFitOf does not give across / whole / fill for the three stored values, and fill for an unknown one");
               state.images = [pic("fitsq", 900, 900), pic("fitpage", 600, 900)];
               let ch = state.sections.find((s) => s.type === "chapter");
               const chId = ch.id;

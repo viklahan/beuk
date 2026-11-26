@@ -417,3 +417,13 @@ test('read: full corpus (BEUK_BOOK_CORPUS)', { skip: corpusDir ? false : 'set BE
   t.diagnostic(`upgrades: ${fmt(upgrades)}`);
   t.diagnostic(`warnings: ${fmt(warns)}`);
 });
+
+/* BEUK:across — plateFit "across" is a third kept value; an unknown value is still dropped (the plate fills its page). */
+test('read: plateFit "across" is kept; an unknown value is still dropped (the plate fills its page)', () => {
+  const b = real();
+  b.sections[0].plateFit = 'across';
+  b.sections[1].plateFit = 'diagonal';
+  const r = readBook(b);
+  assert.equal((r.book.sections[0] as Record<string, unknown>).plateFit, 'across');
+  assert.equal('plateFit' in r.book.sections[1]!, false);
+});
