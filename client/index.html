@@ -30824,6 +30824,24 @@
         const a = px.w / px.h, b = tr.w / tr.h;
         return 1 - Math.min(a, b) / Math.max(a, b) > PLATE_FIT_FAR ? "whole" : "fill";
       }
+      /* The one two-page crop of an "across" plate: the picture, cover-cropped
+         and centred to the shape of the open spread (two trims side by side,
+         plus the bleed on the outside, top and bottom: (2w + 2b) : (h + 2b)),
+         and its two halves, all in whole source pixels. In a right-to-left
+         book the verso is the right half. The halves never overlap or leave
+         a gap: the verso is half the crop's width rounded down, the recto
+         has the rest. ppi is pixels per inch across the crop's width. */
+      function acrossCrop(pxW, pxH, trim, bleedIn, rtl) {
+        const spreadW = 2 * trim.w + 2 * bleedIn, spreadH = trim.h + 2 * bleedIn;
+        const shape = spreadW / spreadH;
+        let w, h;
+        if (pxW / pxH > shape) { h = pxH; w = Math.min(pxW, Math.floor(pxH * shape)); }
+        else { w = pxW; h = Math.min(pxH, Math.floor(pxW / shape)); }
+        const x = Math.floor((pxW - w) / 2), y = Math.floor((pxH - h) / 2);
+        const first = Math.floor(w / 2);
+        const left = { x, y, w: first, h }, rest = { x: x + first, y, w: w - first, h };
+        return { crop: { x, y, w, h }, verso: rtl ? rest : left, recto: rtl ? left : rest, ppi: w / spreadW };
+      }
       function plateHtml(section, forExport, dataMedia, ownPage) {
         const p = plateImage(section);
         if (!p) return "";
@@ -70947,6 +70965,15 @@
               if (normalizeSection({ plateFit: "whole" }).plateFit !== "whole" || normalizeSection({ plateFit: "fill" }).plateFit !== "fill") bad.push("fill / whole are not kept");
               if (normalizeSection({ plateFit: "across" }).plateFit !== "across") bad.push("across is not kept");
               if (plateFitOf({ plateFit: "across" }) !== "across" || plateFitOf({ plateFit: "whole" }) !== "whole" || plateFitOf({ plateFit: "fill" }) !== "fill" || plateFitOf({ plateFit: "cover" }) !== "fill") bad.push("plateFitOf does not give across / whole / fill for the three stored values, and fill for an unknown one");
+              {
+                const jr = (o) => JSON.stringify(o);
+                const a1 = acrossCrop(1408, 768, { w: 6, h: 9 }, 0, false);
+                if (jr(a1.crop) !== jr({ x: 192, y: 0, w: 1024, h: 768 }) || jr(a1.verso) !== jr({ x: 192, y: 0, w: 512, h: 768 }) || jr(a1.recto) !== jr({ x: 704, y: 0, w: 512, h: 768 }) || Math.round(a1.ppi) !== 85) bad.push("acrossCrop 1408 x 768 on 6 x 9 is not crop 1024 x 768 at x 192, halves meeting at 704, 85 ppi (" + jr(a1) + ")");
+                const a2 = acrossCrop(1408, 768, { w: 6, h: 9 }, 0, true);
+                if (a2.verso.x !== a2.crop.x + a2.crop.w / 2 || a2.recto.x !== a2.crop.x) bad.push("acrossCrop in RTL does not put the verso on the right half");
+                const a3 = acrossCrop(1000, 2000, { w: 6, h: 9 }, 0.125, false);
+                if (a3.crop.x !== 0 || a3.crop.w !== 1000 || a3.crop.y !== Math.floor((2000 - a3.crop.h) / 2) || Math.abs(a3.crop.w / a3.crop.h - 12.25 / 9.25) * a3.crop.h > 1 || a3.verso.w + a3.recto.w !== a3.crop.w) bad.push("acrossCrop of a tall picture with bleed is not a centred 12.25 : 9.25 crop with whole halves (" + jr(a3) + ")");
+              }
               state.images = [pic("fitsq", 900, 900), pic("fitpage", 600, 900)];
               let ch = state.sections.find((s) => s.type === "chapter");
               const chId = ch.id;

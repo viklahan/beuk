@@ -223,6 +223,19 @@ export type ClosureApi = {
   plateFitOf: (section: unknown) => 'fill' | 'whole';
   /** The fit a newly chosen picture is given, by its pixel size against the trim (`trimId`, else state.printTrim). */
   plateFitFor: (img: unknown, trimId?: string) => 'fill' | 'whole';
+  /** Across both pages — the one two-page crop (source pixels): centred cover-crop to the open spread's shape, and its halves. */
+  acrossCrop: (
+    pxW: number,
+    pxH: number,
+    trim: { w: number; h: number },
+    bleedIn: number,
+    rtl: boolean,
+  ) => {
+    crop: { x: number; y: number; w: number; h: number };
+    verso: { x: number; y: number; w: number; h: number };
+    recto: { x: number; y: number; w: number; h: number };
+    ppi: number;
+  };
   fmtBytes: (n: number) => string;
   pickerImages: () => BookImage[];
   isFlourishImage: (im: unknown) => boolean;
