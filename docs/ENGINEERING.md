@@ -4020,6 +4020,142 @@ page stays the lines the title-page reader expects, and a centred chapter
 heading line stays a heading. Self-checks: `chapter.containers`,
 `chapter.verse`, `chapter.align`.
 
+## Poem Mode (BEUK:poemmode)
+
+Asked for by a reader aged ten: a chapter that is a poem from its first
+line to its last, without typing a fence. Work order: Poem Mode for the
+writer's desk, 2026-11-24.
+
+**The mark.** Two optional fields on the section (`docs/book-format.md`):
+`mode: "verse"`, stored only for a poem (absent, or anything else, reads as
+prose), and `verseAlign: "left"`, stored only when the writer chose left
+(absent reads as centred). Kept by `normalizeSection` in `client/index.html`
+and by the server's reader (`src/book/schema.ts`, `src/book/read.ts`: any
+other value is dropped with a `bad-enum` warning, as `plateFit` is). Nothing
+is migrated: a book made before the fields reads as prose and gains no key.
+Switching Poem Mode off removes `mode` and leaves `verseAlign`, so the
+choice is remembered. Only a body chapter can be a poem, never a Part and
+never front or back matter (`poemAlignOf` in the page, `poemCan` in the
+studio): the editor offers the mode nowhere else, and a `mode` stored on
+such a section is not read.
+
+**The text is the source of truth.** The fields say how the chapter's
+`content` is read and never change it. Read as a poem, a new line of the
+text is a line and a blank line parts two stanzas. That is what a
+`::: verse` block has always meant for the lines inside it, and it is what
+the 2.0 editor already types: Enter is a new line of the same block, a blank
+line starts a new block (`studio/src/editor/behaviour.ts`). So Poem Mode has
+no typing model of its own and no second verse markup. The one key that
+differs is Shift+Enter: in prose it writes the mark of a line break the
+page keeps (a backslash before the new line, BEUK:breaksshown); in a poem
+every new line is kept already, so it writes the plain new line. A mark
+already in the text (typed while the chapter was prose) is read as the end
+of its line and is not printed (`poemSeg`); it stays in the stored text.
+
+**The editor** (`studio/src/editor/poem.ts`, `PoemMode.tsx`,
+`studio/src/styles/poem.css`; 2.0 only, 1.0's page has no such control):
+
+- The P button, `#btnPoemMode`, opens the insert toolbar in a group of its
+  own (`data-tg="mode"`) on a chapter that can be a poem. A plain toggle
+  button: `aria-pressed`, named "Poem Mode" (`aria-label` and tooltip); the
+  italic P is `aria-hidden`. Pressed, it takes `--accent-soft` as its fill
+  and `--accent` as its border.
+- While on, the strip `#poemStrip` stands under the toolbar: the label and
+  the two-way choice `#segPoemAlign`, the desk's own `.seg` control, each
+  choice a button with `aria-pressed` (Centred first, the default; then
+  Left). In a right-to-left book the second choice is named Right, since a
+  "left" poem ranges where its lines begin; what is stored is the same.
+- Both write the section's Y map in one transaction and nothing else. They
+  show what the section stores (`usePoem` observes it), so another tab or an
+  undo is followed.
+- Layout is stylesheet work on the page's class (`ms-poem`, with
+  `ms-poem-center` or `ms-poem-left`), since a paragraph of the editor
+  already keeps its new lines: one grid column of at most 45 characters
+  centred on the page, type 21/19 of the prose size, a line height of 2.24
+  (1.4 times the prose page's 1.6; with the larger type that is 47px from
+  line to line against prose's 30.4px), one more line of space between
+  stanzas, a thin rule down the column's start edge in `--line-2` at 80%. Left: the column
+  is only as wide as the longest line (`fit-content`), so the block stands
+  centred as a whole, and a line that turns over hangs 1.5em
+  (`text-indent: 1.5em hanging each-line`, where the browser knows it).
+- The starter lines of an empty poem are a decoration of the editor's view
+  (`poemPlugin`: a class and a `data-ghost` attribute on the one empty
+  paragraph; the words are drawn by `::after`), and the title field's
+  "Name your poem" is a placeholder. Neither is in the document, so no
+  count, preview or export can read them, and one character typed removes
+  the lines. The editor's root carries the lines as `aria-placeholder`
+  meanwhile.
+- While a chapter is a poem the drop cap and small-caps switches are not
+  shown (`EditorMeta`; what they store is untouched), and the Verse tool is
+  off (`aria-disabled`, its tooltip saying why).
+
+**The page.** `contentBlocksToHtml` hands every stretch of a poem chapter's
+running text (everything outside a fence) to the verse block's own renderer,
+`CONTAINER_KINDS.verse`, as one verse block marked as the poem's (`poemSeg`).
+So stanzas, lines, scene breaks, note definitions and picture lines behave
+exactly as they do in a `::: verse` block, the chapter's first paragraph is
+never the drop-cap or lead-in paragraph, and no line is joined, justified,
+indented or hyphenated. A fenced block inside a poem chapter is set as it
+always was. `structureText(text, poem)` keeps the leading indent of a poem's
+lines, as it does inside a verse fence. The markup of one stanza:
+
+    <div class="verse poem poem-center"><p class="stanza"><span class="vl">Line one</span><br/><span class="vl">Line two</span></p></div>
+
+(`poem-left` for a left poem). This is the existing verse markup, and it
+differs from the work order's literal tags (`div.stanza`, `p.line`, "never
+`<br>`"): a stanza is a `p`, a line is a block-level `span`, and the `<br/>`
+between lines stays as the fallback for a reader that ignores the stylesheet
+(the stylesheet hides it). That was the briefing session's call, so that
+there is one verse renderer and not two.
+
+The book stylesheet (`buildBookCss`): `.verse.poem` stands at the page's own
+margin (the 1.5em a verse block is set in by has no prose to part it from
+here). `poem-center` centres every line and takes the hung turn-over off.
+`poem-left` is the verse block exactly: lines flush, a turn-over hung 1.5em,
+ragged, a stanza kept whole where it fits (`break-inside: avoid`). In print,
+in the Print Interior View and in the studio's preview a left poem's block
+is only as wide as its longest line and stands centred on the page
+(`printLayoutCss`, and the scoped rule in `buildBookCss`); the EPUB and the
+standalone page keep it at the margin, because an e-reader cannot be relied
+on to shrink a block to its lines. A right-to-left book mirrors through the
+verse block's own rules: a "left" poem ranges right.
+
+**The other surfaces.**
+
+- Word and the submission manuscript: `docxContentParas(raw, section)`
+  writes a poem's stanzas as Verse paragraphs with real line breaks, through
+  the verse block's own `docx()`. A centred poem's are centred and set flush
+  (`w:ind` left 0), so they are centred on the page and not on the Verse
+  style's inset.
+- Markdown: a poem's lines are written as the book stores them, never run
+  together (`contentToMarkdown(raw, section)`). The file does not say that
+  the chapter is a poem (Markdown has no way to), so a Markdown reader still
+  shows a stanza's lines run on.
+- The narration script: each line of a stanza is a line of the script's
+  paragraph (`poemLinesMarked`).
+- Word counts and Story Insights read the text and not the mode: the same
+  numbers with Poem Mode on and off.
+
+**Known limits of this first version.**
+
+- A stanza whose lines open with a list mark (`- `, `1. `), `>` or `#` is
+  still a list, a quotation or a heading in the editor's own model, and is
+  shown as one in the editor. The page sets it as lines of verse with the
+  marks as typed. The narration script reads such a list or heading as it
+  reads any other.
+- A Beuk EPUB imported back brings a poem home as a verse block inside a
+  prose chapter (the import reads the `verse` class), not as a chapter
+  marked as a poem.
+- No rhyme or syllable tools, no shaped (concrete) poetry, no per-poem
+  typeface, no drop cap.
+
+Tests: `tests/book-read.test.ts`, `tests/book-editor-model.test.ts`,
+`tests/poem-mode.test.ts` (the server's EPUB), `studio/test/poem-mode-data.test.ts`,
+`studio/test/poem-mode.test.tsx` (the editor), `studio/test/poem-mode-surfaces.test.ts`
+(the preview, EPUB, standalone and print pages), `studio/test/poem-mode-files.test.ts`
+(Word, the manuscript, Markdown, the narration script, the print file).
+Self-check: `chapter.poem`.
+
 ## Containers: texts and letters
 
 Two more `CONTAINER_KINDS`, for fiction:
@@ -4582,12 +4718,19 @@ printed to PDF through `deploy/renderer` (the facing-pages pass included),
 and its spreads rendered from that PDF to WebP under `client/site/ramp/<slug>/`,
 untouched. A book opens on four spreads (four turns) in a full-screen
 reader: arrow keys, click either half, swipe, or `/ramp#<slug>` to open one
-directly. Today: *Rain on Calder Street* (noir, 8 × 8 in), *Four Kitchens*
+directly. Today, first on the shelf: *Poems of joy* (poems, 6 × 9 in), an
+author's own book. Destiny Hernandez wrote the poems and made the pictures
+with Gemini. It arrived as Beuk's PDF/X print (renderer and Ghostscript),
+password-locked, and its spreads were rendered from that file the same way.
+It opens on the third chapter's picture page beside the title page, the
+cover its author chose, which is the one spread on the Ramp paired by hand.
+Its pictures have rows in `pictures.tsv`. Then *Rain on Calder Street*
+(noir, 8 × 8 in), *Four Kitchens*
 (cookbook, 8.5 × 8.5 in), *The Sunken Vault* (fantasy, 6 × 9 in), *Luna's
 Beach Treasure Hunt* and *The Woolly School* (picture books, 11 × 8.5 in
 landscape), *Salt Road* (memoir, 6 × 9 in), *The Book That Reads You*
 (ergodic novel, 6 × 9 in) and *The Travel Guide* (photo travel book, 11 ×
-8.5 in landscape). The pictures are V's, made with AI image tools and
+8.5 in landscape). In those books the pictures are V's, made with AI image tools and
 owner-licensed; each has a row in the gallery's `pictures.tsv`, which also
 says where a picture was enlarged to print resolution. The words are written
 for the gallery; in the stories every name is invented, and the travel
@@ -5986,6 +6129,182 @@ that is one more command, for example `click "Print"`: the recorder takes
 the first visible control whose text is exactly, then starts with, then
 contains the words, and on the screen as it opens only the Print group's
 header starts with "Print".
+
+## Studio: one chapter's settings on every chapter (2.0)
+
+V, 2026-11-24: "do we have the option to allow chapter plate or backdrop
+to be applied across all the chapters?" (there was none: each is set one
+chapter at a time), then "add the backdrop on every chapter option - also
+check wherever bulk applications are necessary or helpful - we should
+provide that option." That is all he said. Every choice below was made in
+the session that built it and is his to overturn.
+
+It is the 2.0 layer's (`studio/src/chapters/everych.ts` and
+`EveryChapter.tsx`, placed by `studio/src/editor/EditorMeta.tsx`, styled in
+`studio/src/styles/pictures.css`). `client/index.html` gains only the
+words (`BEUK:everychapter`). The book format is unchanged: every value
+written is one a chapter's own settings already write. No export makes a
+different file from the same book.
+
+**What the writer sees.** At the end of a chapter's settings, after the
+art rows, a quiet button: "Use on every chapter…". It opens a dialog,
+"Use this chapter's settings on every chapter", with one checkbox row per
+setting, none ticked:
+
+| Row | What is copied | Offered when | Reaches |
+|---|---|---|---|
+| Chapter backdrop | `backdropId` and `backdropStrength`, together | always | every other chapter |
+| Drop cap | `dropCap`, on or off | always | every other chapter |
+| Small-caps lead-in | `smallCaps`, on or off | always | every other chapter |
+| Plate fit | `plateFit`, fill or whole | this chapter has a plate | other chapters that have a plate |
+
+Each row says this chapter's value in words (the picture's name and its
+strength, "No backdrop", "On", "Off", "Fill the page") and the exact
+number of other chapters that would change ("Other chapters that would
+change: 3 of 4", or "Every other chapter already has this."). Both are the
+checkbox's accessible description. The counts are read from the book as it
+stands, and read again if the book changes while the dialog is open. The
+action is disabled until a row is ticked. Cancel, Escape and a click
+outside change nothing, and focus returns to the button.
+
+**Every chapter** is every section the chapter settings show these rows
+for (1.0's `syncEditor`): a body section that is not a Part. A prologue or
+an interlude is one. A chapter left out of the export is one: it is still
+a chapter of the book. Front matter, back matter and Part dividers are
+never changed, though they store the same keys. The dialog says this in
+one line.
+
+**What is compared** is what the settings show, as 1.0 reads a section
+(`normalizeSection`, `plateFitOf`, `backdropImage`): the drop cap and the
+lead-in are on unless the section says `false`; a fit that is not `whole`
+is `fill`; a strength outside `BACKDROP_STRENGTHS` is `whisper`; a picture
+id that is not in the book's library is no picture (so an id that names
+nothing is never copied, and a chapter holding one "has no plate"). A
+chapter is changed only when what it shows differs, and then only the keys
+that differ are set. With no backdrop on the first chapter the others lose
+their picture and keep the strength they stored.
+
+**One transaction.** `applyToEvery` reads the book, takes a History
+snapshot of it as it stands (auto kind `chapterop`, as `chopRun` takes
+before a delete or a merge; it carries no `chop` record, so History names
+it "Before a chapter change", and it counts among the five such snapshots
+1.0 keeps), and writes History and then the changed keys in one Y
+transaction. History is written first because packing it is the one step
+that can fail: if it does, nothing has been written, and the message says
+so with the error. When nothing differs nothing is written and no snapshot
+is taken; the message says nothing was changed. No chapter's text is read
+for the counts, and none is written.
+
+**The way back: what is true, and nothing more.** The editor's own undo
+(Ctrl+Z) covers the open chapter's text only; it never covered chapter
+settings, and it does not cover this. Two things do:
+
+- The message that follows ("Other chapters changed. Chapter backdrop: 3
+  · Drop cap: 2") carries Undo for as long as 1.0's own Undo messages stay
+  (`CHOP_TOAST_MS`, ten seconds; it waits while pointed at or focused).
+  `undoEvery` puts back the exact value every changed key had (a key the
+  chapter did not store is removed again) in one Y transaction and removes
+  the spent snapshot. A chapter where a written key was changed again
+  since, or that is gone, is left as it is, whole; the message then says
+  how many were left and names the snapshot, which is kept. The record is
+  held in memory: it is gone with the page, and a whole other book
+  arriving takes the message down.
+- The snapshot in History. Restoring from it (one chapter, or the whole
+  book) is History's own restore: it also brings back the text as it was
+  then. The dialog says so.
+
+**A Spread backdrop.** `spread` is one of four strengths and needs
+nothing else to be valid: 1.0 keeps any strength on any body section
+(`normalizeSection`), the strength picker offers Spread on every chapter
+with a backdrop, and `backdropLayerHtml` draws `bd-spread` with or without
+a plate. So copying it cannot make a state a writer could not already make
+by hand, one chapter at a time. What it can do is put a picture beside a
+plate it was not painted for: a plate faces its chapter's opening page in
+print (`isPairedSpread`), and the sample's chapters each carry a pair, the
+two halves of one painting. When chapters with a plate would get the
+copied backdrop the row says how many, and that the plate and the
+backdrop will be side by side. Nothing is refused.
+
+**Not offered, on purpose.** The chapter's number, title, subtitle and
+running head, the plate picture and its alt text: each describes one
+chapter, and the same value on every chapter is never what a writer means
+(one plate picture before every chapter can be done, by hand, and is not
+made easy here). Scene pictures belong to one break in one chapter's text.
+Whether a section is included in the export is not a chapter setting and
+is not here either.
+
+**Rows are data.** `ROWS` in `everych.ts` is the list: a row is its label
+key, the section keys it may write, `offered`, `reaches`, `patch` and
+`said`, and optionally the words of its count line (`counted`, for a row
+that does not reach every chapter) and one more line of its own (`note`).
+The dialog, the counts, the write and the Undo are driven from it, and
+`EveryChapter.tsx` names no row. One more shared setting is one more entry
+there, plus its id in `RowId`. Poem Mode itself is not a row: whether a
+chapter is a poem is not offered for copying.
+
+**Poems.** Poem Mode (above) came to main the same day, on its own branch,
+and the two met in the merge. A chapter whose `mode` is `verse` takes no
+drop cap and no lead-in, its settings do not show those two switches, and
+Poem Mode leaves what they store as it is. So the drop cap and lead-in
+rows are not offered when the chapter copied from is a poem, and they
+never write to a poem (`isPoem` in `everych.ts`; `mode` is read, never
+written). The backdrop and the plate fit, which a poem does show, go to a
+poem as to any chapter. When a row leaves a poem out its count is of the
+chapters that are not poems, and its line says so (`everych.proseCount`,
+`everych.proseSame`, `everych.proseNone`); a book with no poem reads as it
+did before. A row's `spared` is how many other chapters it leaves out (not `left`: the studio's look guard reads that name as a physical CSS side).
+
+**Words.** 26 keys in `client/index.html` (`EVERYCHAPTER_STRINGS`,
+`everych.*`). Every count stands after a colon, so no key needs a plural
+form in any language. English is the source; the 12 other languages are
+drafts awaiting V's sign-off, listed in `docs/strings-pending-signoff.md`
+section 5. The rows' names and values are the chapter settings' own keys,
+but for "Plate fit" (`everych.plateFit`): the settings' own label there is
+"Fit", which says enough only under the plate row.
+
+**Tests.** `studio/test/every-chapter.test.tsx`: which sections are
+chapters; each row's count on a book with mixed settings, and that the
+count is the number of chapters the write then changes (from each of five
+chapters, every row); the write compared section by section, key by key,
+with every text byte for byte; the Part, front matter and back matter
+unmoved though they store the same keys; the fit only where a plate is; a
+row not picked changing nothing; one update per write and per Undo; the
+snapshot; a failed write changing nothing; Undo whole, Undo with a chapter
+changed since, with a chapter deleted, and on a book that is gone; the
+dialog (unticked, disabled, named and described, Escape, Cancel, a click
+outside, focus back on the button, the messages); poems (the two rows
+never reach one and are not offered from one, the counts leave poems out
+and still equal what the write changes, the count line names poems only
+when one is left out); the 26 keys in 13 packs and their place in the
+sign-off list. In Chromium, `studio/e2e/book.mjs`
+`E2E_ONLY=everyChapter` on the production build under the served policy:
+on the Lantern Coast a picture is uploaded as one chapter's backdrop and
+set to Spread, another chapter's plate is taken away, the dialog is opened
+and used by keyboard, every chapter's stored backdrop is read back from
+the exported book with nothing else moved, the preview is turned to the
+opening of another chapter and of the chapter with no plate, the Print
+Interior View is turned from first spread to last (four openings with the
+backdrop beside their plate, one with it and no plate), and a second use
+is undone from its message, the exported book then identical to the one
+before it, History included. Then one chapter is made a poem by its own P
+button: its settings show no drop cap or lead-in switch, the dialog opened
+from it offers neither row, and a use of the drop cap from another chapter
+says "3 of 3. Poems are left as they are.", turns the drop cap off in the
+three chapters that are not poems, and leaves the poem's section exactly
+as it was, every key and its text.
+
+**Not verified.** Firefox and Safari (neither is installed on the bench).
+What a screen reader speaks: the names and descriptions are checked as
+attributes, not heard. An EPUB or a print PDF built from a book after the
+copy: no export code changed and every value written is one a chapter's
+own settings write, but none was built and inspected for this. The dialog
+on a phone-width screen. Two tabs writing at once. The time the snapshot
+takes on a very long book (it is the same whole-book read a chapter delete
+makes). The 12 translations are drafts no native speaker has read.
+
+**Help.** No guide in `content/help/guides` describes setting a chapter's
+plate or backdrop (the three that name them speak of removing a picture,
+of empty pages and of bleed), so none was changed.
 
 ## What is deliberately NOT here yet
 

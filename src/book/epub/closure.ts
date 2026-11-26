@@ -81,7 +81,7 @@ export const EPUB_CLOSURE: readonly string[] = [
   'olSectionFields', 'olTagKey', 'ornamentHtml', 'ornamentSvg', 'packagedContentImages', 'packagedImages',
   'packagedImagesImpl', 'parseContainers', 'parseImageLine', 'parseXmlDoc', 'partDividerHtml',
   'picDataSrc', 'pivEnsureStyle', 'pivFootnoteCutCss', 'pivGeometry', 'plateFitOf', 'plateHtml', 'plateImage', 'platformFilename',
-  'platformPreset', 'printAccent', 'printBaseFontPt', 'printBigLead', 'printBigType', 'printBleedOn',
+  'platformPreset', 'poemAlignOf', 'poemSeg', 'printAccent', 'printBaseFontPt', 'printBigLead', 'printBigType', 'printBleedOn',
   'printBlendHex', 'printColourCss', 'printFootnoteCss', 'printHexRgb', 'printInkFor', 'printLayoutCss',
   'printLayoutNow', 'printMargins', 'printMarginsAuto', 'printNoteFontPt', 'printNoteLinePt',
   'printNotesAtFootNow', 'printPageEstimate', 'printPictureBookOn', 'printSolidTintCss', 'printTextArea',

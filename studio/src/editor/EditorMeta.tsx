@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import type * as Y from 'yjs';
-import { escKey } from '@book/editor/index.js';
+import * as Y from 'yjs';
+import { BODY, escKey } from '@book/editor/index.js';
+import { EveryChapter } from '../chapters/EveryChapter';
 import { useLocale } from '../i18n/LocaleProvider';
 import { ArtRows } from '../pictures/ArtRows';
 import { sectionKey } from '../pictures/pictures';
 import { previewIfLoaded } from '../preview/preview';
+import { usePoem } from './PoemMode';
 
 /* 1.0's chapter heading block, #editorMeta (client/index.html, the markup above #insertToolbar): the chapter number,
    title, subtitle and short running head (.meta-grid), then #bodyArtRows: the drop cap and small-caps lead-in
@@ -23,7 +25,39 @@ import { previewIfLoaded } from '../preview/preview';
      heads all read the section, so they follow it (1.0's renderSidebar / renderPreview are React's re-render here);
    - chRunHead "input" (BEUK:headfit): runHead as typed when it has a letter, else the key is removed; the field's
      placeholder is the title (the head falls back to it);
-   - tglDropCap / tglSmallCaps (bindSwitch): the opposite of what the switch shows. */
+   - tglDropCap / tglSmallCaps (bindSwitch): the opposite of what the switch shows.
+
+   Not 1.0's (2026-11-24): after the art rows, "Use on every chapter…" (src/chapters/EveryChapter.tsx) copies this
+   chapter's backdrop, drop cap, lead-in or plate fit to every other chapter. It stands inside #bodyArtRows, so it
+   shows for exactly the sections those rows show for.
+
+   BEUK:poemmode — while the chapter is a poem (PoemMode.tsx) the drop cap and the small-caps lead-in are not set (a
+   poem opens on its first line as it is), so their two switches are not shown; what they store is left as it is,
+   and they are back, as they were, when Poem Mode is switched off. While a poem has no text yet its title field
+   asks for the poem's name ("Name your poem": a placeholder, never a value). */
+
+/** Whether the section's text is empty: no characters at all (one empty paragraph, or nothing). Read from the
+ *  section's own fragment; re-read as it changes while `watch` is on. */
+function useNoText(section: Y.Map<unknown>, watch: boolean): boolean {
+  const read = (): boolean => {
+    const body = section.get(BODY);
+    if (!(body instanceof Y.XmlFragment)) return String(section.get('content') ?? '') === '';
+    if (body.length === 0) return true;
+    if (body.length > 1) return false;
+    const first = body.get(0);
+    return first instanceof Y.XmlElement && first.nodeName === 'paragraph' && first.toArray().every((c) => c instanceof Y.XmlText && c.length === 0);
+  };
+  const [empty, setEmpty] = useState(read);
+  useEffect(() => {
+    if (!watch) return;
+    const on = () => setEmpty(read());
+    on();
+    section.observeDeep(on);
+    return () => section.unobserveDeep(on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, watch]);
+  return empty;
+}
 
 type Rec = Record<string, unknown>;
 
@@ -59,6 +93,8 @@ export function EditorMeta({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unkn
 
   const kind = get('kind') || 'body';
   const type = get('type') || 'chapter';
+  const poem = usePoem(section);
+  const noText = useNoText(section, poem.on);
   if (kind !== 'body') return <div id="editorMeta" style={{ display: 'none' }} />;
 
   const title = str(get('title'));
@@ -66,6 +102,7 @@ export function EditorMeta({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unkn
   const runHead = typeof rhStored === 'string' ? rhStored : rhBlank ?? '';
   const dropCap = get('dropCap') !== false;
   const smallCaps = get('smallCaps') !== false;
+  const titlePh = poem.on && noText ? t('poem.titlePh') : t('editor.chTitlePh');
 
   return (
     <div id="editorMeta">
@@ -94,7 +131,7 @@ export function EditorMeta({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unkn
             className="txt-input"
             id="chTitle"
             type="text"
-            placeholder={t('editor.chTitlePh')}
+            placeholder={titlePh}
             value={title}
             onChange={(e) => {
               write({ title: e.target.value });
@@ -139,21 +176,26 @@ export function EditorMeta({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unkn
       </div>
       {type !== 'part' && (
         <div id="bodyArtRows" style={{ marginTop: 6 }}>
-          <div className="switch-row">
-            <div className="sw-txt">
-              <b>{t('editor.dropCap')}</b>
-              <span>{t('editor.dropCapDesc')}</span>
-            </div>
-            <button className="switch" id="tglDropCap" aria-pressed={dropCap ? 'true' : 'false'} aria-label={t('editor.dropCapAria')} onClick={() => write({ dropCap: !dropCap })} />
-          </div>
-          <div className="switch-row">
-            <div className="sw-txt">
-              <b>{t('editor.smallCaps')}</b>
-              <span>{t('editor.smallCapsDesc')}</span>
-            </div>
-            <button className="switch" id="tglSmallCaps" aria-pressed={smallCaps ? 'true' : 'false'} aria-label={t('editor.smallCapsAria')} onClick={() => write({ smallCaps: !smallCaps })} />
-          </div>
+          {!poem.on && (
+            <>
+              <div className="switch-row">
+                <div className="sw-txt">
+                  <b>{t('editor.dropCap')}</b>
+                  <span>{t('editor.dropCapDesc')}</span>
+                </div>
+                <button className="switch" id="tglDropCap" aria-pressed={dropCap ? 'true' : 'false'} aria-label={t('editor.dropCapAria')} onClick={() => write({ dropCap: !dropCap })} />
+              </div>
+              <div className="switch-row">
+                <div className="sw-txt">
+                  <b>{t('editor.smallCaps')}</b>
+                  <span>{t('editor.smallCapsDesc')}</span>
+                </div>
+                <button className="switch" id="tglSmallCaps" aria-pressed={smallCaps ? 'true' : 'false'} aria-label={t('editor.smallCapsAria')} onClick={() => write({ smallCaps: !smallCaps })} />
+              </div>
+            </>
+          )}
           <ArtRows ydoc={ydoc} section={section} />
+          <EveryChapter ydoc={ydoc} section={section} />
         </div>
       )}
     </div>

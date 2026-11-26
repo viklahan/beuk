@@ -9,6 +9,23 @@ to make well.
 - **Two tabs on one book no longer move your caret.** When the same chapter was open in two tabs and one of them pressed Enter for a new paragraph before your caret, turned your paragraph into a heading (or undid that), or joined it with the paragraph above, the caret in the other tab jumped away, to the end of the paragraph or into the line before, and the next letters landed there. It now stays between the same letters.
 - **One case remains.** If the other tab joins your paragraph with the one above, or turns it into a heading, at the very moment you type a letter, that letter can be lost, and the letters you type after it go to the end of the paragraph. A fix is next.
 
+## 2026-11-24 — One chapter's settings on every chapter
+
+- **Use on every chapter.** A chapter's settings now end with a button, Use on every chapter. It copies that chapter's backdrop (the picture and its strength together), its drop cap, its small-caps lead-in or the fit of its plate to every other chapter in one step. You tick what to copy; nothing is ticked for you.
+- **It says what would change first.** Each setting shows this chapter's value and the exact number of other chapters that would change. Every chapter means every section in the body of the book except Part dividers, and chapters left out of the export are included. Front and back matter are never changed, the fit goes only to chapters that have a plate, and no text is touched.
+- **Getting the old settings back.** The chapters that change lose the setting they had. The message that follows offers Undo for ten seconds, and a snapshot named "Before a chapter change" is saved in History first. Restoring from a snapshot also brings back the text as it was then.
+- **Poems are left as they are.** A poem takes no drop cap and no lead-in, so those two are never copied onto a poem and are not offered when the chapter you copy from is a poem. The count then says how many of the chapters that are not poems would change. A backdrop and a plate's fit are copied to a poem as to any chapter.
+- Not copied, on purpose: a chapter's number, title, subtitle and running head, its plate picture and alt text, and scene pictures. Each of those describes one chapter.
+
+## 2026-11-24 — Poem Mode
+
+- **A chapter can be a poem.** A reader aged ten asked for this one. In the editor, the P button at the start of the toolbar turns Poem Mode on for the chapter you have open. Every new line you type is a line of the poem, and a blank line starts a new stanza.
+- **Centred or left.** A new poem is centred, each line on its own centre. Choose Left and the lines range left; a line too long for the page turns over, and its turn-over is set in a little, so it still reads as one line. On your desk and in print a left poem stands in the middle of the page as a block; in an e-book it starts at the margin.
+- **Your words are not changed.** Poem Mode changes how a chapter is read, never its text. Switch it off and the chapter is prose again, exactly as it was. Switch it on again and the poem is back.
+- **The book follows.** The preview, the EPUB, the print pages and the Word file set the poem line for line and stanza for stanza. A poem takes no drop cap, is never justified, and its lines are never hyphenated.
+- **A place to start.** An empty poem shows three lines that say how it works. They are a hint and never part of your book, and they go with the first letter you type.
+- Two things it does not do yet. A Markdown file keeps a poem's lines but does not say that the chapter is a poem. A poem taken out as an EPUB and brought back arrives as a verse block inside an ordinary chapter.
+
 ## 2026-11-24 — The whole book before you export, and a shorter Export
 
 - **Read the whole book before you export it.** Export now opens with an offer. Read the whole book on screen shows the book from its first page to its last in one scrolling view. Turn the print pages opens the Print Interior View, and closing it brings you back to Export. It is an offer: every export works without it.
