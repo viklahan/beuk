@@ -2,7 +2,22 @@ import type { Editor } from '@tiptap/core';
 import { yUndoPluginKey } from '@tiptap/y-tiptap';
 import * as Y from 'yjs';
 
-/* Undo storms (studio-2 cutover, task 5): y-tiptap 3's "position migrations".
+/* WHY THIS STAYS, AND WHY THE STUDIO STAYS ON y-tiptap 3.0.10 (Agora part 0A, task 1, 2026-11-26; measured in
+   .superpowers/sdd/2026-11-26-agora-part-0a-caret/ytiptap-bisect-report.md).
+   y-tiptap 3.1.0 and later write no position-migration records and clear old "__tiptap_position_migrations:" maps
+   themselves (clearPositionMigrations; tiptap PR #8694). But on every version from 3.1.0 through 3.3.1, one undo of
+   a toolbar edit leaves the wrong text: test/insert.test.ts has 4 reds (14 tests, 10 pass), for example
+   "**strong word** here[^1].s" where "**strong words** here[^1]." was written. The cause is Yjs 13.6.33's
+   UndoManager misplacing a character (https://github.com/yjs/yjs/issues/823, also #811 and #806; the fix PR
+   https://github.com/yjs/yjs/pull/810 is unmerged), shown in plain Yjs without y-tiptap. y-tiptap up to 3.0.12
+   hid it: its syncPositionText rewrote the edited paragraph with fresh items, and 3.1.0 removed that rewrite.
+   3.0.11 and 3.0.12 are no way out: with this hold they give 4 undo-caret reds. 3.0.10 is the only version green
+   on insert, undo-storm, undo-caret and dedupe. So the studio stays on 3.0.10, which DOES write records, and this
+   hold keeps them out of the book.
+   THE UPGRADE GATE: a candidate y-tiptap is taken only when test/insert.test.ts, test/undo-storm.test.ts,
+   test/undo-caret.test.ts and the caret-keeper suites are green on it.
+
+   Undo storms (studio-2 cutover, task 5): y-tiptap 3's "position migrations".
 
    THE GROWTH. Every edit y-tiptap cannot write as a plain text change (a
    toolbar action's block rewrite, a normalised block, an Enter that splits)
@@ -36,8 +51,10 @@ import * as Y from 'yjs';
    without any of this.
 
    Beuk does not use anything else the records serve (a remote collaborator's
-   caret or a stored relative position inside a block y-tiptap re-created):
-   studio/src reads no relative positions, awareness or cursors.
+   caret or a stored relative position inside a block y-tiptap re-created).
+   The records are not needed for the writer's own caret: the caret keeper
+   (caretKeeper.ts, added later in this branch) keeps it when others' changes
+   rebuild a block.
 
    y-tiptap's key (getPositionMigrationStore, not exported): "item:<client>:<clock>"
    for a fragment inside a section's Y.Map, "root:<name>" for a root fragment. */
