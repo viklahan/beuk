@@ -67246,13 +67246,13 @@
                 "6 × 9 board " + BW.toFixed(1) + " × " + BH.toFixed(1) + " px holds a block " + blockW.toFixed(1) + " × " + blockH.toFixed(1) + " px, square " + sqPx.toFixed(2) + " px = 0.125 in (" + geomOk + "); faces toward the eye — front board, head of block, front and back board head edges (" + faceOk + "); the cream head clears the front board by " + clear.toFixed(2) + " px on screen (" + clearOk + ")");
             } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
           } },
-        { id: "preview.hardcover.i18n", feature: "preview", name: "Hardcover device strings ship in all 13 interface languages",
+        { id: "preview.hardcover.i18n", feature: "preview", name: "Hardcover device strings ship in all 15 interface languages",
           run() {
             const keys = Object.keys(UI_STRINGS.en).filter((k) => k.indexOf("hcp.") === 0);
             const packs = Object.keys(UI_STRINGS);
             const missing = [];
             packs.forEach((p) => keys.forEach((k) => { if (typeof UI_STRINGS[p][k] !== "string" || !UI_STRINGS[p][k]) missing.push(p + ":" + k); }));
-            return scVerdict(keys.length >= 21 && packs.length === 13 && !missing.length, keys.length + " keys × " + packs.length + " packs" + (missing.length ? " — missing " + missing.join(", ") : ", none missing"));
+            return scVerdict(keys.length >= 21 && packs.length === 15 && !missing.length, keys.length + " keys × " + packs.length + " packs" + (missing.length ? " — missing " + missing.join(", ") : ", none missing"));
           } },
         /* ==== /BEUK:hcpreview ==== */
         { id: "preview.desk.totals", feature: "preview", name: "Reading desk totals: the whole-book page count on a device equals the sum of the per-section counts from the same preview layout engine, on two different profiles; switching profiles updates both numbers",
@@ -71719,7 +71719,7 @@
             } finally { setUiLang(keep); }
           } },
         /* ==== BEUK:branding ==== */
-        { id: "ui.brand.domain", feature: "ui", name: "Brand: the header lockup and the page title name beuk.studio (the production domain, V's D1), and no brand.tagline in any of the 13 interface languages claims \"free\" or \"open source\" (V's D2/D3: the repo carries no licence and paid plans are coming)",
+        { id: "ui.brand.domain", feature: "ui", name: "Brand: the header lockup and the page title name beuk.studio (the production domain, V's D1), and no brand.tagline in any of the 15 interface languages claims \"free\" or \"open source\" (V's D2/D3: the repo carries no licence and paid plans are coming)",
           run() {
             const sub = document.querySelector("#topbar .brand-sub");
             const subOk = !!sub && sub.textContent.trim() === "beuk.studio";
@@ -71736,7 +71736,7 @@
               if (typeof tl !== "string" || !tl.trim()) { bad.push(p + ": missing"); return; }
               banned.forEach((re) => { if (re.test(tl)) bad.push(p + ": " + tl); });
             });
-            return scVerdict(subOk && titleOk && packs.length === 13 && !bad.length,
+            return scVerdict(subOk && titleOk && packs.length === 15 && !bad.length,
               "header sub-brand reads “" + (sub ? sub.textContent.trim() : "(missing)") + "”, page title “" + document.title + "”; " + packs.length + " tagline packs checked against " + banned.length + " free/open-source patterns" + (bad.length ? " — FOUND " + bad.join("; ") : ", none found"));
           } },
         /* ==== /BEUK:branding ==== */
