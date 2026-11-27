@@ -103,6 +103,7 @@ export const LIMITS = {
   historyChopNameMax: 300, // CI:32202
   dictationRecentMax: 4, // CI:68702-68715
   printCustomMarginMin: 0, printCustomMarginMax: 3, // CI:50288
+  coverFocusMin: 0, coverFocusMax: 1, coverZoomMin: 1, coverZoomMax: 3, // BEUK:coverpan: normalizeCoverRecipe's ranges (COVER_ZOOM_MAX)
 } as const;
 
 /* ---- small shared pieces ---- */

@@ -11207,7 +11207,7 @@ async function coverpanChecks(origin) {
     const s3 = await shot(page, 'coverpan-3-zoomed.png');
     check((await pixelDiff(diffPage, s2, s3)).ratio > 0.05, 'coverpan: the preview shows the zoom');
     const soft = await page.evaluate(() => { const el = document.getElementById('cmPicSoft'); return { shown: el.style.display === '', text: el.textContent }; });
-    check(soft.shown && /about \d+ pixels per inch/.test(soft.text), `coverpan: zoomed, a 1200 × 800 picture is under 200 ppi on the print cover and one line says so: ${JSON.stringify(soft.text)}`);
+    check(soft.shown && /about \d+ pixels per inch/.test(soft.text) && /larger picture/.test(soft.text) && !/Zoom out/.test(soft.text), `coverpan: zoomed, a 1200 × 800 picture is under 200 ppi on the print cover and one line says so; under 200 at 100% too, it asks only for a larger picture: ${JSON.stringify(soft.text)}`);
     await page.locator('#cmPicRow').scrollIntoViewIfNeeded();
     await page.locator('#cmPicRow').screenshot({ path: path.join(OUT, 'coverpan-6-controls.png') });
     await page.locator('#btnCmResetPic').scrollIntoViewIfNeeded();

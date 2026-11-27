@@ -257,6 +257,18 @@ function checkLimits(b: Rec, out: Out): void {
     for (const [k, v] of Object.entries(b.printCustomMargins))
       if (typeof v === 'number' && (v < LIMITS.printCustomMarginMin || v > LIMITS.printCustomMarginMax))
         out.warn('over-limit', `printCustomMargins.${k}`, `${v} is outside ${LIMITS.printCustomMarginMin}-${LIMITS.printCustomMarginMax}; 1.0 would use its default, this book keeps it`);
+  // BEUK:coverpan — the cover picture's placement: 1.0's normalizeCoverRecipe holds it to range when the book opens
+  if (isRec(b.coverRecipe)) {
+    const r = b.coverRecipe;
+    if (isRec(r.bgFocus))
+      for (const k of ['x', 'y'] as const) {
+        const v = r.bgFocus[k];
+        if (typeof v === 'number' && (v < LIMITS.coverFocusMin || v > LIMITS.coverFocusMax))
+          out.warn('over-limit', `coverRecipe.bgFocus.${k}`, `${v} is outside ${LIMITS.coverFocusMin}-${LIMITS.coverFocusMax}; 1.0 would hold it to the nearest end, this book keeps it`);
+      }
+    if (typeof r.bgZoom === 'number' && (r.bgZoom < LIMITS.coverZoomMin || r.bgZoom > LIMITS.coverZoomMax))
+      out.warn('over-limit', 'coverRecipe.bgZoom', `${r.bgZoom} is outside ${LIMITS.coverZoomMin}-${LIMITS.coverZoomMax}; 1.0 would hold it to the nearest end, this book keeps it`);
+  }
   items(b.history).forEach((e, i) => {
     if (!isRec(e) || !isRec(e.chop)) return;
     over(out, `history[${i}].chop.a`, 'chapter name', len(e.chop.a), LIMITS.historyChopNameMax);

@@ -5,7 +5,8 @@ import * as Y from 'yjs';
 import { importBook } from '../../src/book/editor/index';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
-import { loadClosure, setClosureLang, setClosureT, type Closure } from '../src/closure/index';
+import { loadClosure, setClosureLang, setClosureT, type Closure, type StoreAudit } from '../src/closure/index';
+import { exportReset, exportRun } from '../src/export/state';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
 import { styleRelease, styleReset, styleRun } from '../src/style/session';
@@ -96,6 +97,7 @@ beforeAll(async () => {
 beforeEach(() => styleRelease());
 afterEach(() => {
   desk.ydoc = null;
+  exportReset();
 });
 const onDesk = (doc: Rec) => {
   const y = new Y.Doc();
@@ -103,6 +105,7 @@ const onDesk = (doc: Rec) => {
   desk.ydoc = y;
   desk.active = null;
   styleReset();
+  exportReset();
   return y;
 };
 const LANTERN = () => structuredClone(fixtures('real').find((f) => f.name === 'real/lantern-coast-book-one')!.book) as Rec;
@@ -308,5 +311,56 @@ describe('cover picture placement: the maths (1.0 coverArtPlace, coverArtRect, c
       const front = a.coverArtRect(3000, 2000, pw, ph, { x: 0.1, y: 0.8, zoom: 2 });
       expect(wd).toEqual([['drawImage', 'img:land', sheet.x, sheet.y, sheet.w, sheet.h], ['drawImage', 'img:land', front.x, front.y, front.w, front.h]]);
     });
+  });
+});
+
+describe('review of PR #66: fixes', () => {
+  it('fix 6: a null or a string focus or zoom is no value — centred, 1× (Number(null) is 0, an edge)', () => {
+    const a = c.api;
+    expect(a.coverArtPlace({ bgFocus: { x: null, y: null }, bgZoom: null })).toEqual({ x: 0.5, y: 0.5, zoom: 1 });
+    expect(a.coverArtPlace({ bgFocus: { x: null, y: 0.2 }, bgZoom: '2' })).toEqual({ x: 0.5, y: 0.2, zoom: 1 });
+    expect(a.coverArtPlace({ bgFocus: { x: '0', y: false }, bgZoom: true })).toEqual({ x: 0.5, y: 0.5, zoom: 1 });
+    onDesk(LANTERN());
+    run((api) => {
+      const n = (over: Rec) => api.normalizeCoverRecipe(Object.assign(api.defaultCoverRecipe(), over)) as Rec;
+      expect(n({ bgFocus: { x: null, y: 0.3 } }).bgFocus).toEqual({ x: 0.5, y: 0.3 });
+      const none = n({ bgFocus: { x: null, y: null }, bgZoom: null });
+      expect('bgFocus' in none || 'bgZoom' in none).toBe(false);
+      const str = n({ bgFocus: { x: '0.1', y: '0.9' }, bgZoom: '2' });
+      expect('bgFocus' in str || 'bgZoom' in str).toBe(false);
+    });
+  });
+
+  it('fix 2: when the zoomed front panel carries fewer DPI than the sheet but still enough, the passing row quotes the front (the lowest)', () => {
+    onDesk(LANTERN());
+    // a picture that declares 12000 × 9000 in its PNG header (imagePixelSize reads the header)
+    const ihdr = Buffer.alloc(25);
+    ihdr.writeUInt32BE(13, 0); ihdr.write('IHDR', 4, 'latin1'); ihdr.writeUInt32BE(12000, 8); ihdr.writeUInt32BE(9000, 12); ihdr[16] = 8; ihdr[17] = 6;
+    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), ihdr, Buffer.from([0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82])]).toString('base64');
+    const got = exportRun((cc) => {
+      const st = cc.getState() as Rec & { coverRecipe: Rec; images: Rec[] };
+      const art = st.images.find((i) => i.id === st.coverRecipe.bgImageId)!;
+      art.mediaType = 'image/png';
+      art.data = png;
+      const row = (zoom?: number) => {
+        if (zoom) { st.coverRecipe.bgZoom = zoom; st.coverRecipe.bgFocus = { x: 0.5, y: 0.5 }; } else { delete st.coverRecipe.bgZoom; delete st.coverRecipe.bgFocus; }
+        return (cc.api.storeAudit({ store: 'kdp', binding: 'paperback', ink: 'bw_white' }) as StoreAudit).groups.cover.find((r) => r.id === 'cdpi')!;
+      };
+      const d = cc.api.wrapDims(st.coverRecipe);
+      const sheet = Math.min(12000 / d.totalW, 9000 / d.totalH);
+      const front = (z: number) => cc.api.coverArtPpi(12000, 9000, d.layout.panelW, d.layout.panelH, { x: 0.5, y: 0.5, zoom: z });
+      // the largest zoom that keeps the front at or over 300 DPI, below the sheet's
+      let z = 3;
+      while (z > 1 && front(z) < 300) z = Math.round((z - 0.05) * 100) / 100;
+      return { plain: row(), zoomed: row(z), z, sheet, frontDpi: front(z) };
+    })!;
+    expect(got.frontDpi).toBeGreaterThanOrEqual(300);
+    expect(got.frontDpi).toBeLessThan(got.sheet);
+    expect(got.plain.status).toBe('pass');
+    expect(got.plain.evidence).toContain(`${Math.floor(got.sheet)} DPI`);
+    expect(got.zoomed.status).toBe('pass');
+    expect(got.zoomed.evidence).toContain(`${Math.floor(got.frontDpi)} DPI there`);
+    expect(got.zoomed.evidence).toContain(`${Math.round(got.z * 100)}%`);
+    expect(got.zoomed.evidence).not.toContain(`${Math.floor(got.sheet)} DPI`);
   });
 });
