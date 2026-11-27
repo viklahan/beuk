@@ -24,8 +24,9 @@ import { posOf } from './caret-pair';
    - rescueNotice: null for nothing lost (an `uncounted` share has no exact count, so it says nothing), the
      singular for one, the Plural twin otherwise;
    - through the whole app: the C1 shape (the other tab saw "n" and deleted its paragraph: vetoed) through
-     applyRemoteUpdate on the open chapter gives exactly one toast; so does the studio's own whole paragraph
-     deleted outright by the other tab (the Task 6 ruling), with every letter counted.
+     applyRemoteUpdate on the open chapter gives exactly one toast. The studio's own whole paragraph deleted
+     outright by the other tab gives none: "own" includes the book this session opened, so it cannot be told as
+     "letters you typed" (ruling R6b).
    The English is the brief's, exact (task-6-brief.md, Step 1). */
 
 type Rec = Record<string, unknown>;
@@ -34,7 +35,6 @@ const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralF
 // DERIVED: task-6-brief.md Step 1 (the English strings, exact) with {n} filled by translate.ts's Plural rule
 const ONE = '1 letter you typed went with a change made in another tab, and could not be put back.';
 const THREE = '3 letters you typed went with a change made in another tab, and could not be put back.';
-const lostN = (n: number) => `${n} letters you typed went with a change made in another tab, and could not be put back.`;
 const KEYS = ['rescue.lost', 'rescue.lostPlural'];
 
 const report = (c: Partial<RescueReport>): RescueReport => ({
@@ -122,7 +122,7 @@ afterEach(async () => {
 
 // C1: the chapter holds only the opening line, and the paragraph the studio types into is written by the other tab,
 // so its words are another writer's, as in keystroke-rescue-controls.test.ts. OWN: the paragraph is imported in this
-// studio, so all its letters are the studio's own (the Task 6 ruling's case).
+// studio, so all its letters are the studio's own (ruling R6b's case).
 const BOOK: Rec = {
   meta: { title: 'Rescue Book', author: 'A. Writer', language: 'en' },
   sections: [{ id: 's1', kind: 'body', type: 'chapter', title: 'One', content: 'Opening line above.' }],
@@ -232,7 +232,7 @@ describe('the studio tells the writer', () => {
     expect(said()).toEqual([ONE]);
   });
 
-  it("the studio's own whole paragraph, deleted outright by the other tab: told once, with every letter counted", async () => {
+  it("the studio's own whole paragraph, deleted outright by the other tab: a report, and no toast", async () => {
     const g = await studioAndOtherTab(OWN_BOOK);
     const i = g.typeN();
     const before = toasts();
@@ -240,12 +240,12 @@ describe('the studio tells the writer', () => {
     g.other.transact(() => g.fragOther.delete(i, 1));
     await g.send();
     expect(g.ed.state.doc.textContent).toBe('Opening line above.');
-    // DERIVED: Task 6 ruling (all-own paragraph deleted outright → vetoed): "The bronwn fox jumps over the dog."
-    // is 34 letters, every one the studio's own (the probe's count, then `uncounted`)
+    // DERIVED: ruling R6b (all-own paragraph deleted outright → silent; "own" includes opened content).
+    // "The bronwn fox jumps over the dog." is 34 letters, every one the studio's own (the probe's count)
     const n = [...'The bronwn fox jumps over the dog.'].length;
     expect(n).toBe(34);
-    expect(g.rescue()).toMatchObject({ vetoed: n, unplaced: 0, uncounted: 0, rescued: 0, restored: 0 });
+    expect(g.rescue()).toMatchObject({ vetoed: 0, unplaced: 0, uncounted: n, rescued: 0, restored: 0 });
     await settle();
-    expect(said()).toEqual([lostN(n)]);
+    expect(said()).toEqual([]);
   });
 });

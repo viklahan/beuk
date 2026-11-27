@@ -1484,10 +1484,11 @@ Points worth a look when you read them:
 - If the English changes in the PR, all 24 drafts change with it.
 
 When it is said: once per remote change that cost the writer letters, with the count of letters the other tab
-had and deleted (vetoed) plus the letters whose words were gone (unplaced). That includes a paragraph made only of
-this writer's own letters that the other tab deleted outright, writing no text in the chapter: every letter of it
-is counted (Task 6 ruling, 2026-11-27; `studio/src/editor/rescueCore.ts`). A rebuild that writes text, such as the
-paragraph remade as a heading, may keep some of those letters, so no exact count can be given and nothing is said.
+had and deleted (vetoed) plus the letters whose words were gone (unplaced). It is **not** said for a paragraph made
+only of this writer's "own" letters, whether the other tab deleted it outright or rebuilt it (ruling R6b,
+2026-11-27; `studio/src/editor/rescueCore.ts`). "Own" means every letter this session's document created, and that
+includes a book the writer imported or opened. Telling "N letters you typed …" there would be a false claim about
+letters they never typed, so the rescue says nothing (it counts them `uncounted`).
 
 ### `rescue.lost`
 

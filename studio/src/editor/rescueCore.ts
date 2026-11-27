@@ -288,13 +288,13 @@ export function planRescue(
       else if (find(run.pre, (letters + run.post).slice(0, CTX)) && find((run.pre + letters).slice(-CTX), run.post)) counts.carried += n;
       else if (run.pre !== '' && run.post !== '' && find(run.pre, run.post)) counts.vetoed += n; // the words stand without them (C2)
       else if (sides.length > 0 && sides.every((x) => !wrote.some((w) => w.s.includes(x)))) counts.vetoed += n; // their words went too (C1)
-      // a run with no words beside it (a block of my own letters only), deleted outright: the change wrote no text in frag
-      // at all, so nothing of it was kept (Task 6 ruling, 2026-11-27)
-      else if (sides.length === 0 && wrote.length === 0) counts.vetoed += n;
-      // what is left: the change wrote text, and that text neither holds these letters (carried) nor gives a clear
-      // answer, either because some of their words stand in it and they do not stand where those words are, or
-      // because the run has no words beside it (a block of my own letters only) while the change wrote text (a
-      // rebuild that may keep some of them). No exact count, so nothing is told
+      // what is left is uncounted, and nothing is told:
+      // - some of their words stand in what the change wrote, and the letters do not stand where those words are
+      //   (part kept, part not): no exact count;
+      // - the run has no other writer's words beside it (a block of my own letters only), whether the change
+      //   rebuilt it or deleted it outright. "Own" means every item this session's Y.Doc created, and that includes
+      //   a book it imported or opened, so such a run cannot be told as "letters you typed": silence is the honest
+      //   answer, not a false claim (ruling R6b, 2026-11-27).
       else counts.uncounted += n;
     }
   }
