@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as Y from 'yjs';
 import { observeSections } from '@book/editor/index.js';
 import { closureIfLoaded, loadClosure, type BookImage, type Closure } from '../closure/index';
+import { bookMeta } from '../book/store';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useToast } from '../shell/Toasts';
 import { addPicture, imageById, PICTURE_ACCEPT, PICTURE_ADDED, PICTURE_TYPE_REFUSED, pickerList, plateFitFor, readPictureFile, sectionKey, sectionMapById, setSectionKeys } from './pictures';
@@ -41,7 +42,7 @@ function acrossPpi(c: Closure, ydoc: Y.Doc, plateId: string): number | null {
     const trimId = meta.get('printTrim');
     const tr = c.api.trimSize(typeof trimId === 'string' && trimId ? trimId : String(c.api.bookPrintDefaults().printTrim));
     const bleed = meta.get('printBleed') === true ? PRINT_BLEED_IN : 0;
-    const lang = meta.get('language');
+    const lang = bookMeta(ydoc).language;
     const ppi = c.api.acrossCrop(px.w, px.h, { w: tr.w, h: tr.h }, bleed, c.api.isRtlLang(typeof lang === 'string' && lang ? lang : 'en')).ppi;
     return ppi < 200 ? Math.round(ppi) : null;
   } catch {
@@ -66,7 +67,8 @@ export function ArtRows({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unknown
     section.observe(on);
     const meta = ydoc.getMap<unknown>('meta');
     const onMeta = (e: Y.YMapEvent<unknown>) => {
-      if (e.keysChanged.has('images')) on();
+      // the images, and what the soft-print note reads of the book: its trim, its bleed, its language (in 'meta')
+      if (['images', 'printTrim', 'printBleed', 'meta'].some((k) => e.keysChanged.has(k))) on();
     };
     meta.observe(onMeta);
     // another section's plate, backdrop or scenes is in the pickers' list too

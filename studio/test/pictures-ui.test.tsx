@@ -6,6 +6,10 @@ import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { textOffsetToPos } from '../../src/book/editor/index';
 import en from '../src/generated/packs/en.json';
 import { App } from '../src/App';
+import { loadClosure } from '../src/closure/index';
+import { arriveForExport } from '../src/export/state';
+import { exportSafe } from '../src/export/safe';
+import { loadPrint } from '../src/print/print';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { toBook } from '../src/editor/bridge';
 import { editorText } from '../src/editor/insert';
@@ -507,6 +511,31 @@ describe('pictures in the studio (A6–A8)', { timeout: 60_000 }, () => {
       expect(document.getElementById('plateAcrossNote')).not.toBeNull();
       expect(document.getElementById('plateAcrossSoft')).toBeNull();
     });
+
+    // 2400 × 2400 on 6 × 9: 200 ppi without bleed (no note), 195.9 with it (the note, 196)
+    for (const [bleed, shown, dpi] of [[false, null, 200], [true, 196, 2400 / 12.25]] as const) {
+      it(`bleed ${bleed ? 'on' : 'off'}: the note and the press agree at the 200 ppi boundary`, async () => {
+        const book = acrossBook(sized(2400, 2400), { plateFit: 'across' });
+        book.printBleed = bleed;
+        await openStudio(book);
+        expect(($('chPlateFit') as unknown as HTMLSelectElement).value).toBe('across');
+        const note = document.getElementById('plateAcrossSoft');
+        expect(note ? note.textContent : null).toBe(shown == null ? null : `This picture gives ${shown} pixels per inch across both pages; it may print soft.`);
+        // the press's own count for the same chapter, on the book the studio exports
+        const out = await exported();
+        expect(out.printBleed).toBe(bleed);
+        const c = await loadClosure();
+        const pc = await loadPrint();
+        const st = arriveForExport(c, structuredClone(out) as never) as unknown as Rec;
+        exportSafe(c, st as never, out as never);
+        pc.setState(st as never);
+        const ch = (st.sections as Rec[])[0]!;
+        const mine = ((pc.api as Rec).printPlacements as () => Rec[])().filter((p) => p.section === ch);
+        expect(mine.length).toBe(1);
+        expect(mine[0]!.dpi).toBe(dpi);
+        expect(Math.round(mine[0]!.dpi as number) < 200).toBe(shown != null);
+      });
+    }
 
     it('Review Focus 3: a plate whose pixel size cannot be read shows no note and does not throw', async () => {
       await openStudio(acrossBook(btoa('these bytes are no picture header at all'), { plateFit: 'across' }));
