@@ -110,6 +110,8 @@ describe('keystroke rescue: a letter in flight while another writer rebuilds the
 
   it('undo after the rescue: one undo takes "n" and "xyz", "abc" stays', () => {
     const g = inFlight((x) => joinUp(x.edA));
+    expect(g.textA()).toBe('Opening line above.The broabcnxyzwn fox jumps over the dog.');
+    expect(g.rescuesB).toHaveLength(1);
     g.edB.commands.undo();
     expect(g.textA()).toBe('Opening line above.The broabcwn fox jumps over the dog.'); // run-3 log, "B's undo after the rescue"
     expect(g.textB()).toBe(g.textA());
