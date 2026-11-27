@@ -1,9 +1,10 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useBook } from '../book/BookProvider';
 import { loadClosure } from '../closure/index';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
 import { DEFAULT_DEVICE, FIRST_PAINT } from './defaultDevice';
+import { deskOpenFirst } from './deskFold';
 import { loadPreview, previewIfLoaded, setPreviewMounted, previewStarted, startPreview, stopPreview, renderNow, queueTyped, pvMobile } from './preview';
 
 /* Step 5 wave 4b (inventory E1, E2): 1.0's preview pane — its markup, ids, classes and keys (client/index.html
@@ -29,6 +30,9 @@ const DEVICES: { id: string; label: string }[] = [
 
 /** 1.0's static markup (the device names are 1.0's own words, untranslated, as in 1.0). */
 const Frame = memo(function Frame({ t }: { t: (k: string, p?: Record<string, unknown>) => string }) {
+  // first paint only, read once: 1.0's setDeskOpen (initPreview) owns the desk from the first start on. The value never
+  // changes, so a later draw (a language change) leaves the desk as 1.0 set it.
+  const [deskOpen] = useState(deskOpenFirst);
   return (
     <>
       {/* One native menu at every width (2026-11-27): eleven buttons wrapped into five or six rows over the reader on a
@@ -105,7 +109,11 @@ const Frame = memo(function Frame({ t }: { t: (k: string, p?: Record<string, unk
           <p className="hc-hint">{t('hcp.hint')}</p>
         </div>
         <div id="previewSectionName" />
-        <div id="previewDesk">
+        <button type="button" className="desk-toggle" id="deskToggle" aria-expanded={deskOpen} aria-controls="previewDesk">
+          <span>{t('preview.desk.toggle')}</span>
+          <Icon name="ChevronDown" />
+        </button>
+        <div id="previewDesk" hidden={!deskOpen}>
           <div className="desk-total" id="deskTotal" />
           <div className="desk-basis" id="deskBasis" />
           <div className="desk-rail" id="deskRail" role="list" />

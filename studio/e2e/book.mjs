@@ -3512,6 +3512,22 @@ async function wave4bReader(origin) {
     await page.waitForTimeout(600);
     const railed = await page.evaluate(() => ({ id: window.beukPreview.state().activeId, current: document.querySelector('#deskRail .desk-item.current')?.getAttribute('data-desk-id'), editor: document.getElementById('manuscript')?.getAttribute('data-section') }));
     check(railed.id === pickId && railed.current === pickId, `wave4b preview.desk.rail: a rail row moves the preview to its section (${railed.id === pickId}) and marks it current (${railed.current === pickId}); the editor opened it too (section ${railed.editor})`);
+    // preview.desk.fold: the desk folds away; the reader takes the height; the counts are still measured (the sidebar's "pages on…" reads them); it opens again
+    const foldH = () => page.evaluate(() => ({ h: document.getElementById('deviceFrame').getBoundingClientRect().height, w: document.getElementById('deviceFrame').getBoundingClientRect().width, expanded: document.getElementById('deskToggle').getAttribute('aria-expanded'), shown: getComputedStyle(document.getElementById('previewDesk')).display !== 'none', stored: localStorage.getItem('beuk.previewDesk.v1') }));
+    const open0 = await foldH();
+    await page.click('#deskToggle');
+    await page.waitForTimeout(700);
+    const shut = await foldH();
+    await page.selectOption('#deviceBar', 'android');
+    await page.waitForFunction(() => document.getElementById('deskTotal').textContent.includes('Android Tablet') && window.beukPreview.get('deskState').sig === window.beukPreview.call('deskSignature'), null, { timeout: 30_000 });
+    const measured = await page.evaluate(() => ({ total: window.beukPreview.get('deskState').total, ready: window.beukPreview.call('statsDeskReady') }));
+    await page.selectOption('#deviceBar', 'kindle');
+    await page.waitForTimeout(500);
+    await page.click('#deskToggle');
+    await page.waitForTimeout(700);
+    const again = await foldH();
+    check(open0.expanded === 'true' && open0.shown && shut.expanded === 'false' && !shut.shown && shut.h > open0.h && shut.stored === 'closed' && measured.total > 0 && measured.ready === true && again.expanded === 'true' && again.shown && Math.abs(again.h - open0.h) < 1.5 && again.stored === 'open',
+      `wave4b preview.desk.fold: the desk folds (aria-expanded ${open0.expanded} to ${shut.expanded}, remembered ${shut.stored}), the Kindle frame grows ${open0.h.toFixed(0)} to ${shut.h.toFixed(0)} px tall, the page counts are still measured while folded (${measured.total} pages, stats ready ${measured.ready}), and it opens again to ${again.h.toFixed(0)} px`);
     // preview.pagecount.fixed-geometry + desk.space: the counts do not follow the window; the frame grows with the column
     const counts = () => page.evaluate(() => JSON.stringify(window.beukPreview.call('computeDeskCountsSync')?.counts));
     const w1 = await page.evaluate(() => document.getElementById('deviceFrame').getBoundingClientRect().width);
