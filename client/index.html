@@ -3558,7 +3558,7 @@
           <!-- One native menu at every width (2026-11-27): eleven buttons wrapped into five or six rows over the reader on a phone. The arrow-keys tip is the menu's tooltip. -->
           <div class="device-bar">
             <select class="dev-select" id="deviceBar" aria-label="Preview device" data-i18n-aria="preview.deviceLabel" data-tip="preview.tip">
-              <option value="kindle" selected>Kindle Paperwhite</option>
+              <option value="kindle">Kindle Paperwhite</option>
               <option value="ipad">Apple Books · iPad</option>
               <option value="kobo">Kobo Clara BW</option>
               <option value="phone">Phone · OLED</option>
@@ -3567,18 +3567,18 @@
               <option value="colorsoft">Kindle Colorsoft</option><!-- BEUK:devicetruth -->
               <option value="iphone">iPhone</option>
               <option value="forma">Kobo Forma</option>
-              <option value="android">Android Tablet</option>
+              <option value="android" selected>Android Tablet</option>
               <option value="hardcover" data-i18n="hcp.device">Hardcover</option><!-- BEUK:hcpreview -->
             </select>
           </div>
           <div id="previewStage">
             <div id="frameZone">
-              <div id="deviceFrame" class="frame-kindle" data-display="eink-mono">
+              <div id="deviceFrame" class="frame-android" data-display="lcd">
                 <div class="screen" id="deviceScreen">
                   <div class="notch"></div>
                   <div class="run-head"><span id="rhBook"></span><span id="rhChapter"></span></div>
                   <div id="flowWrap"><div id="pageFlow" class="fc-page" lang="en"></div></div>
-                  <div class="run-foot"><span id="footDevice">Kindle Paperwhite · 300 ppi</span></div>
+                  <div class="run-foot"><span id="footDevice">Android Tablet · 10.1 in</span></div>
                   <div class="home-bar"></div>
                 </div>
               </div>
@@ -20602,6 +20602,10 @@
       }
 
       /* ================= State ================= */
+      /* The preview's default device (2026-11-27, V: "show Android tablet as the default in the drop down"): one id, read by the state
+         (state.device) and held by the first paint's markup (the menu's selected option, #deviceFrame's class and data-display, #footDevice)
+         and by the studio's PreviewPane/DEFAULT_DEVICE, which the studio's tests hold to this one. */
+      const DEFAULT_DEVICE = "android";
       const FRONT = [
         { type: "cover", label: "Cover" },
         { type: "halftitle", label: "Half Title" },
@@ -20630,7 +20634,7 @@
         customThemes: [],
         activeId: null,
         importReport: null,
-        device: "kindle",
+        device: DEFAULT_DEVICE,
         page: 1,
         pageCount: 1,
         exportPlatform: "generic",

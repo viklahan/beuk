@@ -4,6 +4,7 @@ import { epubState } from '@book/epub/state.js';
 import type { BookV1 } from '@book/schema.js';
 import meta from '../generated/strings-meta.json';
 import { drawIcons } from '../insights/insights';
+import { DEFAULT_DEVICE } from '../preview/defaultDevice';
 
 /* 1.0's own render/word-count/History code in the browser (step 5 design,
    decision 3): the generated module src/generated/closure.js
@@ -1082,7 +1083,7 @@ export type DeskState = { counts: Record<string, number>; total: number; sig: st
 const NO_DESK: DeskState = Object.freeze({ counts: Object.freeze({}), total: 0, sig: '', words: 0, run: null }) as DeskState;
 export const previewEnv: { render: () => void; deskSignature: () => string; desk: () => DeskState; device: () => string } = {
   render: () => undefined,
-  device: () => 'kindle',
+  device: () => DEFAULT_DEVICE,
   deskSignature: () => '',
   desk: () => NO_DESK,
 };

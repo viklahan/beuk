@@ -3,6 +3,7 @@ import { useBook } from '../book/BookProvider';
 import { loadClosure } from '../closure/index';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
+import { DEFAULT_DEVICE, FIRST_PAINT } from './defaultDevice';
 import { loadPreview, previewIfLoaded, setPreviewMounted, previewStarted, startPreview, stopPreview, renderNow, queueTyped, pvMobile } from './preview';
 
 /* Step 5 wave 4b (inventory E1, E2): 1.0's preview pane — its markup, ids, classes and keys (client/index.html
@@ -34,7 +35,7 @@ const Frame = memo(function Frame({ t }: { t: (k: string, p?: Record<string, unk
           phone. Uncontrolled: 1.0's setDevice sets its value and its change event calls setDevice (initPreview). The
           arrow-keys tip is its tooltip. */}
       <div className="device-bar">
-        <select className="dev-select" id="deviceBar" defaultValue="kindle" aria-label={t('preview.deviceLabel')} data-tip="preview.tip">
+        <select className="dev-select" id="deviceBar" defaultValue={DEFAULT_DEVICE} aria-label={t('preview.deviceLabel')} data-tip="preview.tip">
           {DEVICES.map((d) => (
             <option key={d.id} value={d.id}>
               {d.label}
@@ -45,7 +46,7 @@ const Frame = memo(function Frame({ t }: { t: (k: string, p?: Record<string, unk
       </div>
       <div id="previewStage">
         <div id="frameZone">
-          <div id="deviceFrame" className="frame-kindle" data-display="eink-mono">
+          <div id="deviceFrame" className={FIRST_PAINT.frameClass} data-display={FIRST_PAINT.display}>
             <div className="screen" id="deviceScreen">
               <div className="notch" />
               <div className="run-head">
@@ -56,7 +57,7 @@ const Frame = memo(function Frame({ t }: { t: (k: string, p?: Record<string, unk
                 <div id="pageFlow" className="fc-page" lang="en" />
               </div>
               <div className="run-foot">
-                <span id="footDevice">Kindle Paperwhite · 300 ppi</span>
+                <span id="footDevice">{FIRST_PAINT.footer}</span>
               </div>
               <div className="home-bar" />
             </div>
