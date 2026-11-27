@@ -6,7 +6,7 @@ import * as Y from 'yjs';
 import { onlyPositionMigrations } from './positionMigrations';
 import { CTX, OBJ, findInText, nearestOf } from './textMatch';
 import { textOf, touches, written, writtenTexts } from './rescueCore';
-import { rescueAfter, type RescueReport } from './rescueEditor';
+import { dropRescue, flushRescue, rescueAfter, rescueWaiting, type RescueReport } from './rescueEditor';
 
 // The caret keeper: keeps a writer's caret where they put it when ANOTHER writer's change rebuilds
 // their paragraph.
@@ -177,17 +177,50 @@ export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStora
 
           // the keystroke rescue, right after the keeper: this writer's own letters the change killed or stranded
           // go back between their words (rescueEditor.ts). The caret it may follow is the keeper's note: a caret's
-          // Yjs character; for a range, only where its head was (nothing to follow).
+          // Yjs character; for a range, only where its head was (nothing to follow). While the view composes,
+          // rescueAfter only plans and the plan waits (flush below).
+          const emit = (r: RescueReport) => {
+            storage.rescue = r;
+            onRescue?.(r);
+          };
           const rescue = (tr: Y.Transaction, was: NonNullable<typeof held>) => {
             if (onlyPositionMigrations(tr) || view.isDestroyed) return;
             const b = binding();
             if (!b) return;
             const end = was.caret ? was.anchor : (was.head ?? was.anchor);
             const r = rescueAfter(view, b, frag, tr, end ? { abs: end.abs, item: was.caret ? end.rel.item : null } : null);
-            if (!r) return;
-            storage.rescue = r;
-            onRescue?.(r);
+            if (r) emit(r);
           };
+
+          // What waited for a composition's end is written once the view no longer composes: from the plugin
+          // view's update, and from a compositionend listener through setTimeout(0) (ProseMirror ends its own
+          // composition after that event). Never throws: a throw (or one in the callback) loses that report only.
+          const flush = () => {
+            try {
+              if (view.isDestroyed || view.composing) return;
+              const b = binding();
+              if (!b) return;
+              for (const r of flushRescue(view, b, frag)) {
+                try {
+                  emit(r);
+                } catch {
+                  // that report not delivered
+                }
+              }
+            } catch {
+              // nothing written
+            }
+          };
+          let timer: ReturnType<typeof setTimeout> | null = null;
+          const later = () => {
+            if (timer === null)
+              timer = setTimeout(() => {
+                timer = null;
+                flush();
+              }, 0);
+          };
+          const onCompositionEnd = () => later();
+          view.dom.addEventListener('compositionend', onCompositionEnd);
 
           // Yjs emits both events outside its own try: a throw in beforeTransaction leaves doc._transaction set
           // for good (every later change nests into the dead one, so nothing renders, syncs or saves), and a
@@ -230,10 +263,21 @@ export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStora
           doc.on('afterTransaction', onAfter);
           doc.on('afterAllTransactions', onAll);
           return {
+            update: () => {
+              if (view.composing || !rescueWaiting(view)) return;
+              // y-tiptap renders a Yjs change inside its binding's mutex, so a write from that render's update
+              // would never reach Yjs: it waits for the next turn instead
+              if ((ySyncPluginKey.getState(view.state) as { isChangeOrigin?: boolean } | undefined)?.isChangeOrigin) later();
+              else flush();
+            },
             destroy: () => {
               doc.off('beforeTransaction', onBefore);
               doc.off('afterTransaction', onAfter);
               doc.off('afterAllTransactions', onAll);
+              view.dom.removeEventListener('compositionend', onCompositionEnd);
+              if (timer !== null) clearTimeout(timer);
+              timer = null;
+              dropRescue(view);
             },
           };
         },
