@@ -593,9 +593,12 @@ into every chapter editor right after Collaboration in `createEditor.ts`) keeps 
       must be read inside `afterTransaction`, before Yjs collects it), kept on the view with every place as a
       `Y.RelativePosition` and every moved letter by its Yjs id, and written on the next turn after the
       composition ends (`setTimeout(0)`, from `compositionend` or the plugin view's update; never a dispatch from
-      inside ProseMirror's update). A place whose character (the relative position's `item`) is no longer alive,
-      or that no longer resolves to a live text, is not written (`unplaced` / `stayed`): Yjs would resolve a
-      deleted character to where it stood among the live letters, a position the words no longer give. Faked in
+      inside ProseMirror's update). A text place (an insert or a move) whose character (the relative position's
+      `item`) is no longer alive, or that no longer resolves to a live text, is not written (`unplaced` /
+      `stayed`): Yjs would resolve a deleted character to where it stood among the live letters, a position the
+      words no longer give. Not covered: a waiting C3 paragraph hangs on the live block before it and is resolved
+      outside that check, so if that block is deleted during the composition the paragraph is written at the
+      slid index (not tested; a stated limit). Faked in
       jsdom (`view.composing`); no real IME tried.
     - *The report.* `editor.storage.caretKeeper.rescue` (the last one) and the extension's `onRescue` option, one
       per remote change that killed or stranded own letters: `{ rescued, moved, restored, carried, vetoed,
@@ -641,8 +644,9 @@ into every chapter editor right after Collaboration in `createEditor.ts`) keeps 
       reports too, which write and tell nothing.
     - **An IME plan that never flushes.** A waiting plan is dropped if the view is destroyed (`dropRescue`), and
       is never written if neither an editor update nor a `compositionend` follows: those letters are lost and the
-      writer is not told. At the flush, a place whose character (the relative position's `item`) is no longer
-      alive gives no position: its letters are `unplaced` and told (`keystroke-rescue-hard.test.ts`).
+      writer is not told. At the flush, a text place whose character (the relative position's `item`) is no
+      longer alive gives no position: its letters are `unplaced` and told (`keystroke-rescue-hard.test.ts`). A
+      waiting C3 paragraph is not covered by that check (see the IME bullet above).
     - **Full diffs both ways.** Two documents that catch up by full diffs each way: the second diff names the
       first writer's letter, so it is lost, and not told (`uncounted`; the controls' "BOTH as full diffs").
     - **Long runs checked at their two ends.** Whether a run is `carried` is judged from its ends with the words

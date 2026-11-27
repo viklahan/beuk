@@ -1486,9 +1486,12 @@ Points worth a look when you read them:
 When it is said: once per remote change that cost the writer letters, with the count of letters the other tab
 had and deleted (vetoed) plus the letters whose words were gone (unplaced). It is **not** said for a paragraph made
 only of this writer's "own" letters, whether the other tab deleted it outright or rebuilt it (ruling R6b,
-2026-11-27; `studio/src/editor/rescueCore.ts`). "Own" means every letter this session's document created, and that
-includes a book the writer imported or opened. Telling "N letters you typed …" there would be a false claim about
-letters they never typed, so the rescue says nothing (it counts them `uncounted`).
+2026-11-27, premise corrected by R6c; `studio/src/editor/rescueCore.ts`). "Own" means letters carrying this
+session's document id. A book reopened from the device keeps its letters' original ids, so there "own" means
+letters typed this session; but a book imported this session is written whole under this session's id, so its
+imported letters are "own" too, and the rescue cannot tell them from typed ones. It therefore says nothing for an
+all-own paragraph (it counts them `uncounted`): this also silences letters really typed this session. Whether to
+tell there (and how to avoid a false claim in an import session) is open for V in the PR.
 
 ### `rescue.lost`
 
