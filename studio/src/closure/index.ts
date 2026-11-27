@@ -692,6 +692,12 @@ export type ClosureApi = {
   updateWrapDims: () => void;
   drawWrapPreview: () => void;
   paintCoverScene: (...args: unknown[]) => unknown;
+  // the cover picture's move and zoom (BEUK:coverpan)
+  coverArtPlace: (recipe: unknown) => CoverArtPlace;
+  coverArtRect: (iw: number, ih: number, W: number, H: number, place?: CoverArtPlace) => { x: number; y: number; w: number; h: number; scale: number };
+  coverArtPpi: (iw: number, ih: number, inW: number, inH: number, place?: CoverArtPlace) => number;
+  COVER_ZOOM_MAX: number;
+  COVER_SOFT_PPI: number;
   // wave 5a (F1, F7, F8): the export modal (src/export) — 1.0's own wiring, presets, package, downloads, inspector,
   // validator and accessibility audit
   initExport: () => void;
@@ -890,6 +896,8 @@ export type PlatformPreset = { id: string; name: string; sub: string; desc: stri
 export type EpubFile = { path: string; content: string; binary?: boolean };
 /** One text line drawCoverTo painted (1.0's cmItems). */
 export type CoverItem = { key: string; text: string; x: number; y: number };
+/** 1.0's coverArtPlace: which part of the cover picture shows (x, y 0–1) and its zoom (1–COVER_ZOOM_MAX). */
+export type CoverArtPlace = { x: number; y: number; zoom: number };
 /** 1.0's wrapDims: the wrap's sizes in inches. */
 export type WrapDims = Record<string, unknown> & { totalW: number; totalH: number; spine: number; binding: string; spineText: boolean; trim: { id: string; label: string; w: number; h: number }; panel: { w: number; h: number }; layout: Record<string, number> & { frontX: number; spineX: number; backX: number; topY: number; panelW: number; panelH: number } };
 /** One of 1.0's built-in themes (PRESETS). */

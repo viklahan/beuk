@@ -172,6 +172,8 @@ export const EXTRA_ROOTS = [
   'cmComputeBlocks', 'cmTitleKeywords', 'searchStockPhotos', 'cmRenderStockResults', 'choosePexelsPhoto', 'imCoverFollowBook', 'imBookCoverText',
   'hcTrimOffered', 'HC_SPEC', 'spineDirection', 'normalizeWrapSpine', 'normalizeWrapBack', 'wrapDefaults', 'stableJson',
   'setElText', 'sbBuildControls', 'sbSync', 'sbIconSvg', 'SB_CURATED_ICONS', 'hcSyncPanel', 'hcLegendHtml', 'updateWrapDims', 'drawWrapPreview', 'paintCoverScene',
+  // the cover picture's move and zoom (BEUK:coverpan): its placement, where it lands, its print sharpness
+  'coverArtPlace', 'coverArtRect', 'coverArtPpi', 'COVER_ZOOM_MAX', 'COVER_SOFT_PPI',
   // wave 5a (F1, F7, F8): the export modal — 1.0's own initExport wires it (the later waves' parts reach supplied, inert
   // stand-ins: BROWSER_SUPPLIED), the platform presets and the package tree, the package itself (epubFiles; the browser's
   // buildEpubBlob, the same text as the server's EPUB_ROOTS: test/export-closure.test.ts), the store-ready download

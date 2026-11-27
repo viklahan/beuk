@@ -234,6 +234,10 @@ const CoverRecipe = obj({
   wrap: Wrap,
   elements: obj({ series: CoverElement, title: CoverElement, subtitle: CoverElement, tagline: CoverElement, author: CoverElement }),
   bookText: obj({ title: str, subtitle: str, author: str, series: str }).optional(),
+  // BEUK:coverpan — the cover picture's placement, present only once the writer moves or zooms it: bgFocus says which
+  // part of the picture shows (x, y 0-1, 0.5 centred), bgZoom how far it is zoomed (1-3). Absent reads as centred at
+  // 1x, the cover as it always was; the studio's normalizeCoverRecipe holds both to range.
+  bgFocus: obj({ x: num, y: num }).optional(), bgZoom: num.optional(),
 });
 
 /* ---- custom themes ---- */
