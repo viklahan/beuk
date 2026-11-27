@@ -4723,13 +4723,13 @@ author's own book. Destiny Hernandez wrote the poems and made the pictures
 with Gemini. It arrived as Beuk's PDF/X print, password-locked; its words
 were set from that print, unchanged, into a Beuk book file
 (`ramp-poems-of-joy.beuk-backup.json`: her theme and colour, each chapter a
-poem), and the book was printed by the renderer like the others. Its
-pictures take Rain on Calder Street's treatment: each is cropped inside its
-painted frame to the two-page shape, enlarged to 300 ppi at the trim (about
-4×) and split down the middle, the left half the chapter's plate and the
-right half its Spread backdrop. It opens on its title page alone on the
-right; its shelf cover is the first chapter's spread. Its pictures have
-rows in `pictures.tsv`. Then *Rain on Calder Street*
+poem), and the book was printed by the renderer like the others. Each
+chapter's picture is a full page: one whole picture made for the page (1696 ×
+2528, about 280 ppi over the 9 in page), set as the chapter's plate as the
+file is, not split and not enlarged, facing the poem; the poem's page has no
+backdrop. It opens on its title page alone on the right; its shelf cover is
+the first chapter's spread. Its pictures have rows in `pictures.tsv`. Then
+*Rain on Calder Street*
 (noir, 8 × 8 in), *Four Kitchens*
 (cookbook, 8.5 × 8.5 in), *The Sunken Vault* (fantasy, 6 × 9 in), *Luna's
 Beach Treasure Hunt* and *The Woolly School* (picture books, 11 × 8.5 in
