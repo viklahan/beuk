@@ -46,6 +46,14 @@ export function findInText(s: string, pre: string, post: string): number[] {
   return hits;
 }
 
+// A cheap pre-check for findInText: false only where findInText(s, pre, post) is certainly empty. Every hit
+// has a full, non-empty side (so that side occurs in s), except the empty block, which needs both sides
+// empty and s empty.
+export function mayHit(s: string, pre: string, post: string): boolean {
+  if (pre === '' && post === '') return s === '';
+  return (pre !== '' && s.includes(pre)) || (post !== '' && s.includes(post));
+}
+
 // Of several equal matches, the one nearest where the caret was; on a tie the smaller. Null when none.
 export function nearestOf(positions: number[], was: number): number | null {
   let best: number | null = null;
