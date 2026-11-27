@@ -1259,11 +1259,25 @@
       #previewSectionName { text-align: center; font-size: 12px; color: var(--muted); padding: 2px 0 8px; }
 
       /* ---------- Reading desk (under the device frame) ---------- */
+      /* The desk folds away (V, 2026-11-27: "make the panel below the e-readers collapsible ... more space for the e-reader"):
+         the header button carries the border the desk used to; collapsed, the reader takes the freed height (fitDeviceFrame). */
+      .desk-toggle {
+        display: flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto;
+        width: 100%; max-width: 432px; margin-top: 2px; padding: 9px 4px 5px;
+        background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0;
+        font-family: var(--ui-font); font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer;
+      }
+      .desk-toggle:hover { color: var(--ink); }
+      .desk-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+      .desk-toggle svg { width: 14px; height: 14px; transition: transform .2s ease; }
+      .desk-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
+      @media (prefers-reduced-motion: reduce) { .desk-toggle svg { transition: none; } }
       #previewDesk {
         width: 100%; max-width: 432px; flex: 0 1 auto; min-height: 0;
-        border-top: 1px solid var(--line); margin-top: 2px; padding-top: 10px;
+        padding-top: 4px;
         display: flex; flex-direction: column;
       }
+      #previewDesk[hidden] { display: none; }
       .desk-total { text-align: center; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-top: 2px; }
       .desk-basis { text-align: center; font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; } /* BEUK:pagecount */
       .desk-rail { overflow-y: auto; min-height: 0; max-height: 172px; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; padding-right: 2px; overscroll-behavior: contain; }
@@ -1286,6 +1300,7 @@
       #pane-preview.hc-mode #deviceFrame,
       #pane-preview.hc-mode #deviceDisplayNote,
       #pane-preview.hc-mode .page-controls,
+      #pane-preview.hc-mode #deskToggle,
       #pane-preview.hc-mode #previewDesk { display: none !important; }
       .hc-stage { position: relative; width: 100%; height: 100%; min-height: 220px; display: flex; align-items: center; justify-content: center; outline: none; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
       .hc-stage[hidden] { display: none; }
@@ -1360,9 +1375,9 @@
       #previewStage:-webkit-full-screen { background: var(--bg); padding: 18px; }
       #previewStage.fs-immersive { position: fixed; inset: 0; z-index: 2147483000; width: 100vw; height: 100vh; height: 100dvh; background: var(--bg); padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
       :root[data-theme="candlelight"] #previewStage.fs-immersive { background: radial-gradient(120% 85% at 50% -10%, var(--stage-glow) 0%, var(--panel-3) 58%); }
-      #previewStage:fullscreen #previewDesk { display: none; }
-      #previewStage:-webkit-full-screen #previewDesk { display: none; }
-      #previewStage.fs-immersive #previewDesk { display: none; }
+      #previewStage:fullscreen #previewDesk, #previewStage:fullscreen #deskToggle { display: none; }
+      #previewStage:-webkit-full-screen #previewDesk, #previewStage:-webkit-full-screen #deskToggle { display: none; }
+      #previewStage.fs-immersive #previewDesk, #previewStage.fs-immersive #deskToggle { display: none; }
       #deviceFrame.fs-scaled { transition: none; }
       .page-controls .pv-full { padding: 8px 10px; }
       .fs-btn[hidden] { display: none; }
@@ -3611,6 +3626,7 @@
             </div>
             <!-- ==== /BEUK:hcpreview ==== -->
             <div id="previewSectionName"></div>
+            <button type="button" class="desk-toggle" id="deskToggle" aria-expanded="true" aria-controls="previewDesk"><span data-i18n="preview.desk.toggle">Chapters and page counts</span><i data-lucide="chevron-down"></i></button><!-- BEUK:deskfold -->
             <div id="previewDesk">
               <div class="desk-total" id="deskTotal"></div>
               <div class="desk-basis" id="deskBasis"></div><!-- BEUK:pagecount -->
@@ -5033,7 +5049,7 @@
         "preview.tip": "Tip: click the preview, then use ← → arrow keys to turn pages.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Previewing: {name}", "preview.chapterPrefix": "Chapter {n} — ", "preview.excludedSuffix": " · excluded from export",
-        "preview.desk.facts": "{size} screen · {res} · {ppi} ppi", "preview.desk.total": "{title} · about {n} page on {device}", "preview.desk.totalPlural": "{title} · about {n} pages on {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimated for a {w} × {h} px reading area with {size} px text. A reader’s own text size and margins change the count.", "preview.desk.railLabel": "Sections and page counts on this device",
+        "preview.desk.facts": "{size} screen · {res} · {ppi} ppi", "preview.desk.total": "{title} · about {n} page on {device}", "preview.desk.totalPlural": "{title} · about {n} pages on {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimated for a {w} × {h} px reading area with {size} px text. A reader’s own text size and margins change the count.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Sections and page counts on this device",
         "set.title": "Project Settings",
         "set.subHtml": "These metadata fields are written into the EPUB package document (<span style=\"font-family:var(--mono-font);\">package.opf</span>) and the Markdown frontmatter, and used to generate the title page and copyright page.",
         "set.bookTitle": "Book Title", "set.subtitle": "Subtitle (optional)", "set.author": "Author", "set.publisher": "Publisher",
@@ -5786,7 +5802,7 @@
         "preview.tip": "Consejo: haz clic en la vista previa y usa las flechas ← → para pasar de página.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Vista previa: {name}", "preview.chapterPrefix": "Capítulo {n} — ", "preview.excludedSuffix": " · excluido de la exportación",
-        "preview.desk.facts": "Pantalla de {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · aprox. {n} página en {device}", "preview.desk.totalPlural": "{title} · aprox. {n} páginas en {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimación para un área de lectura de {w} × {h} px con texto de {size} px. El tamaño de letra y los márgenes que elija cada lector cambian el recuento.", "preview.desk.railLabel": "Secciones y número de páginas en este dispositivo",
+        "preview.desk.facts": "Pantalla de {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · aprox. {n} página en {device}", "preview.desk.totalPlural": "{title} · aprox. {n} páginas en {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimación para un área de lectura de {w} × {h} px con texto de {size} px. El tamaño de letra y los márgenes que elija cada lector cambian el recuento.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Secciones y número de páginas en este dispositivo",
         "set.title": "Ajustes del proyecto",
         "set.subHtml": "Estos metadatos se escriben en el documento del paquete EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) y en la cabecera del Markdown, y se usan para generar la portada interior y la página de créditos.",
         "set.bookTitle": "Título del libro", "set.subtitle": "Subtítulo (opcional)", "set.author": "Autor", "set.publisher": "Editorial",
@@ -6008,7 +6024,7 @@
         "preview.tip": "Astuce : cliquez l'aperçu, puis tournez les pages avec les flèches ← →.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Aperçu : {name}", "preview.chapterPrefix": "Chapitre {n} — ", "preview.excludedSuffix": " · exclu de l'export",
-        "preview.desk.facts": "Écran {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · environ {n} page sur {device}", "preview.desk.totalPlural": "{title} · environ {n} pages sur {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimation pour une zone de lecture de {w} × {h} px avec un texte de {size} px. La taille du texte et les marges choisies par le lecteur changent le décompte.", "preview.desk.railLabel": "Sections et nombre de pages sur cet appareil",
+        "preview.desk.facts": "Écran {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · environ {n} page sur {device}", "preview.desk.totalPlural": "{title} · environ {n} pages sur {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimation pour une zone de lecture de {w} × {h} px avec un texte de {size} px. La taille du texte et les marges choisies par le lecteur changent le décompte.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Sections et nombre de pages sur cet appareil",
         "set.title": "Réglages du projet",
         "set.subHtml": "Ces métadonnées sont écrites dans le document du paquet EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) et dans l'en-tête du Markdown, et servent à générer la page de titre et la page de copyright.",
         "set.bookTitle": "Titre du livre", "set.subtitle": "Sous-titre (facultatif)", "set.author": "Auteur", "set.publisher": "Éditeur",
@@ -6230,7 +6246,7 @@
         "preview.tip": "Tipp: Klicken Sie in die Vorschau und blättern Sie dann mit den Pfeiltasten ← →.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Vorschau: {name}", "preview.chapterPrefix": "Kapitel {n} — ", "preview.excludedSuffix": " · vom Export ausgeschlossen",
-        "preview.desk.facts": "{size} Bildschirm · {res} · {ppi} ppi", "preview.desk.total": "{title} · etwa {n} Seite auf {device}", "preview.desk.totalPlural": "{title} · etwa {n} Seiten auf {device}", "preview.desk.pages": "≈ {n} Seite", "preview.desk.pagesPlural": "≈ {n} Seiten", "preview.desk.basis": "Geschätzt für einen Lesebereich von {w} × {h} px mit {size} px Schrift. Schriftgröße und Ränder, die Lesende selbst wählen, ändern die Zahl.", "preview.desk.railLabel": "Abschnitte und Seitenzahlen auf diesem Gerät",
+        "preview.desk.facts": "{size} Bildschirm · {res} · {ppi} ppi", "preview.desk.total": "{title} · etwa {n} Seite auf {device}", "preview.desk.totalPlural": "{title} · etwa {n} Seiten auf {device}", "preview.desk.pages": "≈ {n} Seite", "preview.desk.pagesPlural": "≈ {n} Seiten", "preview.desk.basis": "Geschätzt für einen Lesebereich von {w} × {h} px mit {size} px Schrift. Schriftgröße und Ränder, die Lesende selbst wählen, ändern die Zahl.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Abschnitte und Seitenzahlen auf diesem Gerät",
         "set.title": "Projekteinstellungen",
         "set.subHtml": "Diese Metadaten werden in das EPUB-Paketdokument (<span style=\"font-family:var(--mono-font);\">package.opf</span>) und den Markdown-Vorspann geschrieben und erzeugen Titelblatt und Impressum.",
         "set.bookTitle": "Buchtitel", "set.subtitle": "Untertitel (optional)", "set.author": "Autor", "set.publisher": "Verlag",
@@ -6452,7 +6468,7 @@
         "preview.tip": "Consiglio: fai clic sull'anteprima, poi sfoglia le pagine con le frecce ← →.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Anteprima: {name}", "preview.chapterPrefix": "Capitolo {n} — ", "preview.excludedSuffix": " · escluso dall'esportazione",
-        "preview.desk.facts": "Schermo da {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · circa {n} pagina su {device}", "preview.desk.totalPlural": "{title} · circa {n} pagine su {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagine", "preview.desk.basis": "Stima per un'area di lettura di {w} × {h} px con testo a {size} px. La dimensione del testo e i margini scelti dal lettore cambiano il conteggio.", "preview.desk.railLabel": "Sezioni e conteggio pagine su questo dispositivo",
+        "preview.desk.facts": "Schermo da {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · circa {n} pagina su {device}", "preview.desk.totalPlural": "{title} · circa {n} pagine su {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagine", "preview.desk.basis": "Stima per un'area di lettura di {w} × {h} px con testo a {size} px. La dimensione del testo e i margini scelti dal lettore cambiano il conteggio.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Sezioni e conteggio pagine su questo dispositivo",
         "set.title": "Impostazioni del progetto",
         "set.subHtml": "Questi metadati vengono scritti nel documento del pacchetto EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) e nell'intestazione del Markdown, e servono a generare frontespizio e pagina del copyright.",
         "set.bookTitle": "Titolo del libro", "set.subtitle": "Sottotitolo (facoltativo)", "set.author": "Autore", "set.publisher": "Editore",
@@ -6674,7 +6690,7 @@
         "preview.tip": "Dica: clique na pré-visualização e vire as páginas com as setas ← →.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Pré-visualização: {name}", "preview.chapterPrefix": "Capítulo {n} — ", "preview.excludedSuffix": " · excluído da exportação",
-        "preview.desk.facts": "Tela de {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · cerca de {n} página no {device}", "preview.desk.totalPlural": "{title} · cerca de {n} páginas no {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimativa para uma área de leitura de {w} × {h} px com texto de {size} px. O tamanho do texto e as margens escolhidos pelo leitor alteram a contagem.", "preview.desk.railLabel": "Seções e contagem de páginas neste dispositivo",
+        "preview.desk.facts": "Tela de {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · cerca de {n} página no {device}", "preview.desk.totalPlural": "{title} · cerca de {n} páginas no {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimativa para uma área de leitura de {w} × {h} px com texto de {size} px. O tamanho do texto e as margens escolhidos pelo leitor alteram a contagem.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Seções e contagem de páginas neste dispositivo",
         "set.title": "Definições do projeto",
         "set.subHtml": "Estes metadados são escritos no documento do pacote EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) e no cabeçalho do Markdown, e servem para gerar a página de título e a página de direitos.",
         "set.bookTitle": "Título do livro", "set.subtitle": "Subtítulo (opcional)", "set.author": "Autor", "set.publisher": "Editora",
@@ -6896,7 +6912,7 @@
         "preview.tip": "Tip: klik op het voorbeeld en blader daarna met de pijltjestoetsen ← →.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Voorbeeld: {name}", "preview.chapterPrefix": "Hoofdstuk {n} — ", "preview.excludedSuffix": " · uitgesloten van de export",
-        "preview.desk.facts": "{size} scherm · {res} · {ppi} ppi", "preview.desk.total": "{title} · ongeveer {n} pagina op {device}", "preview.desk.totalPlural": "{title} · ongeveer {n} pagina's op {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagina's", "preview.desk.basis": "Geschat voor een leesvlak van {w} × {h} px met tekst van {size} px. De tekstgrootte en marges die een lezer zelf kiest, veranderen het aantal.", "preview.desk.railLabel": "Secties en pagina-aantallen op dit apparaat",
+        "preview.desk.facts": "{size} scherm · {res} · {ppi} ppi", "preview.desk.total": "{title} · ongeveer {n} pagina op {device}", "preview.desk.totalPlural": "{title} · ongeveer {n} pagina's op {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagina's", "preview.desk.basis": "Geschat voor een leesvlak van {w} × {h} px met tekst van {size} px. De tekstgrootte en marges die een lezer zelf kiest, veranderen het aantal.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Secties en pagina-aantallen op dit apparaat",
         "set.title": "Projectinstellingen",
         "set.subHtml": "Deze metagegevens worden in het EPUB-pakketdocument (<span style=\"font-family:var(--mono-font);\">package.opf</span>) en de Markdown-voorkop geschreven en genereren de titelpagina en copyrightpagina.",
         "set.bookTitle": "Boektitel", "set.subtitle": "Ondertitel (optioneel)", "set.author": "Auteur", "set.publisher": "Uitgever",
@@ -7118,7 +7134,7 @@
         "preview.tip": "Wskazówka: kliknij podgląd, a potem przewracaj strony strzałkami ← →.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Podgląd: {name}", "preview.chapterPrefix": "Rozdział {n} — ", "preview.excludedSuffix": " · wyłączone z eksportu",
-        "preview.desk.facts": "Ekran {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · około {n} strony na {device}", "preview.desk.totalPlural": "{title} · około {n} stron na {device}", "preview.desk.pages": "≈ {n} strona", "preview.desk.pagesPlural": "≈ {n} strony", "preview.desk.basis": "Szacunek dla obszaru czytania {w} × {h} px przy tekście {size} px. Rozmiar tekstu i marginesy wybrane przez czytelnika zmieniają liczbę.", "preview.desk.railLabel": "Sekcje i liczba stron na tym urządzeniu",
+        "preview.desk.facts": "Ekran {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · około {n} strony na {device}", "preview.desk.totalPlural": "{title} · około {n} stron na {device}", "preview.desk.pages": "≈ {n} strona", "preview.desk.pagesPlural": "≈ {n} strony", "preview.desk.basis": "Szacunek dla obszaru czytania {w} × {h} px przy tekście {size} px. Rozmiar tekstu i marginesy wybrane przez czytelnika zmieniają liczbę.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Sekcje i liczba stron na tym urządzeniu",
         "set.title": "Ustawienia projektu",
         "set.subHtml": "Te metadane są zapisywane w dokumencie pakietu EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) i w nagłówku Markdown oraz służą do wygenerowania strony tytułowej i redakcyjnej.",
         "set.bookTitle": "Tytuł książki", "set.subtitle": "Podtytuł (opcjonalnie)", "set.author": "Autor", "set.publisher": "Wydawca",
@@ -7340,7 +7356,7 @@
         "preview.tip": "Совет: щёлкните по предпросмотру, а затем листайте страницы стрелками ← →.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Предпросмотр: {name}", "preview.chapterPrefix": "Глава {n} — ", "preview.excludedSuffix": " · исключено из экспорта",
-        "preview.desk.facts": "Экран {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · около {n} страницы на {device}", "preview.desk.totalPlural": "{title} · около {n} страниц на {device}", "preview.desk.pages": "≈ {n} страница", "preview.desk.pagesPlural": "≈ {n} страниц", "preview.desk.basis": "Оценка для области чтения {w} × {h} px при тексте {size} px. Размер шрифта и поля, выбранные читателем, меняют число.", "preview.desk.railLabel": "Разделы и число страниц на этом устройстве",
+        "preview.desk.facts": "Экран {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · около {n} страницы на {device}", "preview.desk.totalPlural": "{title} · около {n} страниц на {device}", "preview.desk.pages": "≈ {n} страница", "preview.desk.pagesPlural": "≈ {n} страниц", "preview.desk.basis": "Оценка для области чтения {w} × {h} px при тексте {size} px. Размер шрифта и поля, выбранные читателем, меняют число.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Разделы и число страниц на этом устройстве",
         "set.title": "Настройки проекта",
         "set.subHtml": "Эти метаданные записываются в документ пакета EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) и в шапку Markdown и используются для создания титульного листа и страницы с выходными данными.",
         "set.bookTitle": "Название книги", "set.subtitle": "Подзаголовок (необязательно)", "set.author": "Автор", "set.publisher": "Издатель",
@@ -7562,7 +7578,7 @@
         "preview.tip": "İpucu: önizlemeye tıklayın, sonra ← → ok tuşlarıyla sayfaları çevirin.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "Önizleme: {name}", "preview.chapterPrefix": "Bölüm {n} — ", "preview.excludedSuffix": " · dışa aktarımdan çıkarıldı",
-        "preview.desk.facts": "{size} ekran · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.totalPlural": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.pages": "≈ {n} sayfa", "preview.desk.pagesPlural": "≈ {n} sayfa", "preview.desk.basis": "{size} px metinle {w} × {h} px okuma alanı için tahmin. Okurun seçtiği yazı boyutu ve kenar boşlukları sayıyı değiştirir.", "preview.desk.railLabel": "Bu cihazdaki bölümler ve sayfa sayıları",
+        "preview.desk.facts": "{size} ekran · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.totalPlural": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.pages": "≈ {n} sayfa", "preview.desk.pagesPlural": "≈ {n} sayfa", "preview.desk.basis": "{size} px metinle {w} × {h} px okuma alanı için tahmin. Okurun seçtiği yazı boyutu ve kenar boşlukları sayıyı değiştirir.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Bu cihazdaki bölümler ve sayfa sayıları",
         "set.title": "Proje ayarları",
         "set.subHtml": "Bu üst veriler EPUB paket belgesine (<span style=\"font-family:var(--mono-font);\">package.opf</span>) ve Markdown ön bilgisine yazılır ve başlık sayfası ile telif sayfasını oluşturmak için kullanılır.",
         "set.bookTitle": "Kitap başlığı", "set.subtitle": "Alt başlık (isteğe bağlı)", "set.author": "Yazar", "set.publisher": "Yayınevi",
@@ -7784,7 +7800,7 @@
         "preview.tip": "تلميح: انقر المعاينة، ثم قلّب الصفحات بمفتاحي الأسهم ← →.",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "معاينة: {name}", "preview.chapterPrefix": "الفصل {n} — ", "preview.excludedSuffix": " · مستثنى من التصدير",
-        "preview.desk.facts": "شاشة {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · نحو {n} صفحة على {device}", "preview.desk.totalPlural": "{title} · نحو {n} صفحات على {device}", "preview.desk.pages": "≈ {n} صفحة", "preview.desk.pagesPlural": "≈ {n} صفحات", "preview.desk.basis": "تقدير لمساحة قراءة {w} × {h} px بنص {size} px. حجم الخط والهوامش التي يختارها القارئ تغيّر العدد.", "preview.desk.railLabel": "الأقسام وعدد الصفحات على هذا الجهاز",
+        "preview.desk.facts": "شاشة {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · نحو {n} صفحة على {device}", "preview.desk.totalPlural": "{title} · نحو {n} صفحات على {device}", "preview.desk.pages": "≈ {n} صفحة", "preview.desk.pagesPlural": "≈ {n} صفحات", "preview.desk.basis": "تقدير لمساحة قراءة {w} × {h} px بنص {size} px. حجم الخط والهوامش التي يختارها القارئ تغيّر العدد.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "الأقسام وعدد الصفحات على هذا الجهاز",
         "set.title": "إعدادات المشروع",
         "set.subHtml": "تُكتب هذه البيانات الوصفية في مستند حزمة EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) وفي مقدمة Markdown، وتُستخدم لإنشاء صفحة العنوان وصفحة حقوق النشر.",
         "set.bookTitle": "عنوان الكتاب", "set.subtitle": "العنوان الفرعي (اختياري)", "set.author": "المؤلف", "set.publisher": "الناشر",
@@ -8006,7 +8022,7 @@
         "preview.tip": "ヒント：プレビューをクリックしてから、← → の矢印キーでページをめくれます。",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "プレビュー中：{name}", "preview.chapterPrefix": "第{n}章 — ", "preview.excludedSuffix": " · 書き出しから除外",
-        "preview.desk.facts": "{size} 画面 · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} で約 {n} ページ", "preview.desk.totalPlural": "{title} · {device} で約 {n} ページ", "preview.desk.pages": "≈ {n} ページ", "preview.desk.pagesPlural": "≈ {n} ページ", "preview.desk.basis": "{w} × {h} px の読書領域、{size} px の文字での推定です。読者が選ぶ文字サイズや余白で数は変わります。", "preview.desk.railLabel": "このデバイスでのセクションとページ数",
+        "preview.desk.facts": "{size} 画面 · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} で約 {n} ページ", "preview.desk.totalPlural": "{title} · {device} で約 {n} ページ", "preview.desk.pages": "≈ {n} ページ", "preview.desk.pagesPlural": "≈ {n} ページ", "preview.desk.basis": "{w} × {h} px の読書領域、{size} px の文字での推定です。読者が選ぶ文字サイズや余白で数は変わります。", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "このデバイスでのセクションとページ数",
         "set.title": "プロジェクト設定",
         "set.subHtml": "これらのメタデータはEPUBパッケージ文書（<span style=\"font-family:var(--mono-font);\">package.opf</span>）とMarkdownのフロントマターに書き込まれ、タイトルページと著作権ページの生成に使われます。",
         "set.bookTitle": "書名", "set.subtitle": "サブタイトル（任意）", "set.author": "著者", "set.publisher": "出版社",
@@ -8228,7 +8244,7 @@
         "preview.tip": "提示：点击预览，然后用 ← → 方向键翻页。",
         "preview.deviceLabel": "Preview device",
         "preview.previewing": "正在预览：{name}", "preview.chapterPrefix": "第 {n} 章 — ", "preview.excludedSuffix": " · 已从导出中排除",
-        "preview.desk.facts": "{size} 屏幕 · {res} · {ppi} ppi", "preview.desk.total": "{title} · 在 {device} 上约 {n} 页", "preview.desk.totalPlural": "{title} · 在 {device} 上约 {n} 页", "preview.desk.pages": "≈ {n} 页", "preview.desk.pagesPlural": "≈ {n} 页", "preview.desk.basis": "按 {w} × {h} px 阅读区域、{size} px 文字估算。读者自选的字号和页边距会改变页数。", "preview.desk.railLabel": "此设备上的章节与页数",
+        "preview.desk.facts": "{size} 屏幕 · {res} · {ppi} ppi", "preview.desk.total": "{title} · 在 {device} 上约 {n} 页", "preview.desk.totalPlural": "{title} · 在 {device} 上约 {n} 页", "preview.desk.pages": "≈ {n} 页", "preview.desk.pagesPlural": "≈ {n} 页", "preview.desk.basis": "按 {w} × {h} px 阅读区域、{size} px 文字估算。读者自选的字号和页边距会改变页数。", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "此设备上的章节与页数",
         "set.title": "项目设置",
         "set.subHtml": "这些元数据会写入 EPUB 包文档（<span style=\"font-family:var(--mono-font);\">package.opf</span>）和 Markdown 的前置信息，并用于生成书名页和版权页。",
         "set.bookTitle": "书名", "set.subtitle": "副标题（可选）", "set.author": "作者", "set.publisher": "出版社",
@@ -38680,8 +38696,29 @@
         flow.style.setProperty("--orn-bg", getComputedStyle($("deviceScreen")).backgroundColor);
         hcOnDevice(d); /* BEUK:hcpreview */
       }
+      /* ==== BEUK:deskfold ==== The reading desk under the reader folds away. Remembered per browser (never in the book);
+         with nothing remembered, open on a wide window and folded on the phone layout (the same 1023 px breakpoint as
+         #mobileTabs). Storage may be absent or throw: the choice then holds for the session only. The page counts are
+         measured by #deskMeasure whether the desk shows or not, so the sidebar's "pages on…" line never waits on it. */
+      const DESK_FOLD_KEY = "beuk.previewDesk.v1";
+      function deskOpenWanted() {
+        try { const v = localStorage.getItem(DESK_FOLD_KEY); if (v === "open") return true; if (v === "closed") return false; } catch (e) { /* no storage */ }
+        return window.innerWidth > 1023;
+      }
+      function setDeskOpen(open, remember) {
+        const desk = $("previewDesk"), btn = $("deskToggle");
+        if (!desk || !btn) return;
+        desk.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        if (remember) { try { localStorage.setItem(DESK_FOLD_KEY, open ? "open" : "closed"); } catch (e) { /* no storage */ } }
+        fitDeviceFrame(); /* the reader takes the height the desk gave up, or gives it back */
+        requestAnimationFrame(() => { fitDeviceFrame(); if (!$("flowWrap").clientWidth) return; goToPage(state.page, true); });
+      }
+      /* ==== /BEUK:deskfold ==== */
       function initPreview() {
         pvInit(); /* BEUK:reader */
+        setDeskOpen(deskOpenWanted(), false); /* BEUK:deskfold */
+        if ($("deskToggle")) $("deskToggle").addEventListener("click", () => setDeskOpen($("previewDesk").hidden, true)); /* BEUK:deskfold */
         renderDeviceDisplayNote(); /* BEUK:devicetruth */
         $("deviceBar").addEventListener("change", (e) => setDevice(e.target.value));
         $("deskRail").addEventListener("click", (e) => {
@@ -77683,7 +77720,7 @@
               const pages = state.pageCount, seen = [];
               for (let p = 1; p <= Math.min(3, pages); p++) { goToPage(p, true); seen.push(shown(p === 1)); }
               goToPage(Math.min(2, pages), true);
-              const ps = Array.prototype.filter.call(flow.querySelectorAll("p"), (p) => { const r = p.getBoundingClientRect(); return r.width > 0 && r.left >= wr.left && r.right <= wr.right; });
+              const ps = Array.prototype.filter.call(flow.querySelectorAll("p"), (p) => { const r = p.getBoundingClientRect(); return r.width > 0 && r.left >= wr.left - 1 && r.right <= wr.right + 1; }); /* 1 px of float noise: a paragraph is exactly a page wide, so at some frame sizes its right edge lands a hair past the window's */
               const here = ps.length ? previewPageAtX(ps[0].getBoundingClientRect().left + 2) : 0;
               const ok = flow.dir === "rtl" && pages >= 3 && seen.every((n) => n > 0) && here === state.page;
               return scVerdict(ok, "Arabic book, " + pages + " pages, flow " + flow.dir + "; text shown on pages 1–3: " + seen.join(" / ") + " probes; a paragraph on page " + state.page + " is found on page " + here);

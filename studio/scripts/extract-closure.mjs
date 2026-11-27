@@ -453,7 +453,7 @@ export const PREVIEW_ROOTS = ['renderPreview', 'queuePreview', 'initPreview', 's
   'deviceReadingArea', 'scheduleDeskUpdate', 'updateDesk', 'renderDesk', 'computeDeskCountsSync', 'deskState', 'deskSignature', 'deskGoToSection',
   'pvLeaving', 'pvResume', 'pvShowTitle', 'pvFlush', 'pvPageOfAnchor', 'pvCaretAnchor', 'pvPageAnchor', 'previewPageAtX', 'keepOrnamentsWithText', 'undoOrnamentRepairs',
   'insGlancePages', 'statsPages', 'statsDeskReady', 'pageCountCache', 'sectionHtml', 'buildBookCss', 'pivEnsureStyle',
-  'COL_GAP', 'DEFAULT_DEVICE', 'DEVICE_FOOTERS', 'DEVICE_FACTS', 'DEVICE_NAMES', 'PAGE_GEOMETRY', 'DEVICE_DISPLAY', 'DISPLAY_RENDER',
+  'COL_GAP', 'DEFAULT_DEVICE', 'DESK_FOLD_KEY', 'deskOpenWanted', 'setDeskOpen', 'DEVICE_FOOTERS', 'DEVICE_FACTS', 'DEVICE_NAMES', 'PAGE_GEOMETRY', 'DEVICE_DISPLAY', 'DISPLAY_RENDER',
   // E2: the hardcover and full screen
   'hc', 'hcInit', 'hcRender', 'hcOnDevice', 'hcOnPreview', 'hcSetOpen', 'hcTurn', 'hcKey', 'hcEnsureModel', 'hcSignature', 'hcLook',
   'fsInit', 'fsToggle', 'fsExit', 'fsIsOn', 'fsActive', 'fsState', 'fsLabelFor', 'fsScaleFrame', 'FS_TARGETS', 'syncFsButtons'];
