@@ -14,7 +14,7 @@ to make well.
 - **On e-readers, the whole picture.** An e-reader has no facing page, so the EPUB shows the whole picture on its own page before the chapter, with its alt text. So do the standalone page, Zen and the studio's preview.
 - **The chapter's backdrop is set aside, not lost.** In print the picture takes the backdrop's place on the opening page. On e-readers, the standalone page, Zen and the preview, the opening has no backdrop while the whole picture stands before it. While Across both pages is chosen, the Chapter backdrop rows are greyed out and one line says why. Switch Fit back and the backdrop is there as it was, everywhere.
 - **A note when it may print soft.** If the picture gives fewer than 200 pixels per inch across the two pages, a line under Fit gives the number. It doesn't stop you. The print checks before export now measure such a picture across both pages too.
-- **Suggested when it fits.** Choose a picture close to the shape of the open spread and Beuk picks Across both pages for you. Other pictures get the same choice they always got. Use on every chapter copies it.
+- **Suggested when it fits.** Choose a picture close to the shape of the open spread and Beuk picks Across both pages for you, unless the chapter already has a backdrop: then the picture gets the choice it always got, and the backdrop stays. Other pictures get the same choice they always got. Use on every chapter copies it.
 - Fill the page and Show the whole picture work exactly as before. An older Beuk that opens the book shows the plate as Fill the page, with the chapter's earlier backdrop. The three new lines of wording are in English and drafted in the twelve other languages, waiting to be signed off.
 
 ## 2026-11-24 — One chapter's settings on every chapter

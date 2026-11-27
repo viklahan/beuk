@@ -5,7 +5,7 @@ import { closureIfLoaded, loadClosure, type BookImage, type Closure } from '../c
 import { bookMeta } from '../book/store';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useToast } from '../shell/Toasts';
-import { addPicture, imageById, PICTURE_ACCEPT, PICTURE_ADDED, PICTURE_TYPE_REFUSED, pickerList, plateFitFor, readPictureFile, sectionKey, sectionMapById, setSectionKeys } from './pictures';
+import { addPicture, backdropSetAside, imageById, PICTURE_ACCEPT, PICTURE_ADDED, PICTURE_TYPE_REFUSED, pickerList, plateFitFor, readPictureFile, sectionKey, sectionMapById, setSectionKeys } from './pictures';
 
 /* BEUK:images — 1.0's chapter-art rows (#bodyArtRows after the drop cap and
    small-caps rows: the opening plate, its alt text, the backdrop and its
@@ -90,8 +90,10 @@ export function ArtRows({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unknown
   const strength = get('backdropStrength');
   const strengths = c.api.BACKDROP_STRENGTHS;
   const fitNow = c.api.plateFitOf({ plateFit: get('plateFit') });
-  // Across both pages: the chapter's backdrop is set aside while it is chosen (disabled, never written: Fit away and it is back as it was)
-  const across = fitNow === 'across' && !!plateId;
+  // Across both pages: the chapter's backdrop is set aside while it is chosen (disabled, never written: Fit away and it is back as it was),
+  // by the output's own rule (acrossSetsBackdropAside): only while the plate is drawn — its picture in the library and
+  // its alt text given — so the rows and the note never say "set aside" while the backdrop is in fact drawn
+  const across = backdropSetAside(c, ydoc, section);
   const softPpi = across ? acrossPpi(c, ydoc, plateId) : null;
 
   const options = (none: string, upload: string) => (
@@ -118,8 +120,9 @@ const onPlate = (v: string) => {
   const patch: Record<string, unknown> = { plateId: v || null };
   const im = v ? imageById(ydoc, v) : null;
   if (im && !String(get('plateAlt') || '').trim()) patch.plateAlt = nameOf(im);
-  // BEUK:platefit — a newly chosen picture gets its fit chosen with it (1.0's chPlate handler): never cut unasked
-  if (v) patch.plateFit = plateFitFor(c, ydoc, im ?? ({ id: v } as BookImage));
+  // BEUK:platefit — a newly chosen picture gets its fit chosen with it (1.0's chPlate handler): never cut unasked, and
+  // never across for a chapter with a backdrop stored (it would set the backdrop aside unasked)
+  if (v) patch.plateFit = plateFitFor(c, ydoc, im ?? ({ id: v } as BookImage), section);
   setSectionKeys(ydoc, id, patch);
 };
 const onBackdrop = (v: string) => {
@@ -148,7 +151,7 @@ const onFile = async (which: 'plate' | 'bd', f: File | undefined) => {
     const target = (forId == null ? null : sectionMapById(ydoc, forId)) ?? section;
     const tid = sectionKey(target, 'id');
     if (which === 'plate') {
-      const patch: Record<string, unknown> = { plateId: im.id, plateFit: plateFitFor(c, ydoc, im) };
+      const patch: Record<string, unknown> = { plateId: im.id, plateFit: plateFitFor(c, ydoc, im, target) };
       if (!String(sectionKey(target, 'plateAlt') || '').trim()) patch.plateAlt = nameOf(im);
       setSectionKeys(ydoc, tid, patch);
     } else {

@@ -30823,7 +30823,7 @@
         const whole = (secs) => (Array.isArray(secs) ? secs : []).some((s) => s && (s.plateFit === "whole" || s.plateFit === "across")); /* BEUK:across — shown whole off the press */
         return whole(state.sections) || (Array.isArray(state.boxSetVolumes) ? state.boxSetVolumes : []).some((v) => v && whole(v.sections));
       }
-      function plateFitFor(img, trimId) {
+      function plateFitFor(img, trimId, section) {
         const px = imagePixelSize(img);
         if (!px || !(px.w > 0) || !(px.h > 0)) return "whole";
         const tr = trimSize(trimId);
@@ -30832,7 +30832,10 @@
         /* BEUK:across — one page would cut more than a tenth; the open spread
            (two trims side by side, bleed left out: it is not the picture's
            business) is suggested only when ITS crop would cut no more than a
-           tenth. A near-square picture or a panorama keeps whole. */
+           tenth. A near-square picture or a panorama keeps whole. Never for
+           a chapter (`section`, read only) that has a backdrop stored:
+           across would set it aside unasked, so it gets today's answer. */
+        if (section && section.backdropId) return "whole";
         const c = 2 * tr.w / tr.h;
         return 1 - Math.min(a, c) / Math.max(a, c) <= PLATE_FIT_FAR ? "across" : "whole";
       }
@@ -36356,7 +36359,7 @@
             if (im) s.plateAlt = String(im.name || "").replace(/\.[^.]+$/, "").replace(/[-_—]+/g, " ").trim();
           }
           /* BEUK:platefit — a newly chosen picture gets its fit chosen with it: never cut unasked */
-          if (s.plateId) s.plateFit = plateFitFor(imageById(s.plateId));
+          if (s.plateId) s.plateFit = plateFitFor(imageById(s.plateId), undefined, s);
           noteBookEdited(); syncEditor(); renderPreview(); refreshExportTree();
         });
         $("chPlateFit").addEventListener("change", (e) => {
@@ -36381,7 +36384,7 @@
             plateUploadFor = null;
             if (s) {
               s.plateId = im.id;
-              s.plateFit = plateFitFor(im); /* BEUK:platefit */
+              s.plateFit = plateFitFor(im, undefined, s); /* BEUK:platefit */
               if (!String(s.plateAlt || "").trim()) s.plateAlt = String(im.name || "").replace(/\.[^.]+$/, "").replace(/[-_—]+/g, " ").trim();
             }
             noteBookEdited(); refreshImagePickers(); renderPreview(); refreshExportTree();
@@ -71171,7 +71174,7 @@
             }
           } },
         /* ---- BEUK:platefit — a plate fills its page or is shown whole ---- */
-        { id: "plate.fit.choice", feature: "plate", name: "Plate fit, the choice: a section stored without the field reads as Fill the page and is saved without it (no stored book changes); only fill and whole are kept, through a save and a reload; a newly chosen picture gets its fit chosen with it — whole when filling the page would cut more than a tenth of it, by its pixel size against the book's trim, and whole when its size cannot be read; the Fit row shows only while a plate is set, shows the stored choice and writes the writer's",
+        { id: "plate.fit.choice", feature: "plate", name: "Plate fit, the choice: a section stored without the field reads as Fill the page and is saved without it (no stored book changes); only fill and whole are kept, through a save and a reload; a newly chosen picture gets its fit chosen with it — whole when filling the page would cut more than a tenth of it, by its pixel size against the book's trim, and whole when its size cannot be read; across, for a picture near the open spread's shape, only on a chapter with no backdrop stored (never set aside unasked); the Fit row shows only while a plate is set, shows the stored choice and writes the writer's",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepStreak = { streak: streakState.streak, lastDay: streakState.lastDay };
@@ -71194,10 +71197,13 @@
                 [pic("f", 640, 400), undefined, "whole", "a wide picture on a 6 × 9 page"],
                 [pic("j", 1600, 1200), undefined, "across", "a 4:3 picture on a 6 × 9 page: within a tenth of the spread's 12:9"],
                 [pic("k", 1408, 768), undefined, "whole", "a wide picture on a 6 × 9 page: the two-page crop would cut 27%"],
+                [pic("j", 1600, 1200), undefined, "whole", "a 4:3 picture on a 6 × 9 page, for a chapter with a backdrop stored (across would set it aside unasked)", { backdropId: "bd" }],
+                [pic("j", 1600, 1200), undefined, "across", "a 4:3 picture on a 6 × 9 page, for a chapter with no backdrop", { backdropId: null }],
+                [pic("a", 600, 900), undefined, "fill", "a picture of the page's own shape, for a chapter with a backdrop stored", { backdropId: "bd" }],
                 [pic("g", 900, 900), "8x8", "fill", "a square picture on a square page"],
                 [{ id: "h", name: "h.png", mediaType: "image/png", ext: "png", data: "AAAA" }, undefined, "whole", "a picture whose size cannot be read"]
               ];
-              rule.forEach((r) => { const got = plateFitFor(r[0], r[1]); if (got !== r[2]) bad.push(r[3] + " was given " + got + ", not " + r[2]); });
+              rule.forEach((r) => { const got = plateFitFor(r[0], r[1], r[4]); if (got !== r[2]) bad.push(r[3] + " was given " + got + ", not " + r[2]); });
               state.printTrim = "8.5x8.5";
               if (plateFitFor(pic("i", 900, 900)) !== "fill") bad.push("the rule does not read the book's own trim");
               state.printTrim = "6x9";
@@ -71217,7 +71223,7 @@
                 const a3 = acrossCrop(1000, 2000, { w: 6, h: 9 }, 0.125, false);
                 if (a3.crop.x !== 0 || a3.crop.w !== 1000 || a3.crop.y !== Math.floor((2000 - a3.crop.h) / 2) || Math.abs(a3.crop.w / a3.crop.h - 12.25 / 9.25) * a3.crop.h > 1 || a3.verso.w + a3.recto.w !== a3.crop.w) bad.push("acrossCrop of a tall picture with bleed is not a centred 12.25 : 9.25 crop with whole halves (" + jr(a3) + ")");
               }
-              state.images = [pic("fitsq", 900, 900), pic("fitpage", 600, 900)];
+              state.images = [pic("fitsq", 900, 900), pic("fitpage", 600, 900), pic("fitwide", 1600, 1200)];
               let ch = state.sections.find((s) => s.type === "chapter");
               const chId = ch.id;
               ch.plateId = "fitsq"; ch.plateAlt = "A square picture"; ch.plateFit = "whole";
@@ -71246,12 +71252,21 @@
                 if (!(ch.plateFit === "whole" && sectionHtml(ch).includes('<figure class="plate-page plate-whole">'))) bad.push("the writer's choice of whole was not written or not typeset");
                 fitSel.value = "fill"; fitSel.dispatchEvent(new Event("change"));
                 if (!(ch.plateFit === "fill" && sectionHtml(ch).includes('<figure class="plate-page"><img'))) bad.push("the writer's choice of fill was not written or not typeset");
+                /* BEUK:across — a spread-shaped picture chosen on a chapter with a backdrop stored is not given across (which
+                   would set the backdrop aside unasked), and the backdrop is not written; on a chapter without one it is */
+                ch.backdropId = "fitpage"; ch.backdropStrength = "soft";
+                sel.value = "fitwide"; sel.dispatchEvent(new Event("change"));
+                if (!(ch.plateId === "fitwide" && ch.plateFit === "whole" && ch.backdropId === "fitpage" && ch.backdropStrength === "soft")) bad.push("choosing a spread-shaped picture on a chapter with a backdrop did not store whole with the backdrop untouched (" + ch.plateFit + "/" + ch.backdropId + "/" + ch.backdropStrength + ")");
+                ch.backdropId = null;
+                sel.value = "fitpage"; sel.dispatchEvent(new Event("change"));
+                sel.value = "fitwide"; sel.dispatchEvent(new Event("change"));
+                if (!(ch.plateId === "fitwide" && ch.plateFit === "across")) bad.push("choosing a spread-shaped picture on a chapter with no backdrop did not store across (" + ch.plateFit + ")");
                 sel.value = ""; sel.dispatchEvent(new Event("change"));
                 if (!(ch.plateId === null && row.style.display === "none")) bad.push("No plate did not hide the Fit row");
               }
               if (/full-bleed/i.test(UI_STRINGS.en["editor.plateDesc"])) bad.push("the plate's description still promises full bleed for both choices");
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
-                rule.length + " shapes given the fit the rule states (the book's trim read); a section without the field reads fill and is saved without it; fill / whole kept through a save and a reload, anything else dropped; the Fit row hidden with no plate, storing whole for a square picture and fill for a page-shaped one, and writing the writer's own choice");
+                rule.length + " shapes given the fit the rule states (the book's trim read); a section without the field reads fill and is saved without it; fill / whole kept through a save and a reload, anything else dropped; the Fit row hidden with no plate, storing whole for a square picture and fill for a page-shaped one, whole for a spread-shaped one on a chapter with a backdrop (the backdrop untouched) and across on one without, and writing the writer's own choice");
             } finally {
               applyBookDoc(keepDoc);
               streakState.streak = keepStreak.streak; streakState.lastDay = keepStreak.lastDay;

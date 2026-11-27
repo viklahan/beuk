@@ -223,8 +223,12 @@ export type ClosureApi = {
   plateFitOf: (section: unknown) => 'fill' | 'whole' | 'across';
   /** A section's opening plate as markup: (section, forExport, dataMedia, ownPage, acrossSrc). */
   plateHtml: (section: unknown, forExport?: boolean, dataMedia?: boolean, ownPage?: boolean, acrossSrc?: string | null) => string;
-  /** The fit a newly chosen picture is given, by its pixel size against the trim (`trimId`, else state.printTrim). */
-  plateFitFor: (img: unknown, trimId?: string) => 'fill' | 'whole' | 'across';
+  /** The fit a newly chosen picture is given, by its pixel size against the trim (`trimId`, else state.printTrim);
+   *  never 'across' for a `section` with a backdropId stored. */
+  plateFitFor: (img: unknown, trimId?: string, section?: { backdropId?: unknown } | null) => 'fill' | 'whole' | 'across';
+  /** Across both pages — the output's one rule: a body chapter whose plate is drawn (plateImage, against state.images)
+   *  with the fit across has its backdrop set aside. */
+  acrossSetsBackdropAside: (section: unknown) => boolean;
   /** Across both pages — the one two-page crop (source pixels): centred cover-crop to the open spread's shape, and its halves. */
   acrossCrop: (
     pxW: number,

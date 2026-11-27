@@ -84,8 +84,9 @@ export const EXTRA_ROOTS = [
   // addresses and its result mapping, and the image library itself: the usage map, the unused list, removal and its
   // Undo, run on a state holding the book as book format (src/pictures/imagelib.ts)
   'imageTokensIn', 'parseImageLine', 'imageById', 'sceneEntryAt', 'editorBlocks', 'SCENE_BREAK_BLOCK_RE', 'BACKDROP_STRENGTHS',
-  // BEUK:platefit — the opening plate's fit: the stored choice as read, and the fit a newly chosen picture is given
-  'PLATE_FITS', 'plateFitOf', 'plateFitFor', 'acrossCrop', 'imagePixelSize', 'plateHtml',
+  // BEUK:platefit — the opening plate's fit: the stored choice as read, and the fit a newly chosen picture is given;
+  // BEUK:across — and the output's own rule for when an across plate sets the chapter's backdrop aside (the settings' note)
+  'PLATE_FITS', 'plateFitOf', 'plateFitFor', 'acrossCrop', 'imagePixelSize', 'plateHtml', 'acrossSetsBackdropAside',
   'imageTokenText', 'cleanCaption', 'cleanAlt', 'fmtBytes', 'pickerImages', 'isFlourishImage', 'cmStockGate', 'stockSearchUrl', 'stockDirectUrl',
   'cmMapDirectResults', 'imglibUsageMap', 'imageUsage', 'imglibUnused', 'imglibIsSample', 'imglibBytes', 'imglibSize', 'imglibName',
   'imglibUseText', 'imglibSecName', 'imglibRemove', 'imglibUndo', 'IMGLIB_UNDO_MS', 'IMGLIB_COVER_TYPES', 'sampleState',

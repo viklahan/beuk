@@ -1092,16 +1092,25 @@ happens when the book is drawn, so a new trim crops it again by itself.
   keeps today's rule. It picks `fill` when one page cuts no more than a
   tenth (`PLATE_FIT_FAR`). Otherwise it picks `across` when the open
   spread's shape (two trims side by side, bleed left out) cuts no more than
-  a tenth, and `whole` if not. A size it cannot read gives `whole`. On 6 ×
+  a tenth, and `whole` if not. It never picks `across` for a chapter with a
+  `backdropId` stored (its third argument, the section, read only): there
+  a picture that would get `across` gets `whole`, as before across, and the
+  backdrop keys are not written. Every chooser passes the section: 2.0's `ArtRows` (choose and
+  upload) and 1.0's own `chPlate` handlers. A size it cannot read gives `whole`. On 6 ×
   9: 1,600 × 1,200 gives across (the two-page cut is 0); 1,408 × 768 gives
   whole (27 %); 640 × 400 gives whole (16.7 %); 900 × 900 gives whole
   (25 %). "Use on every chapter" copies across like the other fits.
 - **The chapter settings** (2.0, `studio/src/pictures/ArtRows.tsx`). The Fit
   select (`#chPlateFit`) offers "Across both pages".
-  - While it is set and a plate is chosen, the Chapter backdrop and
+  - While the output sets the backdrop aside, the Chapter backdrop and
     Backdrop strength selects are disabled, and their keys are never
     written, so switching Fit away brings the backdrop back as it was. One
-    line, `#plateAcrossNote`, says why.
+    line, `#plateAcrossNote`, says why. The settings ask the closure's own
+    `acrossSetsBackdropAside` (through `backdropSetAside` in
+    `studio/src/pictures/pictures.ts`, against the book's library), so a
+    plate that is not drawn (empty alt text, or its picture gone from the
+    library) leaves the rows enabled and shows neither line, as the output
+    draws the backdrop then.
   - Under 200 ppi, `#plateAcrossSoft` gives the number. It is computed by
     `acrossCrop` over the book's `printTrim` (else the default trim), with
     the bleed only when `printBleed` is on, in the book language's
