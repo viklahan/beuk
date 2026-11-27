@@ -87,7 +87,10 @@ describe("wave 6: Markdown, text and RTF imports are 1.0's (constraints 77, 78)"
     // what varied: the new book's id, the sections' ids, the snapshot's id and time, the report's id and time
     const ra = a.importReport as Rec, rb = b.importReport as Rec;
     expect([(a.meta as Rec).bookId !== (b.meta as Rec).bookId, ra.id !== rb.id, ra.at !== rb.at, (a.history as Rec[])[0]!.id !== (b.history as Rec[])[0]!.id]).toEqual([true, true, true, true]);
-  });
+    // Two whole 1.0 imports onto Lantern Coast: 4.4–4.7 s alone on the 16 GB Legion (measured 2026-11-26, the same on
+    // 79026c7 and 05f5a60), so vitest's default 5 s timed it out whenever the full suite loaded the machine (6.5 s).
+    // The corpus loops below carry their own long timeout for the same reason.
+  }, 60_000);
 
   for (const desk0 of ['empty', 'lantern'] as const) {
     it(`every corpus file onto ${desk0 === 'empty' ? 'an empty desk' : 'a written book (Lantern Coast)'}: 2.0's book is 1.0's`, async () => {
