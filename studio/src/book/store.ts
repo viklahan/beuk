@@ -1,6 +1,7 @@
 import * as Y from 'yjs';
 import { IndexeddbPersistence, clearDocument, storeState } from 'y-indexeddb';
 import { BLOB_ORIGIN, collectBlobs, exportBook, importBook, LAYOUT, META, migrateSections, packBlobs, sectionsCount, type TextWarning } from '@book/editor/index.js';
+import { applyRemoteUpdate } from '../editor/rescueCore';
 
 /* The books on this device, as Y.Docs (step 4 part C).
 
@@ -188,7 +189,7 @@ export class OpenBook {
         const m = e.data as { u?: unknown; sv?: unknown } | null;
         const u = bytes(m?.u);
         const sv = bytes(m?.sv);
-        if (u) Y.applyUpdate(ydoc, u, ch);
+        if (u) applyRemoteUpdate(ydoc, u, ch);
         // a new tab on this generation says hello with its state vector: send it what it lacks
         else if (sv) ch.postMessage({ u: Y.encodeStateAsUpdate(ydoc, sv) });
       };

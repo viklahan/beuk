@@ -4,6 +4,8 @@ import type { EditorView } from '@tiptap/pm/view';
 import { ySyncPluginKey, absolutePositionToRelativePosition, relativePositionToAbsolutePosition, type ProsemirrorBinding } from '@tiptap/y-tiptap';
 import * as Y from 'yjs';
 import { onlyPositionMigrations } from './positionMigrations';
+import { CTX, OBJ, findInText, nearestOf } from './textMatch';
+import { textOf, touches, written, writtenTexts } from './rescueCore';
 
 // The caret keeper: keeps a writer's caret where they put it when ANOTHER writer's change rebuilds
 // their paragraph.
@@ -36,64 +38,7 @@ import { onlyPositionMigrations } from './positionMigrations';
 // The matching rule (findInText, nearestOf) is pure: no editor, no Yjs. The extension below it is wired
 // into every chapter editor right after Collaboration (createEditor.ts).
 
-export const CTX = 24; // letters of context kept on each side of the caret
-export const OBJ = '\uFFFC'; // an inline non-text node, so offsets match Yjs text indexes
-
-const commonSuffix = (a: string, b: string): number => {
-  let n = 0;
-  while (n < a.length && n < b.length && a[a.length - 1 - n] === b[b.length - 1 - n]) n++;
-  return n;
-};
-const commonPrefix = (a: string, b: string): number => {
-  let n = 0;
-  while (n < a.length && n < b.length && a[n] === b[n]) n++;
-  return n;
-};
-
-// Every offset in `s` where the caret's words stand again, ascending. `pre` is the text before the
-// caret, `post` the text after (each at most CTX letters). Both sides must match in full, or one side
-// in full and not empty while the other matches only up to an edge of `s`: the block now begins (or
-// ends) right at the caret, which is a split or a join, not a change of words. A side that is empty,
-// or that matches only up to an edge, never carries a hit alone: one letter at an edge of the written
-// text is not the caret's words. An empty block matches only a caret that stood in an empty block.
-export function findInText(s: string, pre: string, post: string): number[] {
-  // A hit has the full pre and post (so pre+post occurs there), or its pre match reaches the start of
-  // s (so i <= CTX), or its post match reaches the end of s (so i >= s.length - CTX). These three
-  // sets cover every hit, so the search never scans every offset.
-  const cand = new Set<number>();
-  const both = pre + post;
-  if (both) for (let at = s.indexOf(both); at >= 0; at = s.indexOf(both, at + 1)) cand.add(at + pre.length);
-  for (let i = 0; i <= Math.min(CTX, s.length); i++) cand.add(i);
-  for (let i = Math.max(0, s.length - CTX); i <= s.length; i++) cand.add(i);
-
-  const hits: number[] = [];
-  for (const i of [...cand].sort((a, b) => a - b)) {
-    const l = commonSuffix(pre, s.slice(Math.max(0, i - CTX), i));
-    const r = commonPrefix(post, s.slice(i, i + CTX));
-    const preFull = l === pre.length;
-    const postFull = r === post.length;
-    const preToStart = l === i; // the pre match runs up to the start of s
-    const postToEnd = r === s.length - i; // the post match runs up to the end of s
-    const ok = (preFull && postFull) || (preFull && pre.length > 0 && postToEnd) || (postFull && post.length > 0 && preToStart);
-    if (!ok) continue;
-    if (l + r === 0 && !(s.length === 0 && pre === '' && post === '')) continue;
-    hits.push(i);
-  }
-  return hits;
-}
-
-// Of several equal matches, the one nearest where the caret was; on a tie the smaller. Null when none.
-export function nearestOf(positions: number[], was: number): number | null {
-  let best: number | null = null;
-  for (const p of positions) {
-    if (best === null) best = p;
-    else {
-      const d = Math.abs(p - was), bd = Math.abs(best - was);
-      if (d < bd || (d === bd && p < best)) best = p;
-    }
-  }
-  return best;
-}
+export { CTX, OBJ, findInText, nearestOf, writtenTexts };
 
 // ---- The extension -------------------------------------------------------------------------------
 
@@ -119,8 +64,6 @@ declare module '@tiptap/core' {
 /** One end of the selection, noted before a remote change: the Yjs position and the words either side. */
 type CaretNote = { abs: number; rel: Y.RelativePosition; pre: string; post: string };
 
-const textOf = (t: Y.XmlText): string => t.toDelta().map((o: { insert: unknown }) => (typeof o.insert === 'string' ? o.insert : OBJ)).join('');
-
 /** Is the Yjs character (or type) this position hangs on gone? An id Yjs cannot find counts as gone. */
 function dead(doc: Y.Doc, rel: Y.RelativePosition): boolean {
   const id = rel.item ?? rel.type;
@@ -132,53 +75,6 @@ function dead(doc: Y.Doc, rel: Y.RelativePosition): boolean {
   }
 }
 
-/** `t` is `frag` or lies inside it. */
-const inside = (frag: Y.XmlFragment, t: Y.AbstractType<any>): boolean => t === frag || (t._item !== null && Y.isParentOf(frag, t._item));
-
-/** `tr` changed something in `frag` (a change elsewhere in the book cannot move this editor's caret). */
-const touches = (tr: Y.Transaction, frag: Y.XmlFragment): boolean => {
-  for (const t of tr.changed.keys()) if (inside(frag, t)) return true;
-  return false;
-};
-
-/** What `tr` wrote inside `frag`: the XmlTexts it changed, plus every XmlText inside a block it created (an
- *  item is new when its clock is at or past the transaction's state vector for its client); and the empty
- *  blocks it created. An empty block holds no XmlText in Yjs (y-tiptap writes none), so it is searched as
- *  the empty text "": the empty-block rule of findInText. */
-function written(tr: Y.Transaction, frag: Y.XmlFragment): { texts: Y.XmlText[]; empties: Y.XmlElement[] } {
-  const texts = new Set<Y.XmlText>();
-  const empties = new Set<Y.XmlElement>();
-  const isNew = (it: Y.Item) => it.id.clock >= (tr.beforeState.get(it.id.client) ?? 0);
-  const add = (c: Y.AbstractType<any>) => {
-    if (c instanceof Y.XmlText) texts.add(c);
-    else if (c instanceof Y.XmlElement) {
-      if (c.length === 0) empties.add(c);
-      else all(c);
-    }
-  };
-  const all = (t: Y.XmlFragment | Y.XmlElement) => {
-    for (let it = t._start; it; it = it.right) {
-      if (!it.deleted && it.content instanceof Y.ContentType) add(it.content.type);
-    }
-  };
-  tr.changed.forEach((_k, t) => {
-    if (!inside(frag, t) || t._item?.deleted) return;
-    if (t instanceof Y.XmlText) {
-      texts.add(t);
-      return;
-    }
-    if (!(t instanceof Y.XmlFragment || t instanceof Y.XmlElement)) return;
-    for (let it = t._start; it; it = it.right) {
-      if (!it.deleted && isNew(it) && it.content instanceof Y.ContentType) add(it.content.type);
-    }
-  });
-  return { texts: [...texts], empties: [...empties] };
-}
-
-/** The XmlTexts `tr` changed inside `frag`, plus every XmlText inside a block it created. */
-export function writtenTexts(tr: Y.Transaction, frag: Y.XmlFragment): Y.XmlText[] {
-  return written(tr, frag).texts;
-}
 
 /** This editor's own change: its binding's write, or its UndoManager's undo / redo (also when the migration
  *  hold runs that inside an outer transaction: that transaction's origin is the manager, and it is local). */
