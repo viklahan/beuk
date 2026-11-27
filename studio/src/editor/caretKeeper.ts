@@ -192,9 +192,9 @@ export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStora
             if (r) emit(r);
           };
 
-          // What waited for a composition's end is written once the view no longer composes: from the plugin
-          // view's update, and from a compositionend listener through setTimeout(0) (ProseMirror ends its own
-          // composition after that event). Never throws: a throw (or one in the callback) loses that report only.
+          // What waited for a composition's end is written once the view no longer composes, always on the next
+          // turn (setTimeout(0)): scheduled from the plugin view's update and from a compositionend listener
+          // (ProseMirror ends its own composition after that event). Never throws: a throw (or one in the callback) loses that report only.
           const flush = () => {
             try {
               if (view.isDestroyed || view.composing) return;
@@ -265,10 +265,10 @@ export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStora
           return {
             update: () => {
               if (view.composing || !rescueWaiting(view)) return;
-              // y-tiptap renders a Yjs change inside its binding's mutex, so a write from that render's update
-              // would never reach Yjs: it waits for the next turn instead
-              if ((ySyncPluginKey.getState(view.state) as { isChangeOrigin?: boolean } | undefined)?.isChangeOrigin) later();
-              else flush();
+              // never a dispatch from inside ProseMirror's update: this update may be y-tiptap's render of a Yjs
+              // change (inside its binding's mutex, where a write never reaches Yjs), and a remote transaction's
+              // own rescue may not have run yet. The flush waits for the next turn, as after compositionend.
+              later();
             },
             destroy: () => {
               doc.off('beforeTransaction', onBefore);

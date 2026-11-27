@@ -101,6 +101,61 @@ describe('keystroke rescue: an IME composition', () => {
     expect(g.textA()).toBe(g.textB());
   });
 
+  it('the composition ends without compositionend: the next local keystroke\'s update flushes on the next turn, never inside it', async () => {
+    const { g } = composingWhile((x) => joinUp(x.edA));
+    expect(g.rescuesB).toEqual([]);
+    Object.defineProperty(g.edB.view, 'composing', { get: () => false, configurable: true }); // no compositionend event
+    g.edB.view.dispatch(g.edB.state.tr.insertText('Z', posOf(g.edB, 'dog.', 4))); // one local keystroke in B
+    expect(g.textB()).toBe('Opening line above.The broabcwn fox jumps over the dog.Z'); // DERIVED: deferred, "n" not back yet
+    expect(g.rescuesB).toEqual([]);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(g.textB()).toBe('Opening line above.The broabcnwn fox jumps over the dog.Z'); // DERIVED: the join case without "xyz", plus "Z"
+    expect(g.rescuesB).toHaveLength(1);
+    expect(g.rescuesB).toMatchObject([{ rescued: 1 }]);
+    g.join();
+    expect(g.textA()).toBe(g.textB());
+  });
+
+  it('three plans wait and the middle one throws at its write: the first and third are written and reported, the middle told unplaced', async () => {
+    const FOUR = ['Opening line above.', 'The brown fox jumps over the dog.', 'A second paragraph here.', 'Last words of the chapter.'];
+    const heading = (a: Editor, word: string): void => void a.chain().setTextSelection(posOf(a, word, 0)).setNode('heading', { level: 2 }).run();
+    const g = rig(FOUR);
+    g.cut();
+    g.parkB('brown', 3);
+    g.typeB('n');
+    g.parkB('second', 3);
+    g.typeB('p');
+    g.parkB('chapter', 3);
+    g.typeB('q');
+    heading(g.edA, 'brown'); // three changes from A, three plans in B
+    heading(g.edA, 'second');
+    heading(g.edA, 'chapter');
+    let composing = true;
+    Object.defineProperty(g.edB.view, 'composing', { get: () => composing, configurable: true });
+    g.aToB();
+    expect(g.rescuesB).toEqual([]);
+    const view = g.edB.view;
+    const pass = view.dispatch;
+    let calls = 0;
+    view.dispatch = (tr) => {
+      if (++calls === 2) throw new Error('the second write fails'); // before the editor takes it
+      pass(tr);
+    };
+    composing = false;
+    view.dom.dispatchEvent(new Event('compositionend'));
+    await new Promise((r) => setTimeout(r, 0));
+    view.dispatch = pass;
+    expect(calls).toBe(3);
+    expect(g.textB()).toBe('Opening line above.\nThe bronwn fox jumps over the dog.\nA second paragraph here.\nLast words of the chaqpter.'); // DERIVED: plans 1 and 3 written, 2 not
+    expect(g.rescuesB).toMatchObject([
+      { rescued: 1, unplaced: 0 },
+      { rescued: 0, unplaced: 1 },
+      { rescued: 1, unplaced: 0 },
+    ]);
+    g.join();
+    expect(g.textA()).toBe(g.textB());
+  });
+
   it('destroyed while a plan waits: every compositionend listener removed, the pending timer cleared, nothing reported', async () => {
     // record the compositionend listeners added to and removed from any element while the pair is made
     const added: { el: EventTarget; fn: unknown }[] = [];

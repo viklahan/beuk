@@ -182,43 +182,59 @@ export function flushRescue(view: EditorView, b: ProsemirrorBinding, frag: Y.Xml
       return pos(Y.createRelativePositionFromTypeIndex(text, index, -1));
     };
 
+    // its own try: a throw on one plan never costs another plan its write or its report
     const counts = { ...w.counts };
-    const writes: Write[] = [];
-    for (const op of w.ops) {
-      const n = countLetters(op.letters);
-      if (op.kind === 'paragraph') {
-        const abs = Y.createAbsolutePositionFromRelativePosition(op.at, doc);
-        const at = abs && abs.type === frag ? blockStart(view, frag, abs.index) : null;
-        if (at === null) {
-          counts.restored -= n;
-          counts.unplaced += n;
-          continue;
+    try {
+      const writes: Write[] = [];
+      for (const op of w.ops) {
+        const n = countLetters(op.letters);
+        if (op.kind === 'paragraph') {
+          const abs = Y.createAbsolutePositionFromRelativePosition(op.at, doc);
+          const at = abs && abs.type === frag ? blockStart(view, frag, abs.index) : null;
+          if (at === null) {
+            counts.restored -= n;
+            counts.unplaced += n;
+            continue;
+          }
+          writes.push({ letters: op.letters, at, from: null, last: op.last, block: true });
+        } else if (op.kind === 'insert') {
+          const at = pos(op.at);
+          if (at === null) {
+            counts.rescued -= n;
+            counts.unplaced += n;
+            continue;
+          }
+          writes.push({ letters: op.letters, at, from: null, last: op.last, block: false });
+        } else {
+          const at = pos(op.at);
+          const from = fromOf(op.ids);
+          if (at === null || from === null || !standsAt(view, from, op.letters)) {
+            counts.moved -= n;
+            counts.stayed += n;
+            continue;
+          }
+          writes.push({ letters: op.letters, at, from, last: op.last, block: false });
         }
-        writes.push({ letters: op.letters, at, from: null, last: op.last, block: true });
-      } else if (op.kind === 'insert') {
-        const at = pos(op.at);
-        if (at === null) {
-          counts.rescued -= n;
-          counts.unplaced += n;
-          continue;
-        }
-        writes.push({ letters: op.letters, at, from: null, last: op.last, block: false });
-      } else {
-        const at = pos(op.at);
-        const from = fromOf(op.ids);
-        if (at === null || from === null || !standsAt(view, from, op.letters)) {
-          counts.moved -= n;
-          counts.stayed += n;
-          continue;
-        }
-        writes.push({ letters: op.letters, at, from, last: op.last, block: false });
+      }
+      // the caret follows the letters only if the writer has not moved it since the plan was queued
+      const sel = view.state.selection;
+      const still = w.head !== null && sel.empty && relativePositionToAbsolutePosition(doc, frag, w.head, b.mapping) === sel.head;
+      const caret = write(view, writes, still ? w.caret : null);
+      out.push({ ...counts, caret, ms: w.ms + performance.now() - t0 });
+    } catch {
+      try {
+        // the write landed (the throw came after the editor took it): what was resolved stands. It did not:
+        // nothing of this plan was written, so its letters that were to be written are told (`unplaced`),
+        // and a move's letters, alive where Yjs left them, `stayed`
+        const landed = view.state.doc !== pm;
+        const c = landed
+          ? counts
+          : { ...w.counts, rescued: 0, restored: 0, moved: 0, unplaced: w.counts.unplaced + w.counts.rescued + w.counts.restored, stayed: w.counts.stayed + w.counts.moved };
+        out.push({ ...c, caret: false, ms: w.ms + performance.now() - t0 });
+      } catch {
+        // no report could be built for it
       }
     }
-    // the caret follows the letters only if the writer has not moved it since the plan was queued
-    const sel = view.state.selection;
-    const still = w.head !== null && sel.empty && relativePositionToAbsolutePosition(doc, frag, w.head, b.mapping) === sel.head;
-    const caret = write(view, writes, still ? w.caret : null);
-    out.push({ ...counts, caret, ms: w.ms + performance.now() - t0 });
   }
   return out;
 }
