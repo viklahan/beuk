@@ -6,6 +6,7 @@ import * as Y from 'yjs';
 import { onlyPositionMigrations } from './positionMigrations';
 import { CTX, OBJ, findInText, nearestOf } from './textMatch';
 import { textOf, touches, written, writtenTexts } from './rescueCore';
+import { rescueAfter, type RescueReport } from './rescueEditor';
 
 // The caret keeper: keeps a writer's caret where they put it when ANOTHER writer's change rebuilds
 // their paragraph.
@@ -52,8 +53,10 @@ export type KeeperOutcome = 'alive' | 'found' | 'lost' | 'composing' | 'none';
 /** `moved`: the keeper set the selection. `ms`: its time, note and placing. `searched`: characters findInText read. */
 export type KeeperResult = { outcome: KeeperOutcome; moved: boolean; ms: number; searched: number };
 
-export type CaretKeeperOptions = { fragment: Y.XmlFragment; onResult?: (r: KeeperResult) => void };
-export type CaretKeeperStorage = { last: KeeperResult | null };
+/** `onRescue`: the keystroke rescue's report after a remote change that killed or stranded this writer's own letters (rescueEditor.ts). */
+export type CaretKeeperOptions = { fragment: Y.XmlFragment; onResult?: (r: KeeperResult) => void; onRescue?: (r: RescueReport) => void };
+/** `rescue`: the keystroke rescue's last report (null until one). */
+export type CaretKeeperStorage = { last: KeeperResult | null; rescue: RescueReport | null };
 
 declare module '@tiptap/core' {
   interface Storage {
@@ -82,11 +85,12 @@ const own = (tr: Y.Transaction): boolean => tr.origin === ySyncPluginKey || (tr.
 
 export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStorage>({
   name: 'caretKeeper',
-  addOptions: () => ({ fragment: null as unknown as Y.XmlFragment, onResult: undefined }),
-  addStorage: () => ({ last: null }),
+  addOptions: () => ({ fragment: null as unknown as Y.XmlFragment, onResult: undefined, onRescue: undefined }),
+  addStorage: () => ({ last: null, rescue: null }),
   addProseMirrorPlugins() {
     const frag = this.options.fragment;
     const onResult = this.options.onResult;
+    const onRescue = this.options.onRescue;
     const storage = this.storage;
     const doc = frag.doc!;
     return [
@@ -171,6 +175,20 @@ export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStora
             done(outcome, true, searched);
           };
 
+          // the keystroke rescue, right after the keeper: this writer's own letters the change killed or stranded
+          // go back between their words (rescueEditor.ts). The caret it may follow is the keeper's note: a caret's
+          // Yjs character; for a range, only where its head was (nothing to follow).
+          const rescue = (tr: Y.Transaction, was: NonNullable<typeof held>) => {
+            if (onlyPositionMigrations(tr) || view.isDestroyed) return;
+            const b = binding();
+            if (!b) return;
+            const end = was.caret ? was.anchor : (was.head ?? was.anchor);
+            const r = rescueAfter(view, b, frag, tr, end ? { abs: end.abs, item: was.caret ? end.rel.item : null } : null);
+            if (!r) return;
+            storage.rescue = r;
+            onRescue?.(r);
+          };
+
           // Yjs emits both events outside its own try: a throw in beforeTransaction leaves doc._transaction set
           // for good (every later change nests into the dead one, so nothing renders, syncs or saves), and a
           // throw in afterTransaction comes out of the remote apply. So neither ever throws: on an error the
@@ -190,6 +208,13 @@ export const CaretKeeper = Extension.create<CaretKeeperOptions, CaretKeeperStora
               keepAfter(tr, was);
             } catch {
               // nothing kept
+            }
+            // its own try, so a throw in the keeper never skips the rescue and a throw in the rescue (or its
+            // callback) is swallowed exactly like the keeper's
+            try {
+              rescue(tr, was);
+            } catch {
+              // nothing rescued
             }
           };
 

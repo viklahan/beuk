@@ -10,6 +10,8 @@ import { bookExtensions } from '../src/editor/schema';
 import { BookBehaviour } from '../src/editor/behaviour';
 import { CovenantMarks } from '../src/covenant/marks';
 import type { KeeperResult } from '../src/editor/caretKeeper';
+import type { RescueReport } from '../src/editor/rescueEditor';
+import { applyRemoteUpdate } from '../src/editor/rescueCore';
 
 /* Two writers on one book, for the caret keeper's tests (caret-keeper*.test.ts).
    A and B each hold the book in their own Y.Doc (fixed client ids 1 and 2, so the same
@@ -78,6 +80,9 @@ export type Pair = {
   edB: Editor;
   /** Every result B's keeper reported, in order. */
   results: KeeperResult[];
+  /** Every report A's and B's keystroke rescue emitted, in order (B's stays empty when B has no keeper). */
+  rescuesA: RescueReport[];
+  rescuesB: RescueReport[];
   /** Every selection-only transaction dispatched in B outside y-tiptap's renders, marked not for history: the keeper's. */
   keeperDispatches: Transaction[];
   /** docB's beforeTransaction / afterTransaction / afterAllTransactions listener counts just before B's editor was mounted. */
@@ -153,25 +158,27 @@ export function pair(paras: string[], o: { keeper?: boolean; onDocB?: (docB: Y.D
   const fragS = docS.getArray<Y.Map<unknown>>('sections').get(0).get('body') as Y.XmlFragment;
   let bOffline = false;
   docA.on('update', (u: Uint8Array, origin: unknown) => {
-    if (origin !== FROM_B && !bOffline) Y.applyUpdate(docB, u, FROM_A);
-    if (origin !== FROM_S) Y.applyUpdate(docS, u, TO_S);
+    if (origin !== FROM_B && !bOffline) applyRemoteUpdate(docB, u, FROM_A);
+    if (origin !== FROM_S) applyRemoteUpdate(docS, u, TO_S);
   });
   docB.on('update', (u: Uint8Array, origin: unknown) => {
-    if (origin !== FROM_A && !bOffline) Y.applyUpdate(docA, u, FROM_B);
+    if (origin !== FROM_A && !bOffline) applyRemoteUpdate(docA, u, FROM_B);
   });
   docS.on('update', (u: Uint8Array, origin: unknown) => {
-    if (origin !== TO_S) Y.applyUpdate(docA, u, FROM_S);
+    if (origin !== TO_S) applyRemoteUpdate(docA, u, FROM_S);
   });
 
   const results: KeeperResult[] = [];
+  const rescuesA: RescueReport[] = [];
+  const rescuesB: RescueReport[] = [];
   const keeperDispatches: Transaction[] = [];
   const opts = { dir: 'ltr' as const, lang: 'en', label: 'Chapter', onRefuse: () => undefined };
-  const edA = createChapterEditor({ element: mountElement(), fragment: fragA, ...opts });
+  const edA = createChapterEditor({ element: mountElement(), fragment: fragA, ...opts, onRescueResult: (r) => rescuesA.push(r) });
   editors.push(edA);
   o.onDocB?.(docB);
   const listenersBeforeB = listeners(docB);
   const edB = keeper
-    ? createChapterEditor({ element: mountElement(), fragment: fragB, ...opts, onCaretResult: (r) => results.push(r) })
+    ? createChapterEditor({ element: mountElement(), fragment: fragB, ...opts, onCaretResult: (r) => results.push(r), onRescueResult: (r) => rescuesB.push(r) })
     : new Editor({
         element: mountElement(),
         extensions: [...bookExtensions(), Collaboration.configure({ fragment: fragB }), BookBehaviour.configure({ onRefuse: () => undefined }), CovenantMarks],
@@ -195,6 +202,8 @@ export function pair(paras: string[], o: { keeper?: boolean; onDocB?: (docB: Y.D
     edA,
     edB,
     results,
+    rescuesA,
+    rescuesB,
     keeperDispatches,
     listenersBeforeB,
     parkB: (word, k) => w.selectB(posOf(edB, word, k)),
@@ -237,9 +246,9 @@ export function pair(paras: string[], o: { keeper?: boolean; onDocB?: (docB: Y.D
     online: () => {
       bOffline = false;
       const t0 = performance.now();
-      Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA, Y.encodeStateVector(docB)), FROM_A);
+      applyRemoteUpdate(docB, Y.encodeStateAsUpdate(docA, Y.encodeStateVector(docB)), FROM_A);
       const ms = performance.now() - t0;
-      Y.applyUpdate(docA, Y.encodeStateAsUpdate(docB, Y.encodeStateVector(docA)), FROM_B);
+      applyRemoteUpdate(docA, Y.encodeStateAsUpdate(docB, Y.encodeStateVector(docA)), FROM_B);
       return ms;
     },
   };
@@ -251,4 +260,78 @@ export function bytesWithoutKeeper(paras: string[], steps: (w: Pair) => void): U
   const w = pair(paras, { keeper: false });
   steps(w);
   return Y.encodeStateAsUpdate(w.docB);
+}
+
+// ---- the rescue's rig: B's link cut by hand, every update recorded and delivered with its bytes ----------
+// (the spike's rig, _spike-rescue.test.ts:292-367, without its own rescue: the keeper's runs in both editors)
+
+const A_TO_B = Symbol('A to B (rig)');
+const B_TO_A = Symbol('B to A (rig)');
+
+export type Rig = Pair & {
+  /** Stop the live link to and from B; from now on each side's own updates are queued. */
+  cut(): void;
+  /** A's own updates (as A sent them) delivered to B, in order. */
+  aToB(): void;
+  /** B's own updates (as B sent them) delivered to A, in order. */
+  bToA(): void;
+  /** A one-shot full diff A -> B (a sync step 2: A's whole delete set); A's queue is dropped. */
+  fullAToB(): void;
+  fullBToA(): void;
+  /** Reconnect: what is queued, both ways, then the pair's live link again (a full sync step). */
+  join(): void;
+  /** How often `s` occurs in A's text. */
+  count(s: string): number;
+  textB(): string;
+};
+
+export function rig(paras: string[]): Rig {
+  const w = pair(paras);
+  let isCut = false;
+  let qA: Uint8Array[] = [];
+  let qB: Uint8Array[] = [];
+  w.docA.on('update', (u: Uint8Array, origin: unknown) => {
+    if (isCut && origin !== B_TO_A) qA.push(u);
+  });
+  w.docB.on('update', (u: Uint8Array, origin: unknown) => {
+    if (isCut && origin !== A_TO_B) qB.push(u);
+  });
+  const g: Rig = Object.assign(w, {
+    cut: () => {
+      w.offline();
+      isCut = true;
+    },
+    aToB: () => {
+      const q = qA;
+      qA = [];
+      for (const u of q) applyRemoteUpdate(w.docB, u, A_TO_B);
+    },
+    bToA: () => {
+      const q = qB;
+      qB = [];
+      for (const u of q) applyRemoteUpdate(w.docA, u, B_TO_A);
+    },
+    fullAToB: () => {
+      qA = [];
+      applyRemoteUpdate(w.docB, Y.encodeStateAsUpdate(w.docA, Y.encodeStateVector(w.docB)), A_TO_B);
+    },
+    fullBToA: () => {
+      qB = [];
+      applyRemoteUpdate(w.docA, Y.encodeStateAsUpdate(w.docB, Y.encodeStateVector(w.docA)), B_TO_A);
+    },
+    join: () => {
+      g.aToB();
+      g.bToA();
+      g.aToB();
+      isCut = false;
+      w.online();
+    },
+    count: (s: string) => w.textA().split(s).length - 1,
+    textB: () => {
+      const out: string[] = [];
+      w.edB.state.doc.forEach((n) => void out.push(n.textContent));
+      return out.join('\n');
+    },
+  });
+  return g;
 }
