@@ -2434,7 +2434,10 @@
       .cm3d-dtext { font-size: 11.5px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--panel-3); stroke-width: 4px; stroke-linejoin: round; }
       @media (max-width: 700px) { .cm3d-stage { height: 292px; } }
       #cmCanvas.has-text { cursor: grab; }
+      #cmCanvas.has-pic { cursor: grab; touch-action: none; } /* BEUK:coverpan — a finger drags the picture, not the page */
       #cmCanvas.dragging { cursor: grabbing; }
+      .cm-reset-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .cm-pic-row .cm-drag-hint { margin: 0 0 10px; }
       @media (max-width: 700px) { .cm-layout { grid-template-columns: 1fr; } .cm-preview-col { max-width: 300px; margin: 0 auto; width: 100%; } }
 
       /* ---------- Bulk import (shelf) ---------- */
@@ -4158,6 +4161,17 @@
                 <p class="cm-photo-status" id="cmPhotoStatus"></p>
                 <p class="cm-photo-status" id="cmPhotoCredit"></p>
               </div>
+              <!-- ==== BEUK:coverpan ==== -->
+              <div id="cmPicRow" class="full cm-pic-row" style="display:none;">
+                <p class="cm-drag-hint" id="cmPicHint" data-i18n="covermk.picHint">Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.</p>
+                <div class="form-grid">
+                  <div><label class="field-lab" for="cmPicH" data-i18n="covermk.picH">Picture — across · <span class="range-val" id="cmPicHVal"></span></label><input type="range" id="cmPicH" min="0" max="1000" step="1" /></div>
+                  <div><label class="field-lab" for="cmPicV" data-i18n="covermk.picV">Picture — down · <span class="range-val" id="cmPicVVal"></span></label><input type="range" id="cmPicV" min="0" max="1000" step="1" /></div>
+                  <div class="full"><label class="field-lab" for="cmPicZoom" data-i18n="covermk.picZoom">Picture — zoom · <span class="range-val" id="cmPicZoomVal"></span></label><input type="range" id="cmPicZoom" min="100" max="300" step="1" /></div>
+                </div>
+                <p class="cm-wrap-note warn" id="cmPicSoft" role="status" style="display:none;"></p>
+              </div>
+              <!-- ==== /BEUK:coverpan ==== -->
             </div>
             <label class="field-lab" style="margin-top:18px;" data-i18n="covermk.element">Text Element</label>
             <div class="form-grid">
@@ -4175,7 +4189,7 @@
               <div class="full"><label class="field-lab" for="cmElSize" data-i18n="covermk.size">Size · <span class="range-val" id="cmElSizeVal"></span></label><input type="range" id="cmElSize" min="18" max="170" step="1" /></div>
               <div><label class="field-lab" for="cmPosH" data-i18n="covermk.posH">Position — across · <span class="range-val" id="cmPosHVal"></span></label><input type="range" id="cmPosH" min="0" max="1000" step="1" /></div>
               <div><label class="field-lab" for="cmPosV" data-i18n="covermk.posV">Position — down · <span class="range-val" id="cmPosVVal"></span></label><input type="range" id="cmPosV" min="0" max="1000" step="1" /></div>
-              <div class="full"><button class="tb-btn" id="btnCmResetPos" type="button" data-i18n="covermk.resetPos"><i data-lucide="locate-fixed"></i>Reset positions</button></div>
+              <div class="full cm-reset-row"><button class="tb-btn" id="btnCmResetPos" type="button" data-i18n="covermk.resetPos"><i data-lucide="locate-fixed"></i>Reset positions</button><button class="tb-btn" id="btnCmResetPic" type="button" data-i18n="covermk.resetPic" style="display:none;"><i data-lucide="image"></i>Reset picture</button></div>
             </div>
           </div>
         </div>
@@ -51406,6 +51420,14 @@
           }
           out.elements[k] = el;
         });
+        /* BEUK:coverpan — the picture's placement, kept only when the recipe has one (absent = centred at 1×, so a
+           recipe without it reads back key for key as before); held to 0–1 and 1–COVER_ZOOM_MAX. */
+        const pNum = (v) => typeof v === "number" && isFinite(v); /* Number(null) is 0, an edge: only a number is a value */
+        const bf = r.bgFocus;
+        if (bf && typeof bf === "object" && (pNum(bf.x) || pNum(bf.y))) {
+          out.bgFocus = { x: pNum(bf.x) ? Math.min(1, Math.max(0, bf.x)) : 0.5, y: pNum(bf.y) ? Math.min(1, Math.max(0, bf.y)) : 0.5 };
+        }
+        if (pNum(r.bgZoom)) out.bgZoom = Math.min(COVER_ZOOM_MAX, Math.max(1, r.bgZoom));
         /* BEUK:importmeta — what the book said when this recipe was last saved. */
         if (r.bookText && typeof r.bookText === "object") {
           out.bookText = {};
@@ -51454,12 +51476,49 @@
         const n = parseInt(m[1], 16);
         return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
       }
-      function drawImageCover(ctx, src, W, H) {
+      /* ==== BEUK:coverpan ==== */
+      /* Cover picture: move and zoom. The recipe may carry bgFocus {x, y}
+         (0–1: which part of the picture shows — 0 its left / top edge, 1
+         its right / bottom edge, 0.5 centred, as CSS object-position) and
+         bgZoom (1 = just fills the cover, up to COVER_ZOOM_MAX). Absent =
+         centred at 1×, which is exactly the centred cover-crop every cover
+         had before (docs/superpowers/specs/2026-11-27-cover-art-pan-zoom-
+         design.md). The picture is scaled to fill and then zoomed, and its
+         offset is held between W - dw and 0, so no placement can leave a
+         gap. One placement for every place the front cover is drawn: the
+         maker's preview, the e-book and print renders, "Use as My Cover",
+         the print wrap's front panel (the server paints it with this same
+         code), the hardcover and the book on the stand. */
+      const COVER_ZOOM_MAX = 3;
+      function coverArtPlace(recipe) {
+        const f = recipe && recipe.bgFocus, z = recipe ? recipe.bgZoom : undefined;
+        const num = (v) => typeof v === "number" && isFinite(v); /* a null or a string is no value (Number(null) is 0: an edge) */
+        const c01 = (v) => Math.min(1, Math.max(0, v));
+        const fx = f && num(f.x) ? c01(f.x) : 0.5, fy = f && num(f.y) ? c01(f.y) : 0.5;
+        return { x: fx, y: fy, zoom: num(z) ? Math.min(COVER_ZOOM_MAX, Math.max(1, z)) : 1 };
+      }
+      /* Where a picture iw × ih lands on a W × H cover for a placement: its
+         drawn rectangle, in canvas pixels (x, y ≤ 0; x + w, y + h ≥ W, H). */
+      function coverArtRect(iw, ih, W, H, place) {
+        const p = place || { x: 0.5, y: 0.5, zoom: 1 };
+        const scale = Math.max(W / iw, H / ih) * p.zoom;
+        const dw = iw * scale, dh = ih * scale;
+        return { x: (W - dw) * p.x, y: (H - dh) * p.y, w: dw, h: dh, scale };
+      }
+      /* The picture's pixels per inch on a cover printed inW × inH inches at a placement. */
+      function coverArtPpi(iw, ih, inW, inH, place) {
+        if (!(iw > 0 && ih > 0 && inW > 0 && inH > 0)) return 0;
+        return 1 / coverArtRect(iw, ih, inW, inH, place).scale;
+      }
+      const COVER_SOFT_PPI = 200;
+      /* Under half a canvas pixel of room on an axis, a drag does not move the picture along it (cmPicDrag). */
+      const CM_PIC_MIN_SLACK = 0.5;
+      /* ==== /BEUK:coverpan ==== */
+      function drawImageCover(ctx, src, W, H, place) {
         const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
         if (!iw || !ih) return false;
-        const scale = Math.max(W / iw, H / ih);
-        const dw = iw * scale, dh = ih * scale;
-        ctx.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
+        const r = coverArtRect(iw, ih, W, H, place);
+        ctx.drawImage(src, r.x, r.y, r.w, r.h);
         return true;
       }
       function paintCoverTexture(ctx, W, H, kind) {
@@ -51546,10 +51605,14 @@
          reads on it: r, g, b, alpha. (BEUK:selfchecks — named so the
          self-check can predict the composited pixel per channel.) */
       const COVER_ART_SCRIM = [12, 10, 8, 0.20];
-      function paintCoverBackground(ctx, W, H, recipe) {
+      /* place: the writer's picture placement (coverArtPlace) — the front
+         cover passes it; the print wrap's sheet-wide background does not
+         (it stays centred: moving the back or spine picture is not
+         offered), and the wrap's front panel is drawn by drawCoverTo. */
+      function paintCoverBackground(ctx, W, H, recipe, place) {
         const src = coverBgSource(recipe);
         if ((recipe.bgType === "image" || recipe.bgType === "photo") && src) {
-          drawImageCover(ctx, src, W, H);
+          drawImageCover(ctx, src, W, H, place);
           ctx.fillStyle = "rgba(" + COVER_ART_SCRIM.slice(0, 3).join(",") + "," + COVER_ART_SCRIM[3] + ")"; ctx.fillRect(0, 0, W, H);
           return;
         }
@@ -51557,7 +51620,7 @@
           const off = document.createElement("canvas");
           off.width = W; off.height = H;
           const octx = off.getContext("2d");
-          if (src) drawImageCover(octx, src, W, H);
+          if (src) drawImageCover(octx, src, W, H, place);
           else paintCoverScene(octx, W, H);
           try {
             const idata = octx.getImageData(0, 0, W, H);
@@ -51742,7 +51805,7 @@
         const ctx = canvas.getContext("2d");
         const u = W / 800;
         const items = [];
-        paintCoverBackground(ctx, W, H, recipe);
+        paintCoverBackground(ctx, W, H, recipe, coverArtPlace(recipe)); /* BEUK:coverpan */
         const layout = recipe.layout;
         const left = layout === "modern" || layout === "editorial";
         const marginX = W * 0.09;
@@ -53170,6 +53233,7 @@
           cmBlocks = cmComputeBlocks(c);
           c.classList.toggle("has-text", cmBlocks.length > 0);
         }
+        syncMakerPicControls(); /* BEUK:coverpan — the picture controls follow the picture (it decodes after the first draw) */
         drawWrapPreview();
       }
       /* The drawn blocks' bounding boxes, measured on the preview canvas —
@@ -53226,6 +53290,60 @@
         $("cmPosHVal").textContent = Math.round(pos.x * 100) + "%";
         $("cmPosVVal").textContent = Math.round(pos.y * 100) + "%";
       }
+      /* ==== BEUK:coverpan ==== */
+      /* The picture the maker's cover paints (the writer's art, a stock
+         photo, or the art under duotone), once it is decoded; else null. */
+      function cmPicSrc() {
+        if (!cmRecipe || ["image", "photo", "duotone"].indexOf(cmRecipe.bgType) === -1) return null;
+        const src = coverBgSource(cmRecipe);
+        return src && (src.naturalWidth || src.width) && (src.naturalHeight || src.height) ? src : null;
+      }
+      /* The picture's pixels per inch on the print cover at the recipe's
+         placement: the lower of the print cover download (the book's trim,
+         coverPrintSize) and the print wrap's front panel. */
+      function cmPicPrintPpi(recipe, src) {
+        const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
+        const place = coverArtPlace(recipe), tr = trimSize(), d = wrapDims(recipe);
+        const onTrim = coverArtPpi(iw, ih, tr.w, tr.h, place);
+        const onPanel = d && d.layout ? coverArtPpi(iw, ih, d.layout.panelW, d.layout.panelH, place) : Infinity;
+        return Math.min(onTrim, onPanel);
+      }
+      /* The picture's placement, written whole (both fields) whenever the writer moves or zooms it. */
+      function cmSetPic(fx, fy, zoom) {
+        const c01 = (v) => Math.min(1, Math.max(0, v));
+        cmRecipe.bgFocus = { x: c01(fx), y: c01(fy) };
+        cmRecipe.bgZoom = Math.min(COVER_ZOOM_MAX, Math.max(1, zoom));
+      }
+      /* A different picture starts centred at 1× again. */
+      function cmPicForget() { if (cmRecipe) { delete cmRecipe.bgFocus; delete cmRecipe.bgZoom; } }
+      function syncMakerPicControls() {
+        const row = $("cmPicRow");
+        if (!row || !cmRecipe) return;
+        const src = cmPicSrc();
+        row.style.display = src ? "" : "none";
+        const reset = $("btnCmResetPic");
+        if (reset) reset.style.display = src ? "" : "none";
+        const cv = $("cmCanvas");
+        if (cv) cv.classList.toggle("has-pic", !!src);
+        const p = coverArtPlace(cmRecipe);
+        const set = (id, v, shown) => { const el = $(id); if (el) { el.value = String(v); el.setAttribute("aria-valuetext", shown); } const out = $(id + "Val"); if (out) out.textContent = shown; };
+        set("cmPicH", Math.round(p.x * 1000), Math.round(p.x * 100) + "%");
+        set("cmPicV", Math.round(p.y * 1000), Math.round(p.y * 100) + "%");
+        set("cmPicZoom", Math.round(p.zoom * 100), Math.round(p.zoom * 100) + "%");
+        /* Sharpness: when the zoom leaves the print cover under COVER_SOFT_PPI, one line says so with the number. It never blocks anything. */
+        const soft = $("cmPicSoft");
+        if (soft) {
+          const ppi = src && p.zoom > 1 ? cmPicPrintPpi(cmRecipe, src) : Infinity;
+          const show = ppi < COVER_SOFT_PPI;
+          /* at 100% too it falls short: zooming out cannot sharpen it, so the line asks only for a larger picture */
+          const full = show ? cmPicPrintPpi(Object.assign({}, cmRecipe, { bgZoom: 1 }), src) : Infinity;
+          soft.style.display = show ? "" : "none";
+          soft.textContent = !show ? "" : full < COVER_SOFT_PPI
+            ? t("covermk.picSoftLarger", { ppi: fmtNum(Math.floor(ppi)), need: COVER_SOFT_PPI, full: fmtNum(Math.floor(full)) })
+            : t("covermk.picSoft", { ppi: fmtNum(Math.floor(ppi)), need: COVER_SOFT_PPI });
+        }
+      }
+      /* ==== /BEUK:coverpan ==== */
       /* ---- Stock photos: related to the book's own title ----
          On a shelf, the search runs through the shelf's own
          endpoint — GET /api/stock/search?q=<terms>&per_page=<n> —
@@ -53372,6 +53490,7 @@
                 credit: { name: ph.photographer || "", url: ph.pageUrl || ph.photographerUrl || "" }
               };
               state.images.push(im);
+              cmPicForget(); /* BEUK:coverpan */
               cmRecipe.bgImageId = im.id;
               cmRecipe.bgType = "photo";
               noteBookEdited();
@@ -53397,6 +53516,7 @@
             '<button type="button" class="cm-art-cell' + (cmRecipe.bgImageId === im.id ? " active" : "") + '" data-cmart="' + esc(im.id) + '" title="' + esc(im.name) + '"><img src="' + picDataSrc(im.mediaType, im.data) + '" alt=""/></button>'
           ).join("");
           grid.querySelectorAll("[data-cmart]").forEach((b) => b.addEventListener("click", () => {
+            if (cmRecipe.bgImageId !== b.getAttribute("data-cmart")) cmPicForget(); /* BEUK:coverpan */
             cmRecipe.bgImageId = b.getAttribute("data-cmart");
             if (cmRecipe.bgType !== "image" && cmRecipe.bgType !== "duotone") cmRecipe.bgType = "image";
             syncMakerControls();
@@ -53518,6 +53638,7 @@
             if (comma < 0) { toast(t("toast.coverReadFail"), "alert-triangle"); return; }
             const im = { id: uid(), name: file.name, mediaType: file.type, ext: file.type === "image/png" ? "png" : "jpg", data: url.slice(comma + 1) };
             state.images.push(im);
+            cmPicForget(); /* BEUK:coverpan */
             cmRecipe.bgImageId = im.id;
             if (cmRecipe.bgType !== "image" && cmRecipe.bgType !== "duotone") cmRecipe.bgType = "image";
             noteBookEdited();
@@ -53538,11 +53659,23 @@
            currently sit, so nothing jumps when placement begins. */
         const cmC = $("cmCanvas");
         let cmDrag = null;
+        /* BEUK:coverpan — away from the text, a drag moves the picture:
+           its placement follows the pointer (mouse, pen or finger), held
+           so the picture always fills the cover. */
+        let cmPicDrag = null;
         cmC.addEventListener("pointerdown", (e) => {
-          if (!cmRecipe || !cmBlocks.length) return;
+          if (!cmRecipe) return;
           const pt = cmCanvasPoint(e);
           const box = cmBlocks.slice().reverse().find((b) => pt.x >= b.left - 8 && pt.x <= b.right + 8 && pt.y >= b.top - 8 && pt.y <= b.bottom + 8);
-          if (!box) return;
+          if (!box) {
+            if (!cmPicSrc()) return;
+            const p = coverArtPlace(cmRecipe);
+            cmPicDrag = { x0: pt.x, y0: pt.y, fx: p.x, fy: p.y, zoom: p.zoom };
+            cmC.classList.add("dragging");
+            try { cmC.setPointerCapture(e.pointerId); } catch (err) {}
+            e.preventDefault();
+            return;
+          }
           cmGoFree();
           cmElement = box.key;
           syncMakerElementControls();
@@ -53552,6 +53685,19 @@
           e.preventDefault();
         });
         cmC.addEventListener("pointermove", (e) => {
+          if (cmPicDrag && cmRecipe) {
+            const src = cmPicSrc();
+            if (!src) return;
+            const pt = cmCanvasPoint(e);
+            const r = coverArtRect(src.naturalWidth || src.width, src.naturalHeight || src.height, cmC.width, cmC.height, { x: 0.5, y: 0.5, zoom: cmPicDrag.zoom });
+            /* the axis the picture just fills has no room to move: floating point can leave a hair of slack there
+               (about 2e-13 px), and a pixel of pointer wobble divided by it would throw the focus to an edge */
+            const slackX = r.w - cmC.width, slackY = r.h - cmC.height;
+            cmSetPic(slackX > CM_PIC_MIN_SLACK ? cmPicDrag.fx - (pt.x - cmPicDrag.x0) / slackX : cmPicDrag.fx,
+              slackY > CM_PIC_MIN_SLACK ? cmPicDrag.fy - (pt.y - cmPicDrag.y0) / slackY : cmPicDrag.fy, cmPicDrag.zoom);
+            drawMakerPreview();
+            return;
+          }
           if (!cmDrag || !cmRecipe) return;
           const pt = cmCanvasPoint(e);
           cmRecipe.elements[cmDrag.key].pos = {
@@ -53561,7 +53707,7 @@
           drawMakerPreview();
           syncMakerPosControls();
         });
-        const endCmDrag = () => { cmDrag = null; cmC.classList.remove("dragging"); };
+        const endCmDrag = () => { cmDrag = null; cmPicDrag = null; cmC.classList.remove("dragging"); };
         cmC.addEventListener("pointerup", endCmDrag);
         cmC.addEventListener("pointercancel", endCmDrag);
         const posInput = () => {
@@ -53580,6 +53726,18 @@
           CM_ELEMENTS.forEach((k) => { delete cmRecipe.elements[k].pos; });
           if (cmRecipe.layout === "free") cmRecipe.layout = "classic";
           syncMakerControls();
+          drawMakerPreview();
+        });
+        /* BEUK:coverpan — the picture's sliders (the keyboard's and screen readers' way to move and zoom it) and its reset. */
+        const picInput = () => {
+          if (!cmRecipe) return;
+          cmSetPic(Number($("cmPicH").value) / 1000, Number($("cmPicV").value) / 1000, Number($("cmPicZoom").value) / 100);
+          drawMakerPreview();
+        };
+        ["cmPicH", "cmPicV", "cmPicZoom"].forEach((id) => $(id).addEventListener("input", picInput));
+        $("btnCmResetPic").addEventListener("click", () => {
+          if (!cmRecipe) return;
+          cmPicForget();
           drawMakerPreview();
         });
         $("btnCmPhotoFind").addEventListener("click", searchStockPhotos);
@@ -53655,7 +53813,7 @@
         });
       }
       if (typeof window !== "undefined") {
-        window.beukCoverMaker = { defaultRecipe: defaultCoverRecipe, normalize: normalizeCoverRecipe, renderCanvas: renderCoverCanvas, drawTo: drawCoverTo, adopt: adoptCoverRecipe, clear: clearCover, open: openCoverMaker, printSize: coverPrintSize, cache: coverImgCache, layouts: COVER_LAYOUTS, ebook: { w: COVER_EBOOK_W, h: COVER_EBOOK_H }, keywords: cmTitleKeywords, freePos: COVER_FREE_POS, stockSearch: searchStockPhotos, stockResults: cmRenderStockResults, stockGate: cmStockGate, stockUrl: stockSearchUrl, stockDirectUrl: stockDirectUrl, stockMapDirect: cmMapDirectResults, scene: paintCoverScene, wrapDims: wrapDims, drawWrapTo: drawWrapTo, wrapPdfDoc: buildWrapPdfDoc, wrapCanvas: renderWrapCanvas, wrapPapers: WRAP_PAPERS, wrap3d: { faces: wrap3dFaces, source: wrap3dSource, sample: sampleWrapRecipe, refresh: refreshWrap3d, paint: wrap3dPaint, state: () => ({ rotY: w3.rotY, rotX: w3.rotX, auto: w3.auto, sample: w3.sample, dims: w3.dims, geom: w3.geom, faces: w3.faces }) } };
+        window.beukCoverMaker = { defaultRecipe: defaultCoverRecipe, normalize: normalizeCoverRecipe, renderCanvas: renderCoverCanvas, drawTo: drawCoverTo, adopt: adoptCoverRecipe, clear: clearCover, open: openCoverMaker, printSize: coverPrintSize, cache: coverImgCache, layouts: COVER_LAYOUTS, ebook: { w: COVER_EBOOK_W, h: COVER_EBOOK_H }, keywords: cmTitleKeywords, freePos: COVER_FREE_POS, artPlace: coverArtPlace, artRect: coverArtRect, artPpi: coverArtPpi, zoomMax: COVER_ZOOM_MAX, stockSearch: searchStockPhotos, stockResults: cmRenderStockResults, stockGate: cmStockGate, stockUrl: stockSearchUrl, stockDirectUrl: stockDirectUrl, stockMapDirect: cmMapDirectResults, scene: paintCoverScene, wrapDims: wrapDims, drawWrapTo: drawWrapTo, wrapPdfDoc: buildWrapPdfDoc, wrapCanvas: renderWrapCanvas, wrapPapers: WRAP_PAPERS, wrap3d: { faces: wrap3dFaces, source: wrap3dSource, sample: sampleWrapRecipe, refresh: refreshWrap3d, paint: wrap3dPaint, state: () => ({ rotY: w3.rotY, rotX: w3.rotX, auto: w3.auto, sample: w3.sample, dims: w3.dims, geom: w3.geom, faces: w3.faces }) } };
       }
 
       /* ================= EPUB 3.2 packaging ================= */
@@ -59392,7 +59550,17 @@
           else {
             const dpi = Math.min(artPx.w / d.totalW, artPx.h / d.totalH);
             const CP = Object.assign({ image: art.name || "image", dpi: fmtNum(Math.floor(dpi)), px: fmtNum(artPx.w) + " × " + fmtNum(artPx.h), w: storeIn(Math.round(d.totalW * 100) / 100), h: storeIn(Math.round(d.totalH * 100) / 100), need: R.minDpi }, P);
-            if (dpi >= R.minDpi) row("cover", "cdpi", true, "pass", t("store.c.cdpi.name"), t("store.c.cdpi.ok", CP));
+            /* BEUK:coverpan — a zoomed front cover spreads fewer of the picture's pixels over the front panel than the
+               sheet-wide paint does; when that is what falls short, the row says so. Unzoomed, the front panel (smaller
+               than the sheet) always carries at least the sheet's DPI, so nothing changes for a cover without zoom. */
+            const place = coverArtPlace(recipe);
+            const frontDpi = place.zoom > 1 && d.layout ? coverArtPpi(artPx.w, artPx.h, d.layout.panelW, d.layout.panelH, place) : Infinity;
+            if (frontDpi < dpi && frontDpi < R.minDpi) row("cover", "cdpi", true, "fail", t("store.c.cdpi.name"),
+              t("store.c.cdpi.failZoom", Object.assign({}, CP, { dpi: fmtNum(Math.floor(frontDpi)), zoom: fmtNum(Math.round(place.zoom * 100)) + "%" })),
+              t("store.c.cdpi.fixZoom"), { kind: "cover", label: t("store.act.cover") });
+            else if (frontDpi < dpi) row("cover", "cdpi", true, "pass", t("store.c.cdpi.name"), /* the zoomed front is the lowest: quote it */
+              t("store.c.cdpi.okZoom", Object.assign({}, CP, { dpi: fmtNum(Math.floor(frontDpi)), zoom: fmtNum(Math.round(place.zoom * 100)) + "%" })));
+            else if (dpi >= R.minDpi) row("cover", "cdpi", true, "pass", t("store.c.cdpi.name"), t("store.c.cdpi.ok", CP));
             else row("cover", "cdpi", true, "fail", t("store.c.cdpi.name"), t("store.c.cdpi.fail", CP),
               t("store.c.cdpi.fix", { needW: fmtNum(Math.ceil(d.totalW * R.minDpi)), needH: fmtNum(Math.ceil(d.totalH * R.minDpi)) }), { kind: "cover", label: t("store.act.cover") });
           }
@@ -64874,6 +65042,44 @@
             }
             return scVerdict(neutral && lo < 70 && hi > 185 && mids > 40,
               "no-art duotone renders the built-in scene mapped black→white: darkest sample " + lo + ", lightest " + hi + ", " + mids + " mid-tone samples, every sampled pixel neutral");
+          } },
+        /* BEUK:coverpan */
+        { id: "cover.maker.picture-move-zoom", feature: "cover", name: "Cover maker: the cover picture moves and zooms — absent placement is centred at 1× (the same pixels as an explicit centre), the placement is held to 0–1 and 1–3×, it never leaves a gap, it moves the picture on the drawn cover, it is kept only when the recipe has it, and the print-cover sharpness follows the zoom",
+          run() {
+            const bad = [];
+            const P0 = coverArtPlace({});
+            if (!(P0.x === 0.5 && P0.y === 0.5 && P0.zoom === 1)) bad.push("absent placement is " + JSON.stringify(P0));
+            const Pc = coverArtPlace({ bgFocus: { x: -1, y: 2 }, bgZoom: 9 }), Pl = coverArtPlace({ bgFocus: { x: "a", y: 0.25 }, bgZoom: 0.2 });
+            if (!(Pc.x === 0 && Pc.y === 1 && Pc.zoom === COVER_ZOOM_MAX && Pl.x === 0.5 && Pl.y === 0.25 && Pl.zoom === 1)) bad.push("clamping gave " + JSON.stringify([Pc, Pl]));
+            const Pn = coverArtPlace({ bgFocus: { x: null, y: null }, bgZoom: null }); /* Number(null) is 0: a null must not send the picture to an edge */
+            if (!(Pn.x === 0.5 && Pn.y === 0.5 && Pn.zoom === 1)) bad.push("a null placement gave " + JSON.stringify(Pn));
+            [[3000, 2000], [1000, 3000], [800, 1280], [50, 40]].forEach(([iw, ih]) => [0, 0.37, 1].forEach((fx) => [0, 1].forEach((fy) => [1, 1.7, 3].forEach((z) => {
+              const r = coverArtRect(iw, ih, 800, 1280, { x: fx, y: fy, zoom: z });
+              if (!(r.x <= 1e-9 && r.y <= 1e-9 && r.x + r.w >= 800 - 1e-9 && r.y + r.h >= 1280 - 1e-9)) bad.push("a gap at " + [iw, ih, fx, fy, z].join("/"));
+            }))));
+            const art = document.createElement("canvas"); art.width = 32; art.height = 16;
+            const actx = art.getContext("2d"); actx.fillStyle = "rgb(200,0,0)"; actx.fillRect(0, 0, 16, 16); actx.fillStyle = "rgb(0,0,200)"; actx.fillRect(16, 0, 16, 16);
+            coverImgCache["sc-pan-art"] = art;
+            try {
+              const base = defaultCoverRecipe();
+              base.title = ""; base.subtitle = ""; base.author = ""; base.tagline = ""; base.series = "";
+              base.bgType = "image"; base.bgImageId = "sc-pan-art";
+              const paint = (over) => { const c = document.createElement("canvas"); c.width = 100; c.height = 160; drawCoverTo(c, Object.assign({}, base, over)); return c.getContext("2d").getImageData(0, 0, 100, 160).data; };
+              const none = paint({}), centre = paint({ bgFocus: { x: 0.5, y: 0.5 }, bgZoom: 1 });
+              let same = none.length === centre.length;
+              for (let i = 0; same && i < none.length; i++) if (none[i] !== centre[i]) same = false;
+              if (!same) bad.push("absent placement and an explicit centre painted different pixels");
+              const at = (d) => [d[(80 * 100 + 50) * 4], d[(80 * 100 + 50) * 4 + 2]];
+              const left = at(paint({ bgFocus: { x: 0, y: 0.5 } })), right = at(paint({ bgFocus: { x: 1, y: 0.5 } }));
+              if (!(left[0] > 100 && left[1] < 60 && right[1] > 100 && right[0] < 60)) bad.push("focus 0 / 1 painted the cover's middle " + left + " / " + right + " (want the red half, then the blue)");
+            } finally { delete coverImgCache["sc-pan-art"]; }
+            const plain = normalizeCoverRecipe(defaultCoverRecipe());
+            const kept = normalizeCoverRecipe(Object.assign(defaultCoverRecipe(), { bgFocus: { x: 0.2, y: 0.9 }, bgZoom: 2.5 }));
+            if ("bgFocus" in plain || "bgZoom" in plain) bad.push("a recipe without a placement gained one on normalizing");
+            if (!(kept.bgFocus && kept.bgFocus.x === 0.2 && kept.bgFocus.y === 0.9 && kept.bgZoom === 2.5)) bad.push("the placement did not survive normalizing: " + JSON.stringify([kept.bgFocus, kept.bgZoom]));
+            const ppi1 = coverArtPpi(3000, 4500, 6, 9, coverArtPlace({})), ppi2 = coverArtPpi(3000, 4500, 6, 9, coverArtPlace({ bgZoom: 2 }));
+            if (!(Math.abs(ppi1 - 500) < 1e-6 && Math.abs(ppi2 - 250) < 1e-6)) bad.push("ppi " + ppi1 + " / " + ppi2 + " (want 500 / 250)");
+            return scVerdict(!bad.length, bad.length ? bad.join("; ") : "centred 1× when absent and pixel-equal to an explicit centre; clamped to 0–1 and 1–" + COVER_ZOOM_MAX + "×; no gap at any of 72 placements; focus 0 shows the picture's left half and 1 its right; kept only when given; a 3000 × 4500 picture on a 6 × 9 in cover carries 500 ppi at 1× and 250 at 2×");
           } },
         { id: "cover.maker.photos-standalone-openverse", feature: "cover", name: "Cover maker: Photos where no shelf answers (the standalone page) searches Openverse directly from the browser — no key anywhere — and maps results into the same grid with an Openverse credit; a shelf that answers but has no signed-in writer still gates as “account”",
           run() {
@@ -85459,6 +85665,21 @@
       Object.assign(UI_STRINGS.ja, {"preview.display.mono": "This {device} shows colours as shades of grey. They show in colour in the {brand} app, on colour e-readers and on tablets.", "preview.display.colour": "Colours look softer and darker on this {device}’s colour e-ink screen than on a tablet or phone."});
       Object.assign(UI_STRINGS["zh-Hans"], {"preview.display.mono": "This {device} shows colours as shades of grey. They show in colour in the {brand} app, on colour e-readers and on tablets.", "preview.display.colour": "Colours look softer and darker on this {device}’s colour e-ink screen than on a tablet or phone."});
       /* ==== /BEUK:devicetruth strings ==== */
+      /* ==== BEUK:coverpan strings ==== — cover picture: move and zoom. English placeholders in every pack until V signs the translations off */
+      Object.assign(UI_STRINGS.en, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.es, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.fr, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.de, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.it, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.pt, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.nl, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.pl, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.ru, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.tr, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.ar, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.ja, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS["zh-Hans"], {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      /* ==== /BEUK:coverpan strings ==== */
       document.addEventListener("DOMContentLoaded", init);
       /* ==== BEUK:beta ==== */
       /* Beta-reader share links (studio side).
