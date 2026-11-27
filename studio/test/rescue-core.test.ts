@@ -319,4 +319,17 @@ describe('planRescue: which of my letters died or were stranded, and where their
     expect(w.fragB.length).toBe(1);
     expect(plan).toEqual({ ops: [], counts: { ...ZERO, vetoed: 2 } });
   });
+
+  it('14. B wrote the whole paragraph; A, having it, deletes that paragraph outright, writing nothing: vetoed, and told', () => {
+    const w = world();
+    const mine = 'Last words of the chapter.';
+    w.fragB.insert(2, [para(mine)]);
+    aSeesB(w);
+    const plan = change(w, (f) => f.delete(2, 1))!;
+    expect(w.fragB.length).toBe(2);
+    // DERIVED: Task 6 ruling (all-own paragraph deleted outright → vetoed)
+    expect(plan).toEqual({ ops: [], counts: { ...ZERO, vetoed: countLetters(mine) } });
+    expect(plan.counts.uncounted).toBe(0);
+    expect(lettersLost(plan.counts)).toBe(countLetters(mine));
+  });
 });

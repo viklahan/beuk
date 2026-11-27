@@ -1476,7 +1476,18 @@ Points worth a look when you read them:
 - **fr** says "tapée" for typed, as `ir.k.txtLinesUnsure` ("tapé"); `bible.seriesKept` says "saisi" for a name typed
   into a field.
 - **ar** keeps the figure before the noun in the singular ("{n} حرف"), as `next.textWarning` does.
+- **ja** "元に戻せませんでした" uses the app's Undo verb (元に戻す), so it may read as "Undo failed". Consider
+  "戻せませんでした" or "復元できませんでした". The draft is unchanged: the native reader decides.
+- **ru** `rescue.lostPlural` copies the awkward shape of `next.textWarningPlural` ("Набранных вами букв, которые …:
+  {n}."). A cleaner draft: "Не удалось вернуть набранные вами буквы, пропавшие вместе с изменением в другой
+  вкладке: {n}." The draft is unchanged: the native reader decides.
 - If the English changes in the PR, all 24 drafts change with it.
+
+When it is said: once per remote change that cost the writer letters, with the count of letters the other tab
+had and deleted (vetoed) plus the letters whose words were gone (unplaced). That includes a paragraph made only of
+this writer's own letters that the other tab deleted outright, writing no text in the chapter: every letter of it
+is counted (Task 6 ruling, 2026-11-27; `studio/src/editor/rescueCore.ts`). A rebuild that writes text, such as the
+paragraph remade as a heading, may keep some of those letters, so no exact count can be given and nothing is said.
 
 ### `rescue.lost`
 

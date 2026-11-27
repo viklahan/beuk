@@ -24,14 +24,17 @@ import { posOf } from './caret-pair';
    - rescueNotice: null for nothing lost (an `uncounted` share has no exact count, so it says nothing), the
      singular for one, the Plural twin otherwise;
    - through the whole app: the C1 shape (the other tab saw "n" and deleted its paragraph: vetoed) through
-     applyRemoteUpdate on the open chapter gives exactly one toast.
+     applyRemoteUpdate on the open chapter gives exactly one toast; so does the studio's own whole paragraph
+     deleted outright by the other tab (the Task 6 ruling), with every letter counted.
    The English is the brief's, exact (task-6-brief.md, Step 1). */
 
 type Rec = Record<string, unknown>;
 const E = en as Record<string, string>;
 const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralForms: meta.pluralForms as PluralForms }, 'en', k, p);
+// DERIVED: task-6-brief.md Step 1 (the English strings, exact) with {n} filled by translate.ts's Plural rule
 const ONE = '1 letter you typed went with a change made in another tab, and could not be put back.';
 const THREE = '3 letters you typed went with a change made in another tab, and could not be put back.';
+const lostN = (n: number) => `${n} letters you typed went with a change made in another tab, and could not be put back.`;
 const KEYS = ['rescue.lost', 'rescue.lostPlural'];
 
 const report = (c: Partial<RescueReport>): RescueReport => ({
@@ -117,13 +120,16 @@ afterEach(async () => {
   }
 });
 
-// the chapter holds only the opening line: the paragraph the studio types into is written by the other tab, so
-// its words are another writer's, as in C1 (keystroke-rescue-controls.test.ts). A paragraph imported in this
-// studio would be all its own letters: deleted whole, they have no other writer's words beside them and count
-// `uncounted` (rescueCore.ts, the vetoed branch), which is told to no one.
+// C1: the chapter holds only the opening line, and the paragraph the studio types into is written by the other tab,
+// so its words are another writer's, as in keystroke-rescue-controls.test.ts. OWN: the paragraph is imported in this
+// studio, so all its letters are the studio's own (the Task 6 ruling's case).
 const BOOK: Rec = {
   meta: { title: 'Rescue Book', author: 'A. Writer', language: 'en' },
   sections: [{ id: 's1', kind: 'body', type: 'chapter', title: 'One', content: 'Opening line above.' }],
+};
+const OWN_BOOK: Rec = {
+  meta: { title: 'Rescue Book', author: 'A. Writer', language: 'en' },
+  sections: [{ id: 's1', kind: 'body', type: 'chapter', title: 'One', content: 'Opening line above.\n\nThe brown fox jumps over the dog.' }],
 };
 const backupFile = (book: unknown) => new File([JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: '2026-10-31T00:00:00.000Z', book })], 'a.beuk-backup.json', { type: 'application/json' });
 async function openStudio(book: Rec) {
@@ -145,70 +151,101 @@ const editor = () => (document.getElementById('manuscript') as HTMLElement & { b
 const toasts = () => Array.from(document.querySelectorAll('#toasts .toast')).map((x) => x.textContent || '');
 const OTHER_TAB = Symbol('the other tab');
 
-describe('the studio tells the writer', () => {
-  it('the studio says it once, as a toast: the C1 shape through applyRemoteUpdate on the open chapter', async () => {
-    await openStudio(BOOK);
-    const ed = editor();
-    const b = (ySyncPluginKey.getState(ed.state) as { binding: ProsemirrorBinding }).binding;
-    const doc = b.doc;
-    const frag = b.type as Y.XmlFragment;
-    expect(frag.doc).toBe(doc);
-
-    const rescue = () => (ed.storage as unknown as { caretKeeper: { rescue: RescueReport | null } }).caretKeeper.rescue;
-
-    // the other tab: a second Y.Doc with its own client id, holding the studio's book; its own updates go to the
-    // studio through applyRemoteUpdate, as the store applies another tab's (store.ts)
-    const other = new Y.Doc();
-    other.clientID = doc.clientID === 7 ? 8 : 7;
-    Y.applyUpdate(other, Y.encodeStateAsUpdate(doc), OTHER_TAB);
-    const fragOther = ((Y.getItem(other.store, frag._item!.id) as Y.Item).content as Y.ContentType).type as Y.XmlFragment;
-    const sent: Uint8Array[] = [];
-    other.on('update', (u: Uint8Array, origin: unknown) => {
-      if (origin !== OTHER_TAB) sent.push(u);
-    });
-    const send = async () => {
+/** The open studio and a second tab: a Y.Doc with its own client id holding the studio's book. The other tab's own
+ *  updates go to the studio through applyRemoteUpdate, as the store applies another tab's (store.ts). */
+async function studioAndOtherTab(book: Rec) {
+  await openStudio(book);
+  const ed = editor();
+  const b = (ySyncPluginKey.getState(ed.state) as { binding: ProsemirrorBinding }).binding;
+  const doc = b.doc;
+  const frag = b.type as Y.XmlFragment;
+  expect(frag.doc).toBe(doc);
+  const other = new Y.Doc();
+  other.clientID = doc.clientID === 7 ? 8 : 7;
+  Y.applyUpdate(other, Y.encodeStateAsUpdate(doc), OTHER_TAB);
+  const fragOther = ((Y.getItem(other.store, frag._item!.id) as Y.Item).content as Y.ContentType).type as Y.XmlFragment;
+  const sent: Uint8Array[] = [];
+  other.on('update', (u: Uint8Array, origin: unknown) => {
+    if (origin !== OTHER_TAB) sent.push(u);
+  });
+  return {
+    ed,
+    other,
+    fragOther,
+    rescue: () => (ed.storage as unknown as { caretKeeper: { rescue: RescueReport | null } }).caretKeeper.rescue,
+    /** the other tab's one update, into the studio */
+    send: async () => {
       expect(sent.length).toBe(1);
       const u = sent.shift()!;
       await act(async () => {
         applyRemoteUpdate(doc, u, OTHER_TAB);
       });
-    };
+    },
+    /** the studio types "n" at "bro|wn"; the other tab receives it (it has seen the "n") */
+    typeN: () => {
+      act(() => {
+        ed.view.dispatch(ed.state.tr.setSelection(TextSelection.create(ed.state.doc, posOf(ed, 'brown', 3))));
+        ed.view.dispatch(ed.state.tr.insertText('n'));
+      });
+      Y.applyUpdate(other, Y.encodeStateAsUpdate(doc, Y.encodeStateVector(other)), OTHER_TAB);
+      const i = (fragOther.toArray() as Y.XmlElement[]).findIndex((k) => k.toString().includes('bronwn'));
+      expect(i).toBe(1);
+      return i;
+    },
+  };
+}
+const settle = () =>
+  act(async () => {
+    await new Promise((r) => setTimeout(r, 20));
+  });
+
+describe('the studio tells the writer', () => {
+  it('the studio says it once, as a toast: the C1 shape through applyRemoteUpdate on the open chapter', async () => {
+    const g = await studioAndOtherTab(BOOK);
 
     // the other tab writes the paragraph (a paragraph like the opening one); the studio receives it
-    const first = fragOther.get(0) as Y.XmlElement;
-    other.transact(() => {
+    const first = g.fragOther.get(0) as Y.XmlElement;
+    g.other.transact(() => {
       const para = new Y.XmlElement(first.nodeName);
       for (const [k, v] of Object.entries(first.getAttributes())) para.setAttribute(k, v as string);
       const words = new Y.XmlText();
       words.insert(0, 'The brown fox jumps over the dog.');
       para.insert(0, [words]);
-      fragOther.insert(1, [para]);
+      g.fragOther.insert(1, [para]);
     });
-    await send();
-    expect(ed.state.doc.textContent).toBe('Opening line above.The brown fox jumps over the dog.');
-    expect(rescue()).toBeNull(); // a change that deleted nothing: no report
+    await g.send();
+    expect(g.ed.state.doc.textContent).toBe('Opening line above.The brown fox jumps over the dog.');
+    expect(g.rescue()).toBeNull(); // a change that deleted nothing: no report
 
-    // the studio types "n" at "bro|wn"; the other tab receives it
-    act(() => {
-      ed.view.dispatch(ed.state.tr.setSelection(TextSelection.create(ed.state.doc, posOf(ed, 'brown', 3))));
-      ed.view.dispatch(ed.state.tr.insertText('n'));
-    });
-    Y.applyUpdate(other, Y.encodeStateAsUpdate(doc, Y.encodeStateVector(other)), OTHER_TAB);
-    const i = (fragOther.toArray() as Y.XmlElement[]).findIndex((k) => k.toString().includes('bronwn'));
-    expect(i).toBe(1); // it saw the "n"
+    const i = g.typeN();
     const before = toasts(); // what the studio said before (the backup's own "opened" toast)
     const said = () => toasts().filter((x) => !before.includes(x));
-    expect(rescue()).toBeNull();
+    expect(g.rescue()).toBeNull();
 
     // the other tab deletes that paragraph, having seen the "n"
-    other.transact(() => fragOther.delete(i, 1));
-    await send();
-    // C1 (keystroke-rescue-controls.test.ts): the "n" stays deleted (vetoed), and the writer is told, once
-    expect(ed.state.doc.textContent).toBe('Opening line above.');
-    expect(rescue()).toMatchObject({ vetoed: 1, unplaced: 0, uncounted: 0, rescued: 0, restored: 0 });
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 20));
-    });
+    g.other.transact(() => g.fragOther.delete(i, 1));
+    await g.send();
+    expect(g.ed.state.doc.textContent).toBe('Opening line above.');
+    // DERIVED: keystroke-rescue-controls.test.ts:43 (C1: vetoed 1, rescued 0, restored 0)
+    expect(g.rescue()).toMatchObject({ vetoed: 1, unplaced: 0, uncounted: 0, rescued: 0, restored: 0 });
+    await settle();
     expect(said()).toEqual([ONE]);
+  });
+
+  it("the studio's own whole paragraph, deleted outright by the other tab: told once, with every letter counted", async () => {
+    const g = await studioAndOtherTab(OWN_BOOK);
+    const i = g.typeN();
+    const before = toasts();
+    const said = () => toasts().filter((x) => !before.includes(x));
+    g.other.transact(() => g.fragOther.delete(i, 1));
+    await g.send();
+    expect(g.ed.state.doc.textContent).toBe('Opening line above.');
+    // DERIVED: Task 6 ruling (all-own paragraph deleted outright → vetoed): "The bronwn fox jumps over the dog."
+    // is 34 letters, every one the studio's own (the probe's count, then `uncounted`)
+    const n = [...'The bronwn fox jumps over the dog.'].length;
+    expect(n).toBe(34);
+    expect(g.rescue()).toMatchObject({ vetoed: n, unplaced: 0, uncounted: 0, rescued: 0, restored: 0 });
+    await settle();
+    expect(said()).toEqual([lostN(n)]);
   });
 });
