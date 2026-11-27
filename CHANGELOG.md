@@ -4,6 +4,23 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-27 — A letter typed at the same moment is kept
+
+- **A letter you type at that moment is kept.** When the same chapter is open in two tabs and one of them joins your paragraph with the one above, turns it into a heading, or splits it, at the very moment you type a letter in the other, that letter used to be lost, or left behind in the line before, and the letters you typed next went after it. Now it is put back between the words you typed it between, and your next letters follow it.
+- **A paragraph deleted while you typed in it.** If the other tab deletes the whole paragraph at that same moment, before it has seen what you typed, your letters come back as a paragraph of their own where the deleted one stood. The other tab sees them and can remove them.
+- **Only what you typed.** The studio puts back only your own letters, only when the other tab's change shows it never had them, and only where their words still stand. What the other tab had seen and deleted stays deleted, and when the studio can count letters you typed that could not be put back, a quiet message says how many.
+
+## 2026-11-26 — Move and zoom the cover picture
+
+- **Your own picture can move.** In the cover maker, a picture you bring as the cover's art, or a stock photo, used to sit centred, with its edges cut off equally on both sides, and nothing could change that. Now drag the picture on the cover, anywhere away from the text, to choose what shows. Picture — across and Picture — down do the same from the keyboard.
+- **And zoom.** Picture — zoom goes from 100%, where the picture just fills the cover as before, up to 300%. However far you move or zoom it, the picture always fills the cover, so no gap can show at an edge.
+- **Everywhere the cover goes.** The placement is kept with the cover and used wherever the front cover is drawn: the e-book and print cover downloads, Use as My Cover, the front of the print wrap, the hardcover and the book on the stand. The back and spine of the wrap keep the picture centred, as before.
+- **Sharpness.** Zoom spreads fewer of the picture's pixels over the cover. When that takes the print cover under 200 pixels per inch, one line under the sliders says so, with the number. It never stops you. The store check's cover artwork row now counts the zoom too.
+- **Reset picture** puts it back in the centre at 100%. A different picture starts centred. Covers made before this look exactly as they did.
+
+## 2026-11-26 — Your caret stays where you put it
+
+- **Two tabs on one book no longer move your caret.** When the same chapter was open in two tabs and one of them pressed Enter for a new paragraph before your caret, turned your paragraph into a heading (or undid that), or joined it with the paragraph above, the caret in the other tab jumped away, to the end of the paragraph or into the line before, and the next letters landed there. It now stays between the same letters.
 ## 2026-11-24 — One chapter's settings on every chapter
 
 - **Use on every chapter.** A chapter's settings now end with a button, Use on every chapter. It copies that chapter's backdrop (the picture and its strength together), its drop cap, its small-caps lead-in or the fit of its plate to every other chapter in one step. You tick what to copy; nothing is ticked for you.

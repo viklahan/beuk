@@ -8,7 +8,7 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 /* Per-device page counts are laid out by the studio at each profile's
    fixed CSS-px reading area. The server side is the Housekeeping
    registration (client-only, with a reason) and a static guard that the
-   geometry table covers every e-reader profile on the device bar. */
+   geometry table covers every e-reader profile in the device menu. */
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
@@ -25,11 +25,11 @@ test('pagecount: every client preview.pagecount.* self-check is registered serve
   }
 });
 
-test('pagecount: the geometry table has a sourced row for every e-reader profile on the device bar', async () => {
+test('pagecount: the geometry table has a sourced row for every e-reader profile in the device menu', async () => {
   const html = await clientHtml();
-  const bar = /<div class="device-bar" id="deviceBar">([\s\S]*?)<\/div>/.exec(html);
-  assert.ok(bar, 'device bar present');
-  const ids = [...bar[1].matchAll(/data-device="([a-z]+)"/g)].map((m) => m[1]).filter((d) => d !== 'hardcover');
+  const bar = /<select class="dev-select" id="deviceBar"[^>]*>([\s\S]*?)<\/select>/.exec(html);
+  assert.ok(bar, 'device menu present');
+  const ids = [...bar[1].matchAll(/<option value="([a-z]+)"/g)].map((m) => m[1]).filter((d) => d !== 'hardcover');
   assert.equal(ids.length, 10);
   const table = /const PAGE_GEOMETRY = \{([\s\S]*?)\n {6}\};/.exec(html);
   assert.ok(table, 'PAGE_GEOMETRY table present');

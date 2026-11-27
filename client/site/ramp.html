@@ -155,6 +155,12 @@
         </header>
 
         <div class="shelf" role="list">
+          <button class="book" role="listitem" data-book="poems-of-joy" style="--c:#977cb9" aria-label="Open Poems of joy">
+            <span class="cover"><img src="/site/ramp/poems-of-joy/spread-2.webp?v=davis" width="2200" height="1100" alt="" loading="eager" decoding="async" /></span>
+            <span class="t">Poems of joy</span>
+            <span class="m"><b>Poems</b> · 8.25 × 8.25 in · Montserrat over Source Sans 3, in lavender. A full-page picture faces each poem.</span>
+            <span class="open">Open the book →</span>
+          </button>
           <button class="book" role="listitem" data-book="rain-on-calder-street" style="--c:#8a5a12" aria-label="Open Rain on Calder Street">
             <span class="cover"><img src="/site/ramp/rain-on-calder-street/spread-2.webp" width="2208" height="1104" alt="" loading="eager" decoding="async" /></span>
             <span class="t">Rain on Calder Street</span>
@@ -168,7 +174,7 @@
             <span class="open">Open the book →</span>
           </button>
           <button class="book" role="listitem" data-book="the-sunken-vault" style="--c:#8c2a17" aria-label="Open The Sunken Vault">
-            <span class="cover"><img src="/site/ramp/the-sunken-vault/spread-4.webp" width="1464" height="1098" alt="" loading="eager" decoding="async" /></span>
+            <span class="cover"><img src="/site/ramp/the-sunken-vault/spread-4.webp" width="1464" height="1098" alt="" loading="lazy" decoding="async" /></span>
             <span class="t">The Sunken Vault</span>
             <span class="m"><b>Fantasy novel</b> · 6 × 9 in · Cinzel in an ornate frame over Spectral, in ember red. A full-page plate faces each chapter.</span>
             <span class="open">Open the book →</span>
@@ -219,11 +225,11 @@
           </div>
           <div>
             <h2>How the pictures sit</h2>
-            <p>A picture always takes the left page, edge to edge, and faces its chapter. When a painting is made for two pages, its right half carries on across the gutter and fades away before the first line of text.</p>
+            <p>In most of these books a picture takes the left page, edge to edge, and faces its chapter. When a painting is made for two pages, its right half carries on across the gutter and fades away before the first line of text.</p>
           </div>
           <div>
             <h2>Credits</h2>
-            <p>Pictures made for Beuk with AI image tools and licensed by Beuk's owner; some were enlarged to print resolution. Words written for this gallery; in the stories every name, place and event is invented. The travel guide's places are real; its photographs are made images, not photographs of those places.</p>
+            <p><i>Poems of joy</i> is its author's own: Destiny Hernandez wrote the poems and made the pictures with Gemini. In the other books: pictures made for Beuk with AI image tools and licensed by Beuk's owner; some were enlarged to print resolution. Words written for this gallery; in the stories every name, place and event is invented. The travel guide's places are real; its photographs are made images, not photographs of those places.</p>
           </div>
         </section>
 
@@ -290,7 +296,15 @@
 
     <script>
       (function(){
+        // a book whose pictures were replaced gets a version here, so no browser shows its old copy
+        var PIC_VERSION = { "poems-of-joy": "davis" };
         var BOOKS = {
+          "poems-of-joy": { title: "Poems of joy", c: "#977cb9", w: 2200, h: 1100, spreads: [
+            ["The title page stands alone on the right, the way a printed book opens: the title in Montserrat, in the book's lavender, under a trio of stars. The pages are square, 8.25 inches each way.", "The title page of Poems of joy by Destiny Hernandez, on a right-hand page with the left page blank"],
+            ["<b>One picture faces each poem.</b> The picture fills the left page edge to edge; the poem has its page to itself.", "Left: a girl in a striped top and dungarees kneels on the grass in a sunny park and holds up a glowing purple stone, a speech bubble saying Woah beside her, children at the playground behind. Right: Chapter One, Nora's discovery, a poem of four lines"],
+            ["The chapter number spaced in small capitals, the title in Montserrat, each line of the poem centred in large 18-point Source Sans 3.", "Left: a curly-haired boy on a sofa, a speech bubble saying Yay, super glad, as his mother points to the packed suitcases and says We're going out of town, a beagle at their feet. Right: Chapter 2, Out of town, a poem of four lines"],
+            ["The running head carries the book's title and its author above every poem; each picture fills its own page.", "Left: the principal's office, a girl in a blazer on a time-out chair with her arms folded, a speech bubble saying I'm sorry, I'll follow the rules, while Ms. Davis watches her from behind her desk under the Principal's Office sign and a list of rules. Right: Chapter 3, In big trouble, a poem of four lines"]
+          ]},
           "rain-on-calder-street": { title: "Rain on Calder Street", c: "#8a5a12", w: 2208, h: 1104, spreads: [
             ["The title page, set from the book's own details: title, subtitle and author. A printed book opens on a right-hand page.", "The title page of Rain on Calder Street, a novel by J. R. Vance, on a right-hand page with the left page blank"],
             ["<b>Spread.</b> The left half of the painting fills the page edge to edge; the right half crosses the gutter and fades out before the first line.", "Left: a detective in a fedora stands in the rain under a street lamp while a woman waits in a shop doorway. Right: Chapter 1, The Ninth Ring, its text beside the fog that fades in from the gutter"],
@@ -365,7 +379,7 @@
         // closed and opened again.
         var loads = {}, keep = {}, src = {};
 
-        function url(n){ return "/site/ramp/" + cur + "/spread-" + (n + 1) + ".webp"; }
+        function url(n){ var v = PIC_VERSION[cur]; return "/site/ramp/" + cur + "/spread-" + (n + 1) + ".webp" + (v ? "?v=" + v : ""); }
         function paint(el, n, half){
           if (n == null) { el.style.backgroundImage = "none"; return; }
           el.style.backgroundImage = 'url("' + (src[cur + "/" + n] || url(n)) + '")';

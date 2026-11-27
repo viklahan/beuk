@@ -29,6 +29,12 @@
       next animation frame) over 300 keystrokes in the Dumas book's largest
       chapter; p50 and p95 printed (p95 over 16 ms is reported, with the
       profile's hottest functions, not hidden).
+   coverpan (E2E_ONLY=coverpan): the cover picture moved by a drag, zoomed by the keyboard, kept by "Use as My
+      Cover", shown again after reopening and a reload (coverpanChecks).
+   caret (E2E_ONLY=caret): two tabs on one chapter; B's caret at "bro|wn"
+      stays there through each of A's edits (and a server-shaped raw Yjs
+      write), B's "#" lands "bro#wn"; the caret keeper's cost on a
+      400-paragraph rewrite (caretChecks).
    CSP: zero securitypolicyviolation events and no page errors throughout.
    Screenshots: an open book in Paper, Candlelight and Arabic chrome next
    to 1.0 with the same book; the shell regions are diffed as part A does
@@ -462,9 +468,9 @@ async function readOnlyRooms(page) {
  *  and off, the hardcover opened, turned, closed — and the pane left on the Kindle. */
 async function previewBrowse(page) {
   await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
-  const devs = await page.$$eval('#deviceBar [data-device]', (bs) => bs.map((b) => b.getAttribute('data-device')));
+  const devs = await page.$$eval('#deviceBar option', (os) => os.map((o) => o.value));
   for (const d of devs) {
-    await page.click(`#deviceBar [data-device="${d}"]`);
+    await page.selectOption('#deviceBar', d);
     if (d === 'hardcover') {
       await page.waitForSelector('#hcStage:not([hidden])', { timeout: 10_000 });
       // an empty book has nothing to open (1.0: hcToggle off when empty and closed)
@@ -481,7 +487,7 @@ async function previewBrowse(page) {
     }
     await page.waitForTimeout(80);
   }
-  await page.click('#deviceBar [data-device="kindle"]');
+  await page.selectOption('#deviceBar', 'kindle');
   await page.waitForTimeout(400);
   if (!(await page.$eval('#btnNextPage', (b) => b.disabled))) await page.click('#btnNextPage');
   if (!(await page.$eval('#btnPrevPage', (b) => b.disabled))) await page.click('#btnPrevPage');
@@ -3326,13 +3332,13 @@ const W4B_DEVICE_LOOK = async ([devs, two]) => {
     out[d] = {
       cls: frame.className, maxW: getComputedStyle(frame).maxWidth, foot: document.getElementById('footDevice').textContent, display: frame.getAttribute('data-display'),
       filter: getComputedStyle(document.getElementById('deviceScreen')).filter, note: note.hidden ? '' : note.textContent,
-      active: document.querySelector('#deviceBar .dev-btn.active')?.getAttribute('data-device'), facts: document.getElementById('deskFacts').textContent,
+      active: document.getElementById('deviceBar').value, facts: document.getElementById('deskFacts') ? 'a device facts line' : '',
       hc: { mode: document.getElementById('pane-preview').classList.contains('hc-mode'), stage: !document.getElementById('hcStage').hidden, bar: !document.getElementById('hcBar').hidden, frame: getComputedStyle(frame).display },
     };
   }
   call('setDevice', 'kindle');
   frame.style.transition = '';
-  return { bar: [...document.querySelectorAll('#deviceBar .dev-btn')].map((b) => b.getAttribute('data-device') + ':' + b.textContent.trim()), devices: out };
+  return { bar: [...document.querySelectorAll('#deviceBar option')].map((o) => o.value + ':' + o.textContent.trim()), devices: out };
 };
 /** The hardcover beside 1.0's: closed (its parts, spine, counter, facts), then opened and turned. */
 const W4B_HC = async (two) => {
@@ -3382,9 +3388,9 @@ async function wave4bChrome(origin) {
       const two = await page.evaluate(W4B_DEVICE_LOOK, [W4B_DEVICES, true]);
       await one.bringToFront();
       const oneL = await one.evaluate(W4B_DEVICE_LOOK, [W4B_DEVICES, false]);
-      check(JSON.stringify(two.bar) === JSON.stringify(oneL.bar) && two.bar.length === 11, `wave4b (${ui}) preview.devices.expanded: the device bar reads as 1.0's (${two.bar.length} buttons: ${two.bar.map((x) => x.split(':')[0]).join(', ')})`);
+      check(JSON.stringify(two.bar) === JSON.stringify(oneL.bar) && two.bar.length === 11, `wave4b (${ui}) preview.devices.expanded: the device menu reads as 1.0's (${two.bar.length} choices: ${two.bar.map((x) => x.split(':')[0]).join(', ')})`);
       const bad = W4B_DEVICES.filter((d) => JSON.stringify(two.devices[d]) !== JSON.stringify(oneL.devices[d]));
-      check(bad.length === 0, `wave4b (${ui}) preview.devices.expanded + preview.devices.display-truth: every profile's frame, size, footer, display type, screen filter, truth note and facts equal 1.0's${bad.length ? ' — differ: ' + bad.map((d) => d + ' ' + JSON.stringify(two.devices[d]).slice(0, 160) + ' / 1.0 ' + JSON.stringify(oneL.devices[d]).slice(0, 160)).join('; ') : ''}`);
+      check(bad.length === 0, `wave4b (${ui}) preview.devices.expanded + preview.devices.display-truth: every profile's frame, size, footer, display type, screen filter, truth note, the menu's value and the desk (no facts line) equal 1.0's${bad.length ? ' — differ: ' + bad.map((d) => d + ' ' + JSON.stringify(two.devices[d]).slice(0, 160) + ' / 1.0 ' + JSON.stringify(oneL.devices[d]).slice(0, 160)).join('; ') : ''}`);
       // the visible chrome around the page and the typeset page itself, on the open section
       const chrome = (p) => p.evaluate(() => ({ counter: document.getElementById('pageCounter').textContent, name: document.getElementById('previewSectionName').textContent, rh: document.getElementById('rhBook').textContent + '|' + document.getElementById('rhChapter').textContent, total: document.getElementById('deskTotal').textContent, basis: document.getElementById('deskBasis').textContent, rail: document.getElementById('deskRail').innerText, flow: document.getElementById('pageFlow').innerHTML, prev: document.getElementById('btnPrevPage').disabled, next: document.getElementById('btnNextPage').disabled, dir: document.getElementById('pageFlow').dir, lang: document.getElementById('pageFlow').getAttribute('lang'), statPages: document.getElementById('statPages')?.textContent ?? null, statsNote: document.getElementById('statsNote')?.textContent ?? null }));
       await page.bringToFront();
@@ -3495,12 +3501,12 @@ async function wave4bReader(origin) {
     check(caret.want > 1 && caret.page === caret.want, `wave4b preview.follows-caret: a keystroke at a paragraph 60% into "${a.s.title}" (position ${target}) turns the preview to page ${caret.page}, the caret's page (${caret.want})`);
     // preview.desk.totals + desk.rail: the total is the rail's sum on two profiles; a rail row moves the preview there
     for (const d of ['kindle', 'android']) {
-      await page.click(`#deviceBar [data-device="${d}"]`);
+      await page.selectOption('#deviceBar', d);
       await page.waitForFunction((name) => document.getElementById('deskTotal').textContent.includes(name) && window.beukPreview.get('deskState').sig === window.beukPreview.call('deskSignature'), d === 'kindle' ? 'Kindle Paperwhite' : 'Android Tablet', { timeout: 60_000 });
       const t = await page.evaluate(() => ({ total: window.beukPreview.get('deskState').total, sum: Object.values(window.beukPreview.get('deskState').counts).reduce((x, y) => x + y, 0), text: document.getElementById('deskTotal').textContent }));
       check(t.total > 0 && t.total === t.sum && t.text.includes(String(t.total)), `wave4b preview.desk.totals on ${d}: the total (${t.total}) is the sections' sum (${t.sum}) and the desk says it ("${t.text}")`);
     }
-    await page.click('#deviceBar [data-device="kindle"]');
+    await page.selectOption('#deviceBar', 'kindle');
     const row = await page.$$('#deskRail .desk-item');
     const pick = row[Math.min(row.length - 1, b.i)];
     const pickId = await pick.getAttribute('data-desk-id');
@@ -3508,6 +3514,22 @@ async function wave4bReader(origin) {
     await page.waitForTimeout(600);
     const railed = await page.evaluate(() => ({ id: window.beukPreview.state().activeId, current: document.querySelector('#deskRail .desk-item.current')?.getAttribute('data-desk-id'), editor: document.getElementById('manuscript')?.getAttribute('data-section') }));
     check(railed.id === pickId && railed.current === pickId, `wave4b preview.desk.rail: a rail row moves the preview to its section (${railed.id === pickId}) and marks it current (${railed.current === pickId}); the editor opened it too (section ${railed.editor})`);
+    // preview.desk.fold: the desk folds away; the reader takes the height; the counts are still measured (the sidebar's "pages on…" reads them); it opens again
+    const foldH = () => page.evaluate(() => ({ h: document.getElementById('deviceFrame').getBoundingClientRect().height, w: document.getElementById('deviceFrame').getBoundingClientRect().width, expanded: document.getElementById('deskToggle').getAttribute('aria-expanded'), shown: getComputedStyle(document.getElementById('previewDesk')).display !== 'none', stored: localStorage.getItem('beuk.previewDesk.v1') }));
+    const open0 = await foldH();
+    await page.click('#deskToggle');
+    await page.waitForTimeout(700);
+    const shut = await foldH();
+    await page.selectOption('#deviceBar', 'android');
+    await page.waitForFunction(() => document.getElementById('deskTotal').textContent.includes('Android Tablet') && window.beukPreview.get('deskState').sig === window.beukPreview.call('deskSignature'), null, { timeout: 30_000 });
+    const measured = await page.evaluate(() => ({ total: window.beukPreview.get('deskState').total, ready: window.beukPreview.call('statsDeskReady') }));
+    await page.selectOption('#deviceBar', 'kindle');
+    await page.waitForTimeout(500);
+    await page.click('#deskToggle');
+    await page.waitForTimeout(700);
+    const again = await foldH();
+    check(open0.expanded === 'true' && open0.shown && shut.expanded === 'false' && !shut.shown && shut.h > open0.h && shut.stored === 'closed' && measured.total > 0 && measured.ready === true && again.expanded === 'true' && again.shown && Math.abs(again.h - open0.h) < 1.5 && again.stored === 'open',
+      `wave4b preview.desk.fold: the desk folds (aria-expanded ${open0.expanded} to ${shut.expanded}, remembered ${shut.stored}), the Kindle frame grows ${open0.h.toFixed(0)} to ${shut.h.toFixed(0)} px tall, the page counts are still measured while folded (${measured.total} pages, stats ready ${measured.ready}), and it opens again to ${again.h.toFixed(0)} px`);
     // preview.pagecount.fixed-geometry + desk.space: the counts do not follow the window; the frame grows with the column
     const counts = () => page.evaluate(() => JSON.stringify(window.beukPreview.call('computeDeskCountsSync')?.counts));
     const w1 = await page.evaluate(() => document.getElementById('deviceFrame').getBoundingClientRect().width);
@@ -3640,7 +3662,9 @@ async function wave4bRtl(origin) {
         P.call('goToPage', 1, true);
         const step = parseFloat(flow.style.columnWidth) + 64, fr = flow.getBoundingClientRect(), rtl = flow.dir === 'rtl';
         const scale = fr.width / flow.offsetWidth || 1;
-        const colOf = (r) => Math.floor(((rtl ? fr.right - r.right : r.left - fr.left) / scale) / step);
+        // + 1e-3 of a column: a paragraph starting exactly at a column's edge measures 10.999996 columns through the
+        // drawn scale (2026-11-27, at the taller frame the device menu frees) and must count as column 11
+        const colOf = (r) => Math.floor(((rtl ? fr.right - r.right : r.left - fr.left) / scale) / step + 1e-3);
         const alone = [...flow.querySelectorAll('.scene-break')].filter((o) => {
           const r = o.getBoundingClientRect(); if (!r.width && !r.height) return false;
           const c = colOf(r);
@@ -4072,10 +4096,10 @@ async function wave4cRoundTrip(origin) {
     check(JSON.stringify(oneRecipe) === JSON.stringify(out.coverRecipe), "wave4c: 1.0's adoptCoverRecipe on the same recipe writes the recipe 2.0 wrote");
     // the preview's hardcover (4b) wears the new cover, as a jacket
     await page.bringToFront();
-    await page.click('#deviceBar [data-device="hardcover"]');
+    await page.selectOption('#deviceBar', 'hardcover');
     await page.waitForFunction((d) => [...document.querySelectorAll('#pane-preview img')].some((i) => i.getAttribute('src') === d), 'data:image/jpeg;base64,' + out.cover.data, { timeout: 20_000 });
     check(true, "wave4c review focus #4: the preview's hardcover wears the cover made in the maker");
-    await one.evaluate(() => { const b = document.querySelector('#deviceBar [data-device="hardcover"]'); b.click(); });
+    await one.evaluate(() => { const b = document.getElementById('deviceBar'); b.value = 'hardcover'; b.dispatchEvent(new Event('change', { bubbles: true })); });
     const oneText = await one.evaluate(() => document.getElementById('hcBar')?.innerText || '');
     const twoText = await page.evaluate(() => document.getElementById('hcBar')?.innerText || '');
     check(oneText === twoText && oneText.length > 0, `wave4c: the hardcover's bar names the binding as 1.0's does (${JSON.stringify(twoText.slice(0, 80))})`);
@@ -10467,6 +10491,409 @@ async function importlockChecks() {
   }
 }
 
+/* ---- carets across two real tabs (Agora part 0A, task 5, 2026-11-26): caretChecks (E2E_ONLY=caret) ----
+   Two tabs of /studio/ on one book: one context, so one generation, and the tabs relay every change over its
+   BroadcastChannel (store.ts). Both are in the same chapter. Tab B parks its caret at "bro|wn"; tab A changes
+   the paragraph; B types "#" with the real keyboard; A's text must then read "bro#wn". The cases are the jsdom
+   suites' (caret-keeper.test.ts, caret-keeper-hard.test.ts), here in the production build. B's keeper result
+   (editor.storage.caretKeeper.last) is printed with each case. A build without the keeper (the negative control,
+   or main) runs the same cases: its keeper figures are then reported "no keeper on this build", neither passed
+   nor failed, and only the "bro#wn" texts are recorded. */
+const CARET_PARAS = ['Opening line above.', 'The brown fox jumps over the dog.'];
+const CARET_LOREM = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam quis.';
+const CARET_BIG = ['The brown fox jumps over the dog.', ...Array.from({ length: 400 }, (_, i) => `${i} ${CARET_LOREM}`)];
+const CARET_TYPED = 'abcdefghijklmnopqrstuvwx';
+
+/** In-page helpers, installed once per tab as window.__caret. */
+const CARET_HELPERS = () => {
+  const ed = () => document.getElementById('manuscript').beukEditor;
+  const text = () => {
+    const out = [];
+    ed().state.doc.forEach((n) => void out.push(n.textContent));
+    return out.join('\n');
+  };
+  const sig = () => JSON.stringify(ed().state.doc.toJSON());
+  const shape = () => {
+    const out = [];
+    ed().state.doc.forEach((n) => void out.push(n.type.name));
+    return out.join(',');
+  };
+  /** The position just after `prefix` in the block whose text starts "The" (caret-pair.ts's at()). */
+  const at = (prefix) => {
+    let t = null;
+    ed().state.doc.descendants((n, pos) => {
+      if (t === null && n.isText && n.text.startsWith('The')) t = pos + prefix.length;
+    });
+    if (t === null) throw new Error('no block starting "The"');
+    return t;
+  };
+  /** The position `k` letters into the first occurrence of `word`. */
+  const posOf = (word, k) => {
+    let t = null;
+    ed().state.doc.descendants((n, pos) => {
+      if (t === null && n.isText && n.text.includes(word)) t = pos + n.text.indexOf(word) + k;
+    });
+    if (t === null) throw new Error(`no "${word}" in the text`);
+    return t;
+  };
+  /** The start of the text of the first textblock whose text starts with `word`. */
+  const blockStarting = (word) => {
+    let t = null;
+    ed().state.doc.descendants((n, pos) => {
+      if (t === null && n.isTextblock && n.textContent.startsWith(word)) t = pos + 1;
+      return t === null;
+    });
+    if (t === null) throw new Error(`no block starting "${word}"`);
+    return t;
+  };
+  const firstBlock = () => {
+    let r = null;
+    ed().state.doc.forEach((n, off, i) => {
+      if (i === 0) r = { from: off, to: off + n.nodeSize };
+    });
+    return r;
+  };
+  const plugin = (name) => ed().state.plugins.find((p) => p.key.startsWith(name));
+  const um = () => plugin('y-undo$').getState(ed().state).undoManager;
+  const binding = () => plugin('y-sync$').getState(ed().state).binding;
+  /** Every keystroke-rescue report since markRescues(): the rescue writes storage.rescue once per report, and an
+   *  accessor on that property (the same object the extension holds) keeps each, so a case with two remote
+   *  changes (a split, then a join) shows both, not only the last. Nothing is changed in what the rescue does. */
+  const rescueLog = [];
+  let s0 = null;
+  try {
+    s0 = ed()?.storage?.caretKeeper ?? null;
+  } catch {
+    s0 = null;
+  }
+  if (s0 && 'rescue' in s0) {
+    let v = s0.rescue;
+    Object.defineProperty(s0, 'rescue', { configurable: true, enumerable: true, get: () => v, set: (r) => { v = r; rescueLog.push(r); } });
+  }
+  const markRescues = () => void (rescueLog.length = 0);
+  const keeper = () => {
+    const s = ed().storage.caretKeeper;
+    return s ? { has: true, last: s.last, hasRescue: 'rescue' in s, logged: s === s0, rescue: s.rescue ?? null, rescues: rescueLog.slice() } : { has: false, last: null, hasRescue: false, logged: false, rescue: null, rescues: [] };
+  };
+  const doc = (paras) => ({ type: 'doc', content: paras.map((t) => ({ type: 'paragraph', content: t ? [{ type: 'text', text: t }] : [] })) });
+  /** A server-shaped write: raw Yjs on this tab's own doc, outside its editor (the XmlElement / XmlText
+   *  constructors come from the existing children). "heading": the block starting "The brown" is replaced by a
+   *  level-2 heading copy; "rewrite": every block replaced by a copy, `append` added to the first. Returns the
+   *  time of the write (performance.timeOrigin-based, comparable across tabs). */
+  const serverWrite = (kind, append = '') => {
+    const b = binding();
+    const ydoc = b.doc;
+    const frag = b.type;
+    const kids = frag.toArray();
+    const XmlElement = kids[0].constructor;
+    const textCtor = (el) => {
+      for (const c of el.toArray()) {
+        if (!(c instanceof XmlElement)) return c.constructor;
+        const t = textCtor(c);
+        if (t) return t;
+      }
+      return null;
+    };
+    let XmlText = null;
+    for (const k of kids) if (!XmlText) XmlText = textCtor(k);
+    const plain = (el) => (el instanceof XmlText ? el.toDelta().map((o) => (typeof o.insert === 'string' ? o.insert : '')).join('') : el.toArray().map(plain).join(''));
+    const clone = (el, name = el.nodeName, attrs = el.getAttributes(), add = '') => {
+      const n = new XmlElement(name);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      n.insert(0, el.toArray().map((c) => {
+        if (c instanceof XmlText) {
+          const t = new XmlText();
+          t.applyDelta([...c.toDelta(), ...(add ? [{ insert: add }] : [])]);
+          return t;
+        }
+        return clone(c);
+      }));
+      return n;
+    };
+    const t0 = performance.timeOrigin + performance.now();
+    ydoc.transact(() => {
+      if (kind === 'heading') {
+        const i = kids.findIndex((k) => plain(k).startsWith('The brown'));
+        if (i < 0) throw new Error('no block starting "The brown"');
+        const h = clone(kids[i], 'heading', { level: 2 });
+        frag.delete(i, 1);
+        frag.insert(i, [h]);
+      } else {
+        const copies = kids.map((k, i) => clone(k, undefined, undefined, i === 0 ? append : ''));
+        frag.delete(0, frag.length);
+        frag.insert(0, copies);
+      }
+    }, 'e2e-server-writer');
+    return t0;
+  };
+  /** Time every remote Yjs transaction this tab applies from now on (listeners added after the keeper's, so the
+   *  end mark falls after the keeper placed the caret): window.__caretApplied = [{ t0, t1, shows }]. */
+  const timeRemote = (marker) => {
+    const ydoc = binding().doc;
+    window.__caretApplied = [];
+    let open = null;
+    const before = (tr) => {
+      if (!tr.local) open = performance.timeOrigin + performance.now();
+    };
+    const after = (tr) => {
+      if (tr.local) return;
+      window.__caretApplied.push({ t0: open, t1: performance.timeOrigin + performance.now(), shows: text().includes(marker) });
+      open = null;
+    };
+    ydoc.on('beforeTransaction', before);
+    ydoc.on('afterTransaction', after);
+    window.__caretUntime = () => {
+      ydoc.off('beforeTransaction', before);
+      ydoc.off('afterTransaction', after);
+    };
+  };
+  window.__caret = { ed, text, sig, shape, at, posOf, blockStarting, firstBlock, um, binding, keeper, markRescues, doc, serverWrite, timeRemote };
+};
+
+async function caretUntil(fn, ms = 5000, step = 25) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
+    if (await fn()) return true;
+    await new Promise((r) => setTimeout(r, step));
+  }
+  return false;
+}
+
+/** A keeper result as one short phrase. */
+const keeperSays = (k, fresh) => {
+  if (!k.has) return 'no keeper on this build';
+  if (!fresh || !k.last) return 'keeper: no new result';
+  const l = k.last;
+  return `keeper ${l.outcome}${l.moved ? ', moved' : ''}, ${l.ms.toFixed(2)} ms, searched ${l.searched}`;
+};
+
+/** B's keystroke-rescue report(s) for one case: each report since parkB, in order (rescued, moved, vetoed,
+ *  unplaced, caret, then any other count that is not 0). "no report" means no own letter of B's died or was
+ *  stranded in a remote change during the case: the rescue was not exercised. */
+const rescueSays = (k) => {
+  if (!k.has || !k.hasRescue) return 'no keystroke rescue on this build';
+  if (!k.logged) return `rescue log not attached to this editor; last report in storage: ${k.rescue ? JSON.stringify(k.rescue) : 'none'}`;
+  if (!k.rescues.length) return 'rescue: no report in this case (not exercised)';
+  const one = (r) => {
+    const more = ['restored', 'carried', 'stayed', 'uncounted', 'unknown'].filter((f) => r[f]).map((f) => `${f} ${r[f]}`);
+    return `rescued ${r.rescued}, moved ${r.moved}, vetoed ${r.vetoed}, unplaced ${r.unplaced}, caret ${r.caret}${more.length ? ', ' + more.join(', ') : ''}, ${r.ms.toFixed(2)} ms`;
+  };
+  return `rescue: ${k.rescues.length} report(s): ${k.rescues.map((r, i) => `[${i + 1}] ${one(r)}`).join('; ')}`;
+};
+
+async function caretChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const book = JSON.parse(JSON.stringify(f.book));
+  const si = book.sections.findIndex((s) => s.kind === 'body');
+  book.sections[si].content = 'Opening line above.\n\nThe brown fox jumps over the dog.';
+  const file = path.join(OUT, 'caret-book.json');
+  writeFileSync(file, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book }));
+  const log = [];
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const A = await openNext(ctx, origin);
+    await openBackup(A, file);
+    const B = await openNext(ctx, origin); // same context: the same generation, so the two tabs relay
+    await B.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 });
+    await choose(A, si);
+    await choose(B, si);
+    for (const p of [A, B]) await p.evaluate(CARET_HELPERS);
+    const hasKeeper = (await B.evaluate(() => window.__caret.keeper().has));
+    note(`caret: two tabs on "${book.sections[si].title}" (section ${si}); ${hasKeeper ? 'the caret keeper is on this build' : 'NO caret keeper on this build: its figures are reported as such, not checked'}`);
+
+    const same = () => caretUntil(async () => (await A.evaluate(() => window.__caret.sig())) === (await B.evaluate(() => window.__caret.sig())));
+    /** A puts the chapter back to `paras`; B must show it. */
+    const reset = async (paras) => {
+      await A.evaluate((paras) => {
+        const c = window.__caret;
+        c.ed().commands.setContent(c.doc(paras));
+        c.um().stopCapturing();
+      }, paras);
+      const want = paras.join('\n');
+      if (!(await caretUntil(async () => (await B.evaluate(() => window.__caret.text())) === want, 10_000))) throw new Error("B's editor never showed A's reset");
+      if (!(await same())) throw new Error("B's doc never equalled A's after the reset");
+    };
+    /** B in front and focused, its caret at "bro|wn" (a keystroke sent before focus lands on <body>). */
+    const parkB = async () => {
+      await B.bringToFront();
+      await B.evaluate(() => {
+        const c = window.__caret;
+        c.ed().commands.setTextSelection(c.posOf('brown', 3));
+        c.ed().commands.focus();
+      });
+      await focused(B);
+      const got = await B.evaluate(() => {
+        const c = window.__caret;
+        c.ed().commands.setTextSelection(c.posOf('brown', 3));
+        const h = c.ed().state.selection.head;
+        window.__caretKBefore = c.keeper().last;
+        c.markRescues();
+        return c.ed().state.doc.textBetween(h - 3, h) + '|' + c.ed().state.doc.textBetween(h, h + 2);
+      });
+      if (got !== 'bro|wn') throw new Error(`B's caret is not at "bro|wn" before the edit (it reads "${got}")`);
+    };
+    const keeperB = () => B.evaluate(() => {
+      const k = window.__caret.keeper();
+      return { ...k, fresh: k.last !== window.__caretKBefore };
+    });
+    /** A's text around the first "#", newlines shown as ⏎. */
+    const around = (t, mark = '#') => {
+      const i = t.indexOf(mark);
+      return i < 0 ? `(no "${mark}" in "${t.slice(0, 60).replace(/\n/g, '⏎')}…")` : t.slice(Math.max(0, i - 16), i + mark.length + 10).replace(/\n/g, '⏎');
+    };
+
+    const inA = (fn) => (A_) => A_.evaluate(fn);
+    const CASES = [
+      ['type a word earlier in the paragraph', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).insertContent('quick ').run(); })],
+      ['split before B', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); }), 'paragraph,paragraph,paragraph'],
+      ['split after B', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The brown fox ')).splitBlock().run(); }), 'paragraph,paragraph,paragraph'],
+      ['bold a word earlier', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection({ from: c.at(''), to: c.at('The') }).toggleMark('strong').run(); })],
+      ["bold B's word", inA(() => { const c = window.__caret; c.ed().chain().setTextSelection({ from: c.at('The '), to: c.at('The brown') }).toggleMark('strong').run(); })],
+      ['paragraph → heading', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); }), 'paragraph,heading'],
+      ['join with the paragraph above', inA(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('')).joinBackward().run(); }), 'paragraph'],
+      ['delete the paragraph above', inA(() => { const c = window.__caret; c.ed().chain().deleteRange(c.firstBlock()).run(); })],
+      ['heading, then A undoes it', async (A_) => {
+        const mid = await A_.evaluate(() => { const c = window.__caret; c.um().stopCapturing(); c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); c.um().stopCapturing(); return c.shape(); });
+        if (mid !== 'paragraph,heading') throw new Error(`A's heading did not take effect (A's blocks ${mid})`);
+        await A_.waitForTimeout(300);
+        await A_.evaluate(() => { const c = window.__caret; c.um().stopCapturing(); c.ed().commands.undo(); });
+      }, 'paragraph,paragraph'],
+      ['split before B, then A joins it back', async (A_) => {
+        const mid = await A_.evaluate(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); return c.shape(); });
+        if (mid !== 'paragraph,paragraph,paragraph') throw new Error(`A's split did not take effect (A's blocks ${mid})`);
+        await A_.waitForTimeout(300);
+        await A_.evaluate(() => { const c = window.__caret; c.ed().chain().setTextSelection(c.blockStarting('brown')).joinBackward().run(); });
+      }, 'paragraph,paragraph'],
+      // Beuk's Enter is a "\n" in the text; two make a blank line, which splits the block once A's caret leaves it
+      ["Beuk's own Enter before B (A's keyboard, twice: a blank line), then A clicks into the paragraph above", async (A_) => {
+        await A_.bringToFront();
+        await A_.evaluate(() => { const c = window.__caret; c.ed().commands.setTextSelection(c.at('The ')); c.ed().commands.focus(); });
+        await focused(A_);
+        await A_.evaluate(() => { const c = window.__caret; c.ed().commands.setTextSelection(c.at('The ')); });
+        await A_.keyboard.press('Enter');
+        await A_.keyboard.press('Enter');
+        await A_.locator('#manuscript .ms-editor > p').first().click();
+        if (!(await caretUntil(() => A_.evaluate(() => window.__caret.shape().split(',').length === 3), 3000))) throw new Error("A's blank line never split the block (A's blocks " + (await A_.evaluate(() => window.__caret.shape())) + ')');
+      }, 'paragraph,paragraph,paragraph'],
+      ['server-shaped write (raw Yjs in A): the paragraph becomes a heading', inA(() => void window.__caret.serverWrite('heading')), 'paragraph,heading'],
+      ['server-shaped write (raw Yjs in A): the whole chapter re-sent, a word added above', inA(() => void window.__caret.serverWrite('rewrite', ' Added.'))],
+    ];
+
+    for (const [name, edit, want] of CASES) {
+      try {
+        await reset(CARET_PARAS);
+        await parkB();
+        await edit(A);
+        if (!(await same())) throw new Error("B's doc never equalled A's after the edit");
+        const k = await keeperB();
+        const shape = await A.evaluate(() => window.__caret.shape());
+        // A's edit took effect: the blocks it must leave (cases that change the block shape)
+        if (want && shape !== want) throw new Error(`A's edit did not take effect: A's blocks ${shape}, want ${want}`);
+        await B.bringToFront();
+        await focused(B);
+        await B.keyboard.type('#');
+        const ok = await caretUntil(async () => (await A.evaluate(() => window.__caret.text())).includes('bro#wn'));
+        const t = await A.evaluate(() => window.__caret.text());
+        log.push({ name, ok, text: t, shape, keeper: k });
+        check(ok, `caret: ${name}: B's "#" lands at "bro#wn" (A reads "…${around(t)}…"; A's blocks ${shape}; ${keeperSays(k, k.fresh)})`);
+      } catch (e) {
+        log.push({ name, ok: false, threw: String(e && e.stack ? e.stack : e) });
+        check(false, `caret: ${name}: the case threw: ${e && e.message ? e.message : e}`);
+      }
+    }
+
+    // typing through a restructure: B types 24 letters (delay 40 ms) while A's edits run in A's page
+    const THROUGH = [
+      ['typing through a heading', [() => { const t = performance.timeOrigin + performance.now(); const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).setNode('heading', { level: 2 }).run(); return t; }]],
+      ['typing through a split then join', [
+        () => { const t = performance.timeOrigin + performance.now(); const c = window.__caret; c.ed().chain().setTextSelection(c.at('The ')).splitBlock().run(); return t; },
+        () => { const t = performance.timeOrigin + performance.now(); const c = window.__caret; c.ed().chain().setTextSelection(c.blockStarting('bro')).joinBackward().run(); return t; },
+      ]],
+    ];
+    const WANT = 'bro' + CARET_TYPED + 'wn';
+    for (const [name, edits] of THROUGH) {
+      try {
+        await reset(CARET_PARAS);
+        await parkB();
+        // the timeline: when B's page saw each key, and when A made each edit (timeOrigin-based, comparable across tabs)
+        await B.evaluate(() => {
+          window.__caretKeys = [];
+          window.__caretKeyOff?.();
+          const onKey = (e) => void window.__caretKeys.push({ key: e.key, t: performance.timeOrigin + performance.now() });
+          document.addEventListener('keydown', onKey, true);
+          window.__caretKeyOff = () => document.removeEventListener('keydown', onKey, true);
+        });
+        const typing = B.keyboard.type(CARET_TYPED, { delay: 40 });
+        const editAt = [];
+        for (const e of edits) {
+          await A.waitForTimeout(300);
+          editAt.push(await A.evaluate(e)); // each edit returns the time it began
+        }
+        await typing;
+        const keys = await B.evaluate(() => {
+          window.__caretKeyOff();
+          return window.__caretKeys;
+        });
+        const k0 = keys[0]?.t ?? 0;
+        note(`caret: ${name}: timeline from B's first key: A's edit(s) at ${editAt.map((t) => `+${(t - k0).toFixed(0)} ms`).join(', ')}; the key B typed nearest each: ${editAt.map((t) => {
+          const near = keys.reduce((b, k) => (!b || Math.abs(k.t - t) < Math.abs(b.t - t) ? k : b), null);
+          return near ? `"${near.key}" at +${(near.t - k0).toFixed(0)} ms` : 'none';
+        }).join(', ')}`);
+        const ok = await caretUntil(async () => (await A.evaluate(() => window.__caret.text())).includes(WANT));
+        const converged = await same();
+        const t = await A.evaluate(() => window.__caret.text());
+        const shape = await A.evaluate(() => window.__caret.shape());
+        const k = await keeperB();
+        log.push({ name, ok: ok && converged, text: t, shape, keeper: k });
+        check(ok && converged, `caret: ${name}: A reads "${WANT}" and both tabs hold the same doc (A reads "${t.replace(/\n/g, '⏎')}"; A's blocks ${shape}; converged ${converged}; ${keeperSays(k, k.fresh)}; B's ${rescueSays(k)})`);
+      } catch (e) {
+        log.push({ name, ok: false, threw: String(e && e.stack ? e.stack : e) });
+        check(false, `caret: ${name}: the case threw: ${e && e.message ? e.message : e}`);
+      }
+    }
+
+    // cost: one whole-chapter rewrite of a 400-paragraph chapter (B's block first, " Added." appended to it)
+    try {
+      await reset(CARET_BIG);
+      await parkB();
+      const chars = await B.evaluate(() => window.__caret.text().length);
+      await B.evaluate(() => window.__caret.timeRemote(' Added.'));
+      const t0 = await A.evaluate(() => window.__caret.serverWrite('rewrite', ' Added.'));
+      if (!(await caretUntil(async () => (await B.evaluate(() => window.__caretApplied.some((x) => x.shows))), 10_000))) throw new Error("B's editor never showed the rewrite");
+      const applied = await B.evaluate(() => {
+        window.__caretUntime();
+        return window.__caretApplied;
+      });
+      const shown = applied.find((x) => x.shows);
+      const whole = shown.t1 - t0;
+      const k = await keeperB();
+      const apply = shown.t0 === null ? null : shown.t1 - shown.t0;
+      const line = `rewrite of ${chars} chars (Chromium, two tabs): ${k.has && k.fresh && k.last ? `keeper ${k.last.ms.toFixed(2)} ms of` : `${keeperSays(k, k.fresh)};`} ${whole.toFixed(2)} ms from A's write to B's editor showing it (B's own apply of it ${apply === null ? 'not timed' : apply.toFixed(2) + ' ms'}; ${applied.length} remote transaction(s) in B)`;
+      note(`caret: ${line}`);
+      if (k.has) {
+        check(k.fresh && k.last?.outcome === 'found' && k.last.ms < 0.5 * whole, `caret: cost: the rewrite gives outcome "found" and the keeper's ms is under half the whole (${k.fresh && k.last ? `${k.last.outcome}, ${k.last.ms.toFixed(2)} ms < ${(0.5 * whole).toFixed(2)} ms` : 'no new result'})`);
+      } else note('caret: cost: no keeper on this build (not checked)');
+      await B.bringToFront();
+      await focused(B);
+      await B.keyboard.type('#');
+      const ok = await caretUntil(async () => (await A.evaluate(() => window.__caret.text())).includes('bro#wn'));
+      const t = await A.evaluate(() => window.__caret.text());
+      log.push({ name: 'rewrite of the 400-paragraph chapter', ok, text: t.slice(0, 80), keeper: k, whole, apply, line });
+      check(ok, `caret: rewrite of the 400-paragraph chapter: B's "#" lands at "bro#wn" (A reads "…${around(t)}…")`);
+    } catch (e) {
+      log.push({ name: 'rewrite of the 400-paragraph chapter', ok: false, threw: String(e && e.stack ? e.stack : e) });
+      check(false, `caret: rewrite of the 400-paragraph chapter: the case threw: ${e && e.message ? e.message : e}`);
+    }
+
+    note("caret: offline catch-up: covered by caret-keeper-hard.test.ts until Part 1's transport exists");
+    await harvestCsp(B);
+    await harvestCsp(A);
+  } finally {
+    writeFileSync(path.join(OUT, 'caret-e2e.json'), JSON.stringify(log, null, 1));
+    await ctx.close();
+  }
+}
+
 /* ---- "Use on every chapter…" (2026-11-24; src/chapters/EveryChapter.tsx, everych.ts) ----
    On the Lantern Coast (five chapters of the body: a prologue and four chapters, each with its own plate and backdrop):
    one chapter is given a new backdrop (a picture uploaded there, striped so a screenshot shows it) at Spread, and one
@@ -10621,7 +11048,7 @@ async function everyChapterChecks(origin) {
        chapter's heading block, at most 32em tall): it is "on the page" when most of its box lies inside the device's
        screen. The screenshot is taken with the preview full screen, where the page is large enough to see it. */
     await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
-    await page.locator('#deviceBar [data-device]', { hasText: 'iPad' }).first().click();
+    await page.selectOption('#deviceBar', 'ipad');
     const preview = async (id, name) => {
       await choose(page, idx(id));
       await page.waitForFunction(() => !!document.querySelector('#pageFlow .bd-layer'), null, { timeout: 60_000 });
@@ -10747,6 +11174,123 @@ async function everyChapterChecks(origin) {
   }
 }
 
+/* ---- cover picture: move and zoom (design 2026-11-27): coverpanChecks (E2E_ONLY=coverpan) ----
+   The production build, a real Chromium, the Lantern Coast book. In the cover maker: a picture is uploaded as the
+   writer's art (four coloured quarters, 1200 × 800, so where it sits shows), the picture's controls appear; the
+   picture is dragged with the mouse on the cover, away from the text; the zoom slider is moved with the keyboard; the
+   preview changes; "Use as My Cover" keeps the placement in the book; the maker opened again, and after a reload,
+   shows it kept. Without a placement the cover paints exactly the pixels of an explicit centre at 1×. Screenshots
+   (E2E_OUT): coverpan-1-uploaded.png, coverpan-2-dragged.png, coverpan-3-zoomed.png, coverpan-4-reopened.png,
+   coverpan-5-reloaded.png, coverpan-6-controls.png (the picture's hint, sliders and sharpness line), coverpan-7-reset.png
+   (Reset picture beside Reset positions). */
+async function coverpanChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  const shot = async (page, name) => { const b = await page.locator('#cmCanvas').screenshot(); writeFileSync(path.join(OUT, name), b); return b; };
+  const openMaker = async (page) => {
+    await page.click('#btnSettings2');
+    await page.waitForSelector('#btnCoverMake');
+    await page.click('#btnCoverMake');
+    await page.waitForFunction(() => document.getElementById('modalCoverMaker').classList.contains('open'));
+  };
+  const recipe = (page) => page.evaluate(() => window.beukCover.run((_a, c) => JSON.parse(JSON.stringify(c.vars.cmRecipe))));
+  const sliders = (page) => page.evaluate(() => ['cmPicH', 'cmPicV', 'cmPicZoom'].map((id) => document.getElementById(id).value));
+  try {
+    const page = await w4cOpen(ctx, origin, f.file);
+    await openMaker(page);
+    // the writer's art: four quarters (red, blue / yellow, green)
+    const png = await page.evaluate(() => {
+      const c = document.createElement('canvas'); c.width = 1200; c.height = 800;
+      const g = c.getContext('2d');
+      [['#c0392b', 0, 0], ['#2471a3', 600, 0], ['#f4d03f', 0, 400], ['#1e8449', 600, 400]].forEach(([col, x, y]) => { g.fillStyle = col; g.fillRect(x, y, 600, 400); });
+      return c.toDataURL('image/png').split(',')[1];
+    });
+    await page.setInputFiles('#cmArtInput', { name: 'quarters.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+    await page.waitForFunction(() => document.getElementById('cmPicRow').style.display === '' && document.getElementById('btnCmResetPic').style.display === '', null, { timeout: 20_000 });
+    await page.evaluate(() => document.fonts.ready);
+    const r0 = await recipe(page);
+    check(r0.bgType === 'image' && !('bgFocus' in r0) && !('bgZoom' in r0), `coverpan: the uploaded art paints the cover, centred at 1× (no placement yet: ${JSON.stringify([r0.bgType, r0.bgFocus, r0.bgZoom])})`);
+    check(JSON.stringify(await sliders(page)) === JSON.stringify(['500', '500', '100']), `coverpan: the picture's sliders start at the centre and 100% (${(await sliders(page)).join(', ')})`);
+    const labels = await page.evaluate(() => ['cmPicH', 'cmPicV', 'cmPicZoom'].map((id) => document.querySelector(`label[for="${id}"]`)?.textContent.trim() || ''));
+    check(labels.every((l) => /^Picture — (across|down|zoom) ·/.test(l)), `coverpan: the sliders are labelled (${labels.join(' | ')})`);
+    // without a placement the cover paints exactly what an explicit centre at 1× paints
+    const same = await page.evaluate(() => window.beukCover.run((a, c) => {
+      const r = c.vars.cmRecipe;
+      const px = (rr) => { const cv = a.renderCoverCanvas(rr, 800, 1280); return cv.getContext('2d').getImageData(0, 0, 800, 1280).data; };
+      const x = px(r), y = px(Object.assign({}, r, { bgFocus: { x: 0.5, y: 0.5 }, bgZoom: 1 }));
+      let n = 0; for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) n++;
+      return n;
+    }));
+    check(same === 0, `coverpan: no placement paints the same pixels as an explicit centre at 1× (${same} channel values differ)`);
+    const s1 = await shot(page, 'coverpan-1-uploaded.png');
+    // a drag on the picture, away from every text block
+    const at = await page.evaluate(() => window.beukCover.run((_a, c) => {
+      const cv = document.getElementById('cmCanvas'), boxes = c.vars.cmBlocks;
+      for (const [fx, fy] of [[0.12, 0.62], [0.88, 0.62], [0.12, 0.15], [0.5, 0.62], [0.12, 0.97]]) {
+        const x = fx * cv.width, y = fy * cv.height;
+        if (!boxes.some((b) => x >= b.left - 30 && x <= b.right + 30 && y >= b.top - 30 && y <= b.bottom + 30)) return { fx, fy };
+      }
+      return null;
+    }));
+    check(!!at, `coverpan: a point on the picture away from the text (${JSON.stringify(at)})`);
+    const box = await page.locator('#cmCanvas').boundingBox();
+    const sx = box.x + box.width * at.fx, sy = box.y + box.height * at.fy;
+    await page.mouse.move(sx, sy);
+    await page.mouse.down();
+    await page.mouse.move(sx + 60, sy + 40, { steps: 6 });
+    await page.mouse.up();
+    const r1 = await recipe(page);
+    check(r1.bgFocus && r1.bgFocus.x < 0.5 && r1.bgZoom === 1 && r1.layout === r0.layout, `coverpan: dragging the picture to the right moved it (focus ${JSON.stringify(r1.bgFocus)}, zoom ${r1.bgZoom}; the text layout stays ${r1.layout})`);
+    const s2 = await shot(page, 'coverpan-2-dragged.png');
+    const d12 = await pixelDiff(diffPage, s1, s2);
+    check(d12.ratio > 0.05, `coverpan: the preview shows the picture moved (${(d12.ratio * 100).toFixed(1)}% of its pixels changed)`);
+    // the keyboard: the zoom slider, 80 steps up
+    await page.focus('#cmPicZoom');
+    for (let i = 0; i < 80; i++) await page.keyboard.press('ArrowRight');
+    const r2 = await recipe(page);
+    const vt = await page.getAttribute('#cmPicZoom', 'aria-valuetext');
+    check(Math.abs(r2.bgZoom - 1.8) < 1e-9 && Math.abs(r2.bgFocus.x - r1.bgFocus.x) < 0.002 && vt === '180%', `coverpan: the zoom slider moved by the keyboard zooms to 1.8× (aria-valuetext ${vt}); the focus stays`);
+    const s3 = await shot(page, 'coverpan-3-zoomed.png');
+    check((await pixelDiff(diffPage, s2, s3)).ratio > 0.05, 'coverpan: the preview shows the zoom');
+    const soft = await page.evaluate(() => { const el = document.getElementById('cmPicSoft'); return { shown: el.style.display === '', text: el.textContent }; });
+    check(soft.shown && /about \d+ pixels per inch/.test(soft.text) && /larger picture/.test(soft.text) && !/Zoom out/.test(soft.text), `coverpan: zoomed, a 1200 × 800 picture is under 200 ppi on the print cover and one line says so; under 200 at 100% too, it asks only for a larger picture: ${JSON.stringify(soft.text)}`);
+    await page.locator('#cmPicRow').scrollIntoViewIfNeeded();
+    await page.locator('#cmPicRow').screenshot({ path: path.join(OUT, 'coverpan-6-controls.png') });
+    await page.locator('#btnCmResetPic').scrollIntoViewIfNeeded();
+    await page.locator('.cm-reset-row').screenshot({ path: path.join(OUT, 'coverpan-7-reset.png') });
+    // kept: Use as My Cover, then the export, the maker again, and a reload
+    await page.click('#btnCmUse');
+    await page.waitForFunction(() => !document.getElementById('modalCoverMaker').classList.contains('open'), null, { timeout: 30_000 });
+    await page.keyboard.press('Escape');
+    const out = (await exportBackup(page)).json.book;
+    check(JSON.stringify(out.coverRecipe.bgFocus) === JSON.stringify(r2.bgFocus) && out.coverRecipe.bgZoom === r2.bgZoom, `coverpan: "Use as My Cover" keeps the placement in the book (${JSON.stringify([out.coverRecipe.bgFocus, out.coverRecipe.bgZoom])})`);
+    await openMaker(page);
+    await page.waitForFunction(() => document.getElementById('cmPicRow').style.display === '', null, { timeout: 20_000 });
+    const back = await sliders(page);
+    check(JSON.stringify(back) === JSON.stringify([String(Math.round(r2.bgFocus.x * 1000)), String(Math.round(r2.bgFocus.y * 1000)), '180']), `coverpan: the maker opened again shows the placement (${back.join(', ')})`);
+    const s4 = await shot(page, 'coverpan-4-reopened.png');
+    check((await pixelDiff(diffPage, s3, s4)).ratio === 0, 'coverpan: the reopened cover is the zoomed, moved cover, pixel for pixel');
+    await page.click('#btnCmCancel');
+    await page.keyboard.press('Escape');
+    await page.reload();
+    await page.waitForFunction(() => !!window.beukCover && !!window.lucide && document.querySelectorAll('#cmElFont option').length > 10, null, { timeout: 60_000 });
+    await openMaker(page);
+    await page.waitForFunction(() => document.getElementById('cmPicRow').style.display === '', null, { timeout: 20_000 });
+    const s5 = await shot(page, 'coverpan-5-reloaded.png');
+    check(JSON.stringify(await sliders(page)) === JSON.stringify(back) && (await pixelDiff(diffPage, s4, s5)).ratio === 0, 'coverpan: after a reload the maker shows the same placement and the same cover');
+    // Reset picture: centred at 1× again, the fields gone
+    await page.click('#btnCmResetPic');
+    const r3 = await recipe(page);
+    check(!('bgFocus' in r3) && !('bgZoom' in r3) && JSON.stringify(await sliders(page)) === JSON.stringify(['500', '500', '100']), 'coverpan: Reset picture centres it at 1× and takes the placement away');
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+    await diffCtx.close();
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -10789,6 +11333,8 @@ try {
   if (run('importlock')) await importlockChecks();
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
+  if (run('caret')) await caretChecks(srv.origin);
+  if (run('coverpan')) await coverpanChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
   if (run('screenshots')) await screenshots(srv.origin);
 } catch (e) {

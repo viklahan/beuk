@@ -1168,14 +1168,13 @@
       .studio-sub { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; line-height: 1.5; }
 
       /* ---------- Preview pane ---------- */
-      .device-bar { display: flex; gap: 6px; padding: 14px 16px 4px; flex-wrap: wrap; flex: 0 0 auto; }
-      .dev-btn {
-        display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); background: var(--panel-2);
-        color: var(--muted); border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 600;
+      /* The device menu: one native select at every width, so the bar is one row on a phone too and the reader keeps the height. */
+      .device-bar { display: flex; justify-content: center; padding: 12px 16px 0; flex: 0 0 auto; }
+      .dev-select {
+        width: 100%; max-width: 432px; background: var(--panel-2); border: 1px solid var(--line-2); color: var(--ink);
+        border-radius: 8px; padding: 7px 9px; font-size: 13px; font-weight: 600; cursor: pointer;
       }
-      .dev-btn svg { width: 14px; height: 14px; }
-      .dev-btn.active { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-      #previewStage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 14px 14px 10px; }
+      #previewStage { flex: 1 1 auto; min-height: 0; overflow: hidden auto; display: flex; flex-direction: column; align-items: center; padding: 14px 14px 10px; }
       #frameZone { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
       #deviceFrame { transition: max-width .25s; width: 100%; flex: 0 0 auto; }
       .frame-kindle { max-width: 348px; background: #2c2c2e; border-radius: 22px; padding: 20px 14px 26px; box-shadow: var(--shadow), inset 0 0 0 2px #454547; }
@@ -1257,15 +1256,28 @@
       .page-btn:disabled { opacity: .35; cursor: default; }
       .page-btn svg { width: 15px; height: 15px; }
       #pageCounter { font-family: var(--mono-font); font-size: 12.5px; color: var(--ink-2); min-width: 96px; text-align: center; }
-      #previewSectionName { text-align: center; font-size: 12px; color: var(--muted); padding-top: 2px; }
+      #previewSectionName { text-align: center; font-size: 12px; color: var(--muted); padding: 2px 0 8px; }
 
       /* ---------- Reading desk (under the device frame) ---------- */
+      /* The desk folds away (V, 2026-11-27: "make the panel below the e-readers collapsible ... more space for the e-reader"):
+         the header button carries the border the desk used to; collapsed, the reader takes the freed height (fitDeviceFrame). */
+      .desk-toggle {
+        display: flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto;
+        width: 100%; max-width: 432px; margin-top: 2px; padding: 9px 4px 5px;
+        background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0;
+        font-family: var(--ui-font); font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer;
+      }
+      .desk-toggle:hover { color: var(--ink); }
+      .desk-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+      .desk-toggle svg { width: 14px; height: 14px; transition: transform .2s ease; }
+      .desk-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
+      @media (prefers-reduced-motion: reduce) { .desk-toggle svg { transition: none; } }
       #previewDesk {
         width: 100%; max-width: 432px; flex: 0 1 auto; min-height: 0;
-        border-top: 1px solid var(--line); margin-top: 2px; padding-top: 10px;
+        padding-top: 4px;
         display: flex; flex-direction: column;
       }
-      .desk-facts { text-align: center; font-size: 11.5px; color: var(--muted); letter-spacing: .02em; }
+      #previewDesk[hidden] { display: none; }
       .desk-total { text-align: center; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-top: 2px; }
       .desk-basis { text-align: center; font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; } /* BEUK:pagecount */
       .desk-rail { overflow-y: auto; min-height: 0; max-height: 172px; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; padding-right: 2px; overscroll-behavior: contain; }
@@ -1288,7 +1300,7 @@
       #pane-preview.hc-mode #deviceFrame,
       #pane-preview.hc-mode #deviceDisplayNote,
       #pane-preview.hc-mode .page-controls,
-      #pane-preview.hc-mode [data-i18n="preview.tip"],
+      #pane-preview.hc-mode #deskToggle,
       #pane-preview.hc-mode #previewDesk { display: none !important; }
       .hc-stage { position: relative; width: 100%; height: 100%; min-height: 220px; display: flex; align-items: center; justify-content: center; outline: none; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
       .hc-stage[hidden] { display: none; }
@@ -1363,9 +1375,9 @@
       #previewStage:-webkit-full-screen { background: var(--bg); padding: 18px; }
       #previewStage.fs-immersive { position: fixed; inset: 0; z-index: 2147483000; width: 100vw; height: 100vh; height: 100dvh; background: var(--bg); padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
       :root[data-theme="candlelight"] #previewStage.fs-immersive { background: radial-gradient(120% 85% at 50% -10%, var(--stage-glow) 0%, var(--panel-3) 58%); }
-      #previewStage:fullscreen #previewDesk, #previewStage:fullscreen [data-i18n="preview.tip"] { display: none; }
-      #previewStage:-webkit-full-screen #previewDesk, #previewStage:-webkit-full-screen [data-i18n="preview.tip"] { display: none; }
-      #previewStage.fs-immersive #previewDesk, #previewStage.fs-immersive [data-i18n="preview.tip"] { display: none; }
+      #previewStage:fullscreen #previewDesk, #previewStage:fullscreen #deskToggle { display: none; }
+      #previewStage:-webkit-full-screen #previewDesk, #previewStage:-webkit-full-screen #deskToggle { display: none; }
+      #previewStage.fs-immersive #previewDesk, #previewStage.fs-immersive #deskToggle { display: none; }
       #deviceFrame.fs-scaled { transition: none; }
       .page-controls .pv-full { padding: 8px 10px; }
       .fs-btn[hidden] { display: none; }
@@ -2437,7 +2449,10 @@
       .cm3d-dtext { font-size: 11.5px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--panel-3); stroke-width: 4px; stroke-linejoin: round; }
       @media (max-width: 700px) { .cm3d-stage { height: 292px; } }
       #cmCanvas.has-text { cursor: grab; }
+      #cmCanvas.has-pic { cursor: grab; touch-action: none; } /* BEUK:coverpan — a finger drags the picture, not the page */
       #cmCanvas.dragging { cursor: grabbing; }
+      .cm-reset-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .cm-pic-row .cm-drag-hint { margin: 0 0 10px; }
       @media (max-width: 700px) { .cm-layout { grid-template-columns: 1fr; } .cm-preview-col { max-width: 300px; margin: 0 auto; width: 100%; } }
 
       /* ---------- Bulk import (shelf) ---------- */
@@ -3558,27 +3573,30 @@
 
         <!-- ============ PANE 3 : PREVIEW ============ -->
         <section id="pane-preview" class="pane">
-          <div class="device-bar" id="deviceBar">
-            <button class="dev-btn active" data-device="kindle"><i data-lucide="book-open"></i>Kindle Paperwhite</button>
-            <button class="dev-btn" data-device="ipad"><i data-lucide="tablet"></i>Apple Books · iPad</button>
-            <button class="dev-btn" data-device="kobo"><i data-lucide="book-marked"></i>Kobo Clara BW</button>
-            <button class="dev-btn" data-device="phone"><i data-lucide="smartphone"></i>Phone · OLED</button>
-            <button class="dev-btn" data-device="oasis"><i data-lucide="book-open"></i>Kindle Oasis</button>
-            <button class="dev-btn" data-device="basic"><i data-lucide="book"></i>Kindle</button>
-            <button class="dev-btn" data-device="colorsoft"><i data-lucide="book-open"></i>Kindle Colorsoft</button><!-- BEUK:devicetruth -->
-            <button class="dev-btn" data-device="iphone"><i data-lucide="smartphone"></i>iPhone</button>
-            <button class="dev-btn" data-device="forma"><i data-lucide="book-marked"></i>Kobo Forma</button>
-            <button class="dev-btn" data-device="android"><i data-lucide="tablet"></i>Android Tablet</button>
-            <button class="dev-btn" data-device="hardcover" data-i18n="hcp.device"><i data-lucide="book-text"></i>Hardcover</button><!-- BEUK:hcpreview -->
+          <!-- One native menu at every width (2026-11-27): eleven buttons wrapped into five or six rows over the reader on a phone. The arrow-keys tip is the menu's tooltip. -->
+          <div class="device-bar">
+            <select class="dev-select" id="deviceBar" aria-label="Preview device" data-i18n-aria="preview.deviceLabel" data-tip="preview.tip">
+              <option value="kindle">Kindle Paperwhite</option>
+              <option value="ipad">Apple Books · iPad</option>
+              <option value="kobo">Kobo Clara BW</option>
+              <option value="phone">Phone · OLED</option>
+              <option value="oasis">Kindle Oasis</option>
+              <option value="basic">Kindle</option>
+              <option value="colorsoft">Kindle Colorsoft</option><!-- BEUK:devicetruth -->
+              <option value="iphone">iPhone</option>
+              <option value="forma">Kobo Forma</option>
+              <option value="android" selected>Android Tablet</option>
+              <option value="hardcover" data-i18n="hcp.device">Hardcover</option><!-- BEUK:hcpreview -->
+            </select>
           </div>
           <div id="previewStage">
             <div id="frameZone">
-              <div id="deviceFrame" class="frame-kindle" data-display="eink-mono">
+              <div id="deviceFrame" class="frame-android" data-display="lcd">
                 <div class="screen" id="deviceScreen">
                   <div class="notch"></div>
                   <div class="run-head"><span id="rhBook"></span><span id="rhChapter"></span></div>
                   <div id="flowWrap"><div id="pageFlow" class="fc-page" lang="en"></div></div>
-                  <div class="run-foot"><span id="footDevice">Kindle Paperwhite · 300 ppi</span></div>
+                  <div class="run-foot"><span id="footDevice">Android Tablet · 10.1 in</span></div>
                   <div class="home-bar"></div>
                 </div>
               </div>
@@ -3608,9 +3626,8 @@
             </div>
             <!-- ==== /BEUK:hcpreview ==== -->
             <div id="previewSectionName"></div>
-            <p style="text-align:center; font-size:11.5px; color:var(--muted); margin:2px 0 10px;" data-i18n="preview.tip">Tip: click the preview, then use ← → arrow keys to turn pages.</p>
+            <button type="button" class="desk-toggle" id="deskToggle" aria-expanded="true" aria-controls="previewDesk"><span data-i18n="preview.desk.toggle">Chapters and page counts</span><i data-lucide="chevron-down"></i></button><!-- BEUK:deskfold -->
             <div id="previewDesk">
-              <div class="desk-facts" id="deskFacts"></div>
               <div class="desk-total" id="deskTotal"></div>
               <div class="desk-basis" id="deskBasis"></div><!-- BEUK:pagecount -->
               <div class="desk-rail" id="deskRail" role="list"></div>
@@ -4160,6 +4177,17 @@
                 <p class="cm-photo-status" id="cmPhotoStatus"></p>
                 <p class="cm-photo-status" id="cmPhotoCredit"></p>
               </div>
+              <!-- ==== BEUK:coverpan ==== -->
+              <div id="cmPicRow" class="full cm-pic-row" style="display:none;">
+                <p class="cm-drag-hint" id="cmPicHint" data-i18n="covermk.picHint">Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.</p>
+                <div class="form-grid">
+                  <div><label class="field-lab" for="cmPicH" data-i18n="covermk.picH">Picture — across · <span class="range-val" id="cmPicHVal"></span></label><input type="range" id="cmPicH" min="0" max="1000" step="1" /></div>
+                  <div><label class="field-lab" for="cmPicV" data-i18n="covermk.picV">Picture — down · <span class="range-val" id="cmPicVVal"></span></label><input type="range" id="cmPicV" min="0" max="1000" step="1" /></div>
+                  <div class="full"><label class="field-lab" for="cmPicZoom" data-i18n="covermk.picZoom">Picture — zoom · <span class="range-val" id="cmPicZoomVal"></span></label><input type="range" id="cmPicZoom" min="100" max="300" step="1" /></div>
+                </div>
+                <p class="cm-wrap-note warn" id="cmPicSoft" role="status" style="display:none;"></p>
+              </div>
+              <!-- ==== /BEUK:coverpan ==== -->
             </div>
             <label class="field-lab" style="margin-top:18px;" data-i18n="covermk.element">Text Element</label>
             <div class="form-grid">
@@ -4177,7 +4205,7 @@
               <div class="full"><label class="field-lab" for="cmElSize" data-i18n="covermk.size">Size · <span class="range-val" id="cmElSizeVal"></span></label><input type="range" id="cmElSize" min="18" max="170" step="1" /></div>
               <div><label class="field-lab" for="cmPosH" data-i18n="covermk.posH">Position — across · <span class="range-val" id="cmPosHVal"></span></label><input type="range" id="cmPosH" min="0" max="1000" step="1" /></div>
               <div><label class="field-lab" for="cmPosV" data-i18n="covermk.posV">Position — down · <span class="range-val" id="cmPosVVal"></span></label><input type="range" id="cmPosV" min="0" max="1000" step="1" /></div>
-              <div class="full"><button class="tb-btn" id="btnCmResetPos" type="button" data-i18n="covermk.resetPos"><i data-lucide="locate-fixed"></i>Reset positions</button></div>
+              <div class="full cm-reset-row"><button class="tb-btn" id="btnCmResetPos" type="button" data-i18n="covermk.resetPos"><i data-lucide="locate-fixed"></i>Reset positions</button><button class="tb-btn" id="btnCmResetPic" type="button" data-i18n="covermk.resetPic" style="display:none;"><i data-lucide="image"></i>Reset picture</button></div>
             </div>
           </div>
         </div>
@@ -5019,8 +5047,9 @@
         "flourish.defaultName": "Flourish",
         "preview.prev": "Prev", "preview.next": "Next", "preview.pageOf": "Page {page} of {count}",
         "preview.tip": "Tip: click the preview, then use ← → arrow keys to turn pages.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Previewing: {name}", "preview.chapterPrefix": "Chapter {n} — ", "preview.excludedSuffix": " · excluded from export",
-        "preview.desk.facts": "{size} screen · {res} · {ppi} ppi", "preview.desk.total": "{title} · about {n} page on {device}", "preview.desk.totalPlural": "{title} · about {n} pages on {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimated for a {w} × {h} px reading area with {size} px text. A reader’s own text size and margins change the count.", "preview.desk.railLabel": "Sections and page counts on this device",
+        "preview.desk.facts": "{size} screen · {res} · {ppi} ppi", "preview.desk.total": "{title} · about {n} page on {device}", "preview.desk.totalPlural": "{title} · about {n} pages on {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimated for a {w} × {h} px reading area with {size} px text. A reader’s own text size and margins change the count.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Sections and page counts on this device",
         "set.title": "Project Settings",
         "set.subHtml": "These metadata fields are written into the EPUB package document (<span style=\"font-family:var(--mono-font);\">package.opf</span>) and the Markdown frontmatter, and used to generate the title page and copyright page.",
         "set.bookTitle": "Book Title", "set.subtitle": "Subtitle (optional)", "set.author": "Author", "set.publisher": "Publisher",
@@ -5326,16 +5355,10 @@
       const TIP_DELAY = 450, TIP_WARM = 90, TIP_LONGPRESS = 500, TIP_TOUCH_HOLD = 3500;
       /* dynamic controls (drawn by their own renderers) get their tip here */
       const TIP_MAP = [
-        ["#btnBetaComments", "tips.comments"],
-        ["#deviceBar .dev-btn[data-device]:not([data-device='hardcover'])", "tips.device"],
-        ["#deviceBar .dev-btn[data-device='hardcover']", "tips.deviceHardcover"]
+        ["#btnBetaComments", "tips.comments"]
       ];
-      const TIP_PARAMS = {
-        "tips.device": (el) => {
-          const f = typeof DEVICE_FACTS === "object" && DEVICE_FACTS[el.getAttribute("data-device")];
-          return f ? { size: f.size, res: f.res, ppi: f.ppi } : null;
-        }
-      };
+      /* a tip key's {placeholders}, filled from its element (none now: the device buttons that used it became one menu, #deviceBar) */
+      const TIP_PARAMS = {};
       let tipEl = null, tipCur = null, tipTimer = 0, tipHoldTimer = 0, tipPress = null, tipSuppressClickUntil = 0, tipLastHide = 0, tipKeyboard = false, tipSweep = null;
       function tipKeepsTitle(el) {
         if (!el || !el.tagName || TIP_KEEP_TAGS[el.tagName]) return true;
@@ -5777,8 +5800,9 @@
         "flourish.defaultName": "Floritura",
         "preview.prev": "Anterior", "preview.next": "Siguiente", "preview.pageOf": "Página {page} de {count}",
         "preview.tip": "Consejo: haz clic en la vista previa y usa las flechas ← → para pasar de página.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Vista previa: {name}", "preview.chapterPrefix": "Capítulo {n} — ", "preview.excludedSuffix": " · excluido de la exportación",
-        "preview.desk.facts": "Pantalla de {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · aprox. {n} página en {device}", "preview.desk.totalPlural": "{title} · aprox. {n} páginas en {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimación para un área de lectura de {w} × {h} px con texto de {size} px. El tamaño de letra y los márgenes que elija cada lector cambian el recuento.", "preview.desk.railLabel": "Secciones y número de páginas en este dispositivo",
+        "preview.desk.facts": "Pantalla de {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · aprox. {n} página en {device}", "preview.desk.totalPlural": "{title} · aprox. {n} páginas en {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimación para un área de lectura de {w} × {h} px con texto de {size} px. El tamaño de letra y los márgenes que elija cada lector cambian el recuento.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Secciones y número de páginas en este dispositivo",
         "set.title": "Ajustes del proyecto",
         "set.subHtml": "Estos metadatos se escriben en el documento del paquete EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) y en la cabecera del Markdown, y se usan para generar la portada interior y la página de créditos.",
         "set.bookTitle": "Título del libro", "set.subtitle": "Subtítulo (opcional)", "set.author": "Autor", "set.publisher": "Editorial",
@@ -5998,8 +6022,9 @@
         "flourish.defaultName": "Fioriture",
         "preview.prev": "Préc.", "preview.next": "Suiv.", "preview.pageOf": "Page {page} sur {count}",
         "preview.tip": "Astuce : cliquez l'aperçu, puis tournez les pages avec les flèches ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Aperçu : {name}", "preview.chapterPrefix": "Chapitre {n} — ", "preview.excludedSuffix": " · exclu de l'export",
-        "preview.desk.facts": "Écran {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · environ {n} page sur {device}", "preview.desk.totalPlural": "{title} · environ {n} pages sur {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimation pour une zone de lecture de {w} × {h} px avec un texte de {size} px. La taille du texte et les marges choisies par le lecteur changent le décompte.", "preview.desk.railLabel": "Sections et nombre de pages sur cet appareil",
+        "preview.desk.facts": "Écran {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · environ {n} page sur {device}", "preview.desk.totalPlural": "{title} · environ {n} pages sur {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimation pour une zone de lecture de {w} × {h} px avec un texte de {size} px. La taille du texte et les marges choisies par le lecteur changent le décompte.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Sections et nombre de pages sur cet appareil",
         "set.title": "Réglages du projet",
         "set.subHtml": "Ces métadonnées sont écrites dans le document du paquet EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) et dans l'en-tête du Markdown, et servent à générer la page de titre et la page de copyright.",
         "set.bookTitle": "Titre du livre", "set.subtitle": "Sous-titre (facultatif)", "set.author": "Auteur", "set.publisher": "Éditeur",
@@ -6219,8 +6244,9 @@
         "flourish.defaultName": "Verzierung",
         "preview.prev": "Zurück", "preview.next": "Weiter", "preview.pageOf": "Seite {page} von {count}",
         "preview.tip": "Tipp: Klicken Sie in die Vorschau und blättern Sie dann mit den Pfeiltasten ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Vorschau: {name}", "preview.chapterPrefix": "Kapitel {n} — ", "preview.excludedSuffix": " · vom Export ausgeschlossen",
-        "preview.desk.facts": "{size} Bildschirm · {res} · {ppi} ppi", "preview.desk.total": "{title} · etwa {n} Seite auf {device}", "preview.desk.totalPlural": "{title} · etwa {n} Seiten auf {device}", "preview.desk.pages": "≈ {n} Seite", "preview.desk.pagesPlural": "≈ {n} Seiten", "preview.desk.basis": "Geschätzt für einen Lesebereich von {w} × {h} px mit {size} px Schrift. Schriftgröße und Ränder, die Lesende selbst wählen, ändern die Zahl.", "preview.desk.railLabel": "Abschnitte und Seitenzahlen auf diesem Gerät",
+        "preview.desk.facts": "{size} Bildschirm · {res} · {ppi} ppi", "preview.desk.total": "{title} · etwa {n} Seite auf {device}", "preview.desk.totalPlural": "{title} · etwa {n} Seiten auf {device}", "preview.desk.pages": "≈ {n} Seite", "preview.desk.pagesPlural": "≈ {n} Seiten", "preview.desk.basis": "Geschätzt für einen Lesebereich von {w} × {h} px mit {size} px Schrift. Schriftgröße und Ränder, die Lesende selbst wählen, ändern die Zahl.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Abschnitte und Seitenzahlen auf diesem Gerät",
         "set.title": "Projekteinstellungen",
         "set.subHtml": "Diese Metadaten werden in das EPUB-Paketdokument (<span style=\"font-family:var(--mono-font);\">package.opf</span>) und den Markdown-Vorspann geschrieben und erzeugen Titelblatt und Impressum.",
         "set.bookTitle": "Buchtitel", "set.subtitle": "Untertitel (optional)", "set.author": "Autor", "set.publisher": "Verlag",
@@ -6440,8 +6466,9 @@
         "flourish.defaultName": "Fregio",
         "preview.prev": "Prec.", "preview.next": "Succ.", "preview.pageOf": "Pagina {page} di {count}",
         "preview.tip": "Consiglio: fai clic sull'anteprima, poi sfoglia le pagine con le frecce ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Anteprima: {name}", "preview.chapterPrefix": "Capitolo {n} — ", "preview.excludedSuffix": " · escluso dall'esportazione",
-        "preview.desk.facts": "Schermo da {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · circa {n} pagina su {device}", "preview.desk.totalPlural": "{title} · circa {n} pagine su {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagine", "preview.desk.basis": "Stima per un'area di lettura di {w} × {h} px con testo a {size} px. La dimensione del testo e i margini scelti dal lettore cambiano il conteggio.", "preview.desk.railLabel": "Sezioni e conteggio pagine su questo dispositivo",
+        "preview.desk.facts": "Schermo da {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · circa {n} pagina su {device}", "preview.desk.totalPlural": "{title} · circa {n} pagine su {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagine", "preview.desk.basis": "Stima per un'area di lettura di {w} × {h} px con testo a {size} px. La dimensione del testo e i margini scelti dal lettore cambiano il conteggio.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Sezioni e conteggio pagine su questo dispositivo",
         "set.title": "Impostazioni del progetto",
         "set.subHtml": "Questi metadati vengono scritti nel documento del pacchetto EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) e nell'intestazione del Markdown, e servono a generare frontespizio e pagina del copyright.",
         "set.bookTitle": "Titolo del libro", "set.subtitle": "Sottotitolo (facoltativo)", "set.author": "Autore", "set.publisher": "Editore",
@@ -6661,8 +6688,9 @@
         "flourish.defaultName": "Floreio",
         "preview.prev": "Ant.", "preview.next": "Seg.", "preview.pageOf": "Página {page} de {count}",
         "preview.tip": "Dica: clique na pré-visualização e vire as páginas com as setas ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Pré-visualização: {name}", "preview.chapterPrefix": "Capítulo {n} — ", "preview.excludedSuffix": " · excluído da exportação",
-        "preview.desk.facts": "Tela de {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · cerca de {n} página no {device}", "preview.desk.totalPlural": "{title} · cerca de {n} páginas no {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimativa para uma área de leitura de {w} × {h} px com texto de {size} px. O tamanho do texto e as margens escolhidos pelo leitor alteram a contagem.", "preview.desk.railLabel": "Seções e contagem de páginas neste dispositivo",
+        "preview.desk.facts": "Tela de {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · cerca de {n} página no {device}", "preview.desk.totalPlural": "{title} · cerca de {n} páginas no {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimativa para uma área de leitura de {w} × {h} px com texto de {size} px. O tamanho do texto e as margens escolhidos pelo leitor alteram a contagem.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Seções e contagem de páginas neste dispositivo",
         "set.title": "Definições do projeto",
         "set.subHtml": "Estes metadados são escritos no documento do pacote EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) e no cabeçalho do Markdown, e servem para gerar a página de título e a página de direitos.",
         "set.bookTitle": "Título do livro", "set.subtitle": "Subtítulo (opcional)", "set.author": "Autor", "set.publisher": "Editora",
@@ -6882,8 +6910,9 @@
         "flourish.defaultName": "Versiering",
         "preview.prev": "Vorige", "preview.next": "Volgende", "preview.pageOf": "Pagina {page} van {count}",
         "preview.tip": "Tip: klik op het voorbeeld en blader daarna met de pijltjestoetsen ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Voorbeeld: {name}", "preview.chapterPrefix": "Hoofdstuk {n} — ", "preview.excludedSuffix": " · uitgesloten van de export",
-        "preview.desk.facts": "{size} scherm · {res} · {ppi} ppi", "preview.desk.total": "{title} · ongeveer {n} pagina op {device}", "preview.desk.totalPlural": "{title} · ongeveer {n} pagina's op {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagina's", "preview.desk.basis": "Geschat voor een leesvlak van {w} × {h} px met tekst van {size} px. De tekstgrootte en marges die een lezer zelf kiest, veranderen het aantal.", "preview.desk.railLabel": "Secties en pagina-aantallen op dit apparaat",
+        "preview.desk.facts": "{size} scherm · {res} · {ppi} ppi", "preview.desk.total": "{title} · ongeveer {n} pagina op {device}", "preview.desk.totalPlural": "{title} · ongeveer {n} pagina's op {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagina's", "preview.desk.basis": "Geschat voor een leesvlak van {w} × {h} px met tekst van {size} px. De tekstgrootte en marges die een lezer zelf kiest, veranderen het aantal.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Secties en pagina-aantallen op dit apparaat",
         "set.title": "Projectinstellingen",
         "set.subHtml": "Deze metagegevens worden in het EPUB-pakketdocument (<span style=\"font-family:var(--mono-font);\">package.opf</span>) en de Markdown-voorkop geschreven en genereren de titelpagina en copyrightpagina.",
         "set.bookTitle": "Boektitel", "set.subtitle": "Ondertitel (optioneel)", "set.author": "Auteur", "set.publisher": "Uitgever",
@@ -7103,8 +7132,9 @@
         "flourish.defaultName": "Ornament",
         "preview.prev": "Wstecz", "preview.next": "Dalej", "preview.pageOf": "Strona {page} z {count}",
         "preview.tip": "Wskazówka: kliknij podgląd, a potem przewracaj strony strzałkami ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Podgląd: {name}", "preview.chapterPrefix": "Rozdział {n} — ", "preview.excludedSuffix": " · wyłączone z eksportu",
-        "preview.desk.facts": "Ekran {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · około {n} strony na {device}", "preview.desk.totalPlural": "{title} · około {n} stron na {device}", "preview.desk.pages": "≈ {n} strona", "preview.desk.pagesPlural": "≈ {n} strony", "preview.desk.basis": "Szacunek dla obszaru czytania {w} × {h} px przy tekście {size} px. Rozmiar tekstu i marginesy wybrane przez czytelnika zmieniają liczbę.", "preview.desk.railLabel": "Sekcje i liczba stron na tym urządzeniu",
+        "preview.desk.facts": "Ekran {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · około {n} strony na {device}", "preview.desk.totalPlural": "{title} · około {n} stron na {device}", "preview.desk.pages": "≈ {n} strona", "preview.desk.pagesPlural": "≈ {n} strony", "preview.desk.basis": "Szacunek dla obszaru czytania {w} × {h} px przy tekście {size} px. Rozmiar tekstu i marginesy wybrane przez czytelnika zmieniają liczbę.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Sekcje i liczba stron na tym urządzeniu",
         "set.title": "Ustawienia projektu",
         "set.subHtml": "Te metadane są zapisywane w dokumencie pakietu EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) i w nagłówku Markdown oraz służą do wygenerowania strony tytułowej i redakcyjnej.",
         "set.bookTitle": "Tytuł książki", "set.subtitle": "Podtytuł (opcjonalnie)", "set.author": "Autor", "set.publisher": "Wydawca",
@@ -7324,8 +7354,9 @@
         "flourish.defaultName": "Виньетка",
         "preview.prev": "Назад", "preview.next": "Вперёд", "preview.pageOf": "Страница {page} из {count}",
         "preview.tip": "Совет: щёлкните по предпросмотру, а затем листайте страницы стрелками ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Предпросмотр: {name}", "preview.chapterPrefix": "Глава {n} — ", "preview.excludedSuffix": " · исключено из экспорта",
-        "preview.desk.facts": "Экран {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · около {n} страницы на {device}", "preview.desk.totalPlural": "{title} · около {n} страниц на {device}", "preview.desk.pages": "≈ {n} страница", "preview.desk.pagesPlural": "≈ {n} страниц", "preview.desk.basis": "Оценка для области чтения {w} × {h} px при тексте {size} px. Размер шрифта и поля, выбранные читателем, меняют число.", "preview.desk.railLabel": "Разделы и число страниц на этом устройстве",
+        "preview.desk.facts": "Экран {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · около {n} страницы на {device}", "preview.desk.totalPlural": "{title} · около {n} страниц на {device}", "preview.desk.pages": "≈ {n} страница", "preview.desk.pagesPlural": "≈ {n} страниц", "preview.desk.basis": "Оценка для области чтения {w} × {h} px при тексте {size} px. Размер шрифта и поля, выбранные читателем, меняют число.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Разделы и число страниц на этом устройстве",
         "set.title": "Настройки проекта",
         "set.subHtml": "Эти метаданные записываются в документ пакета EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) и в шапку Markdown и используются для создания титульного листа и страницы с выходными данными.",
         "set.bookTitle": "Название книги", "set.subtitle": "Подзаголовок (необязательно)", "set.author": "Автор", "set.publisher": "Издатель",
@@ -7545,8 +7576,9 @@
         "flourish.defaultName": "Süs",
         "preview.prev": "Önceki", "preview.next": "Sonraki", "preview.pageOf": "Sayfa {page} / {count}",
         "preview.tip": "İpucu: önizlemeye tıklayın, sonra ← → ok tuşlarıyla sayfaları çevirin.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Önizleme: {name}", "preview.chapterPrefix": "Bölüm {n} — ", "preview.excludedSuffix": " · dışa aktarımdan çıkarıldı",
-        "preview.desk.facts": "{size} ekran · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.totalPlural": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.pages": "≈ {n} sayfa", "preview.desk.pagesPlural": "≈ {n} sayfa", "preview.desk.basis": "{size} px metinle {w} × {h} px okuma alanı için tahmin. Okurun seçtiği yazı boyutu ve kenar boşlukları sayıyı değiştirir.", "preview.desk.railLabel": "Bu cihazdaki bölümler ve sayfa sayıları",
+        "preview.desk.facts": "{size} ekran · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.totalPlural": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.pages": "≈ {n} sayfa", "preview.desk.pagesPlural": "≈ {n} sayfa", "preview.desk.basis": "{size} px metinle {w} × {h} px okuma alanı için tahmin. Okurun seçtiği yazı boyutu ve kenar boşlukları sayıyı değiştirir.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "Bu cihazdaki bölümler ve sayfa sayıları",
         "set.title": "Proje ayarları",
         "set.subHtml": "Bu üst veriler EPUB paket belgesine (<span style=\"font-family:var(--mono-font);\">package.opf</span>) ve Markdown ön bilgisine yazılır ve başlık sayfası ile telif sayfasını oluşturmak için kullanılır.",
         "set.bookTitle": "Kitap başlığı", "set.subtitle": "Alt başlık (isteğe bağlı)", "set.author": "Yazar", "set.publisher": "Yayınevi",
@@ -7766,8 +7798,9 @@
         "flourish.defaultName": "زخرفة",
         "preview.prev": "السابق", "preview.next": "التالي", "preview.pageOf": "صفحة {page} من {count}",
         "preview.tip": "تلميح: انقر المعاينة، ثم قلّب الصفحات بمفتاحي الأسهم ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "معاينة: {name}", "preview.chapterPrefix": "الفصل {n} — ", "preview.excludedSuffix": " · مستثنى من التصدير",
-        "preview.desk.facts": "شاشة {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · نحو {n} صفحة على {device}", "preview.desk.totalPlural": "{title} · نحو {n} صفحات على {device}", "preview.desk.pages": "≈ {n} صفحة", "preview.desk.pagesPlural": "≈ {n} صفحات", "preview.desk.basis": "تقدير لمساحة قراءة {w} × {h} px بنص {size} px. حجم الخط والهوامش التي يختارها القارئ تغيّر العدد.", "preview.desk.railLabel": "الأقسام وعدد الصفحات على هذا الجهاز",
+        "preview.desk.facts": "شاشة {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · نحو {n} صفحة على {device}", "preview.desk.totalPlural": "{title} · نحو {n} صفحات على {device}", "preview.desk.pages": "≈ {n} صفحة", "preview.desk.pagesPlural": "≈ {n} صفحات", "preview.desk.basis": "تقدير لمساحة قراءة {w} × {h} px بنص {size} px. حجم الخط والهوامش التي يختارها القارئ تغيّر العدد.", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "الأقسام وعدد الصفحات على هذا الجهاز",
         "set.title": "إعدادات المشروع",
         "set.subHtml": "تُكتب هذه البيانات الوصفية في مستند حزمة EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) وفي مقدمة Markdown، وتُستخدم لإنشاء صفحة العنوان وصفحة حقوق النشر.",
         "set.bookTitle": "عنوان الكتاب", "set.subtitle": "العنوان الفرعي (اختياري)", "set.author": "المؤلف", "set.publisher": "الناشر",
@@ -7987,8 +8020,9 @@
         "flourish.defaultName": "飾り",
         "preview.prev": "前へ", "preview.next": "次へ", "preview.pageOf": "{count}ページ中 {page}ページ",
         "preview.tip": "ヒント：プレビューをクリックしてから、← → の矢印キーでページをめくれます。",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "プレビュー中：{name}", "preview.chapterPrefix": "第{n}章 — ", "preview.excludedSuffix": " · 書き出しから除外",
-        "preview.desk.facts": "{size} 画面 · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} で約 {n} ページ", "preview.desk.totalPlural": "{title} · {device} で約 {n} ページ", "preview.desk.pages": "≈ {n} ページ", "preview.desk.pagesPlural": "≈ {n} ページ", "preview.desk.basis": "{w} × {h} px の読書領域、{size} px の文字での推定です。読者が選ぶ文字サイズや余白で数は変わります。", "preview.desk.railLabel": "このデバイスでのセクションとページ数",
+        "preview.desk.facts": "{size} 画面 · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} で約 {n} ページ", "preview.desk.totalPlural": "{title} · {device} で約 {n} ページ", "preview.desk.pages": "≈ {n} ページ", "preview.desk.pagesPlural": "≈ {n} ページ", "preview.desk.basis": "{w} × {h} px の読書領域、{size} px の文字での推定です。読者が選ぶ文字サイズや余白で数は変わります。", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "このデバイスでのセクションとページ数",
         "set.title": "プロジェクト設定",
         "set.subHtml": "これらのメタデータはEPUBパッケージ文書（<span style=\"font-family:var(--mono-font);\">package.opf</span>）とMarkdownのフロントマターに書き込まれ、タイトルページと著作権ページの生成に使われます。",
         "set.bookTitle": "書名", "set.subtitle": "サブタイトル（任意）", "set.author": "著者", "set.publisher": "出版社",
@@ -8208,8 +8242,9 @@
         "flourish.defaultName": "饰纹",
         "preview.prev": "上一页", "preview.next": "下一页", "preview.pageOf": "第 {page} 页，共 {count} 页",
         "preview.tip": "提示：点击预览，然后用 ← → 方向键翻页。",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "正在预览：{name}", "preview.chapterPrefix": "第 {n} 章 — ", "preview.excludedSuffix": " · 已从导出中排除",
-        "preview.desk.facts": "{size} 屏幕 · {res} · {ppi} ppi", "preview.desk.total": "{title} · 在 {device} 上约 {n} 页", "preview.desk.totalPlural": "{title} · 在 {device} 上约 {n} 页", "preview.desk.pages": "≈ {n} 页", "preview.desk.pagesPlural": "≈ {n} 页", "preview.desk.basis": "按 {w} × {h} px 阅读区域、{size} px 文字估算。读者自选的字号和页边距会改变页数。", "preview.desk.railLabel": "此设备上的章节与页数",
+        "preview.desk.facts": "{size} 屏幕 · {res} · {ppi} ppi", "preview.desk.total": "{title} · 在 {device} 上约 {n} 页", "preview.desk.totalPlural": "{title} · 在 {device} 上约 {n} 页", "preview.desk.pages": "≈ {n} 页", "preview.desk.pagesPlural": "≈ {n} 页", "preview.desk.basis": "按 {w} × {h} px 阅读区域、{size} px 文字估算。读者自选的字号和页边距会改变页数。", "preview.desk.toggle": "Chapters and page counts", "preview.desk.railLabel": "此设备上的章节与页数",
         "set.title": "项目设置",
         "set.subHtml": "这些元数据会写入 EPUB 包文档（<span style=\"font-family:var(--mono-font);\">package.opf</span>）和 Markdown 的前置信息，并用于生成书名页和版权页。",
         "set.bookTitle": "书名", "set.subtitle": "副标题（可选）", "set.author": "作者", "set.publisher": "出版社",
@@ -8839,6 +8874,24 @@
       };
       Object.keys(EVERYCHAPTER_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], EVERYCHAPTER_STRINGS[code]); });
       /* ==== /BEUK:everychapter ==== */
+      /* ==== BEUK:keystrokerescue ==== — Studio 2.0's keystroke rescue (studio/src/editor/rescueEditor.ts): what the studio says when letters the writer typed could not be put back. All 13 packs (the 12 beside English are drafts for V's sign-off: docs/strings-pending-signoff.md) */
+      const RESCUE_STRINGS = {
+        "en": { "rescue.lost": "{n} letter you typed went with a change made in another tab, and could not be put back.", "rescue.lostPlural": "{n} letters you typed went with a change made in another tab, and could not be put back." },
+        "es": { "rescue.lost": "{n} letra que escribiste se perdió con un cambio hecho en otra pestaña y no se pudo reponer.", "rescue.lostPlural": "{n} letras que escribiste se perdieron con un cambio hecho en otra pestaña y no se pudieron reponer." },
+        "fr": { "rescue.lost": "{n} lettre que vous avez tapée est partie avec une modification faite dans un autre onglet et n’a pas pu être remise en place.", "rescue.lostPlural": "{n} lettres que vous avez tapées sont parties avec une modification faite dans un autre onglet et n’ont pas pu être remises en place." },
+        "de": { "rescue.lost": "{n} Buchstabe, den Sie getippt haben, ist mit einer Änderung in einem anderen Tab verloren gegangen und konnte nicht wieder eingefügt werden.", "rescue.lostPlural": "{n} Buchstaben, die Sie getippt haben, sind mit einer Änderung in einem anderen Tab verloren gegangen und konnten nicht wieder eingefügt werden." },
+        "it": { "rescue.lost": "{n} lettera che hai scritto è andata persa con una modifica fatta in un’altra scheda e non è stato possibile rimetterla al suo posto.", "rescue.lostPlural": "{n} lettere che hai scritto sono andate perse con una modifica fatta in un’altra scheda e non è stato possibile rimetterle al loro posto." },
+        "pt": { "rescue.lost": "{n} letra que escreveu perdeu-se com uma alteração feita noutro separador e não foi possível repô-la.", "rescue.lostPlural": "{n} letras que escreveu perderam-se com uma alteração feita noutro separador e não foi possível repô-las." },
+        "nl": { "rescue.lost": "{n} letter die u typte is verloren gegaan bij een wijziging in een ander tabblad en kon niet worden teruggezet.", "rescue.lostPlural": "{n} letters die u typte zijn verloren gegaan bij een wijziging in een ander tabblad en konden niet worden teruggezet." },
+        "pl": { "rescue.lost": "{n} wpisana litera zniknęła wraz ze zmianą wprowadzoną w innej karcie i nie dało się jej przywrócić.", "rescue.lostPlural": "Nie dało się przywrócić wpisanych liter, które zniknęły wraz ze zmianą wprowadzoną w innej karcie: {n}." },
+        "ru": { "rescue.lost": "{n} набранная вами буква пропала вместе с изменением в другой вкладке, и её не удалось вернуть.", "rescue.lostPlural": "Набранных вами букв, которые пропали вместе с изменением в другой вкладке и которые не удалось вернуть: {n}." },
+        "tr": { "rescue.lost": "Yazdığınız {n} harf, başka bir sekmede yapılan bir değişiklikle kayboldu ve geri getirilemedi.", "rescue.lostPlural": "Yazdığınız {n} harf, başka bir sekmede yapılan bir değişiklikle kayboldu ve geri getirilemedi." },
+        "ar": { "rescue.lost": "{n} حرف كتبته ضاع مع تغيير أُجري في علامة تبويب أخرى، وتعذّرت إعادته.", "rescue.lostPlural": "عدد الأحرف التي كتبتها وضاعت مع تغيير أُجري في علامة تبويب أخرى وتعذّرت إعادتها: {n}." },
+        "ja": { "rescue.lost": "入力した {n} 文字が別のタブでの変更とともに消え、元に戻せませんでした。", "rescue.lostPlural": "入力した {n} 文字が別のタブでの変更とともに消え、元に戻せませんでした。" },
+        "zh-Hans": { "rescue.lost": "你输入的 {n} 个字符随另一个标签页中的更改一起消失了，无法放回原处。", "rescue.lostPlural": "你输入的 {n} 个字符随另一个标签页中的更改一起消失了，无法放回原处。" }
+      };
+      Object.keys(RESCUE_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], RESCUE_STRINGS[code]); });
+      /* ==== /BEUK:keystrokerescue ==== */
       /* ==== BEUK:legal ==== — the links to /privacy and /terms, all 13 packs */
       const LEGAL_STRINGS = {
         "en": { "legal.authLine": "How your account and books are looked after:", "legal.settingsLine": "How Beuk handles your data, and the ground rules:", "legal.privacy": "Privacy", "legal.terms": "Terms" },
@@ -20597,6 +20650,10 @@
       }
 
       /* ================= State ================= */
+      /* The preview's default device (2026-11-27, V: "show Android tablet as the default in the drop down"): one id, read by the state
+         (state.device) and held by the first paint's markup (the menu's selected option, #deviceFrame's class and data-display, #footDevice)
+         and by the studio's PreviewPane/DEFAULT_DEVICE, which the studio's tests hold to this one. */
+      const DEFAULT_DEVICE = "android";
       const FRONT = [
         { type: "cover", label: "Cover" },
         { type: "halftitle", label: "Half Title" },
@@ -20625,7 +20682,7 @@
         customThemes: [],
         activeId: null,
         importReport: null,
-        device: "kindle",
+        device: DEFAULT_DEVICE,
         page: 1,
         pageCount: 1,
         exportPlatform: "generic",
@@ -37910,7 +37967,7 @@
       function fitDeviceFrame() {
         const zone = $("frameZone"), frame = $("deviceFrame"), screen = $("deviceScreen");
         if (!zone || !frame || !screen) return;
-        const zw = zone.clientWidth, zh = zone.clientHeight;
+        const zw = zone.clientWidth; let zh = zone.clientHeight;
         if (!zw || !zh) return;
         const cs = getComputedStyle(frame);
         const cap = parseFloat(cs.maxWidth) || zw;
@@ -37927,6 +37984,12 @@
            top. The old sum set width = outer size, so every frame drew
            padX wider (and padX ÷ ratio taller) than its zone and spilled
            over the page controls. Fit the content width instead. */
+        /* 2026-11-27: the zone never shrinks below the smallest frame
+           (the 120px floor): on a short phone the desk under it gives
+           way, and the frame no longer spills over the device menu
+           above and the note below; past that the stage scrolls. */
+        const minH = Math.ceil(120 / ratio + padY) + "px";
+        if (zone.style.minHeight !== minH) { zone.style.minHeight = minH; zh = zone.clientHeight; }
         const byHeight = Math.max(0, zh - padY) * ratio;
         const w = Math.max(120, Math.min(cap, zw - padX, byHeight));
         frame.style.width = w.toFixed(1) + "px";
@@ -38178,7 +38241,6 @@
         deskTimer = setTimeout(updateDesk, typeof delay === "number" ? delay : 450);
       }
       function updateDesk() {
-        renderDeskFacts();
         const area = deviceReadingArea(); /* BEUK:pagecount */
         if (!area) return;
         const w = area.w, h = area.h;
@@ -38239,17 +38301,12 @@
           if (!$("flowWrap").clientWidth && counts[state.activeId]) { state.pageCount = counts[state.activeId]; goToPage(state.page, true); }
         })();
       }
-      function renderDeskFacts() {
-        const f = DEVICE_FACTS[state.device]; if (!f) return;
-        $("deskFacts").textContent = t("preview.desk.facts", { size: f.size, res: f.res, ppi: f.ppi });
-      }
       function deskSectionLabel(s) {
         return s.kind === "body"
           ? (s.number ? t("preview.chapterPrefix", { n: s.number }) : "") + (s.title || t("side.untitled"))
           : s.title;
       }
       function renderDesk() {
-        renderDeskFacts();
         if (typeof insGlancePagesRefresh === "function") insGlancePagesRefresh(); /* BEUK:insights — the glance's page count follows the desk */
         if (typeof statsPagesRefresh === "function") statsPagesRefresh(); /* the sidebar's page count is the desk's too */
         /* BEUK:remnants — an empty desk has no pages to report: no total, no basis, no per-section list. */
@@ -38651,13 +38708,12 @@
         $("deviceFrame").className = "frame-" + d;
         $("footDevice").textContent = DEVICE_FOOTERS[d];
         renderDeviceDisplayNote(); /* BEUK:devicetruth */
-        document.querySelectorAll("#deviceBar .dev-btn").forEach((b) => b.classList.toggle("active", b.getAttribute("data-device") === d));
+        const bar = $("deviceBar"); if (bar && bar.value !== d) bar.value = d; /* the device menu shows the device, whoever chose it */
         /* BEUK:reader — the same words at a new geometry: keep the place. */
         const pvAnc = pvAnchorNow();
         const pvTurn = () => { measurePages(); goToPage(pvPageOfAnchor(pvAnc) || 1, true); pvLastSet = state.page; };
         state.page = 1;
         fitDeviceFrame();
-        renderDeskFacts();
         scheduleDeskUpdate(60);
         requestAnimationFrame(pvTurn);
         setTimeout(() => { fitDeviceFrame(); if (state.page === pvLastSet) pvTurn(); else { measurePages(); goToPage(state.page, true); } scheduleDeskUpdate(60); }, 330);
@@ -38666,12 +38722,31 @@
         flow.style.setProperty("--orn-bg", getComputedStyle($("deviceScreen")).backgroundColor);
         hcOnDevice(d); /* BEUK:hcpreview */
       }
+      /* ==== BEUK:deskfold ==== The reading desk under the reader folds away. Remembered per browser (never in the book);
+         with nothing remembered, open on a wide window and folded on the phone layout (the same 1023 px breakpoint as
+         #mobileTabs). Storage may be absent or throw: the choice then holds for the session only. The page counts are
+         measured by #deskMeasure whether the desk shows or not, so the sidebar's "pages on…" line never waits on it. */
+      const DESK_FOLD_KEY = "beuk.previewDesk.v1";
+      function deskOpenWanted() {
+        try { const v = localStorage.getItem(DESK_FOLD_KEY); if (v === "open") return true; if (v === "closed") return false; } catch (e) { /* no storage */ }
+        return window.innerWidth > 1023;
+      }
+      function setDeskOpen(open, remember) {
+        const desk = $("previewDesk"), btn = $("deskToggle");
+        if (!desk || !btn) return;
+        desk.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        if (remember) { try { localStorage.setItem(DESK_FOLD_KEY, open ? "open" : "closed"); } catch (e) { /* no storage */ } }
+        fitDeviceFrame(); /* the reader takes the height the desk gave up, or gives it back */
+        requestAnimationFrame(() => { fitDeviceFrame(); if (!$("flowWrap").clientWidth) return; goToPage(state.page, true); });
+      }
+      /* ==== /BEUK:deskfold ==== */
       function initPreview() {
         pvInit(); /* BEUK:reader */
+        setDeskOpen(deskOpenWanted(), false); /* BEUK:deskfold */
+        if ($("deskToggle")) $("deskToggle").addEventListener("click", () => setDeskOpen($("previewDesk").hidden, true)); /* BEUK:deskfold */
         renderDeviceDisplayNote(); /* BEUK:devicetruth */
-        $("deviceBar").addEventListener("click", (e) => {
-          const b = e.target.closest("[data-device]"); if (b) setDevice(b.getAttribute("data-device"));
-        });
+        $("deviceBar").addEventListener("change", (e) => setDevice(e.target.value));
         $("deskRail").addEventListener("click", (e) => {
           const b = e.target.closest("[data-desk-id]"); if (b) deskGoToSection(b.getAttribute("data-desk-id"));
         });
@@ -51438,6 +51513,14 @@
           }
           out.elements[k] = el;
         });
+        /* BEUK:coverpan — the picture's placement, kept only when the recipe has one (absent = centred at 1×, so a
+           recipe without it reads back key for key as before); held to 0–1 and 1–COVER_ZOOM_MAX. */
+        const pNum = (v) => typeof v === "number" && isFinite(v); /* Number(null) is 0, an edge: only a number is a value */
+        const bf = r.bgFocus;
+        if (bf && typeof bf === "object" && (pNum(bf.x) || pNum(bf.y))) {
+          out.bgFocus = { x: pNum(bf.x) ? Math.min(1, Math.max(0, bf.x)) : 0.5, y: pNum(bf.y) ? Math.min(1, Math.max(0, bf.y)) : 0.5 };
+        }
+        if (pNum(r.bgZoom)) out.bgZoom = Math.min(COVER_ZOOM_MAX, Math.max(1, r.bgZoom));
         /* BEUK:importmeta — what the book said when this recipe was last saved. */
         if (r.bookText && typeof r.bookText === "object") {
           out.bookText = {};
@@ -51486,12 +51569,49 @@
         const n = parseInt(m[1], 16);
         return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
       }
-      function drawImageCover(ctx, src, W, H) {
+      /* ==== BEUK:coverpan ==== */
+      /* Cover picture: move and zoom. The recipe may carry bgFocus {x, y}
+         (0–1: which part of the picture shows — 0 its left / top edge, 1
+         its right / bottom edge, 0.5 centred, as CSS object-position) and
+         bgZoom (1 = just fills the cover, up to COVER_ZOOM_MAX). Absent =
+         centred at 1×, which is exactly the centred cover-crop every cover
+         had before (docs/superpowers/specs/2026-11-27-cover-art-pan-zoom-
+         design.md). The picture is scaled to fill and then zoomed, and its
+         offset is held between W - dw and 0, so no placement can leave a
+         gap. One placement for every place the front cover is drawn: the
+         maker's preview, the e-book and print renders, "Use as My Cover",
+         the print wrap's front panel (the server paints it with this same
+         code), the hardcover and the book on the stand. */
+      const COVER_ZOOM_MAX = 3;
+      function coverArtPlace(recipe) {
+        const f = recipe && recipe.bgFocus, z = recipe ? recipe.bgZoom : undefined;
+        const num = (v) => typeof v === "number" && isFinite(v); /* a null or a string is no value (Number(null) is 0: an edge) */
+        const c01 = (v) => Math.min(1, Math.max(0, v));
+        const fx = f && num(f.x) ? c01(f.x) : 0.5, fy = f && num(f.y) ? c01(f.y) : 0.5;
+        return { x: fx, y: fy, zoom: num(z) ? Math.min(COVER_ZOOM_MAX, Math.max(1, z)) : 1 };
+      }
+      /* Where a picture iw × ih lands on a W × H cover for a placement: its
+         drawn rectangle, in canvas pixels (x, y ≤ 0; x + w, y + h ≥ W, H). */
+      function coverArtRect(iw, ih, W, H, place) {
+        const p = place || { x: 0.5, y: 0.5, zoom: 1 };
+        const scale = Math.max(W / iw, H / ih) * p.zoom;
+        const dw = iw * scale, dh = ih * scale;
+        return { x: (W - dw) * p.x, y: (H - dh) * p.y, w: dw, h: dh, scale };
+      }
+      /* The picture's pixels per inch on a cover printed inW × inH inches at a placement. */
+      function coverArtPpi(iw, ih, inW, inH, place) {
+        if (!(iw > 0 && ih > 0 && inW > 0 && inH > 0)) return 0;
+        return 1 / coverArtRect(iw, ih, inW, inH, place).scale;
+      }
+      const COVER_SOFT_PPI = 200;
+      /* Under half a canvas pixel of room on an axis, a drag does not move the picture along it (cmPicDrag). */
+      const CM_PIC_MIN_SLACK = 0.5;
+      /* ==== /BEUK:coverpan ==== */
+      function drawImageCover(ctx, src, W, H, place) {
         const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
         if (!iw || !ih) return false;
-        const scale = Math.max(W / iw, H / ih);
-        const dw = iw * scale, dh = ih * scale;
-        ctx.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
+        const r = coverArtRect(iw, ih, W, H, place);
+        ctx.drawImage(src, r.x, r.y, r.w, r.h);
         return true;
       }
       function paintCoverTexture(ctx, W, H, kind) {
@@ -51578,10 +51698,14 @@
          reads on it: r, g, b, alpha. (BEUK:selfchecks — named so the
          self-check can predict the composited pixel per channel.) */
       const COVER_ART_SCRIM = [12, 10, 8, 0.20];
-      function paintCoverBackground(ctx, W, H, recipe) {
+      /* place: the writer's picture placement (coverArtPlace) — the front
+         cover passes it; the print wrap's sheet-wide background does not
+         (it stays centred: moving the back or spine picture is not
+         offered), and the wrap's front panel is drawn by drawCoverTo. */
+      function paintCoverBackground(ctx, W, H, recipe, place) {
         const src = coverBgSource(recipe);
         if ((recipe.bgType === "image" || recipe.bgType === "photo") && src) {
-          drawImageCover(ctx, src, W, H);
+          drawImageCover(ctx, src, W, H, place);
           ctx.fillStyle = "rgba(" + COVER_ART_SCRIM.slice(0, 3).join(",") + "," + COVER_ART_SCRIM[3] + ")"; ctx.fillRect(0, 0, W, H);
           return;
         }
@@ -51589,7 +51713,7 @@
           const off = document.createElement("canvas");
           off.width = W; off.height = H;
           const octx = off.getContext("2d");
-          if (src) drawImageCover(octx, src, W, H);
+          if (src) drawImageCover(octx, src, W, H, place);
           else paintCoverScene(octx, W, H);
           try {
             const idata = octx.getImageData(0, 0, W, H);
@@ -51774,7 +51898,7 @@
         const ctx = canvas.getContext("2d");
         const u = W / 800;
         const items = [];
-        paintCoverBackground(ctx, W, H, recipe);
+        paintCoverBackground(ctx, W, H, recipe, coverArtPlace(recipe)); /* BEUK:coverpan */
         const layout = recipe.layout;
         const left = layout === "modern" || layout === "editorial";
         const marginX = W * 0.09;
@@ -53202,6 +53326,7 @@
           cmBlocks = cmComputeBlocks(c);
           c.classList.toggle("has-text", cmBlocks.length > 0);
         }
+        syncMakerPicControls(); /* BEUK:coverpan — the picture controls follow the picture (it decodes after the first draw) */
         drawWrapPreview();
       }
       /* The drawn blocks' bounding boxes, measured on the preview canvas —
@@ -53258,6 +53383,60 @@
         $("cmPosHVal").textContent = Math.round(pos.x * 100) + "%";
         $("cmPosVVal").textContent = Math.round(pos.y * 100) + "%";
       }
+      /* ==== BEUK:coverpan ==== */
+      /* The picture the maker's cover paints (the writer's art, a stock
+         photo, or the art under duotone), once it is decoded; else null. */
+      function cmPicSrc() {
+        if (!cmRecipe || ["image", "photo", "duotone"].indexOf(cmRecipe.bgType) === -1) return null;
+        const src = coverBgSource(cmRecipe);
+        return src && (src.naturalWidth || src.width) && (src.naturalHeight || src.height) ? src : null;
+      }
+      /* The picture's pixels per inch on the print cover at the recipe's
+         placement: the lower of the print cover download (the book's trim,
+         coverPrintSize) and the print wrap's front panel. */
+      function cmPicPrintPpi(recipe, src) {
+        const iw = src.naturalWidth || src.width, ih = src.naturalHeight || src.height;
+        const place = coverArtPlace(recipe), tr = trimSize(), d = wrapDims(recipe);
+        const onTrim = coverArtPpi(iw, ih, tr.w, tr.h, place);
+        const onPanel = d && d.layout ? coverArtPpi(iw, ih, d.layout.panelW, d.layout.panelH, place) : Infinity;
+        return Math.min(onTrim, onPanel);
+      }
+      /* The picture's placement, written whole (both fields) whenever the writer moves or zooms it. */
+      function cmSetPic(fx, fy, zoom) {
+        const c01 = (v) => Math.min(1, Math.max(0, v));
+        cmRecipe.bgFocus = { x: c01(fx), y: c01(fy) };
+        cmRecipe.bgZoom = Math.min(COVER_ZOOM_MAX, Math.max(1, zoom));
+      }
+      /* A different picture starts centred at 1× again. */
+      function cmPicForget() { if (cmRecipe) { delete cmRecipe.bgFocus; delete cmRecipe.bgZoom; } }
+      function syncMakerPicControls() {
+        const row = $("cmPicRow");
+        if (!row || !cmRecipe) return;
+        const src = cmPicSrc();
+        row.style.display = src ? "" : "none";
+        const reset = $("btnCmResetPic");
+        if (reset) reset.style.display = src ? "" : "none";
+        const cv = $("cmCanvas");
+        if (cv) cv.classList.toggle("has-pic", !!src);
+        const p = coverArtPlace(cmRecipe);
+        const set = (id, v, shown) => { const el = $(id); if (el) { el.value = String(v); el.setAttribute("aria-valuetext", shown); } const out = $(id + "Val"); if (out) out.textContent = shown; };
+        set("cmPicH", Math.round(p.x * 1000), Math.round(p.x * 100) + "%");
+        set("cmPicV", Math.round(p.y * 1000), Math.round(p.y * 100) + "%");
+        set("cmPicZoom", Math.round(p.zoom * 100), Math.round(p.zoom * 100) + "%");
+        /* Sharpness: when the zoom leaves the print cover under COVER_SOFT_PPI, one line says so with the number. It never blocks anything. */
+        const soft = $("cmPicSoft");
+        if (soft) {
+          const ppi = src && p.zoom > 1 ? cmPicPrintPpi(cmRecipe, src) : Infinity;
+          const show = ppi < COVER_SOFT_PPI;
+          /* at 100% too it falls short: zooming out cannot sharpen it, so the line asks only for a larger picture */
+          const full = show ? cmPicPrintPpi(Object.assign({}, cmRecipe, { bgZoom: 1 }), src) : Infinity;
+          soft.style.display = show ? "" : "none";
+          soft.textContent = !show ? "" : full < COVER_SOFT_PPI
+            ? t("covermk.picSoftLarger", { ppi: fmtNum(Math.floor(ppi)), need: COVER_SOFT_PPI, full: fmtNum(Math.floor(full)) })
+            : t("covermk.picSoft", { ppi: fmtNum(Math.floor(ppi)), need: COVER_SOFT_PPI });
+        }
+      }
+      /* ==== /BEUK:coverpan ==== */
       /* ---- Stock photos: related to the book's own title ----
          On a shelf, the search runs through the shelf's own
          endpoint — GET /api/stock/search?q=<terms>&per_page=<n> —
@@ -53404,6 +53583,7 @@
                 credit: { name: ph.photographer || "", url: ph.pageUrl || ph.photographerUrl || "" }
               };
               state.images.push(im);
+              cmPicForget(); /* BEUK:coverpan */
               cmRecipe.bgImageId = im.id;
               cmRecipe.bgType = "photo";
               noteBookEdited();
@@ -53429,6 +53609,7 @@
             '<button type="button" class="cm-art-cell' + (cmRecipe.bgImageId === im.id ? " active" : "") + '" data-cmart="' + esc(im.id) + '" title="' + esc(im.name) + '"><img src="' + picDataSrc(im.mediaType, im.data) + '" alt=""/></button>'
           ).join("");
           grid.querySelectorAll("[data-cmart]").forEach((b) => b.addEventListener("click", () => {
+            if (cmRecipe.bgImageId !== b.getAttribute("data-cmart")) cmPicForget(); /* BEUK:coverpan */
             cmRecipe.bgImageId = b.getAttribute("data-cmart");
             if (cmRecipe.bgType !== "image" && cmRecipe.bgType !== "duotone") cmRecipe.bgType = "image";
             syncMakerControls();
@@ -53550,6 +53731,7 @@
             if (comma < 0) { toast(t("toast.coverReadFail"), "alert-triangle"); return; }
             const im = { id: uid(), name: file.name, mediaType: file.type, ext: file.type === "image/png" ? "png" : "jpg", data: url.slice(comma + 1) };
             state.images.push(im);
+            cmPicForget(); /* BEUK:coverpan */
             cmRecipe.bgImageId = im.id;
             if (cmRecipe.bgType !== "image" && cmRecipe.bgType !== "duotone") cmRecipe.bgType = "image";
             noteBookEdited();
@@ -53570,11 +53752,23 @@
            currently sit, so nothing jumps when placement begins. */
         const cmC = $("cmCanvas");
         let cmDrag = null;
+        /* BEUK:coverpan — away from the text, a drag moves the picture:
+           its placement follows the pointer (mouse, pen or finger), held
+           so the picture always fills the cover. */
+        let cmPicDrag = null;
         cmC.addEventListener("pointerdown", (e) => {
-          if (!cmRecipe || !cmBlocks.length) return;
+          if (!cmRecipe) return;
           const pt = cmCanvasPoint(e);
           const box = cmBlocks.slice().reverse().find((b) => pt.x >= b.left - 8 && pt.x <= b.right + 8 && pt.y >= b.top - 8 && pt.y <= b.bottom + 8);
-          if (!box) return;
+          if (!box) {
+            if (!cmPicSrc()) return;
+            const p = coverArtPlace(cmRecipe);
+            cmPicDrag = { x0: pt.x, y0: pt.y, fx: p.x, fy: p.y, zoom: p.zoom };
+            cmC.classList.add("dragging");
+            try { cmC.setPointerCapture(e.pointerId); } catch (err) {}
+            e.preventDefault();
+            return;
+          }
           cmGoFree();
           cmElement = box.key;
           syncMakerElementControls();
@@ -53584,6 +53778,19 @@
           e.preventDefault();
         });
         cmC.addEventListener("pointermove", (e) => {
+          if (cmPicDrag && cmRecipe) {
+            const src = cmPicSrc();
+            if (!src) return;
+            const pt = cmCanvasPoint(e);
+            const r = coverArtRect(src.naturalWidth || src.width, src.naturalHeight || src.height, cmC.width, cmC.height, { x: 0.5, y: 0.5, zoom: cmPicDrag.zoom });
+            /* the axis the picture just fills has no room to move: floating point can leave a hair of slack there
+               (about 2e-13 px), and a pixel of pointer wobble divided by it would throw the focus to an edge */
+            const slackX = r.w - cmC.width, slackY = r.h - cmC.height;
+            cmSetPic(slackX > CM_PIC_MIN_SLACK ? cmPicDrag.fx - (pt.x - cmPicDrag.x0) / slackX : cmPicDrag.fx,
+              slackY > CM_PIC_MIN_SLACK ? cmPicDrag.fy - (pt.y - cmPicDrag.y0) / slackY : cmPicDrag.fy, cmPicDrag.zoom);
+            drawMakerPreview();
+            return;
+          }
           if (!cmDrag || !cmRecipe) return;
           const pt = cmCanvasPoint(e);
           cmRecipe.elements[cmDrag.key].pos = {
@@ -53593,7 +53800,7 @@
           drawMakerPreview();
           syncMakerPosControls();
         });
-        const endCmDrag = () => { cmDrag = null; cmC.classList.remove("dragging"); };
+        const endCmDrag = () => { cmDrag = null; cmPicDrag = null; cmC.classList.remove("dragging"); };
         cmC.addEventListener("pointerup", endCmDrag);
         cmC.addEventListener("pointercancel", endCmDrag);
         const posInput = () => {
@@ -53612,6 +53819,18 @@
           CM_ELEMENTS.forEach((k) => { delete cmRecipe.elements[k].pos; });
           if (cmRecipe.layout === "free") cmRecipe.layout = "classic";
           syncMakerControls();
+          drawMakerPreview();
+        });
+        /* BEUK:coverpan — the picture's sliders (the keyboard's and screen readers' way to move and zoom it) and its reset. */
+        const picInput = () => {
+          if (!cmRecipe) return;
+          cmSetPic(Number($("cmPicH").value) / 1000, Number($("cmPicV").value) / 1000, Number($("cmPicZoom").value) / 100);
+          drawMakerPreview();
+        };
+        ["cmPicH", "cmPicV", "cmPicZoom"].forEach((id) => $(id).addEventListener("input", picInput));
+        $("btnCmResetPic").addEventListener("click", () => {
+          if (!cmRecipe) return;
+          cmPicForget();
           drawMakerPreview();
         });
         $("btnCmPhotoFind").addEventListener("click", searchStockPhotos);
@@ -53687,7 +53906,7 @@
         });
       }
       if (typeof window !== "undefined") {
-        window.beukCoverMaker = { defaultRecipe: defaultCoverRecipe, normalize: normalizeCoverRecipe, renderCanvas: renderCoverCanvas, drawTo: drawCoverTo, adopt: adoptCoverRecipe, clear: clearCover, open: openCoverMaker, printSize: coverPrintSize, cache: coverImgCache, layouts: COVER_LAYOUTS, ebook: { w: COVER_EBOOK_W, h: COVER_EBOOK_H }, keywords: cmTitleKeywords, freePos: COVER_FREE_POS, stockSearch: searchStockPhotos, stockResults: cmRenderStockResults, stockGate: cmStockGate, stockUrl: stockSearchUrl, stockDirectUrl: stockDirectUrl, stockMapDirect: cmMapDirectResults, scene: paintCoverScene, wrapDims: wrapDims, drawWrapTo: drawWrapTo, wrapPdfDoc: buildWrapPdfDoc, wrapCanvas: renderWrapCanvas, wrapPapers: WRAP_PAPERS, wrap3d: { faces: wrap3dFaces, source: wrap3dSource, sample: sampleWrapRecipe, refresh: refreshWrap3d, paint: wrap3dPaint, state: () => ({ rotY: w3.rotY, rotX: w3.rotX, auto: w3.auto, sample: w3.sample, dims: w3.dims, geom: w3.geom, faces: w3.faces }) } };
+        window.beukCoverMaker = { defaultRecipe: defaultCoverRecipe, normalize: normalizeCoverRecipe, renderCanvas: renderCoverCanvas, drawTo: drawCoverTo, adopt: adoptCoverRecipe, clear: clearCover, open: openCoverMaker, printSize: coverPrintSize, cache: coverImgCache, layouts: COVER_LAYOUTS, ebook: { w: COVER_EBOOK_W, h: COVER_EBOOK_H }, keywords: cmTitleKeywords, freePos: COVER_FREE_POS, artPlace: coverArtPlace, artRect: coverArtRect, artPpi: coverArtPpi, zoomMax: COVER_ZOOM_MAX, stockSearch: searchStockPhotos, stockResults: cmRenderStockResults, stockGate: cmStockGate, stockUrl: stockSearchUrl, stockDirectUrl: stockDirectUrl, stockMapDirect: cmMapDirectResults, scene: paintCoverScene, wrapDims: wrapDims, drawWrapTo: drawWrapTo, wrapPdfDoc: buildWrapPdfDoc, wrapCanvas: renderWrapCanvas, wrapPapers: WRAP_PAPERS, wrap3d: { faces: wrap3dFaces, source: wrap3dSource, sample: sampleWrapRecipe, refresh: refreshWrap3d, paint: wrap3dPaint, state: () => ({ rotY: w3.rotY, rotX: w3.rotX, auto: w3.auto, sample: w3.sample, dims: w3.dims, geom: w3.geom, faces: w3.faces }) } };
       }
 
       /* ================= EPUB 3.2 packaging ================= */
@@ -59424,7 +59643,17 @@
           else {
             const dpi = Math.min(artPx.w / d.totalW, artPx.h / d.totalH);
             const CP = Object.assign({ image: art.name || "image", dpi: fmtNum(Math.floor(dpi)), px: fmtNum(artPx.w) + " × " + fmtNum(artPx.h), w: storeIn(Math.round(d.totalW * 100) / 100), h: storeIn(Math.round(d.totalH * 100) / 100), need: R.minDpi }, P);
-            if (dpi >= R.minDpi) row("cover", "cdpi", true, "pass", t("store.c.cdpi.name"), t("store.c.cdpi.ok", CP));
+            /* BEUK:coverpan — a zoomed front cover spreads fewer of the picture's pixels over the front panel than the
+               sheet-wide paint does; when that is what falls short, the row says so. Unzoomed, the front panel (smaller
+               than the sheet) always carries at least the sheet's DPI, so nothing changes for a cover without zoom. */
+            const place = coverArtPlace(recipe);
+            const frontDpi = place.zoom > 1 && d.layout ? coverArtPpi(artPx.w, artPx.h, d.layout.panelW, d.layout.panelH, place) : Infinity;
+            if (frontDpi < dpi && frontDpi < R.minDpi) row("cover", "cdpi", true, "fail", t("store.c.cdpi.name"),
+              t("store.c.cdpi.failZoom", Object.assign({}, CP, { dpi: fmtNum(Math.floor(frontDpi)), zoom: fmtNum(Math.round(place.zoom * 100)) + "%" })),
+              t("store.c.cdpi.fixZoom"), { kind: "cover", label: t("store.act.cover") });
+            else if (frontDpi < dpi) row("cover", "cdpi", true, "pass", t("store.c.cdpi.name"), /* the zoomed front is the lowest: quote it */
+              t("store.c.cdpi.okZoom", Object.assign({}, CP, { dpi: fmtNum(Math.floor(frontDpi)), zoom: fmtNum(Math.round(place.zoom * 100)) + "%" })));
+            else if (dpi >= R.minDpi) row("cover", "cdpi", true, "pass", t("store.c.cdpi.name"), t("store.c.cdpi.ok", CP));
             else row("cover", "cdpi", true, "fail", t("store.c.cdpi.name"), t("store.c.cdpi.fail", CP),
               t("store.c.cdpi.fix", { needW: fmtNum(Math.ceil(d.totalW * R.minDpi)), needH: fmtNum(Math.ceil(d.totalH * R.minDpi)) }), { kind: "cover", label: t("store.act.cover") });
           }
@@ -64907,6 +65136,44 @@
             return scVerdict(neutral && lo < 70 && hi > 185 && mids > 40,
               "no-art duotone renders the built-in scene mapped black→white: darkest sample " + lo + ", lightest " + hi + ", " + mids + " mid-tone samples, every sampled pixel neutral");
           } },
+        /* BEUK:coverpan */
+        { id: "cover.maker.picture-move-zoom", feature: "cover", name: "Cover maker: the cover picture moves and zooms — absent placement is centred at 1× (the same pixels as an explicit centre), the placement is held to 0–1 and 1–3×, it never leaves a gap, it moves the picture on the drawn cover, it is kept only when the recipe has it, and the print-cover sharpness follows the zoom",
+          run() {
+            const bad = [];
+            const P0 = coverArtPlace({});
+            if (!(P0.x === 0.5 && P0.y === 0.5 && P0.zoom === 1)) bad.push("absent placement is " + JSON.stringify(P0));
+            const Pc = coverArtPlace({ bgFocus: { x: -1, y: 2 }, bgZoom: 9 }), Pl = coverArtPlace({ bgFocus: { x: "a", y: 0.25 }, bgZoom: 0.2 });
+            if (!(Pc.x === 0 && Pc.y === 1 && Pc.zoom === COVER_ZOOM_MAX && Pl.x === 0.5 && Pl.y === 0.25 && Pl.zoom === 1)) bad.push("clamping gave " + JSON.stringify([Pc, Pl]));
+            const Pn = coverArtPlace({ bgFocus: { x: null, y: null }, bgZoom: null }); /* Number(null) is 0: a null must not send the picture to an edge */
+            if (!(Pn.x === 0.5 && Pn.y === 0.5 && Pn.zoom === 1)) bad.push("a null placement gave " + JSON.stringify(Pn));
+            [[3000, 2000], [1000, 3000], [800, 1280], [50, 40]].forEach(([iw, ih]) => [0, 0.37, 1].forEach((fx) => [0, 1].forEach((fy) => [1, 1.7, 3].forEach((z) => {
+              const r = coverArtRect(iw, ih, 800, 1280, { x: fx, y: fy, zoom: z });
+              if (!(r.x <= 1e-9 && r.y <= 1e-9 && r.x + r.w >= 800 - 1e-9 && r.y + r.h >= 1280 - 1e-9)) bad.push("a gap at " + [iw, ih, fx, fy, z].join("/"));
+            }))));
+            const art = document.createElement("canvas"); art.width = 32; art.height = 16;
+            const actx = art.getContext("2d"); actx.fillStyle = "rgb(200,0,0)"; actx.fillRect(0, 0, 16, 16); actx.fillStyle = "rgb(0,0,200)"; actx.fillRect(16, 0, 16, 16);
+            coverImgCache["sc-pan-art"] = art;
+            try {
+              const base = defaultCoverRecipe();
+              base.title = ""; base.subtitle = ""; base.author = ""; base.tagline = ""; base.series = "";
+              base.bgType = "image"; base.bgImageId = "sc-pan-art";
+              const paint = (over) => { const c = document.createElement("canvas"); c.width = 100; c.height = 160; drawCoverTo(c, Object.assign({}, base, over)); return c.getContext("2d").getImageData(0, 0, 100, 160).data; };
+              const none = paint({}), centre = paint({ bgFocus: { x: 0.5, y: 0.5 }, bgZoom: 1 });
+              let same = none.length === centre.length;
+              for (let i = 0; same && i < none.length; i++) if (none[i] !== centre[i]) same = false;
+              if (!same) bad.push("absent placement and an explicit centre painted different pixels");
+              const at = (d) => [d[(80 * 100 + 50) * 4], d[(80 * 100 + 50) * 4 + 2]];
+              const left = at(paint({ bgFocus: { x: 0, y: 0.5 } })), right = at(paint({ bgFocus: { x: 1, y: 0.5 } }));
+              if (!(left[0] > 100 && left[1] < 60 && right[1] > 100 && right[0] < 60)) bad.push("focus 0 / 1 painted the cover's middle " + left + " / " + right + " (want the red half, then the blue)");
+            } finally { delete coverImgCache["sc-pan-art"]; }
+            const plain = normalizeCoverRecipe(defaultCoverRecipe());
+            const kept = normalizeCoverRecipe(Object.assign(defaultCoverRecipe(), { bgFocus: { x: 0.2, y: 0.9 }, bgZoom: 2.5 }));
+            if ("bgFocus" in plain || "bgZoom" in plain) bad.push("a recipe without a placement gained one on normalizing");
+            if (!(kept.bgFocus && kept.bgFocus.x === 0.2 && kept.bgFocus.y === 0.9 && kept.bgZoom === 2.5)) bad.push("the placement did not survive normalizing: " + JSON.stringify([kept.bgFocus, kept.bgZoom]));
+            const ppi1 = coverArtPpi(3000, 4500, 6, 9, coverArtPlace({})), ppi2 = coverArtPpi(3000, 4500, 6, 9, coverArtPlace({ bgZoom: 2 }));
+            if (!(Math.abs(ppi1 - 500) < 1e-6 && Math.abs(ppi2 - 250) < 1e-6)) bad.push("ppi " + ppi1 + " / " + ppi2 + " (want 500 / 250)");
+            return scVerdict(!bad.length, bad.length ? bad.join("; ") : "centred 1× when absent and pixel-equal to an explicit centre; clamped to 0–1 and 1–" + COVER_ZOOM_MAX + "×; no gap at any of 72 placements; focus 0 shows the picture's left half and 1 its right; kept only when given; a 3000 × 4500 picture on a 6 × 9 in cover carries 500 ppi at 1× and 250 at 2×");
+          } },
         { id: "cover.maker.photos-standalone-openverse", feature: "cover", name: "Cover maker: Photos where no shelf answers (the standalone page) searches Openverse directly from the browser — no key anywhere — and maps results into the same grid with an Openverse credit; a shelf that answers but has no signed-in writer still gates as “account”",
           run() {
             const keepCloud = { user: cloud.user, available: cloud.available };
@@ -66651,15 +66918,15 @@
               applyBookDoc(keepDoc);
             }
           } },
-        { id: "preview.devices.expanded", feature: "preview", name: "Preview devices: Kindle Oasis, Kindle (basic), Kindle Colorsoft, iPhone, Kobo Forma and a generic Android tablet join the original four profiles, each selectable with its own frame size and footer label; the original four keep their frames (the Kobo Clara is named for the model it is, the Clara BW); the Hardcover print device makes eleven buttons",
+        { id: "preview.devices.expanded", feature: "preview", name: "Preview devices: Kindle Oasis, Kindle (basic), Kindle Colorsoft, iPhone, Kobo Forma and a generic Android tablet join the original four profiles, each selectable with its own frame size and footer label; the original four keep their frames (the Kobo Clara is named for the model it is, the Clara BW); the Hardcover print device makes eleven choices in the one device menu, which shows the device chosen",
           run() {
             const keepDevice = state.device;
             const frame = $("deviceFrame");
             const keepTrans = frame.style.transition;
             frame.style.transition = "none";
             try {
-              const btns = Array.from(document.querySelectorAll("#deviceBar .dev-btn"));
-              const ids = btns.map((b) => b.getAttribute("data-device"));
+              const btns = Array.from(document.querySelectorAll("#deviceBar option"));
+              const ids = btns.map((b) => b.value);
               const allOk = btns.length === 11 && ["kindle", "ipad", "kobo", "phone", "oasis", "basic", "colorsoft", "iphone", "forma", "android", "hardcover"].every((d) => ids.includes(d)); /* BEUK:hcpreview — ten e-readers + the Hardcover print device (BEUK:devicetruth — Kindle Colorsoft is the tenth) */
               const origOk = DEVICE_FOOTERS.kindle === "Kindle Paperwhite · 300 ppi" && DEVICE_FOOTERS.ipad === "Apple Books · iPad" &&
                 DEVICE_FOOTERS.kobo === "Kobo Clara BW · ComfortLight Pro" && DEVICE_FOOTERS.phone === "Phone · OLED True Black"; /* BEUK:devicetruth — the Clara BW, by name */
@@ -66669,14 +66936,14 @@
                 setDevice(d);
                 const w = getComputedStyle($("deviceFrame")).maxWidth;
                 const f = $("footDevice").textContent;
-                const btn = btns.find((b) => b.getAttribute("data-device") === d);
-                const okD = $("deviceFrame").className === "frame-" + d && w === expect[d][0] && f === expect[d][1] && !!btn && btn.textContent.includes(expect[d][2]);
+                const btn = btns.find((b) => b.value === d);
+                const okD = $("deviceFrame").className === "frame-" + d && w === expect[d][0] && f === expect[d][1] && !!btn && btn.textContent.includes(expect[d][2]) && $("deviceBar").value === d;
                 if (!okD) { newOk = false; bits.push(d + "=" + $("deviceFrame").className + "/" + w + "/" + f); }
               });
               setDevice("kindle");
-              const backOk = $("deviceFrame").className === "frame-kindle" && getComputedStyle($("deviceFrame")).maxWidth === "348px" && $("footDevice").textContent === "Kindle Paperwhite · 300 ppi";
+              const backOk = $("deviceFrame").className === "frame-kindle" && getComputedStyle($("deviceFrame")).maxWidth === "348px" && $("footDevice").textContent === "Kindle Paperwhite · 300 ppi" && $("deviceBar").value === "kindle";
               return scVerdict(allOk && origOk && newOk && backOk,
-                "ten e-reader profiles plus the Hardcover device on the bar (" + allOk + "); the original four keep their names and footers (" + origOk + "); each new profile selects its own frame at its own size with its own footer (" + newOk + (bits.length ? " — mismatches: " + bits.join(", ") : "") + "); the Paperwhite still frames at 348px (" + backOk + ")");
+                "ten e-reader profiles plus the Hardcover device in the menu (" + allOk + "); the original four keep their names and footers (" + origOk + "); each new profile selects its own frame at its own size with its own footer, the menu showing it (" + newOk + (bits.length ? " — mismatches: " + bits.join(", ") : "") + "); the Paperwhite still frames at 348px (" + backOk + ")");
             } finally { setDevice(keepDevice || "kindle"); frame.style.transition = keepTrans; }
           } },
         /* ==== BEUK:devicetruth ==== */
@@ -66690,9 +66957,9 @@
             const norm = (f) => String(f || "").replace(/\s+/g, " ").trim();
             try {
               const bad = [], seen = [];
-              const profiles = Array.from(document.querySelectorAll("#deviceBar .dev-btn")).map((b) => b.getAttribute("data-device")).filter((d) => d !== "hardcover");
+              const profiles = Array.from(document.querySelectorAll("#deviceBar option")).map((b) => b.value).filter((d) => d !== "hardcover");
               if (profiles.length !== 10) bad.push(profiles.length + " e-reader profiles, expected 10");
-              Object.keys(want).forEach((d) => { if (!profiles.includes(d)) bad.push(d + " missing from the bar"); });
+              Object.keys(want).forEach((d) => { if (!profiles.includes(d)) bad.push(d + " missing from the device menu"); });
               profiles.forEach((d) => {
                 const row = DEVICE_DISPLAY[d];
                 if (!row) { bad.push(d + ": no display row"); return; }
@@ -67024,7 +67291,7 @@
               const listOk = items.length === state.sections.length &&
                 items.every((el, i) => el.getAttribute("data-desk-id") === state.sections[i].id &&
                   el.querySelector(".d-pages").textContent === t("preview.desk.pages", { n: res.counts[state.sections[i].id] || 1, count: res.counts[state.sections[i].id] || 1 }));
-              const factsOk = $("deskFacts").textContent.indexOf(DEVICE_FACTS.kindle.res) !== -1 && $("deskFacts").textContent.indexOf("300") !== -1;
+              const factsOk = !$("deskFacts") && $("previewDesk").textContent.indexOf(DEVICE_FACTS.kindle.res) === -1; /* the device facts line is gone (2026-11-27): the desk keeps the total, its basis and the rail */
               const totalOk = $("deskTotal").textContent.indexOf(String(res.total)) !== -1 && $("deskTotal").textContent.indexOf(state.meta.title) !== -1;
               const target = state.sections.find((s) => s.type === "chapter" && s.id !== state.activeId) || state.sections[1];
               const item = items.find((el) => el.getAttribute("data-desk-id") === target.id);
@@ -67034,7 +67301,7 @@
                 document.querySelector("#deskRail .desk-item.current").getAttribute("data-desk-id") === target.id;
               const namedOk = $("previewSectionName").textContent.indexOf(target.title) !== -1;
               return scVerdict(listOk && factsOk && totalOk && movedOk && markedOk && namedOk,
-                "the rail lists all " + items.length + " sections with their engine counts (" + listOk + "); the facts line carries the profile's resolution and density (" + factsOk + "); the total line names the book and its whole-book count (" + totalOk + "); clicking " + (target.title || target.id) + " moves the preview to it (" + movedOk + "), marks it current on the rail (" + markedOk + ") and names it above the desk (" + namedOk + ")");
+                "the rail lists all " + items.length + " sections with their engine counts (" + listOk + "); no device facts line on the desk (" + factsOk + "); the total line names the book and its whole-book count (" + totalOk + "); clicking " + (target.title || target.id) + " moves the preview to it (" + movedOk + "), marks it current on the rail (" + markedOk + ") and names it above the desk (" + namedOk + ")");
             } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
           } },
         { id: "preview.desk.space", feature: "preview", name: "Reading desk space: the device frame grows with the column's available height — measurably larger at a tall pane than a short one — while the screen keeps the profile's true aspect ratio",
@@ -67073,7 +67340,7 @@
             frame.style.transition = "none";
             try {
               applyBookDoc(buildSampleBook());
-              const profiles = Array.from(document.querySelectorAll("#deviceBar .dev-btn")).map((b) => b.getAttribute("data-device")).filter((d) => d !== "hardcover");
+              const profiles = Array.from(document.querySelectorAll("#deviceBar option")).map((b) => b.value).filter((d) => d !== "hardcover");
               const tableBad = profiles.filter((d) => {
                 const g = PAGE_GEOMETRY[d], a = deviceReadingArea(d);
                 return !g || !a || !(a.w > 100 && a.h > 100 && a.w < a.cssW && a.h < a.cssH) || !g.screenSrc ||
@@ -77509,7 +77776,7 @@
               const pages = state.pageCount, seen = [];
               for (let p = 1; p <= Math.min(3, pages); p++) { goToPage(p, true); seen.push(shown(p === 1)); }
               goToPage(Math.min(2, pages), true);
-              const ps = Array.prototype.filter.call(flow.querySelectorAll("p"), (p) => { const r = p.getBoundingClientRect(); return r.width > 0 && r.left >= wr.left && r.right <= wr.right; });
+              const ps = Array.prototype.filter.call(flow.querySelectorAll("p"), (p) => { const r = p.getBoundingClientRect(); return r.width > 0 && r.left >= wr.left - 1 && r.right <= wr.right + 1; }); /* 1 px of float noise: a paragraph is exactly a page wide, so at some frame sizes its right edge lands a hair past the window's */
               const here = ps.length ? previewPageAtX(ps[0].getBoundingClientRect().left + 2) : 0;
               const ok = flow.dir === "rtl" && pages >= 3 && seen.every((n) => n > 0) && here === state.page;
               return scVerdict(ok, "Arabic book, " + pages + " pages, flow " + flow.dir + "; text shown on pages 1–3: " + seen.join(" / ") + " probes; a paragraph on page " + state.page + " is found on page " + here);
@@ -85491,6 +85758,21 @@
       Object.assign(UI_STRINGS.ja, {"preview.display.mono": "This {device} shows colours as shades of grey. They show in colour in the {brand} app, on colour e-readers and on tablets.", "preview.display.colour": "Colours look softer and darker on this {device}’s colour e-ink screen than on a tablet or phone."});
       Object.assign(UI_STRINGS["zh-Hans"], {"preview.display.mono": "This {device} shows colours as shades of grey. They show in colour in the {brand} app, on colour e-readers and on tablets.", "preview.display.colour": "Colours look softer and darker on this {device}’s colour e-ink screen than on a tablet or phone."});
       /* ==== /BEUK:devicetruth strings ==== */
+      /* ==== BEUK:coverpan strings ==== — cover picture: move and zoom. English placeholders in every pack until V signs the translations off */
+      Object.assign(UI_STRINGS.en, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.es, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.fr, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.de, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.it, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.pt, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.nl, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.pl, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.ru, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.tr, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.ar, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS.ja, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      Object.assign(UI_STRINGS["zh-Hans"], {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
+      /* ==== /BEUK:coverpan strings ==== */
       document.addEventListener("DOMContentLoaded", init);
       /* ==== BEUK:beta ==== */
       /* Beta-reader share links (studio side).

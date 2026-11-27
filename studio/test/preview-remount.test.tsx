@@ -46,10 +46,14 @@ describe('the preview pane, remounted', () => {
     mount();
     await waitFor(() => expect(previewStarted()).toBe(true), { timeout: 20_000 });
     expect(previewSafety.listeners).toBe(first);
-    // 1.0's own device bar listener is on the NEW bar
-    document.querySelector<HTMLButtonElement>('#deviceBar [data-device="ipad"]')!.click();
+    // 1.0's own device menu listener is on the NEW menu
+    const menu = document.querySelector<HTMLSelectElement>('#deviceBar')!;
+    menu.value = 'ipad';
+    menu.dispatchEvent(new Event('change', { bubbles: true }));
     expect(document.getElementById('deviceFrame')!.className).toBe('frame-ipad');
-    document.querySelector<HTMLButtonElement>('#deviceBar [data-device="kindle"]')!.click();
+    menu.value = 'kindle';
+    menu.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(document.getElementById('deviceFrame')!.className).toBe('frame-kindle');
     cleanup();
   }, 60_000);
 

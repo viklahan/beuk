@@ -302,7 +302,7 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
 test('Ramp: every book opens on four spreads printed by Beuk, each a real WebP of the size the reader states, each described', () => {
   const html = read('client', 'site', 'ramp.html');
   const books = [...html.matchAll(/"([a-z-]+)": \{ title: "([^"]+)", c: "(#[0-9a-f]{6})", w: (\d+), h: (\d+), spreads: \[([\s\S]*?)\]\}/g)];
-  assert.deepEqual(books.map((b) => b[1]), ['rain-on-calder-street', 'four-kitchens', 'the-sunken-vault', 'lunas-beach-treasure-hunt', 'salt-road', 'the-book-that-reads-you', 'the-woolly-school', 'the-travel-guide', 'the-bookbinders-letter']);
+  assert.deepEqual(books.map((b) => b[1]), ['poems-of-joy', 'rain-on-calder-street', 'four-kitchens', 'the-sunken-vault', 'lunas-beach-treasure-hunt', 'salt-road', 'the-book-that-reads-you', 'the-woolly-school', 'the-travel-guide', 'the-bookbinders-letter']);
   for (const [, slug, title, , w, h, body] of books) {
     const spreads = [...body.matchAll(/\["([^"]+)", "([^"]+)"\]/g)];
     assert.equal(spreads.length, 4, `${slug}: four spreads (a book ends in four turns)`);
@@ -325,7 +325,9 @@ test('Ramp: every book opens on four spreads printed by Beuk, each a real WebP o
   }
   // Honest provenance: printed by Beuk's renderer, pictures made with AI tools and licensed, stories invented, the travel guide's places real.
   assert.match(html, /printed to PDF by Beuk's own print renderer/);
-  assert.match(html, /Pictures made for Beuk with AI image tools and licensed by Beuk's owner/);
+  assert.match(html, /pictures made for Beuk with AI image tools and licensed by Beuk's owner/);
+  // An author's own book says whose words and pictures they are.
+  assert.match(html, /<i>Poems of joy<\/i> is its author's own: Destiny Hernandez wrote the poems and made the pictures with Gemini\./);
   assert.match(html, /in the stories every name, place and event is invented/);
   assert.match(html, /The travel guide's places are real; its photographs are made images, not photographs of those places\./);
   // Every site page beside it links Ramp.

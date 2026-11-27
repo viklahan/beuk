@@ -1,49 +1,56 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useBook } from '../book/BookProvider';
 import { loadClosure } from '../closure/index';
 import { useLocale } from '../i18n/LocaleProvider';
-import { Icon, type IconName } from '../shell/Icon';
+import { Icon } from '../shell/Icon';
+import { DEFAULT_DEVICE, FIRST_PAINT } from './defaultDevice';
+import { deskOpenFirst } from './deskFold';
 import { loadPreview, previewIfLoaded, setPreviewMounted, previewStarted, startPreview, stopPreview, renderNow, queueTyped, pvMobile } from './preview';
 
 /* Step 5 wave 4b (inventory E1, E2): 1.0's preview pane — its markup, ids, classes and keys (client/index.html
    "PANE 3 : PREVIEW"): the device bar, the device frame and its screen (the running head, the page flow, the
    footer), the hardcover's stage, the truth note, the page controls and full screen, the hardcover's bar and facts,
-   the section line, the tip, the reading desk and its hidden measurer. React draws this frame once (its words again on
+   the section line, the reading desk and its hidden measurer. React draws this frame once (its words again on
    a language change); everything inside it that moves is 1.0's own code (src/preview/preview.ts), wired by 1.0's own
    initPreview, hcInit and fsInit. */
 
-const DEVICES: { id: string; icon: IconName; label: string }[] = [
-  { id: 'kindle', icon: 'BookOpen', label: 'Kindle Paperwhite' },
-  { id: 'ipad', icon: 'Tablet', label: 'Apple Books · iPad' },
-  { id: 'kobo', icon: 'BookMarked', label: 'Kobo Clara BW' },
-  { id: 'phone', icon: 'Smartphone', label: 'Phone · OLED' },
-  { id: 'oasis', icon: 'BookOpen', label: 'Kindle Oasis' },
-  { id: 'basic', icon: 'Book', label: 'Kindle' },
-  { id: 'colorsoft', icon: 'BookOpen', label: 'Kindle Colorsoft' },
-  { id: 'iphone', icon: 'Smartphone', label: 'iPhone' },
-  { id: 'forma', icon: 'BookMarked', label: 'Kobo Forma' },
-  { id: 'android', icon: 'Tablet', label: 'Android Tablet' },
+/** The device menu's choices: 1.0's own words, untranslated, as in 1.0 (the hardcover's is translated, hcp.device). */
+const DEVICES: { id: string; label: string }[] = [
+  { id: 'kindle', label: 'Kindle Paperwhite' },
+  { id: 'ipad', label: 'Apple Books · iPad' },
+  { id: 'kobo', label: 'Kobo Clara BW' },
+  { id: 'phone', label: 'Phone · OLED' },
+  { id: 'oasis', label: 'Kindle Oasis' },
+  { id: 'basic', label: 'Kindle' },
+  { id: 'colorsoft', label: 'Kindle Colorsoft' },
+  { id: 'iphone', label: 'iPhone' },
+  { id: 'forma', label: 'Kobo Forma' },
+  { id: 'android', label: 'Android Tablet' },
 ];
 
 /** 1.0's static markup (the device names are 1.0's own words, untranslated, as in 1.0). */
 const Frame = memo(function Frame({ t }: { t: (k: string, p?: Record<string, unknown>) => string }) {
+  // first paint only, read once: 1.0's setDeskOpen (initPreview) owns the desk from the first start on. The value never
+  // changes, so a later draw (a language change) leaves the desk as 1.0 set it.
+  const [deskOpen] = useState(deskOpenFirst);
   return (
     <>
-      <div className="device-bar" id="deviceBar">
-        {DEVICES.map((d) => (
-          <button key={d.id} type="button" className={'dev-btn' + (d.id === 'kindle' ? ' active' : '')} data-device={d.id}>
-            <Icon name={d.icon} />
-            {d.label}
-          </button>
-        ))}
-        <button type="button" className="dev-btn" data-device="hardcover">
-          <Icon name="BookText" />
-          {t('hcp.device')}
-        </button>
+      {/* One native menu at every width (2026-11-27): eleven buttons wrapped into five or six rows over the reader on a
+          phone. Uncontrolled: 1.0's setDevice sets its value and its change event calls setDevice (initPreview). The
+          arrow-keys tip is its tooltip. */}
+      <div className="device-bar">
+        <select className="dev-select" id="deviceBar" defaultValue={DEFAULT_DEVICE} aria-label={t('preview.deviceLabel')} data-tip="preview.tip">
+          {DEVICES.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.label}
+            </option>
+          ))}
+          <option value="hardcover">{t('hcp.device')}</option>
+        </select>
       </div>
       <div id="previewStage">
         <div id="frameZone">
-          <div id="deviceFrame" className="frame-kindle" data-display="eink-mono">
+          <div id="deviceFrame" className={FIRST_PAINT.frameClass} data-display={FIRST_PAINT.display}>
             <div className="screen" id="deviceScreen">
               <div className="notch" />
               <div className="run-head">
@@ -54,7 +61,7 @@ const Frame = memo(function Frame({ t }: { t: (k: string, p?: Record<string, unk
                 <div id="pageFlow" className="fc-page" lang="en" />
               </div>
               <div className="run-foot">
-                <span id="footDevice">Kindle Paperwhite · 300 ppi</span>
+                <span id="footDevice">{FIRST_PAINT.footer}</span>
               </div>
               <div className="home-bar" />
             </div>
@@ -102,9 +109,11 @@ const Frame = memo(function Frame({ t }: { t: (k: string, p?: Record<string, unk
           <p className="hc-hint">{t('hcp.hint')}</p>
         </div>
         <div id="previewSectionName" />
-        <p data-i18n="preview.tip" style={{ textAlign: 'center', fontSize: '11.5px', color: 'var(--muted)', margin: '2px 0 10px' }}>{t('preview.tip')}</p>
-        <div id="previewDesk">
-          <div className="desk-facts" id="deskFacts" />
+        <button type="button" className="desk-toggle" id="deskToggle" aria-expanded={deskOpen} aria-controls="previewDesk">
+          <span>{t('preview.desk.toggle')}</span>
+          <Icon name="ChevronDown" />
+        </button>
+        <div id="previewDesk" hidden={!deskOpen}>
           <div className="desk-total" id="deskTotal" />
           <div className="desk-basis" id="deskBasis" />
           <div className="desk-rail" id="deskRail" role="list" />

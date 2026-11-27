@@ -40,7 +40,7 @@ export const WRAP_SUPPLIED: readonly string[] = ['state', 'document', 'Image', '
 
 export const WRAP_CLOSURE: readonly string[] = [
   'AUTO_TYPES', 'BACKDROP_STRENGTHS', 'BODY_FONTS', 'CM_ELEMENTS', 'COVER_ART_SCRIM', 'COVER_BG_TYPES',
-  'COVER_FONTS', 'COVER_FREE_POS', 'COVER_LAYOUTS', 'COVER_TEXTURES', 'DISPLAY_FONTS', 'FONT_MEDIA',
+  'COVER_FONTS', 'COVER_FREE_POS', 'COVER_LAYOUTS', 'COVER_TEXTURES', 'COVER_ZOOM_MAX', 'DISPLAY_FONTS', 'FONT_MEDIA',
   'HC_BINDINGS', 'HC_GUIDE_STYLE', 'HC_SPEC', 'HEAD_FONTS', 'IMAGE_LINE_RE', 'LANG_PACKS', 'OL_FIELDS_MAX',
   'OL_STATUSES', 'OL_THREADS_MAX', 'OL_THREAD_ID', 'PLATE_FITS', 'PRINT_PICTURE_BOOK_PT', 'SANS_FONTS', 'SANS_STACK',
   'SCRIPT_STACK', 'SERIF_STACK', 'SPINE_CLEAR_IN', 'SPINE_ICON_GAP_IN', 'SPINE_ICON_INSET_IN',
@@ -48,7 +48,7 @@ export const WRAP_CLOSURE: readonly string[] = [
   'TEXT_HEAD_FONTS', 'TRIM_SIZES', 'UI_PLURAL_FORMS', 'UI_STRINGS', 'WRAP_BG_DIRS', 'WRAP_BG_MODES',
   'WRAP_BLEED', 'WRAP_HEX', 'WRAP_PANEL_COLOR', 'WRAP_PANEL_COLOR2', 'WRAP_PAPERS', 'WRAP_PATTERNS',
   'WRAP_SPINE_DIRS', 'WRAP_SPINE_MIN', 'WRAP_SPINE_SHOW', 'countWords', 'countWordsClean', 'countWordsFresh', 'countWordsRaw',
-  'countWordsShort', 'coverBgSource', 'coverImgCache', 'coverLines', 'defaultCoverRecipe', 'displayFontOf',
+  'countWordsShort', 'coverArtPlace', 'coverArtRect', 'coverBgSource', 'coverImgCache', 'coverLines', 'defaultCoverRecipe', 'displayFontOf',
   'drawCoverTo', 'drawImageCover', 'drawLucideIcon', 'drawUploadedIcon', 'drawWrapTo', 'fontStack',
   'frontispieceCaption', 'hcAboutAuthorText', 'hcDrawFlaps', 'hcDrawGuides', 'hcFlapBackText',
   'hcFlapFrontText', 'hcLayout', 'hcTrimOffered', 'hexToRgb', 'imIsPlaceholderTitle', 'imMetaValue',

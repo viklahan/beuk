@@ -25,13 +25,27 @@ test('hcpreview: every client preview.hardcover.* self-check is registered serve
   }
 });
 
-test('hcpreview: the device bar carries eleven devices and the device self-check expects exactly them', async () => {
+test('hcpreview: the device menu carries eleven devices and the device self-check expects exactly them', async () => {
   const html = await clientHtml();
-  const bar = /<div class="device-bar" id="deviceBar">([\s\S]*?)<\/div>/.exec(html);
-  assert.ok(bar, 'device bar present');
-  const ids = [...bar[1].matchAll(/data-device="([a-z]+)"/g)].map((m) => m[1]);
+  const bar = /<select class="dev-select" id="deviceBar"[^>]*>([\s\S]*?)<\/select>/.exec(html);
+  assert.ok(bar, 'device menu present');
+  const ids = [...bar[1].matchAll(/<option value="([a-z]+)"/g)].map((m) => m[1]);
   assert.deepEqual(ids, ['kindle', 'ipad', 'kobo', 'phone', 'oasis', 'basic', 'colorsoft', 'iphone', 'forma', 'android', 'hardcover']);
   assert.match(html, /btns\.length === 11 && \["kindle", "ipad", "kobo", "phone", "oasis", "basic", "colorsoft", "iphone", "forma", "android", "hardcover"\]/);
+});
+
+test('default device: Android Tablet, one id, and the first paint is what setDevice would draw for it', async () => {
+  const html = await clientHtml();
+  const id = /const DEFAULT_DEVICE = "([a-z]+)";/.exec(html)?.[1];
+  assert.equal(id, 'android');
+  assert.match(html, /\n\s+device: DEFAULT_DEVICE,\n/, 'the state starts on it');
+  const bar = /<select class="dev-select" id="deviceBar"[^>]*>([\s\S]*?)<\/select>/.exec(html)!;
+  const selected = [...bar[1].matchAll(/<option value="([a-z]+)"[^>]* selected/g)].map((m) => m[1]);
+  assert.deepEqual(selected, [id], 'exactly the default option is selected');
+  const footer = new RegExp(`const DEVICE_FOOTERS = \\{[^}]*\\b${id}: "([^"]*)"`).exec(html)![1];
+  const display = new RegExp(`\\n\\s+${id}: \\{ type: "([a-z-]+)"`).exec(html.slice(html.indexOf('const DEVICE_DISPLAY')))![1];
+  assert.ok(html.includes(`<div id="deviceFrame" class="frame-${id}" data-display="${display}">`), 'frame class and display type');
+  assert.ok(html.includes(`<span id="footDevice">${footer}</span>`), 'footer');
 });
 
 test('hcpreview: the open book is built from the print view engine and every hcp.* string ships in all 15 locales', async () => {
