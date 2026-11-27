@@ -101,6 +101,25 @@ describe('keystroke rescue: an IME composition', () => {
     expect(g.textA()).toBe(g.textB());
   });
 
+  it('IME: the character the waiting place hangs on is deleted before compositionend: the letter is not written, the writer is told', async () => {
+    const { g, end } = composingWhile((x) => joinUp(x.edA));
+    expect(g.rescuesB).toEqual([]);
+    // the waiting place hangs on the letter before it, the "c" of A's joined block; A deletes that "c", and the
+    // deletion reaches B while B still composes
+    const c = posOf(g.edA, 'abcwn', 2);
+    g.edA.view.dispatch(g.edA.state.tr.delete(c, c + 1));
+    g.aToB();
+    expect(g.rescuesB).toEqual([]);
+    expect(g.textB()).toBe('Opening line above.The broabwn fox jumps over the dog.'); // DERIVED: the join, then A's deletion of "c"
+    await end();
+    // DERIVED: the fix's rule (a waiting place whose character is gone gives no position): "n" is not written,
+    // and it counts unplaced, so the writer is told 1
+    expect(g.textB()).toBe('Opening line above.The broabwn fox jumps over the dog.');
+    expect(g.rescuesB).toMatchObject([{ rescued: 0, unplaced: 1 }]);
+    g.join();
+    expect(g.textA()).toBe(g.textB());
+  });
+
   it('the composition ends without compositionend: the next local keystroke\'s update flushes on the next turn, never inside it', async () => {
     const { g } = composingWhile((x) => joinUp(x.edA));
     expect(g.rescuesB).toEqual([]);

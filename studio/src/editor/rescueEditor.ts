@@ -113,6 +113,16 @@ function idsAt(text: Y.XmlText, index: number, letters: string): Y.ID[] | null {
   return s === letters ? ids : null;
 }
 
+/** The Yjs character `id` is alive (an id Yjs cannot find counts as gone). */
+function alive(doc: Y.Doc, id: Y.ID): boolean {
+  try {
+    const it = Y.getItem(doc.store, id);
+    return it instanceof Y.Item && !it.deleted;
+  } catch {
+    return false;
+  }
+}
+
 /** `t` and every block above it up to `frag` are alive. */
 function aliveIn(frag: Y.XmlFragment, t: Y.AbstractType<any>): boolean {
   if (frag._item?.deleted) return false;
@@ -142,8 +152,8 @@ function queue(view: EditorView, b: ProsemirrorBinding, frag: Y.XmlFragment, ops
 }
 
 /** Write what waited for a composition to end: one transaction and one report per queued plan, in the order
- *  they were queued. Each place is resolved through Yjs now: a place that does not resolve to a live text in
- *  frag, or not inside a textblock, leaves its letters `unplaced`; a move whose letters are no longer all alive
+ *  they were queued. Each place is resolved through Yjs now: a place whose character is no longer alive, or that
+ *  does not resolve to a live text in frag, or not inside a textblock, leaves its letters `unplaced`; a move whose letters are no longer all alive
  *  (or no longer stand together in one block) is not written (`stayed`); a C3 paragraph is written only while
  *  the editor holds exactly frag's live children (else `unplaced`). Nothing while the view still composes. */
 export function flushRescue(view: EditorView, b: ProsemirrorBinding, frag: Y.XmlFragment): RescueReport[] {
@@ -156,6 +166,9 @@ export function flushRescue(view: EditorView, b: ProsemirrorBinding, frag: Y.Xml
     const t0 = performance.now();
     const pm = view.state.doc;
     const pos = (rel: Y.RelativePosition): number | null => {
+      // the character the place hangs on must still be alive: Yjs resolves a deleted one to where it stood among
+      // the live letters, a position the words no longer give
+      if (rel.item && !alive(doc, rel.item)) return null;
       const abs = Y.createAbsolutePositionFromRelativePosition(rel, doc);
       if (!abs || !(abs.type instanceof Y.XmlText) || !aliveIn(frag, abs.type)) return null;
       const p = relativePositionToAbsolutePosition(doc, frag, rel, b.mapping);
