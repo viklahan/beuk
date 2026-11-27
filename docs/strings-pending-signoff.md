@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-27 (the keystroke rescue's two strings: section 6). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words); 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -1434,3 +1434,78 @@ it, and uses the noun for a poem that its Poem Mode strings use (section 4).
 - **ar** العربية: `كل الفصول الأخرى قصائد، والقصائد تبقى كما هي.`
 - **ja** 日本語: `ほかの章はすべて詩です。詩はそのままです。`
 - **zh-Hans** 简体中文: `其他章节都是诗歌，诗歌保持不变。`
+
+## 6. The keystroke rescue: letters that could not be put back (2 keys, 2026-11-27)
+
+When a change made in another tab takes away letters this writer had just typed, the studio's keystroke rescue puts
+them back between their words (`studio/src/editor/rescueEditor.ts`). Letters it could not put back (the other tab had
+them and deleted them, or their words were gone) are told once, quietly, with the exact count, as an Info toast
+(`studio/src/editor/rescueNotice.ts`, `ChapterEditor.tsx`; V's ruling). A report with nothing lost says nothing.
+Its 2 keys are in `client/index.html` `UI_STRINGS` (the `BEUK:keystrokerescue` block, `RESCUE_STRINGS`): `rescue.lost`
+and its `Plural` twin `rescue.lostPlural`. English is the source; the English wording itself is V's to confirm in the
+PR (the design's draft said "made at the same moment", which is not true of letters the other tab had seen and
+deleted). The 12 other languages below are drafts written by Claude: not approved, not read by a native speaker.
+
+How the drafts were made:
+
+- `{n}` is kept byte for byte, once in each string; `studio/test/keystroke-rescue-ui.test.tsx` checks it in every
+  language, and that no string is empty, still the English, or has an exclamation mark.
+- Plurals: 1.0's rule, the `Plural` twin when n is not 1 (as `offline.pending` / `offline.pendingPlural` and
+  `next.textWarning`). **pl**, **ru** and **ar** word the twin with the count after a colon, which fits every count, as
+  their `next.textWarningPlural` does. **tr**, **ja** and **zh-Hans** do not pluralise after a number, so their two
+  strings are the same.
+- Words follow the neighbouring 1.0 strings: the tab as `next.bookReplaced` and `local.detailFailed` name it (pestaña,
+  onglet, Tab, scheda, separador, tabblad, karta, вкладка, sekme, علامة تبويب, タブ, 标签页). The address form follows
+  each language's 1.0 strings (`bible.seriesKept`, `local.detailFailed`): *tú* in Spanish and Italian, *vous* in
+  French, *Sie* in German, the third-person verb in Portuguese ("escreveu"), *u* in Dutch, *siz* in Turkish, *вы* in
+  Russian; Polish without a person ("wpisana", as "Wpisana nazwa"); Arabic in the second person ("كتبته", as
+  `bible.seriesKept`); Japanese without a pronoun; Chinese *你*.
+
+Points worth a look when you read them:
+
+- **letter**: every draft says letter as the English does (letra, lettre, Buchstabe, lettera, letra, letter, litera,
+  буква, harf, حرف, 文字), except **zh-Hans**, which says 字符 (character): 字 alone reads as a Chinese character, and
+  `next.textWarning` already uses 字符 there.
+- **went with a change**: no language here has a natural word for word "went with". The drafts say "was lost with" (es
+  "se perdió con", de "verloren gegangen", it "andata persa", pt "perdeu-se", nl "verloren gegaan bij", tr "kayboldu"),
+  "left with" (fr "est partie avec") or "disappeared together with" (pl "zniknęła wraz ze", ru "пропала вместе с",
+  ar "ضاع مع", ja "とともに消え", zh-Hans "随…一起消失了").
+- **put back**: es "reponer", fr "remise en place", de "wieder eingefügt", it "rimetterla al suo posto", pt "repô-la",
+  nl "teruggezet", pl "przywrócić", ru "вернуть", tr "geri getirilemedi", ar "إعادته", ja "元に戻せませんでした",
+  zh-Hans "放回原处".
+- **fr** says "tapée" for typed, as `ir.k.txtLinesUnsure` ("tapé"); `bible.seriesKept` says "saisi" for a name typed
+  into a field.
+- **ar** keeps the figure before the noun in the singular ("{n} حرف"), as `next.textWarning` does.
+- If the English changes in the PR, all 24 drafts change with it.
+
+### `rescue.lost`
+
+- **en** (source): {n} letter you typed went with a change made in another tab, and could not be put back.
+- **es** Español: `{n} letra que escribiste se perdió con un cambio hecho en otra pestaña y no se pudo reponer.`
+- **fr** Français: `{n} lettre que vous avez tapée est partie avec une modification faite dans un autre onglet et n’a pas pu être remise en place.`
+- **de** Deutsch: `{n} Buchstabe, den Sie getippt haben, ist mit einer Änderung in einem anderen Tab verloren gegangen und konnte nicht wieder eingefügt werden.`
+- **it** Italiano: `{n} lettera che hai scritto è andata persa con una modifica fatta in un’altra scheda e non è stato possibile rimetterla al suo posto.`
+- **pt** Português: `{n} letra que escreveu perdeu-se com uma alteração feita noutro separador e não foi possível repô-la.`
+- **nl** Nederlands: `{n} letter die u typte is verloren gegaan bij een wijziging in een ander tabblad en kon niet worden teruggezet.`
+- **pl** Polski: `{n} wpisana litera zniknęła wraz ze zmianą wprowadzoną w innej karcie i nie dało się jej przywrócić.`
+- **ru** Русский: `{n} набранная вами буква пропала вместе с изменением в другой вкладке, и её не удалось вернуть.`
+- **tr** Türkçe: `Yazdığınız {n} harf, başka bir sekmede yapılan bir değişiklikle kayboldu ve geri getirilemedi.`
+- **ar** العربية: `{n} حرف كتبته ضاع مع تغيير أُجري في علامة تبويب أخرى، وتعذّرت إعادته.`
+- **ja** 日本語: `入力した {n} 文字が別のタブでの変更とともに消え、元に戻せませんでした。`
+- **zh-Hans** 简体中文: `你输入的 {n} 个字符随另一个标签页中的更改一起消失了，无法放回原处。`
+
+### `rescue.lostPlural`
+
+- **en** (source): {n} letters you typed went with a change made in another tab, and could not be put back.
+- **es** Español: `{n} letras que escribiste se perdieron con un cambio hecho en otra pestaña y no se pudieron reponer.`
+- **fr** Français: `{n} lettres que vous avez tapées sont parties avec une modification faite dans un autre onglet et n’ont pas pu être remises en place.`
+- **de** Deutsch: `{n} Buchstaben, die Sie getippt haben, sind mit einer Änderung in einem anderen Tab verloren gegangen und konnten nicht wieder eingefügt werden.`
+- **it** Italiano: `{n} lettere che hai scritto sono andate perse con una modifica fatta in un’altra scheda e non è stato possibile rimetterle al loro posto.`
+- **pt** Português: `{n} letras que escreveu perderam-se com uma alteração feita noutro separador e não foi possível repô-las.`
+- **nl** Nederlands: `{n} letters die u typte zijn verloren gegaan bij een wijziging in een ander tabblad en konden niet worden teruggezet.`
+- **pl** Polski: `Nie dało się przywrócić wpisanych liter, które zniknęły wraz ze zmianą wprowadzoną w innej karcie: {n}.`
+- **ru** Русский: `Набранных вами букв, которые пропали вместе с изменением в другой вкладке и которые не удалось вернуть: {n}.`
+- **tr** Türkçe: `Yazdığınız {n} harf, başka bir sekmede yapılan bir değişiklikle kayboldu ve geri getirilemedi.`
+- **ar** العربية: `عدد الأحرف التي كتبتها وضاعت مع تغيير أُجري في علامة تبويب أخرى وتعذّرت إعادتها: {n}.`
+- **ja** 日本語: `入力した {n} 文字が別のタブでの変更とともに消え、元に戻せませんでした。`
+- **zh-Hans** 简体中文: `你输入的 {n} 个字符随另一个标签页中的更改一起消失了，无法放回原处。`
