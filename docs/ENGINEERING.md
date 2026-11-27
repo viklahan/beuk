@@ -526,9 +526,10 @@ into every chapter editor right after Collaboration in `createEditor.ts`) keeps 
   tested (3.0.10–3.3.1) only 3.0.10 is green on insert, undo-storm, undo-caret and dedupe. 3.0.10 writes
   migration records; the hold keeps them out of the book.
 - **The rule: y-tiptap stays pinned exactly.** A candidate y-tiptap is taken only when `test/insert.test.ts`,
-  `test/undo-storm.test.ts`, `test/undo-caret.test.ts`, the `caret-keeper*.test.ts` suites and
-  `E2E_ONLY=caret node e2e/book.mjs` are green on it, before merge — `E2E_ONLY=caret` green except the one
-  documented known red below ("typing through a split then join"). Watch yjs#810.
+  `test/undo-storm.test.ts`, `test/undo-caret.test.ts`, the `caret-keeper*.test.ts` suites, the keystroke
+  rescue's `test/rescue-core.test.ts`, `test/keystroke-rescue.test.ts`, `test/keystroke-rescue-controls.test.ts`,
+  `test/keystroke-rescue-hard.test.ts` and `test/keystroke-rescue-ui.test.tsx`, and
+  `E2E_ONLY=caret node e2e/book.mjs` are green on it, before merge. Watch yjs#810.
 - **Measured.** jsdom (`caret-keeper-hard.test.ts`): one server rewrite of a 63,130-character, 400-paragraph
   chapter, keeper 1.15–3.63 ms of a 10.54–27.54 ms `applyUpdate` (the test asserts under half); 200 keystrokes
   300 paragraphs away, 200 results, all `alive`, nothing searched, 2.22–11.73 ms in all; the same with B's caret in
@@ -539,27 +540,140 @@ into every chapter editor right after Collaboration in `createEditor.ts`) keeps 
   against 15.5–18.8 ms for B's own apply of it (15–18%); the last run, 2.50 ms of 37.90 ms and of 15.80 ms. Of
   the two-tab cases, the build without the keeper (and main, 79026c7) moved the caret in nine:
   split before the caret, heading, join, heading then undo, split then join, Beuk's Enter (a blank line), a
-  server-shaped heading, and typing through a heading or a split then join; with the keeper all but one stay.
-- **Known red (V's ruling, 2026-11-26): a letter typed at the moment of a rebuild is lost.**
-  - OBSERVED (Chromium, two real tabs, 4 of 4 runs): B's "n" keydown and A's join of B's paragraph with the one
-    above fell in the same millisecond; both tabs then read "broabcdefghijklmwn … dog.opqrstuvwx". The "n" is
-    gone from both, the keeper reported `lost`, and B's next letters went to the block's end.
-  - OBSERVED (jsdom, the `caret-pair.ts` pair, a letter typed while A's change is undelivered):
-    - A joins the paragraph with the one above: with the keeper the letter is lost ("…broabcdefwn … dog.xyz");
-      without it the letter survives but neighbouring letters move ("The defbroabcwn … dog.nxyz").
-    - A turns the paragraph into a heading: the letter is lost with the keeper and without it ("The broabcwn fox …
-      dog.xyz" in both). Not seen in the browser, where no keystroke coincided with the heading.
-  - DERIVED: y-tiptap writes such a change as a delete-and-rebuild of the block, and Yjs drops an insert into a
-    parent another writer deleted concurrently. So main has the same exposure (the heading case above, without the
-    keeper). How often it happens is not measured: the browser red repeats because the test lines the keystroke up
-    with the edit. From the mechanism it needs the keystroke to land within milliseconds of the other tab's change.
-  - DERIVED: the keeper changes where the damage lands. In the two-tab split-then-join run, without it the
-    writer's letters survive but in the wrong place (the caret was already thrown out of the block); with it the
-    letter typed at that moment is lost, and the letters typed after it go to the end of the paragraph (OBSERVED:
-    "…klmwn … dog.opqrstuvwx").
-  - The e2e check "typing through a split then join" is red on purpose, in the default `E2E_ONLY=caret` run, until
-    a keystroke rescue lands: a follow-up that re-inserts a tab's own letters deleted only because their block was
-    rebuilt. That rescue gates Agora Part 1.
+  server-shaped heading, and typing through a heading or a split then join; with the keeper all but one stay
+  (0A's runs; the one, "typing through a split then join", is green with the keystroke rescue below).
+- **The keystroke rescue (Agora Part 0, item 9, 2026-11-27): a letter typed at the moment of a rebuild.** This
+  was 0A's known red (V's ruling, 2026-11-26).
+  - *The problem.* y-tiptap 3.0.10 writes a join, or a paragraph turned into a heading, as *delete the old block,
+    insert a new one*; a letter typed into the old block at that moment goes into its Yjs text, and Yjs drops an
+    insert into a parent another writer deleted concurrently. OBSERVED (Chromium, two real tabs, 4 of 4 runs in
+    0A): B's "n" keydown and A's join fell in the same millisecond, both tabs then read "broabcdefghijklmwn …
+    dog.opqrstuvwx" (the "n" gone from both, the keeper `lost`, the next letters at the block's end). A split is a
+    different shape: y-tiptap trims the first half in place and writes the second half as a new block, so the
+    letter stays alive at the end of the first half, away from its words, and the next letters follow it there
+    (OBSERVED, jsdom: "The nxyz⏎broabcwn"). Main had the same exposure without the keeper (DERIVED: same editor,
+    same Yjs).
+  - *What it does.* `studio/src/editor/rescueCore.ts` (`planRescue`, pure Yjs) and `rescueEditor.ts`
+    (`rescueAfter`, `flushRescue`), run by the caret keeper's extension right after the keeper, on every
+    transaction that touched the chapter and is not this editor's own (its binding's write or its UndoManager's
+    undo / redo): the other tab's changes, and also local transactions of other origins (y-indexeddb applying
+    stored updates, `BLOB_ORIGIN`, programmatic writes), which carry no incoming bytes and so give a harmless
+    `unknown` report when they delete own letters. One that deleted nothing is skipped first. It looks only at this
+    editor's own letters (`ContentString` items whose client id is `doc.clientID`):
+    - *dead*: deleted in this transaction because a block above them was deleted in it;
+    - *stranded*: alive after it while the letters on both sides of them were deleted in it (the split).
+    - *The knowledge gate (dead letters).* A dead letter is put back only when the incoming update's delete set
+      does not name it: a letter the sending document never had cannot be in it. The bytes come through the one
+      apply function, `applyRemoteUpdate` (`rescueCore.ts`, used by `store.ts` for every message on the tab
+      relay, the BroadcastChannel); the delete set is sorted and merged before the lookup. Named: `vetoed` (the
+      other writer had them). No bytes: nothing is done (`unknown`). Not every other tab's update comes that way:
+      y-indexeddb's `storeState` / `fetchUpdates` (run when its update store reaches 500 entries, and by
+      `store.ts`'s own compaction, `collect()`) applies the updates other tabs stored with a plain `Y.applyUpdate`,
+      no bytes kept: a deletion that reaches this tab only that way is `unknown`, nothing is put back and nobody
+      is told. The gate stays safe (no bytes, no write). A stranded letter needs no gate (DERIVED: a deletion of a
+      stretch deletes every item of it the deleter has). That holds for y-tiptap writers, whose `updateYText`
+      writes one contiguous diff per text (`@tiptap/y-tiptap` dist/index.js, about lines 880-890); it is not
+      shown for a writer that edits the Yjs document directly (Part 1).
+    - *The placement rule.* The words around the letters as the other writer could have seen them (this writer's
+      affected letters left out, 24 letters each side) must be found in the text the transaction wrote, by the
+      keeper's own rule (`findInText`); several matches: the nearest to where the caret was (`nearestOf`). The
+      change already holds the letters: nothing done (`carried`). Not found: a stranded letter stays where Yjs
+      left it (`stayed`), a dead one is not written (`unplaced`), except:
+    - *The C3 paragraph (V's ruling).* Letters typed into a chapter block the other tab deleted whole, never having
+      seen them, whose words are found nowhere, come back as a paragraph of their own where the deleted block
+      stood, in document order when several were deleted at once (`restored`).
+    - *One write, in the writer's undo.* Dead letters inserted at the place (with the marks of the place), stranded
+      ones moved there, C3 paragraphs inserted, all as ONE ProseMirror transaction in this writer's own editor,
+      with no history meta: it is the writer's own edit, reaches the other tab as an ordinary change, and joins
+      the writer's current undo step (OBSERVED, `keystroke-rescue.test.ts`: one undo takes the rescued "n" with
+      the "xyz" typed after it; "abc", typed before the remote change, stays).
+    - *The caret.* If the caret stood right after the letters (the keeper's note hangs on the run's last letter),
+      it is put right after them again, so the next keystroke follows them.
+    - *The IME wait.* During a composition nothing is written: the plan is made at once (the dead letters' text
+      must be read inside `afterTransaction`, before Yjs collects it), kept on the view with every place as a
+      `Y.RelativePosition` and every moved letter by its Yjs id, and written on the next turn after the
+      composition ends (`setTimeout(0)`, from `compositionend` or the plugin view's update; never a dispatch from
+      inside ProseMirror's update). A text place (an insert or a move) whose character (the relative position's
+      `item`) is no longer alive, or that no longer resolves to a live text, is not written (`unplaced` /
+      `stayed`): Yjs would resolve a deleted character to where it stood among the live letters, a position the
+      words no longer give. Not covered: a waiting C3 paragraph hangs on the live block before it and is resolved
+      outside that check, so if that block is deleted during the composition the paragraph is written at the
+      slid index (not tested; a stated limit). Faked in
+      jsdom (`view.composing`); no real IME tried.
+    - *The report.* `editor.storage.caretKeeper.rescue` (the last one) and the extension's `onRescue` option, one
+      per remote change that killed or stranded own letters: `{ rescued, moved, restored, carried, vetoed,
+      unplaced, unknown, uncounted, stayed, caret, ms }` (counts in code points; `ms` is planning plus the write,
+      not the IME wait).
+  - *What it never does.* It only ever writes characters read from this editor's **own** deleted or stranded
+    `ContentString` items, never another writer's, never a character that was not typed (no separator, no space),
+    never at a position the words do not give, except the C3 ruling's paragraph. It stores nothing and sends
+    nothing but its one ordinary edit; it never throws into Yjs's transaction events (its own try, after the
+    keeper's; a throw in one waiting plan costs no other plan its write or report); it writes nothing during an
+    IME composition.
+  - *The notice.* The letters the writer is told about are `vetoed + unplaced` (`lettersLost`): once per report, a
+    quiet Info toast with the exact count (`rescueNotice.ts`, `ChapterEditor.tsx`; strings `rescue.lost` /
+    `rescue.lostPlural`, the 12 other languages unsigned drafts in `docs/strings-pending-signoff.md` §6). A vetoed
+    run is told only when its words stand in the change without it (C2) or all its words went too (C1).
+    Everything else is `uncounted` and nothing is told:
+    - some of the run's words stand in what the change wrote and the letters do not stand where those words are
+      (part kept, part not): no exact count;
+    - ruling R6b: a block made only of the writer's own letters (items whose client id is this session's
+      `doc.clientID`) that the other tab deletes outright or rebuilds. R6b's behaviour stands; its stated premise
+      ("own" includes content created by opening the book) was wrong, and ruling R6c corrects it (DERIVED by the
+      final review from `store.ts`): a book REOPENED from the device keeps its items' original client ids
+      (`openGeneration` loads the y-indexeddb updates into a new `Y.Doc`), so there "own" letters are letters
+      this session wrote. Only the import paths write a whole book under this session's id (`importBook` in
+      `importToDevice`, and `importLegacyOnce`). So, for V's word: (a) R6b also silences letters really typed into
+      a reopened book; (b) in a session that IMPORTED the book, C1 / C2 can tell "N letters you typed…" about
+      imported letters. A possible later fix, not built: an import watermark (this session's clock after the
+      import), so that only own items written after it count as typed.
+    So the notice is exact but not complete.
+  - *Stated limits.*
+    - **A relay that held the letter.** The gate is sound, not complete: bytes from a document that held the letter
+      when the deletion reached it (a relay, or a full diff made after it absorbed the letter) name it, and it is
+      not put back (`keystroke-rescue-controls.test.ts`: the relay case, B told 1). Not exact on the tab relay
+      either, though there a tab's message is usually its own edit as it happened: the relay posts every
+      update a tab's doc emits that did not come from the channel, which includes what it applied from
+      y-indexeddb (DERIVED: `store.ts` `relay`, origin `!== this.channel`), and it answers a new tab's hello with
+      a full diff (`Y.encodeStateAsUpdate(ydoc, sv)`); either can name a letter the sender absorbed. Not exact on
+      Part 1's Hocuspocus, which broadcasts its own re-encoding (Part 1 needs the server-side complement, not
+      built).
+    - **Updates applied without bytes.** Another tab's deletion that reaches this tab only through y-indexeddb's
+      `fetchUpdates` (above) is `unknown`: nothing is put back and the writer is not told. Local transactions of
+      other origins (y-indexeddb, `BLOB_ORIGIN`, programmatic writes) that delete own letters give `unknown`
+      reports too, which write and tell nothing.
+    - **An IME plan that never flushes.** A waiting plan is dropped if the view is destroyed (`dropRescue`), and
+      is never written if neither an editor update nor a `compositionend` follows: those letters are lost and the
+      writer is not told. At the flush, a text place whose character (the relative position's `item`) is no
+      longer alive gives no position: its letters are `unplaced` and told (`keystroke-rescue-hard.test.ts`). A
+      waiting C3 paragraph is not covered by that check (see the IME bullet above).
+    - **Full diffs both ways.** Two documents that catch up by full diffs each way: the second diff names the
+      first writer's letter, so it is lost, and not told (`uncounted`; the controls' "BOTH as full diffs").
+    - **Long runs checked at their two ends.** Whether a run is `carried` is judged from its ends with the words
+      beside them (24 letters each), not letter by letter: a vetoed run's first and last 24 letters, a dead run's
+      last 24 before the words after it. A change that holds those ends but not the middle of a run longer than
+      that counts it carried (DERIVED from `rescueCore.ts`; no test drives it).
+    - **An undo of a rebuild (landing step 3).** A makes the paragraph a heading, B types "XYZ" in it (A receives
+      it), A undoes the heading: the undo deletes A's heading and B's "XYZ" with it. A had the letters, so the
+      gate says vetoed: lost, B told 3 (the controls' "LIMIT until landing step 3"). Only the undoer knows its
+      transaction was an undo; the undoer-side rule is designed, not built.
+    - **Two rebuilds of one paragraph.** Both tabs turn the same paragraph into a heading at once: each deletes it
+      and inserts its own heading, and the book holds the paragraph twice. Not the rescue's (no typing involved;
+      main has it with two tabs, DERIVED); a Part 1 risk of its own, not designed. Also untested: a place rebuilt
+      again while an IME plan waits (it goes `unplaced` / `stayed` by the rule above).
+    - Not touched: the Yjs UndoManager bug (yjs#823) above.
+  - *Measured.*
+    - jsdom (`keystroke-rescue-hard.test.ts`, printed, not asserted; Task 5's runs on the Legion): 200 remote
+      keystrokes 400 paragraphs away, 0 rescue reports; one whole-chapter rewrite of a 65,131-character chapter
+      with "n" in flight, B's rescue (its own write included) 3.65–6.28 ms in four runs against 13.36–19.62 ms for
+      B's apply of the rewrite; A's side of it (carried 64,723, vetoed 0) 21.58–31.94 ms.
+    - Chromium, two real tabs (`E2E_ONLY=caret`, three runs on 2026-11-27, every check passing in each): "typing
+      through a split then join" passes in all three, B's "n" keydown in the same millisecond as A's join each
+      time, B's rescue report `rescued 1, moved 0, vetoed 0, unplaced 0, caret true` (carried 6; 1.10, 0.70 and
+      0.70 ms). "Typing through a heading" passes too, but no own letter of B's was lost there in any run (report
+      `rescued 0, carried 7`: A's heading already held the 7 letters, B's nearest keystroke 14–17 ms away), so that
+      case did not exercise the rescue in the browser. The e2e prints each case's reports (`book.mjs`
+      `rescueSays`).
 
 ## Export archive storage (M2)
 

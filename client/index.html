@@ -8874,6 +8874,24 @@
       };
       Object.keys(EVERYCHAPTER_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], EVERYCHAPTER_STRINGS[code]); });
       /* ==== /BEUK:everychapter ==== */
+      /* ==== BEUK:keystrokerescue ==== — Studio 2.0's keystroke rescue (studio/src/editor/rescueEditor.ts): what the studio says when letters the writer typed could not be put back. All 13 packs (the 12 beside English are drafts for V's sign-off: docs/strings-pending-signoff.md) */
+      const RESCUE_STRINGS = {
+        "en": { "rescue.lost": "{n} letter you typed went with a change made in another tab, and could not be put back.", "rescue.lostPlural": "{n} letters you typed went with a change made in another tab, and could not be put back." },
+        "es": { "rescue.lost": "{n} letra que escribiste se perdió con un cambio hecho en otra pestaña y no se pudo reponer.", "rescue.lostPlural": "{n} letras que escribiste se perdieron con un cambio hecho en otra pestaña y no se pudieron reponer." },
+        "fr": { "rescue.lost": "{n} lettre que vous avez tapée est partie avec une modification faite dans un autre onglet et n’a pas pu être remise en place.", "rescue.lostPlural": "{n} lettres que vous avez tapées sont parties avec une modification faite dans un autre onglet et n’ont pas pu être remises en place." },
+        "de": { "rescue.lost": "{n} Buchstabe, den Sie getippt haben, ist mit einer Änderung in einem anderen Tab verloren gegangen und konnte nicht wieder eingefügt werden.", "rescue.lostPlural": "{n} Buchstaben, die Sie getippt haben, sind mit einer Änderung in einem anderen Tab verloren gegangen und konnten nicht wieder eingefügt werden." },
+        "it": { "rescue.lost": "{n} lettera che hai scritto è andata persa con una modifica fatta in un’altra scheda e non è stato possibile rimetterla al suo posto.", "rescue.lostPlural": "{n} lettere che hai scritto sono andate perse con una modifica fatta in un’altra scheda e non è stato possibile rimetterle al loro posto." },
+        "pt": { "rescue.lost": "{n} letra que escreveu perdeu-se com uma alteração feita noutro separador e não foi possível repô-la.", "rescue.lostPlural": "{n} letras que escreveu perderam-se com uma alteração feita noutro separador e não foi possível repô-las." },
+        "nl": { "rescue.lost": "{n} letter die u typte is verloren gegaan bij een wijziging in een ander tabblad en kon niet worden teruggezet.", "rescue.lostPlural": "{n} letters die u typte zijn verloren gegaan bij een wijziging in een ander tabblad en konden niet worden teruggezet." },
+        "pl": { "rescue.lost": "{n} wpisana litera zniknęła wraz ze zmianą wprowadzoną w innej karcie i nie dało się jej przywrócić.", "rescue.lostPlural": "Nie dało się przywrócić wpisanych liter, które zniknęły wraz ze zmianą wprowadzoną w innej karcie: {n}." },
+        "ru": { "rescue.lost": "{n} набранная вами буква пропала вместе с изменением в другой вкладке, и её не удалось вернуть.", "rescue.lostPlural": "Набранных вами букв, которые пропали вместе с изменением в другой вкладке и которые не удалось вернуть: {n}." },
+        "tr": { "rescue.lost": "Yazdığınız {n} harf, başka bir sekmede yapılan bir değişiklikle kayboldu ve geri getirilemedi.", "rescue.lostPlural": "Yazdığınız {n} harf, başka bir sekmede yapılan bir değişiklikle kayboldu ve geri getirilemedi." },
+        "ar": { "rescue.lost": "{n} حرف كتبته ضاع مع تغيير أُجري في علامة تبويب أخرى، وتعذّرت إعادته.", "rescue.lostPlural": "عدد الأحرف التي كتبتها وضاعت مع تغيير أُجري في علامة تبويب أخرى وتعذّرت إعادتها: {n}." },
+        "ja": { "rescue.lost": "入力した {n} 文字が別のタブでの変更とともに消え、元に戻せませんでした。", "rescue.lostPlural": "入力した {n} 文字が別のタブでの変更とともに消え、元に戻せませんでした。" },
+        "zh-Hans": { "rescue.lost": "你输入的 {n} 个字符随另一个标签页中的更改一起消失了，无法放回原处。", "rescue.lostPlural": "你输入的 {n} 个字符随另一个标签页中的更改一起消失了，无法放回原处。" }
+      };
+      Object.keys(RESCUE_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], RESCUE_STRINGS[code]); });
+      /* ==== /BEUK:keystrokerescue ==== */
       /* ==== BEUK:legal ==== — the links to /privacy and /terms, all 13 packs */
       const LEGAL_STRINGS = {
         "en": { "legal.authLine": "How your account and books are looked after:", "legal.settingsLine": "How Beuk handles your data, and the ground rules:", "legal.privacy": "Privacy", "legal.terms": "Terms" },
