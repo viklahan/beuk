@@ -10767,12 +10767,15 @@ async function everyChapterChecks(origin) {
      other by no more than the picture's own difference over the same distance inside the leaves + ACROSS_JOIN_TOL;
      the verso's outer column, top row and bottom row hold the picture, not paper.
    Then (left to right only) the EPUB, built by the server's own build from the body the studio's export sends:
-   the plate page holds the whole picture (plate-full plate-whole, its alt text), nothing cut.
+   the plate page holds the whole picture (plate-full plate-whole, its alt text), nothing cut, and the chapter's stored
+   backdrop is set aside there too (no layer in its XHTML, its picture not shipped).
    Last, the control: Fit back to "Fill the page", and the print view draws the plate filled with the chapter's own
    stored backdrop beside it again (so the search that found the backdrop nowhere above is shown to find it when drawn).
    The same in an Arabic copy of the book (right to left): the plate leaf on the right, the halves mirrored.
    Every wait that runs out is a FAIL, never a pass. */
-const ACROSS_JOIN_TOL = 8; // mean absolute difference per channel (0–255) allowed beyond the picture's own
+/* mean absolute difference per channel (0–255) allowed beyond the picture's own: measured join − own was −0.22 at most
+   over 3 runs × 4 spreads (Task 8 fix round 1), so 1 is the smallest whole level that is stable with a margin */
+const ACROSS_JOIN_TOL = 1;
 const ACROSS_RUN_TOL = 2; // screen px: the stripe's width on each side of the spine against acrossCrop's
 const ACROSS_STRIPE = [776, 824]; // source columns of the stripe (centred on 800), rows 0–599
 /** A PNG (8-bit RGB) of W × H, each pixel [r, g, b] = px(x, y). */
@@ -11066,11 +11069,14 @@ async function acrossRun(origin, f, lang, file, pic, png, SEC, ALT) {
           `${tag}: the EPUB (${r.filename}) carries the picture once, byte for byte (${imgs.map((x) => x.path).join(', ') || 'none'}), on one plate page (${pages.map(([p]) => p).join(', ') || 'none'}) as the whole picture with its alt text: ${pages.length && pages[0][1].includes(want) ? want : '(not found)'}`);
         check(!texts.some(([, t]) => /plate-across|bd-baked/.test(t)), `${tag}: nothing of print's halves in the EPUB (no plate-across, no bd-baked in ${texts.length} text files)`);
         const opening = texts.find(([p, t]) => p.endsWith('.xhtml') && !/toc|nav|plate_/.test(p) && t.includes(sec0.title));
-        // seen, not judged: the EPUB is a one-page view, given no across options, so the stored backdrop is still drawn there
+        // the chapter's stored backdrop is set aside on the e-reader too: no layer in its XHTML, its picture not shipped
+        // (the backdrop is a picture of its own here, so its bytes and its file name are its alone)
         const bdSha = bdIm ? createHash('sha256').update(Buffer.from(bdIm.data, 'base64')).digest('hex') : null;
-        const bdFile = bdSha ? ((r.files || []).find((x) => x.sha256 === bdSha) || { path: '' }).path.split('/').pop() : '';
-        const bdLayer = opening ? (/<div class="bd-layer[^"]*"[^>]*>/.exec(opening[1]) || [''])[0] : '';
-        note(`${tag}: the chapter's own XHTML (${opening ? opening[0] : 'not found'}) ${bdLayer ? `carries a backdrop layer ${bdLayer.replace(/url\(([^)]{0,60})[^)]*\)/, 'url($1…)')}, ${bdFile && bdLayer.includes(bdFile) ? `the stored backdrop's own file (${bdFile})` : `not the stored backdrop's file (${bdFile || 'not in the EPUB'})`}` : 'carries no backdrop layer'}`);
+        const bdShipped = bdSha ? (r.files || []).filter((x) => x.sha256 === bdSha).map((x) => x.path) : [];
+        const bdLayer = opening ? (/<div class="bd-layer[^"]*"[^>]*>/.exec(opening[1]) || [''])[0] : null;
+        const bdNamed = texts.filter(([, t]) => t.includes(`-${s1.backdropId}.`)).map(([p]) => p);
+        check(!!opening && bdLayer === '' && !/has-backdrop/.test(opening[1]) && bdShipped.length === 0 && bdNamed.length === 0,
+          `${tag}: the chapter's stored backdrop is set aside in the EPUB: its XHTML (${opening ? opening[0] : 'not found'}) has no backdrop layer (${bdLayer === '' ? 'none' : bdLayer && bdLayer.slice(0, 80)}), its picture is not shipped (${bdShipped.join(', ') || 'none'}) and no file names it (${bdNamed.join(', ') || 'none'})`);
       }
     }
 
@@ -11091,6 +11097,16 @@ async function acrossRun(origin, f, lang, file, pic, png, SEC, ALT) {
     await page.click('#btnClosePrintView');
     await until(() => !document.getElementById('modalPrintView').classList.contains('open'), null, 10_000, `${tag}: the view closes (the control)`);
     if (await page.evaluate(() => document.getElementById('modalExport').classList.contains('open'))) await page.keyboard.press('Escape');
+    if (!rtl && bdIm) {
+      // and the EPUB at Fill: the same search finds the stored backdrop's layer and its picture
+      const built2 = w5aServerBuild([await page.evaluate(() => window.beukExport.body('en'))], true);
+      const r2 = built2.error ? null : built2.results[0];
+      const bdSha2 = createHash('sha256').update(Buffer.from(bdIm.data, 'base64')).digest('hex');
+      const file2 = r2 ? ((r2.files || []).find((x) => x.sha256 === bdSha2) || { path: '' }).path.split('/').pop() : '';
+      const open2 = r2 ? Object.entries(r2.texts || {}).find(([p, t]) => p.endsWith('.xhtml') && !/toc|nav|plate_/.test(p) && t.includes(sec0.title)) : null;
+      const layer2 = open2 ? (/<div class="bd-layer[^"]*"[^>]*>/.exec(open2[1]) || [''])[0] : '';
+      check(!!r2 && !!file2 && layer2.includes(`../Images/${file2}`), `${tag}: the control, EPUB: back on "Fill the page" the chapter's XHTML (${open2 ? open2[0] : 'not found'}) draws the stored backdrop again (${layer2 ? layer2.replace(/url\(([^)]{0,60})[^)]*\)/, 'url($1…)') : built2.error || 'no layer'}), its picture shipped (${file2 || 'not shipped'})`);
+    }
 
     await harvestCsp(page);
     check(csp.errors.length === e0, `${tag}: no page error and no console error in the block (${csp.errors.length - e0}${csp.errors.length > e0 ? ': ' + csp.errors.slice(e0).join(' | ') : ''})`);

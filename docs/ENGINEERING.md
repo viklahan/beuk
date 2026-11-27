@@ -1063,13 +1063,24 @@ happens when the book is drawn, so a new trim crops it again by itself.
   EPUB's plate page is `plate-full plate-whole`. The standalone page and
   the studio's preview get `plate-page plate-whole`. Zen shows it whole, as
   it shows every plate. All of them keep the alt text, and
-  `bookHasWholePlate` counts across. Only print and its preview set the
-  chapter's backdrop aside. In the one-page views the stored backdrop is
-  still drawn under the opening, as before:
-  - In the EPUB this was seen. The e2e below finds the chapter's XHTML
-    pointing at the stored backdrop's own file.
-  - In the others it was found by reading the code: `sectionHtml` is given
-    no across options there.
+  `bookHasWholePlate` counts across.
+- **The backdrop is set aside on every surface, by one rule.**
+  `acrossSetsBackdropAside(s)` is true for a body chapter that has a plate
+  (`plateImage`) and `plateFit: "across"`, and `printIsAcross` is that
+  test. `backdropInEffect(s)` returns `backdropImage(s)` unless that test
+  holds, and then null. Every reader goes through it:
+  - `backdropLayerHtml`, which covers the EPUB's chapter file, the
+    standalone page, the studio's preview (`sectionHtml`) and Zen's
+    stage (`zenStageHtml`);
+  - Zen's `has-backdrop` class;
+  - the Print Interior View's pairing (`pivPageEl`);
+  - `printPlacements`.
+  The EPUB does not ship a set-aside backdrop's picture
+  (`packagedImagesImpl`, and `packagedImagesFor` for a box set's volumes,
+  judged against that volume's own pictures). `zenStageSignature` includes
+  `plateFit`, so Zen redraws when the fit changes. The stored `backdropId`
+  and `backdropStrength` are never written. The names are in the server's
+  `EPUB_CLOSURE` list (`src/book/epub/closure.ts`).
 - **printPlacements** (the preflight's `images.resolution` and the
   Store-ready DPI row) measures an across plate by its real two-page crop:
   placed at 2W + 2b by H + 2b, at `acrossCrop`'s ppi. It does not measure
@@ -1118,9 +1129,18 @@ happens when the book is drawn, so a new trim crops it again by itself.
     in a 1,600 × 1,200 test picture shows on each side of the spine as
     wide as `acrossCrop` puts it (±2 screen px). The columns either side of
     the spine differ by no more than the picture's own difference over the
-    same distance (+8 per channel). The verso is edge to edge. The EPUB's
-    plate page holds the whole picture with its alt text. A control
-    switches Fit back to fill and finds the stored backdrop drawn again.
+    same distance (+1 per channel; worst seen −0.22, the same in 3 runs).
+    The verso is edge to edge. The EPUB's plate page holds the whole
+    picture with its alt text, and the chapter's XHTML has no backdrop
+    layer and ships no backdrop picture. A control switches Fit back to
+    fill and finds the stored backdrop drawn again, in the print view and
+    in the EPUB.
+  - `studio/test/across-onepage.test.ts` and the page self-check
+    `plate.fit.surfaces` check that the across chapter with its backdrop
+    still stored is byte for byte the whole plate with no backdrop. The
+    self-check covers the EPUB chapter file, the standalone page, the
+    preview and Zen. Their control, the whole or fill plate with its
+    backdrop, does draw the layer.
 - **Follow-ups (queued, not done).**
   - The preview lays out every right-to-left book with the verso on the
     left, the opposite of print. This was already so on main. The fix

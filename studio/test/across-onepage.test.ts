@@ -12,7 +12,8 @@ import { installStandIns, png, type Rec } from './across-fixture';
 /* Across both pages, Task 5 — the e-reader and the one-page views. An "across" plate has no second page to
    continue on there, so EPUB, Zen and the standalone HTML show it whole, on its own page, with its alt text:
    exactly what "Show the whole picture" gives. "Fill the page" and "Show the whole picture" stay byte for byte
-   what they were: their fingerprints below were taken from the code before this task. */
+   what they were: their fingerprints below were taken from the code before this task. The chapter's stored
+   backdrop is set aside on these views as in print (Task 8, fix round 1: backdropInEffect). */
 
 const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralForms: meta.pluralForms as PluralForms }, 'en', k, p);
 const sha = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 16);
@@ -54,6 +55,22 @@ async function views(fit: string | undefined) {
     standalone: String(a.buildStandaloneHtml()),
   };
 }
+/** The same book with a picture of its own in the library ('bdpic'); with `bd`, it is the chapter's stored backdrop (Whisper).
+ *  What the EPUB (the chapter's own file, and whether the backdrop's file ships) and the standalone page make of it. */
+function backdropViews(fit: string, bd: boolean) {
+  const { st, ch } = book(fit);
+  (st.images as Rec[]).push({ id: 'bdpic', name: 'Night harbour', mediaType: 'image/png', ext: 'png', data: png(300, 450) });
+  if (bd) Object.assign(ch, { backdropId: 'bdpic', backdropStrength: 'whisper' });
+  const files = (a.epubFiles() as { path: string; content: unknown }[]);
+  const chapter = files.find((f) => /\.xhtml$/.test(f.path) && !/plate_/.test(f.path) && String(f.content).includes('over the water at first light'));
+  expect(chapter, `the chapter's own file among ${files.map((f) => f.path).join(', ')}`).toBeTruthy();
+  return {
+    ch,
+    chapter: String(chapter?.content ?? ''),
+    shipped: files.some((f) => f.path.endsWith('-bdpic.png')),
+    standalone: String(a.buildStandaloneHtml()),
+  };
+}
 const FINGERPRINT: Record<string, Record<string, string>> = {
   fill: { epubPlate: '6722ec85487d1e26', epubCss: '4c82a0710e9e455c', zen: '3a61d99e8371bcf5', page: 'c662d11c5312fa58', standalone: 'aa551b4ed5f91e8e' },
   whole: { epubPlate: '4f62f83b001296c3', epubCss: '5ff87f3924b77d10', zen: '3a61d99e8371bcf5', page: '1c2f363d3ea87c77', standalone: 'bf9ebe11d273144f' },
@@ -78,6 +95,23 @@ describe('Across both pages on e-readers and one-page views (Task 5)', () => {
     expect(across.standalone).toBe(whole.standalone);
     expect(across.standalone).toContain('<figure class="plate-page plate-whole">');
     expect(across.standalone).not.toContain('plate-across');
+  });
+  it('the chapter\'s stored backdrop is set aside there too: no layer, its file not shipped, the stored keys untouched; at Fill it is drawn (the control)', () => {
+    const fill = backdropViews('fill', true);
+    expect(fill.chapter).toContain('<div class="bd-layer bd-whisper" style="background-image:url(../Images/night-harbour-bdpic.png)"');
+    expect(fill.chapter).toContain('has-backdrop');
+    expect(fill.shipped).toBe(true);
+    expect(fill.standalone).toContain('class="bd-layer bd-whisper"');
+    const across = backdropViews('across', true);
+    expect(across.chapter).not.toContain('bd-layer');
+    expect(across.chapter).not.toContain('has-backdrop');
+    expect(across.shipped).toBe(false);
+    expect(across.standalone).not.toContain('class="bd-layer');
+    expect([across.ch.backdropId, across.ch.backdropStrength]).toEqual(['bdpic', 'whisper']);
+    // byte for byte the whole plate's with no backdrop at all
+    const bare = backdropViews('whole', false);
+    expect(across.chapter).toBe(bare.chapter);
+    expect(across.standalone).toBe(bare.standalone);
   });
   it('fill and whole stay byte for byte what they were', async () => {
     for (const fit of ['fill', 'whole']) {

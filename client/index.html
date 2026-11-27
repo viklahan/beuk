@@ -30766,8 +30766,9 @@
             if (img && !seen.has(img.id)) { seen.add(img.id); out.push(img); }
           }
           /* And its backdrop: referenced from the chapter's XHTML as a
-             CSS background, so it ships and is declared like any image. */
-          if (s.backdropId) {
+             CSS background, so it ships and is declared like any image.
+             (BEUK:across: not while the plate runs across — it is not drawn.) */
+          if (s.backdropId && !acrossSetsBackdropAside(s)) {
             const img = imageById(s.backdropId);
             if (img && !seen.has(img.id)) { seen.add(img.id); out.push(img); }
           }
@@ -30900,6 +30901,20 @@
         const strength = BACKDROP_STRENGTHS.includes(section.backdropStrength) ? section.backdropStrength : "whisper";
         return { img, strength };
       }
+      /* BEUK:across — the one rule: a chapter whose plate runs "Across both
+         pages" has no backdrop of its own while it does, on every surface.
+         Print and its preview lay the plate's other half there; the
+         one-page views (EPUB, the standalone page, the preview, Zen) show
+         the plate whole and draw no backdrop. The stored backdropId and
+         backdropStrength are never written: switch the fit away and the
+         backdrop is back. (printIsAcross is this test.) */
+      function acrossSetsBackdropAside(section) {
+        return !!section && section.kind === "body" && !!plateImage(section) && plateFitOf(section) === "across";
+      }
+      /** The backdrop a section draws: backdropImage, unless across sets it aside. */
+      function backdropInEffect(section) {
+        return acrossSetsBackdropAside(section) ? null : backdropImage(section);
+      }
       /* A plate faces its section: any section carrying a plate puts the
          plate on the verso, edge to edge, and its opening on the facing
          recto. With a backdrop too (a paired spread), the two halves of
@@ -30919,7 +30934,7 @@
         return "linear-gradient(" + toward + ", " + stops.map((p) => "rgba(0,0,0," + p[1] + ") " + (Math.round(p[0] * 10000) / 100) + "%").join(", ") + ")";
       }
       function backdropLayerHtml(section, forExport, dataMedia) {
-        const b = backdropImage(section);
+        const b = backdropInEffect(section); /* BEUK:across — none while the plate runs across */
         if (!b) return "";
         const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(b.img) : picDataSrc(b.img.mediaType, b.img.data);
         return '<div class="bd-layer bd-' + b.strength + '" style="background-image:url(' + src + ')" aria-hidden="true" role="presentation"></div>';
@@ -55227,7 +55242,7 @@
          margin the fade is measured from — a new trim is a new key, so
          halves cut for an old trim are never reused. The print preview
          reads the very same halves (printAcrossHalves). */
-      function printIsAcross(s) { return !!s && s.kind === "body" && !!plateImage(s) && plateFitOf(s) === "across"; }
+      function printIsAcross(s) { return acrossSetsBackdropAside(s); }
       function printAcrossBox() {
         const tr = trimSize();
         return { w: tr.w, h: tr.h, bleed: printBleedOn() ? PRINT_BLEED_IN : 0, rtl: isRtlLang(bookLang()), inside: printMargins(tr.id).inside };
@@ -55731,7 +55746,7 @@
         const printSide = (page.col === 0) !== isRtlLang(bookLang()) ? "left" : "right";
         const halves = across && side === printSide ? printAcrossCached(page.section) : null;
         const pairedBd = (!across && !page.blank && page.section && page.section.kind === "body" && plateImage(page.section))
-          ? backdropImage(page.section) : null;
+          ? backdropInEffect(page.section) : null;
         const pairedOpening = !!pairedBd && page.col === (plateImage(page.section) ? 1 : 0);
         const acrossOpening = !!halves && page.col === 1;
         if (acrossOpening) {
@@ -56031,7 +56046,9 @@
             const img = (images || []).find((im) => im.id === s.plateId);
             if (img && !seen.has(img.id)) { seen.add(img.id); out.push(img); }
           }
-          if (s.backdropId) {
+          /* (BEUK:across: a backdrop set aside is not drawn, so not shipped; judged against this volume's pictures) */
+          const aside = (() => { const keep = state.images; state.images = images || []; try { return acrossSetsBackdropAside(s); } finally { state.images = keep; } })();
+          if (s.backdropId && !aside) {
             const img = (images || []).find((im) => im.id === s.backdropId);
             if (img && !seen.has(img.id)) { seen.add(img.id); out.push(img); }
           }
@@ -58937,7 +58954,7 @@
                 push(plate.img, s, px.w * k, px.h * k);
               }
             } else if (plate) push(plate.img, s, tr.w, tr.h);
-            const bd = across ? null : backdropImage(s);
+            const bd = backdropInEffect(s); /* (none for an across chapter: set aside) */
             if (bd) push(bd.img, s, tr.w, tr.h);
           }
           if (s.type === "frontispiece") {
@@ -71287,14 +71304,29 @@
               if (val.errors !== 0) bad.push("the EPUB has " + val.errors + " validator errors");
               /* BEUK:across — an across plate is shown whole off the press: the EPUB's page, the stylesheet, Zen and the standalone page are the whole plate's, byte for byte */
               {
-                const wholeEpub = x1, wholeZen = plateHtml(ch, false, true, true), wholeStand = buildStandaloneHtml();
+                const wholeEpub = x1, wholeZen = plateHtml(ch, false, true, true);
                 const wholeCss = files.find((f) => /.css$/.test(f.path)).content;
+                /* ...and its backdrop set aside (backdropInEffect): each one-page view of the across chapter, its backdrop
+                   still stored, is the whole plate's with NO backdrop, byte for byte — the chapter's EPUB file, the
+                   standalone page, the preview's section and Zen's stage. The control: the whole plate with its backdrop
+                   draws a layer in every one of them, so the comparison could see one. */
+                const chapterFile = (fs) => { const e = epubPlan().find((p) => !p.plate && p.section === ch); return e ? scText(fs, "OEBPS/" + e.file) : ""; };
+                const oneViews = () => ({ epub: chapterFile(epubFiles("generic")), standalone: buildStandaloneHtml(), preview: sectionHtml(ch), zen: zenStageHtml(ch) });
+                const withBd = oneViews();
+                ch.backdropId = null;
+                const noBd = oneViews();
+                ch.backdropId = "fitwide";
                 ch.plateFit = "across";
                 const af = epubFiles("generic"), ae = epubPlan().find((p) => p.plate && p.section === ch);
                 if (!(ae && scText(af, "OEBPS/" + ae.file) === wholeEpub)) bad.push("an across plate's EPUB page is not the whole plate's");
                 if (af.find((f) => /.css$/.test(f.path)).content !== wholeCss) bad.push("an across plate's EPUB stylesheet is not the whole plate's");
                 if (plateHtml(ch, false, true, true) !== wholeZen) bad.push("Zen does not show an across plate whole");
-                if (buildStandaloneHtml() !== wholeStand) bad.push("the standalone page does not show an across plate whole");
+                const acr = oneViews();
+                for (const k of Object.keys(acr)) {
+                  if (!/class="bd-layer/.test(withBd[k])) bad.push("the control failed: the whole plate's " + k + " draws no backdrop layer");
+                  if (acr[k] !== noBd[k]) bad.push("the across chapter's " + k + " is not the whole plate's without a backdrop" + (/class="bd-layer/.test(acr[k]) ? " (it draws the stored backdrop)" : ""));
+                }
+                if (!(ch.backdropId === "fitwide" && ch.backdropStrength === "whisper")) bad.push("the stored backdrop was written");
                 ch.plateFit = "whole";
               }
               /* print */
@@ -83630,7 +83662,7 @@
       }
       function zenStageSignature(s) {
         if (!s) return "";
-        return [s.id, s.type, s.plateId || "", s.plateAlt || "", s.backdropId || "", s.backdropStrength || "",
+        return [s.id, s.type, s.plateId || "", s.plateAlt || "", s.backdropId || "", s.backdropStrength || "", s.plateFit || "" /* BEUK:across — the fit decides the backdrop */,
           state.theme.ornament || "", state.theme.headingFlourish || "", state.theme.headingFlourishPos || "",
           state.cover ? (state.cover.name || "") + ":" + state.cover.data.length : "",
           state.meta.title || "", state.meta.author || "",
@@ -83726,7 +83758,7 @@
         if (sig !== zenStageSig) {
           zenStageSig = sig;
           const html = zenStageHtml(s);
-          stage.innerHTML = html ? '<div class="zen-book' + (backdropImage(s) ? " has-backdrop" : "") + '">' + html + "</div>" : "";
+          stage.innerHTML = html ? '<div class="zen-book' + (backdropInEffect(s) ? " has-backdrop" : "") + '">' + html + "</div>" : "";
           stage.style.display = html ? "" : "none";
           stage.querySelectorAll("img").forEach((im) => {
             const alt = im.getAttribute("alt");
