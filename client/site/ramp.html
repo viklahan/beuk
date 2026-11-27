@@ -156,9 +156,9 @@
 
         <div class="shelf" role="list">
           <button class="book" role="listitem" data-book="poems-of-joy" style="--c:#977cb9" aria-label="Open Poems of joy">
-            <span class="cover"><img src="/site/ramp/poems-of-joy/spread-2.webp" width="2200" height="1100" alt="" loading="eager" decoding="async" /></span>
+            <span class="cover"><img src="/site/ramp/poems-of-joy/spread-2.webp?v=nora" width="2200" height="1100" alt="" loading="eager" decoding="async" /></span>
             <span class="t">Poems of joy</span>
-            <span class="m"><b>Poems</b> · 8.25 × 8.25 in · Montserrat over Source Sans 3, in lavender. One wide picture per poem crosses the gutter.</span>
+            <span class="m"><b>Poems</b> · 8.25 × 8.25 in · Montserrat over Source Sans 3, in lavender. A full-page picture faces each poem.</span>
             <span class="open">Open the book →</span>
           </button>
           <button class="book" role="listitem" data-book="rain-on-calder-street" style="--c:#8a5a12" aria-label="Open Rain on Calder Street">
@@ -296,12 +296,14 @@
 
     <script>
       (function(){
+        // a book whose pictures were replaced gets a version here, so no browser shows its old copy
+        var PIC_VERSION = { "poems-of-joy": "nora" };
         var BOOKS = {
           "poems-of-joy": { title: "Poems of joy", c: "#977cb9", w: 2200, h: 1100, spreads: [
             ["The title page stands alone on the right, the way a printed book opens: the title in Montserrat, in the book's lavender, under a trio of stars. The pages are square, 8.25 inches each way.", "The title page of Poems of joy by Destiny Hernandez, on a right-hand page with the left page blank"],
-            ["<b>One wide picture crosses the open book.</b> The left half fills the left page edge to edge; the right half carries on across the gutter and fades before the poem.", "Left: a sunny park, children on the swings and a boy with a backpack on the path under a bright sun. Right: the park carries on across the fold and fades to white behind Chapter One, Nora's discovery, a poem of four lines"],
-            ["The chapter number spaced in small capitals, the title in Montserrat, each line of the poem centred in large 18-point Source Sans 3.", "Left: a curly-haired boy on a sofa, a speech bubble saying Yay, super glad, as his mother points to the packed suitcases and says We're going out of town, a beagle at their feet. Right: the room fades to white behind Chapter 2, Out of town, a poem of four lines"],
-            ["The running head carries the book's title and its author above every poem; each picture was painted wide, for the two pages together.", "Left: a girl on a time-out chair with her arms folded, a speech bubble saying I'm sorry, I'll follow the rules, under Principal's Office, Time Out and Rules signs. Right: the office fades to white behind Chapter 3, In big trouble, a poem of four lines"]
+            ["<b>One picture faces each poem.</b> The picture fills the left page edge to edge; the poem has its page to itself.", "Left: a girl in a striped top and dungarees kneels on the grass in a sunny park and holds up a glowing purple stone, a speech bubble saying Woah beside her, children at the playground behind. Right: Chapter One, Nora's discovery, a poem of four lines"],
+            ["The chapter number spaced in small capitals, the title in Montserrat, each line of the poem centred in large 18-point Source Sans 3.", "Left: a curly-haired boy on a sofa, a speech bubble saying Yay, super glad, as his mother points to the packed suitcases and says We're going out of town, a beagle at their feet. Right: Chapter 2, Out of town, a poem of four lines"],
+            ["The running head carries the book's title and its author above every poem; each picture fills its own page.", "Left: a girl on a time-out chair with her arms folded, a speech bubble saying I'm sorry, I'll follow the rules, under Principal's Office, Time Out and Rules signs. Right: Chapter 3, In big trouble, a poem of four lines"]
           ]},
           "rain-on-calder-street": { title: "Rain on Calder Street", c: "#8a5a12", w: 2208, h: 1104, spreads: [
             ["The title page, set from the book's own details: title, subtitle and author. A printed book opens on a right-hand page.", "The title page of Rain on Calder Street, a novel by J. R. Vance, on a right-hand page with the left page blank"],
@@ -377,7 +379,7 @@
         // closed and opened again.
         var loads = {}, keep = {}, src = {};
 
-        function url(n){ return "/site/ramp/" + cur + "/spread-" + (n + 1) + ".webp"; }
+        function url(n){ var v = PIC_VERSION[cur]; return "/site/ramp/" + cur + "/spread-" + (n + 1) + ".webp" + (v ? "?v=" + v : ""); }
         function paint(el, n, half){
           if (n == null) { el.style.backgroundImage = "none"; return; }
           el.style.backgroundImage = 'url("' + (src[cur + "/" + n] || url(n)) + '")';
