@@ -239,6 +239,22 @@ describe('the write', () => {
     expect(byId(secs(y)).c4!.plateFit).toBe('fill');
   });
 
+  it('"Use on every chapter" copies Across both pages', () => {
+    const book = BOOK();
+    (book.sections as Rec[]).find((s) => s.id === 'c1')!.plateFit = 'across';
+    const y = onDoc(book);
+    const before = secs(y);
+    // the plan names it, as the settings do
+    const plan = planFor(y, 'c1', ctxOf(c, y))!;
+    expect(plan.rows.find((r) => r.id === 'plateFit')!.said).toEqual([{ key: 'editor.plateFitAcross' }]);
+    const rec = applyToEvery(c, y, 'c1', ['plateFit'])!;
+    // c3 (no fit stored) and c5 (whole) take it; c4's plate is no picture, c2 has none
+    expect(rec.counts).toEqual({ plateFit: 2 });
+    expectOnly(before, secs(y), { c3: { plateFit: 'across' }, c5: { plateFit: 'across' } });
+    expect(byId(secs(y)).c4!.plateFit).toBe('fill');
+    expect(Object.hasOwn(byId(secs(y)).c2!, 'plateFit')).toBe(false);
+  });
+
   it('a row that is not picked changes nothing', () => {
     for (const [picked, want] of [
       [['backdrop'], { c3: { backdropId: 'p1', backdropStrength: 'soft' }, c4: { backdropId: 'p1', backdropStrength: 'soft' }, c5: { backdropStrength: 'soft' } }],

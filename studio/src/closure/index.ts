@@ -224,7 +224,7 @@ export type ClosureApi = {
   /** A section's opening plate as markup: (section, forExport, dataMedia, ownPage, acrossSrc). */
   plateHtml: (section: unknown, forExport?: boolean, dataMedia?: boolean, ownPage?: boolean, acrossSrc?: string | null) => string;
   /** The fit a newly chosen picture is given, by its pixel size against the trim (`trimId`, else state.printTrim). */
-  plateFitFor: (img: unknown, trimId?: string) => 'fill' | 'whole';
+  plateFitFor: (img: unknown, trimId?: string) => 'fill' | 'whole' | 'across';
   /** Across both pages — the one two-page crop (source pixels): centred cover-crop to the open spread's shape, and its halves. */
   acrossCrop: (
     pxW: number,
