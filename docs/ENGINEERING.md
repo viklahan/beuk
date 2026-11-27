@@ -4718,16 +4718,18 @@ printed to PDF through `deploy/renderer` (the facing-pages pass included),
 and its spreads rendered from that PDF to WebP under `client/site/ramp/<slug>/`,
 untouched. A book opens on four spreads (four turns) in a full-screen
 reader: arrow keys, click either half, swipe, or `/ramp#<slug>` to open one
-directly. Today, first on the shelf: *Poems of joy* (poems, 6 × 9 in), an
+directly. Today, first on the shelf: *Poems of joy* (poems, 8.25 × 8.25 in, the poems in 18 pt), an
 author's own book. Destiny Hernandez wrote the poems and made the pictures
 with Gemini. It arrived as Beuk's PDF/X print, password-locked; its words
 were set from that print, unchanged, into a Beuk book file
 (`ramp-poems-of-joy.beuk-backup.json`: her theme and colour, each chapter a
 poem), and the book was printed by the renderer like the others. Each
-chapter's picture is a full page: one whole picture made for the page (1696 ×
-2528, about 280 ppi over the 9 in page), set as the chapter's plate as the
-file is, not split and not enlarged, facing the poem; the poem's page has no
-backdrop. It opens on its title page alone on the right; its shelf cover is
+chapter's picture is one wide picture painted for the open book (2912 ×
+1440), cut by `tools/wide_spread_plates.py` at its centre line into two
+square halves of 1440 × 1440 (about 175 ppi over the 8.25 in page; trimmed
+only at the two outer edges, nothing enlarged): the left half is the
+chapter's plate, the right half its Spread backdrop, fading before the
+poem. It opens on its title page alone on the right; its shelf cover is
 the first chapter's spread. Its pictures have rows in `pictures.tsv`. Then
 *Rain on Calder Street*
 (noir, 8 × 8 in), *Four Kitchens*
