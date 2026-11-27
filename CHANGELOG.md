@@ -4,6 +4,19 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-26 — One picture across both pages
+
+- **Across both pages.** A chapter's opening plate has a third choice under Fit: Across both pages. One wide picture opens the chapter across the whole spread, and you don't have to cut it in two yourself.
+- **In print.** The picture is cropped once, centred, to the shape of the two open pages. With bleed on, the bleed is included. The left half fills the plate's page edge to edge. The right half carries on under the chapter's first page and fades before the words, as the Spread backdrop does.
+- **Right-to-left books are mirrored.** In a right-to-left book the plate's page is on the right and the picture crosses to the left.
+- **Your picture stays whole.** It is stored once, whole. Change the trim size and it is cropped again for the new pages.
+- **The Print Interior View shows what prints.** It shows the same two halves the PDF gets. If the halves can't be made, print and the view both show the whole picture inside the margins, never a crop you didn't see.
+- **On e-readers, the whole picture.** An e-reader has no facing page, so the EPUB shows the whole picture on its own page before the chapter, with its alt text. So do the standalone page, Zen and the studio's preview.
+- **The chapter's backdrop is set aside, not lost.** In print the picture takes the backdrop's place on the opening page. While Across both pages is chosen, the Chapter backdrop rows are greyed out and one line says why. Switch Fit back and the backdrop is there as it was. The e-book still shows the backdrop under the opening.
+- **A note when it may print soft.** If the picture gives fewer than 200 pixels per inch across the two pages, a line under Fit gives the number. It doesn't stop you. The print checks before export now measure such a picture across both pages too.
+- **Suggested when it fits.** Choose a picture close to the shape of the open spread and Beuk picks Across both pages for you. Other pictures get the same choice they always got. Use on every chapter copies it.
+- Fill the page and Show the whole picture work exactly as before. An older Beuk that opens the book shows the plate as Fill the page, with the chapter's earlier backdrop. The three new lines of wording are in English and drafted in the twelve other languages, waiting to be signed off.
+
 ## 2026-11-24 — One chapter's settings on every chapter
 
 - **Use on every chapter.** A chapter's settings now end with a button, Use on every chapter. It copies that chapter's backdrop (the picture and its strength together), its drop cap, its small-caps lead-in or the fit of its plate to every other chapter in one step. You tick what to copy; nothing is ticked for you.
