@@ -466,9 +466,9 @@ async function readOnlyRooms(page) {
  *  and off, the hardcover opened, turned, closed — and the pane left on the Kindle. */
 async function previewBrowse(page) {
   await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
-  const devs = await page.$$eval('#deviceBar [data-device]', (bs) => bs.map((b) => b.getAttribute('data-device')));
+  const devs = await page.$$eval('#deviceBar option', (os) => os.map((o) => o.value));
   for (const d of devs) {
-    await page.click(`#deviceBar [data-device="${d}"]`);
+    await page.selectOption('#deviceBar', d);
     if (d === 'hardcover') {
       await page.waitForSelector('#hcStage:not([hidden])', { timeout: 10_000 });
       // an empty book has nothing to open (1.0: hcToggle off when empty and closed)
@@ -485,7 +485,7 @@ async function previewBrowse(page) {
     }
     await page.waitForTimeout(80);
   }
-  await page.click('#deviceBar [data-device="kindle"]');
+  await page.selectOption('#deviceBar', 'kindle');
   await page.waitForTimeout(400);
   if (!(await page.$eval('#btnNextPage', (b) => b.disabled))) await page.click('#btnNextPage');
   if (!(await page.$eval('#btnPrevPage', (b) => b.disabled))) await page.click('#btnPrevPage');
@@ -3330,13 +3330,13 @@ const W4B_DEVICE_LOOK = async ([devs, two]) => {
     out[d] = {
       cls: frame.className, maxW: getComputedStyle(frame).maxWidth, foot: document.getElementById('footDevice').textContent, display: frame.getAttribute('data-display'),
       filter: getComputedStyle(document.getElementById('deviceScreen')).filter, note: note.hidden ? '' : note.textContent,
-      active: document.querySelector('#deviceBar .dev-btn.active')?.getAttribute('data-device'), facts: document.getElementById('deskFacts').textContent,
+      active: document.getElementById('deviceBar').value, facts: document.getElementById('deskFacts') ? 'a device facts line' : '',
       hc: { mode: document.getElementById('pane-preview').classList.contains('hc-mode'), stage: !document.getElementById('hcStage').hidden, bar: !document.getElementById('hcBar').hidden, frame: getComputedStyle(frame).display },
     };
   }
   call('setDevice', 'kindle');
   frame.style.transition = '';
-  return { bar: [...document.querySelectorAll('#deviceBar .dev-btn')].map((b) => b.getAttribute('data-device') + ':' + b.textContent.trim()), devices: out };
+  return { bar: [...document.querySelectorAll('#deviceBar option')].map((o) => o.value + ':' + o.textContent.trim()), devices: out };
 };
 /** The hardcover beside 1.0's: closed (its parts, spine, counter, facts), then opened and turned. */
 const W4B_HC = async (two) => {
@@ -3386,9 +3386,9 @@ async function wave4bChrome(origin) {
       const two = await page.evaluate(W4B_DEVICE_LOOK, [W4B_DEVICES, true]);
       await one.bringToFront();
       const oneL = await one.evaluate(W4B_DEVICE_LOOK, [W4B_DEVICES, false]);
-      check(JSON.stringify(two.bar) === JSON.stringify(oneL.bar) && two.bar.length === 11, `wave4b (${ui}) preview.devices.expanded: the device bar reads as 1.0's (${two.bar.length} buttons: ${two.bar.map((x) => x.split(':')[0]).join(', ')})`);
+      check(JSON.stringify(two.bar) === JSON.stringify(oneL.bar) && two.bar.length === 11, `wave4b (${ui}) preview.devices.expanded: the device menu reads as 1.0's (${two.bar.length} choices: ${two.bar.map((x) => x.split(':')[0]).join(', ')})`);
       const bad = W4B_DEVICES.filter((d) => JSON.stringify(two.devices[d]) !== JSON.stringify(oneL.devices[d]));
-      check(bad.length === 0, `wave4b (${ui}) preview.devices.expanded + preview.devices.display-truth: every profile's frame, size, footer, display type, screen filter, truth note and facts equal 1.0's${bad.length ? ' — differ: ' + bad.map((d) => d + ' ' + JSON.stringify(two.devices[d]).slice(0, 160) + ' / 1.0 ' + JSON.stringify(oneL.devices[d]).slice(0, 160)).join('; ') : ''}`);
+      check(bad.length === 0, `wave4b (${ui}) preview.devices.expanded + preview.devices.display-truth: every profile's frame, size, footer, display type, screen filter, truth note, the menu's value and the desk (no facts line) equal 1.0's${bad.length ? ' — differ: ' + bad.map((d) => d + ' ' + JSON.stringify(two.devices[d]).slice(0, 160) + ' / 1.0 ' + JSON.stringify(oneL.devices[d]).slice(0, 160)).join('; ') : ''}`);
       // the visible chrome around the page and the typeset page itself, on the open section
       const chrome = (p) => p.evaluate(() => ({ counter: document.getElementById('pageCounter').textContent, name: document.getElementById('previewSectionName').textContent, rh: document.getElementById('rhBook').textContent + '|' + document.getElementById('rhChapter').textContent, total: document.getElementById('deskTotal').textContent, basis: document.getElementById('deskBasis').textContent, rail: document.getElementById('deskRail').innerText, flow: document.getElementById('pageFlow').innerHTML, prev: document.getElementById('btnPrevPage').disabled, next: document.getElementById('btnNextPage').disabled, dir: document.getElementById('pageFlow').dir, lang: document.getElementById('pageFlow').getAttribute('lang'), statPages: document.getElementById('statPages')?.textContent ?? null, statsNote: document.getElementById('statsNote')?.textContent ?? null }));
       await page.bringToFront();
@@ -3499,12 +3499,12 @@ async function wave4bReader(origin) {
     check(caret.want > 1 && caret.page === caret.want, `wave4b preview.follows-caret: a keystroke at a paragraph 60% into "${a.s.title}" (position ${target}) turns the preview to page ${caret.page}, the caret's page (${caret.want})`);
     // preview.desk.totals + desk.rail: the total is the rail's sum on two profiles; a rail row moves the preview there
     for (const d of ['kindle', 'android']) {
-      await page.click(`#deviceBar [data-device="${d}"]`);
+      await page.selectOption('#deviceBar', d);
       await page.waitForFunction((name) => document.getElementById('deskTotal').textContent.includes(name) && window.beukPreview.get('deskState').sig === window.beukPreview.call('deskSignature'), d === 'kindle' ? 'Kindle Paperwhite' : 'Android Tablet', { timeout: 60_000 });
       const t = await page.evaluate(() => ({ total: window.beukPreview.get('deskState').total, sum: Object.values(window.beukPreview.get('deskState').counts).reduce((x, y) => x + y, 0), text: document.getElementById('deskTotal').textContent }));
       check(t.total > 0 && t.total === t.sum && t.text.includes(String(t.total)), `wave4b preview.desk.totals on ${d}: the total (${t.total}) is the sections' sum (${t.sum}) and the desk says it ("${t.text}")`);
     }
-    await page.click('#deviceBar [data-device="kindle"]');
+    await page.selectOption('#deviceBar', 'kindle');
     const row = await page.$$('#deskRail .desk-item');
     const pick = row[Math.min(row.length - 1, b.i)];
     const pickId = await pick.getAttribute('data-desk-id');
@@ -3644,7 +3644,9 @@ async function wave4bRtl(origin) {
         P.call('goToPage', 1, true);
         const step = parseFloat(flow.style.columnWidth) + 64, fr = flow.getBoundingClientRect(), rtl = flow.dir === 'rtl';
         const scale = fr.width / flow.offsetWidth || 1;
-        const colOf = (r) => Math.floor(((rtl ? fr.right - r.right : r.left - fr.left) / scale) / step);
+        // + 1e-3 of a column: a paragraph starting exactly at a column's edge measures 10.999996 columns through the
+        // drawn scale (2026-11-27, at the taller frame the device menu frees) and must count as column 11
+        const colOf = (r) => Math.floor(((rtl ? fr.right - r.right : r.left - fr.left) / scale) / step + 1e-3);
         const alone = [...flow.querySelectorAll('.scene-break')].filter((o) => {
           const r = o.getBoundingClientRect(); if (!r.width && !r.height) return false;
           const c = colOf(r);
@@ -4076,10 +4078,10 @@ async function wave4cRoundTrip(origin) {
     check(JSON.stringify(oneRecipe) === JSON.stringify(out.coverRecipe), "wave4c: 1.0's adoptCoverRecipe on the same recipe writes the recipe 2.0 wrote");
     // the preview's hardcover (4b) wears the new cover, as a jacket
     await page.bringToFront();
-    await page.click('#deviceBar [data-device="hardcover"]');
+    await page.selectOption('#deviceBar', 'hardcover');
     await page.waitForFunction((d) => [...document.querySelectorAll('#pane-preview img')].some((i) => i.getAttribute('src') === d), 'data:image/jpeg;base64,' + out.cover.data, { timeout: 20_000 });
     check(true, "wave4c review focus #4: the preview's hardcover wears the cover made in the maker");
-    await one.evaluate(() => { const b = document.querySelector('#deviceBar [data-device="hardcover"]'); b.click(); });
+    await one.evaluate(() => { const b = document.getElementById('deviceBar'); b.value = 'hardcover'; b.dispatchEvent(new Event('change', { bubbles: true })); });
     const oneText = await one.evaluate(() => document.getElementById('hcBar')?.innerText || '');
     const twoText = await page.evaluate(() => document.getElementById('hcBar')?.innerText || '');
     check(oneText === twoText && oneText.length > 0, `wave4c: the hardcover's bar names the binding as 1.0's does (${JSON.stringify(twoText.slice(0, 80))})`);
@@ -10998,7 +11000,7 @@ async function everyChapterChecks(origin) {
        chapter's heading block, at most 32em tall): it is "on the page" when most of its box lies inside the device's
        screen. The screenshot is taken with the preview full screen, where the page is large enough to see it. */
     await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
-    await page.locator('#deviceBar [data-device]', { hasText: 'iPad' }).first().click();
+    await page.selectOption('#deviceBar', 'ipad');
     const preview = async (id, name) => {
       await choose(page, idx(id));
       await page.waitForFunction(() => !!document.querySelector('#pageFlow .bd-layer'), null, { timeout: 60_000 });

@@ -448,7 +448,7 @@ export const SERIALIZE_ROOTS = ['serializeBook'];
  *  always run on the preview's state, never on a state another part of the studio set into the main closure. The
  *  main closure's renderPreview, deskState and deskSignature are this module's (BROWSER_SUPPLIED there). */
 export const PREVIEW_ROOTS = ['renderPreview', 'queuePreview', 'initPreview', 'setDevice', 'measurePages', 'goToPage', 'fitDeviceFrame', 'renderDeviceDisplayNote',
-  'deviceReadingArea', 'scheduleDeskUpdate', 'updateDesk', 'renderDesk', 'renderDeskFacts', 'computeDeskCountsSync', 'deskState', 'deskSignature', 'deskGoToSection',
+  'deviceReadingArea', 'scheduleDeskUpdate', 'updateDesk', 'renderDesk', 'computeDeskCountsSync', 'deskState', 'deskSignature', 'deskGoToSection',
   'pvLeaving', 'pvResume', 'pvShowTitle', 'pvFlush', 'pvPageOfAnchor', 'pvCaretAnchor', 'pvPageAnchor', 'previewPageAtX', 'keepOrnamentsWithText', 'undoOrnamentRepairs',
   'insGlancePages', 'statsPages', 'statsDeskReady', 'pageCountCache', 'sectionHtml', 'buildBookCss', 'pivEnsureStyle',
   'COL_GAP', 'DEVICE_FOOTERS', 'DEVICE_FACTS', 'DEVICE_NAMES', 'PAGE_GEOMETRY', 'DEVICE_DISPLAY', 'DISPLAY_RENDER',

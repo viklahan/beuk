@@ -24,12 +24,9 @@ type Cur = { el: HTMLElement; via: string; wired: boolean };
 const TIP_KEEP_TAGS: Record<string, 1> = { IFRAME: 1, FRAME: 1, ABBR: 1, DFN: 1, LINK: 1, STYLE: 1, META: 1, OPTION: 1, OPTGROUP: 1, TITLE: 1 };
 const TIP_KEEP_SCOPE = '[data-keep-titles], .fc-page, .piv-book';
 export const TIP_DELAY = 450, TIP_WARM = 90, TIP_LONGPRESS = 500, TIP_TOUCH_HOLD = 3500;
-/* dynamic controls (drawn by their own renderers) get their tip here (1.0's list; none of them exist in 2.0 yet) */
-const TIP_MAP: [string, string][] = [
-  ['#btnBetaComments', 'tips.comments'],
-  ["#deviceBar .dev-btn[data-device]:not([data-device='hardcover'])", 'tips.device'],
-  ["#deviceBar .dev-btn[data-device='hardcover']", 'tips.deviceHardcover'],
-];
+/* dynamic controls (drawn by their own renderers) get their tip here (1.0's list; none of them exist in 2.0 yet; the
+   device buttons it named became one menu, #deviceBar, whose tip is in its markup) */
+const TIP_MAP: [string, string][] = [['#btnBetaComments', 'tips.comments']];
 
 export type TipsApi = {
   show: (el: HTMLElement, via: string) => boolean;

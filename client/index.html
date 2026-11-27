@@ -1168,14 +1168,13 @@
       .studio-sub { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; line-height: 1.5; }
 
       /* ---------- Preview pane ---------- */
-      .device-bar { display: flex; gap: 6px; padding: 14px 16px 4px; flex-wrap: wrap; flex: 0 0 auto; }
-      .dev-btn {
-        display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); background: var(--panel-2);
-        color: var(--muted); border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 600;
+      /* The device menu: one native select at every width, so the bar is one row on a phone too and the reader keeps the height. */
+      .device-bar { display: flex; justify-content: center; padding: 12px 16px 0; flex: 0 0 auto; }
+      .dev-select {
+        width: 100%; max-width: 432px; background: var(--panel-2); border: 1px solid var(--line-2); color: var(--ink);
+        border-radius: 8px; padding: 7px 9px; font-size: 13px; font-weight: 600; cursor: pointer;
       }
-      .dev-btn svg { width: 14px; height: 14px; }
-      .dev-btn.active { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-      #previewStage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 14px 14px 10px; }
+      #previewStage { flex: 1 1 auto; min-height: 0; overflow: hidden auto; display: flex; flex-direction: column; align-items: center; padding: 14px 14px 10px; }
       #frameZone { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
       #deviceFrame { transition: max-width .25s; width: 100%; flex: 0 0 auto; }
       .frame-kindle { max-width: 348px; background: #2c2c2e; border-radius: 22px; padding: 20px 14px 26px; box-shadow: var(--shadow), inset 0 0 0 2px #454547; }
@@ -1257,7 +1256,7 @@
       .page-btn:disabled { opacity: .35; cursor: default; }
       .page-btn svg { width: 15px; height: 15px; }
       #pageCounter { font-family: var(--mono-font); font-size: 12.5px; color: var(--ink-2); min-width: 96px; text-align: center; }
-      #previewSectionName { text-align: center; font-size: 12px; color: var(--muted); padding-top: 2px; }
+      #previewSectionName { text-align: center; font-size: 12px; color: var(--muted); padding: 2px 0 8px; }
 
       /* ---------- Reading desk (under the device frame) ---------- */
       #previewDesk {
@@ -1265,7 +1264,6 @@
         border-top: 1px solid var(--line); margin-top: 2px; padding-top: 10px;
         display: flex; flex-direction: column;
       }
-      .desk-facts { text-align: center; font-size: 11.5px; color: var(--muted); letter-spacing: .02em; }
       .desk-total { text-align: center; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-top: 2px; }
       .desk-basis { text-align: center; font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; } /* BEUK:pagecount */
       .desk-rail { overflow-y: auto; min-height: 0; max-height: 172px; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; padding-right: 2px; overscroll-behavior: contain; }
@@ -1288,7 +1286,6 @@
       #pane-preview.hc-mode #deviceFrame,
       #pane-preview.hc-mode #deviceDisplayNote,
       #pane-preview.hc-mode .page-controls,
-      #pane-preview.hc-mode [data-i18n="preview.tip"],
       #pane-preview.hc-mode #previewDesk { display: none !important; }
       .hc-stage { position: relative; width: 100%; height: 100%; min-height: 220px; display: flex; align-items: center; justify-content: center; outline: none; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
       .hc-stage[hidden] { display: none; }
@@ -1363,9 +1360,9 @@
       #previewStage:-webkit-full-screen { background: var(--bg); padding: 18px; }
       #previewStage.fs-immersive { position: fixed; inset: 0; z-index: 2147483000; width: 100vw; height: 100vh; height: 100dvh; background: var(--bg); padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
       :root[data-theme="candlelight"] #previewStage.fs-immersive { background: radial-gradient(120% 85% at 50% -10%, var(--stage-glow) 0%, var(--panel-3) 58%); }
-      #previewStage:fullscreen #previewDesk, #previewStage:fullscreen [data-i18n="preview.tip"] { display: none; }
-      #previewStage:-webkit-full-screen #previewDesk, #previewStage:-webkit-full-screen [data-i18n="preview.tip"] { display: none; }
-      #previewStage.fs-immersive #previewDesk, #previewStage.fs-immersive [data-i18n="preview.tip"] { display: none; }
+      #previewStage:fullscreen #previewDesk { display: none; }
+      #previewStage:-webkit-full-screen #previewDesk { display: none; }
+      #previewStage.fs-immersive #previewDesk { display: none; }
       #deviceFrame.fs-scaled { transition: none; }
       .page-controls .pv-full { padding: 8px 10px; }
       .fs-btn[hidden] { display: none; }
@@ -3558,18 +3555,21 @@
 
         <!-- ============ PANE 3 : PREVIEW ============ -->
         <section id="pane-preview" class="pane">
-          <div class="device-bar" id="deviceBar">
-            <button class="dev-btn active" data-device="kindle"><i data-lucide="book-open"></i>Kindle Paperwhite</button>
-            <button class="dev-btn" data-device="ipad"><i data-lucide="tablet"></i>Apple Books · iPad</button>
-            <button class="dev-btn" data-device="kobo"><i data-lucide="book-marked"></i>Kobo Clara BW</button>
-            <button class="dev-btn" data-device="phone"><i data-lucide="smartphone"></i>Phone · OLED</button>
-            <button class="dev-btn" data-device="oasis"><i data-lucide="book-open"></i>Kindle Oasis</button>
-            <button class="dev-btn" data-device="basic"><i data-lucide="book"></i>Kindle</button>
-            <button class="dev-btn" data-device="colorsoft"><i data-lucide="book-open"></i>Kindle Colorsoft</button><!-- BEUK:devicetruth -->
-            <button class="dev-btn" data-device="iphone"><i data-lucide="smartphone"></i>iPhone</button>
-            <button class="dev-btn" data-device="forma"><i data-lucide="book-marked"></i>Kobo Forma</button>
-            <button class="dev-btn" data-device="android"><i data-lucide="tablet"></i>Android Tablet</button>
-            <button class="dev-btn" data-device="hardcover" data-i18n="hcp.device"><i data-lucide="book-text"></i>Hardcover</button><!-- BEUK:hcpreview -->
+          <!-- One native menu at every width (2026-11-27): eleven buttons wrapped into five or six rows over the reader on a phone. The arrow-keys tip is the menu's tooltip. -->
+          <div class="device-bar">
+            <select class="dev-select" id="deviceBar" aria-label="Preview device" data-i18n-aria="preview.deviceLabel" data-tip="preview.tip">
+              <option value="kindle" selected>Kindle Paperwhite</option>
+              <option value="ipad">Apple Books · iPad</option>
+              <option value="kobo">Kobo Clara BW</option>
+              <option value="phone">Phone · OLED</option>
+              <option value="oasis">Kindle Oasis</option>
+              <option value="basic">Kindle</option>
+              <option value="colorsoft">Kindle Colorsoft</option><!-- BEUK:devicetruth -->
+              <option value="iphone">iPhone</option>
+              <option value="forma">Kobo Forma</option>
+              <option value="android">Android Tablet</option>
+              <option value="hardcover" data-i18n="hcp.device">Hardcover</option><!-- BEUK:hcpreview -->
+            </select>
           </div>
           <div id="previewStage">
             <div id="frameZone">
@@ -3608,9 +3608,7 @@
             </div>
             <!-- ==== /BEUK:hcpreview ==== -->
             <div id="previewSectionName"></div>
-            <p style="text-align:center; font-size:11.5px; color:var(--muted); margin:2px 0 10px;" data-i18n="preview.tip">Tip: click the preview, then use ← → arrow keys to turn pages.</p>
             <div id="previewDesk">
-              <div class="desk-facts" id="deskFacts"></div>
               <div class="desk-total" id="deskTotal"></div>
               <div class="desk-basis" id="deskBasis"></div><!-- BEUK:pagecount -->
               <div class="desk-rail" id="deskRail" role="list"></div>
@@ -5019,6 +5017,7 @@
         "flourish.defaultName": "Flourish",
         "preview.prev": "Prev", "preview.next": "Next", "preview.pageOf": "Page {page} of {count}",
         "preview.tip": "Tip: click the preview, then use ← → arrow keys to turn pages.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Previewing: {name}", "preview.chapterPrefix": "Chapter {n} — ", "preview.excludedSuffix": " · excluded from export",
         "preview.desk.facts": "{size} screen · {res} · {ppi} ppi", "preview.desk.total": "{title} · about {n} page on {device}", "preview.desk.totalPlural": "{title} · about {n} pages on {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimated for a {w} × {h} px reading area with {size} px text. A reader’s own text size and margins change the count.", "preview.desk.railLabel": "Sections and page counts on this device",
         "set.title": "Project Settings",
@@ -5326,16 +5325,10 @@
       const TIP_DELAY = 450, TIP_WARM = 90, TIP_LONGPRESS = 500, TIP_TOUCH_HOLD = 3500;
       /* dynamic controls (drawn by their own renderers) get their tip here */
       const TIP_MAP = [
-        ["#btnBetaComments", "tips.comments"],
-        ["#deviceBar .dev-btn[data-device]:not([data-device='hardcover'])", "tips.device"],
-        ["#deviceBar .dev-btn[data-device='hardcover']", "tips.deviceHardcover"]
+        ["#btnBetaComments", "tips.comments"]
       ];
-      const TIP_PARAMS = {
-        "tips.device": (el) => {
-          const f = typeof DEVICE_FACTS === "object" && DEVICE_FACTS[el.getAttribute("data-device")];
-          return f ? { size: f.size, res: f.res, ppi: f.ppi } : null;
-        }
-      };
+      /* a tip key's {placeholders}, filled from its element (none now: the device buttons that used it became one menu, #deviceBar) */
+      const TIP_PARAMS = {};
       let tipEl = null, tipCur = null, tipTimer = 0, tipHoldTimer = 0, tipPress = null, tipSuppressClickUntil = 0, tipLastHide = 0, tipKeyboard = false, tipSweep = null;
       function tipKeepsTitle(el) {
         if (!el || !el.tagName || TIP_KEEP_TAGS[el.tagName]) return true;
@@ -5777,6 +5770,7 @@
         "flourish.defaultName": "Floritura",
         "preview.prev": "Anterior", "preview.next": "Siguiente", "preview.pageOf": "Página {page} de {count}",
         "preview.tip": "Consejo: haz clic en la vista previa y usa las flechas ← → para pasar de página.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Vista previa: {name}", "preview.chapterPrefix": "Capítulo {n} — ", "preview.excludedSuffix": " · excluido de la exportación",
         "preview.desk.facts": "Pantalla de {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · aprox. {n} página en {device}", "preview.desk.totalPlural": "{title} · aprox. {n} páginas en {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimación para un área de lectura de {w} × {h} px con texto de {size} px. El tamaño de letra y los márgenes que elija cada lector cambian el recuento.", "preview.desk.railLabel": "Secciones y número de páginas en este dispositivo",
         "set.title": "Ajustes del proyecto",
@@ -5998,6 +5992,7 @@
         "flourish.defaultName": "Fioriture",
         "preview.prev": "Préc.", "preview.next": "Suiv.", "preview.pageOf": "Page {page} sur {count}",
         "preview.tip": "Astuce : cliquez l'aperçu, puis tournez les pages avec les flèches ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Aperçu : {name}", "preview.chapterPrefix": "Chapitre {n} — ", "preview.excludedSuffix": " · exclu de l'export",
         "preview.desk.facts": "Écran {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · environ {n} page sur {device}", "preview.desk.totalPlural": "{title} · environ {n} pages sur {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimation pour une zone de lecture de {w} × {h} px avec un texte de {size} px. La taille du texte et les marges choisies par le lecteur changent le décompte.", "preview.desk.railLabel": "Sections et nombre de pages sur cet appareil",
         "set.title": "Réglages du projet",
@@ -6219,6 +6214,7 @@
         "flourish.defaultName": "Verzierung",
         "preview.prev": "Zurück", "preview.next": "Weiter", "preview.pageOf": "Seite {page} von {count}",
         "preview.tip": "Tipp: Klicken Sie in die Vorschau und blättern Sie dann mit den Pfeiltasten ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Vorschau: {name}", "preview.chapterPrefix": "Kapitel {n} — ", "preview.excludedSuffix": " · vom Export ausgeschlossen",
         "preview.desk.facts": "{size} Bildschirm · {res} · {ppi} ppi", "preview.desk.total": "{title} · etwa {n} Seite auf {device}", "preview.desk.totalPlural": "{title} · etwa {n} Seiten auf {device}", "preview.desk.pages": "≈ {n} Seite", "preview.desk.pagesPlural": "≈ {n} Seiten", "preview.desk.basis": "Geschätzt für einen Lesebereich von {w} × {h} px mit {size} px Schrift. Schriftgröße und Ränder, die Lesende selbst wählen, ändern die Zahl.", "preview.desk.railLabel": "Abschnitte und Seitenzahlen auf diesem Gerät",
         "set.title": "Projekteinstellungen",
@@ -6440,6 +6436,7 @@
         "flourish.defaultName": "Fregio",
         "preview.prev": "Prec.", "preview.next": "Succ.", "preview.pageOf": "Pagina {page} di {count}",
         "preview.tip": "Consiglio: fai clic sull'anteprima, poi sfoglia le pagine con le frecce ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Anteprima: {name}", "preview.chapterPrefix": "Capitolo {n} — ", "preview.excludedSuffix": " · escluso dall'esportazione",
         "preview.desk.facts": "Schermo da {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · circa {n} pagina su {device}", "preview.desk.totalPlural": "{title} · circa {n} pagine su {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagine", "preview.desk.basis": "Stima per un'area di lettura di {w} × {h} px con testo a {size} px. La dimensione del testo e i margini scelti dal lettore cambiano il conteggio.", "preview.desk.railLabel": "Sezioni e conteggio pagine su questo dispositivo",
         "set.title": "Impostazioni del progetto",
@@ -6661,6 +6658,7 @@
         "flourish.defaultName": "Floreio",
         "preview.prev": "Ant.", "preview.next": "Seg.", "preview.pageOf": "Página {page} de {count}",
         "preview.tip": "Dica: clique na pré-visualização e vire as páginas com as setas ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Pré-visualização: {name}", "preview.chapterPrefix": "Capítulo {n} — ", "preview.excludedSuffix": " · excluído da exportação",
         "preview.desk.facts": "Tela de {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · cerca de {n} página no {device}", "preview.desk.totalPlural": "{title} · cerca de {n} páginas no {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimativa para uma área de leitura de {w} × {h} px com texto de {size} px. O tamanho do texto e as margens escolhidos pelo leitor alteram a contagem.", "preview.desk.railLabel": "Seções e contagem de páginas neste dispositivo",
         "set.title": "Definições do projeto",
@@ -6882,6 +6880,7 @@
         "flourish.defaultName": "Versiering",
         "preview.prev": "Vorige", "preview.next": "Volgende", "preview.pageOf": "Pagina {page} van {count}",
         "preview.tip": "Tip: klik op het voorbeeld en blader daarna met de pijltjestoetsen ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Voorbeeld: {name}", "preview.chapterPrefix": "Hoofdstuk {n} — ", "preview.excludedSuffix": " · uitgesloten van de export",
         "preview.desk.facts": "{size} scherm · {res} · {ppi} ppi", "preview.desk.total": "{title} · ongeveer {n} pagina op {device}", "preview.desk.totalPlural": "{title} · ongeveer {n} pagina's op {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagina's", "preview.desk.basis": "Geschat voor een leesvlak van {w} × {h} px met tekst van {size} px. De tekstgrootte en marges die een lezer zelf kiest, veranderen het aantal.", "preview.desk.railLabel": "Secties en pagina-aantallen op dit apparaat",
         "set.title": "Projectinstellingen",
@@ -7103,6 +7102,7 @@
         "flourish.defaultName": "Ornament",
         "preview.prev": "Wstecz", "preview.next": "Dalej", "preview.pageOf": "Strona {page} z {count}",
         "preview.tip": "Wskazówka: kliknij podgląd, a potem przewracaj strony strzałkami ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Podgląd: {name}", "preview.chapterPrefix": "Rozdział {n} — ", "preview.excludedSuffix": " · wyłączone z eksportu",
         "preview.desk.facts": "Ekran {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · około {n} strony na {device}", "preview.desk.totalPlural": "{title} · około {n} stron na {device}", "preview.desk.pages": "≈ {n} strona", "preview.desk.pagesPlural": "≈ {n} strony", "preview.desk.basis": "Szacunek dla obszaru czytania {w} × {h} px przy tekście {size} px. Rozmiar tekstu i marginesy wybrane przez czytelnika zmieniają liczbę.", "preview.desk.railLabel": "Sekcje i liczba stron na tym urządzeniu",
         "set.title": "Ustawienia projektu",
@@ -7324,6 +7324,7 @@
         "flourish.defaultName": "Виньетка",
         "preview.prev": "Назад", "preview.next": "Вперёд", "preview.pageOf": "Страница {page} из {count}",
         "preview.tip": "Совет: щёлкните по предпросмотру, а затем листайте страницы стрелками ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Предпросмотр: {name}", "preview.chapterPrefix": "Глава {n} — ", "preview.excludedSuffix": " · исключено из экспорта",
         "preview.desk.facts": "Экран {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · около {n} страницы на {device}", "preview.desk.totalPlural": "{title} · около {n} страниц на {device}", "preview.desk.pages": "≈ {n} страница", "preview.desk.pagesPlural": "≈ {n} страниц", "preview.desk.basis": "Оценка для области чтения {w} × {h} px при тексте {size} px. Размер шрифта и поля, выбранные читателем, меняют число.", "preview.desk.railLabel": "Разделы и число страниц на этом устройстве",
         "set.title": "Настройки проекта",
@@ -7545,6 +7546,7 @@
         "flourish.defaultName": "Süs",
         "preview.prev": "Önceki", "preview.next": "Sonraki", "preview.pageOf": "Sayfa {page} / {count}",
         "preview.tip": "İpucu: önizlemeye tıklayın, sonra ← → ok tuşlarıyla sayfaları çevirin.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "Önizleme: {name}", "preview.chapterPrefix": "Bölüm {n} — ", "preview.excludedSuffix": " · dışa aktarımdan çıkarıldı",
         "preview.desk.facts": "{size} ekran · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.totalPlural": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.pages": "≈ {n} sayfa", "preview.desk.pagesPlural": "≈ {n} sayfa", "preview.desk.basis": "{size} px metinle {w} × {h} px okuma alanı için tahmin. Okurun seçtiği yazı boyutu ve kenar boşlukları sayıyı değiştirir.", "preview.desk.railLabel": "Bu cihazdaki bölümler ve sayfa sayıları",
         "set.title": "Proje ayarları",
@@ -7766,6 +7768,7 @@
         "flourish.defaultName": "زخرفة",
         "preview.prev": "السابق", "preview.next": "التالي", "preview.pageOf": "صفحة {page} من {count}",
         "preview.tip": "تلميح: انقر المعاينة، ثم قلّب الصفحات بمفتاحي الأسهم ← →.",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "معاينة: {name}", "preview.chapterPrefix": "الفصل {n} — ", "preview.excludedSuffix": " · مستثنى من التصدير",
         "preview.desk.facts": "شاشة {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · نحو {n} صفحة على {device}", "preview.desk.totalPlural": "{title} · نحو {n} صفحات على {device}", "preview.desk.pages": "≈ {n} صفحة", "preview.desk.pagesPlural": "≈ {n} صفحات", "preview.desk.basis": "تقدير لمساحة قراءة {w} × {h} px بنص {size} px. حجم الخط والهوامش التي يختارها القارئ تغيّر العدد.", "preview.desk.railLabel": "الأقسام وعدد الصفحات على هذا الجهاز",
         "set.title": "إعدادات المشروع",
@@ -7987,6 +7990,7 @@
         "flourish.defaultName": "飾り",
         "preview.prev": "前へ", "preview.next": "次へ", "preview.pageOf": "{count}ページ中 {page}ページ",
         "preview.tip": "ヒント：プレビューをクリックしてから、← → の矢印キーでページをめくれます。",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "プレビュー中：{name}", "preview.chapterPrefix": "第{n}章 — ", "preview.excludedSuffix": " · 書き出しから除外",
         "preview.desk.facts": "{size} 画面 · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} で約 {n} ページ", "preview.desk.totalPlural": "{title} · {device} で約 {n} ページ", "preview.desk.pages": "≈ {n} ページ", "preview.desk.pagesPlural": "≈ {n} ページ", "preview.desk.basis": "{w} × {h} px の読書領域、{size} px の文字での推定です。読者が選ぶ文字サイズや余白で数は変わります。", "preview.desk.railLabel": "このデバイスでのセクションとページ数",
         "set.title": "プロジェクト設定",
@@ -8208,6 +8212,7 @@
         "flourish.defaultName": "饰纹",
         "preview.prev": "上一页", "preview.next": "下一页", "preview.pageOf": "第 {page} 页，共 {count} 页",
         "preview.tip": "提示：点击预览，然后用 ← → 方向键翻页。",
+        "preview.deviceLabel": "Preview device",
         "preview.previewing": "正在预览：{name}", "preview.chapterPrefix": "第 {n} 章 — ", "preview.excludedSuffix": " · 已从导出中排除",
         "preview.desk.facts": "{size} 屏幕 · {res} · {ppi} ppi", "preview.desk.total": "{title} · 在 {device} 上约 {n} 页", "preview.desk.totalPlural": "{title} · 在 {device} 上约 {n} 页", "preview.desk.pages": "≈ {n} 页", "preview.desk.pagesPlural": "≈ {n} 页", "preview.desk.basis": "按 {w} × {h} px 阅读区域、{size} px 文字估算。读者自选的字号和页边距会改变页数。", "preview.desk.railLabel": "此设备上的章节与页数",
         "set.title": "项目设置",
@@ -37902,7 +37907,7 @@
       function fitDeviceFrame() {
         const zone = $("frameZone"), frame = $("deviceFrame"), screen = $("deviceScreen");
         if (!zone || !frame || !screen) return;
-        const zw = zone.clientWidth, zh = zone.clientHeight;
+        const zw = zone.clientWidth; let zh = zone.clientHeight;
         if (!zw || !zh) return;
         const cs = getComputedStyle(frame);
         const cap = parseFloat(cs.maxWidth) || zw;
@@ -37919,6 +37924,12 @@
            top. The old sum set width = outer size, so every frame drew
            padX wider (and padX ÷ ratio taller) than its zone and spilled
            over the page controls. Fit the content width instead. */
+        /* 2026-11-27: the zone never shrinks below the smallest frame
+           (the 120px floor): on a short phone the desk under it gives
+           way, and the frame no longer spills over the device menu
+           above and the note below; past that the stage scrolls. */
+        const minH = Math.ceil(120 / ratio + padY) + "px";
+        if (zone.style.minHeight !== minH) { zone.style.minHeight = minH; zh = zone.clientHeight; }
         const byHeight = Math.max(0, zh - padY) * ratio;
         const w = Math.max(120, Math.min(cap, zw - padX, byHeight));
         frame.style.width = w.toFixed(1) + "px";
@@ -38170,7 +38181,6 @@
         deskTimer = setTimeout(updateDesk, typeof delay === "number" ? delay : 450);
       }
       function updateDesk() {
-        renderDeskFacts();
         const area = deviceReadingArea(); /* BEUK:pagecount */
         if (!area) return;
         const w = area.w, h = area.h;
@@ -38231,17 +38241,12 @@
           if (!$("flowWrap").clientWidth && counts[state.activeId]) { state.pageCount = counts[state.activeId]; goToPage(state.page, true); }
         })();
       }
-      function renderDeskFacts() {
-        const f = DEVICE_FACTS[state.device]; if (!f) return;
-        $("deskFacts").textContent = t("preview.desk.facts", { size: f.size, res: f.res, ppi: f.ppi });
-      }
       function deskSectionLabel(s) {
         return s.kind === "body"
           ? (s.number ? t("preview.chapterPrefix", { n: s.number }) : "") + (s.title || t("side.untitled"))
           : s.title;
       }
       function renderDesk() {
-        renderDeskFacts();
         if (typeof insGlancePagesRefresh === "function") insGlancePagesRefresh(); /* BEUK:insights — the glance's page count follows the desk */
         if (typeof statsPagesRefresh === "function") statsPagesRefresh(); /* the sidebar's page count is the desk's too */
         /* BEUK:remnants — an empty desk has no pages to report: no total, no basis, no per-section list. */
@@ -38643,13 +38648,12 @@
         $("deviceFrame").className = "frame-" + d;
         $("footDevice").textContent = DEVICE_FOOTERS[d];
         renderDeviceDisplayNote(); /* BEUK:devicetruth */
-        document.querySelectorAll("#deviceBar .dev-btn").forEach((b) => b.classList.toggle("active", b.getAttribute("data-device") === d));
+        const bar = $("deviceBar"); if (bar && bar.value !== d) bar.value = d; /* the device menu shows the device, whoever chose it */
         /* BEUK:reader — the same words at a new geometry: keep the place. */
         const pvAnc = pvAnchorNow();
         const pvTurn = () => { measurePages(); goToPage(pvPageOfAnchor(pvAnc) || 1, true); pvLastSet = state.page; };
         state.page = 1;
         fitDeviceFrame();
-        renderDeskFacts();
         scheduleDeskUpdate(60);
         requestAnimationFrame(pvTurn);
         setTimeout(() => { fitDeviceFrame(); if (state.page === pvLastSet) pvTurn(); else { measurePages(); goToPage(state.page, true); } scheduleDeskUpdate(60); }, 330);
@@ -38661,9 +38665,7 @@
       function initPreview() {
         pvInit(); /* BEUK:reader */
         renderDeviceDisplayNote(); /* BEUK:devicetruth */
-        $("deviceBar").addEventListener("click", (e) => {
-          const b = e.target.closest("[data-device]"); if (b) setDevice(b.getAttribute("data-device"));
-        });
+        $("deviceBar").addEventListener("change", (e) => setDevice(e.target.value));
         $("deskRail").addEventListener("click", (e) => {
           const b = e.target.closest("[data-desk-id]"); if (b) deskGoToSection(b.getAttribute("data-desk-id"));
         });
@@ -66613,15 +66615,15 @@
               applyBookDoc(keepDoc);
             }
           } },
-        { id: "preview.devices.expanded", feature: "preview", name: "Preview devices: Kindle Oasis, Kindle (basic), Kindle Colorsoft, iPhone, Kobo Forma and a generic Android tablet join the original four profiles, each selectable with its own frame size and footer label; the original four keep their frames (the Kobo Clara is named for the model it is, the Clara BW); the Hardcover print device makes eleven buttons",
+        { id: "preview.devices.expanded", feature: "preview", name: "Preview devices: Kindle Oasis, Kindle (basic), Kindle Colorsoft, iPhone, Kobo Forma and a generic Android tablet join the original four profiles, each selectable with its own frame size and footer label; the original four keep their frames (the Kobo Clara is named for the model it is, the Clara BW); the Hardcover print device makes eleven choices in the one device menu, which shows the device chosen",
           run() {
             const keepDevice = state.device;
             const frame = $("deviceFrame");
             const keepTrans = frame.style.transition;
             frame.style.transition = "none";
             try {
-              const btns = Array.from(document.querySelectorAll("#deviceBar .dev-btn"));
-              const ids = btns.map((b) => b.getAttribute("data-device"));
+              const btns = Array.from(document.querySelectorAll("#deviceBar option"));
+              const ids = btns.map((b) => b.value);
               const allOk = btns.length === 11 && ["kindle", "ipad", "kobo", "phone", "oasis", "basic", "colorsoft", "iphone", "forma", "android", "hardcover"].every((d) => ids.includes(d)); /* BEUK:hcpreview — ten e-readers + the Hardcover print device (BEUK:devicetruth — Kindle Colorsoft is the tenth) */
               const origOk = DEVICE_FOOTERS.kindle === "Kindle Paperwhite · 300 ppi" && DEVICE_FOOTERS.ipad === "Apple Books · iPad" &&
                 DEVICE_FOOTERS.kobo === "Kobo Clara BW · ComfortLight Pro" && DEVICE_FOOTERS.phone === "Phone · OLED True Black"; /* BEUK:devicetruth — the Clara BW, by name */
@@ -66631,14 +66633,14 @@
                 setDevice(d);
                 const w = getComputedStyle($("deviceFrame")).maxWidth;
                 const f = $("footDevice").textContent;
-                const btn = btns.find((b) => b.getAttribute("data-device") === d);
-                const okD = $("deviceFrame").className === "frame-" + d && w === expect[d][0] && f === expect[d][1] && !!btn && btn.textContent.includes(expect[d][2]);
+                const btn = btns.find((b) => b.value === d);
+                const okD = $("deviceFrame").className === "frame-" + d && w === expect[d][0] && f === expect[d][1] && !!btn && btn.textContent.includes(expect[d][2]) && $("deviceBar").value === d;
                 if (!okD) { newOk = false; bits.push(d + "=" + $("deviceFrame").className + "/" + w + "/" + f); }
               });
               setDevice("kindle");
-              const backOk = $("deviceFrame").className === "frame-kindle" && getComputedStyle($("deviceFrame")).maxWidth === "348px" && $("footDevice").textContent === "Kindle Paperwhite · 300 ppi";
+              const backOk = $("deviceFrame").className === "frame-kindle" && getComputedStyle($("deviceFrame")).maxWidth === "348px" && $("footDevice").textContent === "Kindle Paperwhite · 300 ppi" && $("deviceBar").value === "kindle";
               return scVerdict(allOk && origOk && newOk && backOk,
-                "ten e-reader profiles plus the Hardcover device on the bar (" + allOk + "); the original four keep their names and footers (" + origOk + "); each new profile selects its own frame at its own size with its own footer (" + newOk + (bits.length ? " — mismatches: " + bits.join(", ") : "") + "); the Paperwhite still frames at 348px (" + backOk + ")");
+                "ten e-reader profiles plus the Hardcover device in the menu (" + allOk + "); the original four keep their names and footers (" + origOk + "); each new profile selects its own frame at its own size with its own footer, the menu showing it (" + newOk + (bits.length ? " — mismatches: " + bits.join(", ") : "") + "); the Paperwhite still frames at 348px (" + backOk + ")");
             } finally { setDevice(keepDevice || "kindle"); frame.style.transition = keepTrans; }
           } },
         /* ==== BEUK:devicetruth ==== */
@@ -66652,9 +66654,9 @@
             const norm = (f) => String(f || "").replace(/\s+/g, " ").trim();
             try {
               const bad = [], seen = [];
-              const profiles = Array.from(document.querySelectorAll("#deviceBar .dev-btn")).map((b) => b.getAttribute("data-device")).filter((d) => d !== "hardcover");
+              const profiles = Array.from(document.querySelectorAll("#deviceBar option")).map((b) => b.value).filter((d) => d !== "hardcover");
               if (profiles.length !== 10) bad.push(profiles.length + " e-reader profiles, expected 10");
-              Object.keys(want).forEach((d) => { if (!profiles.includes(d)) bad.push(d + " missing from the bar"); });
+              Object.keys(want).forEach((d) => { if (!profiles.includes(d)) bad.push(d + " missing from the device menu"); });
               profiles.forEach((d) => {
                 const row = DEVICE_DISPLAY[d];
                 if (!row) { bad.push(d + ": no display row"); return; }
@@ -66986,7 +66988,7 @@
               const listOk = items.length === state.sections.length &&
                 items.every((el, i) => el.getAttribute("data-desk-id") === state.sections[i].id &&
                   el.querySelector(".d-pages").textContent === t("preview.desk.pages", { n: res.counts[state.sections[i].id] || 1, count: res.counts[state.sections[i].id] || 1 }));
-              const factsOk = $("deskFacts").textContent.indexOf(DEVICE_FACTS.kindle.res) !== -1 && $("deskFacts").textContent.indexOf("300") !== -1;
+              const factsOk = !$("deskFacts") && $("previewDesk").textContent.indexOf(DEVICE_FACTS.kindle.res) === -1; /* the device facts line is gone (2026-11-27): the desk keeps the total, its basis and the rail */
               const totalOk = $("deskTotal").textContent.indexOf(String(res.total)) !== -1 && $("deskTotal").textContent.indexOf(state.meta.title) !== -1;
               const target = state.sections.find((s) => s.type === "chapter" && s.id !== state.activeId) || state.sections[1];
               const item = items.find((el) => el.getAttribute("data-desk-id") === target.id);
@@ -66996,7 +66998,7 @@
                 document.querySelector("#deskRail .desk-item.current").getAttribute("data-desk-id") === target.id;
               const namedOk = $("previewSectionName").textContent.indexOf(target.title) !== -1;
               return scVerdict(listOk && factsOk && totalOk && movedOk && markedOk && namedOk,
-                "the rail lists all " + items.length + " sections with their engine counts (" + listOk + "); the facts line carries the profile's resolution and density (" + factsOk + "); the total line names the book and its whole-book count (" + totalOk + "); clicking " + (target.title || target.id) + " moves the preview to it (" + movedOk + "), marks it current on the rail (" + markedOk + ") and names it above the desk (" + namedOk + ")");
+                "the rail lists all " + items.length + " sections with their engine counts (" + listOk + "); no device facts line on the desk (" + factsOk + "); the total line names the book and its whole-book count (" + totalOk + "); clicking " + (target.title || target.id) + " moves the preview to it (" + movedOk + "), marks it current on the rail (" + markedOk + ") and names it above the desk (" + namedOk + ")");
             } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
           } },
         { id: "preview.desk.space", feature: "preview", name: "Reading desk space: the device frame grows with the column's available height — measurably larger at a tall pane than a short one — while the screen keeps the profile's true aspect ratio",
@@ -67035,7 +67037,7 @@
             frame.style.transition = "none";
             try {
               applyBookDoc(buildSampleBook());
-              const profiles = Array.from(document.querySelectorAll("#deviceBar .dev-btn")).map((b) => b.getAttribute("data-device")).filter((d) => d !== "hardcover");
+              const profiles = Array.from(document.querySelectorAll("#deviceBar option")).map((b) => b.value).filter((d) => d !== "hardcover");
               const tableBad = profiles.filter((d) => {
                 const g = PAGE_GEOMETRY[d], a = deviceReadingArea(d);
                 return !g || !a || !(a.w > 100 && a.h > 100 && a.w < a.cssW && a.h < a.cssH) || !g.screenSrc ||
