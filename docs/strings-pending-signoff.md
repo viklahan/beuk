@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-26 (Across both pages: section 6). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words). Before that: 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -409,7 +409,7 @@ keys and 32 `auth.*` plus 10 `backup.*` keys in all, most of them long since sig
 are the pending ones. The reports are the list.
 
 Total still waiting: 22 (this task) + 11 + 20 + 21 + 6 + 1 = 81 keys, counting each key once however many languages it has.
-(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys, section 4 adds 7 and section 5 adds 26. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
+(That total is of 2026-11-12, sections 1 and 2 only. Section 3 below adds 24 keys, section 4 adds 7, section 5 adds 26 and section 6 adds 3. Sets added between those two dates are not listed in this file: for example the 11 shelf-removal keys of 2026-11-20, `BEUK:shelfremove`, are marked as drafts only in `client/index.html`.)
 
 ## 3. The export screen: its groups and the proof (24 keys, 2026-11-23; the proof's link words changed 2026-11-24)
 
@@ -1434,3 +1434,95 @@ it, and uses the noun for a poem that its Poem Mode strings use (section 4).
 - **ar** العربية: `كل الفصول الأخرى قصائد، والقصائد تبقى كما هي.`
 - **ja** 日本語: `ほかの章はすべて詩です。詩はそのままです。`
 - **zh-Hans** 简体中文: `其他章节都是诗歌，诗歌保持不变。`
+
+## 6. Across both pages (3 keys, 2026-11-26)
+
+The chapter settings' Fit row for the opening plate has a third choice, "Across both pages": one picture spans the left page
+and the chapter's first page (`studio/src/pictures/ArtRows.tsx`). Its 3 keys sit in each language's main `UI_STRINGS` pack in
+`client/index.html`, beside `editor.plateFitFill` and `editor.plateFitWhole`. Until this draft the 12 other languages held the
+English as a stand-in. English is the source. The 12 other languages below are drafts written by Claude: not approved, not read
+by a native speaker.
+
+What each one is:
+
+- `editor.plateFitAcross`: the third option in the Fit picker, after "Fill the page" and "Show the whole picture". "Use on every
+  chapter" shows the same words as a value (`studio/src/chapters/everych.ts`, `FIT_SAID`).
+- `editor.plateAcrossNote`: shown under the picker while Across is chosen.
+- `editor.plateAcrossSoft`: shown under it too when the picture gives under 200 pixels per inch across the spread. `{ppi}` is a
+  whole number.
+
+How the drafts were made:
+
+- The option takes the form of its two neighbours in each language: an infinitive in **es**, **fr**, **pt**, **de**, **nl**,
+  **ru** (*Abarcar*, *Couvrir*, *Ocupar*, *überspannen*, *overspannen*, *Разместить*), an imperative in **it**, **pl**, **tr**
+  (*Copri*, *Rozłóż*, *yay*), a verbal noun in **ar** (*الامتداد*), a verb phrase in **ja** and **zh-Hans**.
+- "Backdrop" is each pack's own `editor.backdrop` word (*fondo*, *arrière-plan*, *Hintergrund*, *sfondo*, *fundo*, *achtergrond*,
+  *tło*, *фон*, *arka plan*, *خلفية*, *背景*, *背景*).
+- "Print soft" follows each pack's `preflight.f.dpi.name` ("A picture will print softly"): *borrosa*, *floue*, *weich gedruckt*,
+  *morbida*, *desfocada*, *zacht gedrukt*, *miękko*, *мягко*, *yumuşak*, *باهتة الحدة*, *柔らかく*, *发虚*.
+- "Pixels per inch" is spelled out as the English is, with each pack's word for pixel (`tips.device`: pt-PT *píxeis*) and inch
+  (`preflight.f.dpi.detail`: *pulgada*, *pouce*, *Zoll*, *pollice*, *polegada*, *inch*, *cal*, *дюйм*, *inç*, *بوصة*, *インチ*, *英寸*).
+- `{ppi}` is kept byte for byte; no exclamation marks.
+
+Points worth a look when you read them:
+
+- **pl** and **ru**: a bare number before "pixels" must agree with it (152 *piksele*, 155 *pikseli*; 152 *пикселя*, 155
+  *пикселей*), and one string cannot. **pl** puts the count in the genitive after *rozdzielczość*, where every count takes
+  *pikseli*; **ru** uses the unit abbreviation *пикс./дюйм*, which does not change. If you prefer *ppi* (as `tips.device`
+  and `preview.desk.facts` already use), it is one word in each.
+- "Facing page": *página de enfrente*, *page en regard*, *gegenüberliegende Seite*, *pagina a fronte*, *página oposta*,
+  *tegenoverliggende pagina*, *strona naprzeciwko*, *страница напротив*, *karşı sayfa*, *الصفحة المقابلة*, *向かいのページ*, *对页*.
+- "Set aside" means kept but not drawn. **ja** says *保留されます* (held back) and **zh-Hans** *搁置* (shelved) to keep that sense;
+  **de** says *bleibt außen vor*. If one of them reads as "deleted", that is the one to change.
+- **ru** `editor.plateFitAcross` is *Разместить на обеих страницах*, echoing the row's label *Размещение*; the pack's word
+  for a spread, *разворот* (`piv.prev`), would give *На весь разворот*, the usual print phrase. The English avoids "spread",
+  so the draft does too. **de** *überspannen* and **nl** *overspannen* ("span") are the same choice.
+- **ar** keeps `{ppi} بكسل` with the singular after the number, as `tips.device` does with `{res} بكسل`.
+
+### `editor.plateFitAcross`
+
+- **en** (source): Across both pages
+- **es** Español: `Abarcar las dos páginas`
+- **fr** Français: `Couvrir les deux pages`
+- **de** Deutsch: `Beide Seiten überspannen`
+- **it** Italiano: `Copri entrambe le pagine`
+- **pt** Português: `Ocupar as duas páginas`
+- **nl** Nederlands: `Beide pagina's overspannen`
+- **pl** Polski: `Rozłóż na obie strony`
+- **ru** Русский: `Разместить на обеих страницах`
+- **tr** Türkçe: `İki sayfaya yay`
+- **ar** العربية: `الامتداد على الصفحتين`
+- **ja** 日本語: `両ページにまたがる`
+- **zh-Hans** 简体中文: `横跨两页`
+
+### `editor.plateAcrossNote`
+
+- **en** (source): The picture also covers the facing page, so this chapter's backdrop is set aside while this is chosen.
+- **es** Español: `La imagen cubre también la página de enfrente, así que el fondo de este capítulo se deja a un lado mientras esté elegida esta opción.`
+- **fr** Français: `L'image couvre aussi la page en regard, donc l'arrière-plan de ce chapitre est mis de côté tant que ce choix est retenu.`
+- **de** Deutsch: `Das Bild bedeckt auch die gegenüberliegende Seite, daher bleibt der Hintergrund dieses Kapitels außen vor, solange dies gewählt ist.`
+- **it** Italiano: `L'immagine copre anche la pagina a fronte, quindi lo sfondo di questo capitolo viene messo da parte finché questa scelta è attiva.`
+- **pt** Português: `A imagem cobre também a página oposta, por isso o fundo deste capítulo fica de parte enquanto esta opção estiver escolhida.`
+- **nl** Nederlands: `De afbeelding bedekt ook de tegenoverliggende pagina, dus de achtergrond van dit hoofdstuk wordt opzijgezet zolang dit gekozen is.`
+- **pl** Polski: `Obraz zakrywa też stronę naprzeciwko, więc tło tego rozdziału zostaje odłożone na bok, dopóki ta opcja jest wybrana.`
+- **ru** Русский: `Изображение занимает и страницу напротив, поэтому фон этой главы откладывается, пока выбран этот вариант.`
+- **tr** Türkçe: `Resim karşı sayfayı da kaplar; bu yüzden bu seçenek seçiliyken bu bölümün arka planı bir kenara bırakılır.`
+- **ar** العربية: `تغطي الصورة الصفحة المقابلة أيضًا، لذا تُنحّى خلفية هذا الفصل جانبًا ما دام هذا الخيار مختارًا.`
+- **ja** 日本語: `絵は向かいのページも覆うため、これを選んでいる間、この章の背景は保留されます。`
+- **zh-Hans** 简体中文: `图片也会覆盖对页，因此选择此项期间，本章的背景会被搁置。`
+
+### `editor.plateAcrossSoft`
+
+- **en** (source): This picture gives {ppi} pixels per inch across both pages; it may print soft.
+- **es** Español: `Esta imagen da {ppi} píxeles por pulgada en las dos páginas; puede imprimirse borrosa.`
+- **fr** Français: `Cette image donne {ppi} pixels par pouce sur les deux pages ; elle risque de s'imprimer floue.`
+- **de** Deutsch: `Dieses Bild liefert über beide Seiten {ppi} Pixel pro Zoll; es wird womöglich weich gedruckt.`
+- **it** Italiano: `Questa immagine dà {ppi} pixel per pollice su entrambe le pagine; potrebbe essere stampata morbida.`
+- **pt** Português: `Esta imagem dá {ppi} píxeis por polegada nas duas páginas; pode imprimir desfocada.`
+- **nl** Nederlands: `Deze afbeelding geeft over beide pagina's {ppi} pixels per inch; ze kan zacht gedrukt worden.`
+- **pl** Polski: `Ten obraz ma na obu stronach rozdzielczość {ppi} pikseli na cal; może wydrukować się miękko.`
+- **ru** Русский: `На обеих страницах у этого изображения {ppi} пикс./дюйм; оно может напечататься мягко.`
+- **tr** Türkçe: `Bu resim iki sayfa boyunca inç başına {ppi} piksel veriyor; yumuşak basılabilir.`
+- **ar** العربية: `تعطي هذه الصورة {ppi} بكسل في البوصة عبر الصفحتين؛ وقد تُطبع باهتة الحدة.`
+- **ja** 日本語: `この絵は両ページにわたって1インチあたり {ppi} ピクセルです。柔らかく印刷されるおそれがあります。`
+- **zh-Hans** 简体中文: `这张图片在两页上为每英寸 {ppi} 像素，印出来可能会发虚。`
