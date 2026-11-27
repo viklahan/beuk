@@ -257,7 +257,7 @@ export function imageById(ydoc: Y.Doc, id: unknown): BookImage | null {
 /** BEUK:platefit — the fit a newly chosen plate picture is given: 1.0's plateFitFor (whole when filling the page would
  *  cut more than a tenth of the picture, by its pixel size, or when its size cannot be read) against the BOOK's trim
  *  (its stored printTrim, else 1.0's default for a book that has none). `im` carries its bytes (imageById, an upload). */
-export function plateFitFor(c: Closure, ydoc: Y.Doc, im: BookImage): 'fill' | 'whole' {
+export function plateFitFor(c: Closure, ydoc: Y.Doc, im: BookImage): 'fill' | 'whole' | 'across' {
   const trim = ydoc.getMap<unknown>(META).get('printTrim');
   return c.api.plateFitFor(im, typeof trim === 'string' && trim ? trim : String(c.api.bookPrintDefaults().printTrim));
 }

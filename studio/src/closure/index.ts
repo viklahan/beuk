@@ -238,6 +238,8 @@ export type ClosureApi = {
     recto: { x: number; y: number; w: number; h: number };
     ppi: number;
   };
+  /** A picture's pixel size, read from its bytes' header; null when it cannot be read. */
+  imagePixelSize: (img: unknown) => { w: number; h: number } | null;
   fmtBytes: (n: number) => string;
   pickerImages: () => BookImage[];
   isFlourishImage: (im: unknown) => boolean;
@@ -673,7 +675,7 @@ export type ClosureApi = {
   hcDrawFlaps: (...args: unknown[]) => unknown;
   hcDrawGuides: (...args: unknown[]) => unknown;
   TRIM_SIZES: { id: string; label: string; w: number; h: number }[];
-  trimSize: () => { id: string; label: string; w: number; h: number };
+  trimSize: (id?: string) => { id: string; label: string; w: number; h: number };
   printPageEstimate: () => number;
   slug: (s: unknown) => string;
   downloadWrap: (kind: 'pdf' | 'jpg') => Promise<void>;

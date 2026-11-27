@@ -20,12 +20,34 @@ import { addPicture, imageById, PICTURE_ACCEPT, PICTURE_ADDED, PICTURE_TYPE_REFU
    Every write is a section key, as 1.0 sets it on the section: plateId (null
    for "No plate"), plateAlt (offered from the picture's name when empty,
    kept per keystroke as 1.0's "input" listener does), plateFit (BEUK:platefit:
-   "fill" or "whole"; written with every newly chosen picture by 1.0's own
+   "fill", "whole" or "across"; written with every newly chosen picture by 1.0's own
    rule, plateFitFor, and by the Fit row, which shows only while a plate is
    set; a section without the key reads as "fill"), backdropId,
    backdropStrength ("whisper" when it is none of 1.0's four). */
 
+/** 1.0's PRINT_BLEED_IN: the bleed on the top, bottom and outer edge when the book prints with it. */
+const PRINT_BLEED_IN = 0.125;
 const UPLOAD = '__upload__';
+
+/** Pixels per inch the plate gives across both pages, as the press counts it (1.0's acrossCrop over the book's own trim,
+ *  the bleed actually in effect — printBleedOn, 0.125 in — and its direction), when that is under 200; null when it is
+ *  not, or when the picture's size cannot be read (no note, never a throw). Nothing here blocks. */
+function acrossPpi(c: Closure, ydoc: Y.Doc, plateId: string): number | null {
+  try {
+    const im = imageById(ydoc, plateId);
+    const px = im ? c.api.imagePixelSize(im) : null;
+    if (!px || !(px.w > 0) || !(px.h > 0)) return null;
+    const meta = ydoc.getMap<unknown>('meta');
+    const trimId = meta.get('printTrim');
+    const tr = c.api.trimSize(typeof trimId === 'string' && trimId ? trimId : String(c.api.bookPrintDefaults().printTrim));
+    const bleed = meta.get('printBleed') === true ? PRINT_BLEED_IN : 0;
+    const lang = meta.get('language');
+    const ppi = c.api.acrossCrop(px.w, px.h, { w: tr.w, h: tr.h }, bleed, c.api.isRtlLang(typeof lang === 'string' && lang ? lang : 'en')).ppi;
+    return ppi < 200 ? Math.round(ppi) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function ArtRows({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unknown> }) {
   const { t } = useLocale();
@@ -65,6 +87,10 @@ export function ArtRows({ ydoc, section }: { ydoc: Y.Doc; section: Y.Map<unknown
   const backdropId = (get('backdropId') as string | null | undefined) || '';
   const strength = get('backdropStrength');
   const strengths = c.api.BACKDROP_STRENGTHS;
+  const fitNow = c.api.plateFitOf({ plateFit: get('plateFit') });
+  // Across both pages: the chapter's backdrop is set aside while it is chosen (disabled, never written: Fit away and it is back as it was)
+  const across = fitNow === 'across' && !!plateId;
+  const softPpi = across ? acrossPpi(c, ydoc, plateId) : null;
 
   const options = (none: string, upload: string) => (
     <>
@@ -153,13 +179,20 @@ return (
           id="chPlateFit"
           style={{ width: 200, flex: '0 1 200px' }}
           aria-label={t('editor.plateFit')}
-          value={c.api.plateFitOf({ plateFit: get('plateFit') })}
-          onChange={(e) => setSectionKeys(ydoc, id, { plateFit: e.target.value === 'whole' ? 'whole' : 'fill' })}
+          value={fitNow}
+          onChange={(e) => setSectionKeys(ydoc, id, { plateFit: c.api.plateFitOf({ plateFit: e.target.value }) })}
         >
           <option value="fill">{t('editor.plateFitFill')}</option>
           <option value="whole">{t('editor.plateFitWhole')}</option>
+          <option value="across">{t('editor.plateFitAcross')}</option>
         </select>
       </div>
+      {across && (
+        <div id="plateAcrossLines" className="sw-txt" style={{ padding: '0 0 8px' }}>
+          <span id="plateAcrossNote" style={{ display: 'block' }}>{t('editor.plateAcrossNote')}</span>
+          {softPpi != null && <span id="plateAcrossSoft" style={{ display: 'block' }}>{t('editor.plateAcrossSoft', { ppi: softPpi })}</span>}
+        </div>
+      )}
       <div className="switch-row" id="plateAltRow" style={plateId ? undefined : { display: 'none' }}>
         <div className="sw-txt">
           <b>{t('editor.plateAlt')}</b>
@@ -180,7 +213,7 @@ return (
           <b>{t('editor.backdrop')}</b>
           <span>{t('editor.backdropDesc')}</span>
         </div>
-        <select className="txt-input" id="chBackdrop" style={{ width: 200, flex: '0 1 200px' }} aria-label={t('editor.backdrop')} value={backdropId} onChange={(e) => onBackdrop(e.target.value)}>
+        <select className="txt-input" id="chBackdrop" style={{ width: 200, flex: '0 1 200px' }} aria-label={t('editor.backdrop')} value={backdropId} disabled={across} onChange={(e) => onBackdrop(e.target.value)}>
           {options(t('editor.backdropNone'), t('editor.backdropUpload'))}
         </select>
       </div>
@@ -195,6 +228,7 @@ return (
           style={{ width: 200, flex: '0 1 200px' }}
           aria-label={t('editor.backdropStrength')}
           value={strengths.includes(strength as string) ? (strength as string) : 'whisper'}
+          disabled={across}
           onChange={(e) => setSectionKeys(ydoc, id, { backdropStrength: e.target.value })}
         >
           <option value="whisper">{t('editor.bdWhisper')}</option>
