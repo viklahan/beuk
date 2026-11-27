@@ -17,6 +17,14 @@ to make well.
 - **Suggested when it fits.** Choose a picture close to the shape of the open spread and Beuk picks Across both pages for you, unless the chapter already has a backdrop: then the picture gets the choice it always got, and the backdrop stays. Other pictures get the same choice they always got. Use on every chapter copies it.
 - Fill the page and Show the whole picture work exactly as before. An older Beuk that opens the book shows the plate as Fill the page, with the chapter's earlier backdrop. The three new lines of wording are in English and drafted in the twelve other languages, waiting to be signed off.
 
+## 2026-11-26 — Move and zoom the cover picture
+
+- **Your own picture can move.** In the cover maker, a picture you bring as the cover's art, or a stock photo, used to sit centred, with its edges cut off equally on both sides, and nothing could change that. Now drag the picture on the cover, anywhere away from the text, to choose what shows. Picture — across and Picture — down do the same from the keyboard.
+- **And zoom.** Picture — zoom goes from 100%, where the picture just fills the cover as before, up to 300%. However far you move or zoom it, the picture always fills the cover, so no gap can show at an edge.
+- **Everywhere the cover goes.** The placement is kept with the cover and used wherever the front cover is drawn: the e-book and print cover downloads, Use as My Cover, the front of the print wrap, the hardcover and the book on the stand. The back and spine of the wrap keep the picture centred, as before.
+- **Sharpness.** Zoom spreads fewer of the picture's pixels over the cover. When that takes the print cover under 200 pixels per inch, one line under the sliders says so, with the number. It never stops you. The store check's cover artwork row now counts the zoom too.
+- **Reset picture** puts it back in the centre at 100%. A different picture starts centred. Covers made before this look exactly as they did.
+
 ## 2026-11-26 — Your caret stays where you put it
 
 - **Two tabs on one book no longer move your caret.** When the same chapter was open in two tabs and one of them pressed Enter for a new paragraph before your caret, turned your paragraph into a heading (or undid that), or joined it with the paragraph above, the caret in the other tab jumped away, to the end of the paragraph or into the line before, and the next letters landed there. It now stays between the same letters.

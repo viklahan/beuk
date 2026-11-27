@@ -7,6 +7,7 @@ import { editorText } from '../editor/insert';
 import { desk, envRun } from '../environment/page';
 import { styleEnter, styleState } from '../style/session';
 import { cleanBookCss, cleanFlowFragment, cleanFlowHtml } from './safe';
+import { DEFAULT_DEVICE } from './defaultDevice';
 
 /* Step 5 wave 4b (inventory E1, E2): the preview — 1.0's own code, lifted whole into its own module
    (src/generated/closure-preview.js, scripts/extract-closure.mjs PREVIEW_ROOTS): the pane's device profiles and
@@ -35,7 +36,7 @@ export type PreviewClosure = { api: Record<string, Fn>; vars: Rec; setState: (s:
 export const deskEvents = new EventTarget();
 
 /** 1.0's preview view, kept across books (state.device, page, pageCount: 1.0 keeps the device over applyBookDoc). */
-const view = { device: 'kindle', page: 1, pageCount: 1 };
+const view = { device: DEFAULT_DEVICE, page: 1, pageCount: 1 };
 
 /* ---- 1.0's page, for the preview module ---- */
 const FLOWS = new Set(['pageFlow', 'deskFlow']);

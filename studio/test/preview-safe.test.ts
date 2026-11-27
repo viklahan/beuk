@@ -101,7 +101,10 @@ describe('both sinks leave an honest book exactly as 1.0 made it', () => {
     (pv.getState() as unknown as { theme: unknown }).theme = theme;
     expect(sections).toBeGreaterThan(100);
     expect(sheets).toBeGreaterThan(40);
-  });
+    // Every section of 25 fixtures under every preset theme: alone on the 16 GB Legion it took 5.0, 4.9 and 5.3 s on
+    // main 6734e53 (measured 2026-11-26, interleaved with a branch run), so vitest's default 5 s timed it out on main
+    // itself. The same long timeout PR #63 gave import-data's two whole imports.
+  }, 60_000);
 });
 
 describe('at the source (the Style session’s sourceSafe): the theme values 1.0 writes unescaped', () => {

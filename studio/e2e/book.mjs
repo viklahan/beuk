@@ -29,6 +29,8 @@
       next animation frame) over 300 keystrokes in the Dumas book's largest
       chapter; p50 and p95 printed (p95 over 16 ms is reported, with the
       profile's hottest functions, not hidden).
+   coverpan (E2E_ONLY=coverpan): the cover picture moved by a drag, zoomed by the keyboard, kept by "Use as My
+      Cover", shown again after reopening and a reload (coverpanChecks).
    caret (E2E_ONLY=caret): two tabs on one chapter; B's caret at "bro|wn"
       stays there through each of A's edits (and a server-shaped raw Yjs
       write), B's "#" lands "bro#wn"; the caret keeper's cost on a
@@ -470,9 +472,9 @@ async function readOnlyRooms(page) {
  *  and off, the hardcover opened, turned, closed — and the pane left on the Kindle. */
 async function previewBrowse(page) {
   await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
-  const devs = await page.$$eval('#deviceBar [data-device]', (bs) => bs.map((b) => b.getAttribute('data-device')));
+  const devs = await page.$$eval('#deviceBar option', (os) => os.map((o) => o.value));
   for (const d of devs) {
-    await page.click(`#deviceBar [data-device="${d}"]`);
+    await page.selectOption('#deviceBar', d);
     if (d === 'hardcover') {
       await page.waitForSelector('#hcStage:not([hidden])', { timeout: 10_000 });
       // an empty book has nothing to open (1.0: hcToggle off when empty and closed)
@@ -489,7 +491,7 @@ async function previewBrowse(page) {
     }
     await page.waitForTimeout(80);
   }
-  await page.click('#deviceBar [data-device="kindle"]');
+  await page.selectOption('#deviceBar', 'kindle');
   await page.waitForTimeout(400);
   if (!(await page.$eval('#btnNextPage', (b) => b.disabled))) await page.click('#btnNextPage');
   if (!(await page.$eval('#btnPrevPage', (b) => b.disabled))) await page.click('#btnPrevPage');
@@ -3334,13 +3336,13 @@ const W4B_DEVICE_LOOK = async ([devs, two]) => {
     out[d] = {
       cls: frame.className, maxW: getComputedStyle(frame).maxWidth, foot: document.getElementById('footDevice').textContent, display: frame.getAttribute('data-display'),
       filter: getComputedStyle(document.getElementById('deviceScreen')).filter, note: note.hidden ? '' : note.textContent,
-      active: document.querySelector('#deviceBar .dev-btn.active')?.getAttribute('data-device'), facts: document.getElementById('deskFacts').textContent,
+      active: document.getElementById('deviceBar').value, facts: document.getElementById('deskFacts') ? 'a device facts line' : '',
       hc: { mode: document.getElementById('pane-preview').classList.contains('hc-mode'), stage: !document.getElementById('hcStage').hidden, bar: !document.getElementById('hcBar').hidden, frame: getComputedStyle(frame).display },
     };
   }
   call('setDevice', 'kindle');
   frame.style.transition = '';
-  return { bar: [...document.querySelectorAll('#deviceBar .dev-btn')].map((b) => b.getAttribute('data-device') + ':' + b.textContent.trim()), devices: out };
+  return { bar: [...document.querySelectorAll('#deviceBar option')].map((o) => o.value + ':' + o.textContent.trim()), devices: out };
 };
 /** The hardcover beside 1.0's: closed (its parts, spine, counter, facts), then opened and turned. */
 const W4B_HC = async (two) => {
@@ -3390,9 +3392,9 @@ async function wave4bChrome(origin) {
       const two = await page.evaluate(W4B_DEVICE_LOOK, [W4B_DEVICES, true]);
       await one.bringToFront();
       const oneL = await one.evaluate(W4B_DEVICE_LOOK, [W4B_DEVICES, false]);
-      check(JSON.stringify(two.bar) === JSON.stringify(oneL.bar) && two.bar.length === 11, `wave4b (${ui}) preview.devices.expanded: the device bar reads as 1.0's (${two.bar.length} buttons: ${two.bar.map((x) => x.split(':')[0]).join(', ')})`);
+      check(JSON.stringify(two.bar) === JSON.stringify(oneL.bar) && two.bar.length === 11, `wave4b (${ui}) preview.devices.expanded: the device menu reads as 1.0's (${two.bar.length} choices: ${two.bar.map((x) => x.split(':')[0]).join(', ')})`);
       const bad = W4B_DEVICES.filter((d) => JSON.stringify(two.devices[d]) !== JSON.stringify(oneL.devices[d]));
-      check(bad.length === 0, `wave4b (${ui}) preview.devices.expanded + preview.devices.display-truth: every profile's frame, size, footer, display type, screen filter, truth note and facts equal 1.0's${bad.length ? ' — differ: ' + bad.map((d) => d + ' ' + JSON.stringify(two.devices[d]).slice(0, 160) + ' / 1.0 ' + JSON.stringify(oneL.devices[d]).slice(0, 160)).join('; ') : ''}`);
+      check(bad.length === 0, `wave4b (${ui}) preview.devices.expanded + preview.devices.display-truth: every profile's frame, size, footer, display type, screen filter, truth note, the menu's value and the desk (no facts line) equal 1.0's${bad.length ? ' — differ: ' + bad.map((d) => d + ' ' + JSON.stringify(two.devices[d]).slice(0, 160) + ' / 1.0 ' + JSON.stringify(oneL.devices[d]).slice(0, 160)).join('; ') : ''}`);
       // the visible chrome around the page and the typeset page itself, on the open section
       const chrome = (p) => p.evaluate(() => ({ counter: document.getElementById('pageCounter').textContent, name: document.getElementById('previewSectionName').textContent, rh: document.getElementById('rhBook').textContent + '|' + document.getElementById('rhChapter').textContent, total: document.getElementById('deskTotal').textContent, basis: document.getElementById('deskBasis').textContent, rail: document.getElementById('deskRail').innerText, flow: document.getElementById('pageFlow').innerHTML, prev: document.getElementById('btnPrevPage').disabled, next: document.getElementById('btnNextPage').disabled, dir: document.getElementById('pageFlow').dir, lang: document.getElementById('pageFlow').getAttribute('lang'), statPages: document.getElementById('statPages')?.textContent ?? null, statsNote: document.getElementById('statsNote')?.textContent ?? null }));
       await page.bringToFront();
@@ -3503,12 +3505,12 @@ async function wave4bReader(origin) {
     check(caret.want > 1 && caret.page === caret.want, `wave4b preview.follows-caret: a keystroke at a paragraph 60% into "${a.s.title}" (position ${target}) turns the preview to page ${caret.page}, the caret's page (${caret.want})`);
     // preview.desk.totals + desk.rail: the total is the rail's sum on two profiles; a rail row moves the preview there
     for (const d of ['kindle', 'android']) {
-      await page.click(`#deviceBar [data-device="${d}"]`);
+      await page.selectOption('#deviceBar', d);
       await page.waitForFunction((name) => document.getElementById('deskTotal').textContent.includes(name) && window.beukPreview.get('deskState').sig === window.beukPreview.call('deskSignature'), d === 'kindle' ? 'Kindle Paperwhite' : 'Android Tablet', { timeout: 60_000 });
       const t = await page.evaluate(() => ({ total: window.beukPreview.get('deskState').total, sum: Object.values(window.beukPreview.get('deskState').counts).reduce((x, y) => x + y, 0), text: document.getElementById('deskTotal').textContent }));
       check(t.total > 0 && t.total === t.sum && t.text.includes(String(t.total)), `wave4b preview.desk.totals on ${d}: the total (${t.total}) is the sections' sum (${t.sum}) and the desk says it ("${t.text}")`);
     }
-    await page.click('#deviceBar [data-device="kindle"]');
+    await page.selectOption('#deviceBar', 'kindle');
     const row = await page.$$('#deskRail .desk-item');
     const pick = row[Math.min(row.length - 1, b.i)];
     const pickId = await pick.getAttribute('data-desk-id');
@@ -3516,6 +3518,22 @@ async function wave4bReader(origin) {
     await page.waitForTimeout(600);
     const railed = await page.evaluate(() => ({ id: window.beukPreview.state().activeId, current: document.querySelector('#deskRail .desk-item.current')?.getAttribute('data-desk-id'), editor: document.getElementById('manuscript')?.getAttribute('data-section') }));
     check(railed.id === pickId && railed.current === pickId, `wave4b preview.desk.rail: a rail row moves the preview to its section (${railed.id === pickId}) and marks it current (${railed.current === pickId}); the editor opened it too (section ${railed.editor})`);
+    // preview.desk.fold: the desk folds away; the reader takes the height; the counts are still measured (the sidebar's "pages on…" reads them); it opens again
+    const foldH = () => page.evaluate(() => ({ h: document.getElementById('deviceFrame').getBoundingClientRect().height, w: document.getElementById('deviceFrame').getBoundingClientRect().width, expanded: document.getElementById('deskToggle').getAttribute('aria-expanded'), shown: getComputedStyle(document.getElementById('previewDesk')).display !== 'none', stored: localStorage.getItem('beuk.previewDesk.v1') }));
+    const open0 = await foldH();
+    await page.click('#deskToggle');
+    await page.waitForTimeout(700);
+    const shut = await foldH();
+    await page.selectOption('#deviceBar', 'android');
+    await page.waitForFunction(() => document.getElementById('deskTotal').textContent.includes('Android Tablet') && window.beukPreview.get('deskState').sig === window.beukPreview.call('deskSignature'), null, { timeout: 30_000 });
+    const measured = await page.evaluate(() => ({ total: window.beukPreview.get('deskState').total, ready: window.beukPreview.call('statsDeskReady') }));
+    await page.selectOption('#deviceBar', 'kindle');
+    await page.waitForTimeout(500);
+    await page.click('#deskToggle');
+    await page.waitForTimeout(700);
+    const again = await foldH();
+    check(open0.expanded === 'true' && open0.shown && shut.expanded === 'false' && !shut.shown && shut.h > open0.h && shut.stored === 'closed' && measured.total > 0 && measured.ready === true && again.expanded === 'true' && again.shown && Math.abs(again.h - open0.h) < 1.5 && again.stored === 'open',
+      `wave4b preview.desk.fold: the desk folds (aria-expanded ${open0.expanded} to ${shut.expanded}, remembered ${shut.stored}), the Kindle frame grows ${open0.h.toFixed(0)} to ${shut.h.toFixed(0)} px tall, the page counts are still measured while folded (${measured.total} pages, stats ready ${measured.ready}), and it opens again to ${again.h.toFixed(0)} px`);
     // preview.pagecount.fixed-geometry + desk.space: the counts do not follow the window; the frame grows with the column
     const counts = () => page.evaluate(() => JSON.stringify(window.beukPreview.call('computeDeskCountsSync')?.counts));
     const w1 = await page.evaluate(() => document.getElementById('deviceFrame').getBoundingClientRect().width);
@@ -3648,7 +3666,9 @@ async function wave4bRtl(origin) {
         P.call('goToPage', 1, true);
         const step = parseFloat(flow.style.columnWidth) + 64, fr = flow.getBoundingClientRect(), rtl = flow.dir === 'rtl';
         const scale = fr.width / flow.offsetWidth || 1;
-        const colOf = (r) => Math.floor(((rtl ? fr.right - r.right : r.left - fr.left) / scale) / step);
+        // + 1e-3 of a column: a paragraph starting exactly at a column's edge measures 10.999996 columns through the
+        // drawn scale (2026-11-27, at the taller frame the device menu frees) and must count as column 11
+        const colOf = (r) => Math.floor(((rtl ? fr.right - r.right : r.left - fr.left) / scale) / step + 1e-3);
         const alone = [...flow.querySelectorAll('.scene-break')].filter((o) => {
           const r = o.getBoundingClientRect(); if (!r.width && !r.height) return false;
           const c = colOf(r);
@@ -4080,10 +4100,10 @@ async function wave4cRoundTrip(origin) {
     check(JSON.stringify(oneRecipe) === JSON.stringify(out.coverRecipe), "wave4c: 1.0's adoptCoverRecipe on the same recipe writes the recipe 2.0 wrote");
     // the preview's hardcover (4b) wears the new cover, as a jacket
     await page.bringToFront();
-    await page.click('#deviceBar [data-device="hardcover"]');
+    await page.selectOption('#deviceBar', 'hardcover');
     await page.waitForFunction((d) => [...document.querySelectorAll('#pane-preview img')].some((i) => i.getAttribute('src') === d), 'data:image/jpeg;base64,' + out.cover.data, { timeout: 20_000 });
     check(true, "wave4c review focus #4: the preview's hardcover wears the cover made in the maker");
-    await one.evaluate(() => { const b = document.querySelector('#deviceBar [data-device="hardcover"]'); b.click(); });
+    await one.evaluate(() => { const b = document.getElementById('deviceBar'); b.value = 'hardcover'; b.dispatchEvent(new Event('change', { bubbles: true })); });
     const oneText = await one.evaluate(() => document.getElementById('hcBar')?.innerText || '');
     const twoText = await page.evaluate(() => document.getElementById('hcBar')?.innerText || '');
     check(oneText === twoText && oneText.length > 0, `wave4c: the hardcover's bar names the binding as 1.0's does (${JSON.stringify(twoText.slice(0, 80))})`);
@@ -11002,7 +11022,7 @@ async function everyChapterChecks(origin) {
        chapter's heading block, at most 32em tall): it is "on the page" when most of its box lies inside the device's
        screen. The screenshot is taken with the preview full screen, where the page is large enough to see it. */
     await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
-    await page.locator('#deviceBar [data-device]', { hasText: 'iPad' }).first().click();
+    await page.selectOption('#deviceBar', 'ipad');
     const preview = async (id, name) => {
       await choose(page, idx(id));
       await page.waitForFunction(() => !!document.querySelector('#pageFlow .bd-layer'), null, { timeout: 60_000 });
@@ -11543,6 +11563,123 @@ async function acrossRun(origin, f, lang, file, pic, png, SEC, ALT) {
   }
 }
 
+/* ---- cover picture: move and zoom (design 2026-11-27): coverpanChecks (E2E_ONLY=coverpan) ----
+   The production build, a real Chromium, the Lantern Coast book. In the cover maker: a picture is uploaded as the
+   writer's art (four coloured quarters, 1200 × 800, so where it sits shows), the picture's controls appear; the
+   picture is dragged with the mouse on the cover, away from the text; the zoom slider is moved with the keyboard; the
+   preview changes; "Use as My Cover" keeps the placement in the book; the maker opened again, and after a reload,
+   shows it kept. Without a placement the cover paints exactly the pixels of an explicit centre at 1×. Screenshots
+   (E2E_OUT): coverpan-1-uploaded.png, coverpan-2-dragged.png, coverpan-3-zoomed.png, coverpan-4-reopened.png,
+   coverpan-5-reloaded.png, coverpan-6-controls.png (the picture's hint, sliders and sharpness line), coverpan-7-reset.png
+   (Reset picture beside Reset positions). */
+async function coverpanChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  const shot = async (page, name) => { const b = await page.locator('#cmCanvas').screenshot(); writeFileSync(path.join(OUT, name), b); return b; };
+  const openMaker = async (page) => {
+    await page.click('#btnSettings2');
+    await page.waitForSelector('#btnCoverMake');
+    await page.click('#btnCoverMake');
+    await page.waitForFunction(() => document.getElementById('modalCoverMaker').classList.contains('open'));
+  };
+  const recipe = (page) => page.evaluate(() => window.beukCover.run((_a, c) => JSON.parse(JSON.stringify(c.vars.cmRecipe))));
+  const sliders = (page) => page.evaluate(() => ['cmPicH', 'cmPicV', 'cmPicZoom'].map((id) => document.getElementById(id).value));
+  try {
+    const page = await w4cOpen(ctx, origin, f.file);
+    await openMaker(page);
+    // the writer's art: four quarters (red, blue / yellow, green)
+    const png = await page.evaluate(() => {
+      const c = document.createElement('canvas'); c.width = 1200; c.height = 800;
+      const g = c.getContext('2d');
+      [['#c0392b', 0, 0], ['#2471a3', 600, 0], ['#f4d03f', 0, 400], ['#1e8449', 600, 400]].forEach(([col, x, y]) => { g.fillStyle = col; g.fillRect(x, y, 600, 400); });
+      return c.toDataURL('image/png').split(',')[1];
+    });
+    await page.setInputFiles('#cmArtInput', { name: 'quarters.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+    await page.waitForFunction(() => document.getElementById('cmPicRow').style.display === '' && document.getElementById('btnCmResetPic').style.display === '', null, { timeout: 20_000 });
+    await page.evaluate(() => document.fonts.ready);
+    const r0 = await recipe(page);
+    check(r0.bgType === 'image' && !('bgFocus' in r0) && !('bgZoom' in r0), `coverpan: the uploaded art paints the cover, centred at 1× (no placement yet: ${JSON.stringify([r0.bgType, r0.bgFocus, r0.bgZoom])})`);
+    check(JSON.stringify(await sliders(page)) === JSON.stringify(['500', '500', '100']), `coverpan: the picture's sliders start at the centre and 100% (${(await sliders(page)).join(', ')})`);
+    const labels = await page.evaluate(() => ['cmPicH', 'cmPicV', 'cmPicZoom'].map((id) => document.querySelector(`label[for="${id}"]`)?.textContent.trim() || ''));
+    check(labels.every((l) => /^Picture — (across|down|zoom) ·/.test(l)), `coverpan: the sliders are labelled (${labels.join(' | ')})`);
+    // without a placement the cover paints exactly what an explicit centre at 1× paints
+    const same = await page.evaluate(() => window.beukCover.run((a, c) => {
+      const r = c.vars.cmRecipe;
+      const px = (rr) => { const cv = a.renderCoverCanvas(rr, 800, 1280); return cv.getContext('2d').getImageData(0, 0, 800, 1280).data; };
+      const x = px(r), y = px(Object.assign({}, r, { bgFocus: { x: 0.5, y: 0.5 }, bgZoom: 1 }));
+      let n = 0; for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) n++;
+      return n;
+    }));
+    check(same === 0, `coverpan: no placement paints the same pixels as an explicit centre at 1× (${same} channel values differ)`);
+    const s1 = await shot(page, 'coverpan-1-uploaded.png');
+    // a drag on the picture, away from every text block
+    const at = await page.evaluate(() => window.beukCover.run((_a, c) => {
+      const cv = document.getElementById('cmCanvas'), boxes = c.vars.cmBlocks;
+      for (const [fx, fy] of [[0.12, 0.62], [0.88, 0.62], [0.12, 0.15], [0.5, 0.62], [0.12, 0.97]]) {
+        const x = fx * cv.width, y = fy * cv.height;
+        if (!boxes.some((b) => x >= b.left - 30 && x <= b.right + 30 && y >= b.top - 30 && y <= b.bottom + 30)) return { fx, fy };
+      }
+      return null;
+    }));
+    check(!!at, `coverpan: a point on the picture away from the text (${JSON.stringify(at)})`);
+    const box = await page.locator('#cmCanvas').boundingBox();
+    const sx = box.x + box.width * at.fx, sy = box.y + box.height * at.fy;
+    await page.mouse.move(sx, sy);
+    await page.mouse.down();
+    await page.mouse.move(sx + 60, sy + 40, { steps: 6 });
+    await page.mouse.up();
+    const r1 = await recipe(page);
+    check(r1.bgFocus && r1.bgFocus.x < 0.5 && r1.bgZoom === 1 && r1.layout === r0.layout, `coverpan: dragging the picture to the right moved it (focus ${JSON.stringify(r1.bgFocus)}, zoom ${r1.bgZoom}; the text layout stays ${r1.layout})`);
+    const s2 = await shot(page, 'coverpan-2-dragged.png');
+    const d12 = await pixelDiff(diffPage, s1, s2);
+    check(d12.ratio > 0.05, `coverpan: the preview shows the picture moved (${(d12.ratio * 100).toFixed(1)}% of its pixels changed)`);
+    // the keyboard: the zoom slider, 80 steps up
+    await page.focus('#cmPicZoom');
+    for (let i = 0; i < 80; i++) await page.keyboard.press('ArrowRight');
+    const r2 = await recipe(page);
+    const vt = await page.getAttribute('#cmPicZoom', 'aria-valuetext');
+    check(Math.abs(r2.bgZoom - 1.8) < 1e-9 && Math.abs(r2.bgFocus.x - r1.bgFocus.x) < 0.002 && vt === '180%', `coverpan: the zoom slider moved by the keyboard zooms to 1.8× (aria-valuetext ${vt}); the focus stays`);
+    const s3 = await shot(page, 'coverpan-3-zoomed.png');
+    check((await pixelDiff(diffPage, s2, s3)).ratio > 0.05, 'coverpan: the preview shows the zoom');
+    const soft = await page.evaluate(() => { const el = document.getElementById('cmPicSoft'); return { shown: el.style.display === '', text: el.textContent }; });
+    check(soft.shown && /about \d+ pixels per inch/.test(soft.text) && /larger picture/.test(soft.text) && !/Zoom out/.test(soft.text), `coverpan: zoomed, a 1200 × 800 picture is under 200 ppi on the print cover and one line says so; under 200 at 100% too, it asks only for a larger picture: ${JSON.stringify(soft.text)}`);
+    await page.locator('#cmPicRow').scrollIntoViewIfNeeded();
+    await page.locator('#cmPicRow').screenshot({ path: path.join(OUT, 'coverpan-6-controls.png') });
+    await page.locator('#btnCmResetPic').scrollIntoViewIfNeeded();
+    await page.locator('.cm-reset-row').screenshot({ path: path.join(OUT, 'coverpan-7-reset.png') });
+    // kept: Use as My Cover, then the export, the maker again, and a reload
+    await page.click('#btnCmUse');
+    await page.waitForFunction(() => !document.getElementById('modalCoverMaker').classList.contains('open'), null, { timeout: 30_000 });
+    await page.keyboard.press('Escape');
+    const out = (await exportBackup(page)).json.book;
+    check(JSON.stringify(out.coverRecipe.bgFocus) === JSON.stringify(r2.bgFocus) && out.coverRecipe.bgZoom === r2.bgZoom, `coverpan: "Use as My Cover" keeps the placement in the book (${JSON.stringify([out.coverRecipe.bgFocus, out.coverRecipe.bgZoom])})`);
+    await openMaker(page);
+    await page.waitForFunction(() => document.getElementById('cmPicRow').style.display === '', null, { timeout: 20_000 });
+    const back = await sliders(page);
+    check(JSON.stringify(back) === JSON.stringify([String(Math.round(r2.bgFocus.x * 1000)), String(Math.round(r2.bgFocus.y * 1000)), '180']), `coverpan: the maker opened again shows the placement (${back.join(', ')})`);
+    const s4 = await shot(page, 'coverpan-4-reopened.png');
+    check((await pixelDiff(diffPage, s3, s4)).ratio === 0, 'coverpan: the reopened cover is the zoomed, moved cover, pixel for pixel');
+    await page.click('#btnCmCancel');
+    await page.keyboard.press('Escape');
+    await page.reload();
+    await page.waitForFunction(() => !!window.beukCover && !!window.lucide && document.querySelectorAll('#cmElFont option').length > 10, null, { timeout: 60_000 });
+    await openMaker(page);
+    await page.waitForFunction(() => document.getElementById('cmPicRow').style.display === '', null, { timeout: 20_000 });
+    const s5 = await shot(page, 'coverpan-5-reloaded.png');
+    check(JSON.stringify(await sliders(page)) === JSON.stringify(back) && (await pixelDiff(diffPage, s4, s5)).ratio === 0, 'coverpan: after a reload the maker shows the same placement and the same cover');
+    // Reset picture: centred at 1× again, the fields gone
+    await page.click('#btnCmResetPic');
+    const r3 = await recipe(page);
+    check(!('bgFocus' in r3) && !('bgZoom' in r3) && JSON.stringify(await sliders(page)) === JSON.stringify(['500', '500', '100']), 'coverpan: Reset picture centres it at 1× and takes the placement away');
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+    await diffCtx.close();
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -11587,6 +11724,7 @@ try {
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('caret')) await caretChecks(srv.origin);
+  if (run('coverpan')) await coverpanChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
   if (run('screenshots')) await screenshots(srv.origin);
 } catch (e) {

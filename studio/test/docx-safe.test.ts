@@ -175,7 +175,10 @@ describe('wave 5c: a hostile book and a hostile volume through Word, the manuscr
       expect(found).toEqual([]);
       y.destroy();
     }
-  });
+    // A hostile volume and an honest one through the box set under every store preset: alone on the 16 GB Legion it
+    // took 5.4, 4.5 and 3.9 s on main 3dcabd1 (measured 2026-11-26), so vitest's default 5 s timed it out on main itself
+    // one run in three. The same long timeout PR #63 gave import-data's two whole imports.
+  }, 60_000);
 
   it("1.0 finding (the reproducing fixture): 1.0's own box set of the hostile volume, uncorrected, carries handlers and remote requests", () => {
     const y = onDesk(structuredClone(fixtures('real').find((x) => x.name === 'real/salt-road-book-one')!.book));

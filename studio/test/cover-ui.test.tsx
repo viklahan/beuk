@@ -10,7 +10,7 @@ import { loadClosure, setClosureLang, setClosureT, type Closure } from '../src/c
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { desk } from '../src/environment/page';
-import { styleReset } from '../src/style/session';
+import { styleReset, styleRun } from '../src/style/session';
 import { coverFetch, policyPhotos } from '../src/cover/cover';
 import { allowedStockUrl } from '../src/pictures/stock';
 import { readBook } from '../../src/book/read';
@@ -174,6 +174,103 @@ describe('the cover maker in the studio', { timeout: 60_000 }, () => {
     expect((out.cover as Rec).name).toBe(c.api.slug((doc.meta as Rec).title) + '-cover.jpg');
     expect(readBook(out).status).toBe('ok');
     await waitFor(() => expect(Array.from(document.querySelectorAll('#toasts .toast')).map((x) => x.textContent)).toContain(t('toast.coverMade')));
+  });
+
+  it("cover picture: move and zoom — the picture's sliders show with the art, write the placement Use as My Cover keeps, and Reset picture takes it away", async () => {
+    const doc = LANTERN();
+    await studioWith(doc);
+    await openSettingsAndMaker();
+    // the book's cover paints its art: the picture's controls show once the picture is decoded
+    await waitFor(() => expect($('cmPicRow').style.display).toBe(''));
+    expect($('btnCmResetPic').style.display).toBe('');
+    for (const [id, key] of [['cmPicH', 'covermk.picH'], ['cmPicV', 'covermk.picV'], ['cmPicZoom', 'covermk.picZoom']] as const) {
+      const lab = document.querySelector(`label[for="${id}"]`)!;
+      expect(lab.textContent).toContain(t(key)); // labelled, in 1.0's words
+    }
+    expect([$('cmPicH').value, $('cmPicV').value, $('cmPicZoom').value]).toEqual(['500', '500', '100']); // centred at 1× until moved
+    expect($('cmPicZoomVal').textContent).toBe('100%');
+    await change($('cmPicH'), '200', 'input');
+    await change($('cmPicV'), '800', 'input');
+    await change($('cmPicZoom'), '250', 'input');
+    expect(c.vars.cmRecipe).toMatchObject({ bgFocus: { x: 0.2, y: 0.8 }, bgZoom: 2.5 });
+    expect($('cmPicHVal').textContent).toBe('20%');
+    expect($('cmPicZoom').getAttribute('aria-valuetext')).toBe('250%');
+    await click($('btnCmUse'));
+    await waitFor(() => expect(isOpen()).toBe(false));
+    const out = await exported();
+    expect((out.coverRecipe as Rec).bgFocus).toEqual({ x: 0.2, y: 0.8 });
+    expect((out.coverRecipe as Rec).bgZoom).toBe(2.5);
+    expect(readBook(out).status).toBe('ok');
+    // opened again, the maker reads the placement back; Reset picture takes it away, and the cover is as it was
+    await openSettingsAndMaker();
+    await waitFor(() => expect($('cmPicRow').style.display).toBe(''));
+    expect([$('cmPicH').value, $('cmPicV').value, $('cmPicZoom').value]).toEqual(['200', '800', '250']);
+    await click($('btnCmResetPic'));
+    expect([$('cmPicH').value, $('cmPicV').value, $('cmPicZoom').value]).toEqual(['500', '500', '100']);
+    await click($('btnCmUse'));
+    await waitFor(() => expect(isOpen()).toBe(false));
+    const back = (await exported()).coverRecipe as Rec;
+    expect('bgFocus' in back || 'bgZoom' in back).toBe(false);
+  });
+
+  it('review of PR #66, fix 1: a drag on a picture that just fills one axis does not move it along that axis (1400 × 2100 at 1×, 20 px across with 1 px of vertical wobble)', async () => {
+    const doc = LANTERN();
+    await studioWith(doc);
+    await openSettingsAndMaker();
+    await waitFor(() => expect($('cmPicRow').style.display).toBe(''));
+    const id = (doc.coverRecipe as Rec).bgImageId as string;
+    (c.api.coverImgCache as unknown as Rec)[id] = { naturalWidth: 1400, naturalHeight: 2100, width: 1400, height: 2100 };
+    const cv = document.getElementById('cmCanvas') as HTMLCanvasElement;
+    // the precondition the review measured: floating point leaves a hair of slack on the filled (vertical) axis
+    const r = c.api.coverArtRect(1400, 2100, cv.width, cv.height);
+    expect(r.h - cv.height).toBeGreaterThan(0);
+    expect(r.h - cv.height).toBeLessThan(1e-9);
+    cv.getBoundingClientRect = () => ({ x: 0, y: 0, left: 0, top: 0, right: cv.width, bottom: cv.height, width: cv.width, height: cv.height, toJSON: () => ({}) }) as DOMRect;
+    const boxes = c.vars.cmBlocks as { left: number; top: number; right: number; bottom: number }[];
+    const at = [[0.05, 0.62], [0.95, 0.62], [0.05, 0.97], [0.5, 0.62]].map(([fx, fy]) => ({ x: fx! * cv.width, y: fy! * cv.height }))
+      .find((p) => !boxes.some((b) => p.x >= b.left - 8 && p.x <= b.right + 8 && p.y >= b.top - 8 && p.y <= b.bottom + 8))!;
+    expect(at).toBeTruthy();
+    const PE = (window as unknown as { PointerEvent?: typeof MouseEvent }).PointerEvent ?? MouseEvent;
+    const fire = (type: string, x: number, y: number) => act(() => void cv.dispatchEvent(new PE(type, { bubbles: true, cancelable: true, clientX: x, clientY: y })));
+    await fire('pointerdown', at.x, at.y);
+    await fire('pointermove', at.x + 10, at.y);
+    await fire('pointermove', at.x + 20, at.y + 1);
+    await fire('pointerup', at.x + 20, at.y + 1);
+    const rc = c.vars.cmRecipe as Rec & { bgFocus: { x: number; y: number } };
+    expect(rc.bgFocus.y).toBe(0.5); // RED before the fix: 0 (1 px ÷ 2e-13 px of slack)
+    expect(rc.bgFocus.x).toBeCloseTo(0.5 - 20 / (r.w - cv.width), 9); // the axis with room moves as dragged
+    expect(rc.bgZoom).toBe(1);
+  });
+
+  it('review of PR #66, fix 3: the soft-print line asks to zoom out only when 100% would be sharp enough; else only for a larger picture', async () => {
+    const doc = LANTERN();
+    await studioWith(doc);
+    await openSettingsAndMaker();
+    await waitFor(() => expect($('cmPicRow').style.display).toBe(''));
+    const id = (doc.coverRecipe as Rec).bgImageId as string;
+    const geo = styleRun((cc) => ({ tr: cc.api.trimSize(), d: cc.api.wrapDims(cc.vars.cmRecipe) }))!;
+    // the print cover's ppi at a placement: the lower of the trim and the wrap's front panel (cmPicPrintPpi)
+    const ppi = (iw: number, ih: number, zoom: number) => Math.min(c.api.coverArtPpi(iw, ih, geo.tr.w, geo.tr.h, { x: 0.5, y: 0.5, zoom }), c.api.coverArtPpi(iw, ih, geo.d.layout.panelW, geo.d.layout.panelH, { x: 0.5, y: 0.5, zoom }));
+    const soft = () => ({ shown: $('cmPicSoft').style.display === '', text: $('cmPicSoft').textContent });
+    const use = async (iw: number, ih: number, zoom: string) => {
+      (c.api.coverImgCache as unknown as Rec)[id] = { naturalWidth: iw, naturalHeight: ih, width: iw, height: ih };
+      await change($('cmPicZoom'), zoom, 'input');
+    };
+    // 300 ppi at 100%: zoomed to 200% it is about 150 — zooming out helps, and the line says so
+    const big = [Math.round(geo.tr.w * 300), Math.round(geo.tr.h * 300)] as const;
+    await use(big[0], big[1], '100');
+    expect(soft().shown).toBe(false);
+    await use(big[0], big[1], '200');
+    expect(ppi(big[0], big[1], 1)).toBeGreaterThanOrEqual(200);
+    expect(soft()).toEqual({ shown: true, text: t('covermk.picSoft', { ppi: Math.floor(ppi(big[0], big[1], 2)), need: 200 }) });
+    expect(soft().text).toContain('Zoom out');
+    // 150 ppi at 100%: zooming out cannot reach 200, so the line asks only for a larger picture
+    const small = [Math.round(geo.tr.w * 150), Math.round(geo.tr.h * 150)] as const;
+    await use(small[0], small[1], '120');
+    expect(ppi(small[0], small[1], 1)).toBeLessThan(200);
+    expect(soft()).toEqual({ shown: true, text: t('covermk.picSoftLarger', { ppi: Math.floor(ppi(small[0], small[1], 1.2)), need: 200, full: Math.floor(ppi(small[0], small[1], 1)) }) });
+    expect(soft().text).not.toContain('Zoom out');
+    expect(soft().text).toContain('larger picture');
   });
 
   it('review, Important 1: the maker opened again after its markup is drawn anew (another book, then back) dresses the 3D book and starts with the guides on', async () => {

@@ -226,6 +226,26 @@ test('read: series of 130 chars stays 130 chars, warning code over-limit path me
   assert.deepEqual(r.preserved, []);
 });
 
+const lantern = () => structuredClone(realFixtures().find((f) => f.name === 'lantern-coast-book-one.json')!.book) as Json & { coverRecipe: Record<string, unknown> };
+test('read: a cover picture placement out of range stays, with an over-limit warning per value; in range, no warning (BEUK:coverpan)', () => {
+  const b = lantern();
+  assert.ok(b.coverRecipe, 'the fixture has a made cover');
+  b.coverRecipe.bgFocus = { x: -0.25, y: 1.5 };
+  b.coverRecipe.bgZoom = 4;
+  const r = readBook(b);
+  const rc = r.book.coverRecipe as unknown as Record<string, unknown>;
+  assert.deepEqual([rc.bgFocus, rc.bgZoom], [{ x: -0.25, y: 1.5 }, 4], 'kept as written');
+  const paths = r.warnings.filter((w) => w.code === 'over-limit' && w.path.startsWith('coverRecipe.')).map((w) => w.path).sort();
+  assert.deepEqual(paths, ['coverRecipe.bgFocus.x', 'coverRecipe.bgFocus.y', 'coverRecipe.bgZoom']);
+  const ok = lantern();
+  ok.coverRecipe.bgFocus = { x: 0, y: 1 };
+  ok.coverRecipe.bgZoom = 3;
+  assert.deepEqual(readBook(ok).warnings.filter((w) => w.path.startsWith('coverRecipe.bg')), []);
+  const low = lantern();
+  low.coverRecipe.bgZoom = 0.5;
+  assert.ok(readBook(low).warnings.some((w) => w.code === 'over-limit' && w.path === 'coverRecipe.bgZoom'));
+});
+
 test('read: a wrong-typed value is replaced by the 1.0 default, raw in preserved, warning code bad-type', () => {
   const b = real();
   b.printBleed = 'yes';
