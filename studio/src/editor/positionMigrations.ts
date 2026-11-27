@@ -17,8 +17,7 @@ import * as Y from 'yjs';
    of the book.
    THE UPGRADE GATE: a candidate y-tiptap is taken only when test/insert.test.ts, test/undo-storm.test.ts,
    test/undo-caret.test.ts, the caret-keeper*.test.ts suites and `E2E_ONLY=caret node e2e/book.mjs` are green
-   on it, before merge — E2E_ONLY=caret green except the one documented known red ("typing through a split then
-   join", docs/ENGINEERING.md), which stays red until the keystroke rescue lands. Watch yjs#810.
+   on it, before merge. Watch yjs#810.
 
    Undo storms (studio-2 cutover, task 5): y-tiptap 3's "position migrations".
 
