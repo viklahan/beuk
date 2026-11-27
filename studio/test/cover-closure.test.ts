@@ -41,7 +41,7 @@ function byName(statements: readonly ts.Statement[], sf: ts.SourceFile): Map<str
 describe("wave 4c: the wrap painters are 1.0's, the same text as the server's WRAP_CLOSURE (constraint 40)", () => {
   it('every WRAP_CLOSURE name the browser does not supply is lifted into the browser closure', () => {
     const wrap = wrapList('WRAP_CLOSURE');
-    expect(wrap.length).toBe(132); // 130 + noteLeadRe, noteMarkRe (BEUK:notelabels: countWordsClean takes a note's mark out under any label the writer typed); 127 + PLATE_FITS (BEUK:platefit: normalizeSection keeps plateFit only from it) + countWordsClean, wordsOfClean (BEUK:importtally: countWordsRaw split, its result unchanged)
+    expect(wrap.length).toBe(135); // 132 + COVER_ZOOM_MAX, coverArtPlace, coverArtRect (BEUK:coverpan: the cover picture's move and zoom, which the wrap's front panel paints); 130 + noteLeadRe, noteMarkRe (BEUK:notelabels: countWordsClean takes a note's mark out under any label the writer typed); 127 + PLATE_FITS (BEUK:platefit: normalizeSection keeps plateFit only from it) + countWordsClean, wordsOfClean (BEUK:importtally: countWordsRaw split, its result unchanged)
     const browserOwn = wrap.filter((n) => SUPPLIED_BY_BROWSER.test(n));
     expect(browserOwn.sort()).toEqual(['UI_PLURAL_FORMS', 'UI_STRINGS', 't', 'tCountForm', 'uiLangState', 'uiPluralCategory', 'uiPluralRulesCache'].sort());
     expect(CLOSURE_SUPPLIED).toEqual(expect.arrayContaining(['t', 'UI_STRINGS', 'uiLangState']));
@@ -67,6 +67,6 @@ describe("wave 4c: the wrap painters are 1.0's, the same text as the server's WR
       if (s.get(n) !== b.get(n)) unequal.push(n);
     }
     expect(unequal).toEqual([]);
-    expect(wrap.length).toBe(125); // 123 + noteLeadRe, noteMarkRe (BEUK:notelabels); 120 + PLATE_FITS (BEUK:platefit) + countWordsClean, wordsOfClean (BEUK:importtally)
+    expect(wrap.length).toBe(128); // 125 + COVER_ZOOM_MAX, coverArtPlace, coverArtRect (BEUK:coverpan); 123 + noteLeadRe, noteMarkRe (BEUK:notelabels); 120 + PLATE_FITS (BEUK:platefit) + countWordsClean, wordsOfClean (BEUK:importtally)
   });
 });

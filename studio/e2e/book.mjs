@@ -29,6 +29,8 @@
       next animation frame) over 300 keystrokes in the Dumas book's largest
       chapter; p50 and p95 printed (p95 over 16 ms is reported, with the
       profile's hottest functions, not hidden).
+   coverpan (E2E_ONLY=coverpan): the cover picture moved by a drag, zoomed by the keyboard, kept by "Use as My
+      Cover", shown again after reopening and a reload (coverpanChecks).
    caret (E2E_ONLY=caret): two tabs on one chapter; B's caret at "bro|wn"
       stays there through each of A's edits (and a server-shaped raw Yjs
       write), B's "#" lands "bro#wn"; the caret keeper's cost on a
@@ -11124,6 +11126,123 @@ async function everyChapterChecks(origin) {
   }
 }
 
+/* ---- cover picture: move and zoom (design 2026-11-27): coverpanChecks (E2E_ONLY=coverpan) ----
+   The production build, a real Chromium, the Lantern Coast book. In the cover maker: a picture is uploaded as the
+   writer's art (four coloured quarters, 1200 × 800, so where it sits shows), the picture's controls appear; the
+   picture is dragged with the mouse on the cover, away from the text; the zoom slider is moved with the keyboard; the
+   preview changes; "Use as My Cover" keeps the placement in the book; the maker opened again, and after a reload,
+   shows it kept. Without a placement the cover paints exactly the pixels of an explicit centre at 1×. Screenshots
+   (E2E_OUT): coverpan-1-uploaded.png, coverpan-2-dragged.png, coverpan-3-zoomed.png, coverpan-4-reopened.png,
+   coverpan-5-reloaded.png, coverpan-6-controls.png (the picture's hint, sliders and sharpness line), coverpan-7-reset.png
+   (Reset picture beside Reset positions). */
+async function coverpanChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  const diffCtx = await browser.newContext();
+  const diffPage = await diffCtx.newPage();
+  const shot = async (page, name) => { const b = await page.locator('#cmCanvas').screenshot(); writeFileSync(path.join(OUT, name), b); return b; };
+  const openMaker = async (page) => {
+    await page.click('#btnSettings2');
+    await page.waitForSelector('#btnCoverMake');
+    await page.click('#btnCoverMake');
+    await page.waitForFunction(() => document.getElementById('modalCoverMaker').classList.contains('open'));
+  };
+  const recipe = (page) => page.evaluate(() => window.beukCover.run((_a, c) => JSON.parse(JSON.stringify(c.vars.cmRecipe))));
+  const sliders = (page) => page.evaluate(() => ['cmPicH', 'cmPicV', 'cmPicZoom'].map((id) => document.getElementById(id).value));
+  try {
+    const page = await w4cOpen(ctx, origin, f.file);
+    await openMaker(page);
+    // the writer's art: four quarters (red, blue / yellow, green)
+    const png = await page.evaluate(() => {
+      const c = document.createElement('canvas'); c.width = 1200; c.height = 800;
+      const g = c.getContext('2d');
+      [['#c0392b', 0, 0], ['#2471a3', 600, 0], ['#f4d03f', 0, 400], ['#1e8449', 600, 400]].forEach(([col, x, y]) => { g.fillStyle = col; g.fillRect(x, y, 600, 400); });
+      return c.toDataURL('image/png').split(',')[1];
+    });
+    await page.setInputFiles('#cmArtInput', { name: 'quarters.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+    await page.waitForFunction(() => document.getElementById('cmPicRow').style.display === '' && document.getElementById('btnCmResetPic').style.display === '', null, { timeout: 20_000 });
+    await page.evaluate(() => document.fonts.ready);
+    const r0 = await recipe(page);
+    check(r0.bgType === 'image' && !('bgFocus' in r0) && !('bgZoom' in r0), `coverpan: the uploaded art paints the cover, centred at 1× (no placement yet: ${JSON.stringify([r0.bgType, r0.bgFocus, r0.bgZoom])})`);
+    check(JSON.stringify(await sliders(page)) === JSON.stringify(['500', '500', '100']), `coverpan: the picture's sliders start at the centre and 100% (${(await sliders(page)).join(', ')})`);
+    const labels = await page.evaluate(() => ['cmPicH', 'cmPicV', 'cmPicZoom'].map((id) => document.querySelector(`label[for="${id}"]`)?.textContent.trim() || ''));
+    check(labels.every((l) => /^Picture — (across|down|zoom) ·/.test(l)), `coverpan: the sliders are labelled (${labels.join(' | ')})`);
+    // without a placement the cover paints exactly what an explicit centre at 1× paints
+    const same = await page.evaluate(() => window.beukCover.run((a, c) => {
+      const r = c.vars.cmRecipe;
+      const px = (rr) => { const cv = a.renderCoverCanvas(rr, 800, 1280); return cv.getContext('2d').getImageData(0, 0, 800, 1280).data; };
+      const x = px(r), y = px(Object.assign({}, r, { bgFocus: { x: 0.5, y: 0.5 }, bgZoom: 1 }));
+      let n = 0; for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) n++;
+      return n;
+    }));
+    check(same === 0, `coverpan: no placement paints the same pixels as an explicit centre at 1× (${same} channel values differ)`);
+    const s1 = await shot(page, 'coverpan-1-uploaded.png');
+    // a drag on the picture, away from every text block
+    const at = await page.evaluate(() => window.beukCover.run((_a, c) => {
+      const cv = document.getElementById('cmCanvas'), boxes = c.vars.cmBlocks;
+      for (const [fx, fy] of [[0.12, 0.62], [0.88, 0.62], [0.12, 0.15], [0.5, 0.62], [0.12, 0.97]]) {
+        const x = fx * cv.width, y = fy * cv.height;
+        if (!boxes.some((b) => x >= b.left - 30 && x <= b.right + 30 && y >= b.top - 30 && y <= b.bottom + 30)) return { fx, fy };
+      }
+      return null;
+    }));
+    check(!!at, `coverpan: a point on the picture away from the text (${JSON.stringify(at)})`);
+    const box = await page.locator('#cmCanvas').boundingBox();
+    const sx = box.x + box.width * at.fx, sy = box.y + box.height * at.fy;
+    await page.mouse.move(sx, sy);
+    await page.mouse.down();
+    await page.mouse.move(sx + 60, sy + 40, { steps: 6 });
+    await page.mouse.up();
+    const r1 = await recipe(page);
+    check(r1.bgFocus && r1.bgFocus.x < 0.5 && r1.bgZoom === 1 && r1.layout === r0.layout, `coverpan: dragging the picture to the right moved it (focus ${JSON.stringify(r1.bgFocus)}, zoom ${r1.bgZoom}; the text layout stays ${r1.layout})`);
+    const s2 = await shot(page, 'coverpan-2-dragged.png');
+    const d12 = await pixelDiff(diffPage, s1, s2);
+    check(d12.ratio > 0.05, `coverpan: the preview shows the picture moved (${(d12.ratio * 100).toFixed(1)}% of its pixels changed)`);
+    // the keyboard: the zoom slider, 80 steps up
+    await page.focus('#cmPicZoom');
+    for (let i = 0; i < 80; i++) await page.keyboard.press('ArrowRight');
+    const r2 = await recipe(page);
+    const vt = await page.getAttribute('#cmPicZoom', 'aria-valuetext');
+    check(Math.abs(r2.bgZoom - 1.8) < 1e-9 && Math.abs(r2.bgFocus.x - r1.bgFocus.x) < 0.002 && vt === '180%', `coverpan: the zoom slider moved by the keyboard zooms to 1.8× (aria-valuetext ${vt}); the focus stays`);
+    const s3 = await shot(page, 'coverpan-3-zoomed.png');
+    check((await pixelDiff(diffPage, s2, s3)).ratio > 0.05, 'coverpan: the preview shows the zoom');
+    const soft = await page.evaluate(() => { const el = document.getElementById('cmPicSoft'); return { shown: el.style.display === '', text: el.textContent }; });
+    check(soft.shown && /about \d+ pixels per inch/.test(soft.text), `coverpan: zoomed, a 1200 × 800 picture is under 200 ppi on the print cover and one line says so: ${JSON.stringify(soft.text)}`);
+    await page.locator('#cmPicRow').scrollIntoViewIfNeeded();
+    await page.locator('#cmPicRow').screenshot({ path: path.join(OUT, 'coverpan-6-controls.png') });
+    await page.locator('#btnCmResetPic').scrollIntoViewIfNeeded();
+    await page.locator('.cm-reset-row').screenshot({ path: path.join(OUT, 'coverpan-7-reset.png') });
+    // kept: Use as My Cover, then the export, the maker again, and a reload
+    await page.click('#btnCmUse');
+    await page.waitForFunction(() => !document.getElementById('modalCoverMaker').classList.contains('open'), null, { timeout: 30_000 });
+    await page.keyboard.press('Escape');
+    const out = (await exportBackup(page)).json.book;
+    check(JSON.stringify(out.coverRecipe.bgFocus) === JSON.stringify(r2.bgFocus) && out.coverRecipe.bgZoom === r2.bgZoom, `coverpan: "Use as My Cover" keeps the placement in the book (${JSON.stringify([out.coverRecipe.bgFocus, out.coverRecipe.bgZoom])})`);
+    await openMaker(page);
+    await page.waitForFunction(() => document.getElementById('cmPicRow').style.display === '', null, { timeout: 20_000 });
+    const back = await sliders(page);
+    check(JSON.stringify(back) === JSON.stringify([String(Math.round(r2.bgFocus.x * 1000)), String(Math.round(r2.bgFocus.y * 1000)), '180']), `coverpan: the maker opened again shows the placement (${back.join(', ')})`);
+    const s4 = await shot(page, 'coverpan-4-reopened.png');
+    check((await pixelDiff(diffPage, s3, s4)).ratio === 0, 'coverpan: the reopened cover is the zoomed, moved cover, pixel for pixel');
+    await page.click('#btnCmCancel');
+    await page.keyboard.press('Escape');
+    await page.reload();
+    await page.waitForFunction(() => !!window.beukCover && !!window.lucide && document.querySelectorAll('#cmElFont option').length > 10, null, { timeout: 60_000 });
+    await openMaker(page);
+    await page.waitForFunction(() => document.getElementById('cmPicRow').style.display === '', null, { timeout: 20_000 });
+    const s5 = await shot(page, 'coverpan-5-reloaded.png');
+    check(JSON.stringify(await sliders(page)) === JSON.stringify(back) && (await pixelDiff(diffPage, s4, s5)).ratio === 0, 'coverpan: after a reload the maker shows the same placement and the same cover');
+    // Reset picture: centred at 1× again, the fields gone
+    await page.click('#btnCmResetPic');
+    const r3 = await recipe(page);
+    check(!('bgFocus' in r3) && !('bgZoom' in r3) && JSON.stringify(await sliders(page)) === JSON.stringify(['500', '500', '100']), 'coverpan: Reset picture centres it at 1× and takes the placement away');
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+    await diffCtx.close();
+  }
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -11167,6 +11286,7 @@ try {
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('caret')) await caretChecks(srv.origin);
+  if (run('coverpan')) await coverpanChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
   if (run('screenshots')) await screenshots(srv.origin);
 } catch (e) {

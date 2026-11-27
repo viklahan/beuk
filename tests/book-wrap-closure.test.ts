@@ -366,6 +366,40 @@ test('wrap fonts: the writer\'s uploaded "Lora" stands in where Chrome puts it: 
   assert.equal(up.probes[2], builtIn.probes[2], 'italic: the built-in italic');
 });
 
+/* BEUK:coverpan — the server paints the writer's picture placement on the wrap's front panel (it lifts the studio's
+   drawCoverTo, which applies it), and only there: the sheet-wide background on the back and spine stays centred. */
+test("wrap closure: the cover picture's move and zoom reach the front panel the server paints, and nothing else", async () => {
+  const sb = loadWrapClosure(html, CLIENT);
+  /* the fixture's art is a small flat picture, which looks the same wherever it sits: give it halves and quarters of its own */
+  const pic = createCanvas(1200, 800);
+  const pc = pic.getContext('2d');
+  [['#c0392b', 0, 0], ['#2471a3', 600, 0], ['#f4d03f', 0, 400], ['#1e8449', 600, 400]].forEach(([col, x, y]) => { pc.fillStyle = col as string; pc.fillRect(x as number, y as number, 600, 400); });
+  const png = (await pic.encode('png')).toString('base64');
+  const withArt = () => { const b = lantern(); const art = b.images.find((i) => i.id === 'sample-img-cover-art')!; art.mediaType = 'image/png'; art.data = png; return b; };
+  const plain = withArt();
+  const moved = withArt() as Book & { coverRecipe: Record<string, unknown> };
+  moved.coverRecipe.bgFocus = { x: 0, y: 1 };
+  moved.coverRecipe.bgZoom = 2.5;
+  const a = await sb.render(plain as never, 'jpg', { lang: 'en' });
+  const b = await sb.render(moved as never, 'jpg', { lang: 'en' });
+  const L = (a.dims as unknown as { layout: { backX: number; frontX: number; topY: number; panelW: number; panelH: number } }).layout;
+  assert.deepEqual(b.dims, a.dims, 'the same wrap');
+  const pixels = async (bytes: Buffer, xIn: number, yIn: number, wIn: number, hIn: number) => {
+    const img = await loadImage(bytes);
+    const cv = createCanvas(img.width, img.height);
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    return ctx.getImageData(Math.round(xIn * 300), Math.round(yIn * 300), Math.round(wIn * 300), Math.round(hIn * 300)).data;
+  };
+  const diff = (p: Uint8ClampedArray, q: Uint8ClampedArray) => { let s = 0; for (let i = 0; i < p.length; i++) s += Math.abs(p[i]! - q[i]!); return s / p.length; };
+  /* the panels' insides, half an inch clear of every edge (no JPEG block straddles the front panel's edge there) */
+  const inner = (x: number) => [x + 0.5, L.topY + 0.5, L.panelW - 1, L.panelH - 1] as const;
+  const frontDiff = diff(await pixels(a.bytes, ...inner(L.frontX)), await pixels(b.bytes, ...inner(L.frontX)));
+  const backDiff = diff(await pixels(a.bytes, ...inner(L.backX)), await pixels(b.bytes, ...inner(L.backX)));
+  assert.ok(frontDiff > 5, `the front panel's picture moved (mean channel difference ${frontDiff.toFixed(2)})`);
+  assert.equal(backDiff, 0, "the back panel's sheet-wide picture is untouched, pixel for pixel");
+});
+
 test('wrap closure: loading is cached per studio file', () => {
   assert.equal(loadWrapClosure(html, CLIENT), loadWrapClosure(html, CLIENT));
 });

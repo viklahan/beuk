@@ -176,6 +176,43 @@ describe('the cover maker in the studio', { timeout: 60_000 }, () => {
     await waitFor(() => expect(Array.from(document.querySelectorAll('#toasts .toast')).map((x) => x.textContent)).toContain(t('toast.coverMade')));
   });
 
+  it("cover picture: move and zoom — the picture's sliders show with the art, write the placement Use as My Cover keeps, and Reset picture takes it away", async () => {
+    const doc = LANTERN();
+    await studioWith(doc);
+    await openSettingsAndMaker();
+    // the book's cover paints its art: the picture's controls show once the picture is decoded
+    await waitFor(() => expect($('cmPicRow').style.display).toBe(''));
+    expect($('btnCmResetPic').style.display).toBe('');
+    for (const [id, key] of [['cmPicH', 'covermk.picH'], ['cmPicV', 'covermk.picV'], ['cmPicZoom', 'covermk.picZoom']] as const) {
+      const lab = document.querySelector(`label[for="${id}"]`)!;
+      expect(lab.textContent).toContain(t(key)); // labelled, in 1.0's words
+    }
+    expect([$('cmPicH').value, $('cmPicV').value, $('cmPicZoom').value]).toEqual(['500', '500', '100']); // centred at 1× until moved
+    expect($('cmPicZoomVal').textContent).toBe('100%');
+    await change($('cmPicH'), '200', 'input');
+    await change($('cmPicV'), '800', 'input');
+    await change($('cmPicZoom'), '250', 'input');
+    expect(c.vars.cmRecipe).toMatchObject({ bgFocus: { x: 0.2, y: 0.8 }, bgZoom: 2.5 });
+    expect($('cmPicHVal').textContent).toBe('20%');
+    expect($('cmPicZoom').getAttribute('aria-valuetext')).toBe('250%');
+    await click($('btnCmUse'));
+    await waitFor(() => expect(isOpen()).toBe(false));
+    const out = await exported();
+    expect((out.coverRecipe as Rec).bgFocus).toEqual({ x: 0.2, y: 0.8 });
+    expect((out.coverRecipe as Rec).bgZoom).toBe(2.5);
+    expect(readBook(out).status).toBe('ok');
+    // opened again, the maker reads the placement back; Reset picture takes it away, and the cover is as it was
+    await openSettingsAndMaker();
+    await waitFor(() => expect($('cmPicRow').style.display).toBe(''));
+    expect([$('cmPicH').value, $('cmPicV').value, $('cmPicZoom').value]).toEqual(['200', '800', '250']);
+    await click($('btnCmResetPic'));
+    expect([$('cmPicH').value, $('cmPicV').value, $('cmPicZoom').value]).toEqual(['500', '500', '100']);
+    await click($('btnCmUse'));
+    await waitFor(() => expect(isOpen()).toBe(false));
+    const back = (await exported()).coverRecipe as Rec;
+    expect('bgFocus' in back || 'bgZoom' in back).toBe(false);
+  });
+
   it('review, Important 1: the maker opened again after its markup is drawn anew (another book, then back) dresses the 3D book and starts with the guides on', async () => {
     const doc = LANTERN();
     const r = await studioWith(doc);
