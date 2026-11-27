@@ -111,10 +111,10 @@ const toHeading = (f: Y.XmlFragment, i: number): void => {
   f.insert(i, [h]);
 };
 /** A makes `edit` in one transaction; its update reaches B (with its bytes known, or by plain Y.applyUpdate);
- *  B's afterTransaction plans the rescue. The one plan. */
-function change(w: World, edit: (f: Y.XmlFragment) => void, how: 'bytes' | 'plain' = 'bytes'): RescuePlan | null {
+ *  B's afterTransaction plans the rescue. The one plan. `remake` turns A's bytes into the bytes B receives. */
+function change(w: World, edit: (f: Y.XmlFragment) => void, how: 'bytes' | 'plain' = 'bytes', remake: (u: Uint8Array) => Uint8Array = (u) => u): RescuePlan | null {
   const us: Uint8Array[] = [];
-  const onUpdate = (u: Uint8Array) => void us.push(u);
+  const onUpdate = (u: Uint8Array) => void us.push(remake(u));
   w.docA.on('update', onUpdate);
   w.docA.transact(() => edit(w.fragA));
   w.docA.off('update', onUpdate);
@@ -258,4 +258,65 @@ describe('planRescue: which of my letters died or were stranded, and where their
   });
 
   it('11. countLetters counts code points', () => expect(countLetters('a\u{1F600}b')).toBe(3));
+
+  it('12. C3 shape, two deleted blocks, typed later block first: paragraph ops in document order, both at live index 1', () => {
+    // DERIVED: the C3 ruling + document order. The third paragraph is the spike's FOUR[2]; "x" is any letter.
+    const w = world((f) => f.insert(0, [...START, 'A second paragraph here.'].map((s) => para(s))));
+    const x = Y.createID(2, Y.getState(w.docB.store, 2));
+    textAt(w.fragB, 2).insert(2, 'x'); // "A x|second": the later block, typed first
+    const n = typeN(w); // then "The bron|wn": the earlier block
+    const plan = change(w, (f) => f.delete(1, 2))!;
+    expect(plan).toEqual({
+      ops: [
+        { kind: 'paragraph', letters: 'n', index: 1, last: n },
+        { kind: 'paragraph', letters: 'x', index: 1, last: x },
+      ],
+      counts: { ...ZERO, restored: 2 },
+    });
+  });
+
+  it('13. the knowledge gate holds when the bytes carry an unsorted delete set', () => {
+    // DERIVED: the knowledge gate ruling (it never puts back a letter the deleter had). B's letters get clocks
+    // 0, 1, 2: "n" and "y" in the paragraph A deletes, "x" in the first one, so A's delete set names B's
+    // clocks as two ranges, [0,1) and [2,3). The bytes B receives carry them in reverse order.
+    const w = world();
+    const n = typeN(w); // clock 0
+    textAt(w.fragB, 0).insert(0, 'x'); // clock 1
+    const t1 = textAt(w.fragB, 1);
+    t1.insert(t1.length, 'y'); // clock 2
+    expect(n).toEqual(Y.createID(2, 0));
+    aSeesB(w);
+    let sent: Uint8Array | null = null;
+    const reversed = (u: Uint8Array): Uint8Array => {
+      const { structs, ds } = Y.decodeUpdate(u);
+      expect(structs).toHaveLength(0); // a pure deletion: the bytes are its delete set alone
+      const bytes: number[] = [];
+      const varUint = (v: number) => {
+        while (v > 0x7f) {
+          bytes.push(0x80 | (v & 0x7f));
+          v >>>= 7;
+        }
+        bytes.push(v);
+      };
+      varUint(0); // no struct clients
+      varUint(ds.clients.size);
+      for (const [client, ranges] of ds.clients) {
+        varUint(client);
+        varUint(ranges.length);
+        for (const r of [...ranges].reverse()) {
+          varUint(r.clock);
+          varUint(r.len);
+        }
+      }
+      sent = new Uint8Array(bytes);
+      return sent;
+    };
+    const plan = change(w, (f) => f.delete(1, 1), 'bytes', reversed)!;
+    // the bytes really are unsorted, and a binary search on them misses B's clock 0
+    const got = Y.decodeUpdate(sent!).ds.clients.get(2)!.map((r) => [r.clock, r.len]);
+    expect(got).toEqual([[2, 1], [0, 1]]);
+    expect(Y.isDeleted(Y.decodeUpdate(sent!).ds, n)).toBe(false);
+    expect(w.fragB.length).toBe(1);
+    expect(plan).toEqual({ ops: [], counts: { ...ZERO, vetoed: 2 } });
+  });
 });

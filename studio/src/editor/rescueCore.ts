@@ -80,8 +80,12 @@ export function incomingUpdate(doc: Y.Doc): Uint8Array | null {
 export type YPlace = { text: Y.XmlText; index: number }; // index in UTF-16 units, as Yjs counts
 export type RescueOp =
   | { kind: 'insert'; letters: string; at: YPlace; last: Y.ID } // dead letters, back between their words
-  | { kind: 'move'; letters: string; from: YPlace; at: YPlace; last: Y.ID } // stranded letters; `from`: where they stand now
-  | { kind: 'paragraph'; letters: string; index: number; last: Y.ID }; // the C3 ruling: live child index in the fragment
+  // stranded letters; `from`: where they stand now, a Yjs place NOT checked against `rank`: it may not map to a
+  // ProseMirror position, and the editor half must skip the op when it does not
+  | { kind: 'move'; letters: string; from: YPlace; at: YPlace; last: Y.ID }
+  // the C3 ruling. Paragraph ops are in document order; `index` is the live index in frag after tr; ops with
+  // equal index are applied in array order, each after the previous
+  | { kind: 'paragraph'; letters: string; index: number; last: Y.ID };
 export type RescueCounts = { rescued: number; moved: number; restored: number; carried: number; vetoed: number; unplaced: number; unknown: number; uncounted: number; stayed: number };
 export type RescuePlan = { ops: RescueOp[]; counts: RescueCounts };
 
@@ -165,10 +169,12 @@ export function planRescue(
     if (t instanceof Y.XmlText && t._item && !t._item.deleted && inside(frag, t)) texts.add(t);
   });
 
-  // the knowledge gate, decoded only when a dead letter exists
+  // the knowledge gate, decoded only when a dead letter exists. Y.isDeleted binary-searches each client's
+  // ranges, so the bytes' delete set is sorted and merged first (mergeDeleteSets returns a fresh, sorted
+  // copy): the gate must not depend on how the sender ordered its ranges.
   let ds: ReturnType<typeof Y.decodeUpdate>['ds'] | null = null;
   const named = (id: Y.ID): boolean => {
-    if (ds === null) ds = Y.decodeUpdate(update!).ds;
+    if (ds === null) ds = Y.mergeDeleteSets([Y.decodeUpdate(update!).ds]);
     return Y.isDeleted(ds, id);
   };
 
@@ -287,8 +293,15 @@ export function planRescue(
   }
 
   // the C3 ruling: the candidate runs of one deleted top block, in before-view order, as their own paragraph
-  // where that block stood (its live index: the children of frag alive after tr that stand before it)
-  for (const [top, group] of paragraphs) {
+  // where that block stood (its live index: the children of frag alive after tr that stand before it). The
+  // blocks in document order: their place among frag's children in Yjs order, deleted ones included.
+  const blockAt = new Map<Y.Item, number>();
+  if (paragraphs.size) {
+    let i = 0;
+    for (let it = frag._start; it; it = it.right) blockAt.set(it, i++);
+  }
+  const tops = [...paragraphs].sort((a, b) => blockAt.get(a[0]._item!)! - blockAt.get(b[0]._item!)!);
+  for (const [top, group] of tops) {
     const order = textsUnder(top);
     const sorted = group.map((run, i) => ({ run, i })).sort((a, b) => order.indexOf(a.run.t) - order.indexOf(b.run.t) || a.i - b.i).map((x) => x.run);
     const letters = sorted.map(lettersOf).join('');
