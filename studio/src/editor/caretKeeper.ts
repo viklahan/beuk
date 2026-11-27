@@ -78,7 +78,6 @@ function dead(doc: Y.Doc, rel: Y.RelativePosition): boolean {
   }
 }
 
-
 /** This editor's own change: its binding's write, or its UndoManager's undo / redo (also when the migration
  *  hold runs that inside an outer transaction: that transaction's origin is the manager, and it is local). */
 const own = (tr: Y.Transaction): boolean => tr.origin === ySyncPluginKey || (tr.origin instanceof Y.UndoManager && tr.local);

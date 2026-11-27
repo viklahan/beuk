@@ -16,8 +16,10 @@ import * as Y from 'yjs';
    undo-caret and dedupe. So the studio stays on 3.0.10, which DOES write records, and this hold keeps them out
    of the book.
    THE UPGRADE GATE: a candidate y-tiptap is taken only when test/insert.test.ts, test/undo-storm.test.ts,
-   test/undo-caret.test.ts, the caret-keeper*.test.ts suites and `E2E_ONLY=caret node e2e/book.mjs` are green
-   on it, before merge. Watch yjs#810.
+   test/undo-caret.test.ts, the caret-keeper*.test.ts suites, the keystroke rescue's test/rescue-core.test.ts,
+   test/keystroke-rescue.test.ts, test/keystroke-rescue-controls.test.ts, test/keystroke-rescue-hard.test.ts and
+   test/keystroke-rescue-ui.test.tsx, and `E2E_ONLY=caret node e2e/book.mjs` are green on it, before merge.
+   Watch yjs#810.
 
    Undo storms (studio-2 cutover, task 5): y-tiptap 3's "position migrations".
 

@@ -240,7 +240,8 @@ describe('the studio tells the writer', () => {
     g.other.transact(() => g.fragOther.delete(i, 1));
     await g.send();
     expect(g.ed.state.doc.textContent).toBe('Opening line above.');
-    // DERIVED: ruling R6b (all-own paragraph deleted outright → silent; "own" includes opened content).
+    // DERIVED: ruling R6b (all-own paragraph deleted outright → silent; premise corrected by R6c: only an import
+    // writes a whole book under this session's id, a reopened book keeps its original client ids).
     // "The bronwn fox jumps over the dog." is 34 letters, every one the studio's own (the probe's count)
     const n = [...'The bronwn fox jumps over the dog.'].length;
     expect(n).toBe(34);

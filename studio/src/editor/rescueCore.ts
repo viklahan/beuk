@@ -1,7 +1,8 @@
 import * as Y from 'yjs';
 import { CTX, OBJ, findInText, mayHit, nearestOf } from './textMatch';
 
-// The keystroke rescue's pure core: what a transaction wrote, and the one function every remote update goes through.
+// The keystroke rescue's pure core: what a transaction wrote, and the one apply function the tab relay's updates go
+// through (y-indexeddb applies the updates other tabs stored without it: those carry no bytes, `unknown`).
 
 export const textOf = (t: Y.XmlText): string => t.toDelta().map((o: { insert: unknown }) => (typeof o.insert === 'string' ? o.insert : OBJ)).join('');
 
@@ -292,9 +293,12 @@ export function planRescue(
       // - some of their words stand in what the change wrote, and the letters do not stand where those words are
       //   (part kept, part not): no exact count;
       // - the run has no other writer's words beside it (a block of my own letters only), whether the change
-      //   rebuilt it or deleted it outright. "Own" means every item this session's Y.Doc created, and that includes
-      //   a book it imported or opened, so such a run cannot be told as "letters you typed": silence is the honest
-      //   answer, not a false claim (ruling R6b, 2026-11-27).
+      //   rebuilt it or deleted it outright: silent (ruling R6b, 2026-11-27; its premise corrected by R6c). "Own"
+      //   means every item this session's Y.Doc created. A book reopened from the device keeps its items' original
+      //   client ids (store.ts openGeneration loads the y-indexeddb updates into a new Y.Doc), so there own
+      //   letters are letters this session wrote; only an import (importBook in importToDevice,
+      //   importLegacyOnce) writes a whole book under this session's id. R6b therefore also silences letters
+      //   really typed into a reopened book (R6c, for V's word).
       else counts.uncounted += n;
     }
   }

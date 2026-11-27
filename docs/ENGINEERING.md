@@ -526,7 +526,9 @@ into every chapter editor right after Collaboration in `createEditor.ts`) keeps 
   tested (3.0.10–3.3.1) only 3.0.10 is green on insert, undo-storm, undo-caret and dedupe. 3.0.10 writes
   migration records; the hold keeps them out of the book.
 - **The rule: y-tiptap stays pinned exactly.** A candidate y-tiptap is taken only when `test/insert.test.ts`,
-  `test/undo-storm.test.ts`, `test/undo-caret.test.ts`, the `caret-keeper*.test.ts` suites and
+  `test/undo-storm.test.ts`, `test/undo-caret.test.ts`, the `caret-keeper*.test.ts` suites, the keystroke
+  rescue's `test/rescue-core.test.ts`, `test/keystroke-rescue.test.ts`, `test/keystroke-rescue-controls.test.ts`,
+  `test/keystroke-rescue-hard.test.ts` and `test/keystroke-rescue-ui.test.tsx`, and
   `E2E_ONLY=caret node e2e/book.mjs` are green on it, before merge. Watch yjs#810.
 - **Measured.** jsdom (`caret-keeper-hard.test.ts`): one server rewrite of a 63,130-character, 400-paragraph
   chapter, keeper 1.15–3.63 ms of a 10.54–27.54 ms `applyUpdate` (the test asserts under half); 200 keystrokes
@@ -552,17 +554,26 @@ into every chapter editor right after Collaboration in `createEditor.ts`) keeps 
     (OBSERVED, jsdom: "The nxyz⏎broabcwn"). Main had the same exposure without the keeper (DERIVED: same editor,
     same Yjs).
   - *What it does.* `studio/src/editor/rescueCore.ts` (`planRescue`, pure Yjs) and `rescueEditor.ts`
-    (`rescueAfter`, `flushRescue`), run by the caret keeper's extension right after the keeper, on every remote
-    transaction that touched the chapter (one that deleted nothing is skipped first). It looks only at this
+    (`rescueAfter`, `flushRescue`), run by the caret keeper's extension right after the keeper, on every
+    transaction that touched the chapter and is not this editor's own (its binding's write or its UndoManager's
+    undo / redo): the other tab's changes, and also local transactions of other origins (y-indexeddb applying
+    stored updates, `BLOB_ORIGIN`, programmatic writes), which carry no incoming bytes and so give a harmless
+    `unknown` report when they delete own letters. One that deleted nothing is skipped first. It looks only at this
     editor's own letters (`ContentString` items whose client id is `doc.clientID`):
     - *dead*: deleted in this transaction because a block above them was deleted in it;
     - *stranded*: alive after it while the letters on both sides of them were deleted in it (the split).
     - *The knowledge gate (dead letters).* A dead letter is put back only when the incoming update's delete set
       does not name it: a letter the sending document never had cannot be in it. The bytes come through the one
-      apply function, `applyRemoteUpdate` (`rescueCore.ts`, used by `store.ts` for every update from another
-      tab); the delete set is sorted and merged before the lookup. Named: `vetoed` (the other writer had them).
-      No bytes: nothing is done (`unknown`). A stranded letter needs no gate (a deletion of a stretch deletes
-      every item of it the deleter has).
+      apply function, `applyRemoteUpdate` (`rescueCore.ts`, used by `store.ts` for every message on the tab
+      relay, the BroadcastChannel); the delete set is sorted and merged before the lookup. Named: `vetoed` (the
+      other writer had them). No bytes: nothing is done (`unknown`). Not every other tab's update comes that way:
+      y-indexeddb's `storeState` / `fetchUpdates` (run when its update store reaches 500 entries, and by
+      `store.ts`'s own compaction, `collect()`) applies the updates other tabs stored with a plain `Y.applyUpdate`,
+      no bytes kept: a deletion that reaches this tab only that way is `unknown`, nothing is put back and nobody
+      is told. The gate stays safe (no bytes, no write). A stranded letter needs no gate (DERIVED: a deletion of a
+      stretch deletes every item of it the deleter has). That holds for y-tiptap writers, whose `updateYText`
+      writes one contiguous diff per text (`@tiptap/y-tiptap` dist/index.js, about lines 880-890); it is not
+      shown for a writer that edits the Yjs document directly (Part 1).
     - *The placement rule.* The words around the letters as the other writer could have seen them (this writer's
       affected letters left out, 24 letters each side) must be found in the text the transaction wrote, by the
       keeper's own rule (`findInText`); several matches: the nearest to where the caret was (`nearestOf`). The
@@ -582,8 +593,10 @@ into every chapter editor right after Collaboration in `createEditor.ts`) keeps 
       must be read inside `afterTransaction`, before Yjs collects it), kept on the view with every place as a
       `Y.RelativePosition` and every moved letter by its Yjs id, and written on the next turn after the
       composition ends (`setTimeout(0)`, from `compositionend` or the plugin view's update; never a dispatch from
-      inside ProseMirror's update). A place that no longer resolves to a live text is not written (`unplaced` /
-      `stayed`). Faked in jsdom (`view.composing`); no real IME tried.
+      inside ProseMirror's update). A place whose character (the relative position's `item`) is no longer alive,
+      or that no longer resolves to a live text, is not written (`unplaced` / `stayed`): Yjs would resolve a
+      deleted character to where it stood among the live letters, a position the words no longer give. Faked in
+      jsdom (`view.composing`); no real IME tried.
     - *The report.* `editor.storage.caretKeeper.rescue` (the last one) and the extension's `onRescue` option, one
       per remote change that killed or stranded own letters: `{ rescued, moved, restored, carried, vetoed,
       unplaced, unknown, uncounted, stayed, caret, ms }` (counts in code points; `ms` is planning plus the write,
@@ -601,17 +614,35 @@ into every chapter editor right after Collaboration in `createEditor.ts`) keeps 
     Everything else is `uncounted` and nothing is told:
     - some of the run's words stand in what the change wrote and the letters do not stand where those words are
       (part kept, part not): no exact count;
-    - ruling R6b: a block made only of the writer's own letters (this session's doc, which includes content
-      created by opening or importing the book) that the other tab deletes outright or rebuilds. Typed and opened
-      letters share the client id, so telling "letters you typed" would be false; letters really typed this
-      session into such a block are silent too.
+    - ruling R6b: a block made only of the writer's own letters (items whose client id is this session's
+      `doc.clientID`) that the other tab deletes outright or rebuilds. R6b's behaviour stands; its stated premise
+      ("own" includes content created by opening the book) was wrong, and ruling R6c corrects it (DERIVED by the
+      final review from `store.ts`): a book REOPENED from the device keeps its items' original client ids
+      (`openGeneration` loads the y-indexeddb updates into a new `Y.Doc`), so there "own" letters are letters
+      this session wrote. Only the import paths write a whole book under this session's id (`importBook` in
+      `importToDevice`, and `importLegacyOnce`). So, for V's word: (a) R6b also silences letters really typed into
+      a reopened book; (b) in a session that IMPORTED the book, C1 / C2 can tell "N letters you typed…" about
+      imported letters. A possible later fix, not built: an import watermark (this session's clock after the
+      import), so that only own items written after it count as typed.
     So the notice is exact but not complete.
   - *Stated limits.*
     - **A relay that held the letter.** The gate is sound, not complete: bytes from a document that held the letter
       when the deletion reached it (a relay, or a full diff made after it absorbed the letter) name it, and it is
-      not put back (`keystroke-rescue-controls.test.ts`: the relay case, B told 1). Exact on the tab relay, which
-      posts each tab's own updates; not on Part 1's Hocuspocus, which broadcasts its own re-encoding (Part 1 needs
-      the server-side complement, not built).
+      not put back (`keystroke-rescue-controls.test.ts`: the relay case, B told 1). Not exact on the tab relay
+      either, though there a tab's message is usually its own edit as it happened: the relay posts every
+      update a tab's doc emits that did not come from the channel, which includes what it applied from
+      y-indexeddb (DERIVED: `store.ts` `relay`, origin `!== this.channel`), and it answers a new tab's hello with
+      a full diff (`Y.encodeStateAsUpdate(ydoc, sv)`); either can name a letter the sender absorbed. Not exact on
+      Part 1's Hocuspocus, which broadcasts its own re-encoding (Part 1 needs the server-side complement, not
+      built).
+    - **Updates applied without bytes.** Another tab's deletion that reaches this tab only through y-indexeddb's
+      `fetchUpdates` (above) is `unknown`: nothing is put back and the writer is not told. Local transactions of
+      other origins (y-indexeddb, `BLOB_ORIGIN`, programmatic writes) that delete own letters give `unknown`
+      reports too, which write and tell nothing.
+    - **An IME plan that never flushes.** A waiting plan is dropped if the view is destroyed (`dropRescue`), and
+      is never written if neither an editor update nor a `compositionend` follows: those letters are lost and the
+      writer is not told. At the flush, a place whose character (the relative position's `item`) is no longer
+      alive gives no position: its letters are `unplaced` and told (`keystroke-rescue-hard.test.ts`).
     - **Full diffs both ways.** Two documents that catch up by full diffs each way: the second diff names the
       first writer's letter, so it is lost, and not told (`uncounted`; the controls' "BOTH as full diffs").
     - **Long runs checked at their two ends.** Whether a run is `carried` is judged from its ends with the words
