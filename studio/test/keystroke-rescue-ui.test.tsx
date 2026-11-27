@@ -20,7 +20,7 @@ import { posOf } from './caret-pair';
 
 /* Telling the writer (Agora Part 0, item 9; V's ruling): when letters they typed could not be put back, the
    studio says so once, quietly (an 'Info' toast), with the exact count. Nothing lost, nothing said.
-   - the two keys in all 13 packs, English's placeholder byte for byte, the 12 drafts on the sign-off list;
+   - the two keys in all 15 packs, English's placeholder byte for byte, the 14 drafts on the sign-off list;
    - rescueNotice: null for nothing lost (an `uncounted` share has no exact count, so it says nothing), the
      singular for one, the Plural twin otherwise;
    - through the whole app: the C1 shape (the other tab saw "n" and deleted its paragraph: vetoed) through
@@ -57,11 +57,11 @@ describe('its words in every language', () => {
   const packs = Object.fromEntries(readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => [f.replace(/\.json$/, ''), JSON.parse(readFileSync(path.join(dir, f), 'utf8')) as Record<string, string>]));
   const holes = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join(' ');
 
-  it("two keys in each of the 13 packs, with English's placeholder, none empty, none still English, no exclamation mark", () => {
+  it("two keys in each of the 15 packs, with English's placeholder, none empty, none still English, no exclamation mark", () => {
     expect(Object.keys(E).filter((k) => k.startsWith('rescue.'))).toEqual(KEYS);
     expect(E['rescue.lost']).toBe('{n} letter you typed went with a change made in another tab, and could not be put back.');
     expect(E['rescue.lostPlural']).toBe('{n} letters you typed went with a change made in another tab, and could not be put back.');
-    expect(Object.keys(packs).length).toBe(13);
+    expect(Object.keys(packs).length).toBe(15);
     for (const [lang, pack] of Object.entries(packs)) {
       for (const k of KEYS) {
         expect(typeof pack[k] === 'string' && pack[k]!.trim().length > 0, `${lang} ${k}`).toBe(true);

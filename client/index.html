@@ -8874,7 +8874,7 @@
       };
       Object.keys(EVERYCHAPTER_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], EVERYCHAPTER_STRINGS[code]); });
       /* ==== /BEUK:everychapter ==== */
-      /* ==== BEUK:keystrokerescue ==== — Studio 2.0's keystroke rescue (studio/src/editor/rescueEditor.ts): what the studio says when letters the writer typed could not be put back. All 13 packs (the 12 beside English are drafts for V's sign-off: docs/strings-pending-signoff.md) */
+      /* ==== BEUK:keystrokerescue ==== — Studio 2.0's keystroke rescue (studio/src/editor/rescueEditor.ts): what the studio says when letters the writer typed could not be put back. All 13 packs (the 12 beside English are drafts for V's sign-off: docs/strings-pending-signoff.md); hi and mr carry their drafts in BEUK:ui-hi-mr */
       const RESCUE_STRINGS = {
         "en": { "rescue.lost": "{n} letter you typed went with a change made in another tab, and could not be put back.", "rescue.lostPlural": "{n} letters you typed went with a change made in another tab, and could not be put back." },
         "es": { "rescue.lost": "{n} letra que escribiste se perdió con un cambio hecho en otra pestaña y no se pudo reponer.", "rescue.lostPlural": "{n} letras que escribiste se perdieron con un cambio hecho en otra pestaña y no se pudieron reponer." },
@@ -85758,7 +85758,7 @@
       Object.assign(UI_STRINGS.ja, {"preview.display.mono": "This {device} shows colours as shades of grey. They show in colour in the {brand} app, on colour e-readers and on tablets.", "preview.display.colour": "Colours look softer and darker on this {device}’s colour e-ink screen than on a tablet or phone."});
       Object.assign(UI_STRINGS["zh-Hans"], {"preview.display.mono": "This {device} shows colours as shades of grey. They show in colour in the {brand} app, on colour e-readers and on tablets.", "preview.display.colour": "Colours look softer and darker on this {device}’s colour e-ink screen than on a tablet or phone."});
       /* ==== /BEUK:devicetruth strings ==== */
-      /* ==== BEUK:coverpan strings ==== — cover picture: move and zoom. English placeholders in every pack until V signs the translations off */
+      /* ==== BEUK:coverpan strings ==== — cover picture: move and zoom. English placeholders in every pack until V signs the translations off (hi and mr: unsigned drafts in BEUK:ui-hi-mr) */
       Object.assign(UI_STRINGS.en, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
       Object.assign(UI_STRINGS.es, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
       Object.assign(UI_STRINGS.fr, {"covermk.picHint": "Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.", "covermk.picH": "Picture — across", "covermk.picV": "Picture — down", "covermk.picZoom": "Picture — zoom", "covermk.resetPic": "Reset picture", "covermk.picSoft": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.", "store.c.cdpi.failZoom": "The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.", "store.c.cdpi.fixZoom": "Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.", "covermk.picSoftLarger": "At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.", "store.c.cdpi.okZoom": "The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed)."});
@@ -87322,6 +87322,7 @@
         "preview.next": "अगला",
         "preview.pageOf": "{count} में से पेज {page}",
         "preview.tip": "सुझाव: प्रीव्यू पर क्लिक करें, फिर पेज पलटने के लिए ← → ऐरो की दबाएँ।",
+        "preview.deviceLabel": "प्रीव्यू डिवाइस",
         "preview.previewing": "प्रीव्यू: {name}",
         "preview.chapterPrefix": "अध्याय {n} — ",
         "preview.excludedSuffix": " · एक्सपोर्ट में शामिल नहीं",
@@ -87331,6 +87332,7 @@
         "preview.desk.pages": "≈ {n} पेज",
         "preview.desk.pagesPlural": "≈ {n} पेज",
         "preview.desk.basis": "{w} × {h} px पढ़ने की जगह और {size} px टेक्स्ट के हिसाब से अनुमान। पाठक का अपना टेक्स्ट साइज़ और मार्जिन यह गिनती बदल देते हैं।",
+        "preview.desk.toggle": "अध्याय और पेजों की गिनती",
         "preview.desk.railLabel": "इस डिवाइस पर सेक्शन और उनके पेजों की गिनती",
         "set.title": "प्रोजेक्ट सेटिंग्स",
         "set.subHtml": "ये मेटाडेटा फ़ील्ड EPUB पैकेज दस्तावेज़ (<span style=\"font-family:var(--mono-font);\">package.opf</span>) और Markdown फ्रंटमैटर में लिखे जाते हैं, और इन्हीं से शीर्षक पेज और कॉपीराइट पेज बनते हैं।",
@@ -88332,6 +88334,8 @@
         "everych.proseCount": "बाकी अध्याय जो बदलेंगे: {total} में से {n}। कविताओं को जैसा है वैसा छोड़ा गया है।",
         "everych.proseSame": "बाकी हर अध्याय में, जो कविता नहीं है, यह पहले से है।",
         "everych.proseNone": "बाकी हर अध्याय एक कविता है, और कविताओं को जैसा है वैसा छोड़ा जाता है।",
+        "rescue.lost": "आपने जो {n} अक्षर टाइप किया था, वह दूसरे टैब में किए गए एक बदलाव के साथ चला गया, और उसे वापस नहीं लाया जा सका।",
+        "rescue.lostPlural": "आपने जो {n} अक्षर टाइप किए थे, वे दूसरे टैब में किए गए एक बदलाव के साथ चले गए, और उन्हें वापस नहीं लाया जा सका।",
         "legal.authLine": "आपके अकाउंट और किताबों की देखभाल कैसे होती है:",
         "legal.settingsLine": "Beuk आपके डेटा को कैसे संभालता है, और बुनियादी नियम:",
         "legal.privacy": "प्राइवेसी",
@@ -89894,6 +89898,16 @@
         "import.replaceBodyShelf": "{name} को नई किताब के रूप में खोलें? इसके लिए डेस्क खाली की जाएगी, और अभी डेस्क पर रखी किताब आपके शेल्फ़ पर जैसी है वैसी ही रहेगी, और उसकी एक कॉपी {history} में होगी।",
         "preview.display.mono": "यह {device} रंगों को ग्रे के अलग-अलग शेड में दिखाता है। {brand} ऐप में, रंगीन ई-रीडर पर और टैबलेट पर ये रंगीन दिखते हैं।",
         "preview.display.colour": "टैबलेट या फ़ोन के मुकाबले इस {device} की रंगीन ई-इंक स्क्रीन पर रंग थोड़े फीके और गहरे दिखते हैं।",
+        "covermk.picHint": "क्या दिखे, यह चुनने के लिए कवर पर तस्वीर को टेक्स्ट से हटकर किसी जगह से खींचें। तस्वीर हमेशा पूरा कवर भरती है।",
+        "covermk.picH": "तस्वीर — दाएँ-बाएँ",
+        "covermk.picV": "तस्वीर — ऊपर-नीचे",
+        "covermk.picZoom": "तस्वीर — ज़ूम",
+        "covermk.resetPic": "तस्वीर पहले जैसी करें",
+        "covermk.picSoft": "इस ज़ूम पर तस्वीर प्रिंट कवर पर लगभग {ppi} पिक्सेल प्रति इंच पर छपती है — {need} से कम, इसलिए यह धुंधली दिख सकती है। ज़ूम कम करें, या बड़ी तस्वीर लगाएँ।",
+        "store.c.cdpi.failZoom": "कवर आर्टवर्क “{image}” सामने वाले कवर पर {zoom} तक ज़ूम किया गया है, जिससे वहाँ वह {dpi} DPI रह जाता है; {store} {need} माँगता है।",
+        "store.c.cdpi.fixZoom": "कवर मेकर में तस्वीर का ज़ूम कम करें (“तस्वीर — ज़ूम”), या बड़ी तस्वीर दें।",
+        "covermk.picSoftLarger": "इस ज़ूम पर तस्वीर प्रिंट कवर पर लगभग {ppi} पिक्सेल प्रति इंच पर छपती है — {need} से कम, इसलिए यह धुंधली दिख सकती है। 100% पर भी यह लगभग {full} है, इसलिए ज़ूम कम करने से यह साफ़ नहीं होगी: बड़ी तस्वीर लगाएँ।",
+        "store.c.cdpi.okZoom": "कवर आर्टवर्क “{image}” ({px} px) सामने वाले कवर पर {zoom} तक ज़ूम किया गया है, जिससे वहाँ वह {dpi} DPI देता है — पूरे रैप पर उसका सबसे कम ({need} चाहिए)।",
         "beta.cAllResolved": "सब निपट गया — पाठकों की हर टिप्पणी हल हो चुकी है।",
         "beta.emptyBook": "इस किताब में अभी पढ़ने को कुछ नहीं है — कोई अध्याय लिखें या इम्पोर्ट करें, फिर इसे शेयर करें।",
         "beta.h": "बीटा पाठकों के साथ शेयर करें",
@@ -90336,6 +90350,7 @@
         "preview.next": "पुढे",
         "preview.pageOf": "{count} पैकी पान {page}",
         "preview.tip": "सूचना: प्रीव्ह्यूवर क्लिक करा, मग पाने उलटण्यासाठी ← → बाण की वापरा.",
+        "preview.deviceLabel": "प्रीव्ह्यू डिव्हाइस",
         "preview.previewing": "प्रीव्ह्यू: {name}",
         "preview.chapterPrefix": "प्रकरण {n} — ",
         "preview.excludedSuffix": " · एक्सपोर्टमधून वगळले",
@@ -90345,6 +90360,7 @@
         "preview.desk.pages": "≈ {n} पान",
         "preview.desk.pagesPlural": "≈ {n} पाने",
         "preview.desk.basis": "{w} × {h} px वाचन-जागा आणि {size} px मजकूर गृहीत धरून अंदाज. वाचकाने स्वतः ठेवलेला मजकुराचा आकार आणि समास यांमुळे ही संख्या बदलते.",
+        "preview.desk.toggle": "प्रकरणे आणि पानसंख्या",
         "preview.desk.railLabel": "या डिव्हाइसवरील विभाग आणि त्यांची पाने",
         "set.title": "प्रोजेक्ट सेटिंग्ज",
         "set.subHtml": "ही माहिती EPUB पॅकेज दस्तऐवजात (<span style=\"font-family:var(--mono-font);\">package.opf</span>) आणि Markdown फ्रंटमॅटरमध्ये लिहिली जाते, आणि शीर्षक-पान व कॉपीराइट-पान तयार करण्यासाठी वापरली जाते.",
@@ -91346,6 +91362,8 @@
         "everych.proseCount": "बदलतील अशी इतर प्रकरणे: {total} पैकी {n}. कविता आहेत तशाच ठेवल्या जातात.",
         "everych.proseSame": "कविता नसलेल्या इतर प्रत्येक प्रकरणात हे आधीच आहे.",
         "everych.proseNone": "इतर प्रत्येक प्रकरण कविता आहे, आणि कविता आहेत तशाच ठेवल्या जातात.",
+        "rescue.lost": "तुम्ही टाइप केलेले {n} अक्षर दुसऱ्या टॅबमध्ये केलेल्या एका बदलासोबत गेले, आणि ते पुन्हा जागेवर आणता आले नाही.",
+        "rescue.lostPlural": "तुम्ही टाइप केलेली {n} अक्षरे दुसऱ्या टॅबमध्ये केलेल्या एका बदलासोबत गेली, आणि ती पुन्हा जागेवर आणता आली नाहीत.",
         "legal.authLine": "तुमच्या अकाउंटची आणि पुस्तकांची काळजी कशी घेतली जाते:",
         "legal.settingsLine": "Beuk तुमचा डेटा कसा हाताळते, आणि मूलभूत नियम:",
         "legal.privacy": "गोपनीयता",
@@ -92908,6 +92926,16 @@
         "import.replaceBodyShelf": "{name} नवे पुस्तक म्हणून उघडायचे? त्यासाठी डेस्क रिकामा केला जाईल, आणि सध्या डेस्कवर असलेले पुस्तक तुमच्या शेल्फवर जसे आहे तसे राहील, आणि त्याची एक प्रत {history} मध्ये असेल.",
         "preview.display.mono": "हे {device} रंग राखाडी छटांमध्ये दाखवते. {brand} ॲपमध्ये, रंगीत ई-रीडरवर आणि टॅबलेटवर ते रंगीत दिसतात.",
         "preview.display.colour": "टॅबलेट किंवा फोनपेक्षा या {device} च्या रंगीत ई-इंक स्क्रीनवर रंग जरा फिके आणि गडद दिसतात.",
+        "covermk.picHint": "काय दिसावे ते निवडण्यासाठी मुखपृष्ठावरचे चित्र मजकुरापासून दूर कुठूनही धरून ओढा. चित्र नेहमी संपूर्ण मुखपृष्ठ भरते.",
+        "covermk.picH": "चित्र — डावीकडे-उजवीकडे",
+        "covermk.picV": "चित्र — वर-खाली",
+        "covermk.picZoom": "चित्र — झूम",
+        "covermk.resetPic": "चित्र पूर्वीसारखे करा",
+        "covermk.picSoft": "या झूमवर चित्र प्रिंट मुखपृष्ठावर सुमारे {ppi} पिक्सेल प्रति इंच इतके छापले जाते — {need} पेक्षा कमी, त्यामुळे ते धूसर दिसू शकते. झूम कमी करा, किंवा मोठे चित्र वापरा.",
+        "store.c.cdpi.failZoom": "मुखपृष्ठ चित्र “{image}” पुढच्या मुखपृष्ठावर {zoom} पर्यंत झूम केले आहे, त्यामुळे तिथे ते {dpi} DPI राहते; {store} {need} मागते.",
+        "store.c.cdpi.fixZoom": "मुखपृष्ठ मेकरमध्ये चित्राचा झूम कमी करा (“चित्र — झूम”), किंवा मोठे चित्र द्या.",
+        "covermk.picSoftLarger": "या झूमवर चित्र प्रिंट मुखपृष्ठावर सुमारे {ppi} पिक्सेल प्रति इंच इतके छापले जाते — {need} पेक्षा कमी, त्यामुळे ते धूसर दिसू शकते. 100% वरसुद्धा ते सुमारे {full} आहे, त्यामुळे झूम कमी केल्याने ते स्पष्ट होणार नाही: मोठे चित्र वापरा.",
+        "store.c.cdpi.okZoom": "मुखपृष्ठ चित्र “{image}” ({px} px) पुढच्या मुखपृष्ठावर {zoom} पर्यंत झूम केले आहे, त्यामुळे तिथे ते {dpi} DPI देते — संपूर्ण रॅपवरचे त्याचे सर्वात कमी ({need} लागते).",
         "beta.cAllResolved": "सगळे पूर्ण झाले — वाचकांची प्रत्येक टिप्पणी निकाली निघाली आहे.",
         "beta.emptyBook": "या पुस्तकात अजून वाचण्यासारखे काहीच नाही — एखादे प्रकरण लिहा किंवा इम्पोर्ट करा, मग शेअर करा.",
         "beta.h": "बीटा वाचकांशी शेअर करा",

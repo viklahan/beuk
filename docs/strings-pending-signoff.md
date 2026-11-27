@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-27 (the keystroke rescue's two strings: section 6; Hindi and Marathi moved to section 7). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words); 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-27 (Hindi and Marathi: section 7, with the 14 keys main added since 340cb22; the keystroke rescue's two strings: section 6). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words); 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -1603,6 +1603,7 @@ Its 2 keys are in `client/index.html` `UI_STRINGS` (the `BEUK:keystrokerescue` b
 and its `Plural` twin `rescue.lostPlural`. English is the source; the English wording itself is V's to confirm in the
 PR (the design's draft said "made at the same moment", which is not true of letters the other tab had seen and
 deleted). The 12 other languages below are drafts written by Claude: not approved, not read by a native speaker.
+The Hindi and Marathi drafts of both keys are in section 7, under "Keys added on main since 340cb22".
 
 How the drafts were made:
 
@@ -1683,7 +1684,7 @@ tell there (and how to avoid a false claim in an import session) is open for V i
 - **ja** 日本語: `入力した {n} 文字が別のタブでの変更とともに消え、元に戻せませんでした。`
 - **zh-Hans** 简体中文: `你输入的 {n} 个字符随另一个标签页中的更改一起消失了，无法放回原处。`
 
-## 7. Hindi and Marathi — two whole interface packs (3,012 keys each, 2026-11-26)
+## 7. Hindi and Marathi — two whole interface packs (3,012 keys each, 2026-11-26; 3,026 after merging main, 2026-11-27)
 
 **Every string in both packs is an unreviewed draft written by Claude.** V asked for them so his parents can use the studio
 and give feedback; V (and they) are the native-speaker review. Nothing here is approved until V says so.
@@ -1732,3 +1733,125 @@ Also drafts in this set:
 - Marathi is now a book language too (`LANG_PACKS.mr`, dictation `mr-IN`): the studio's rule is that every interface
   language is also a book language. Devanagari text is told apart from Hindi by its commonest words (आहे, आणि, नाही …
   against है, और, नहीं …); a writer can always pick the language by hand.
+
+### Keys added on main since 340cb22 (14 keys, 2026-11-27)
+
+Merging main into this branch brought 14 English keys that the hi/mr packs did not have yet. The l10n guard
+(`tests/localization.test.ts`) requires every interface language to carry every English key, so each got a Hindi and a
+Marathi draft, written into the `BEUK:ui-hi-mr` block in English key order. **All 28 are UNSIGNED drafts; none is approved.** They were drafted by
+Claude by hand, with `docs/ui-hi-mr-glossary.md` and the neighbouring hi/mr strings (no translation service or API was
+called), in the same register as the rest of the packs: Hindi with आप, Marathi with तुम्ही, no nukta in Marathi, Western
+digits, `{placeholders}` byte for byte.
+
+Every other pack still carries English placeholders for `preview.deviceLabel`, `preview.desk.toggle` and the ten cover
+picture keys (main's `BEUK:coverpan strings` says so until V signs off); hi and mr have drafts for them because these two
+packs are whole drafts anyway. If V prefers the English placeholders there too, they can be swapped back.
+
+Points worth a look:
+
+- **rescue.lost / rescue.lostPlural**: "went with a change" is said as "went along with a change" (hi चला गया / चले गए,
+  mr गेले / गेली); "put back" as hi वापस नहीं लाया जा सका (as restore → वापस लाएँ) and mr पुन्हा जागेवर आणता आले नाही.
+  Letter is अक्षर in both, as `next.textWarning` says it.
+- **front cover**: hi सामने वाला कवर and mr पुढचे मुखपृष्ठ, as `covermk.spine.bgFront` ("Follow the front") already says.
+- **Picture — across / down**: the slider names are said by direction (hi दाएँ-बाएँ / ऊपर-नीचे, mr डावीकडे-उजवीकडे / वर-खाली).
+- **store.c.cdpi.fixZoom** names the slider in quotes by its translated label (“तस्वीर — ज़ूम”, “चित्र — झूम”), per the
+  glossary's rule for naming another control; the English has the label in parentheses without quotes.
+- **soft** (a picture that may look soft): hi धुंधली, mr धूसर, as `store.c.textK.tintsFix` says it.
+
+#### `preview.deviceLabel`
+
+- where: the preview device menu's accessible name (`data-i18n-aria` on `#deviceBar`)
+- **en** (source): Preview device
+- **hi** हिन्दी: `प्रीव्यू डिवाइस`
+- **mr** मराठी: `प्रीव्ह्यू डिव्हाइस`
+
+#### `preview.desk.toggle`
+
+- where: the reading desk's fold button (`BEUK:deskfold`)
+- **en** (source): Chapters and page counts
+- **hi** हिन्दी: `अध्याय और पेजों की गिनती`
+- **mr** मराठी: `प्रकरणे आणि पानसंख्या`
+
+#### `rescue.lost`
+
+- where: the keystroke rescue (`BEUK:keystrokerescue`, section 6)
+- **en** (source): {n} letter you typed went with a change made in another tab, and could not be put back.
+- **hi** हिन्दी: `आपने जो {n} अक्षर टाइप किया था, वह दूसरे टैब में किए गए एक बदलाव के साथ चला गया, और उसे वापस नहीं लाया जा सका।`
+- **mr** मराठी: `तुम्ही टाइप केलेले {n} अक्षर दुसऱ्या टॅबमध्ये केलेल्या एका बदलासोबत गेले, आणि ते पुन्हा जागेवर आणता आले नाही.`
+
+#### `rescue.lostPlural`
+
+- where: the keystroke rescue, the `Plural` twin
+- **en** (source): {n} letters you typed went with a change made in another tab, and could not be put back.
+- **hi** हिन्दी: `आपने जो {n} अक्षर टाइप किए थे, वे दूसरे टैब में किए गए एक बदलाव के साथ चले गए, और उन्हें वापस नहीं लाया जा सका।`
+- **mr** मराठी: `तुम्ही टाइप केलेली {n} अक्षरे दुसऱ्या टॅबमध्ये केलेल्या एका बदलासोबत गेली, आणि ती पुन्हा जागेवर आणता आली नाहीत.`
+
+#### `covermk.picHint`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.
+- **hi** हिन्दी: `क्या दिखे, यह चुनने के लिए कवर पर तस्वीर को टेक्स्ट से हटकर किसी जगह से खींचें। तस्वीर हमेशा पूरा कवर भरती है।`
+- **mr** मराठी: `काय दिसावे ते निवडण्यासाठी मुखपृष्ठावरचे चित्र मजकुरापासून दूर कुठूनही धरून ओढा. चित्र नेहमी संपूर्ण मुखपृष्ठ भरते.`
+
+#### `covermk.picH`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Picture — across
+- **hi** हिन्दी: `तस्वीर — दाएँ-बाएँ`
+- **mr** मराठी: `चित्र — डावीकडे-उजवीकडे`
+
+#### `covermk.picV`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Picture — down
+- **hi** हिन्दी: `तस्वीर — ऊपर-नीचे`
+- **mr** मराठी: `चित्र — वर-खाली`
+
+#### `covermk.picZoom`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Picture — zoom
+- **hi** हिन्दी: `तस्वीर — ज़ूम`
+- **mr** मराठी: `चित्र — झूम`
+
+#### `covermk.resetPic`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Reset picture
+- **hi** हिन्दी: `तस्वीर पहले जैसी करें`
+- **mr** मराठी: `चित्र पूर्वीसारखे करा`
+
+#### `covermk.picSoft`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.
+- **hi** हिन्दी: `इस ज़ूम पर तस्वीर प्रिंट कवर पर लगभग {ppi} पिक्सेल प्रति इंच पर छपती है — {need} से कम, इसलिए यह धुंधली दिख सकती है। ज़ूम कम करें, या बड़ी तस्वीर लगाएँ।`
+- **mr** मराठी: `या झूमवर चित्र प्रिंट मुखपृष्ठावर सुमारे {ppi} पिक्सेल प्रति इंच इतके छापले जाते — {need} पेक्षा कमी, त्यामुळे ते धूसर दिसू शकते. झूम कमी करा, किंवा मोठे चित्र वापरा.`
+
+#### `store.c.cdpi.failZoom`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.
+- **hi** हिन्दी: `कवर आर्टवर्क “{image}” सामने वाले कवर पर {zoom} तक ज़ूम किया गया है, जिससे वहाँ वह {dpi} DPI रह जाता है; {store} {need} माँगता है।`
+- **mr** मराठी: `मुखपृष्ठ चित्र “{image}” पुढच्या मुखपृष्ठावर {zoom} पर्यंत झूम केले आहे, त्यामुळे तिथे ते {dpi} DPI राहते; {store} {need} मागते.`
+
+#### `store.c.cdpi.fixZoom`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.
+- **hi** हिन्दी: `कवर मेकर में तस्वीर का ज़ूम कम करें (“तस्वीर — ज़ूम”), या बड़ी तस्वीर दें।`
+- **mr** मराठी: `मुखपृष्ठ मेकरमध्ये चित्राचा झूम कमी करा (“चित्र — झूम”), किंवा मोठे चित्र द्या.`
+
+#### `covermk.picSoftLarger`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.
+- **hi** हिन्दी: `इस ज़ूम पर तस्वीर प्रिंट कवर पर लगभग {ppi} पिक्सेल प्रति इंच पर छपती है — {need} से कम, इसलिए यह धुंधली दिख सकती है। 100% पर भी यह लगभग {full} है, इसलिए ज़ूम कम करने से यह साफ़ नहीं होगी: बड़ी तस्वीर लगाएँ।`
+- **mr** मराठी: `या झूमवर चित्र प्रिंट मुखपृष्ठावर सुमारे {ppi} पिक्सेल प्रति इंच इतके छापले जाते — {need} पेक्षा कमी, त्यामुळे ते धूसर दिसू शकते. 100% वरसुद्धा ते सुमारे {full} आहे, त्यामुळे झूम कमी केल्याने ते स्पष्ट होणार नाही: मोठे चित्र वापरा.`
+
+#### `store.c.cdpi.okZoom`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed).
+- **hi** हिन्दी: `कवर आर्टवर्क “{image}” ({px} px) सामने वाले कवर पर {zoom} तक ज़ूम किया गया है, जिससे वहाँ वह {dpi} DPI देता है — पूरे रैप पर उसका सबसे कम ({need} चाहिए)।`
+- **mr** मराठी: `मुखपृष्ठ चित्र “{image}” ({px} px) पुढच्या मुखपृष्ठावर {zoom} पर्यंत झूम केले आहे, त्यामुळे तिथे ते {dpi} DPI देते — संपूर्ण रॅपवरचे त्याचे सर्वात कमी ({need} लागते).`
