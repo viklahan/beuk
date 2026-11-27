@@ -11256,7 +11256,53 @@ async function acrossChecks(origin) {
   for (const lang of ['en', 'ar']) {
     const book = copyOf(lang);
     const file = w4File(`across-${lang}.beuk-backup.json`, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book }));
+    // Ruling 12: the suggestion is made only for a chapter with no backdrop stored — checked on a copy whose chapter has none
+    const bare = copyOf(lang);
+    const bs = bare.sections.find((s) => s.id === SEC);
+    delete bs.backdropId;
+    delete bs.backdropStrength;
+    const bareFile = w4File(`across-nobd-${lang}.beuk-backup.json`, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: bare }));
+    await acrossSuggestRun(origin, bare, lang, bareFile, png, SEC);
     await acrossRun(origin, { ...f, book }, lang, file, pic, png, SEC, ALT);
+  }
+}
+/** Ruling 12's other half: on a chapter with NO backdrop stored, the 1600 x 1200 picture uploaded as its plate on 6 x 9 is
+ *  suggested "Across both pages", with the set-aside note and the soft-print note as when Across is chosen by hand. */
+async function acrossSuggestRun(origin, book, lang, file, png, SEC) {
+  const tag = `across (${lang === 'ar' ? 'an Arabic book, right to left' : 'left to right'}), a chapter with no backdrop`;
+  const ctx = await newContext({ viewport: { width: 1600, height: 1000 } });
+  try {
+    const page = await openNext(ctx, origin);
+    const e0 = csp.errors.length;
+    await openBackup(page, file);
+    const sec0 = book.sections.find((s) => s.id === SEC);
+    await choose(page, book.sections.findIndex((s) => s.id === SEC));
+    await page.waitForSelector('#chPlate', { timeout: 60_000 });
+    const rowsNow = () => page.evaluate(() => {
+      const v = (id) => document.getElementById(id);
+      const txt = (id) => (v(id) ? v(id).textContent : null);
+      return {
+        plate: v('chPlate').value, fit: v('chPlateFit') ? v('chPlateFit').value : null, fits: v('chPlateFit') ? [...v('chPlateFit').options].map((o) => [o.value, o.textContent]) : [],
+        bd: v('chBackdrop').value, bdOff: v('chBackdrop').disabled, note: txt('plateAcrossNote'), soft: txt('plateAcrossSoft'),
+      };
+    });
+    const was = await rowsNow();
+    check(was.plate === sec0.plateId && was.bd === '' && !was.bdOff, `${tag}: "${sec0.title}" opens with its own plate (${was.plate}) and no backdrop ("${was.bd}"), the backdrop rows enabled`);
+    await page.setInputFiles('#plateFileInput', { name: 'across-sweep.png', mimeType: 'image/png', buffer: png });
+    try {
+      await page.waitForFunction((old) => { const v = document.getElementById('chPlate').value; return !!v && v !== old && !!document.getElementById('chPlateFit'); }, was.plate, { timeout: 30_000 });
+    } catch (e) {
+      check(false, `${tag}: the uploaded picture becomes the plate — not within 30 s (${String((e && e.message) || e).split('\n')[0]})`);
+      return;
+    }
+    const up = await rowsNow();
+    const wantSoft = 'This picture gives 133 pixels per inch across both pages; it may print soft.'; // the interface is English in both runs
+    check(up.fit === 'across' && up.bdOff && up.bd === '' && up.note === "The picture also covers the facing page, so this chapter's backdrop is set aside while this is chosen." && up.soft === wantSoft,
+      `${tag}: a 1600 x 1200 picture on 6 x 9 is suggested "Across both pages" (Fit ${up.fit}; the options ${JSON.stringify(up.fits)}; backdrop rows disabled ${up.bdOff}, no backdrop "${up.bd}"); the note "${up.note}"; the soft-print note "${up.soft}" (1600 / 12 in = 133.3)`);
+    await harvestCsp(page);
+    check(csp.errors.length === e0, `${tag}: no page error and no console error in the block (${csp.errors.length - e0}${csp.errors.length > e0 ? ': ' + csp.errors.slice(e0).join(' | ') : ''})`);
+  } finally {
+    await ctx.close();
   }
 }
 async function acrossRun(origin, f, lang, file, pic, png, SEC, ALT) {
@@ -11302,7 +11348,10 @@ async function acrossRun(origin, f, lang, file, pic, png, SEC, ALT) {
     await page.setInputFiles('#plateFileInput', { name: pic.name, mimeType: 'image/png', buffer: png });
     await until((old) => { const v = document.getElementById('chPlate').value; return !!v && v !== old && !!document.getElementById('chPlateFit'); }, was.plate, 30_000, `${tag}: the uploaded picture becomes the plate`);
     const up = await rowsNow();
-    check(up.fit === 'across' && up.bdOff && up.note !== null, `${tag}: a 1600 x 1200 picture on 6 x 9 is suggested "Across both pages" (Fit ${up.fit}; the options ${JSON.stringify(up.fits)}; backdrop rows disabled ${up.bdOff})`);
+    // Ruling 12 (6e1d45a): this chapter has a backdrop stored, so the suggestion is today's answer (whole) and the backdrop
+    // stays as it was; the chapter without one is suggested Across in acrossSuggestRun. Across is chosen by hand below.
+    check(up.fit === 'whole' && up.fits.some(([v]) => v === 'across') && !up.bdOff && up.strengthOff === false && up.bd === was.bd && up.strength === was.strength && up.note === null && up.soft === null,
+      `${tag}: a 1600 x 1200 picture on 6 x 9, on a chapter with a backdrop stored, is suggested "Show the whole picture", not Across (Fit ${up.fit}; the options ${JSON.stringify(up.fits)}); the backdrop rows enabled (${!up.bdOff}) and the backdrop untouched (${up.bd}, ${up.strength}); no set-aside note (${up.note}), no soft note (${up.soft})`);
     await page.selectOption('#chPlateFit', 'fill');
     await until(() => !document.getElementById('chBackdrop').disabled && !document.getElementById('plateAcrossNote'), null, 10_000, `${tag}: Fill gives the backdrop rows back`);
     const fill = await rowsNow();
