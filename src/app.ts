@@ -75,6 +75,8 @@ export interface AppDeps {
   arcMailer?: Mailer | null;
   /** ARC's public claim page limits (src/arc/claims.ts); tests loosen or tighten them. */
   arcLimits?: Partial<ArcPublicLimits>;
+  /** ARC's stamped-download queue (Task 7); defaults to BuildQueue(2, 8). Tests hold it busy. */
+  arcDownloads?: BuildQueue;
   /** P0 #5: rate limits for the account endpoints (tests tighten them). */
   accountLimits?: AccountLimits;
   /** CSP violation report endpoint (tests inject the log + limits). */
@@ -96,6 +98,7 @@ export function buildApp({
   mailer,
   arcMailer,
   arcLimits,
+  arcDownloads,
   accountLimits,
   cspReport,
   helpSearchLimits,
@@ -303,8 +306,8 @@ export function buildApp({
   app.use('/read', shareReaderRoutes(db, { now, cookieSecure: config.cookieSecure }));
   // ARC campaigns: the public claim page and its code (no account).
   // Caddy proxies /arc and /arc/* to the app (see the Caddyfile).
-  const arcDownloads = new BuildQueue(2, 8);
-  app.use('/arc', arcPublicRoutes(arcDeps, { ...DEFAULT_ARC_PUBLIC_LIMITS, ...arcLimits }, arcDownloads));
+  // The stamped downloads take turns: 2 at once, 8 waiting, one per reader.
+  app.use('/arc', arcPublicRoutes(arcDeps, { ...DEFAULT_ARC_PUBLIC_LIMITS, ...arcLimits }, arcDownloads ?? new BuildQueue(2, 8)));
 
   // M4 warmth pages (help reading room, thanks, changelog, roadmap).
   // Everything else at the site root is Caddy's static client mount.

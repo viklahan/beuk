@@ -9,7 +9,9 @@
  * Fixed by the spec or the plan, verbatim: `arc.stamp` (V's stamp line),
  * `arc.stampPage.title`, `arc.mail.review` and `arc.mail.stampNote`;
  * and, from the plan (Task 6), `arc.claim.title`, `.lede`, `.review`,
- * `.submit`, `.stampNote` and `.profile`.
+ * `.submit`, `.stampNote` and `.profile`; from the plan (Task 7),
+ * `arc.copy.title`, `.for`, `.download`, `.read` and `.keep`, and V's
+ * `arc.notMe.body` and `arc.stop.body`.
  * The stamp and its page title stay English in every language in slice 1
  * (controller ruling F16: an unsigned translation inside a reader's EPUB
  * cannot be recalled), so Task 9 leaves those two keys untranslated and
@@ -112,6 +114,46 @@ export const ARC_EN = {
   'arc.wait.title': 'Your request is with {author}',
   'arc.wait.lead': 'Thank you, {name}. Your address is confirmed.',
   'arc.wait.body': '{author} looks at each request. You will get one more email when they decide.',
+
+  // The reader's copy page (Task 7). From the plan, verbatim:
+  // arc.copy.title, .for, .download, .read and .keep. Every other line
+  // below was written for Task 7 and is V's to change.
+  'arc.copy.title': '{title} — your advance copy',
+  'arc.copy.for': 'Prepared for {name}',
+  'arc.copy.download': 'Download EPUB',
+  'arc.copy.read': 'Read in your browser',
+  'arc.copy.stampNote': 'Your copy shows your name and email on its copyright page.',
+  'arc.copy.keep': "Keep this page: it's your link to your copy.",
+  // A closed copy (the author closed it, or the whole copy): the 410 page.
+  'arc.copy.goneTitle': 'This copy is closed',
+  'arc.copy.gone': 'This advance copy is no longer available.',
+  // Why a download did not happen.
+  'arc.copy.err.limit': 'This copy has been downloaded many times in the last hour. Please try again later.',
+  'arc.copy.err.busy': 'Your copy is already being prepared. Please wait a few seconds, then try again.',
+  'arc.copy.err.serverBusy': 'Beuk is busy preparing other copies. Please try again in a minute.',
+  'arc.copy.err.failed': "Beuk couldn't prepare your copy just now. Please try again later.",
+
+  // The mail links (Task 7): "Not me" and "Stop", each a page with one
+  // button. The two .body lines are V's (verbatim intent). Titles follow
+  // the email's link words (arc.mail.notMe, arc.mail.stop). Privacy: say
+  // nothing stronger than content/legal/privacy.md (backups keep rows; the
+  // suppression is backed up too).
+  'arc.notMe.title': 'Not you?',
+  'arc.notMe.body':
+    "If you didn't ask for a copy of {title}, press the button. Beuk deletes your name and email from this book, closes this copy, and won't send this address mail from any author on Beuk again.",
+  'arc.notMe.button': "I didn't ask for a copy",
+  'arc.notMe.done': "Beuk deleted your name and email from {title}, closed this copy, and won't send this address mail from any author on Beuk again.",
+  'arc.notMe.backups': 'Like anything Beuk deletes, they can remain in older backups. The block on this address is kept in the backups too.',
+  'arc.stop.title': 'No more email from {author}',
+  'arc.stop.body': "Press the button and Beuk won't send you any more email about {author}'s books. Your copy keeps working.",
+  'arc.stop.button': 'Stop these emails',
+  'arc.stop.done': "Beuk won't send you any more email about {author}'s books. Your copy keeps working.",
+  'arc.mail.doneTitle': 'Done',
+  // A used or unknown mail link: the 404 page.
+  'arc.mail.goneTitle': 'This link no longer works',
+  'arc.mail.gone': 'It may have been used already, or the campaign it came from was deleted.',
+  // The opt-out cannot be kept on this server right now (no ARC_SUPPRESSION_SALT): the 503 page.
+  'arc.mail.unavailable': "Beuk can't do this right now, so nothing was changed. Please try again later.",
 
   // Pages with no campaign behind them, or a closed one.
   'arc.page.unknownTitle': "We couldn't find this page",

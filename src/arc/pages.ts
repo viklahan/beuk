@@ -5,7 +5,9 @@ import { arcDir, arcT, type ArcKey, type ArcLang } from './strings.js';
 /**
  * ARC campaigns: the server-rendered pages a reader sees (slice 1, Task 6:
  * the claim page, the code page, the waiting page, and the calm 404/410
- * pages). Strangers read these, so:
+ * pages; Task 7: the copy page, the closed copy, and the Not me / Stop
+ * pages with their done, used-link and unavailable pages). Strangers read
+ * these, so:
  *   - every line comes from src/arc/strings.ts through t('…'), in the
  *     book's language (arcLang(snapshot.language)) and direction (arcDir);
  *   - every value is escaped by the `html` tag (src/email/layout.ts);
@@ -28,6 +30,8 @@ const PAGE_CSS = `
 .arc input.code{max-width:9rem;letter-spacing:.2em;font-size:1.2rem}
 .arc button{margin:1rem 0 .4rem;padding:.6rem 1.2rem;border:0;border-radius:6px;background:var(--amber);color:#fff;font-weight:600;cursor:pointer}
 .arc .hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+.arc .get{margin:1.2rem 0 1rem}
+.arc a.btn{display:inline-block;padding:.6rem 1.2rem;border-radius:6px;background:var(--amber);color:#fff;font-weight:600;text-decoration:none}
 `;
 
 type T = ReturnType<typeof arcT>;
@@ -209,6 +213,116 @@ export function renderClosedPage(view: Pick<SignupView, 'title' | 'author' | 'la
       <p class="note">${heading(t, view)}</p>
       <p class="lede">${t('arc.claim.err.closed')}</p>`;
   return shell({ nonce: opts.nonce, lang: view.lang, title: t('arc.page.closedTitle'), body });
+}
+
+/* ---------------- Task 7: the reader's copy and the mail links ---------------- */
+
+/** What the copy page shows of a reader (ReaderView, src/arc/readers.ts). */
+export interface CopyPageView {
+  name: string;
+  title: string;
+  author: string;
+  lang: ArcLang;
+}
+
+/** Why a download did not happen, as the copy page says it. */
+export type CopyRefusal = 'limit' | 'busy' | 'server-busy' | 'failed';
+
+const COPY_ERR: Record<CopyRefusal, ArcKey> = {
+  limit: 'arc.copy.err.limit',
+  busy: 'arc.copy.err.busy',
+  'server-busy': 'arc.copy.err.serverBusy',
+  failed: 'arc.copy.err.failed',
+};
+
+/**
+ * The reader's copy page (/arc/r/:token): Download EPUB first, today's web
+ * reader (/read/:token, ruling R4a) as the fallback (spec: the copy goes to
+ * the device first), the stamp note and "keep this page". A refused
+ * download shows the same page with the reason on top.
+ */
+export function renderCopyPage(view: CopyPageView, opts: { nonce: string; token: string; error?: CopyRefusal }): string {
+  const t = arcT(view.lang);
+  const title = t('arc.copy.title', { title: view.title });
+  const body = html`      <h1>${title}</h1>
+      <p class="note">${heading(t, view)}</p>
+      ${errorBox(opts.error ? t(COPY_ERR[opts.error]) : null)}
+      <p class="lede">${t('arc.copy.for', { name: view.name })}</p>
+      <p class="get"><a class="btn" href="/arc/r/${opts.token}/epub">${t('arc.copy.download')}</a></p>
+      <p><a href="/read/${opts.token}">${t('arc.copy.read')}</a></p>
+      <p class="note">${t('arc.copy.stampNote')}</p>
+      <p class="note">${t('arc.copy.keep')}</p>`;
+  return shell({ nonce: opts.nonce, lang: view.lang, title, body });
+}
+
+/** A closed copy: the 410 page. It never names the reader. */
+export function renderCopyGonePage(view: Pick<CopyPageView, 'title' | 'author' | 'lang'>, opts: { nonce: string }): string {
+  const t = arcT(view.lang);
+  const body = html`      <h1>${t('arc.copy.goneTitle')}</h1>
+      <p class="note">${heading(t, view)}</p>
+      <p class="lede">${t('arc.copy.gone')}</p>`;
+  return shell({ nonce: opts.nonce, lang: view.lang, title: t('arc.copy.goneTitle'), body });
+}
+
+export type MailAction = 'not-me' | 'stop';
+
+/** What the mail pages show (MailReader, src/arc/readers.ts). */
+export type MailPageView = Pick<CopyPageView, 'title' | 'author' | 'lang'>;
+
+const MAIL_PAGE: Record<MailAction, { title: ArcKey; body: ArcKey; button: ArcKey; done: ArcKey }> = {
+  'not-me': { title: 'arc.notMe.title', body: 'arc.notMe.body', button: 'arc.notMe.button', done: 'arc.notMe.done' },
+  stop: { title: 'arc.stop.title', body: 'arc.stop.body', button: 'arc.stop.button', done: 'arc.stop.done' },
+};
+
+/**
+ * A mail link's page (GET /arc/m/:mailToken/:action): what pressing does,
+ * and one POST button. Opening it changes nothing (a mail scanner opens
+ * every link; plan: "A GET never acts on a mail link").
+ */
+export function renderMailActionPage(view: MailPageView, opts: { nonce: string; mailToken: string; action: MailAction }): string {
+  const t = arcT(view.lang);
+  const words = MAIL_PAGE[opts.action];
+  const vars = { title: view.title, author: view.author };
+  const title = t(words.title, vars);
+  const body = html`      <h1>${title}</h1>
+      <p class="note">${heading(t, view)}</p>
+      <p class="lede">${t(words.body, vars)}</p>
+      <form method="post" action="/arc/m/${opts.mailToken}/${opts.action}">
+      <input type="hidden" name="confirm" value="1" />
+      <button type="submit">${t(words.button, vars)}</button>
+      </form>`;
+  return shell({ nonce: opts.nonce, lang: view.lang, title, body });
+}
+
+/** After the button: what was done. Not me adds what backups keep (the
+ *  privacy page's words, no stronger). */
+export function renderMailDonePage(view: MailPageView, opts: { nonce: string; action: MailAction }): string {
+  const t = arcT(view.lang);
+  const vars = { title: view.title, author: view.author };
+  const body = html`      <h1>${t('arc.mail.doneTitle')}</h1>
+      <p class="note">${heading(t, view)}</p>
+      <p class="lede">${t(MAIL_PAGE[opts.action].done, vars)}</p>
+      ${opts.action === 'not-me' ? html`<p class="note">${t('arc.notMe.backups')}</p>` : ''}`;
+  return shell({ nonce: opts.nonce, lang: view.lang, title: t('arc.mail.doneTitle'), body });
+}
+
+/** A used or unknown mail link: the 404 page, in English (a used Not me
+ *  link names nobody any more). */
+export function renderMailGonePage(opts: { nonce: string }): string {
+  const t = arcT('en');
+  const body = html`      <h1>${t('arc.mail.goneTitle')}</h1>
+      <p class="lede">${t('arc.mail.gone')}</p>`;
+  return shell({ nonce: opts.nonce, lang: 'en', title: t('arc.mail.goneTitle'), body });
+}
+
+/** The opt-out cannot be kept on this server right now: the 503 page. */
+export function renderMailUnavailablePage(view: MailPageView, opts: { nonce: string; action: MailAction }): string {
+  const t = arcT(view.lang);
+  const title = t(MAIL_PAGE[opts.action].title, { title: view.title, author: view.author });
+  const body = html`      <h1>${title}</h1>
+      <p class="note">${heading(t, view)}</p>
+      ${errorBox(t('arc.mail.unavailable'))}`;
+  return shell({ nonce: opts.nonce, lang: view.lang, title, body });
 }
 
 /** No campaign behind the link: the 404 page, in English (no book to take

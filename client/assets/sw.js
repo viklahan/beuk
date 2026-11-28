@@ -206,6 +206,10 @@ self.addEventListener("fetch", (event) => {
      for the cached shell — straight to the network, untouched. */
   if (url.pathname.indexOf("/read/") === 0) return;
 
+  /* ARC readers' pages (/arc/…: a claim page, a copy page, a stamped
+     download made for one reader, the mail links): never cached either. */
+  if (url.pathname.indexOf("/arc/") === 0) return;
+
   /* Help, support, thanks, changelog, roadmap, privacy and terms are server-rendered
      pages, not the studio, and are not precached: their HTML, CSS and
      scripts always go straight to the network, so a restyle reaches a

@@ -12,6 +12,7 @@ import type { AccountLimits, BackgroundTasks } from '../src/routes/account.js';
 import type { CspReportOptions } from '../src/routes/csp-report.js';
 import type { HelpSearchLimits } from '../src/routes/help.js';
 import type { ArcPublicLimits } from '../src/arc/claims.js';
+import type { BuildQueue } from '../src/book/studio/queue.js';
 import type {
   BootCheck,
   HousekeepingDeps,
@@ -242,6 +243,8 @@ export async function startTestServer(
     mailer?: Mailer;
     arcMailer?: Mailer | null;
     arcLimits?: Partial<ArcPublicLimits>;
+    /** ARC's stamped-download queue (Task 7); a test holds it busy. */
+    arcDownloads?: BuildQueue;
     accountLimits?: AccountLimits;
     cspReport?: CspReportOptions;
     billing?: BillingProvider;
