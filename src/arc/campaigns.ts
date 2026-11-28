@@ -9,7 +9,7 @@ import type { Mailer } from '../mailer.js';
 import { hydrateDoc } from '../pictures.js';
 import { renderSnapshot } from '../shares/render.js';
 import { arcApprovedEmail, arcDeclinedEmail, type ArcMailContext } from './emails.js';
-import { arcMailStatus, arcMailToken, sendArcMail, type ArcSendOutcome } from './mail.js';
+import { arcMailStatus, arcMailToken, sendArcMail, suppressionOf, type ArcSendOutcome } from './mail.js';
 import { arcLang, arcT } from './strings.js';
 
 /**
@@ -599,6 +599,18 @@ const toOf = (c: CampaignRow, reader: ArcReaderJson, mailToken: string) => ({
   mailToken,
 });
 
+/** The refusal when the reader opted out (controller ruling I5): an
+ *  approval that cannot be emailed is no approval. `error` is a code for
+ *  the panel (its own strings live in the studio's packs, Task 8);
+ *  `message` is the server's English. */
+const SUPPRESSED_WORDS = {
+  owner: 'This reader asked for no more email from you. Decline them instead.',
+  all: 'This reader asked Beuk for no email from any author. Decline them instead.',
+} as const;
+function suppressedRefusal(scope: 'owner' | 'all'): ArcError {
+  return new ArcError(SUPPRESSED_WORDS[scope], 409, { error: 'reader-suppressed', message: SUPPRESSED_WORDS[scope], scope });
+}
+
 function notApprovable(status: ArcReaderJson['status']): ArcError {
   if (status === 'claimed') return new ArcError('This reader already has a copy.', 409);
   return new ArcError('This reader was declined, and a decline is final.', 409);
@@ -616,9 +628,12 @@ function notApprovable(status: ArcReaderJson['status']): ArcError {
  * 'pending' with no link, public id, build or claim time — and an ArcError
  * says why: 503, or 429 when rate-limited (the trial-mail pattern: mark
  * first, release when the server refuses, src/trial-mail.ts). A reader who
- * asked for no more email (suppressed) keeps the approval, and the outcome
- * says it was not emailed. ARC mail switched off is refused before anything
- * is marked (the email could not even be built without the salt).
+ * asked for no more email — "Stop" for this author or "Not me" for all of
+ * Beuk — is refused (409 `reader-suppressed`, controller ruling I5): checked
+ * before anything is marked, and again by sendArcMail, whose 'suppressed'
+ * (an opt-out that landed in between) is released like a refused send.
+ * ARC mail switched off is refused before anything is marked (the email
+ * could not even be built without the salt).
  */
 export async function approveReader(deps: ArcDeps, c: CampaignRow, readerId: string): Promise<{ reader: ArcReaderJson; mail: ArcSendOutcome }> {
   const { db, config } = deps;
@@ -627,6 +642,8 @@ export async function approveReader(deps: ArcDeps, c: CampaignRow, readerId: str
   if (off) {
     throw new ArcError(`ARC email is not set up on this server (${off.detail}), so this reader was not approved.`, 503, { mail: off });
   }
+  const opted = await suppressionOf(db, config, reader.email, c.owner_id);
+  if (opted) throw suppressedRefusal(opted);
   const token = await db.tx(async (tx) => {
     const fresh = await lockCampaign(tx, c.id);
     const cur = await mustLoadReader(tx, fresh, readerId);
@@ -651,7 +668,11 @@ export async function approveReader(deps: ArcDeps, c: CampaignRow, readerId: str
     await release();
     throw err;
   }
-  if (!mail.sent && mail.reason !== 'suppressed') {
+  if (!mail.sent && mail.reason === 'suppressed') {
+    await release();
+    throw suppressedRefusal((await suppressionOf(db, config, reader.email, c.owner_id)) ?? 'owner');
+  }
+  if (!mail.sent) {
     await release();
     const limited = mail.reason === 'rate-limited';
     throw new ArcError(
@@ -682,10 +703,16 @@ export async function declineReader(deps: ArcDeps, c: CampaignRow, readerId: str
     if (cur.status === 'claimed') throw new ArcError('This reader already has a copy. Close the copy instead.', 409);
     throw new ArcError('This reader was already declined.', 409);
   });
+  // The decline is committed: a failure from here on is reported in `mail`,
+  // never as a 500 that would read as "nothing happened".
   let mail: ArcSendOutcome | null = mailOff(deps);
   if (!mail) {
-    const ctx = await mailContext(db, c, readerId, config);
-    mail = await sendArcMail(deps, toOf(c, reader, ctx.mailToken), 'declined', arcDeclinedEmail(config, ctx));
+    try {
+      const ctx = await mailContext(db, c, readerId, config);
+      mail = await sendArcMail(deps, toOf(c, reader, ctx.mailToken), 'declined', arcDeclinedEmail(config, ctx));
+    } catch (err) {
+      mail = { sent: false, reason: 'refused', detail: `the decline email could not be sent: ${(err as Error)?.message ?? String(err)}` };
+    }
   }
   return { reader: await mustLoadReader(db, c, readerId), mail };
 }

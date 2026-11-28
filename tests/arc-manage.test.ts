@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { NEVER_PAUSED } from '../src/access.js';
-import { ArcError, copyUrl, countedClaims, createCampaign, mintCopy, parseCreateInput, type ArcDeps } from '../src/arc/campaigns.js';
+import { approveReader, ArcError, copyUrl, countedClaims, createCampaign, mintCopy, parseCreateInput, rowOf, type ArcDeps } from '../src/arc/campaigns.js';
 import { EpubQueue } from '../src/book/epub/queue.js';
 import { arcMailTokenHash, suppress } from '../src/arc/mail.js';
 import type { Db } from '../src/db.js';
@@ -36,10 +36,13 @@ const PASSWORD = 'correct horse battery';
 class FakeArcMailer implements Mailer {
   sent: MailMessage[] = [];
   refuse = false;
+  /** The transport throws (a bug or a dead socket), rather than answering "not delivered". */
+  explode = false;
   status(): MailerStatus {
     return { configured: true, transport: 'smtp', from: ARC.mailFrom, detail: 'fake ARC mailer (test)' };
   }
   async send(message: MailMessage): Promise<MailResult> {
+    if (this.explode) throw new Error('the test transport blew up');
     if (this.refuse) return { delivered: false, reason: 'the test mail server refused it', loggedToConsole: false };
     this.sent.push(message);
     return { delivered: true, messageId: '<arc-manage@example.com>' };
@@ -322,21 +325,92 @@ test('approve is undone when ARC mail refuses it', async () => {
   assert.deepEqual((seen.body.campaign as Campaign).counts, { claimed: 0, pending: 1, declined: 0, revoked: 0 });
 });
 
-test('approve of a reader who said Stop keeps the approval and says it was not emailed', async () => {
+// Controller ruling I5: an approval that cannot be emailed because the reader opted out is no approval.
+test('approve of a reader who said Stop or Not me is refused, and nothing about them changes', async () => {
+  const { w, mid, campaign } = await campaignOn(arcOn.base, { approvalMode: 'approval', maxClaims: 3 });
+  const sarah = await addReader(campaign, { name: 'Sarah', email: 'sarah@example.com', status: 'pending' });
+  // A 'Not me' hash is global (scope all): an address no other test mails.
+  const omar = await addReader(campaign, { name: 'Omar', email: 'not-me-i5@example.com', status: 'pending' });
+  await suppress(db, arcOn.config, 'sarah@example.com', { ownerId: w.id });
+  await db.query('update share_recipients set mail_stopped_at = $2 where id = $1', [sarah.id, clock.toISOString()]);
+  await suppress(db, arcOn.config, 'not-me-i5@example.com', 'all');
+  const counts = async () => ((await w.c.get(`/api/arc?manuscriptId=${mid}`)).body.campaign as Campaign).counts;
+  const before = await counts();
+  const sentBefore = mailer.sent.length;
+  const untouched = async (id: string) => {
+    const x = await row(id);
+    assert.deepEqual(
+      [x.status, x.token_hash, x.public_id, x.build_id, x.claimed_at, x.revoked_at],
+      ['pending', null, null, null, null, null],
+      'still waiting, no copy',
+    );
+  };
+  const stop = await w.c.post(`/api/arc/${campaign.id}/readers/${sarah.id}/approve`);
+  assert.equal(stop.status, 409, JSON.stringify(stop.body));
+  assert.deepEqual(stop.body, {
+    error: 'reader-suppressed',
+    message: 'This reader asked for no more email from you. Decline them instead.',
+    scope: 'owner',
+  });
+  await untouched(sarah.id);
+  const notMe = await w.c.post(`/api/arc/${campaign.id}/readers/${omar.id}/approve`);
+  assert.equal(notMe.status, 409, JSON.stringify(notMe.body));
+  assert.deepEqual(notMe.body, {
+    error: 'reader-suppressed',
+    message: 'This reader asked Beuk for no email from any author. Decline them instead.',
+    scope: 'all',
+  });
+  await untouched(omar.id);
+  assert.deepEqual(await counts(), before, 'the cap is as it was');
+  assert.equal(mailer.sent.length, sentBefore, 'nothing was sent');
+  assert.equal(await count(`arc_events where campaign_id = $1`, [campaign.id]), 0);
+  // The panel's way out: decline. It is kept, and says the email was not sent.
+  const d = await w.c.post(`/api/arc/${campaign.id}/readers/${sarah.id}/decline`);
+  assert.equal(d.status, 200, JSON.stringify(d.body));
+  assert.equal((d.body.mail as { reason: string }).reason, 'suppressed');
+  assert.equal((await row(sarah.id)).status, 'declined');
+  assert.equal(mailer.sent.length, sentBefore);
+});
+
+// I5, the other door: an opt-out that lands between the check and the send. sendArcMail
+// says 'suppressed' after the copy was minted; the mint is released like a refused send.
+test('an opt-out that arrives after the check still undoes the approval', async () => {
   const { w, campaign } = await campaignOn(arcOn.base, { approvalMode: 'approval' });
   const sarah = await addReader(campaign, { name: 'Sarah', email: 'sarah@example.com', status: 'pending' });
   await suppress(db, arcOn.config, 'sarah@example.com', { ownerId: w.id });
-  await db.query('update share_recipients set mail_stopped_at = $2 where id = $1', [sarah.id, clock.toISOString()]);
+  let hidden = 0;
+  // The first suppression lookup (approveReader's own check) sees nothing, as if the Stop came a moment later.
+  const lateDb: Db = {
+    query: (text, params) =>
+      text.includes('from mail_suppressions') && hidden++ === 0 ? Promise.resolve({ rows: [] }) : db.query(text, params),
+    tx: (fn) => db.tx(fn),
+  };
+  const row0 = (await db.query<Record<string, unknown>>(
+    `select c.id, c.share_id, c.owner_id, c.manuscript_id, c.max_claims, c.approval_mode, c.launch_date::text as launch_date,
+       c.closes_at, c.tz, c.author_notified_at, c.created_at, c.ended_at from arc_campaigns c where c.id = $1`,
+    [campaign.id],
+  )).rows[0];
+  const c = rowOf(row0);
+  const deps: ArcDeps = { db: lateDb, config: arcOn.config, arcMailer: mailer, mailer, epubQueue: new EpubQueue(1, 4), now: () => clock };
   const before = mailer.sent.length;
-  const r = await w.c.post(`/api/arc/${campaign.id}/readers/${sarah.id}/approve`);
-  assert.equal(r.status, 200, JSON.stringify(r.body));
-  assert.equal((r.body.mail as { sent: boolean; reason: string }).sent, false);
-  assert.equal((r.body.mail as { reason: string }).reason, 'suppressed');
-  assert.equal((r.body.reader as Reader).status, 'claimed');
-  assert.equal((r.body.reader as Reader).mailStopped, true);
-  assert.equal((await row(sarah.id)).status, 'claimed', 'the approval stays');
-  assert.notEqual((await row(sarah.id)).token_hash, null);
-  assert.equal(mailer.sent.length, before, 'nothing was sent');
+  await assert.rejects(approveReader(deps, c, sarah.id), (e: unknown) =>
+    e instanceof ArcError && e.status === 409 && e.extra?.error === 'reader-suppressed' && e.extra?.scope === 'owner');
+  assert.equal(hidden, 3, "the first lookup was hidden; then sendArcMail's, then the refusal's scope");
+  const x = await row(sarah.id);
+  assert.deepEqual([x.status, x.token_hash, x.public_id, x.build_id, x.claimed_at], ['pending', null, null, null, null]);
+  assert.equal(mailer.sent.length, before);
+  // With the opt-out already on record, the check comes first: no copy is ever minted.
+  let mints = 0;
+  const watchDb: Db = {
+    query: (text, params) => {
+      if (/update share_recipients r set/.test(text)) mints += 1;
+      return db.query(text, params);
+    },
+    // The transaction's statements go through this wrapper too (wrapPglite hands fn the bare db).
+    tx: (fn) => db.tx(() => fn(watchDb)),
+  };
+  await assert.rejects(approveReader({ ...deps, db: watchDb }, c, sarah.id), (e: unknown) => e instanceof ArcError && e.extra?.error === 'reader-suppressed');
+  assert.equal(mints, 0, 'refused before mintCopy');
 });
 
 test('decline sends one email; revoke closes the copy', async () => {
@@ -364,6 +438,20 @@ test('decline sends one email; revoke closes the copy', async () => {
     mailer.refuse = false;
   }
   assert.equal((await row(omar.id)).status, 'declined');
+  // A transport that throws after the decline committed: still 200, the decline kept, the outcome says so.
+  const zed = await addReader(campaign, { name: 'Zed', email: 'zed@example.com', status: 'pending' });
+  mailer.explode = true;
+  try {
+    const d = await w.c.post(`/api/arc/${campaign.id}/readers/${zed.id}/decline`);
+    assert.equal(d.status, 200, JSON.stringify(d.body));
+    assert.equal((d.body.reader as Reader).status, 'declined');
+    assert.equal((d.body.mail as { sent: boolean }).sent, false);
+    assert.equal((d.body.mail as { reason: string }).reason, 'refused');
+    assert.match((d.body.mail as { detail: string }).detail, /the test transport blew up/);
+  } finally {
+    mailer.explode = false;
+  }
+  assert.equal((await row(zed.id)).status, 'declined');
 
   // Revoke ("Close this copy"): the claimed reader's link answers 410, and no mail goes.
   const tom = await addReader(campaign, { name: 'Tom', email: 'tom@example.com', status: 'claimed' });
@@ -449,6 +537,19 @@ test('mintCopy: a new link stops the old one; never past the cap; never a closed
   assert.equal(still.token_hash, closed.token_hash, 'the closed link was not replaced');
   assert.notEqual(still.revoked_at, null, 'revoked_at is never cleared');
   await assert.rejects(mintCopy(db, campaign.id, randomUUID(), clock), (e: unknown) => e instanceof ArcError && e.status === 404);
+});
+
+// The cap's boundary: a waiting reader is already counted, so approving them takes no extra
+// slot (the `x.id <> r.id` in mintCopy's count). Max 2, one claimed, one waiting → 200.
+test('approving the last waiting reader fills the cap exactly', async () => {
+  const { w, mid, campaign } = await campaignOn(arcOn.base, { approvalMode: 'approval', maxClaims: 2 });
+  await addReader(campaign, { name: 'Tom', email: 'tom@example.com', status: 'claimed' });
+  const sarah = await addReader(campaign, { name: 'Sarah', email: 'sarah@example.com', status: 'pending' });
+  const r = await w.c.post(`/api/arc/${campaign.id}/readers/${sarah.id}/approve`);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal((await row(sarah.id)).status, 'claimed');
+  const seen = (await w.c.get(`/api/arc?manuscriptId=${mid}`)).body.campaign as Campaign;
+  assert.deepEqual([seen.counts.claimed, seen.counts.pending, seen.maxClaims], [2, 0, 2]);
 });
 
 test('the cap cannot go below what is counted, nor above 50', async () => {
