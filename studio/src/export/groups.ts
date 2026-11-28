@@ -32,8 +32,9 @@ export const EXPORT_GROUPS: readonly GroupDef[] = [
   { id: 'files', title: 'expg.files', sub: 'expg.filesSub', icon: 'file-text', claims: ['#btnDownloadMd', '#btnDownloadHtml', '#btnDownloadDocx', '#btnMsOpen'] },
   { id: 'audio', title: 'expg.audio', sub: 'expg.audioSub', icon: 'headphones', claims: ['#btnAcxOpen'] },
   { id: 'boxset', title: 'expg.boxset', sub: 'expg.boxsetSub', icon: 'library-big', claims: ['#btnBuildBoxSet'] },
-  // #betaSec: the share section 1.0's cloud module injects after the archive (betaInjectDom)
-  { id: 'archive', title: 'expg.archive', sub: 'expg.archiveSub', icon: 'archive', claims: ['#archiveSec', '#betaSec'] },
+  // #betaSec: the share section 1.0's cloud module injects after the archive (betaInjectDom); #arcSec: 2.0's ARC panel's
+  // section (src/arc/ArcPanel.tsx), which src/export/ExportModal.tsx appends to the modal after it (ARC slice 1)
+  { id: 'archive', title: 'expg.archive', sub: 'expg.archiveSub', icon: 'archive', claims: ['#archiveSec', '#betaSec', '#arcSec'] },
 ];
 /** The parts that stay outside the groups, always in view: the title, its line, Store-ready, Close. */
 export const EXPORT_FIXED: readonly string[] = ['#expH', '[data-i18n="exp.sub"]', '#btnStoreReady', '#btnCloseExport'];

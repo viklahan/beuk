@@ -192,6 +192,34 @@ describe('the export screen in groups', () => {
     expect(groups.unclassified()).toEqual([]);
   });
 
+  it("the ARC panel's section (#arcSec, appended to the modal by 2.0's ExportModal) lands in the archive group, after the share section", async () => {
+    // ARC slice 1, Task 8: src/export/ExportModal.tsx appends <div id="arcSec" class="fmt-sec"> to the modal's box once
+    const back = place();
+    groups = groupExport(back);
+    const arc = $('archiveSec');
+    const beta = document.createElement('div');
+    beta.className = 'fmt-sec';
+    beta.id = 'betaSec';
+    arc.parentNode!.insertBefore(beta, arc.nextSibling);
+    const sec = document.createElement('div');
+    sec.className = 'fmt-sec';
+    sec.id = 'arcSec';
+    sec.hidden = true; // signed out: ExportModal keeps it hidden
+    back.querySelector('.modal')!.append(sec);
+    await tick();
+    expect(groupOf($('arcSec'))).toBe('archive');
+    expect(Array.from(body('archive').children).map((c) => c.id)).toEqual(['archiveSec', 'betaSec', 'arcSec']);
+    expect(groups.unclassified()).toEqual([]);
+    expect(EXPORT_GROUPS.find((g) => g.id === 'archive')!.claims).toContain('#arcSec');
+    // hidden, it does not show the archive group by itself; shown, it does
+    beta.style.display = 'none';
+    await tick();
+    expect(wrap('archive').hidden).toBe(true);
+    sec.hidden = false;
+    await tick();
+    expect(wrap('archive').hidden).toBe(false);
+  });
+
   it("COMPLETENESS GUARD: every section of 1.0's export modal is claimed by a group (a new section must be classified in src/export/groups.ts)", () => {
     const back = place();
     groups = groupExport(back);

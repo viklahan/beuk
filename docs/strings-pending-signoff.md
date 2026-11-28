@@ -1883,3 +1883,1104 @@ only the quoted names changed.
 - was: `“माझी ठेवा” शेल्फवरील प्रतीच्या जागी या डिव्हाइसवरील प्रत ठेवते. “शेल्फवरील प्रत वापरा” या डिव्हाइसवरील प्रतीच्या जागी शेल्फवरील प्रत ठेवते. मालिकेचा करार एकच असतो, त्यामुळे इथे “दोन्ही ठेवा” नाही.`
 - now: `“माझी प्रत ठेवा” शेल्फवरील प्रतीच्या जागी या डिव्हाइसवरील प्रत ठेवते. “शेल्फवरची प्रत वापरा” या डिव्हाइसवरील प्रतीच्या जागी शेल्फवरील प्रत ठेवते. मालिकेचा करार एकच असतो, त्यामुळे इथे “दोन्ही ठेवा” नाही.`
 - the hi note already quoted all three hi labels exactly; it is unchanged.
+
+## 8. The ARC panel in the 2.0 studio (59 keys, 2026-11-27)
+
+The author's side of ARC campaigns, slice 1 (`studio/src/arc/ArcPanel.tsx`): a section in the export screen's archive
+group ("Run an ARC" / "Open your ARC") and the dialog that starts one campaign for the desk book and runs it (the signup
+link, the counts, the reader list with Approve / Decline / Close this copy, Close sign-ups, Delete this ARC). Its keys are in
+`client/index.html` `UI_STRINGS`: the `BEUK:arc` block (`ARC_STRINGS`, English and the 12 packs beside it) and, for Hindi
+and Marathi, the `BEUK:ui-hi-mr` block, in English key order after `tool.verseInPoem`.
+
+**English.** Three strings are fixed, word for word, by the plan and the spec: `arcp.stamp` (the Global Constraint's author
+panel line, V's), `arcp.noReview` and `arcp.deleteConfirm` (the plan's, kept by ruling F15). Every other English string is
+Claude's and is V's to confirm in the PR. **All 14 other languages below are drafts written by Claude by hand: not approved,
+not read by a native speaker.** No translation service or API was called.
+
+How the drafts were made:
+
+- `{placeholders}` byte for byte (a generator refused any draft whose set differed from English), none empty, none still
+  the English, no added exclamation mark, no nukta in Marathi.
+- Amazon rule (plan Global Constraints): no draft says "in exchange for a review" or treats a review as owed; `arcp.noReview`
+  says readers are never asked and reviewing is their choice, in each language.
+- Address form as each pack's neighbouring strings: *tú* (es, it), *vous* (fr), *Sie* (de), the third person (pt), *u*
+  (nl), Polish without a person where it can (imperatives as the pack's buttons), *вы* (ru), *siz* (tr), the second person
+  (ar), no pronoun (ja), *你* (zh-Hans), *आप* (hi), *तुम्ही* (mr).
+- "ARC" stays as the acronym in every language (the section heading explains it once: advance copies, then "(ARC)"); "EPUB",
+  "Beuk", "Goodreads" and "Amazon" stay as they are.
+- Counts stand after a colon (`arcp.claimedN`, `arcp.pendingN`), so no string needs a plural form. **pl**, **ru** and **tr**
+  put the date in `arcp.endedSum` after a colon too, so it reads with any date format.
+- Book copy and the Copy button are different words everywhere (es ejemplar / Copiar, de Exemplar / Kopieren, hi प्रति / कॉपी करें …).
+
+Points worth a look:
+
+- **`arcp.mailOff`** fills `{reason}` with the server's English setting name (`ARC_MAIL_FROM is not set`,
+  `ARC_SMTP_URL is not set`, or the salt's reason): the name of a server setting is not translated.
+- **`arcp.notSent`** fills `{detail}` with the server's English reason for an unsent email.
+- **`arcp.stamp`** is the panel's line. The stamp inside readers' EPUBs stays English (ruling F16); these drafts do not change it.
+- **ja** `arcp.closeConfirm` says 取り消せません (cannot be cancelled), not 元に戻せません, so it does not read as the app's Undo.
+- **ja** `arcp.stamp` says 海賊版の作り手 (a maker of pirated copies) for "pirate"; **zh-Hans** 盗版者; **tr** korsan; **ar** قرصان.
+- **de** uses *das ARC* (das Exemplar); **nl** *de ARC*; **mr** neuter *ARC* (तुमचे ARC).
+- **hi** `arcp.approval` is "हर पाठक मेरी मंज़ूरी से जुड़े" so it carries no grammatical gender for the writer.
+
+### `arcp.secH`
+
+- **en** (source, Claude's): Advance review copies
+- **es** Español: `Ejemplares anticipados (ARC)`
+- **fr** Français: `Exemplaires en avant-première (ARC)`
+- **de** Deutsch: `Vorab-Exemplare (ARC)`
+- **it** Italiano: `Copie in anteprima (ARC)`
+- **pt** Português: `Exemplares antecipados (ARC)`
+- **nl** Nederlands: `Voorpublicatie-exemplaren (ARC)`
+- **pl** Polski: `Egzemplarze przedpremierowe (ARC)`
+- **ru** Русский: `Сигнальные экземпляры (ARC)`
+- **tr** Türkçe: `Ön okuma kopyaları (ARC)`
+- **ar** العربية: `نسخ مسبقة للقرّاء (ARC)`
+- **hi** हिन्दी: `रिलीज़ से पहले की प्रतियाँ (ARC)`
+- **mr** मराठी: `प्रकाशनापूर्वीच्या प्रती (ARC)`
+- **ja** 日本語: `発売前の献本（ARC）`
+- **zh-Hans** 简体中文: `预发本（ARC）`
+
+### `arcp.secSub`
+
+- **en** (source, Claude's): Give early readers a free copy before launch. They sign up through an unlisted link, and each copy names its reader.
+- **es** Español: `Regala un ejemplar a tus primeros lectores antes del lanzamiento. Se apuntan con un enlace no listado, y cada ejemplar lleva el nombre de su lector.`
+- **fr** Français: `Offrez un exemplaire gratuit à vos premiers lecteurs avant la sortie. Ils s'inscrivent par un lien non répertorié, et chaque exemplaire porte le nom de son lecteur.`
+- **de** Deutsch: `Geben Sie ersten Lesern vor dem Erscheinen ein kostenloses Exemplar. Die Anmeldung läuft über einen nicht gelisteten Link, und jedes Exemplar nennt seinen Leser.`
+- **it** Italiano: `Regala una copia ai tuoi primi lettori prima dell'uscita. Si iscrivono tramite un link non elencato, e ogni copia porta il nome del suo lettore.`
+- **pt** Português: `Ofereça um exemplar aos primeiros leitores antes do lançamento. Inscrevem-se através de um link não listado, e cada exemplar tem o nome do seu leitor.`
+- **nl** Nederlands: `Geef eerste lezers vóór de verschijning een gratis exemplaar. Ze melden zich aan via een niet-openbare link, en elk exemplaar draagt de naam van de lezer.`
+- **pl** Polski: `Pierwsi czytelnicy dostają darmowy egzemplarz przed premierą. Zapisują się przez niepubliczny link, a w każdym egzemplarzu jest imię jego czytelnika.`
+- **ru** Русский: `Подарите первым читателям бесплатный экземпляр до выхода книги. Они записываются по неопубликованной ссылке, и в каждом экземпляре указано имя его читателя.`
+- **tr** Türkçe: `İlk okurlarınıza çıkıştan önce ücretsiz bir kopya verin. Listelenmeyen bir bağlantıyla kaydolurlar ve her kopyada okurunun adı yazar.`
+- **ar** العربية: `امنح قرّاءك الأوائل نسخة مجانية قبل الإصدار. يسجّلون عبر رابط غير مُدرج، وتحمل كل نسخة اسم قارئها.`
+- **hi** हिन्दी: `रिलीज़ से पहले अपने पहले पाठकों को एक मुफ़्त प्रति दें। वे एक बिना-सूचीबद्ध लिंक से साइन अप करते हैं, और हर प्रति पर उसके पाठक का नाम होता है।`
+- **mr** मराठी: `प्रकाशनापूर्वी तुमच्या पहिल्या वाचकांना एक मोफत प्रत द्या. ते एका यादीत नसलेल्या लिंकवरून नोंदणी करतात, आणि प्रत्येक प्रतीवर तिच्या वाचकाचे नाव असते.`
+- **ja** 日本語: `発売前に、最初の読者へ無料の献本を届けます。読者は非公開のリンクから申し込み、献本にはそれぞれ読者の名前が入ります。`
+- **zh-Hans** 简体中文: `在发售前，把免费的书送给第一批读者。他们通过不公开的链接报名，每一份都写有读者的名字。`
+
+### `arcp.run`
+
+- **en** (source, Claude's): Run an ARC
+- **es** Español: `Iniciar un ARC`
+- **fr** Français: `Lancer un ARC`
+- **de** Deutsch: `ARC starten`
+- **it** Italiano: `Avvia un ARC`
+- **pt** Português: `Iniciar um ARC`
+- **nl** Nederlands: `Een ARC starten`
+- **pl** Polski: `Rozpocznij ARC`
+- **ru** Русский: `Запустить ARC`
+- **tr** Türkçe: `ARC başlat`
+- **ar** العربية: `ابدأ حملة ARC`
+- **hi** हिन्दी: `ARC शुरू करें`
+- **mr** मराठी: `ARC सुरू करा`
+- **ja** 日本語: `ARCを始める`
+- **zh-Hans** 简体中文: `开始 ARC`
+
+### `arcp.open`
+
+- **en** (source, Claude's): Open your ARC
+- **es** Español: `Abrir tu ARC`
+- **fr** Français: `Ouvrir votre ARC`
+- **de** Deutsch: `Ihr ARC öffnen`
+- **it** Italiano: `Apri il tuo ARC`
+- **pt** Português: `Abrir o seu ARC`
+- **nl** Nederlands: `Uw ARC openen`
+- **pl** Polski: `Otwórz ARC`
+- **ru** Русский: `Открыть ваш ARC`
+- **tr** Türkçe: `ARC'nizi açın`
+- **ar** العربية: `افتح حملة ARC`
+- **hi** हिन्दी: `अपना ARC खोलें`
+- **mr** मराठी: `तुमचे ARC उघडा`
+- **ja** 日本語: `ARCを開く`
+- **zh-Hans** 简体中文: `打开你的 ARC`
+
+### `arcp.title`
+
+- **en** (source, Claude's): ARC for “{title}”
+- **es** Español: `ARC de «{title}»`
+- **fr** Français: `ARC de « {title} »`
+- **de** Deutsch: `ARC für „{title}“`
+- **it** Italiano: `ARC di «{title}»`
+- **pt** Português: `ARC de «{title}»`
+- **nl** Nederlands: `ARC voor “{title}”`
+- **pl** Polski: `ARC: „{title}”`
+- **ru** Русский: `ARC для «{title}»`
+- **tr** Türkçe: `“{title}” için ARC`
+- **ar** العربية: `حملة ARC لكتاب «{title}»`
+- **hi** हिन्दी: `“{title}” का ARC`
+- **mr** मराठी: `“{title}” साठी ARC`
+- **ja** 日本語: `『{title}』のARC`
+- **zh-Hans** 简体中文: `《{title}》的 ARC`
+
+### `arcp.loading`
+
+- **en** (source, Claude's): Reading your ARC…
+- **es** Español: `Leyendo tu ARC…`
+- **fr** Français: `Lecture de votre ARC…`
+- **de** Deutsch: `Ihr ARC wird gelesen…`
+- **it** Italiano: `Lettura del tuo ARC…`
+- **pt** Português: `A ler o seu ARC…`
+- **nl** Nederlands: `Uw ARC wordt gelezen…`
+- **pl** Polski: `Wczytywanie ARC…`
+- **ru** Русский: `Загружаем ваш ARC…`
+- **tr** Türkçe: `ARC'niz okunuyor…`
+- **ar** العربية: `جارٍ تحميل حملة ARC…`
+- **hi** हिन्दी: `आपका ARC पढ़ा जा रहा है…`
+- **mr** मराठी: `तुमचे ARC वाचले जात आहे…`
+- **ja** 日本語: `ARCを読み込んでいます…`
+- **zh-Hans** 简体中文: `正在读取你的 ARC…`
+
+### `arcp.offline`
+
+- **en** (source, Claude's): Beuk could not be reached. Nothing changed; try again.
+- **es** Español: `No se pudo conectar con Beuk. No ha cambiado nada; inténtalo de nuevo.`
+- **fr** Français: `Impossible de joindre Beuk. Rien n'a changé ; réessayez.`
+- **de** Deutsch: `Beuk ist nicht erreichbar. Nichts wurde geändert; versuchen Sie es erneut.`
+- **it** Italiano: `Impossibile raggiungere Beuk. Non è cambiato nulla; riprova.`
+- **pt** Português: `Não foi possível contactar o Beuk. Nada mudou; tente novamente.`
+- **nl** Nederlands: `Beuk is niet bereikbaar. Er is niets veranderd; probeer het opnieuw.`
+- **pl** Polski: `Nie udało się połączyć z Beuk. Nic się nie zmieniło; spróbuj ponownie.`
+- **ru** Русский: `Не удалось связаться с Beuk. Ничего не изменилось; попробуйте ещё раз.`
+- **tr** Türkçe: `Beuk'e ulaşılamadı. Hiçbir şey değişmedi; yeniden deneyin.`
+- **ar** العربية: `تعذّر الوصول إلى Beuk. لم يتغيّر شيء؛ حاول مرة أخرى.`
+- **hi** हिन्दी: `Beuk से संपर्क नहीं हो सका। कुछ नहीं बदला; फिर से कोशिश करें।`
+- **mr** मराठी: `Beuk शी संपर्क होऊ शकला नाही. काहीही बदलले नाही; पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `Beukに接続できませんでした。何も変更されていません。もう一度お試しください。`
+- **zh-Hans** 简体中文: `无法连接 Beuk。没有任何更改；请重试。`
+
+### `arcp.mailOff`
+
+- **en** (source, Claude's): ARC email is not set up on this server ({reason}), so a campaign cannot start yet.
+- **es** Español: `El correo de los ARC no está configurado en este servidor ({reason}), así que todavía no se puede iniciar una campaña.`
+- **fr** Français: `L'e-mail des ARC n'est pas configuré sur ce serveur ({reason}) : une campagne ne peut donc pas encore commencer.`
+- **de** Deutsch: `Die ARC-E-Mail ist auf diesem Server nicht eingerichtet ({reason}), daher kann noch keine Kampagne starten.`
+- **it** Italiano: `L'email degli ARC non è configurata su questo server ({reason}), quindi non si può ancora avviare una campagna.`
+- **pt** Português: `O e-mail dos ARC não está configurado neste servidor ({reason}), por isso ainda não é possível iniciar uma campanha.`
+- **nl** Nederlands: `ARC-e-mail is op deze server niet ingesteld ({reason}), dus een campagne kan nog niet starten.`
+- **pl** Polski: `Poczta ARC nie jest skonfigurowana na tym serwerze ({reason}), więc kampanii nie można jeszcze rozpocząć.`
+- **ru** Русский: `Почта для ARC на этом сервере не настроена ({reason}), поэтому кампанию пока нельзя начать.`
+- **tr** Türkçe: `Bu sunucuda ARC e-postası ayarlanmamış ({reason}), bu yüzden henüz bir kampanya başlatılamaz.`
+- **ar** العربية: `بريد ARC غير مُعدّ على هذا الخادم ({reason})، لذا لا يمكن بدء حملة بعد.`
+- **hi** हिन्दी: `इस सर्वर पर ARC ईमेल सेट नहीं है ({reason}), इसलिए अभी कोई अभियान शुरू नहीं हो सकता।`
+- **mr** मराठी: `या सर्व्हरवर ARC ईमेल सेट केलेले नाही ({reason}), त्यामुळे अजून मोहीम सुरू करता येत नाही.`
+- **ja** 日本語: `このサーバーではARC用のメールが設定されていません（{reason}）。そのため、まだキャンペーンを始められません。`
+- **zh-Hans** 简体中文: `此服务器未设置 ARC 邮件（{reason}），所以暂时还不能开始活动。`
+
+### `arcp.launch`
+
+- **en** (source, Claude's): Launch date
+- **es** Español: `Fecha de lanzamiento`
+- **fr** Français: `Date de sortie`
+- **de** Deutsch: `Erscheinungsdatum`
+- **it** Italiano: `Data di uscita`
+- **pt** Português: `Data de lançamento`
+- **nl** Nederlands: `Verschijningsdatum`
+- **pl** Polski: `Data premiery`
+- **ru** Русский: `Дата выхода`
+- **tr** Türkçe: `Çıkış tarihi`
+- **ar** العربية: `تاريخ الإصدار`
+- **hi** हिन्दी: `रिलीज़ की तारीख`
+- **mr** मराठी: `प्रकाशनाची तारीख`
+- **ja** 日本語: `発売日`
+- **zh-Hans** 简体中文: `发售日期`
+
+### `arcp.closes`
+
+- **en** (source, Claude's): Sign-ups close
+- **es** Español: `Cierre de inscripciones`
+- **fr** Français: `Fin des inscriptions`
+- **de** Deutsch: `Anmeldeschluss`
+- **it** Italiano: `Chiusura iscrizioni`
+- **pt** Português: `Fim das inscrições`
+- **nl** Nederlands: `Aanmelden sluit`
+- **pl** Polski: `Koniec zapisów`
+- **ru** Русский: `Запись закрывается`
+- **tr** Türkçe: `Kayıtların kapanışı`
+- **ar** العربية: `إغلاق التسجيل`
+- **hi** हिन्दी: `साइन अप बंद होने की तारीख`
+- **mr** मराठी: `नोंदणी बंद होण्याची तारीख`
+- **ja** 日本語: `申し込みの締め切り`
+- **zh-Hans** 简体中文: `报名截止`
+
+### `arcp.closesHint`
+
+- **en** (source, Claude's): At the end of that day, in your time zone.
+- **es** Español: `Al final de ese día, en tu zona horaria.`
+- **fr** Français: `À la fin de ce jour-là, dans votre fuseau horaire.`
+- **de** Deutsch: `Am Ende dieses Tages, in Ihrer Zeitzone.`
+- **it** Italiano: `Alla fine di quel giorno, nel tuo fuso orario.`
+- **pt** Português: `No fim desse dia, no seu fuso horário.`
+- **nl** Nederlands: `Aan het eind van die dag, in uw tijdzone.`
+- **pl** Polski: `Z końcem tego dnia, według lokalnej strefy czasowej.`
+- **ru** Русский: `В конце этого дня, по вашему часовому поясу.`
+- **tr** Türkçe: `O günün sonunda, sizin saat diliminizde.`
+- **ar** العربية: `في نهاية ذلك اليوم، بحسب منطقتك الزمنية.`
+- **hi** हिन्दी: `उस दिन के अंत में, आपके टाइम ज़ोन के हिसाब से।`
+- **mr** मराठी: `त्या दिवसाच्या शेवटी, तुमच्या टाइम झोननुसार.`
+- **ja** 日本語: `その日の終わり（お使いのタイムゾーン）。`
+- **zh-Hans** 简体中文: `在那一天结束时，按你的时区。`
+
+### `arcp.copies`
+
+- **en** (source, Claude's): Copies (1 to 50)
+- **es** Español: `Ejemplares (de 1 a 50)`
+- **fr** Français: `Exemplaires (de 1 à 50)`
+- **de** Deutsch: `Exemplare (1 bis 50)`
+- **it** Italiano: `Copie (da 1 a 50)`
+- **pt** Português: `Exemplares (de 1 a 50)`
+- **nl** Nederlands: `Exemplaren (1 tot 50)`
+- **pl** Polski: `Egzemplarze (od 1 do 50)`
+- **ru** Русский: `Экземпляры (от 1 до 50)`
+- **tr** Türkçe: `Kopya sayısı (1 ile 50 arası)`
+- **ar** العربية: `النسخ (من 1 إلى 50)`
+- **hi** हिन्दी: `प्रतियाँ (1 से 50)`
+- **mr** मराठी: `प्रती (1 ते 50)`
+- **ja** 日本語: `部数（1〜50）`
+- **zh-Hans** 简体中文: `份数（1 到 50）`
+
+### `arcp.copiesBad`
+
+- **en** (source, Claude's): Choose a number of copies from 1 to 50.
+- **es** Español: `Elige un número de ejemplares entre 1 y 50.`
+- **fr** Français: `Choisissez un nombre d'exemplaires entre 1 et 50.`
+- **de** Deutsch: `Wählen Sie eine Anzahl von Exemplaren zwischen 1 und 50.`
+- **it** Italiano: `Scegli un numero di copie da 1 a 50.`
+- **pt** Português: `Escolha um número de exemplares entre 1 e 50.`
+- **nl** Nederlands: `Kies een aantal exemplaren van 1 tot 50.`
+- **pl** Polski: `Wybierz liczbę egzemplarzy od 1 do 50.`
+- **ru** Русский: `Выберите число экземпляров от 1 до 50.`
+- **tr** Türkçe: `1 ile 50 arasında bir kopya sayısı seçin.`
+- **ar** العربية: `اختر عدد نسخ من 1 إلى 50.`
+- **hi** हिन्दी: `1 से 50 के बीच प्रतियों की संख्या चुनें।`
+- **mr** मराठी: `1 ते 50 मधील प्रतींची संख्या निवडा.`
+- **ja** 日本語: `部数は1から50の間で選んでください。`
+- **zh-Hans** 简体中文: `请选择 1 到 50 之间的份数。`
+
+### `arcp.joining`
+
+- **en** (source, Claude's): Joining
+- **es** Español: `Inscripción`
+- **fr** Français: `Inscription`
+- **de** Deutsch: `Teilnahme`
+- **it** Italiano: `Iscrizione`
+- **pt** Português: `Inscrição`
+- **nl** Nederlands: `Aanmelden`
+- **pl** Polski: `Zapisy`
+- **ru** Русский: `Запись`
+- **tr** Türkçe: `Katılım`
+- **ar** العربية: `الانضمام`
+- **hi** हिन्दी: `जुड़ने का तरीका`
+- **mr** मराठी: `सहभागी होण्याची पद्धत`
+- **ja** 日本語: `参加方法`
+- **zh-Hans** 简体中文: `加入方式`
+
+### `arcp.instant`
+
+- **en** (source, Claude's): Instant: a reader who confirms their email gets a copy, while copies last
+- **es** Español: `Inmediata: quien confirma su correo recibe un ejemplar, mientras queden`
+- **fr** Français: `Immédiate : un lecteur qui confirme son e-mail reçoit un exemplaire, dans la limite des exemplaires disponibles`
+- **de** Deutsch: `Sofort: Wer seine E-Mail-Adresse bestätigt, erhält ein Exemplar, solange der Vorrat reicht`
+- **it** Italiano: `Immediata: chi conferma la propria email riceve una copia, fino a esaurimento`
+- **pt** Português: `Imediata: quem confirma o e-mail recebe um exemplar, enquanto houver`
+- **nl** Nederlands: `Direct: wie zijn e-mailadres bevestigt, krijgt een exemplaar, zolang de voorraad strekt`
+- **pl** Polski: `Od razu: czytelnik, który potwierdzi e-mail, dostaje egzemplarz, dopóki starczy`
+- **ru** Русский: `Сразу: читатель, подтвердивший адрес почты, получает экземпляр, пока они есть`
+- **tr** Türkçe: `Anında: e-postasını doğrulayan okur, kopyalar tükenene kadar bir kopya alır`
+- **ar** العربية: `فوري: القارئ الذي يؤكد بريده يحصل على نسخة ما دامت النسخ متوفرة`
+- **hi** हिन्दी: `तुरंत: जो पाठक अपना ईमेल पक्का करता है, उसे एक प्रति मिलती है, जब तक प्रतियाँ बची हों`
+- **mr** मराठी: `लगेच: जो वाचक आपला ईमेल पक्का करतो त्याला, प्रती शिल्लक असेपर्यंत, एक प्रत मिळते`
+- **ja** 日本語: `すぐに：メールアドレスを確認した読者に、部数がある限り献本が届きます`
+- **zh-Hans** 简体中文: `即时：确认邮箱的读者即可获得一份，送完为止`
+
+### `arcp.approval`
+
+- **en** (source, Claude's): I approve each reader
+- **es** Español: `Apruebo a cada lector`
+- **fr** Français: `J'approuve chaque lecteur`
+- **de** Deutsch: `Ich nehme jeden Leser selbst an`
+- **it** Italiano: `Approvo ogni lettore`
+- **pt** Português: `Aprovo cada leitor`
+- **nl** Nederlands: `Ik keur elke lezer goed`
+- **pl** Polski: `Zatwierdzam każdego czytelnika`
+- **ru** Русский: `Я одобряю каждого читателя`
+- **tr** Türkçe: `Her okuru ben onaylarım`
+- **ar** العربية: `أوافق على كل قارئ بنفسي`
+- **hi** हिन्दी: `हर पाठक मेरी मंज़ूरी से जुड़े`
+- **mr** मराठी: `प्रत्येक वाचक माझ्या मंजुरीने`
+- **ja** 日本語: `読者を一人ずつ承認する`
+- **zh-Hans** 简体中文: `由我逐一批准读者`
+
+### `arcp.approvalHint`
+
+- **en** (source, Claude's): Readers confirm their email and give a profile link (such as Goodreads or Amazon). You approve or decline each one; Beuk never opens the link.
+- **es** Español: `Los lectores confirman su correo y dan un enlace a su perfil (por ejemplo, de Goodreads o Amazon). Tú apruebas o rechazas a cada uno; Beuk nunca abre el enlace.`
+- **fr** Français: `Les lecteurs confirment leur e-mail et donnent un lien vers leur profil (Goodreads ou Amazon, par exemple). Vous approuvez ou refusez chacun d'eux ; Beuk n'ouvre jamais ce lien.`
+- **de** Deutsch: `Leser bestätigen ihre E-Mail-Adresse und geben einen Profil-Link an (zum Beispiel bei Goodreads oder Amazon). Sie nehmen jeden an oder lehnen ihn ab; Beuk öffnet den Link nie.`
+- **it** Italiano: `I lettori confermano la propria email e indicano un link al loro profilo (per esempio Goodreads o Amazon). Tu approvi o rifiuti ciascuno; Beuk non apre mai il link.`
+- **pt** Português: `Os leitores confirmam o e-mail e indicam um link para o seu perfil (por exemplo, no Goodreads ou na Amazon). Aprova ou recusa cada um; o Beuk nunca abre o link.`
+- **nl** Nederlands: `Lezers bevestigen hun e-mailadres en geven een link naar hun profiel (bijvoorbeeld op Goodreads of Amazon). U keurt elke lezer goed of wijst hem af; Beuk opent de link nooit.`
+- **pl** Polski: `Czytelnicy potwierdzają e-mail i podają link do swojego profilu (np. w Goodreads lub Amazon). Każdego czytelnika zatwierdza się lub odrzuca ręcznie; Beuk nigdy nie otwiera tego linku.`
+- **ru** Русский: `Читатели подтверждают адрес почты и указывают ссылку на свой профиль (например, на Goodreads или Amazon). Вы одобряете или отклоняете каждого; Beuk никогда не открывает эту ссылку.`
+- **tr** Türkçe: `Okurlar e-postalarını doğrular ve bir profil bağlantısı verir (örneğin Goodreads veya Amazon). Her birini siz onaylar ya da reddedersiniz; Beuk bağlantıyı asla açmaz.`
+- **ar** العربية: `يؤكد القرّاء بريدهم ويقدّمون رابط ملفهم الشخصي (مثل Goodreads أو Amazon). توافق على كل واحد منهم أو ترفضه؛ ولا يفتح Beuk الرابط أبدًا.`
+- **hi** हिन्दी: `पाठक अपना ईमेल पक्का करते हैं और अपनी प्रोफ़ाइल का लिंक देते हैं (जैसे Goodreads या Amazon)। आप हर एक को मंज़ूरी देते हैं या मना करते हैं; Beuk वह लिंक कभी नहीं खोलता।`
+- **mr** मराठी: `वाचक आपला ईमेल पक्का करतात आणि आपल्या प्रोफाइलची लिंक देतात (उदा. Goodreads किंवा Amazon). प्रत्येकाला तुम्ही मंजुरी देता किंवा नकार देता; Beuk ती लिंक कधीच उघडत नाही.`
+- **ja** 日本語: `読者はメールアドレスを確認し、プロフィールのリンク（GoodreadsやAmazonなど）を入力します。一人ずつ承認するかお断りするかを選びます。Beukがそのリンクを開くことはありません。`
+- **zh-Hans** 简体中文: `读者确认邮箱，并提供个人主页链接（例如 Goodreads 或 Amazon）。你逐一批准或拒绝；Beuk 从不打开这个链接。`
+
+### `arcp.stamp`
+
+- **en** (source, fixed by the plan/spec): Each copy names its reader. That deters sharing; it cannot stop a determined pirate.
+- **es** Español: `Cada ejemplar lleva el nombre de su lector. Eso disuade de compartirlo; no puede detener a un pirata decidido.`
+- **fr** Français: `Chaque exemplaire porte le nom de son lecteur. Cela dissuade de le partager ; cela ne peut pas arrêter un pirate déterminé.`
+- **de** Deutsch: `Jedes Exemplar nennt seinen Leser. Das schreckt vom Weitergeben ab; einen entschlossenen Raubkopierer kann es nicht aufhalten.`
+- **it** Italiano: `Ogni copia porta il nome del suo lettore. Questo scoraggia la condivisione; non può fermare un pirata determinato.`
+- **pt** Português: `Cada exemplar tem o nome do seu leitor. Isso desencoraja a partilha; não consegue travar um pirata determinado.`
+- **nl** Nederlands: `Elk exemplaar draagt de naam van de lezer. Dat ontmoedigt delen; een vastberaden piraat houdt het niet tegen.`
+- **pl** Polski: `W każdym egzemplarzu jest imię jego czytelnika. To zniechęca do udostępniania; nie powstrzyma zdeterminowanego pirata.`
+- **ru** Русский: `В каждом экземпляре указано имя его читателя. Это удерживает от распространения; решительного пирата это не остановит.`
+- **tr** Türkçe: `Her kopyada okurunun adı yazar. Bu, paylaşmayı caydırır; kararlı bir korsanı durduramaz.`
+- **ar** العربية: `تحمل كل نسخة اسم قارئها. هذا يردع عن مشاركتها؛ لكنه لا يستطيع إيقاف قرصان مصمّم.`
+- **hi** हिन्दी: `हर प्रति पर उसके पाठक का नाम होता है। इससे शेयर करने से लोग रुकते हैं; पर पक्के इरादे वाले पाइरेट को यह नहीं रोक सकता।`
+- **mr** मराठी: `प्रत्येक प्रतीवर तिच्या वाचकाचे नाव असते. त्यामुळे शेअर करण्याला आळा बसतो; पण ठाम निश्चय केलेल्या पायरेटला ते थांबवू शकत नाही.`
+- **ja** 日本語: `献本にはそれぞれ読者の名前が入ります。共有を思いとどまらせることはできますが、意志の固い海賊版の作り手は止められません。`
+- **zh-Hans** 简体中文: `每一份都写有读者的名字。这能阻止随意分享，但挡不住铁了心的盗版者。`
+
+### `arcp.noReview`
+
+- **en** (source, fixed by the plan/spec): Copies are free. Readers are never asked for a review; if they'd like to review it, that's their choice.
+- **es** Español: `Los ejemplares son gratis. Nunca se pide una reseña a los lectores; si quieren reseñarlo, es su decisión.`
+- **fr** Français: `Les exemplaires sont gratuits. On ne demande jamais d'avis aux lecteurs ; s'ils souhaitent en donner un, c'est leur choix.`
+- **de** Deutsch: `Die Exemplare sind kostenlos. Leser werden nie um eine Rezension gebeten; ob sie eine schreiben möchten, entscheiden sie selbst.`
+- **it** Italiano: `Le copie sono gratuite. Ai lettori non viene mai chiesta una recensione; se vogliono recensirlo, è una loro scelta.`
+- **pt** Português: `Os exemplares são gratuitos. Nunca se pede uma crítica aos leitores; se quiserem escrever uma, a escolha é deles.`
+- **nl** Nederlands: `De exemplaren zijn gratis. Lezers wordt nooit om een recensie gevraagd; of ze er een willen schrijven, kiezen ze zelf.`
+- **pl** Polski: `Egzemplarze są bezpłatne. Czytelników nigdy nie prosi się o recenzję; jeśli zechcą ją napisać, to ich wybór.`
+- **ru** Русский: `Экземпляры бесплатны. У читателей никогда не просят отзыв; если они захотят его написать, это их выбор.`
+- **tr** Türkçe: `Kopyalar ücretsizdir. Okurlardan asla yorum istenmez; yorum yazmak isterlerse bu onların seçimidir.`
+- **ar** العربية: `النسخ مجانية. لا يُطلب من القرّاء أبدًا كتابة مراجعة؛ وإن رغبوا في مراجعته، فذلك اختيارهم.`
+- **hi** हिन्दी: `प्रतियाँ मुफ़्त हैं। पाठकों से कभी रिव्यू नहीं माँगा जाता; अगर वे रिव्यू लिखना चाहें, तो यह उनकी मर्ज़ी है।`
+- **mr** मराठी: `प्रती मोफत आहेत. वाचकांना कधीही परीक्षण मागितले जात नाही; त्यांना परीक्षण लिहायचे असेल, तर ती त्यांची निवड आहे.`
+- **ja** 日本語: `献本は無料です。読者にレビューを頼むことはありません。レビューを書くかどうかは読者が決めることです。`
+- **zh-Hans** 简体中文: `这些书是免费的。读者从不会被要求写书评；如果他们愿意评论，那是他们自己的选择。`
+
+### `arcp.start`
+
+- **en** (source, Claude's): Start the ARC
+- **es** Español: `Iniciar el ARC`
+- **fr** Français: `Lancer l'ARC`
+- **de** Deutsch: `Das ARC starten`
+- **it** Italiano: `Avvia l'ARC`
+- **pt** Português: `Iniciar o ARC`
+- **nl** Nederlands: `De ARC starten`
+- **pl** Polski: `Uruchom ARC`
+- **ru** Русский: `Начать ARC`
+- **tr** Türkçe: `ARC'yi başlat`
+- **ar** العربية: `ابدأ الحملة`
+- **hi** हिन्दी: `ARC अभियान शुरू करें`
+- **mr** मराठी: `ARC मोहीम सुरू करा`
+- **ja** 日本語: `ARCを開始`
+- **zh-Hans** 简体中文: `开始 ARC 活动`
+
+### `arcp.building`
+
+- **en** (source, Claude's): Building your book's EPUB once, for every reader. This can take a minute.
+- **es** Español: `Creando el EPUB de tu libro una sola vez, para todos los lectores. Puede tardar un minuto.`
+- **fr** Français: `Création de l'EPUB de votre livre, une seule fois pour tous les lecteurs. Cela peut prendre une minute.`
+- **de** Deutsch: `Das EPUB Ihres Buchs wird einmal für alle Leser erstellt. Das kann eine Minute dauern.`
+- **it** Italiano: `Creazione dell'EPUB del tuo libro, una volta sola per tutti i lettori. Può richiedere un minuto.`
+- **pt** Português: `A criar o EPUB do seu livro uma única vez, para todos os leitores. Pode demorar um minuto.`
+- **nl** Nederlands: `Het EPUB van uw boek wordt één keer gemaakt, voor alle lezers. Dit kan een minuut duren.`
+- **pl** Polski: `Tworzenie pliku EPUB książki, raz dla wszystkich czytelników. To może potrwać minutę.`
+- **ru** Русский: `Создаём EPUB вашей книги один раз для всех читателей. Это может занять минуту.`
+- **tr** Türkçe: `Kitabınızın EPUB'ı tüm okurlar için bir kez oluşturuluyor. Bu bir dakika sürebilir.`
+- **ar** العربية: `يجري إنشاء ملف EPUB لكتابك مرة واحدة لكل القرّاء. قد يستغرق ذلك دقيقة.`
+- **hi** हिन्दी: `सभी पाठकों के लिए आपकी किताब का EPUB एक बार बनाया जा रहा है। इसमें एक मिनट लग सकता है।`
+- **mr** मराठी: `सर्व वाचकांसाठी तुमच्या पुस्तकाचे EPUB एकदाच तयार होत आहे. याला एक मिनिट लागू शकतो.`
+- **ja** 日本語: `すべての読者のために、この本のEPUBを一度だけ作成しています。1分ほどかかることがあります。`
+- **zh-Hans** 简体中文: `正在为所有读者一次性生成这本书的 EPUB。这可能需要一分钟。`
+
+### `arcp.link`
+
+- **en** (source, Claude's): Signup link
+- **es** Español: `Enlace de inscripción`
+- **fr** Français: `Lien d'inscription`
+- **de** Deutsch: `Anmelde-Link`
+- **it** Italiano: `Link di iscrizione`
+- **pt** Português: `Link de inscrição`
+- **nl** Nederlands: `Aanmeldlink`
+- **pl** Polski: `Link do zapisów`
+- **ru** Русский: `Ссылка для записи`
+- **tr** Türkçe: `Kayıt bağlantısı`
+- **ar** العربية: `رابط التسجيل`
+- **hi** हिन्दी: `साइन अप लिंक`
+- **mr** मराठी: `नोंदणीची लिंक`
+- **ja** 日本語: `申し込みリンク`
+- **zh-Hans** 简体中文: `报名链接`
+
+### `arcp.copy`
+
+- **en** (source, Claude's): Copy
+- **es** Español: `Copiar`
+- **fr** Français: `Copier`
+- **de** Deutsch: `Kopieren`
+- **it** Italiano: `Copia`
+- **pt** Português: `Copiar`
+- **nl** Nederlands: `Kopiëren`
+- **pl** Polski: `Kopiuj`
+- **ru** Русский: `Копировать`
+- **tr** Türkçe: `Kopyala`
+- **ar** العربية: `انسخ`
+- **hi** हिन्दी: `कॉपी करें`
+- **mr** मराठी: `कॉपी करा`
+- **ja** 日本語: `コピー`
+- **zh-Hans** 简体中文: `复制`
+
+### `arcp.copied`
+
+- **en** (source, Claude's): Copied
+- **es** Español: `Copiado`
+- **fr** Français: `Copié`
+- **de** Deutsch: `Kopiert`
+- **it** Italiano: `Copiato`
+- **pt** Português: `Copiado`
+- **nl** Nederlands: `Gekopieerd`
+- **pl** Polski: `Skopiowano`
+- **ru** Русский: `Скопировано`
+- **tr** Türkçe: `Kopyalandı`
+- **ar** العربية: `نُسخ`
+- **hi** हिन्दी: `कॉपी हो गया`
+- **mr** मराठी: `कॉपी झाले`
+- **ja** 日本語: `コピーしました`
+- **zh-Hans** 简体中文: `已复制`
+
+### `arcp.unlisted`
+
+- **en** (source, Claude's): Unlisted: Beuk lists it nowhere and asks search engines not to index it. Anyone who has the link can sign up.
+- **es** Español: `No listado: Beuk no lo muestra en ningún sitio y pide a los buscadores que no lo indexen. Cualquiera que tenga el enlace puede apuntarse.`
+- **fr** Français: `Non répertorié : Beuk ne l'affiche nulle part et demande aux moteurs de recherche de ne pas l'indexer. Toute personne qui a le lien peut s'inscrire.`
+- **de** Deutsch: `Nicht gelistet: Beuk zeigt ihn nirgends an und bittet Suchmaschinen, ihn nicht zu indexieren. Wer den Link hat, kann sich anmelden.`
+- **it** Italiano: `Non elencato: Beuk non lo mostra da nessuna parte e chiede ai motori di ricerca di non indicizzarlo. Chiunque abbia il link può iscriversi.`
+- **pt** Português: `Não listado: o Beuk não o mostra em lado nenhum e pede aos motores de pesquisa que não o indexem. Qualquer pessoa que tenha o link pode inscrever-se.`
+- **nl** Nederlands: `Niet openbaar: Beuk toont hem nergens en vraagt zoekmachines hem niet te indexeren. Iedereen die de link heeft, kan zich aanmelden.`
+- **pl** Polski: `Niepubliczny: Beuk nigdzie go nie pokazuje i prosi wyszukiwarki, aby go nie indeksowały. Każdy, kto ma ten link, może się zapisać.`
+- **ru** Русский: `Не опубликована: Beuk нигде её не показывает и просит поисковые системы не индексировать её. Записаться может любой, у кого есть ссылка.`
+- **tr** Türkçe: `Listelenmiyor: Beuk onu hiçbir yerde göstermez ve arama motorlarından dizine eklememelerini ister. Bağlantıya sahip olan herkes kaydolabilir.`
+- **ar** العربية: `غير مُدرج: لا يعرضه Beuk في أي مكان ويطلب من محركات البحث عدم فهرسته. يمكن لأي شخص لديه الرابط أن يسجّل.`
+- **hi** हिन्दी: `बिना-सूचीबद्ध: Beuk इसे कहीं नहीं दिखाता और सर्च इंजनों से इसे इंडेक्स न करने को कहता है। जिसके पास भी लिंक है, वह साइन अप कर सकता है।`
+- **mr** मराठी: `यादीत नसलेली: Beuk ती कुठेही दाखवत नाही आणि सर्च इंजिनना ती इंडेक्स न करण्यास सांगते. ज्याच्याकडे लिंक आहे तो कोणीही नोंदणी करू शकतो.`
+- **ja** 日本語: `非公開：Beukはこのリンクをどこにも表示せず、検索エンジンにもインデックスしないよう求めます。リンクを知っている人なら誰でも申し込めます。`
+- **zh-Hans** 简体中文: `不公开：Beuk 不在任何地方列出它，并要求搜索引擎不要收录。任何拿到链接的人都可以报名。`
+
+### `arcp.linkHidden`
+
+- **en** (source, Claude's): The signup link is shown only when it is made. To see one again, make a new signup link; the old one then stops working.
+- **es** Español: `El enlace de inscripción solo se muestra cuando se crea. Para volver a ver uno, crea un enlace de inscripción nuevo; el anterior deja entonces de funcionar.`
+- **fr** Français: `Le lien d'inscription n'est affiché qu'au moment où il est créé. Pour en revoir un, créez un nouveau lien d'inscription ; l'ancien cesse alors de fonctionner.`
+- **de** Deutsch: `Der Anmelde-Link wird nur angezeigt, wenn er erstellt wird. Um wieder einen zu sehen, erstellen Sie einen neuen Anmelde-Link; der alte funktioniert dann nicht mehr.`
+- **it** Italiano: `Il link di iscrizione viene mostrato solo quando viene creato. Per vederne uno di nuovo, crea un nuovo link di iscrizione; quello vecchio smette allora di funzionare.`
+- **pt** Português: `O link de inscrição só é mostrado quando é criado. Para voltar a ver um, crie um novo link de inscrição; o anterior deixa então de funcionar.`
+- **nl** Nederlands: `De aanmeldlink wordt alleen getoond wanneer hij wordt gemaakt. Om er weer een te zien, maakt u een nieuwe aanmeldlink; de oude werkt dan niet meer.`
+- **pl** Polski: `Link do zapisów jest pokazywany tylko w chwili utworzenia. Aby znów go zobaczyć, utwórz nowy link do zapisów; stary przestanie wtedy działać.`
+- **ru** Русский: `Ссылка для записи показывается только в момент создания. Чтобы снова увидеть ссылку, создайте новую ссылку для записи; старая тогда перестанет работать.`
+- **tr** Türkçe: `Kayıt bağlantısı yalnızca oluşturulduğu anda gösterilir. Yeniden görmek için yeni bir kayıt bağlantısı oluşturun; eskisi o zaman çalışmaz.`
+- **ar** العربية: `يظهر رابط التسجيل فقط عند إنشائه. لرؤية رابط مجددًا، أنشئ رابط تسجيل جديدًا؛ وعندها يتوقف الرابط القديم عن العمل.`
+- **hi** हिन्दी: `साइन अप लिंक सिर्फ़ बनाते समय दिखता है। उसे फिर से देखने के लिए नया साइन अप लिंक बनाएँ; तब पुराना लिंक काम करना बंद कर देता है।`
+- **mr** मराठी: `नोंदणीची लिंक फक्त तयार करताना दिसते. ती पुन्हा पाहण्यासाठी नवीन नोंदणीची लिंक तयार करा; मग जुनी लिंक काम करणे थांबते.`
+- **ja** 日本語: `申し込みリンクは作成したときにだけ表示されます。もう一度表示するには、新しい申し込みリンクを作成してください。古いリンクは使えなくなります。`
+- **zh-Hans** 简体中文: `报名链接只在创建时显示。要再次看到链接，请创建新的报名链接；旧链接随即失效。`
+
+### `arcp.newLink`
+
+- **en** (source, Claude's): Make a new signup link
+- **es** Español: `Crear un enlace de inscripción nuevo`
+- **fr** Français: `Créer un nouveau lien d'inscription`
+- **de** Deutsch: `Neuen Anmelde-Link erstellen`
+- **it** Italiano: `Crea un nuovo link di iscrizione`
+- **pt** Português: `Criar um novo link de inscrição`
+- **nl** Nederlands: `Een nieuwe aanmeldlink maken`
+- **pl** Polski: `Utwórz nowy link do zapisów`
+- **ru** Русский: `Создать новую ссылку для записи`
+- **tr** Türkçe: `Yeni kayıt bağlantısı oluştur`
+- **ar** العربية: `أنشئ رابط تسجيل جديدًا`
+- **hi** हिन्दी: `नया साइन अप लिंक बनाएँ`
+- **mr** मराठी: `नवीन नोंदणीची लिंक तयार करा`
+- **ja** 日本語: `新しい申し込みリンクを作成`
+- **zh-Hans** 简体中文: `创建新的报名链接`
+
+### `arcp.claimedN`
+
+- **en** (source, Claude's): Claimed: {n} of {max}
+- **es** Español: `Reclamados: {n} de {max}`
+- **fr** Français: `Réclamés : {n} sur {max}`
+- **de** Deutsch: `Vergeben: {n} von {max}`
+- **it** Italiano: `Assegnate: {n} su {max}`
+- **pt** Português: `Atribuídos: {n} de {max}`
+- **nl** Nederlands: `Geclaimd: {n} van {max}`
+- **pl** Polski: `Odebrane: {n} z {max}`
+- **ru** Русский: `Получено: {n} из {max}`
+- **tr** Türkçe: `Alınan: {n} / {max}`
+- **ar** العربية: `النسخ المأخوذة: {n} من {max}`
+- **hi** हिन्दी: `ली गई प्रतियाँ: {max} में से {n}`
+- **mr** मराठी: `घेतलेल्या प्रती: {max} पैकी {n}`
+- **ja** 日本語: `受け取り済み：{n} / {max}`
+- **zh-Hans** 简体中文: `已领取：{n} / {max}`
+
+### `arcp.pendingN`
+
+- **en** (source, Claude's): Waiting for you: {n}
+- **es** Español: `Esperando tu respuesta: {n}`
+- **fr** Français: `En attente de votre réponse : {n}`
+- **de** Deutsch: `Warten auf Sie: {n}`
+- **it** Italiano: `In attesa di te: {n}`
+- **pt** Português: `À espera da sua resposta: {n}`
+- **nl** Nederlands: `Wachten op u: {n}`
+- **pl** Polski: `Czekają na decyzję: {n}`
+- **ru** Русский: `Ждут вашего решения: {n}`
+- **tr** Türkçe: `Onayınızı bekleyen: {n}`
+- **ar** العربية: `بانتظار قرارك: {n}`
+- **hi** हिन्दी: `आपके फ़ैसले का इंतज़ार: {n}`
+- **mr** मराठी: `तुमच्या निर्णयाची वाट: {n}`
+- **ja** 日本語: `承認待ち：{n}`
+- **zh-Hans** 简体中文: `等你处理：{n}`
+
+### `arcp.launchOn`
+
+- **en** (source, Claude's): Launch: {date}
+- **es** Español: `Lanzamiento: {date}`
+- **fr** Français: `Sortie : {date}`
+- **de** Deutsch: `Erscheinen: {date}`
+- **it** Italiano: `Uscita: {date}`
+- **pt** Português: `Lançamento: {date}`
+- **nl** Nederlands: `Verschijning: {date}`
+- **pl** Polski: `Premiera: {date}`
+- **ru** Русский: `Выход: {date}`
+- **tr** Türkçe: `Çıkış: {date}`
+- **ar** العربية: `الإصدار: {date}`
+- **hi** हिन्दी: `रिलीज़: {date}`
+- **mr** मराठी: `प्रकाशन: {date}`
+- **ja** 日本語: `発売：{date}`
+- **zh-Hans** 简体中文: `发售：{date}`
+
+### `arcp.closesOn`
+
+- **en** (source, Claude's): Sign-ups close: {date}
+- **es** Español: `Las inscripciones cierran: {date}`
+- **fr** Français: `Fin des inscriptions : {date}`
+- **de** Deutsch: `Anmeldeschluss: {date}`
+- **it** Italiano: `Le iscrizioni chiudono: {date}`
+- **pt** Português: `As inscrições fecham: {date}`
+- **nl** Nederlands: `Aanmelden sluit: {date}`
+- **pl** Polski: `Koniec zapisów: {date}`
+- **ru** Русский: `Запись закрывается: {date}`
+- **tr** Türkçe: `Kayıtlar kapanıyor: {date}`
+- **ar** العربية: `يُغلق التسجيل: {date}`
+- **hi** हिन्दी: `साइन अप बंद: {date}`
+- **mr** मराठी: `नोंदणी बंद: {date}`
+- **ja** 日本語: `申し込み締め切り：{date}`
+- **zh-Hans** 简体中文: `报名截止：{date}`
+
+### `arcp.holders`
+
+- **en** (source, Claude's): Readers hold {label} ({n})
+- **es** Español: `Los lectores tienen {label} ({n})`
+- **fr** Français: `Les lecteurs ont {label} ({n})`
+- **de** Deutsch: `Leser haben {label} ({n})`
+- **it** Italiano: `I lettori hanno {label} ({n})`
+- **pt** Português: `Os leitores têm {label} ({n})`
+- **nl** Nederlands: `Lezers hebben {label} ({n})`
+- **pl** Polski: `Czytelnicy mają {label} ({n})`
+- **ru** Русский: `У читателей {label} ({n})`
+- **tr** Türkçe: `Okurlardaki sürüm: {label} ({n})`
+- **ar** العربية: `لدى القرّاء {label} ({n})`
+- **hi** हिन्दी: `पाठकों के पास {label} ({n})`
+- **mr** मराठी: `वाचकांकडे {label} ({n})`
+- **ja** 日本語: `読者の手元の版：{label}（{n}）`
+- **zh-Hans** 简体中文: `读者手中的版本：{label}（{n}）`
+
+### `arcp.modeInstant`
+
+- **en** (source, Claude's): Joining: instant
+- **es** Español: `Inscripción: inmediata`
+- **fr** Français: `Inscription : immédiate`
+- **de** Deutsch: `Teilnahme: sofort`
+- **it** Italiano: `Iscrizione: immediata`
+- **pt** Português: `Inscrição: imediata`
+- **nl** Nederlands: `Aanmelden: direct`
+- **pl** Polski: `Zapisy: od razu`
+- **ru** Русский: `Запись: сразу`
+- **tr** Türkçe: `Katılım: anında`
+- **ar** العربية: `الانضمام: فوري`
+- **hi** हिन्दी: `जुड़ने का तरीका: तुरंत`
+- **mr** मराठी: `सहभागी होण्याची पद्धत: लगेच`
+- **ja** 日本語: `参加方法：すぐに`
+- **zh-Hans** 简体中文: `加入方式：即时`
+
+### `arcp.modeApproval`
+
+- **en** (source, Claude's): Joining: you approve each reader
+- **es** Español: `Inscripción: tú apruebas a cada lector`
+- **fr** Français: `Inscription : vous approuvez chaque lecteur`
+- **de** Deutsch: `Teilnahme: Sie nehmen jeden Leser selbst an`
+- **it** Italiano: `Iscrizione: approvi tu ogni lettore`
+- **pt** Português: `Inscrição: aprova cada leitor`
+- **nl** Nederlands: `Aanmelden: u keurt elke lezer goed`
+- **pl** Polski: `Zapisy: każdy czytelnik zatwierdzany ręcznie`
+- **ru** Русский: `Запись: вы одобряете каждого читателя`
+- **tr** Türkçe: `Katılım: her okuru siz onaylarsınız`
+- **ar** العربية: `الانضمام: توافق على كل قارئ بنفسك`
+- **hi** हिन्दी: `जुड़ने का तरीका: हर पाठक को आप मंज़ूरी देते हैं`
+- **mr** मराठी: `सहभागी होण्याची पद्धत: प्रत्येक वाचकाला तुम्ही मंजुरी देता`
+- **ja** 日本語: `参加方法：読者を一人ずつ承認`
+- **zh-Hans** 简体中文: `加入方式：由你逐一批准`
+
+### `arcp.readersH`
+
+- **en** (source, Claude's): Readers
+- **es** Español: `Lectores`
+- **fr** Français: `Lecteurs`
+- **de** Deutsch: `Leser`
+- **it** Italiano: `Lettori`
+- **pt** Português: `Leitores`
+- **nl** Nederlands: `Lezers`
+- **pl** Polski: `Czytelnicy`
+- **ru** Русский: `Читатели`
+- **tr** Türkçe: `Okurlar`
+- **ar** العربية: `القرّاء`
+- **hi** हिन्दी: `पाठक`
+- **mr** मराठी: `वाचक`
+- **ja** 日本語: `読者`
+- **zh-Hans** 简体中文: `读者`
+
+### `arcp.noReaders`
+
+- **en** (source, Claude's): No reader has signed up yet.
+- **es** Español: `Todavía no se ha apuntado ningún lector.`
+- **fr** Français: `Aucun lecteur ne s'est encore inscrit.`
+- **de** Deutsch: `Noch hat sich kein Leser angemeldet.`
+- **it** Italiano: `Nessun lettore si è ancora iscritto.`
+- **pt** Português: `Ainda nenhum leitor se inscreveu.`
+- **nl** Nederlands: `Er heeft zich nog geen lezer aangemeld.`
+- **pl** Polski: `Nikt jeszcze się nie zapisał.`
+- **ru** Русский: `Пока никто не записался.`
+- **tr** Türkçe: `Henüz kaydolan okur yok.`
+- **ar** العربية: `لم يسجّل أي قارئ بعد.`
+- **hi** हिन्दी: `अभी तक किसी पाठक ने साइन अप नहीं किया है।`
+- **mr** मराठी: `अजून कोणत्याही वाचकाने नोंदणी केलेली नाही.`
+- **ja** 日本語: `まだ申し込んだ読者はいません。`
+- **zh-Hans** 简体中文: `还没有读者报名。`
+
+### `arcp.stPending`
+
+- **en** (source, Claude's): Waiting
+- **es** Español: `Esperando`
+- **fr** Français: `En attente`
+- **de** Deutsch: `Wartet`
+- **it** Italiano: `In attesa`
+- **pt** Português: `À espera`
+- **nl** Nederlands: `Wacht`
+- **pl** Polski: `Czeka`
+- **ru** Русский: `Ждёт`
+- **tr** Türkçe: `Bekliyor`
+- **ar** العربية: `بالانتظار`
+- **hi** हिन्दी: `इंतज़ार में`
+- **mr** मराठी: `वाट पाहत आहे`
+- **ja** 日本語: `承認待ち`
+- **zh-Hans** 简体中文: `等待中`
+
+### `arcp.stClaimed`
+
+- **en** (source, Claude's): Has a copy
+- **es** Español: `Tiene un ejemplar`
+- **fr** Français: `A un exemplaire`
+- **de** Deutsch: `Hat ein Exemplar`
+- **it** Italiano: `Ha una copia`
+- **pt** Português: `Tem um exemplar`
+- **nl** Nederlands: `Heeft een exemplaar`
+- **pl** Polski: `Ma egzemplarz`
+- **ru** Русский: `Есть экземпляр`
+- **tr** Türkçe: `Kopyası var`
+- **ar** العربية: `لديه نسخة`
+- **hi** हिन्दी: `प्रति मिल गई`
+- **mr** मराठी: `प्रत मिळाली`
+- **ja** 日本語: `献本あり`
+- **zh-Hans** 简体中文: `已有一份`
+
+### `arcp.stClosed`
+
+- **en** (source, Claude's): Copy closed
+- **es** Español: `Ejemplar cerrado`
+- **fr** Français: `Exemplaire fermé`
+- **de** Deutsch: `Exemplar geschlossen`
+- **it** Italiano: `Copia chiusa`
+- **pt** Português: `Exemplar fechado`
+- **nl** Nederlands: `Exemplaar gesloten`
+- **pl** Polski: `Egzemplarz zamknięty`
+- **ru** Русский: `Экземпляр закрыт`
+- **tr** Türkçe: `Kopya kapatıldı`
+- **ar** العربية: `أُغلقت النسخة`
+- **hi** हिन्दी: `प्रति बंद`
+- **mr** मराठी: `प्रत बंद`
+- **ja** 日本語: `献本を閉じました`
+- **zh-Hans** 简体中文: `已关闭`
+
+### `arcp.stDeclined`
+
+- **en** (source, Claude's): Declined
+- **es** Español: `Rechazado`
+- **fr** Français: `Refusé`
+- **de** Deutsch: `Abgelehnt`
+- **it** Italiano: `Rifiutato`
+- **pt** Português: `Recusado`
+- **nl** Nederlands: `Afgewezen`
+- **pl** Polski: `Odrzucony`
+- **ru** Русский: `Отклонён`
+- **tr** Türkçe: `Reddedildi`
+- **ar** العربية: `مرفوض`
+- **hi** हिन्दी: `मना किया गया`
+- **mr** मराठी: `नकार दिला`
+- **ja** 日本語: `お断り済み`
+- **zh-Hans** 简体中文: `已拒绝`
+
+### `arcp.profile`
+
+- **en** (source, Claude's): Profile link, as the reader typed it (Beuk does not open it): {link}
+- **es** Español: `Enlace al perfil, tal como lo escribió el lector (Beuk no lo abre): {link}`
+- **fr** Français: `Lien du profil, tel que le lecteur l'a saisi (Beuk ne l'ouvre pas) : {link}`
+- **de** Deutsch: `Profil-Link, wie der Leser ihn eingegeben hat (Beuk öffnet ihn nicht): {link}`
+- **it** Italiano: `Link al profilo, come l'ha scritto il lettore (Beuk non lo apre): {link}`
+- **pt** Português: `Link do perfil, tal como o leitor o escreveu (o Beuk não o abre): {link}`
+- **nl** Nederlands: `Profiellink, zoals de lezer hem typte (Beuk opent hem niet): {link}`
+- **pl** Polski: `Link do profilu, tak jak wpisał go czytelnik (Beuk go nie otwiera): {link}`
+- **ru** Русский: `Ссылка на профиль, как её ввёл читатель (Beuk её не открывает): {link}`
+- **tr** Türkçe: `Profil bağlantısı, okurun yazdığı gibi (Beuk onu açmaz): {link}`
+- **ar** العربية: `رابط الملف الشخصي كما كتبه القارئ (لا يفتحه Beuk): {link}`
+- **hi** हिन्दी: `प्रोफ़ाइल लिंक, जैसा पाठक ने लिखा (Beuk इसे नहीं खोलता): {link}`
+- **mr** मराठी: `प्रोफाइलची लिंक, वाचकाने लिहिल्याप्रमाणे (Beuk ती उघडत नाही): {link}`
+- **ja** 日本語: `プロフィールのリンク（読者が入力したまま。Beukは開きません）：{link}`
+- **zh-Hans** 简体中文: `个人主页链接，按读者输入的原样显示（Beuk 不会打开）：{link}`
+
+### `arcp.approve`
+
+- **en** (source, Claude's): Approve
+- **es** Español: `Aprobar`
+- **fr** Français: `Approuver`
+- **de** Deutsch: `Annehmen`
+- **it** Italiano: `Approva`
+- **pt** Português: `Aprovar`
+- **nl** Nederlands: `Goedkeuren`
+- **pl** Polski: `Zatwierdź`
+- **ru** Русский: `Одобрить`
+- **tr** Türkçe: `Onayla`
+- **ar** العربية: `وافق`
+- **hi** हिन्दी: `मंज़ूरी दें`
+- **mr** मराठी: `मंजुरी द्या`
+- **ja** 日本語: `承認`
+- **zh-Hans** 简体中文: `批准`
+
+### `arcp.decline`
+
+- **en** (source, Claude's): Decline
+- **es** Español: `Rechazar`
+- **fr** Français: `Refuser`
+- **de** Deutsch: `Ablehnen`
+- **it** Italiano: `Rifiuta`
+- **pt** Português: `Recusar`
+- **nl** Nederlands: `Afwijzen`
+- **pl** Polski: `Odrzuć`
+- **ru** Русский: `Отклонить`
+- **tr** Türkçe: `Reddet`
+- **ar** العربية: `ارفض`
+- **hi** हिन्दी: `मना करें`
+- **mr** मराठी: `नकार द्या`
+- **ja** 日本語: `お断りする`
+- **zh-Hans** 简体中文: `拒绝`
+
+### `arcp.revoke`
+
+- **en** (source, Claude's): Close this copy
+- **es** Español: `Cerrar este ejemplar`
+- **fr** Français: `Fermer cet exemplaire`
+- **de** Deutsch: `Dieses Exemplar schließen`
+- **it** Italiano: `Chiudi questa copia`
+- **pt** Português: `Fechar este exemplar`
+- **nl** Nederlands: `Dit exemplaar sluiten`
+- **pl** Polski: `Zamknij ten egzemplarz`
+- **ru** Русский: `Закрыть этот экземпляр`
+- **tr** Türkçe: `Bu kopyayı kapat`
+- **ar** العربية: `أغلق هذه النسخة`
+- **hi** हिन्दी: `यह प्रति बंद करें`
+- **mr** मराठी: `ही प्रत बंद करा`
+- **ja** 日本語: `この献本を閉じる`
+- **zh-Hans** 简体中文: `关闭这份`
+
+### `arcp.revokeConfirm`
+
+- **en** (source, Claude's): Close this reader's copy? Their link stops working and is never reopened. A copy they already downloaded stays on their device.
+- **es** Español: `¿Cerrar el ejemplar de este lector? Su enlace deja de funcionar y nunca se vuelve a abrir. Un ejemplar que ya haya descargado se queda en su dispositivo.`
+- **fr** Français: `Fermer l'exemplaire de ce lecteur ? Son lien cesse de fonctionner et n'est jamais rouvert. Un exemplaire qu'il a déjà téléchargé reste sur son appareil.`
+- **de** Deutsch: `Das Exemplar dieses Lesers schließen? Sein Link funktioniert dann nicht mehr und wird nie wieder geöffnet. Ein bereits heruntergeladenes Exemplar bleibt auf seinem Gerät.`
+- **it** Italiano: `Chiudere la copia di questo lettore? Il suo link smette di funzionare e non viene mai riaperto. Una copia che ha già scaricato resta sul suo dispositivo.`
+- **pt** Português: `Fechar o exemplar deste leitor? O link dele deixa de funcionar e nunca é reaberto. Um exemplar que já tenha descarregado fica no dispositivo dele.`
+- **nl** Nederlands: `Het exemplaar van deze lezer sluiten? Zijn link werkt dan niet meer en wordt nooit heropend. Een exemplaar dat hij al heeft gedownload, blijft op zijn apparaat.`
+- **pl** Polski: `Zamknąć egzemplarz tego czytelnika? Jego link przestanie działać i nigdy nie zostanie ponownie otwarty. Egzemplarz, który już pobrał, zostaje na jego urządzeniu.`
+- **ru** Русский: `Закрыть экземпляр этого читателя? Его ссылка перестанет работать и больше никогда не откроется. Экземпляр, который он уже скачал, останется на его устройстве.`
+- **tr** Türkçe: `Bu okurun kopyası kapatılsın mı? Bağlantısı çalışmayı bırakır ve bir daha asla açılmaz. Zaten indirdiği bir kopya cihazında kalır.`
+- **ar** العربية: `أتريد إغلاق نسخة هذا القارئ؟ يتوقف رابطه عن العمل ولا يُعاد فتحه أبدًا. أما النسخة التي نزّلها بالفعل فتبقى على جهازه.`
+- **hi** हिन्दी: `इस पाठक की प्रति बंद करें? उनका लिंक काम करना बंद कर देगा और फिर कभी नहीं खुलेगा। जो प्रति वे पहले ही डाउनलोड कर चुके हैं, वह उनके डिवाइस पर रहेगी।`
+- **mr** मराठी: `या वाचकाची प्रत बंद करायची? त्यांची लिंक काम करणे थांबवेल आणि पुन्हा कधीच उघडणार नाही. त्यांनी आधीच डाउनलोड केलेली प्रत त्यांच्या डिव्हाइसवर राहील.`
+- **ja** 日本語: `この読者の献本を閉じますか？リンクは使えなくなり、二度と再開されません。すでにダウンロードされた献本は読者の端末に残ります。`
+- **zh-Hans** 简体中文: `要关闭这位读者的这份书吗？其链接将失效，且永远不会重新开放。读者已下载的那份会留在其设备上。`
+
+### `arcp.mailStopped`
+
+- **en** (source, Claude's): Asked for no more email from you
+- **es** Español: `Pidió no recibir más correos tuyos`
+- **fr** Français: `A demandé à ne plus recevoir vos e-mails`
+- **de** Deutsch: `Möchte keine E-Mails mehr von Ihnen`
+- **it** Italiano: `Ha chiesto di non ricevere più tue email`
+- **pt** Português: `Pediu para não receber mais e-mails seus`
+- **nl** Nederlands: `Wil geen e-mail meer van u`
+- **pl** Polski: `Poprosił o brak kolejnych e-maili od autora`
+- **ru** Русский: `Попросил больше не присылать ему ваши письма`
+- **tr** Türkçe: `Sizden artık e-posta istemiyor`
+- **ar** العربية: `طلب ألّا يتلقى منك بريدًا بعد الآن`
+- **hi** हिन्दी: `आपसे और ईमेल न भेजने को कहा है`
+- **mr** मराठी: `तुमच्याकडून आणखी ईमेल नको असे सांगितले आहे`
+- **ja** 日本語: `あなたからのメールを今後受け取らないよう希望しています`
+- **zh-Hans** 简体中文: `已要求不再收到你的邮件`
+
+### `arcp.notSent`
+
+- **en** (source, Claude's): Done, but the email to this reader was not sent: {detail}
+- **es** Español: `Hecho, pero el correo a este lector no se envió: {detail}`
+- **fr** Français: `C'est fait, mais l'e-mail à ce lecteur n'a pas été envoyé : {detail}`
+- **de** Deutsch: `Erledigt, aber die E-Mail an diesen Leser wurde nicht gesendet: {detail}`
+- **it** Italiano: `Fatto, ma l'email a questo lettore non è stata inviata: {detail}`
+- **pt** Português: `Feito, mas o e-mail para este leitor não foi enviado: {detail}`
+- **nl** Nederlands: `Gedaan, maar de e-mail aan deze lezer is niet verstuurd: {detail}`
+- **pl** Polski: `Gotowe, ale e-mail do tego czytelnika nie został wysłany: {detail}`
+- **ru** Русский: `Готово, но письмо этому читателю не отправлено: {detail}`
+- **tr** Türkçe: `Yapıldı, ancak bu okura e-posta gönderilmedi: {detail}`
+- **ar** العربية: `تمّ، لكن البريد إلى هذا القارئ لم يُرسَل: {detail}`
+- **hi** हिन्दी: `हो गया, पर इस पाठक को ईमेल नहीं भेजा गया: {detail}`
+- **mr** मराठी: `झाले, पण या वाचकाला ईमेल पाठवला गेला नाही: {detail}`
+- **ja** 日本語: `完了しましたが、この読者へのメールは送信されませんでした：{detail}`
+- **zh-Hans** 简体中文: `已完成，但给这位读者的邮件没有发出：{detail}`
+
+### `arcp.suppressedOwner`
+
+- **en** (source, Claude's): This reader asked for no more email from you, so no copy can be sent to them. Decline them instead.
+- **es** Español: `Este lector pidió no recibir más correos tuyos, así que no se le puede enviar un ejemplar. Recházalo en su lugar.`
+- **fr** Français: `Ce lecteur a demandé à ne plus recevoir vos e-mails : aucun exemplaire ne peut lui être envoyé. Refusez-le plutôt.`
+- **de** Deutsch: `Dieser Leser möchte keine E-Mails mehr von Ihnen, daher kann ihm kein Exemplar geschickt werden. Lehnen Sie ihn stattdessen ab.`
+- **it** Italiano: `Questo lettore ha chiesto di non ricevere più tue email, quindi non gli si può inviare una copia. Rifiutalo invece.`
+- **pt** Português: `Este leitor pediu para não receber mais e-mails seus, por isso não lhe pode ser enviado um exemplar. Recuse-o em vez disso.`
+- **nl** Nederlands: `Deze lezer wil geen e-mail meer van u, dus er kan geen exemplaar naar hem worden gestuurd. Wijs hem in plaats daarvan af.`
+- **pl** Polski: `Ten czytelnik poprosił o brak kolejnych e-maili od autora, więc nie można wysłać mu egzemplarza. Zamiast tego odrzuć zgłoszenie.`
+- **ru** Русский: `Этот читатель попросил больше не присылать ему ваши письма, поэтому отправить ему экземпляр нельзя. Вместо этого отклоните его.`
+- **tr** Türkçe: `Bu okur sizden artık e-posta almak istemediğini söyledi, bu yüzden ona kopya gönderilemez. Bunun yerine onu reddedin.`
+- **ar** العربية: `طلب هذا القارئ ألّا يتلقى منك بريدًا بعد الآن، لذا لا يمكن إرسال نسخة إليه. ارفضه بدلًا من ذلك.`
+- **hi** हिन्दी: `इस पाठक ने आपसे और ईमेल न भेजने को कहा है, इसलिए उन्हें प्रति नहीं भेजी जा सकती। इसके बजाय उन्हें मना करें।`
+- **mr** मराठी: `या वाचकाने तुमच्याकडून आणखी ईमेल नको असे सांगितले आहे, त्यामुळे त्यांना प्रत पाठवता येत नाही. त्याऐवजी त्यांना नकार द्या.`
+- **ja** 日本語: `この読者はあなたからのメールを今後受け取らないよう希望しているため、献本を送れません。代わりにお断りしてください。`
+- **zh-Hans** 简体中文: `这位读者已要求不再收到你的邮件，因此无法给其发送书。请改为拒绝。`
+
+### `arcp.suppressedAll`
+
+- **en** (source, Claude's): This reader asked Beuk for no email from any author, so no copy can be sent to them. Decline them instead.
+- **es** Español: `Este lector pidió a Beuk no recibir correos de ningún autor, así que no se le puede enviar un ejemplar. Recházalo en su lugar.`
+- **fr** Français: `Ce lecteur a demandé à Beuk de ne recevoir aucun e-mail d'aucun auteur : aucun exemplaire ne peut lui être envoyé. Refusez-le plutôt.`
+- **de** Deutsch: `Dieser Leser hat Beuk gebeten, ihm von keinem Autor E-Mails zu schicken, daher kann ihm kein Exemplar geschickt werden. Lehnen Sie ihn stattdessen ab.`
+- **it** Italiano: `Questo lettore ha chiesto a Beuk di non ricevere email da nessun autore, quindi non gli si può inviare una copia. Rifiutalo invece.`
+- **pt** Português: `Este leitor pediu ao Beuk para não receber e-mails de nenhum autor, por isso não lhe pode ser enviado um exemplar. Recuse-o em vez disso.`
+- **nl** Nederlands: `Deze lezer heeft Beuk gevraagd hem van geen enkele auteur e-mail te sturen, dus er kan geen exemplaar naar hem worden gestuurd. Wijs hem in plaats daarvan af.`
+- **pl** Polski: `Ten czytelnik poprosił Beuk o brak e-maili od jakiegokolwiek autora, więc nie można wysłać mu egzemplarza. Zamiast tego odrzuć zgłoszenie.`
+- **ru** Русский: `Этот читатель попросил Beuk не присылать ему письма ни от одного автора, поэтому отправить ему экземпляр нельзя. Вместо этого отклоните его.`
+- **tr** Türkçe: `Bu okur Beuk'ten hiçbir yazardan e-posta almamayı istedi, bu yüzden ona kopya gönderilemez. Bunun yerine onu reddedin.`
+- **ar** العربية: `طلب هذا القارئ من Beuk ألّا يتلقى بريدًا من أي مؤلف، لذا لا يمكن إرسال نسخة إليه. ارفضه بدلًا من ذلك.`
+- **hi** हिन्दी: `इस पाठक ने Beuk से किसी भी लेखक का ईमेल न भेजने को कहा है, इसलिए उन्हें प्रति नहीं भेजी जा सकती। इसके बजाय उन्हें मना करें।`
+- **mr** मराठी: `या वाचकाने Beuk ला कोणत्याही लेखकाकडून ईमेल नको असे सांगितले आहे, त्यामुळे त्यांना प्रत पाठवता येत नाही. त्याऐवजी त्यांना नकार द्या.`
+- **ja** 日本語: `この読者はどの著者からもメールを受け取らないようBeukに希望しているため、献本を送れません。代わりにお断りしてください。`
+- **zh-Hans** 简体中文: `这位读者已要求 Beuk 不再发送任何作者的邮件，因此无法给其发送书。请改为拒绝。`
+
+### `arcp.closeSignups`
+
+- **en** (source, Claude's): Close sign-ups
+- **es** Español: `Cerrar inscripciones`
+- **fr** Français: `Clore les inscriptions`
+- **de** Deutsch: `Anmeldung schließen`
+- **it** Italiano: `Chiudi le iscrizioni`
+- **pt** Português: `Fechar inscrições`
+- **nl** Nederlands: `Aanmelden sluiten`
+- **pl** Polski: `Zamknij zapisy`
+- **ru** Русский: `Закрыть запись`
+- **tr** Türkçe: `Kayıtları kapat`
+- **ar** العربية: `أغلق التسجيل`
+- **hi** हिन्दी: `साइन अप बंद करें`
+- **mr** मराठी: `नोंदणी बंद करा`
+- **ja** 日本語: `申し込みを締め切る`
+- **zh-Hans** 简体中文: `截止报名`
+
+### `arcp.closeConfirm`
+
+- **en** (source, Claude's): Close sign-ups now? No one new can join or be approved, and this cannot be undone. Copies already given keep working.
+- **es** Español: `¿Cerrar las inscripciones ahora? Nadie más podrá apuntarse ni ser aprobado, y no se puede deshacer. Los ejemplares ya entregados siguen funcionando.`
+- **fr** Français: `Clore les inscriptions maintenant ? Plus personne ne pourra s'inscrire ni être approuvé, et c'est définitif. Les exemplaires déjà donnés continuent de fonctionner.`
+- **de** Deutsch: `Die Anmeldung jetzt schließen? Niemand kann sich dann noch anmelden oder angenommen werden, und das lässt sich nicht rückgängig machen. Bereits vergebene Exemplare funktionieren weiter.`
+- **it** Italiano: `Chiudere le iscrizioni adesso? Nessun altro potrà iscriversi o essere approvato, e non si può annullare. Le copie già date continuano a funzionare.`
+- **pt** Português: `Fechar as inscrições agora? Mais ninguém se poderá inscrever nem ser aprovado, e não é possível anular. Os exemplares já atribuídos continuam a funcionar.`
+- **nl** Nederlands: `Het aanmelden nu sluiten? Niemand kan zich dan nog aanmelden of worden goedgekeurd, en dit kan niet ongedaan worden gemaakt. Exemplaren die al zijn gegeven, blijven werken.`
+- **pl** Polski: `Zamknąć zapisy teraz? Nikt nowy nie będzie mógł się zapisać ani zostać zatwierdzony, a tego nie da się cofnąć. Wydane już egzemplarze nadal działają.`
+- **ru** Русский: `Закрыть запись сейчас? Никто новый не сможет записаться или получить одобрение, и это нельзя отменить. Уже выданные экземпляры продолжат работать.`
+- **tr** Türkçe: `Kayıtlar şimdi kapatılsın mı? Artık kimse kaydolamaz ya da onaylanamaz ve bu geri alınamaz. Verilmiş kopyalar çalışmaya devam eder.`
+- **ar** العربية: `أتريد إغلاق التسجيل الآن؟ لن يتمكن أحد جديد من الانضمام أو نيل الموافقة، ولا يمكن التراجع عن ذلك. تبقى النسخ التي أُعطيت تعمل.`
+- **hi** हिन्दी: `अभी साइन अप बंद करें? फिर कोई नया पाठक न जुड़ सकेगा, न उसे मंज़ूरी मिल सकेगी, और इसे पलटा नहीं जा सकता। जो प्रतियाँ दी जा चुकी हैं, वे काम करती रहेंगी।`
+- **mr** मराठी: `आता नोंदणी बंद करायची? मग कोणीही नवीन वाचक सहभागी होऊ शकणार नाही किंवा त्याला मंजुरी मिळणार नाही, आणि हे उलटवता येत नाही. आधी दिलेल्या प्रती काम करत राहतील.`
+- **ja** 日本語: `今すぐ申し込みを締め切りますか？新しい読者の申し込みや承認はできなくなり、取り消せません。すでに渡した献本は引き続き使えます。`
+- **zh-Hans** 简体中文: `现在截止报名吗？之后没有新读者能报名或获得批准，而且无法撤销。已经送出的书仍可使用。`
+
+### `arcp.delete`
+
+- **en** (source, Claude's): Delete this ARC
+- **es** Español: `Eliminar este ARC`
+- **fr** Français: `Supprimer cet ARC`
+- **de** Deutsch: `Dieses ARC löschen`
+- **it** Italiano: `Elimina questo ARC`
+- **pt** Português: `Eliminar este ARC`
+- **nl** Nederlands: `Deze ARC verwijderen`
+- **pl** Polski: `Usuń ten ARC`
+- **ru** Русский: `Удалить этот ARC`
+- **tr** Türkçe: `Bu ARC'yi sil`
+- **ar** العربية: `احذف حملة ARC هذه`
+- **hi** हिन्दी: `यह ARC हटाएँ`
+- **mr** मराठी: `हे ARC हटवा`
+- **ja** 日本語: `このARCを削除`
+- **zh-Hans** 简体中文: `删除这个 ARC`
+
+### `arcp.deleteConfirm`
+
+- **en** (source, fixed by the plan/spec): Delete this ARC? Its readers' links stop working, and their names and email addresses are removed from Beuk. Copies already inside backups stay until those backups are deleted.
+- **es** Español: `¿Eliminar este ARC? Los enlaces de sus lectores dejan de funcionar, y sus nombres y direcciones de correo se borran de Beuk. Lo que ya esté en copias de seguridad se queda hasta que esas copias se eliminen.`
+- **fr** Français: `Supprimer cet ARC ? Les liens de ses lecteurs cessent de fonctionner, et leurs noms et adresses e-mail sont effacés de Beuk. Ce qui se trouve déjà dans des sauvegardes y reste jusqu'à la suppression de ces sauvegardes.`
+- **de** Deutsch: `Dieses ARC löschen? Die Links seiner Leser funktionieren nicht mehr, und ihre Namen und E-Mail-Adressen werden aus Beuk entfernt. Was bereits in Sicherungen liegt, bleibt dort, bis diese Sicherungen gelöscht werden.`
+- **it** Italiano: `Eliminare questo ARC? I link dei suoi lettori smettono di funzionare, e i loro nomi e indirizzi email vengono rimossi da Beuk. Ciò che è già nei backup resta lì finché quei backup non vengono eliminati.`
+- **pt** Português: `Eliminar este ARC? Os links dos seus leitores deixam de funcionar, e os nomes e endereços de e-mail deles são removidos do Beuk. O que já estiver em cópias de segurança fica lá até essas cópias de segurança serem eliminadas.`
+- **nl** Nederlands: `Deze ARC verwijderen? De links van de lezers werken niet meer, en hun namen en e-mailadressen worden uit Beuk verwijderd. Wat al in back-ups staat, blijft daar tot die back-ups worden verwijderd.`
+- **pl** Polski: `Usunąć ten ARC? Linki jego czytelników przestaną działać, a ich imiona i adresy e-mail zostaną usunięte z Beuk. To, co jest już w kopiach zapasowych, pozostaje tam do czasu usunięcia tych kopii.`
+- **ru** Русский: `Удалить этот ARC? Ссылки его читателей перестанут работать, а их имена и адреса почты будут удалены из Beuk. То, что уже есть в резервных копиях, останется там, пока эти резервные копии не удалят.`
+- **tr** Türkçe: `Bu ARC silinsin mi? Okurlarının bağlantıları çalışmayı bırakır, adları ve e-posta adresleri Beuk'ten kaldırılır. Yedeklerde zaten bulunanlar, o yedekler silinene kadar orada kalır.`
+- **ar** العربية: `أتريد حذف حملة ARC هذه؟ تتوقف روابط قرّائها عن العمل، وتُزال أسماؤهم وعناوين بريدهم من Beuk. وما هو موجود بالفعل في النسخ الاحتياطية يبقى فيها حتى تُحذف تلك النسخ.`
+- **hi** हिन्दी: `यह ARC हटाएँ? इसके पाठकों के लिंक काम करना बंद कर देंगे, और उनके नाम और ईमेल पते Beuk से हटा दिए जाएँगे। जो पहले से बैकअप में है, वह तब तक रहेगा जब तक वे बैकअप हटाए न जाएँ।`
+- **mr** मराठी: `हे ARC हटवायचे? त्याच्या वाचकांच्या लिंक काम करणे थांबवतील, आणि त्यांची नावे व ईमेल पत्ते Beuk मधून काढले जातील. जे आधीच बॅकअपमध्ये आहे, ते ते बॅकअप हटवले जाईपर्यंत तिथे राहील.`
+- **ja** 日本語: `このARCを削除しますか？読者のリンクは使えなくなり、読者の名前とメールアドレスはBeukから削除されます。すでにバックアップに含まれているものは、そのバックアップが削除されるまで残ります。`
+- **zh-Hans** 简体中文: `删除这个 ARC 吗？其读者的链接将失效，他们的姓名和邮箱地址会从 Beuk 中删除。已经在备份中的内容会保留，直到那些备份被删除。`
+
+### `arcp.deleteYes`
+
+- **en** (source, Claude's): Delete
+- **es** Español: `Eliminar`
+- **fr** Français: `Supprimer`
+- **de** Deutsch: `Löschen`
+- **it** Italiano: `Elimina`
+- **pt** Português: `Eliminar`
+- **nl** Nederlands: `Verwijderen`
+- **pl** Polski: `Usuń`
+- **ru** Русский: `Удалить`
+- **tr** Türkçe: `Sil`
+- **ar** العربية: `احذف`
+- **hi** हिन्दी: `हटाएँ`
+- **mr** मराठी: `हटवा`
+- **ja** 日本語: `削除`
+- **zh-Hans** 简体中文: `删除`
+
+### `arcp.cancel`
+
+- **en** (source, Claude's): Cancel
+- **es** Español: `Cancelar`
+- **fr** Français: `Annuler`
+- **de** Deutsch: `Abbrechen`
+- **it** Italiano: `Annulla`
+- **pt** Português: `Cancelar`
+- **nl** Nederlands: `Annuleren`
+- **pl** Polski: `Anuluj`
+- **ru** Русский: `Отмена`
+- **tr** Türkçe: `İptal`
+- **ar** العربية: `إلغاء`
+- **hi** हिन्दी: `रद्द करें`
+- **mr** मराठी: `रद्द करा`
+- **ja** 日本語: `キャンセル`
+- **zh-Hans** 简体中文: `取消`
+
+### `arcp.close`
+
+- **en** (source, Claude's): Close
+- **es** Español: `Cerrar`
+- **fr** Français: `Fermer`
+- **de** Deutsch: `Schließen`
+- **it** Italiano: `Chiudi`
+- **pt** Português: `Fechar`
+- **nl** Nederlands: `Sluiten`
+- **pl** Polski: `Zamknij`
+- **ru** Русский: `Закрыть`
+- **tr** Türkçe: `Kapat`
+- **ar** العربية: `إغلاق`
+- **hi** हिन्दी: `बंद करें`
+- **mr** मराठी: `बंद करा`
+- **ja** 日本語: `閉じる`
+- **zh-Hans** 简体中文: `关闭`
+
+### `arcp.endedSum`
+
+- **en** (source, Claude's): Your last ARC for this book ended on {date}. Claimed: {n} of {max}. Copies already given keep working.
+- **es** Español: `Tu último ARC de este libro terminó el {date}. Reclamados: {n} de {max}. Los ejemplares ya entregados siguen funcionando.`
+- **fr** Français: `Votre dernier ARC pour ce livre s'est terminé le {date}. Réclamés : {n} sur {max}. Les exemplaires déjà donnés continuent de fonctionner.`
+- **de** Deutsch: `Ihr letztes ARC für dieses Buch endete am {date}. Vergeben: {n} von {max}. Bereits vergebene Exemplare funktionieren weiter.`
+- **it** Italiano: `Il tuo ultimo ARC per questo libro è terminato il {date}. Assegnate: {n} su {max}. Le copie già date continuano a funzionare.`
+- **pt** Português: `O seu último ARC deste livro terminou a {date}. Atribuídos: {n} de {max}. Os exemplares já atribuídos continuam a funcionar.`
+- **nl** Nederlands: `Uw laatste ARC voor dit boek eindigde op {date}. Geclaimd: {n} van {max}. Exemplaren die al zijn gegeven, blijven werken.`
+- **pl** Polski: `Ostatni ARC tej książki zakończył się: {date}. Odebrane: {n} z {max}. Wydane już egzemplarze nadal działają.`
+- **ru** Русский: `Ваш последний ARC для этой книги закончился: {date}. Получено: {n} из {max}. Уже выданные экземпляры продолжат работать.`
+- **tr** Türkçe: `Bu kitap için son ARC'niz sona erdi: {date}. Alınan: {n} / {max}. Verilmiş kopyalar çalışmaya devam eder.`
+- **ar** العربية: `انتهت آخر حملة ARC لهذا الكتاب في {date}. النسخ المأخوذة: {n} من {max}. تبقى النسخ التي أُعطيت تعمل.`
+- **hi** हिन्दी: `इस किताब का आपका पिछला ARC {date} को खत्म हुआ। ली गई प्रतियाँ: {max} में से {n}। जो प्रतियाँ दी जा चुकी हैं, वे काम करती रहेंगी।`
+- **mr** मराठी: `या पुस्तकाचे तुमचे मागचे ARC {date} रोजी संपले. घेतलेल्या प्रती: {max} पैकी {n}. आधी दिलेल्या प्रती काम करत राहतील.`
+- **ja** 日本語: `この本の前回のARCは{date}に終了しました。受け取り済み：{n} / {max}。すでに渡した献本は引き続き使えます。`
+- **zh-Hans** 简体中文: `这本书上一次的 ARC 已于 {date} 结束。已领取：{n} / {max}。已经送出的书仍可使用。`
+
+### `arcp.endedWaiting`
+
+- **en** (source, Claude's): These readers were still waiting when it ended. Decline them to let them know.
+- **es** Español: `Estos lectores seguían esperando cuando terminó. Recházalos para que lo sepan.`
+- **fr** Français: `Ces lecteurs attendaient encore quand il s'est terminé. Refusez-les pour qu'ils soient prévenus.`
+- **de** Deutsch: `Diese Leser warteten noch, als es endete. Lehnen Sie sie ab, damit sie Bescheid wissen.`
+- **it** Italiano: `Questi lettori erano ancora in attesa quando è terminato. Rifiutali perché lo sappiano.`
+- **pt** Português: `Estes leitores ainda estavam à espera quando terminou. Recuse-os para que fiquem a saber.`
+- **nl** Nederlands: `Deze lezers wachtten nog toen hij eindigde. Wijs ze af, zodat ze het weten.`
+- **pl** Polski: `Ci czytelnicy wciąż czekali, gdy się zakończył. Odrzuć ich zgłoszenia, aby się o tym dowiedzieli.`
+- **ru** Русский: `Эти читатели ещё ждали, когда он закончился. Отклоните их, чтобы они узнали об этом.`
+- **tr** Türkçe: `Bu okurlar, ARC sona erdiğinde hâlâ bekliyordu. Haberleri olsun diye onları reddedin.`
+- **ar** العربية: `كان هؤلاء القرّاء لا يزالون بالانتظار عندما انتهت. ارفضهم ليعلموا بذلك.`
+- **hi** हिन्दी: `ये पाठक खत्म होने के समय भी इंतज़ार में थे। उन्हें मना करें, ताकि उन्हें पता चल जाए।`
+- **mr** मराठी: `हे वाचक ARC संपले तेव्हाही वाट पाहत होते. त्यांना कळावे म्हणून त्यांना नकार द्या.`
+- **ja** 日本語: `これらの読者は、終了時にまだ承認を待っていました。お断りすると、読者に知らせが届きます。`
+- **zh-Hans** 简体中文: `结束时这些读者仍在等待。拒绝他们，好让他们知道结果。`
+
+### `arcp.newH`
+
+- **en** (source, Claude's): Start a new ARC
+- **es** Español: `Iniciar un ARC nuevo`
+- **fr** Français: `Lancer un nouvel ARC`
+- **de** Deutsch: `Ein neues ARC starten`
+- **it** Italiano: `Avvia un nuovo ARC`
+- **pt** Português: `Iniciar um novo ARC`
+- **nl** Nederlands: `Een nieuwe ARC starten`
+- **pl** Polski: `Rozpocznij nowy ARC`
+- **ru** Русский: `Начать новый ARC`
+- **tr** Türkçe: `Yeni bir ARC başlat`
+- **ar** العربية: `ابدأ حملة ARC جديدة`
+- **hi** हिन्दी: `नया ARC शुरू करें`
+- **mr** मराठी: `नवीन ARC सुरू करा`
+- **ja** 日本語: `新しいARCを始める`
+- **zh-Hans** 简体中文: `开始新的 ARC`
