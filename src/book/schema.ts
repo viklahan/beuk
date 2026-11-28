@@ -169,7 +169,7 @@ const Section = obj({
   plateId: strOrNull, plateAlt: str,
   // how the plate sits on its page; present only when set, absent reads as "fill" (BEUK:platefit).
   // enforced on load: normalizeSection keeps it only when it is one of PLATE_FITS
-  plateFit: z.enum(['fill', 'whole']).optional(),
+  plateFit: z.enum(['fill', 'whole', 'across']).optional(),
   backdropId: strOrNull,
   // enforced on load: normalizeSection (CI:50249) replaces anything outside BACKDROP_STRENGTHS (CI:29412) with "whisper" (CI:50108)
   backdropStrength: z.enum(['whisper', 'soft', 'strong', 'spread']),

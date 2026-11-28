@@ -6,6 +6,10 @@ import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { textOffsetToPos } from '../../src/book/editor/index';
 import en from '../src/generated/packs/en.json';
 import { App } from '../src/App';
+import { loadClosure } from '../src/closure/index';
+import { arriveForExport } from '../src/export/state';
+import { exportSafe } from '../src/export/safe';
+import { loadPrint } from '../src/print/print';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { toBook } from '../src/editor/bridge';
 import { editorText } from '../src/editor/insert';
@@ -382,7 +386,7 @@ describe('pictures in the studio (A6–A8)', { timeout: 60_000 }, () => {
     const plate = $('chPlate') as unknown as HTMLSelectElement;
     const fit = $('chPlateFit') as unknown as HTMLSelectElement;
     expect($('plateFitRow').style.display).toBe('none');
-    expect([...fit.options].map((o) => [o.value, o.textContent])).toEqual([['fill', E['editor.plateFitFill']], ['whole', E['editor.plateFitWhole']]]);
+    expect([...fit.options].map((o) => [o.value, o.textContent])).toEqual([['fill', E['editor.plateFitFill']], ['whole', E['editor.plateFitWhole']], ['across', E['editor.plateFitAcross']]]);
     expect($('plateFitRow').textContent).toContain(E['editor.plateFit']);
     expect($('plateFitRow').textContent).toContain(E['editor.plateFitDesc']);
     const s1 = async () => ((await exported()).sections as Rec[])[0]!;
@@ -436,6 +440,200 @@ describe('pictures in the studio (A6–A8)', { timeout: 60_000 }, () => {
     });
     expect(fit.value).toBe('whole'); // a 2:3 picture on a square page
     expect(((await exported()).sections as Rec[])[0]!.plateFit).toBe('whole');
+  });
+
+  describe('Across both pages: the chapter settings (Task 7)', () => {
+    const sized = (w: number, h: number) => btoa(String.fromCharCode(137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, (w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255,
+      (h >>> 24) & 255, (h >>> 16) & 255, (h >>> 8) & 255, h & 255, 8, 2, 0, 0, 0, 0, 0, 0, 0));
+    const acrossBook = (data: string, patch: Rec = {}) => {
+      const book = BOOK() as Rec;
+      book.printTrim = '6x9';
+      book.images = [...(book.images as Rec[]), im('wide', 'Wide.png', data)];
+      Object.assign((book.sections as Rec[])[0]!, { plateId: 'wide', plateAlt: 'A wide plate', ...patch });
+      return book;
+    };
+    const s1 = async () => ((await exported()).sections as Rec[])[0]!;
+    const pick = async (el: Element, value: string) => {
+      await act(async () => {
+        fireEvent.change(el, { target: { value } });
+      });
+    };
+
+    it('choosing Across both pages stores plateFit "across" and disables the two backdrop rows with the note', async () => {
+      await openStudio(acrossBook(sized(1408, 768), { backdropId: 'scimg2', backdropStrength: 'soft' }));
+      const fit = $('chPlateFit') as unknown as HTMLSelectElement;
+      expect([...fit.options].map((o) => [o.value, o.textContent])).toEqual([['fill', E['editor.plateFitFill']], ['whole', E['editor.plateFitWhole']], ['across', E['editor.plateFitAcross']]]);
+      expect(E['editor.plateFitAcross']).toBe('Across both pages');
+      expect(E['editor.plateAcrossNote']).toBe("The picture also covers the facing page, so this chapter's backdrop is set aside while this is chosen.");
+      expect(document.getElementById('plateAcrossNote')).toBeNull();
+      expect($('chBackdrop').disabled).toBe(false);
+      await pick(fit, 'across');
+      expect((await s1()).plateFit).toBe('across');
+      expect(fit.value).toBe('across');
+      expect($('chBackdrop').disabled).toBe(true);
+      expect($('chBackdropStrength').disabled).toBe(true);
+      expect(document.getElementById('plateAcrossNote')!.textContent).toBe(E['editor.plateAcrossNote']);
+    });
+
+    it('Review Focus 5: a chapter with backdrop b1 at "soft" → Across → Fill: backdropId is b1 and backdropStrength "soft" throughout (never written)', async () => {
+      await openStudio(acrossBook(sized(1408, 768), { backdropId: 'scimg2', backdropStrength: 'soft' }));
+      const fit = $('chPlateFit') as unknown as HTMLSelectElement;
+      const back = async () => {
+        const s = await s1();
+        return [s.backdropId, s.backdropStrength];
+      };
+      expect(await back()).toEqual(['scimg2', 'soft']);
+      await pick(fit, 'across');
+      expect(await back()).toEqual(['scimg2', 'soft']);
+      expect($('chBackdrop').value).toBe('scimg2');
+      await pick(fit, 'fill');
+      expect(await back()).toEqual(['scimg2', 'soft']);
+      expect($('chBackdrop').disabled).toBe(false);
+      expect($('chBackdropStrength').disabled).toBe(false);
+      expect(document.getElementById('plateAcrossNote')).toBeNull();
+      expect($('chBackdropStrength').value).toBe('soft');
+    });
+
+    it('a 1408 × 768 plate on 6 × 9 shows "This picture gives 85 pixels per inch across both pages; it may print soft."', async () => {
+      await openStudio(acrossBook(sized(1408, 768)));
+      expect(document.getElementById('plateAcrossSoft')).toBeNull(); // not while Fit is not across
+      await pick($('chPlateFit'), 'across');
+      await waitFor(() => expect(document.getElementById('plateAcrossSoft')).not.toBeNull());
+      expect(document.getElementById('plateAcrossSoft')!.textContent).toBe('This picture gives 85 pixels per inch across both pages; it may print soft.');
+      expect((await s1()).plateFit).toBe('across');
+      await pick($('chPlateFit'), 'whole');
+      await waitFor(() => expect(document.getElementById('plateAcrossSoft')).toBeNull());
+    });
+
+    it('no note for a picture of 200 pixels per inch or more', async () => {
+      await openStudio(acrossBook(sized(4000, 2000), { plateFit: 'across' }));
+      expect(($('chPlateFit') as unknown as HTMLSelectElement).value).toBe('across');
+      expect(document.getElementById('plateAcrossNote')).not.toBeNull();
+      expect(document.getElementById('plateAcrossSoft')).toBeNull();
+    });
+
+    // 2400 × 2400 on 6 × 9: 200 ppi without bleed (no note), 195.9 with it (the note, 196)
+    for (const [bleed, shown, dpi] of [[false, null, 200], [true, 196, 2400 / 12.25]] as const) {
+      it(`bleed ${bleed ? 'on' : 'off'}: the note and the press agree at the 200 ppi boundary`, async () => {
+        const book = acrossBook(sized(2400, 2400), { plateFit: 'across' });
+        book.printBleed = bleed;
+        await openStudio(book);
+        expect(($('chPlateFit') as unknown as HTMLSelectElement).value).toBe('across');
+        const note = document.getElementById('plateAcrossSoft');
+        expect(note ? note.textContent : null).toBe(shown == null ? null : `This picture gives ${shown} pixels per inch across both pages; it may print soft.`);
+        // the press's own count for the same chapter, on the book the studio exports
+        const out = await exported();
+        expect(out.printBleed).toBe(bleed);
+        const c = await loadClosure();
+        const pc = await loadPrint();
+        const st = arriveForExport(c, structuredClone(out) as never) as unknown as Rec;
+        exportSafe(c, st as never, out as never);
+        pc.setState(st as never);
+        const ch = (st.sections as Rec[])[0]!;
+        const mine = ((pc.api as Rec).printPlacements as () => Rec[])().filter((p) => p.section === ch);
+        expect(mine.length).toBe(1);
+        expect(mine[0]!.dpi).toBe(dpi);
+        expect(Math.round(mine[0]!.dpi as number) < 200).toBe(shown != null);
+      });
+    }
+
+    it('Review Focus 3: a plate whose pixel size cannot be read shows no note and does not throw', async () => {
+      await openStudio(acrossBook(btoa('these bytes are no picture header at all'), { plateFit: 'across' }));
+      expect(($('chPlateFit') as unknown as HTMLSelectElement).value).toBe('across');
+      expect(document.getElementById('plateAcrossNote')).not.toBeNull(); // the backdrop line still shows
+      expect(document.getElementById('plateAcrossSoft')).toBeNull();
+    });
+
+    /* Final review T8-1: the rows and the note follow the output's own rule (acrossSetsBackdropAside), which needs the
+       plate drawn (plateImage: alt text given, the picture in the library); without it the output draws the backdrop. */
+    it('across with a plate whose alt text is empty: the plate is not drawn, so the backdrop rows stay enabled and no set-aside line shows', async () => {
+      await openStudio(acrossBook(sized(1408, 768), { plateAlt: '', plateFit: 'across', backdropId: 'scimg2', backdropStrength: 'soft' }));
+      expect(($('chPlateFit') as unknown as HTMLSelectElement).value).toBe('across');
+      expect($('chPlateAlt').value).toBe('');
+      expect($('chBackdrop').disabled).toBe(false);
+      expect($('chBackdropStrength').disabled).toBe(false);
+      expect(document.getElementById('plateAcrossNote')).toBeNull();
+      expect(document.getElementById('plateAcrossSoft')).toBeNull();
+      // the output agrees: the closure's rule, on the book the studio exports, does not set the backdrop aside
+      const c = await loadClosure();
+      const st = arriveForExport(c, structuredClone(await exported()) as never) as unknown as Rec;
+      expect(c.api.acrossSetsBackdropAside((st.sections as Rec[])[0]!)).toBe(false);
+      // the alt text given: the plate is drawn, and the backdrop is set aside, the line saying so
+      await pick($('chPlateAlt'), 'A wide plate');
+      expect($('chBackdrop').disabled).toBe(true);
+      expect($('chBackdropStrength').disabled).toBe(true);
+      expect(document.getElementById('plateAcrossNote')!.textContent).toBe(E['editor.plateAcrossNote']);
+      expect(document.getElementById('plateAcrossSoft')).not.toBeNull();
+      expect([(await s1()).backdropId, (await s1()).backdropStrength]).toEqual(['scimg2', 'soft']);
+    });
+
+    it('across with a plate whose picture is gone from the library: the plate is not drawn, so the backdrop rows stay enabled and no set-aside line shows', async () => {
+      await openStudio(acrossBook(sized(1408, 768), { plateId: 'gone', plateFit: 'across', backdropId: 'scimg2', backdropStrength: 'soft' }));
+      expect((await s1()).plateId).toBe('gone');
+      expect(($('chPlateFit') as unknown as HTMLSelectElement).value).toBe('across');
+      expect($('chBackdrop').disabled).toBe(false);
+      expect($('chBackdropStrength').disabled).toBe(false);
+      expect(document.getElementById('plateAcrossNote')).toBeNull();
+      expect(document.getElementById('plateAcrossSoft')).toBeNull();
+      const c = await loadClosure();
+      const st = arriveForExport(c, structuredClone(await exported()) as never) as unknown as Rec;
+      expect(c.api.acrossSetsBackdropAside((st.sections as Rec[])[0]!)).toBe(false);
+    });
+
+    /* Controller Ruling 12: a newly chosen picture near the spread's shape is suggested across only on a chapter with no
+       backdrop stored; on one with a backdrop it gets the answer it got before across (fill or whole), the backdrop
+       untouched. 1,600 × 1,200 on 6 × 9: one page would cut 50%, the open spread 0. */
+    const spreadBook = (patch: Rec = {}) => {
+      const book = BOOK() as Rec;
+      book.printTrim = '6x9';
+      book.images = [...(book.images as Rec[]), im('spread', 'Spread.png', sized(1600, 1200))];
+      Object.assign((book.sections as Rec[])[0]!, patch);
+      return book;
+    };
+    it('a spread-shaped picture chosen on a chapter WITH a backdrop is not given across; the backdrop is untouched', async () => {
+      await openStudio(spreadBook({ backdropId: 'scimg2', backdropStrength: 'soft' }));
+      await pick($('chPlate'), 'spread');
+      const s = await s1();
+      expect([s.plateId, s.plateFit, s.backdropId, s.backdropStrength]).toEqual(['spread', 'whole', 'scimg2', 'soft']);
+      expect($('chBackdrop').disabled).toBe(false);
+      expect(document.getElementById('plateAcrossNote')).toBeNull();
+    });
+    it('a spread-shaped picture uploaded as the plate of a chapter WITH a backdrop is not given across; the backdrop is untouched', async () => {
+      await openStudio(spreadBook({ backdropId: 'scimg2', backdropStrength: 'soft' }));
+      await pick($('chPlate'), '__upload__');
+      const bytes = Uint8Array.from(atob(sized(1600, 1200)), (ch) => ch.charCodeAt(0));
+      await putFile($('plateFileInput'), new File([bytes], 'Wide-Spread.png', { type: 'image/png' }));
+      await waitFor(async () => expect((await s1()).plateId).not.toBe(null));
+      const s = await s1();
+      expect([s.plateFit, s.backdropId, s.backdropStrength]).toEqual(['whole', 'scimg2', 'soft']);
+    });
+    it('a spread-shaped picture chosen on a chapter WITHOUT a backdrop is given across (unchanged)', async () => {
+      await openStudio(spreadBook());
+      await pick($('chPlate'), 'spread');
+      const s = await s1();
+      expect([s.plateId, s.plateFit]).toEqual(['spread', 'across']);
+      expect(s.backdropId ?? null).toBe(null);
+    });
+    it('a spread-shaped picture uploaded as the plate of a chapter WITHOUT a backdrop is given across (unchanged)', async () => {
+      await openStudio(spreadBook());
+      await pick($('chPlate'), '__upload__');
+      const bytes = Uint8Array.from(atob(sized(1600, 1200)), (ch) => ch.charCodeAt(0));
+      await putFile($('plateFileInput'), new File([bytes], 'Wide-Spread.png', { type: 'image/png' }));
+      await waitFor(async () => expect((await s1()).plateId).not.toBe(null));
+      expect((await s1()).plateFit).toBe('across');
+    });
+
+    it('Fill and Whole still store fill and whole', async () => {
+      await openStudio(acrossBook(sized(1408, 768)));
+      const fit = $('chPlateFit') as unknown as HTMLSelectElement;
+      await pick(fit, 'whole');
+      expect((await s1()).plateFit).toBe('whole');
+      await pick(fit, 'fill');
+      expect((await s1()).plateFit).toBe('fill');
+      await pick(fit, 'across');
+      await pick(fit, 'whole');
+      expect((await s1()).plateFit).toBe('whole');
+    });
   });
 
   it('scene.images.place: the bar names the break; library attach with name and caption; another break its own; upload attach; replace; remove; the text never changes', async () => {

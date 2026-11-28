@@ -1527,6 +1527,11 @@
       .piv-plate-full { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
       /* BEUK:platefit — a plate shown whole: inside the page's margins (placed by pivPageEl), never cropped */
       .piv-plate-whole { position: absolute; object-fit: contain; display: block; }
+      /* BEUK:across — an across chapter's two halves, print's own bakes (printAcrossHalves), each laid over its whole
+         leaf, bleed included, as given (never cover-cropped a second time); the recto half carries the Spread fade in
+         its pixels, so it is drawn unmasked, as print draws a baked layer (.bd-baked) */
+      .piv-plate-across { position: absolute; display: block; object-fit: fill; }
+      .piv-bleed.piv-across { background-size: 100% 100%; background-position: 0 0; -webkit-mask-image: none; mask-image: none; opacity: 1; }
       /* A paired spread (a chapter carrying both a plate and a backdrop):
          the opening leaf's backdrop leaves the clip and takes the print
          file's own geometry — full-bleed to the trim, dissolving over
@@ -5005,7 +5010,7 @@
         "editor.dropCap": "Drop cap", "editor.dropCapDesc": "Open this chapter with a large initial letter.",
         "editor.smallCaps": "Small-caps lead-in", "editor.smallCapsDesc": "Set the first words of the chapter in small capitals.",
         "editor.placeholder": "Start writing…", "editor.dropCapAria": "Toggle drop cap", "editor.smallCapsAria": "Toggle small caps lead-in",
-        "editor.plate": "Opening plate", "editor.plateDesc": "An illustration on its own page, just before this chapter opens.", "editor.plateFit": "Fit", "editor.plateFitDesc": "Fill the page and the picture is cropped to the page's shape; show it whole and all of it stays, inside the margins.", "editor.plateFitFill": "Fill the page", "editor.plateFitWhole": "Show the whole picture",
+        "editor.plate": "Opening plate", "editor.plateDesc": "An illustration on its own page, just before this chapter opens.", "editor.plateFit": "Fit", "editor.plateFitDesc": "Fill the page and the picture is cropped to the page's shape; show it whole and all of it stays, inside the margins.", "editor.plateFitFill": "Fill the page", "editor.plateFitWhole": "Show the whole picture", "editor.plateFitAcross": "Across both pages", "editor.plateAcrossNote": "The picture also covers the facing page, so this chapter's backdrop is set aside while this is chosen.", "editor.plateAcrossSoft": "This picture gives {ppi} pixels per inch across both pages; it may print soft.",
         "editor.plateNone": "No plate", "editor.plateUpload": "Upload an image…", "editor.plateAlt": "Plate alt text", "editor.plateAltDesc": "Describe the plate for readers who cannot see it — a plate needs its description to appear.", "editor.plateAltPh": "The harbour at first light",
         "editor.backdrop": "Chapter backdrop", "editor.backdropDesc": "Art that lies behind this chapter's opening, beneath the words.", "editor.backdropNone": "No backdrop", "editor.backdropUpload": "Upload a picture…", "editor.backdropStrength": "Backdrop strength", "editor.backdropNote": "Some e-readers ignore backdrops; the words always carry the page.", "editor.bdWhisper": "Whisper", "editor.bdSoft": "Soft", "editor.bdStrong": "Strong", "editor.bdSpread": "Spread — across the gutter",
         "tool.bold": "Bold", "tool.italic": "Italic", "tool.blockquote": "Blockquote", "tool.sceneBreak": "Scene Break", "tool.emDash": "Em Dash —",
@@ -5758,7 +5763,7 @@
         "editor.dropCap": "Letra capital", "editor.dropCapDesc": "Abre este capítulo con una inicial grande.",
         "editor.smallCaps": "Versalitas iniciales", "editor.smallCapsDesc": "Compone las primeras palabras del capítulo en versalitas.",
         "editor.placeholder": "Empieza a escribir…", "editor.dropCapAria": "Activar o desactivar la letra capital", "editor.smallCapsAria": "Activar o desactivar las versalitas iniciales",
-        "editor.plate": "Lámina de apertura", "editor.plateDesc": "Una ilustración en su propia página, justo antes de que se abra este capítulo.", "editor.plateFit": "Ajuste", "editor.plateFitDesc": "Al llenar la página, la imagen se recorta a la forma de la página; mostrada entera, se conserva completa, dentro de los márgenes.", "editor.plateFitFill": "Llenar la página", "editor.plateFitWhole": "Mostrar la imagen entera",
+        "editor.plate": "Lámina de apertura", "editor.plateDesc": "Una ilustración en su propia página, justo antes de que se abra este capítulo.", "editor.plateFit": "Ajuste", "editor.plateFitDesc": "Al llenar la página, la imagen se recorta a la forma de la página; mostrada entera, se conserva completa, dentro de los márgenes.", "editor.plateFitFill": "Llenar la página", "editor.plateFitWhole": "Mostrar la imagen entera", "editor.plateFitAcross": "Abarcar las dos páginas", "editor.plateAcrossNote": "La imagen cubre también la página de enfrente, así que el fondo de este capítulo se deja a un lado mientras esté elegida esta opción.", "editor.plateAcrossSoft": "Esta imagen da {ppi} píxeles por pulgada en las dos páginas; puede imprimirse borrosa.",
         "editor.plateNone": "Sin lámina", "editor.plateUpload": "Subir una imagen…", "editor.plateAlt": "Texto alternativo de la lámina", "editor.plateAltDesc": "Describe la lámina para quienes no pueden verla: una lámina necesita su descripción para aparecer.", "editor.plateAltPh": "El puerto al amanecer",
         "editor.backdrop": "Fondo del capítulo", "editor.backdropDesc": "Arte que queda detrás de la apertura de este capítulo, bajo las palabras.", "editor.backdropNone": "Sin fondo", "editor.backdropUpload": "Subir una imagen…", "editor.backdropStrength": "Intensidad del fondo", "editor.backdropNote": "Algunos lectores electrónicos ignoran los fondos; las palabras siempre sostienen la página.", "editor.bdWhisper": "Susurro", "editor.bdSoft": "Suave", "editor.bdStrong": "Fuerte", "editor.bdSpread": "Doble página — cruza el medianil",
         "tool.bold": "Negrita", "tool.italic": "Cursiva", "tool.blockquote": "Cita", "tool.sceneBreak": "Cambio de escena", "tool.emDash": "Raya —",
@@ -5980,7 +5985,7 @@
         "editor.dropCap": "Lettrine", "editor.dropCapDesc": "Ouvre ce chapitre avec une grande initiale.",
         "editor.smallCaps": "Début en petites capitales", "editor.smallCapsDesc": "Compose les premiers mots du chapitre en petites capitales.",
         "editor.placeholder": "Commencez à écrire…", "editor.dropCapAria": "Activer ou couper la lettrine", "editor.smallCapsAria": "Activer ou couper le début en petites capitales",
-        "editor.plate": "Planche d'ouverture", "editor.plateDesc": "Une illustration sur sa propre page, juste avant l'ouverture de ce chapitre.", "editor.plateFit": "Cadrage", "editor.plateFitDesc": "En remplissant la page, l'image est rognée à la forme de la page ; montrée entière, elle reste complète, à l'intérieur des marges.", "editor.plateFitFill": "Remplir la page", "editor.plateFitWhole": "Montrer l'image entière",
+        "editor.plate": "Planche d'ouverture", "editor.plateDesc": "Une illustration sur sa propre page, juste avant l'ouverture de ce chapitre.", "editor.plateFit": "Cadrage", "editor.plateFitDesc": "En remplissant la page, l'image est rognée à la forme de la page ; montrée entière, elle reste complète, à l'intérieur des marges.", "editor.plateFitFill": "Remplir la page", "editor.plateFitWhole": "Montrer l'image entière", "editor.plateFitAcross": "Couvrir les deux pages", "editor.plateAcrossNote": "L'image couvre aussi la page en regard, donc l'arrière-plan de ce chapitre est mis de côté tant que ce choix est retenu.", "editor.plateAcrossSoft": "Cette image donne {ppi} pixels par pouce sur les deux pages ; elle risque de s'imprimer floue.",
         "editor.plateNone": "Aucune planche", "editor.plateUpload": "Importer une image…", "editor.plateAlt": "Texte alternatif de la planche", "editor.plateAltDesc": "Décrivez la planche pour les lecteurs qui ne peuvent pas la voir — une planche a besoin de sa description pour apparaître.", "editor.plateAltPh": "Le port à l'aube",
         "editor.backdrop": "Arrière-plan du chapitre", "editor.backdropDesc": "Une image qui se tient derrière l'ouverture de ce chapitre, sous les mots.", "editor.backdropNone": "Aucun arrière-plan", "editor.backdropUpload": "Importer une image…", "editor.backdropStrength": "Force de l'arrière-plan", "editor.backdropNote": "Certaines liseuses ignorent les arrière-plans ; les mots portent toujours la page.", "editor.bdWhisper": "Murmure", "editor.bdSoft": "Douce", "editor.bdStrong": "Forte", "editor.bdSpread": "Double page — à travers la gouttière",
         "tool.bold": "Gras", "tool.italic": "Italique", "tool.blockquote": "Citation", "tool.sceneBreak": "Saut de scène", "tool.emDash": "Tiret cadratin —",
@@ -6202,7 +6207,7 @@
         "editor.dropCap": "Initiale", "editor.dropCapDesc": "Dieses Kapitel mit einem großen Anfangsbuchstaben eröffnen.",
         "editor.smallCaps": "Kapitälchen-Anlauf", "editor.smallCapsDesc": "Die ersten Worte des Kapitels in Kapitälchen setzen.",
         "editor.placeholder": "Fangen Sie an zu schreiben…", "editor.dropCapAria": "Initiale umschalten", "editor.smallCapsAria": "Kapitälchen-Anlauf umschalten",
-        "editor.plate": "Eröffnungstafel", "editor.plateDesc": "Eine Illustration auf einer eigenen Seite, unmittelbar bevor dieses Kapitel beginnt.", "editor.plateFit": "Einpassung", "editor.plateFitDesc": "Füllt das Bild die Seite, wird es auf das Seitenformat beschnitten; ganz gezeigt bleibt es vollständig, innerhalb der Ränder.", "editor.plateFitFill": "Seite füllen", "editor.plateFitWhole": "Ganzes Bild zeigen",
+        "editor.plate": "Eröffnungstafel", "editor.plateDesc": "Eine Illustration auf einer eigenen Seite, unmittelbar bevor dieses Kapitel beginnt.", "editor.plateFit": "Einpassung", "editor.plateFitDesc": "Füllt das Bild die Seite, wird es auf das Seitenformat beschnitten; ganz gezeigt bleibt es vollständig, innerhalb der Ränder.", "editor.plateFitFill": "Seite füllen", "editor.plateFitWhole": "Ganzes Bild zeigen", "editor.plateFitAcross": "Beide Seiten überspannen", "editor.plateAcrossNote": "Das Bild bedeckt auch die gegenüberliegende Seite, daher bleibt der Hintergrund dieses Kapitels außen vor, solange dies gewählt ist.", "editor.plateAcrossSoft": "Dieses Bild liefert über beide Seiten {ppi} Pixel pro Zoll; es wird womöglich weich gedruckt.",
         "editor.plateNone": "Keine Tafel", "editor.plateUpload": "Bild hochladen…", "editor.plateAlt": "Alt-Text der Tafel", "editor.plateAltDesc": "Beschreiben Sie die Tafel für Leserinnen und Leser, die sie nicht sehen können — eine Tafel braucht ihre Beschreibung, um zu erscheinen.", "editor.plateAltPh": "Der Hafen im ersten Licht",
         "editor.backdrop": "Kapitel-Hintergrund", "editor.backdropDesc": "Ein Bild, das hinter dem Anfang dieses Kapitels liegt, unter den Worten.", "editor.backdropNone": "Kein Hintergrund", "editor.backdropUpload": "Bild hochladen…", "editor.backdropStrength": "Hintergrundstärke", "editor.backdropNote": "Manche E-Reader ignorieren Hintergründe; die Worte tragen die Seite immer.", "editor.bdWhisper": "Hauch", "editor.bdSoft": "Sanft", "editor.bdStrong": "Kräftig", "editor.bdSpread": "Doppelseite — über den Bund",
         "tool.bold": "Fett", "tool.italic": "Kursiv", "tool.blockquote": "Blockzitat", "tool.sceneBreak": "Szenenwechsel", "tool.emDash": "Gedankenstrich —",
@@ -6424,7 +6429,7 @@
         "editor.dropCap": "Capolettera", "editor.dropCapDesc": "Apri questo capitolo con una grande lettera iniziale.",
         "editor.smallCaps": "Inizio in maiuscoletto", "editor.smallCapsDesc": "Compone le prime parole del capitolo in maiuscoletto.",
         "editor.placeholder": "Inizia a scrivere…", "editor.dropCapAria": "Attiva o disattiva il capolettera", "editor.smallCapsAria": "Attiva o disattiva l'inizio in maiuscoletto",
-        "editor.plate": "Tavola di apertura", "editor.plateDesc": "Un'illustrazione su una pagina propria, subito prima che questo capitolo si apra.", "editor.plateFit": "Adattamento", "editor.plateFitDesc": "Se riempie la pagina, l'immagine viene ritagliata alla forma della pagina; mostrata intera, resta completa, dentro i margini.", "editor.plateFitFill": "Riempi la pagina", "editor.plateFitWhole": "Mostra l'immagine intera",
+        "editor.plate": "Tavola di apertura", "editor.plateDesc": "Un'illustrazione su una pagina propria, subito prima che questo capitolo si apra.", "editor.plateFit": "Adattamento", "editor.plateFitDesc": "Se riempie la pagina, l'immagine viene ritagliata alla forma della pagina; mostrata intera, resta completa, dentro i margini.", "editor.plateFitFill": "Riempi la pagina", "editor.plateFitWhole": "Mostra l'immagine intera", "editor.plateFitAcross": "Copri entrambe le pagine", "editor.plateAcrossNote": "L'immagine copre anche la pagina a fronte, quindi lo sfondo di questo capitolo viene messo da parte finché questa scelta è attiva.", "editor.plateAcrossSoft": "Questa immagine dà {ppi} pixel per pollice su entrambe le pagine; potrebbe essere stampata morbida.",
         "editor.plateNone": "Nessuna tavola", "editor.plateUpload": "Carica un'immagine…", "editor.plateAlt": "Testo alternativo della tavola", "editor.plateAltDesc": "Descrivi la tavola per chi non può vederla: una tavola ha bisogno della sua descrizione per apparire.", "editor.plateAltPh": "Il porto alle prime luci",
         "editor.backdrop": "Sfondo del capitolo", "editor.backdropDesc": "Un'immagine che sta dietro l'apertura di questo capitolo, sotto le parole.", "editor.backdropNone": "Nessuno sfondo", "editor.backdropUpload": "Carica un'immagine…", "editor.backdropStrength": "Intensità dello sfondo", "editor.backdropNote": "Alcuni e-reader ignorano gli sfondi; le parole reggono sempre la pagina.", "editor.bdWhisper": "Sussurro", "editor.bdSoft": "Morbida", "editor.bdStrong": "Intensa", "editor.bdSpread": "Doppia pagina — oltre la piega",
         "tool.bold": "Grassetto", "tool.italic": "Corsivo", "tool.blockquote": "Citazione", "tool.sceneBreak": "Cambio di scena", "tool.emDash": "Trattino lungo —",
@@ -6646,7 +6651,7 @@
         "editor.dropCap": "Capitular", "editor.dropCapDesc": "Abre este capítulo com uma letra inicial grande.",
         "editor.smallCaps": "Abertura em versaletes", "editor.smallCapsDesc": "Compõe as primeiras palavras do capítulo em versaletes.",
         "editor.placeholder": "Comece a escrever…", "editor.dropCapAria": "Ativar ou desativar a capitular", "editor.smallCapsAria": "Ativar ou desativar a abertura em versaletes",
-        "editor.plate": "Gravura de abertura", "editor.plateDesc": "Uma ilustração numa página própria, mesmo antes de este capítulo começar.", "editor.plateFit": "Ajuste", "editor.plateFitDesc": "Ao preencher a página, a imagem é recortada à forma da página; mostrada inteira, mantém-se completa, dentro das margens.", "editor.plateFitFill": "Preencher a página", "editor.plateFitWhole": "Mostrar a imagem inteira",
+        "editor.plate": "Gravura de abertura", "editor.plateDesc": "Uma ilustração numa página própria, mesmo antes de este capítulo começar.", "editor.plateFit": "Ajuste", "editor.plateFitDesc": "Ao preencher a página, a imagem é recortada à forma da página; mostrada inteira, mantém-se completa, dentro das margens.", "editor.plateFitFill": "Preencher a página", "editor.plateFitWhole": "Mostrar a imagem inteira", "editor.plateFitAcross": "Ocupar as duas páginas", "editor.plateAcrossNote": "A imagem cobre também a página oposta, por isso o fundo deste capítulo fica de parte enquanto esta opção estiver escolhida.", "editor.plateAcrossSoft": "Esta imagem dá {ppi} píxeis por polegada nas duas páginas; pode imprimir desfocada.",
         "editor.plateNone": "Sem gravura", "editor.plateUpload": "Enviar uma imagem…", "editor.plateAlt": "Texto alternativo da gravura", "editor.plateAltDesc": "Descreva a gravura para quem não a pode ver — uma gravura precisa da sua descrição para aparecer.", "editor.plateAltPh": "O porto às primeiras luzes",
         "editor.backdrop": "Fundo do capítulo", "editor.backdropDesc": "Arte que fica atrás da abertura deste capítulo, sob as palavras.", "editor.backdropNone": "Sem fundo", "editor.backdropUpload": "Enviar uma imagem…", "editor.backdropStrength": "Intensidade do fundo", "editor.backdropNote": "Alguns leitores eletrónicos ignoram os fundos; as palavras sustentam sempre a página.", "editor.bdWhisper": "Sussurro", "editor.bdSoft": "Suave", "editor.bdStrong": "Forte", "editor.bdSpread": "Página dupla — cruza a medianiz",
         "tool.bold": "Negrito", "tool.italic": "Itálico", "tool.blockquote": "Citação", "tool.sceneBreak": "Mudança de cena", "tool.emDash": "Travessão —",
@@ -6868,7 +6873,7 @@
         "editor.dropCap": "Initiaal", "editor.dropCapDesc": "Open dit hoofdstuk met een grote beginletter.",
         "editor.smallCaps": "Aanhef in kleinkapitalen", "editor.smallCapsDesc": "Zet de eerste woorden van het hoofdstuk in kleinkapitalen.",
         "editor.placeholder": "Begin met schrijven…", "editor.dropCapAria": "Initiaal aan- of uitzetten", "editor.smallCapsAria": "Aanhef in kleinkapitalen aan- of uitzetten",
-        "editor.plate": "Openingsplaat", "editor.plateDesc": "Een illustratie op een eigen pagina, vlak voordat dit hoofdstuk opent.", "editor.plateFit": "Passing", "editor.plateFitDesc": "Vult de afbeelding de pagina, dan wordt ze bijgesneden tot de vorm van de pagina; geheel getoond blijft ze volledig, binnen de marges.", "editor.plateFitFill": "Pagina vullen", "editor.plateFitWhole": "Hele afbeelding tonen",
+        "editor.plate": "Openingsplaat", "editor.plateDesc": "Een illustratie op een eigen pagina, vlak voordat dit hoofdstuk opent.", "editor.plateFit": "Passing", "editor.plateFitDesc": "Vult de afbeelding de pagina, dan wordt ze bijgesneden tot de vorm van de pagina; geheel getoond blijft ze volledig, binnen de marges.", "editor.plateFitFill": "Pagina vullen", "editor.plateFitWhole": "Hele afbeelding tonen", "editor.plateFitAcross": "Beide pagina's overspannen", "editor.plateAcrossNote": "De afbeelding bedekt ook de tegenoverliggende pagina, dus de achtergrond van dit hoofdstuk wordt opzijgezet zolang dit gekozen is.", "editor.plateAcrossSoft": "Deze afbeelding geeft over beide pagina's {ppi} pixels per inch; ze kan zacht gedrukt worden.",
         "editor.plateNone": "Geen plaat", "editor.plateUpload": "Afbeelding uploaden…", "editor.plateAlt": "Alt-tekst van de plaat", "editor.plateAltDesc": "Beschrijf de plaat voor lezers die haar niet kunnen zien — een plaat heeft haar beschrijving nodig om te verschijnen.", "editor.plateAltPh": "De haven in het eerste licht",
         "editor.backdrop": "Hoofdstukachtergrond", "editor.backdropDesc": "Beeld dat achter de opening van dit hoofdstuk ligt, onder de woorden.", "editor.backdropNone": "Geen achtergrond", "editor.backdropUpload": "Afbeelding uploaden…", "editor.backdropStrength": "Sterkte van de achtergrond", "editor.backdropNote": "Sommige e-readers negeren achtergronden; de woorden dragen de pagina altijd.", "editor.bdWhisper": "Fluistering", "editor.bdSoft": "Zacht", "editor.bdStrong": "Sterk", "editor.bdSpread": "Dubbele pagina — over de rug",
         "tool.bold": "Vet", "tool.italic": "Cursief", "tool.blockquote": "Blokcitaat", "tool.sceneBreak": "Scènewissel", "tool.emDash": "Gedachtestreepje —",
@@ -7090,7 +7095,7 @@
         "editor.dropCap": "Inicjał", "editor.dropCapDesc": "Otwórz ten rozdział dużą literą początkową.",
         "editor.smallCaps": "Początek kapitalikami", "editor.smallCapsDesc": "Składa pierwsze słowa rozdziału kapitalikami.",
         "editor.placeholder": "Zacznij pisać…", "editor.dropCapAria": "Włącz lub wyłącz inicjał", "editor.smallCapsAria": "Włącz lub wyłącz początek kapitalikami",
-        "editor.plate": "Plansza otwierająca", "editor.plateDesc": "Ilustracja na własnej stronie, tuż przed otwarciem tego rozdziału.", "editor.plateFit": "Dopasowanie", "editor.plateFitDesc": "Gdy obraz wypełnia stronę, jest przycinany do kształtu strony; pokazany w całości pozostaje cały, w obrębie marginesów.", "editor.plateFitFill": "Wypełnij stronę", "editor.plateFitWhole": "Pokaż cały obraz",
+        "editor.plate": "Plansza otwierająca", "editor.plateDesc": "Ilustracja na własnej stronie, tuż przed otwarciem tego rozdziału.", "editor.plateFit": "Dopasowanie", "editor.plateFitDesc": "Gdy obraz wypełnia stronę, jest przycinany do kształtu strony; pokazany w całości pozostaje cały, w obrębie marginesów.", "editor.plateFitFill": "Wypełnij stronę", "editor.plateFitWhole": "Pokaż cały obraz", "editor.plateFitAcross": "Rozłóż na obie strony", "editor.plateAcrossNote": "Obraz zakrywa też stronę naprzeciwko, więc tło tego rozdziału zostaje odłożone na bok, dopóki ta opcja jest wybrana.", "editor.plateAcrossSoft": "Ten obraz ma na obu stronach rozdzielczość {ppi} pikseli na cal; może wydrukować się miękko.",
         "editor.plateNone": "Bez planszy", "editor.plateUpload": "Prześlij obraz…", "editor.plateAlt": "Tekst alternatywny planszy", "editor.plateAltDesc": "Opisz planszę dla czytelników, którzy jej nie widzą — plansza potrzebuje opisu, aby się pojawić.", "editor.plateAltPh": "Port o pierwszym świetle",
         "editor.backdrop": "Tło rozdziału", "editor.backdropDesc": "Grafika, która leży za otwarciem tego rozdziału, pod słowami.", "editor.backdropNone": "Bez tła", "editor.backdropUpload": "Prześlij obraz…", "editor.backdropStrength": "Siła tła", "editor.backdropNote": "Niektóre czytniki ignorują tła; słowa zawsze niosą stronę.", "editor.bdWhisper": "Szept", "editor.bdSoft": "Łagodne", "editor.bdStrong": "Mocne", "editor.bdSpread": "Rozkładówka — przez grzbiet",
         "tool.bold": "Pogrubienie", "tool.italic": "Kursywa", "tool.blockquote": "Cytat blokowy", "tool.sceneBreak": "Przerwa sceny", "tool.emDash": "Myślnik —",
@@ -7312,7 +7317,7 @@
         "editor.dropCap": "Буквица", "editor.dropCapDesc": "Открыть эту главу большой начальной буквой.",
         "editor.smallCaps": "Зачин капителью", "editor.smallCapsDesc": "Набрать первые слова главы капителью.",
         "editor.placeholder": "Начните писать…", "editor.dropCapAria": "Включить или выключить буквицу", "editor.smallCapsAria": "Включить или выключить зачин капителью",
-        "editor.plate": "Вступительная вклейка", "editor.plateDesc": "Иллюстрация на отдельной странице, прямо перед началом этой главы.", "editor.plateFit": "Размещение", "editor.plateFitDesc": "Если изображение заполняет страницу, оно обрезается по форме страницы; показанное целиком, оно остаётся полным, в пределах полей.", "editor.plateFitFill": "Заполнить страницу", "editor.plateFitWhole": "Показать изображение целиком",
+        "editor.plate": "Вступительная вклейка", "editor.plateDesc": "Иллюстрация на отдельной странице, прямо перед началом этой главы.", "editor.plateFit": "Размещение", "editor.plateFitDesc": "Если изображение заполняет страницу, оно обрезается по форме страницы; показанное целиком, оно остаётся полным, в пределах полей.", "editor.plateFitFill": "Заполнить страницу", "editor.plateFitWhole": "Показать изображение целиком", "editor.plateFitAcross": "Разместить на обеих страницах", "editor.plateAcrossNote": "Изображение занимает и страницу напротив, поэтому фон этой главы откладывается, пока выбран этот вариант.", "editor.plateAcrossSoft": "На обеих страницах у этого изображения {ppi} пикс./дюйм; оно может напечататься мягко.",
         "editor.plateNone": "Без вклейки", "editor.plateUpload": "Загрузить изображение…", "editor.plateAlt": "Альтернативный текст вклейки", "editor.plateAltDesc": "Опишите вклейку для читателей, которые не могут её видеть, — вклейке нужно описание, чтобы появиться.", "editor.plateAltPh": "Гавань на рассвете",
         "editor.backdrop": "Фон главы", "editor.backdropDesc": "Изображение, которое лежит за началом этой главы, под словами.", "editor.backdropNone": "Без фона", "editor.backdropUpload": "Загрузить изображение…", "editor.backdropStrength": "Сила фона", "editor.backdropNote": "Некоторые ридеры игнорируют фоны; слова всегда несут страницу.", "editor.bdWhisper": "Шёпот", "editor.bdSoft": "Мягкий", "editor.bdStrong": "Сильный", "editor.bdSpread": "Разворот — через корешок",
         "tool.bold": "Полужирный", "tool.italic": "Курсив", "tool.blockquote": "Цитата", "tool.sceneBreak": "Смена сцены", "tool.emDash": "Тире —",
@@ -7534,7 +7539,7 @@
         "editor.dropCap": "Büyük ilk harf", "editor.dropCapDesc": "Bu bölümü büyük bir ilk harfle açar.",
         "editor.smallCaps": "Küçük büyük harfli giriş", "editor.smallCapsDesc": "Bölümün ilk kelimelerini küçük büyük harflerle dizer.",
         "editor.placeholder": "Yazmaya başlayın…", "editor.dropCapAria": "Büyük ilk harfi aç veya kapat", "editor.smallCapsAria": "Küçük büyük harfli girişi aç veya kapat",
-        "editor.plate": "Açılış levhası", "editor.plateDesc": "Bu bölüm açılmadan hemen önce, kendi sayfasında bir illüstrasyon.", "editor.plateFit": "Sığdırma", "editor.plateFitDesc": "Sayfayı doldurduğunda resim sayfanın biçimine göre kırpılır; bütün olarak gösterildiğinde tamamı kenar boşluklarının içinde kalır.", "editor.plateFitFill": "Sayfayı doldur", "editor.plateFitWhole": "Resmin tamamını göster",
+        "editor.plate": "Açılış levhası", "editor.plateDesc": "Bu bölüm açılmadan hemen önce, kendi sayfasında bir illüstrasyon.", "editor.plateFit": "Sığdırma", "editor.plateFitDesc": "Sayfayı doldurduğunda resim sayfanın biçimine göre kırpılır; bütün olarak gösterildiğinde tamamı kenar boşluklarının içinde kalır.", "editor.plateFitFill": "Sayfayı doldur", "editor.plateFitWhole": "Resmin tamamını göster", "editor.plateFitAcross": "İki sayfaya yay", "editor.plateAcrossNote": "Resim karşı sayfayı da kaplar; bu yüzden bu seçenek seçiliyken bu bölümün arka planı bir kenara bırakılır.", "editor.plateAcrossSoft": "Bu resim iki sayfa boyunca inç başına {ppi} piksel veriyor; yumuşak basılabilir.",
         "editor.plateNone": "Levha yok", "editor.plateUpload": "Resim yükle…", "editor.plateAlt": "Levha alternatif metni", "editor.plateAltDesc": "Levhayı göremeyen okurlar için onu anlatın — bir levhanın görünmesi için açıklaması gerekir.", "editor.plateAltPh": "İlk ışıkta liman",
         "editor.backdrop": "Bölüm arka planı", "editor.backdropDesc": "Bu bölümün açılışının arkasında, sözcüklerin altında duran görsel.", "editor.backdropNone": "Arka plan yok", "editor.backdropUpload": "Resim yükle…", "editor.backdropStrength": "Arka plan gücü", "editor.backdropNote": "Bazı e-okuyucular arka planları yok sayar; sayfayı her zaman sözcükler taşır.", "editor.bdWhisper": "Fısıltı", "editor.bdSoft": "Yumuşak", "editor.bdStrong": "Güçlü", "editor.bdSpread": "Çift sayfa — cilt boşluğunu aşar",
         "tool.bold": "Kalın", "tool.italic": "İtalik", "tool.blockquote": "Alıntı", "tool.sceneBreak": "Sahne arası", "tool.emDash": "Uzun tire —",
@@ -7756,7 +7761,7 @@
         "editor.dropCap": "حرف استهلالي كبير", "editor.dropCapDesc": "افتتح هذا الفصل بحرف أول كبير.",
         "editor.smallCaps": "بداية بأحرف صغيرة كبيرة", "editor.smallCapsDesc": "يضبط الكلمات الأولى من الفصل بأحرف صغيرة كبيرة.",
         "editor.placeholder": "ابدأ الكتابة…", "editor.dropCapAria": "تبديل الحرف الاستهلالي الكبير", "editor.smallCapsAria": "تبديل البداية بالأحرف الصغيرة الكبيرة",
-        "editor.plate": "لوحة الافتتاح", "editor.plateDesc": "رسم في صفحة خاصة به، قبيل افتتاح هذا الفصل مباشرة.", "editor.plateFit": "الملاءمة", "editor.plateFitDesc": "إذا ملأت الصورة الصفحة قُصّت على شكل الصفحة؛ وإذا عُرضت كاملة بقيت كلها داخل الهوامش.", "editor.plateFitFill": "ملء الصفحة", "editor.plateFitWhole": "عرض الصورة كاملة",
+        "editor.plate": "لوحة الافتتاح", "editor.plateDesc": "رسم في صفحة خاصة به، قبيل افتتاح هذا الفصل مباشرة.", "editor.plateFit": "الملاءمة", "editor.plateFitDesc": "إذا ملأت الصورة الصفحة قُصّت على شكل الصفحة؛ وإذا عُرضت كاملة بقيت كلها داخل الهوامش.", "editor.plateFitFill": "ملء الصفحة", "editor.plateFitWhole": "عرض الصورة كاملة", "editor.plateFitAcross": "الامتداد على الصفحتين", "editor.plateAcrossNote": "تغطي الصورة الصفحة المقابلة أيضًا، لذا تُنحّى خلفية هذا الفصل جانبًا ما دام هذا الخيار مختارًا.", "editor.plateAcrossSoft": "تعطي هذه الصورة {ppi} بكسل في البوصة عبر الصفحتين؛ وقد تُطبع باهتة الحدة.",
         "editor.plateNone": "بلا لوحة", "editor.plateUpload": "رفع صورة…", "editor.plateAlt": "النص البديل للوحة", "editor.plateAltDesc": "صِف اللوحة للقراء الذين لا يستطيعون رؤيتها — تحتاج اللوحة إلى وصفها كي تظهر.", "editor.plateAltPh": "الميناء عند أول ضوء",
         "editor.backdrop": "خلفية الفصل", "editor.backdropDesc": "صورة تقع خلف افتتاحية هذا الفصل، تحت الكلمات.", "editor.backdropNone": "بلا خلفية", "editor.backdropUpload": "رفع صورة…", "editor.backdropStrength": "قوة الخلفية", "editor.backdropNote": "بعض أجهزة القراءة تتجاهل الخلفيات؛ الكلمات تحمل الصفحة دائمًا.", "editor.bdWhisper": "همس", "editor.bdSoft": "خفيفة", "editor.bdStrong": "قوية", "editor.bdSpread": "صفحتان متقابلتان — عبر الكعب",
         "tool.bold": "عريض", "tool.italic": "مائل", "tool.blockquote": "اقتباس", "tool.sceneBreak": "فاصل مشهد", "tool.emDash": "شرطة طويلة —",
@@ -7978,7 +7983,7 @@
         "editor.dropCap": "ドロップキャップ", "editor.dropCapDesc": "この章を大きな頭文字で始めます。",
         "editor.smallCaps": "スモールキャップスの書き出し", "editor.smallCapsDesc": "章の最初の数語をスモールキャップスで組みます。",
         "editor.placeholder": "書き始めましょう…", "editor.dropCapAria": "ドロップキャップの切り替え", "editor.smallCapsAria": "スモールキャップス書き出しの切り替え",
-        "editor.plate": "口絵", "editor.plateDesc": "この章が始まる直前に、それだけで1ページを占めるイラスト。", "editor.plateFit": "収め方", "editor.plateFitDesc": "ページいっぱいにすると、絵はページの形に合わせて切り取られます。全体を表示すると、余白の内側に絵のすべてが収まります。", "editor.plateFitFill": "ページいっぱいにする", "editor.plateFitWhole": "絵の全体を表示",
+        "editor.plate": "口絵", "editor.plateDesc": "この章が始まる直前に、それだけで1ページを占めるイラスト。", "editor.plateFit": "収め方", "editor.plateFitDesc": "ページいっぱいにすると、絵はページの形に合わせて切り取られます。全体を表示すると、余白の内側に絵のすべてが収まります。", "editor.plateFitFill": "ページいっぱいにする", "editor.plateFitWhole": "絵の全体を表示", "editor.plateFitAcross": "両ページにまたがる", "editor.plateAcrossNote": "絵は向かいのページも覆うため、これを選んでいる間、この章の背景は保留されます。", "editor.plateAcrossSoft": "この絵は両ページにわたって1インチあたり {ppi} ピクセルです。柔らかく印刷されるおそれがあります。",
         "editor.plateNone": "口絵なし", "editor.plateUpload": "画像をアップロード…", "editor.plateAlt": "口絵の代替テキスト", "editor.plateAltDesc": "見られない読者のために口絵を説明してください — 口絵は説明があって初めて表示されます。", "editor.plateAltPh": "夜明けの港",
         "editor.backdrop": "章の背景", "editor.backdropDesc": "この章の開きの背後、言葉の下に敷かれる絵。", "editor.backdropNone": "背景なし", "editor.backdropUpload": "画像をアップロード…", "editor.backdropStrength": "背景の強さ", "editor.backdropNote": "一部の電子書籍リーダーは背景を無視します。言葉が常にページを支えます。", "editor.bdWhisper": "ささやき", "editor.bdSoft": "やわらか", "editor.bdStrong": "つよめ", "editor.bdSpread": "見開き — ノドをまたぐ",
         "tool.bold": "太字", "tool.italic": "斜体", "tool.blockquote": "引用", "tool.sceneBreak": "場面転換", "tool.emDash": "ダッシュ —",
@@ -8200,7 +8205,7 @@
         "editor.dropCap": "首字放大", "editor.dropCapDesc": "以一个大号首字母开启本章。",
         "editor.smallCaps": "小型大写引子", "editor.smallCapsDesc": "将本章开头几词以小型大写字母排版。",
         "editor.placeholder": "开始写作…", "editor.dropCapAria": "切换首字放大", "editor.smallCapsAria": "切换小型大写引子",
-        "editor.plate": "卷首插图", "editor.plateDesc": "在本章开始之前，单独一页的插图。", "editor.plateFit": "适应方式", "editor.plateFitDesc": "铺满页面时，图片会按页面形状裁切；显示整幅图片时，图片完整保留在页边距之内。", "editor.plateFitFill": "铺满页面", "editor.plateFitWhole": "显示整幅图片",
+        "editor.plate": "卷首插图", "editor.plateDesc": "在本章开始之前，单独一页的插图。", "editor.plateFit": "适应方式", "editor.plateFitDesc": "铺满页面时，图片会按页面形状裁切；显示整幅图片时，图片完整保留在页边距之内。", "editor.plateFitFill": "铺满页面", "editor.plateFitWhole": "显示整幅图片", "editor.plateFitAcross": "横跨两页", "editor.plateAcrossNote": "图片也会覆盖对页，因此选择此项期间，本章的背景会被搁置。", "editor.plateAcrossSoft": "这张图片在两页上为每英寸 {ppi} 像素，印出来可能会发虚。",
         "editor.plateNone": "无插图", "editor.plateUpload": "上传图片…", "editor.plateAlt": "插图替代文字", "editor.plateAltDesc": "为无法看见的读者描述这幅插图——插图需要描述才能呈现。", "editor.plateAltPh": "晨光中的港口",
         "editor.backdrop": "章节背景", "editor.backdropDesc": "位于本章开篇之后、文字之下的图画。", "editor.backdropNone": "无背景", "editor.backdropUpload": "上传图片…", "editor.backdropStrength": "背景强度", "editor.backdropNote": "有些电子阅读器会忽略背景；文字始终承载着页面。", "editor.bdWhisper": "轻语", "editor.bdSoft": "柔和", "editor.bdStrong": "浓烈", "editor.bdSpread": "跨页 — 越过书脊",
         "tool.bold": "粗体", "tool.italic": "斜体", "tool.blockquote": "引用块", "tool.sceneBreak": "场景分隔", "tool.emDash": "破折号 —",
@@ -29882,10 +29887,21 @@
             const tb = tableParts(seg);
             if (!tb.rows.length) return cx.blocks(seg.text);
             const num = tableNumericCols(tb);
+            /* A right-to-left book: a figure column's words are isolated
+               in <span dir="auto">, set in their own direction (the first
+               strong letter's, else left to right), so "+4%" is never set
+               "4%+". Markup, not CSS: EPUB 3.3 (6.3.1.2) forbids
+               unicode-bidi and direction in a style sheet and names the
+               dir attribute instead. On a span, not the cell: dir on the
+               cell would turn its logical padding round too (measured
+               2026-11-27, Chromium: the gap moved to the other side, and
+               in one row two columns' figures stood 4px apart). */
+            const figIso = isRtlLang(bookLang());
             /* "nb": a short cell (tableCellShort) of a table of up to four columns is never broken — a figure cell is whole already */
             const cell = (tag, c, i) => {
               const cls = (num[i] ? ["num"] : []).concat(tb.cols <= 4 && tableCellShort(c) && !(num[i] && tag === "td") ? ["nb"] : []);
-              return "<" + tag + (tag === "th" ? ' scope="col"' : "") + (cls.length ? ' class="' + cls.join(" ") + '"' : "") + ">" + tableCellHtml(c, cx) + "</" + tag + ">";
+              const words = tableCellHtml(c, cx);
+              return "<" + tag + (tag === "th" ? ' scope="col"' : "") + (cls.length ? ' class="' + cls.join(" ") + '"' : "") + ">" + (num[i] && figIso && words ? '<span dir="auto">' + words + "</span>" : words) + "</" + tag + ">";
             };
             const row = (tag, r) => "<tr>" + Array.from({ length: tb.cols }, (x, i) => cell(tag, r[i] == null ? "" : r[i], i)).join("") + "</tr>";
             const step = tb.cols >= 9 ? " tbl-w3" : tb.cols >= 7 ? " tbl-w2" : tb.cols >= 5 ? " tbl-w1" : "";
@@ -30854,8 +30870,9 @@
             if (img && !seen.has(img.id)) { seen.add(img.id); out.push(img); }
           }
           /* And its backdrop: referenced from the chapter's XHTML as a
-             CSS background, so it ships and is declared like any image. */
-          if (s.backdropId) {
+             CSS background, so it ships and is declared like any image.
+             (BEUK:across: not while the plate runs across — it is not drawn.) */
+          if (s.backdropId && !acrossSetsBackdropAside(s)) {
             const img = imageById(s.backdropId);
             if (img && !seen.has(img.id)) { seen.add(img.id); out.push(img); }
           }
@@ -30900,29 +30917,65 @@
          of the picture, by the picture's own pixel size (read from its
          bytes, imagePixelSize) against the book's trim. A picture
          whose size cannot be read is shown whole — never cut unasked. */
-      const PLATE_FITS = ["fill", "whole"];
+      const PLATE_FITS = ["fill", "whole", "across"];
       const PLATE_FIT_FAR = 0.1;
       function plateFitOf(section) {
-        return section && section.plateFit === "whole" ? "whole" : "fill";
+        return section && PLATE_FITS.includes(section.plateFit) ? section.plateFit : "fill";
       }
       /* Whether any section (of the book, or of a box set's other volumes) asks for a whole plate. */
       function bookHasWholePlate() {
-        const whole = (secs) => (Array.isArray(secs) ? secs : []).some((s) => s && s.plateFit === "whole");
+        const whole = (secs) => (Array.isArray(secs) ? secs : []).some((s) => s && (s.plateFit === "whole" || s.plateFit === "across")); /* BEUK:across — shown whole off the press */
         return whole(state.sections) || (Array.isArray(state.boxSetVolumes) ? state.boxSetVolumes : []).some((v) => v && whole(v.sections));
       }
-      function plateFitFor(img, trimId) {
+      function plateFitFor(img, trimId, section) {
         const px = imagePixelSize(img);
         if (!px || !(px.w > 0) || !(px.h > 0)) return "whole";
         const tr = trimSize(trimId);
         const a = px.w / px.h, b = tr.w / tr.h;
-        return 1 - Math.min(a, b) / Math.max(a, b) > PLATE_FIT_FAR ? "whole" : "fill";
+        if (1 - Math.min(a, b) / Math.max(a, b) <= PLATE_FIT_FAR) return "fill";
+        /* BEUK:across — one page would cut more than a tenth; the open spread
+           (two trims side by side, bleed left out: it is not the picture's
+           business) is suggested only when ITS crop would cut no more than a
+           tenth. A near-square picture or a panorama keeps whole. Never for
+           a chapter (`section`, read only) that has a backdrop stored:
+           across would set it aside unasked, so it gets today's answer. */
+        if (section && section.backdropId) return "whole";
+        const c = 2 * tr.w / tr.h;
+        return 1 - Math.min(a, c) / Math.max(a, c) <= PLATE_FIT_FAR ? "across" : "whole";
       }
-      function plateHtml(section, forExport, dataMedia, ownPage) {
+      /* The one two-page crop of an "across" plate: the picture, cover-cropped
+         and centred to the shape of the open spread (two trims side by side,
+         plus the bleed on the outside, top and bottom: (2w + 2b) : (h + 2b)),
+         and its two halves, all in whole source pixels. In a right-to-left
+         book the verso is the right half. The halves never overlap or leave
+         a gap: the verso is half the crop's width rounded down, the recto
+         has the rest. ppi is pixels per inch across the crop's width. */
+      function acrossCrop(pxW, pxH, trim, bleedIn, rtl) {
+        const spreadW = 2 * trim.w + 2 * bleedIn, spreadH = trim.h + 2 * bleedIn;
+        let w, h;
+        /* multiplied before divided, so float rounding never drops a pixel */
+        if (pxW * spreadH > pxH * spreadW) { h = pxH; w = Math.min(pxW, Math.floor(pxH * spreadW / spreadH)); }
+        else { w = pxW; h = Math.min(pxH, Math.floor(pxW * spreadH / spreadW)); }
+        const x = Math.floor((pxW - w) / 2), y = Math.floor((pxH - h) / 2);
+        const first = Math.floor(w / 2);
+        const left = { x, y, w: first, h }, rest = { x: x + first, y, w: w - first, h };
+        return { crop: { x, y, w, h }, verso: rtl ? rest : left, recto: rtl ? left : rest, ppi: w / spreadW };
+      }
+      function plateHtml(section, forExport, dataMedia, ownPage, acrossSrc) {
         const p = plateImage(section);
         if (!p) return "";
+        /* BEUK:across — in print only (buildPrintHtml), an across plate's
+           verso half as the press baked it (printAcrossHalves): its own page
+           with its bleed, which the renderer draws as given. The class is
+           added after plate-page, like plate-whole. */
+        if (acrossSrc && !ownPage && plateFitOf(section) === "across") return '<figure class="plate-page plate-across"><img src="' + acrossSrc + '" alt="' + esc(altSaid(p.alt)) + '"/></figure>';
         const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(p.img) : picDataSrc(p.img.mediaType, p.img.data);
         const imgTag = '<img src="' + src + '" alt="' + esc(altSaid(p.alt)) + '"/>';
-        const whole = plateFitOf(section) === "whole";
+        /* BEUK:across — everywhere but print's baked halves (above), an across
+           plate has no second page to run on: the e-reader's own page, Zen,
+           the standalone page and the studio's preview show it whole, as
+           "Show the whole picture" does — same markup, same alt text. */
+        const whole = plateFitOf(section) === "whole" || plateFitOf(section) === "across";
         /* The class is ADDED after the plate's own, so a "fill" plate's
            markup is byte for byte what it was (the print renderer reads
            `<figure class="plate-page"` to draw a plate edge to edge, and
@@ -30955,6 +31008,20 @@
         const strength = BACKDROP_STRENGTHS.includes(section.backdropStrength) ? section.backdropStrength : "whisper";
         return { img, strength };
       }
+      /* BEUK:across — the one rule: a chapter whose plate runs "Across both
+         pages" has no backdrop of its own while it does, on every surface.
+         Print and its preview lay the plate's other half there; the
+         one-page views (EPUB, the standalone page, the preview, Zen) show
+         the plate whole and draw no backdrop. The stored backdropId and
+         backdropStrength are never written: switch the fit away and the
+         backdrop is back. (printIsAcross is this test.) */
+      function acrossSetsBackdropAside(section) {
+        return !!section && section.kind === "body" && !!plateImage(section) && plateFitOf(section) === "across";
+      }
+      /** The backdrop a section draws: backdropImage, unless across sets it aside. */
+      function backdropInEffect(section) {
+        return acrossSetsBackdropAside(section) ? null : backdropImage(section);
+      }
       /* A plate faces its section: any section carrying a plate puts the
          plate on the verso, edge to edge, and its opening on the facing
          recto. With a backdrop too (a paired spread), the two halves of
@@ -30974,7 +31041,7 @@
         return "linear-gradient(" + toward + ", " + stops.map((p) => "rgba(0,0,0," + p[1] + ") " + (Math.round(p[0] * 10000) / 100) + "%").join(", ") + ")";
       }
       function backdropLayerHtml(section, forExport, dataMedia) {
-        const b = backdropImage(section);
+        const b = backdropInEffect(section); /* BEUK:across — none while the plate runs across */
         if (!b) return "";
         const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(b.img) : picDataSrc(b.img.mediaType, b.img.data);
         return '<div class="bd-layer bd-' + b.strength + '" style="background-image:url(' + src + ')" aria-hidden="true" role="presentation"></div>';
@@ -31666,10 +31733,20 @@
           /* The plate leads the section everywhere except the EPUB's
              chapter file, where it ships as its own XHTML ahead of
              this one (opts.skipPlate). */
-          const plate = (opts && opts.skipPlate) ? "" : plateHtml(section, forExport, dataCover, false);
+          /* BEUK:across — print hands in an across plate's baked halves
+             (opts.across, buildPrintHtml): the verso half is the plate, the
+             recto half the opening's Spread page layer, in place of the
+             chapter's own backdrop (left stored, not drawn). Halves not
+             baked (not yet, or the bake failed): the whole picture inside
+             the margins, as "Show the whole picture" prints it, and no
+             layer — never a crop the writer did not see. */
+          const ac = (opts && opts.across) || null;
+          const plate = (opts && opts.skipPlate) ? "" : (ac && !ac.verso)
+            ? plateHtml(Object.assign({}, section, { plateFit: "whole" }), forExport, dataCover, false)
+            : plateHtml(section, forExport, dataCover, false, ac ? ac.verso : null);
           /* A backdrop wraps the opening: the art layer lies behind the
              title and the first page of text, the words above it. */
-          const bd = backdropLayerHtml(section, forExport, dataCover);
+          const bd = ac ? (ac.recto ? '<div class="bd-layer bd-spread bd-page bd-baked" style="background-image:url(' + ac.recto + ')" aria-hidden="true" role="presentation"></div>' : "") : backdropLayerHtml(section, forExport, dataCover);
           const opening = chapterOpeningHtml(section, bd, forExport, dataCover) + contentBlocksToHtml(section.content, section, true, forExport, dataCover);
           if (!bd) return plate + opening;
           return plate + '<div class="ch-wrap has-backdrop">' + opening + "</div>";
@@ -32102,13 +32179,15 @@
             /* BEUK:table — a table reads from the right (its columns run
                right to left by the direction alone): cells flush right,
                their gap on the left, a column of figures at the line's
-               end, the left, each figure read left to right by itself
-               (plaintext), so "+4%" is never set "4%+". The physical
-               values are for readers without logical properties. */
+               end, the left. Each figure reads in its own direction by
+               the span dir="auto" round its words (CONTAINER_KINDS.table), never by
+               unicode-bidi here: EPUB 3.3 forbids it and direction in a
+               style sheet (EPUBCheck CSS-001). The physical values are
+               for readers without logical properties. */
             S + ".tbl caption, " + S + ".tbl th, " + S + ".tbl td { text-align: right; text-align: start; }",
             S + ".tbl th, " + S + ".tbl td { padding-right: 0; padding-left: 1.5em; padding-inline-start: 0; padding-inline-end: 1.5em; }",
             S + ".tbl th:last-child, " + S + ".tbl td:last-child { padding-left: 0; padding-inline-end: 0; }",
-            S + ".tbl .num { text-align: left; unicode-bidi: plaintext; }");
+            S + ".tbl .num { text-align: left; }");
         }
         /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
            book wears a display face or a colour. */
@@ -36386,7 +36465,7 @@
             if (im) s.plateAlt = String(im.name || "").replace(/\.[^.]+$/, "").replace(/[-_—]+/g, " ").trim();
           }
           /* BEUK:platefit — a newly chosen picture gets its fit chosen with it: never cut unasked */
-          if (s.plateId) s.plateFit = plateFitFor(imageById(s.plateId));
+          if (s.plateId) s.plateFit = plateFitFor(imageById(s.plateId), undefined, s);
           noteBookEdited(); syncEditor(); renderPreview(); refreshExportTree();
         });
         $("chPlateFit").addEventListener("change", (e) => {
@@ -36411,7 +36490,7 @@
             plateUploadFor = null;
             if (s) {
               s.plateId = im.id;
-              s.plateFit = plateFitFor(im); /* BEUK:platefit */
+              s.plateFit = plateFitFor(im, undefined, s); /* BEUK:platefit */
               if (!String(s.plateAlt || "").trim()) s.plateAlt = String(im.name || "").replace(/\.[^.]+$/, "").replace(/[-_—]+/g, " ").trim();
             }
             noteBookEdited(); refreshImagePickers(); renderPreview(); refreshExportTree();
@@ -54456,9 +54535,10 @@
       const PRINT_BLEED_IN = 0.125;
       function printBleedOn() { return !!state.printBleed; }
       /* The included chapters whose art prints to the page edge: a
-         plate (always a paired spread's edge-to-edge verso) or a backdrop. */
+         plate (always a paired spread's edge-to-edge verso) or a backdrop.
+         An across plate (BEUK:across) reaches the edge on both its pages. */
       function printEdgeSections() {
-        return state.sections.filter((s) => s.included && s.type !== "cover" && s.kind === "body" && ((plateImage(s) && plateFitOf(s) === "fill") /* BEUK:platefit — a whole plate stays inside the margins */ || backdropImage(s)));
+        return state.sections.filter((s) => s.included && s.type !== "cover" && s.kind === "body" && ((plateImage(s) && (plateFitOf(s) === "fill" || plateFitOf(s) === "across")) /* BEUK:platefit — a whole plate stays inside the margins */ || backdropImage(s)));
       }
       function printBleedConfig() { return { in: PRINT_BLEED_IN, rtl: isRtlLang(state.meta.language || "en") }; }
       const bleedInStr = (n) => String(Math.round(n * 1000) / 1000);
@@ -55203,7 +55283,7 @@
         printLayoutNow = true; /* BEUK:layout */
         try {
           pairs = state.sections.filter((s) => inBook(s) && s.type !== "cover")
-            .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (printIsDisplaySec(s) ? " display-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true)))) + "\n</section>" }));
+            .map((s, k) => { const ao = printAcrossOpts(s); return { s: s, ao: ao, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (printIsDisplaySec(s) ? " display-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true, ao)))) + "\n</section>" }; });
         } finally { printNotesAtFootNow = false; printLayoutNow = false; }
         /* A Large Print edition says so in the book itself, in the
            position the typesetter controls: the colophon carries the
@@ -55223,11 +55303,22 @@
            would hide the in-page plate with nothing drawn in its place;
            this rule, more specific and as important, keeps it shown. */
         const wholeCss = pairs.map((p, k) => (plateImage(p.s) && plateFitOf(p.s) === "whole") ? "#ps-" + k + " .plate-page.plate-whole img { visibility: visible !important; }" : "").filter(Boolean).join("\n");
+        /* BEUK:across — with bleed, an across recto half is baked at its page
+           plus bleed (outer edge, top, bottom). Where the document itself
+           draws it (the browser's own print, the downloaded file; the
+           renderer stamps it instead), it is set so its gutter edge stays
+           on the gutter and the trim shows. */
+        const acrossCss = [
+          ...(printBleedOn() ? pairs.map((p, k) => printIsAcross(p.s) ? "#ps-" + k + " .bd-layer.bd-page.bd-baked { background-size: " + inCss(tr.w + PRINT_BLEED_IN) + " " + inCss(tr.h + 2 * PRINT_BLEED_IN) + "; background-position: " + (isRtlLang(bookLang()) ? inCss(-PRINT_BLEED_IN) : "0") + " " + inCss(-PRINT_BLEED_IN) + "; }" : "") : []),
+          /* halves not baked: the plate is printed whole (sectionHtml), fitted
+             here even in a book whose stylesheet has no whole plate of its own */
+          ...pairs.map((p, k) => (p.ao && !p.ao.across.verso) ? "#ps-" + k + " .plate-page.plate-whole img { object-fit: contain; object-position: center center; }" : "")
+        ].filter(Boolean).join("\n");
         return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n' +
           (atFoot ? '<meta name="beuk-footnotes" content="' + esc(JSON.stringify(printFootnoteConfig())) + '"/>\n' : "") +
           (printBleedOn() ? '<meta name="beuk-bleed" content="' + esc(JSON.stringify(printBleedConfig())) + '"/>\n' : "") + /* BEUK:bleed */
           (printHeadsConfig() ? '<meta name="beuk-heads" content="' + esc(JSON.stringify(printHeadsConfig())) + '"/>\n' : "") + /* BEUK:runheads */ "<title>" +
-          esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + (wholeCss ? "\n" + wholeCss : "") + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
+          esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + (wholeCss ? "\n" + wholeCss : "") + (acrossCss ? "\n" + acrossCss : "") + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
       }
       /* ==== BEUK:print ==== */
       /* Print for press. IngramSpark requires a PDF/X-1a:2001 or
@@ -55439,6 +55530,101 @@
         g.drawImage(lay, 0, 0);
         return c.toDataURL("image/jpeg", PRINT_JPEG_Q);
       }
+      /* ==== BEUK:across ==== Across both pages in print: one picture over
+         the gutter. It is cropped once (acrossCrop: centred, to the open
+         spread's shape, bleed included when bleed is on) and baked here as
+         two opaque JPEGs, each the size of its own page with its bleed (the
+         trim + 0.125 in on the outer edge, top and bottom; the trim alone
+         without bleed): the verso half edge to edge, unfaded; the recto
+         half with the Spread fade from the gutter edge (spreadFadeStops,
+         as the baked Spread layer above), at the Spread's strength. Nothing
+         stored is changed: the halves live in the press cache, keyed by
+         the picture, the trim, the bleed, the direction and the gutter
+         margin the fade is measured from — a new trim is a new key, so
+         halves cut for an old trim are never reused. The print preview
+         reads the very same halves (printAcrossHalves). */
+      function printIsAcross(s) { return acrossSetsBackdropAside(s); }
+      function printAcrossBox() {
+        const tr = trimSize();
+        return { w: tr.w, h: tr.h, bleed: printBleedOn() ? PRINT_BLEED_IN : 0, rtl: isRtlLang(bookLang()), inside: printMargins(tr.id).inside };
+      }
+      function printAcrossKey(src, box) {
+        const b = box || printAcrossBox();
+        return "across|" + b.w + "x" + b.h + "|bleed " + b.bleed + "|" + (b.rtl ? "rtl" : "ltr") + "|inside " + b.inside + "|" + src;
+      }
+      async function printBakeAcross(src, look, box) {
+        const alpha = look.strength.spread;
+        if (alpha == null) throw new Error("the Spread look could not be read from the book stylesheet");
+        const im = await printDecodeImage(src);
+        const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height;
+        if (!iw || !ih) throw new Error("the picture has no size");
+        const r = acrossCrop(iw, ih, { w: box.w, h: box.h }, box.bleed, box.rtl);
+        const pw = box.w + box.bleed, ph = box.h + 2 * box.bleed;
+        /* the picture's own detail, between 150 and 300 ppi (as printBakeBackdrop) */
+        const ppi = Math.max(150, Math.min(300, r.ppi));
+        const half = (rect, fade) => {
+          const c = printCanvas(pw * ppi, ph * ppi);
+          const g = c.getContext("2d");
+          g.fillStyle = PRINT_PAGE;
+          g.fillRect(0, 0, c.width, c.height);
+          if (!fade) {
+            g.drawImage(im, rect.x, rect.y, rect.w, rect.h, 0, 0, c.width, c.height);
+            return c.toDataURL("image/jpeg", PRINT_JPEG_Q);
+          }
+          const lay = printCanvas(c.width, c.height);
+          const lg = lay.getContext("2d");
+          lg.drawImage(im, rect.x, rect.y, rect.w, rect.h, 0, 0, lay.width, lay.height);
+          lg.globalCompositeOperation = "destination-in";
+          /* From the gutter edge: the left edge of a recto, the right of an RTL one. */
+          const grad = box.rtl ? lg.createLinearGradient(lay.width, 0, 0, 0) : lg.createLinearGradient(0, 0, lay.width, 0);
+          spreadFadeStops(pw, box.inside).forEach((p) => grad.addColorStop(p[0], "rgba(0,0,0," + p[1] + ")"));
+          grad.addColorStop(1, "rgba(0,0,0,0)");
+          lg.fillStyle = grad;
+          lg.fillRect(0, 0, lay.width, lay.height);
+          g.globalAlpha = alpha;
+          g.drawImage(lay, 0, 0);
+          return c.toDataURL("image/jpeg", PRINT_JPEG_Q);
+        };
+        return { verso: half(r.verso, false), recto: half(r.recto, true) };
+      }
+      /* The baked halves of a section's across plate, { verso, recto } data
+         URLs, for the print settings as they stand: from the press cache,
+         else baked into it (one bake at a time per key). */
+      function printAcrossHalves(section) {
+        const p = plateImage(section);
+        if (!p) return Promise.reject(new Error("the chapter has no opening plate"));
+        const src = picDataSrc(p.img.mediaType, p.img.data);
+        const box = printAcrossBox();
+        const key = printAcrossKey(src, box);
+        const had = printPressCache.get(key);
+        if (had && had.out) return Promise.resolve(had.out);
+        if (had && had.wait) return had.wait;
+        const wait = printBakeAcross(src, printBackdropLook(), box).then(
+          (out) => { printPressCache.set(key, { out: out }); return out; },
+          (e) => { printPressCache.set(key, { out: null, error: String((e && e.message) || e) }); throw e; });
+        printPressCache.set(key, { out: null, wait: wait });
+        return wait;
+      }
+      /* What buildPrintHtml hands sectionHtml for a section: an across
+         plate's halves when baked; when not yet, nothing (the plate prints
+         as today, without the layer) and the report counts it pending. */
+      function printAcrossOpts(s) {
+        if (!printIsAcross(s)) return undefined;
+        const out = printAcrossCached(s);
+        if (!out) { printPressState.pending += 1; return { across: {} }; }
+        return { across: out };
+      }
+      /* An across section's baked halves, { verso, recto }, from the press
+         cache for the print settings as they stand; null when they are not
+         baked (not yet, or the bake failed). Reads only: the print preview
+         and printAcrossOpts both ask it. */
+      function printAcrossCached(s) {
+        if (!printIsAcross(s)) return null;
+        const p = plateImage(s);
+        const hit = printPressCache.get(printAcrossKey(picDataSrc(p.img.mediaType, p.img.data)));
+        return hit && hit.out ? hit.out : null;
+      }
+      /* ==== /BEUK:across ==== */
       /* A picture with see-through parts, laid onto the page colour;
          null when it has none (it prints as it is). */
       async function printFlattenPicture(src) {
@@ -55496,6 +55682,13 @@
           const had = printPressCache.get(key);
           if ((!had || had.error) && !seen.has(key)) { seen.add(key); settle(key, printFlattenPicture(src)); }
           return all;
+        });
+        /* BEUK:across — each across plate's two halves (printAcrossHalves keeps its own record, a failure included) */
+        state.sections.filter((s) => inBook(s) && s.type !== "cover" && printIsAcross(s)).forEach((s) => {
+          const p = plateImage(s);
+          const key = printAcrossKey(picDataSrc(p.img.mediaType, p.img.data));
+          const had = printPressCache.get(key);
+          if (!(had && had.out) && !seen.has(key)) { seen.add(key); jobs.push(printAcrossHalves(s).catch(() => undefined)); } /* (a bake in flight is awaited; a failed one tried again) */
         });
         await Promise.all(jobs);
         return printPressReport();
@@ -55645,7 +55838,7 @@
       const PIV_GAP = 96;     /* px between columns of a measure flow */
       const PIV_SPINE = 14;   /* px of binding fold between facing pages */
       const PIV_STACK_GAP = 18; /* px between pages when stacked at phone width */
-      const piv = { model: null, spread: 0, zoom: "fit", guides: true };
+      const piv = { model: null, spread: 0, zoom: "fit", guides: true, baking: null }; /* (baking: BEUK:across, pivBakeAcross) */
       function pivEnsureStyle() {
         let el = $("pivBookStyle");
         if (!el) { el = document.createElement("style"); el.id = "pivBookStyle"; document.head.appendChild(el); }
@@ -55689,7 +55882,11 @@
         flow.dir = isRtlLang(bookLang()) ? "rtl" : "ltr";
         printNotesAtFootNow = printNotesAtFoot(); /* BEUK:footnotes */
         printLayoutNow = true; /* BEUK:layout */
-        try { flow.innerHTML = printUnlink(sectionHtml(s, true, true)); /* print sets a link's words only */ } finally { printNotesAtFootNow = false; printLayoutNow = false; }
+        /* BEUK:across — an across section flows as print builds it: its baked
+           halves when they are (the plate, and the opening's Spread page layer),
+           else the whole plate and no layer; its own backdrop never drawn */
+        const acrossOpts = printIsAcross(s) ? { across: printAcrossCached(s) || {} } : undefined;
+        try { flow.innerHTML = printUnlink(sectionHtml(s, true, true, acrossOpts)); /* print sets a link's words only */ } finally { printNotesAtFootNow = false; printLayoutNow = false; }
         return flow;
       }
       function buildPrintViewModel() {
@@ -55737,6 +55934,30 @@
           left: s >= 1 && 2 * s <= P ? model.pages[2 * s - 1] : null,
           right: 2 * s + 1 <= P ? model.pages[2 * s] : null
         };
+      }
+      /* BEUK:across — a spread whose verso is an across chapter's plate leaf,
+         in a right-to-left book: drawn mirrored (renderPrintView). NOTE: the
+         queued fix that mirrors every RTL spread in the preview must remove
+         this across-only mirror, or the across spread is mirrored twice. */
+      function pivAcrossMirrored(pr) {
+        return !!(pr.left && pr.right && !pr.left.blank && pr.left.col === 0 && pr.right.section === pr.left.section &&
+          printIsAcross(pr.left.section) && isRtlLang(bookLang()));
+      }
+      /* BEUK:across — the halves the view shows are print's own: bake any
+         across chapter's that are not yet (printAcrossHalves, into the press
+         cache). Until they land the view shows print's fallback (the whole
+         picture, no layer); when any land, it re-lays with them, on the same
+         page. A failed bake leaves the fallback standing, as print prints it,
+         and is not retried until the view is laid out again. The promise is
+         kept on piv.baking: true when the view re-laid. */
+      function pivBakeAcross() {
+        const want = state.sections.filter((s) => inBook(s) && s.type !== "cover" && printIsAcross(s) && !printAcrossCached(s));
+        if (!want.length) return Promise.resolve(false);
+        return Promise.all(want.map((s) => printAcrossHalves(s).then(() => true, () => false))).then((got) => {
+          if (!got.some(Boolean) || !$("modalPrintView").classList.contains("open") || !piv.model) return false;
+          pivRebuild(true);
+          return true;
+        });
       }
       function pivPageEl(page, side, model) {
         const g = model.g, mg = g.mg;
@@ -55810,9 +56031,37 @@
            dissolving in-flow layer, exactly as before. The opening
            column is the section's first text column — column 1 when
            a plate page leads the section, column 0 otherwise. */
-        const pairedBd = (!page.blank && page.section && page.section.kind === "body" && plateImage(page.section))
-          ? backdropImage(page.section) : null;
+        /* BEUK:across — an across chapter shows print's own halves
+           (printAcrossHalves, from the press cache): the verso half on the
+           plate leaf, the recto half over the opening leaf, each over its
+           whole leaf with its bleed, as the renderer stamps them. Not baked
+           (not yet, or the bake failed): what print then prints — the whole
+           picture inside the margins and no layer. The chapter's own
+           backdrop is never drawn for it. The halves are used only on a
+           leaf standing on its print side — the plate leaf on the left (the
+           right in a right-to-left book), the opening on the other — so no
+           caller (the hardcover's spread, which never mirrors) can show the
+           painting swapped at the gutter: a leaf on the other side gets the
+           fallback. */
+        const across = !page.blank && printIsAcross(page.section);
+        const printSide = (page.col === 0) !== isRtlLang(bookLang()) ? "left" : "right";
+        const halves = across && side === printSide ? printAcrossCached(page.section) : null;
+        const pairedBd = (!across && !page.blank && page.section && page.section.kind === "body" && plateImage(page.section))
+          ? backdropInEffect(page.section) : null;
         const pairedOpening = !!pairedBd && page.col === (plateImage(page.section) ? 1 : 0);
+        const acrossOpening = !!halves && page.col === 1;
+        if (acrossOpening) {
+          const lay = document.createElement("div");
+          lay.className = "piv-bleed piv-across";
+          lay.setAttribute("aria-hidden", "true");
+          lay.style.top = "0px"; lay.style.left = "0px";
+          lay.style.width = (g.pageW + bpx) + "px"; lay.style.height = (g.pageH + 2 * bpx) + "px";
+          lay.style.backgroundSize = "100% 100%"; lay.style.backgroundPosition = "0px 0px";
+          lay.style.opacity = "1";
+          lay.style.backgroundImage = "url(" + halves.recto + ")";
+          el.insertBefore(lay, el.firstChild);
+          el.classList.add("piv-paired");
+        }
         if (pairedOpening) {
           const bleed = document.createElement("div");
           bleed.className = "piv-bleed";
@@ -55838,11 +56087,17 @@
           /* The verso plate of a paired spread prints edge to edge. */
           const pl = plateImage(page.section);
           const im = document.createElement("img");
-          const whole = plateFitOf(page.section) === "whole"; /* BEUK:platefit */
-          im.className = whole ? "piv-plate-whole" : "piv-plate-full";
-          im.src = picDataSrc(pl.img.mediaType, pl.img.data);
+          const whole = plateFitOf(page.section) === "whole" || (across && !halves); /* BEUK:platefit; BEUK:across — print's fallback */
+          im.className = halves ? "piv-plate-across" : whole ? "piv-plate-whole" : "piv-plate-full";
+          im.src = halves ? halves.verso : picDataSrc(pl.img.mediaType, pl.img.data);
           im.alt = pl.alt;
-          if (whole) {
+          if (halves) {
+            /* BEUK:across — the verso half over the whole leaf, bleed included, as given */
+            im.style.left = "0px"; im.style.top = "0px";
+            im.style.width = (g.pageW + bpx) + "px"; im.style.height = (g.pageH + 2 * bpx) + "px";
+            im.style.objectFit = "fill";
+            el.insertBefore(im, host === el ? null : host);
+          } else if (whole) {
             /* Shown whole: the page area inside this page's margins, as
                the print file sets it (in the trim box when bleed is on). */
             im.style.left = mLeft + "px"; im.style.top = (mg.top * PIV_PX) + "px";
@@ -55863,7 +56118,7 @@
           const flow = pivSectionFlow(page.section, g);
           const fnl = model.fn && model.fn.get(page.section.id); /* BEUK:footnotes */
           if (fnl) flow.innerHTML = fnl.html;
-          if (pairedOpening) {
+          if (pairedOpening || across) { /* (an across leaf: its layer is the one above, or none) */
             const inFlow = flow.querySelector(".bd-layer");
             if (inFlow) inFlow.style.display = "none";
           }
@@ -55951,14 +56206,22 @@
         const stacked = pivStacked();
         spreadEl.classList.toggle("stacked", stacked);
         spreadEl.style.gap = stacked && pr.left && pr.right ? PIV_STACK_GAP + "px" : "0px";
-        if (pr.left) spreadEl.appendChild(pivPageEl(pr.left, "left", model));
+        /* BEUK:across — an across chapter's spread in a right-to-left book is
+           drawn as it prints: its plate (the verso) on the right, the opening
+           on the left, so the two halves meet at the spine. (Every other spread
+           is laid out as before. A fix mirroring every RTL spread must remove
+           this, or the across spread is mirrored twice.) */
+        const mirror = pivAcrossMirrored(pr);
+        const pa = mirror && !stacked ? pr.right : pr.left, pb = mirror && !stacked ? pr.left : pr.right;
+        const sideOf = (p) => (p === pr.left) !== mirror ? "left" : "right";
+        if (pa) spreadEl.appendChild(pivPageEl(pa, sideOf(pa), model));
         if (pr.left && pr.right && !stacked) {
           const sp = document.createElement("div");
           sp.className = "piv-spine";
           sp.style.height = (model.g.pageH + 2 * (model.g.bleedPx || 0)) + "px";
           spreadEl.appendChild(sp);
         }
-        if (pr.right) spreadEl.appendChild(pivPageEl(pr.right, "right", model));
+        if (pb) spreadEl.appendChild(pivPageEl(pb, sideOf(pb), model));
         const g = model.g;
         const shown = (pr.left ? 1 : 0) + (pr.right ? 1 : 0);
         let contentW, contentH;
@@ -56000,6 +56263,7 @@
         pivSyncChrome();
         piv.spread = Math.max(0, Math.min(piv.model.spreads - 1, Math.floor(anchor / 2)));
         renderPrintView();
+        piv.baking = pivBakeAcross(); /* BEUK:across */
       }
       function openPrintInteriorView() {
         if (samplePicsHold(() => openPrintInteriorView())) return; /* BEUK:slim — never without the sample's pictures */
@@ -56010,6 +56274,7 @@
         piv.model = buildPrintViewModel();
         pivSyncChrome();
         renderPrintView();
+        piv.baking = pivBakeAcross(); /* BEUK:across — print's halves, baked if they are not yet */
         icons();
         /* Webfonts arriving late change the measure; re-lay once they
            land, keeping the writer on the same page. */
@@ -56082,7 +56347,9 @@
             const img = (images || []).find((im) => im.id === s.plateId);
             if (img && !seen.has(img.id)) { seen.add(img.id); out.push(img); }
           }
-          if (s.backdropId) {
+          /* (BEUK:across: a backdrop set aside is not drawn, so not shipped; judged against this volume's pictures) */
+          const aside = (() => { const keep = state.images; state.images = images || []; try { return acrossSetsBackdropAside(s); } finally { state.images = keep; } })();
+          if (s.backdropId && !aside) {
             const img = (images || []).find((im) => im.id === s.backdropId);
             if (img && !seen.has(img.id)) { seen.add(img.id); out.push(img); }
           }
@@ -58963,16 +59230,24 @@
         const mg = printMargins(tr.id, pages);
         const textW = tr.w - mg.inside - mg.outside;
         const out = [];
-        const push = (img, section, placedW, placedH) => {
+        const push = (img, section, placedW, placedH, dpiOf) => {
           const px = imagePixelSize(img);
           if (!px || !px.w || !px.h) return;
-          const dpi = placedH ? Math.min(px.w / placedW, px.h / placedH) : px.w / placedW;
+          const dpi = dpiOf ? dpiOf(px) : placedH ? Math.min(px.w / placedW, px.h / placedH) : px.w / placedW;
           out.push({ img: img, section: section, px: px, placedW: placedW, placedH: placedH || 0, dpi: dpi });
         };
         state.sections.filter((s) => inBook(s) && s.type !== "cover").forEach((s) => {
           if (s.kind === "body") {
             const plate = plateImage(s);
-            if (plate && plateFitOf(s) === "whole") {
+            const across = printIsAcross(s);
+            if (across) {
+              /* BEUK:across — one crop across both pages: it occupies the
+                 open spread (both trims, plus the bleed when it is on), at
+                 the crop's own pixels per inch (acrossCrop). The chapter's
+                 stored backdrop is not printed, so it is not counted. */
+              const b = printBleedOn() ? PRINT_BLEED_IN : 0;
+              push(plate.img, s, 2 * tr.w + 2 * b, tr.h + 2 * b, (px) => acrossCrop(px.w, px.h, tr, b, false).ppi);
+            } else if (plate && plateFitOf(s) === "whole") {
               /* BEUK:platefit — shown whole, it is fitted inside the page area: those are the inches it occupies */
               const px = imagePixelSize(plate.img);
               if (px && px.w && px.h) {
@@ -58980,7 +59255,7 @@
                 push(plate.img, s, px.w * k, px.h * k);
               }
             } else if (plate) push(plate.img, s, tr.w, tr.h);
-            const bd = backdropImage(s);
+            const bd = backdropInEffect(s); /* (none for an across chapter: set aside) */
             if (bd) push(bd.img, s, tr.w, tr.h);
           }
           if (s.type === "frontispiece") {
@@ -70047,6 +70322,17 @@
               try {
                 const rtl = probe(buildBookCss(".sc-tb-r"), "sc-tb-r", "rtl", 420);
                 if (!rtl.firstColOnRight || !rtl.firstAtRight || !rtl.numAtLeft || !rtl.fits || rtl.boxes) bad.push("right-to-left: first column on the right " + rtl.firstColOnRight + ", words flush right " + rtl.firstAtRight + ", figures at the left " + rtl.numAtLeft + ", fits " + rtl.fits);
+                /* a signed figure reads left to right in the right-to-left table by its span dir="auto"; the EPUB
+                   stylesheet sets neither unicode-bidi nor direction (EPUB 3.3 6.3.1.2, EPUBCheck CSS-001) */
+                if (/(?:^|[{;\s])(?:unicode-bidi|direction)\s*:/.test(buildBookCss("").replace(/\/\*[\s\S]*?\*\//g, ""))) bad.push("right-to-left: the EPUB stylesheet sets unicode-bidi or direction, which EPUB 3.3 forbids");
+                const sgSt = document.createElement("style"); sgSt.textContent = buildBookCss(".sc-tb-s"); document.body.appendChild(sgSt);
+                const sg = document.createElement("div"); sg.className = "sc-tb-s"; sg.dir = "rtl"; sg.style.cssText = "position:absolute;left:-9999px;top:0;width:420px";
+                sg.innerHTML = set("::: table header\n| المدينة | التغيّر |\n| القاهرة | +4% |\n:::"); document.body.appendChild(sg);
+                try {
+                  const sp = sg.querySelector("td.num > span[dir=auto]"), tx = sp && sp.firstChild;
+                  const xs = tx && tx.data === "+4%" ? [0, 1, 2].map((i) => { const r = document.createRange(); r.setStart(tx, i); r.setEnd(tx, i + 1); return r.getBoundingClientRect().left; }) : [];
+                  if (!(xs.length === 3 && xs[0] < xs[1] && xs[1] < xs[2])) bad.push("right-to-left: \"+4%\" does not read left to right in its cell: " + JSON.stringify(xs) + " " + JSON.stringify(sg.innerHTML.slice(0, 300)));
+                } finally { sg.remove(); sgSt.remove(); }
               } finally { state.meta.language = "en"; }
               /* 5. every surface carries it */
               const ph = buildPrintHtml();
@@ -70068,7 +70354,7 @@
               if (!["Table 3. Tonnage by port, 1921", "Port; Ships; Tonnage", "Leith; 14; 9,200", "Hull; 22; 15,750", "Witness; Statement"].every((x) => acx.includes(x)) || !acx.some((x) => /^H\. Lindholm; \*\*Absent\*\* \| on leave$/.test(x)) || /:::/.test(acx.join("\n"))) bad.push("narration: " + JSON.stringify(acx));
               const ra = raCleanText(t1);
               if (/\||:::/.test(ra) || !/Leith; 14; 9,200/.test(ra) || !/\n\s*\n\s*Hull; 22; 15,750/.test(ra)) bad.push("read aloud: " + JSON.stringify(ra));
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "computed: a rule above, below and under the header, no boxes, caption above, header bold; a short table centred at its own width, a long one the full measure; cells hyphenate as the book does; figures at the line's end and words at its start, mirrored right to left; eight columns inside a 420px and a 330px measure, type stepped down, header words whole; a short cell beside a long one kept on one line; rows whole, header and caption kept with the next row; print file and EPUB carry the table (validator errors 0); a note reference in a cell links both ways; escaped bars, redactions, short rows and stray lines read as written; the beautifier and the Markdown export leave the fence unchanged; Word: a paragraph per row; counts 15 / 16 / 3; narration and read aloud say each row as \"cell; cell\"");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "computed: a rule above, below and under the header, no boxes, caption above, header bold; a short table centred at its own width, a long one the full measure; cells hyphenate as the book does; figures at the line's end and words at its start, mirrored right to left (\"+4%\" read left to right there, no unicode-bidi or direction in the stylesheet); eight columns inside a 420px and a 330px measure, type stepped down, header words whole; a short cell beside a long one kept on one line; rows whole, header and caption kept with the next row; print file and EPUB carry the table (validator errors 0); a note reference in a cell links both ways; escaped bars, redactions, short rows and stray lines read as written; the beautifier and the Markdown export leave the fence unchanged; Word: a paragraph per row; counts 15 / 16 / 3; narration and read aloud say each row as \"cell; cell\"");
             } finally {
               applyBookDoc(keepDoc);
             }
@@ -71245,7 +71531,7 @@
             }
           } },
         /* ---- BEUK:platefit — a plate fills its page or is shown whole ---- */
-        { id: "plate.fit.choice", feature: "plate", name: "Plate fit, the choice: a section stored without the field reads as Fill the page and is saved without it (no stored book changes); only fill and whole are kept, through a save and a reload; a newly chosen picture gets its fit chosen with it — whole when filling the page would cut more than a tenth of it, by its pixel size against the book's trim, and whole when its size cannot be read; the Fit row shows only while a plate is set, shows the stored choice and writes the writer's",
+        { id: "plate.fit.choice", feature: "plate", name: "Plate fit, the choice: a section stored without the field reads as Fill the page and is saved without it (no stored book changes); only fill and whole are kept, through a save and a reload; a newly chosen picture gets its fit chosen with it — whole when filling the page would cut more than a tenth of it, by its pixel size against the book's trim, and whole when its size cannot be read; across, for a picture near the open spread's shape, only on a chapter with no backdrop stored (never set aside unasked); the Fit row shows only while a plate is set, shows the stored choice and writes the writer's",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepStreak = { streak: streakState.streak, lastDay: streakState.lastDay };
@@ -71266,10 +71552,15 @@
                 [pic("d", 960, 1280), undefined, "whole", "a 3:4 picture on a 6 × 9 page (a ninth cut)"],
                 [pic("e", 900, 900), undefined, "whole", "a square picture on a 6 × 9 page"],
                 [pic("f", 640, 400), undefined, "whole", "a wide picture on a 6 × 9 page"],
+                [pic("j", 1600, 1200), undefined, "across", "a 4:3 picture on a 6 × 9 page: within a tenth of the spread's 12:9"],
+                [pic("k", 1408, 768), undefined, "whole", "a wide picture on a 6 × 9 page: the two-page crop would cut 27%"],
+                [pic("j", 1600, 1200), undefined, "whole", "a 4:3 picture on a 6 × 9 page, for a chapter with a backdrop stored (across would set it aside unasked)", { backdropId: "bd" }],
+                [pic("j", 1600, 1200), undefined, "across", "a 4:3 picture on a 6 × 9 page, for a chapter with no backdrop", { backdropId: null }],
+                [pic("a", 600, 900), undefined, "fill", "a picture of the page's own shape, for a chapter with a backdrop stored", { backdropId: "bd" }],
                 [pic("g", 900, 900), "8x8", "fill", "a square picture on a square page"],
                 [{ id: "h", name: "h.png", mediaType: "image/png", ext: "png", data: "AAAA" }, undefined, "whole", "a picture whose size cannot be read"]
               ];
-              rule.forEach((r) => { const got = plateFitFor(r[0], r[1]); if (got !== r[2]) bad.push(r[3] + " was given " + got + ", not " + r[2]); });
+              rule.forEach((r) => { const got = plateFitFor(r[0], r[1], r[4]); if (got !== r[2]) bad.push(r[3] + " was given " + got + ", not " + r[2]); });
               state.printTrim = "8.5x8.5";
               if (plateFitFor(pic("i", 900, 900)) !== "fill") bad.push("the rule does not read the book's own trim");
               state.printTrim = "6x9";
@@ -71278,7 +71569,18 @@
               if ("plateFit" in old || plateFitOf(old) !== "fill") bad.push("a section stored without the field does not read as fill, or gained the field");
               if ("plateFit" in normalizeSection({ plateFit: "cover" }) || "plateFit" in normalizeSection({ plateFit: 1 })) bad.push("a value outside fill / whole was kept");
               if (normalizeSection({ plateFit: "whole" }).plateFit !== "whole" || normalizeSection({ plateFit: "fill" }).plateFit !== "fill") bad.push("fill / whole are not kept");
-              state.images = [pic("fitsq", 900, 900), pic("fitpage", 600, 900)];
+              if (normalizeSection({ plateFit: "across" }).plateFit !== "across") bad.push("across is not kept");
+              if (plateFitOf({ plateFit: "across" }) !== "across" || plateFitOf({ plateFit: "whole" }) !== "whole" || plateFitOf({ plateFit: "fill" }) !== "fill" || plateFitOf({ plateFit: "cover" }) !== "fill") bad.push("plateFitOf does not give across / whole / fill for the three stored values, and fill for an unknown one");
+              {
+                const jr = (o) => JSON.stringify(o);
+                const a1 = acrossCrop(1408, 768, { w: 6, h: 9 }, 0, false);
+                if (jr(a1.crop) !== jr({ x: 192, y: 0, w: 1024, h: 768 }) || jr(a1.verso) !== jr({ x: 192, y: 0, w: 512, h: 768 }) || jr(a1.recto) !== jr({ x: 704, y: 0, w: 512, h: 768 }) || Math.round(a1.ppi) !== 85) bad.push("acrossCrop 1408 x 768 on 6 x 9 is not crop 1024 x 768 at x 192, halves meeting at 704, 85 ppi (" + jr(a1) + ")");
+                const a2 = acrossCrop(1408, 768, { w: 6, h: 9 }, 0, true);
+                if (a2.verso.x !== a2.crop.x + a2.crop.w / 2 || a2.recto.x !== a2.crop.x) bad.push("acrossCrop in RTL does not put the verso on the right half");
+                const a3 = acrossCrop(1000, 2000, { w: 6, h: 9 }, 0.125, false);
+                if (a3.crop.x !== 0 || a3.crop.w !== 1000 || a3.crop.y !== Math.floor((2000 - a3.crop.h) / 2) || Math.abs(a3.crop.w / a3.crop.h - 12.25 / 9.25) * a3.crop.h > 1 || a3.verso.w + a3.recto.w !== a3.crop.w) bad.push("acrossCrop of a tall picture with bleed is not a centred 12.25 : 9.25 crop with whole halves (" + jr(a3) + ")");
+              }
+              state.images = [pic("fitsq", 900, 900), pic("fitpage", 600, 900), pic("fitwide", 1600, 1200)];
               let ch = state.sections.find((s) => s.type === "chapter");
               const chId = ch.id;
               ch.plateId = "fitsq"; ch.plateAlt = "A square picture"; ch.plateFit = "whole";
@@ -71307,12 +71609,21 @@
                 if (!(ch.plateFit === "whole" && sectionHtml(ch).includes('<figure class="plate-page plate-whole">'))) bad.push("the writer's choice of whole was not written or not typeset");
                 fitSel.value = "fill"; fitSel.dispatchEvent(new Event("change"));
                 if (!(ch.plateFit === "fill" && sectionHtml(ch).includes('<figure class="plate-page"><img'))) bad.push("the writer's choice of fill was not written or not typeset");
+                /* BEUK:across — a spread-shaped picture chosen on a chapter with a backdrop stored is not given across (which
+                   would set the backdrop aside unasked), and the backdrop is not written; on a chapter without one it is */
+                ch.backdropId = "fitpage"; ch.backdropStrength = "soft";
+                sel.value = "fitwide"; sel.dispatchEvent(new Event("change"));
+                if (!(ch.plateId === "fitwide" && ch.plateFit === "whole" && ch.backdropId === "fitpage" && ch.backdropStrength === "soft")) bad.push("choosing a spread-shaped picture on a chapter with a backdrop did not store whole with the backdrop untouched (" + ch.plateFit + "/" + ch.backdropId + "/" + ch.backdropStrength + ")");
+                ch.backdropId = null;
+                sel.value = "fitpage"; sel.dispatchEvent(new Event("change"));
+                sel.value = "fitwide"; sel.dispatchEvent(new Event("change"));
+                if (!(ch.plateId === "fitwide" && ch.plateFit === "across")) bad.push("choosing a spread-shaped picture on a chapter with no backdrop did not store across (" + ch.plateFit + ")");
                 sel.value = ""; sel.dispatchEvent(new Event("change"));
                 if (!(ch.plateId === null && row.style.display === "none")) bad.push("No plate did not hide the Fit row");
               }
               if (/full-bleed/i.test(UI_STRINGS.en["editor.plateDesc"])) bad.push("the plate's description still promises full bleed for both choices");
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
-                rule.length + " shapes given the fit the rule states (the book's trim read); a section without the field reads fill and is saved without it; fill / whole kept through a save and a reload, anything else dropped; the Fit row hidden with no plate, storing whole for a square picture and fill for a page-shaped one, and writing the writer's own choice");
+                rule.length + " shapes given the fit the rule states (the book's trim read); a section without the field reads fill and is saved without it; fill / whole kept through a save and a reload, anything else dropped; the Fit row hidden with no plate, storing whole for a square picture and fill for a page-shaped one, whole for a spread-shaped one on a chapter with a backdrop (the backdrop untouched) and across on one without, and writing the writer's own choice");
             } finally {
               applyBookDoc(keepDoc);
               streakState.streak = keepStreak.streak; streakState.lastDay = keepStreak.lastDay;
@@ -71363,6 +71674,33 @@
               if (!files.some((f) => /\.css$/.test(f.path) && String(f.content).includes(".plate-full.plate-whole img { width: auto; height: auto; max-width: 100%; max-height: 94vh; }"))) bad.push("the EPUB's stylesheet lacks the whole rule");
               const val = validateEpubPackage(files);
               if (val.errors !== 0) bad.push("the EPUB has " + val.errors + " validator errors");
+              /* BEUK:across — an across plate is shown whole off the press: the EPUB's page, the stylesheet, Zen and the standalone page are the whole plate's, byte for byte */
+              {
+                const wholeEpub = x1, wholeZen = plateHtml(ch, false, true, true);
+                const wholeCss = files.find((f) => /.css$/.test(f.path)).content;
+                /* ...and its backdrop set aside (backdropInEffect): each one-page view of the across chapter, its backdrop
+                   still stored, is the whole plate's with NO backdrop, byte for byte — the chapter's EPUB file, the
+                   standalone page, the preview's section and Zen's stage. The control: the whole plate with its backdrop
+                   draws a layer in every one of them, so the comparison could see one. */
+                const chapterFile = (fs) => { const e = epubPlan().find((p) => !p.plate && p.section === ch); return e ? scText(fs, "OEBPS/" + e.file) : ""; };
+                const oneViews = () => ({ epub: chapterFile(epubFiles("generic")), standalone: buildStandaloneHtml(), preview: sectionHtml(ch), zen: zenStageHtml(ch) });
+                const withBd = oneViews();
+                ch.backdropId = null;
+                const noBd = oneViews();
+                ch.backdropId = "fitwide";
+                ch.plateFit = "across";
+                const af = epubFiles("generic"), ae = epubPlan().find((p) => p.plate && p.section === ch);
+                if (!(ae && scText(af, "OEBPS/" + ae.file) === wholeEpub)) bad.push("an across plate's EPUB page is not the whole plate's");
+                if (af.find((f) => /.css$/.test(f.path)).content !== wholeCss) bad.push("an across plate's EPUB stylesheet is not the whole plate's");
+                if (plateHtml(ch, false, true, true) !== wholeZen) bad.push("Zen does not show an across plate whole");
+                const acr = oneViews();
+                for (const k of Object.keys(acr)) {
+                  if (!/class="bd-layer/.test(withBd[k])) bad.push("the control failed: the whole plate's " + k + " draws no backdrop layer");
+                  if (acr[k] !== noBd[k]) bad.push("the across chapter's " + k + " is not the whole plate's without a backdrop" + (/class="bd-layer/.test(acr[k]) ? " (it draws the stored backdrop)" : ""));
+                }
+                if (!(ch.backdropId === "fitwide" && ch.backdropStrength === "whisper")) bad.push("the stored backdrop was written");
+                ch.plateFit = "whole";
+              }
               /* print */
               const print = buildPrintHtml();
               const inPrint = state.sections.filter((s) => inBook(s) && s.type !== "cover");
@@ -71404,6 +71742,200 @@
             } finally {
               $("modalPrintView").classList.remove("open");
               state.printTrim = keepTrim; state.printRecto = keepRecto;
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "plate.across.print", feature: "plate", name: "Across both pages in print: an across chapter's print file carries the verso half of its picture as the plate (plate-page plate-across) and the recto half as the opening's Spread page layer, the chapter's own backdrop not drawn; each half is baked at its page's size with its bleed, the verso the picture's left half (its right in a right-to-left book) edge to edge, the recto the other half fading from the gutter to the page; the halves are the ones printAcrossHalves hands out; a new trim bakes new halves; a fill plate beside it prints as before; the chapter counts as art to the page edge",
+          async run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepTrim = state.printTrim, keepRecto = state.printRecto, keepBleed = state.printBleed;
+            try {
+              const bad = [];
+              applyBookDoc(buildEmptyBook());
+              state.meta.title = "Across Fixture"; state.meta.author = "Fixture Author";
+              state.printTrim = "6x9"; state.printRecto = true; state.printBleed = false;
+              /* a 1600 x 1200 picture: its left half red, its right half blue */
+              const paint = (w, h, cols) => { const c = printCanvas(w, h); const g = c.getContext("2d"); cols.forEach((col, i) => { g.fillStyle = col; g.fillRect(i * w / cols.length, 0, w / cols.length, h); }); return c.toDataURL("image/png").split(",")[1]; };
+              state.images = [{ id: "acrpic", name: "Halves.png", mediaType: "image/png", ext: "png", data: paint(1600, 1200, ["#ff0000", "#0000ff"]) },
+                { id: "acrbd", name: "Green.png", mediaType: "image/png", ext: "png", data: paint(40, 40, ["#00ff00"]) }];
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.title = "One"; ch.content = "The harbour bell rang over the water at first light.";
+              Object.assign(ch, { plateId: "acrpic", plateAlt: "Red meets blue", plateFit: "across", backdropId: "acrbd", backdropStrength: "whisper" });
+              const ch2 = mkSection("body", "chapter", "Two", { number: "2", content: "The tide turned before noon.", plateId: "acrbd", plateAlt: "A green page", plateFit: "fill" });
+              state.sections.splice(state.sections.indexOf(ch) + 1, 0, ch2);
+              const px = (im, x, y) => { const c = printCanvas(im.naturalWidth, im.naturalHeight); const g = c.getContext("2d"); g.drawImage(im, 0, 0); return Array.from(g.getImageData(Math.round(x), Math.round(y), 1, 1).data); };
+              const red = (p) => p[0] > 200 && p[1] < 70 && p[2] < 70, blue = (p) => p[2] > 200 && p[0] < 70 && p[1] < 70, paper = (p) => p[0] > 235 && p[1] > 235 && p[2] > 235;
+              const secOf = (html, s) => { const k = state.sections.filter((x) => inBook(x) && x.type !== "cover").indexOf(s); const at = html.indexOf('id="ps-' + k + '"'); return at < 0 ? "" : html.slice(html.lastIndexOf("<section", at), html.indexOf("</section>", at)); };
+              const printed = async (lang, bleed) => {
+                state.meta.language = lang; state.printBleed = bleed;
+                await preparePrintPress();
+                const html = buildPrintHtml(), sec = secOf(html, ch), what = (lang === "ar" ? "right to left" : "left to right") + (bleed ? ", bleed" : "");
+                const v = /<figure class="plate-page plate-across"><img src="(data:image\/jpeg;base64,[^"]+)" alt="Red meets blue"\/><\/figure>/.exec(sec);
+                const r = /<div class="bd-layer bd-spread bd-page bd-baked" style="background-image:url\((data:image\/jpeg;base64,[^)]+)\)"/.exec(sec);
+                if (!/^<section class="print-sec chapter-sec spread-sec" id="ps-\d+" data-start="verso">/.test(sec)) bad.push(what + ": the across chapter is not a spread opening on a verso");
+                if (!v || !r) { bad.push(what + ": the print file lacks the across plate or its Spread page layer"); return null; }
+                if ((sec.match(/class="bd-layer/g) || []).length !== 1) bad.push(what + ": the chapter's own backdrop is drawn too");
+                const h = await printAcrossHalves(ch);
+                if (h.verso !== v[1] || h.recto !== r[1]) bad.push(what + ": printAcrossHalves does not hand out the halves the print file carries");
+                const vi = await printDecodeImage(v[1]), ri = await printDecodeImage(r[1]);
+                const tr = trimSize(), b = bleed ? PRINT_BLEED_IN : 0, rtl = lang === "ar";
+                [vi, ri].forEach((im, i) => { if (Math.abs(im.naturalWidth / im.naturalHeight - (tr.w + b) / (tr.h + 2 * b)) * im.naturalHeight > 1) bad.push(what + ": the " + (i ? "recto" : "verso") + " half is not its page's shape with its bleed (" + im.naturalWidth + " x " + im.naturalHeight + ")"); });
+                const vw = vi.naturalWidth, rw = ri.naturalWidth, mid = vi.naturalHeight / 2;
+                const mine = rtl ? blue : red, theirs = rtl ? red : blue;
+                /* (12 px in from an edge: clear of the JPEG's colour blur at the cut) */
+                if (!(mine(px(vi, 12, mid)) && mine(px(vi, vw - 12, mid)))) bad.push(what + ": the verso is not the picture's " + (rtl ? "right" : "left") + " half edge to edge");
+                const atGutter = px(ri, rtl ? rw - 12 : 12, mid), farEdge = px(ri, rtl ? 12 : rw - 12, mid);
+                if (!theirs(atGutter)) bad.push(what + ": the recto does not carry the other half at full strength at the gutter (" + atGutter + ")");
+                if (!paper(farEdge)) bad.push(what + ": the recto does not fade to the page away from the gutter (" + farEdge + ")");
+                if (!secOf(html, ch2).includes('<figure class="plate-page"><img src="data:image/png;base64,')) bad.push(what + ": the fill plate beside it does not print as before");
+                return v[1];
+              };
+              const first = await printed("en", false);
+              await printed("en", true);
+              await printed("ar", false);
+              await printed("ar", true);
+              state.meta.language = "en"; state.printBleed = false; state.printTrim = "5x8";
+              const five = await printed("en", false);
+              if (first && five && first === five) bad.push("a new trim reused the halves cut for the old one");
+              if (!printEdgeSections().includes(ch)) bad.push("the across chapter is not counted as art to the page edge");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
+                "the across chapter prints its verso half as the plate and its recto half as the Spread page layer (its own backdrop not drawn), left to right and right to left, bleed off and on: each half its page's shape with its bleed, the verso the picture's own half edge to edge, the recto the other half strong at the gutter and faded to the page beyond; the halves are printAcrossHalves'; a 5 x 8 trim baked new halves; the fill plate beside it printed as before; counted as edge art");
+            } finally {
+              state.printTrim = keepTrim; state.printRecto = keepRecto; state.printBleed = keepBleed;
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "plate.across.preview", feature: "plate", name: "Across both pages in the Print Interior View: an across chapter's spread shows print's very halves (printAcrossHalves) — the verso half over the whole plate leaf and the recto half over the whole opening leaf, bleed included, the recto unmasked (its Spread fade is baked in, as print draws it), the chapter's own backdrop not drawn — meeting at the spine, left to right and right to left (the plate on the right), bleed off and on; before its halves are baked the view shows what print would then print (the whole picture inside the margins, no layer) and re-lays with them when they land; a fill plate's leaf beside it is drawn as before",
+          async run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepTrim = state.printTrim, keepRecto = state.printRecto, keepBleed = state.printBleed, keepGuides = piv.guides;
+            try {
+              const bad = [];
+              applyBookDoc(buildEmptyBook());
+              state.meta.title = "Across Preview Fixture"; state.meta.author = "Fixture Author";
+              state.printTrim = "6x9"; state.printRecto = true; state.printBleed = false; piv.guides = true;
+              const paint = (w, h, cols) => { const c = printCanvas(w, h); const g = c.getContext("2d"); cols.forEach((col, i) => { g.fillStyle = col; g.fillRect(i * w / cols.length, 0, w / cols.length, h); }); return c.toDataURL("image/png").split(",")[1]; };
+              const bdData = paint(40, 40, ["#00ff00"]);
+              state.images = [{ id: "acvpic", name: "Halves.png", mediaType: "image/png", ext: "png", data: paint(1600, 1200, ["#ff0000", "#0000ff"]) },
+                { id: "acvbd", name: "Green.png", mediaType: "image/png", ext: "png", data: bdData }];
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.title = "One"; ch.content = "The harbour bell rang over the water at first light.";
+              Object.assign(ch, { plateId: "acvpic", plateAlt: "Red meets blue", plateFit: "across", backdropId: "acvbd", backdropStrength: "whisper" });
+              const ch2 = mkSection("body", "chapter", "Two", { number: "2", content: "The tide turned before noon.", plateId: "acvbd", plateAlt: "A green page", plateFit: "fill" });
+              state.sections.splice(state.sections.indexOf(ch) + 1, 0, ch2);
+              const spreadOf = (s) => {
+                const pg = piv.model.pages.find((p) => p.section === s && p.col === 0);
+                if (!pg) return null;
+                piv.spread = Math.floor(pg.n / 2); renderPrintView();
+                const sp = $("pivSpread");
+                return { sp, plateEl: sp.querySelector('.piv-page[data-page="' + pg.n + '"]'), openEl: sp.querySelector('.piv-page[data-page="' + (pg.n + 1) + '"]') };
+              };
+              const near = (r1, r2) => Math.abs(r1.left - r2.left) < 1 && Math.abs(r1.top - r2.top) < 1 && Math.abs(r1.width - r2.width) < 1 && Math.abs(r1.height - r2.height) < 1;
+              const shown = async (lang, bleed) => {
+                state.meta.language = lang; state.printBleed = bleed;
+                const rtl = lang === "ar", what = (rtl ? "right to left" : "left to right") + (bleed ? ", bleed" : "");
+                await preparePrintPress();
+                const h = await printAcrossHalves(ch);
+                openPrintInteriorView();
+                await piv.baking;
+                const v = spreadOf(ch);
+                if (!v || !v.plateEl || !v.openEl) { bad.push(what + ": the across spread is not drawn"); return; }
+                const im = v.plateEl.querySelector("img.piv-plate-across");
+                if (!im || im.getAttribute("src") !== h.verso) { bad.push(what + ": the plate leaf does not show print's verso half"); return; }
+                const lay = v.openEl.querySelector(".piv-bleed.piv-across");
+                if (!lay || lay.style.backgroundImage.indexOf(h.recto) === -1) { bad.push(what + ": the opening leaf does not show print's recto half"); return; }
+                if (v.openEl.querySelectorAll(".piv-bleed").length !== 1 || v.sp.innerHTML.indexOf(bdData.slice(0, 120)) !== -1) bad.push(what + ": the chapter's own backdrop is drawn");
+                const cs = getComputedStyle(lay), mask = cs.maskImage || cs.webkitMaskImage;
+                if (!(mask === "none" && cs.opacity === "1" && cs.backgroundSize === "100% 100%")) bad.push(what + ": the recto half is not drawn whole and unmasked (mask " + mask + ", opacity " + cs.opacity + ", size " + cs.backgroundSize + ")");
+                if (getComputedStyle(im).objectFit !== "fill") bad.push(what + ": the verso half is fitted, not placed as given");
+                const pr = v.plateEl.getBoundingClientRect(), or = v.openEl.getBoundingClientRect();
+                if (!near(im.getBoundingClientRect(), pr)) bad.push(what + ": the verso half does not cover its whole leaf");
+                if (!near(lay.getBoundingClientRect(), or)) bad.push(what + ": the recto half does not cover its whole leaf");
+                if (rtl ? !(or.right <= pr.left + 0.5) : !(pr.right <= or.left + 0.5)) bad.push(what + ": the plate is not on the " + (rtl ? "right" : "left") + " of the spread");
+                const inFlow = v.openEl.querySelector(".piv-clip .bd-layer");
+                if (inFlow && getComputedStyle(inFlow).display !== "none") bad.push(what + ": the in-flow layer is drawn too");
+                if (bleed) {
+                  const pb = v.plateEl.querySelector(":scope > .piv-trimbox"), ob = v.openEl.querySelector(":scope > .piv-trimbox");
+                  const pbr = pb && pb.getBoundingClientRect(), obr = ob && ob.getBoundingClientRect();
+                  /* the trim boxes meet the spine: the bleed lies on the outer edges only */
+                  if (!(pbr && obr && (rtl ? Math.abs(pbr.left - pr.left) < 1 && Math.abs(obr.right - or.right) < 1 : Math.abs(pbr.right - pr.right) < 1 && Math.abs(obr.left - or.left) < 1))) bad.push(what + ": the trim does not meet the spine on both leaves");
+                }
+                const f = spreadOf(ch2);
+                if (!(f && f.plateEl && f.plateEl.querySelector(".piv-plate-full") && !f.plateEl.querySelector(".piv-plate-across"))) bad.push(what + ": the fill plate's leaf is not drawn as before");
+                if (rtl) {
+                  /* a leaf off its print side (the hardcover's spread: verso left, never mirrored) gets the fallback, never a half */
+                  const pg = piv.model.pages.find((p) => p.section === ch && p.col === 0);
+                  const off = pg && pivPageEl(pg, "left", piv.model);
+                  if (!(off && off.querySelector("img.piv-plate-whole") && !off.querySelector(".piv-plate-across"))) bad.push(what + ": a plate leaf drawn off its print side carries a half");
+                }
+                $("modalPrintView").classList.remove("open");
+              };
+              await shown("en", false);
+              await shown("en", true);
+              await shown("ar", false);
+              await shown("ar", true);
+              /* a picture and trim not yet baked (a picture of this check's own: plate.across.print paints the same
+                 red | blue one and bakes it at 5 x 8): the view opens on print's fallback, then re-lays with the halves */
+              state.images.push({ id: "acvpic2", name: "Halves 2.png", mediaType: "image/png", ext: "png", data: paint(1600, 1200, ["#ff0000", "#00ffff"]) });
+              ch.plateId = "acvpic2";
+              state.meta.language = "en"; state.printBleed = false; state.printTrim = "5x8";
+              if (printAcrossCached(ch)) bad.push("the fallback went unexercised: this picture's halves were baked already");
+              openPrintInteriorView();
+              const waiting = piv.baking;
+              const b = spreadOf(ch);
+              const w = b && b.plateEl && b.plateEl.querySelector("img.piv-plate-whole");
+              if (!(w && w.getAttribute("src") === picDataSrc("image/png", state.images[2].data) && !b.plateEl.querySelector(".piv-plate-across") && b.openEl && !b.openEl.querySelector(".piv-bleed"))) bad.push("before its halves are baked the view does not show the whole picture without a layer");
+              await waiting;
+              const h5 = await printAcrossHalves(ch);
+              const a5 = spreadOf(ch);
+              const im5 = a5 && a5.plateEl && a5.plateEl.querySelector("img.piv-plate-across");
+              if (!(im5 && im5.getAttribute("src") === h5.verso && a5.openEl.querySelector(".piv-bleed.piv-across"))) bad.push("the view did not re-lay with the halves once they were baked");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
+                "the across spread shows print's own halves (printAcrossHalves), each over its whole leaf with its bleed, the recto unmasked and the chapter's own backdrop not drawn, meeting at the spine: left to right with the plate on the left, right to left with it on the right (a leaf drawn off its print side, as the hardcover draws it, got the whole picture), bleed off and on; a 5 x 8 trim opened on the whole picture without a layer and re-laid with its new halves; the fill plate's leaf drawn as before");
+            } finally {
+              $("modalPrintView").classList.remove("open");
+              state.printTrim = keepTrim; state.printRecto = keepRecto; state.printBleed = keepBleed; piv.guides = keepGuides;
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "plate.across.placements", feature: "plate", name: "Across both pages, resolution: an across plate is measured where it prints — across the open spread (both trims, plus the bleed when it is on) at its one crop's pixels per inch — so a square 3000 x 3000 picture on 6 x 9 is 250 DPI (244.9 with bleed) and fails the preflight's and the Store-ready check's 300 DPI rows, a 1408 x 768 one is 85; the chapter's stored backdrop, not printed, is not measured",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepTrim = state.printTrim, keepBleed = state.printBleed, keepServer = storeUi.server;
+            try {
+              const bad = [];
+              const png = (w, h) => btoa(String.fromCharCode(137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, (w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255, (h >>> 24) & 255, (h >>> 16) & 255, (h >>> 8) & 255, h & 255, 8, 2, 0, 0, 0, 0, 0, 0, 0));
+              applyBookDoc(buildEmptyBook());
+              state.printTrim = "6x9"; state.printBleed = false; storeUi.server = null;
+              state.images = [{ id: "acsq", name: "Square.png", mediaType: "image/png", ext: "png", data: png(3000, 3000) },
+                { id: "acwide", name: "Wide.png", mediaType: "image/png", ext: "png", data: png(1408, 768) },
+                { id: "aclow", name: "Small backdrop.png", mediaType: "image/png", ext: "png", data: png(100, 100) }];
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.title = "One"; ch.content = "The harbour bell rang over the water at first light.";
+              Object.assign(ch, { plateId: "acsq", plateAlt: "A square picture", plateFit: "across", backdropId: "aclow", backdropStrength: "whisper" });
+              const mine = () => printPlacements().filter((p) => p.section === ch);
+              const near = (a, b) => Math.abs(a - b) < 1e-9;
+              let pl = mine();
+              if (!(pl.length === 1 && pl[0].img.id === "acsq")) bad.push("the across chapter is not measured as its one plate (" + pl.map((p) => p.img.id).join(",") + "): its stored backdrop must not be");
+              else if (!(near(pl[0].dpi, 250) && pl[0].placedW === 12 && pl[0].placedH === 9)) bad.push("a 3000 x 3000 across plate on 6 x 9 is not 250 DPI over 12 x 9 in (" + pl[0].dpi + ", " + pl[0].placedW + " x " + pl[0].placedH + ")");
+              const flagged = auditPrintInterior().findings.filter((f) => f.id === "images.resolution" && f.jump && f.jump.sectionId === ch.id);
+              if (flagged.length !== 1 || !flagged[0].detail.includes("250")) bad.push("the preflight does not flag the across plate at 250 DPI, once");
+              const x = storeAudit({ store: "kdp", binding: "paperback", ink: "bw_white" });
+              const rows = x.groups.interior.filter((r) => r.id.indexOf("dpi.") === 0 && r.action && r.action.sectionId === ch.id);
+              if (rows.length !== 1 || rows[0].status !== "fail" || !rows[0].evidence.includes("250 DPI")) bad.push("the Store-ready check does not fail the across plate at 250 DPI, once");
+              state.printBleed = true;
+              pl = mine();
+              if (!(pl.length === 1 && near(pl[0].dpi, 3000 / 12.25) && pl[0].placedW === 12.25 && pl[0].placedH === 9.25)) bad.push("with bleed, the 3000 x 3000 across plate is not 3000 / 12.25 DPI over 12.25 x 9.25 in (" + (pl[0] && pl[0].dpi) + ")");
+              state.printBleed = false;
+              ch.plateId = "acwide";
+              pl = mine();
+              if (!(pl.length === 1 && Math.round(pl[0].dpi) === 85)) bad.push("a 1408 x 768 across plate on 6 x 9 is not 85 DPI (" + (pl[0] && pl[0].dpi) + ")");
+              ch.plateFit = "fill";
+              if (mine().length !== 2) bad.push("switched to fill, the chapter's backdrop is not measured again");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") :
+                "a 3000 x 3000 across plate on 6 x 9 measured at 250 DPI over 12 x 9 in (244.9 over 12.25 x 9.25 with bleed), failing the preflight's and the Store-ready check's 300 DPI rows; 1408 x 768 at 85 DPI; the stored backdrop measured only once the fit is fill again");
+            } finally {
+              state.printTrim = keepTrim; state.printBleed = keepBleed; storeUi.server = keepServer;
               applyBookDoc(keepDoc);
             }
           } },
@@ -80928,6 +81460,9 @@
         } });
       /* BEUK:localpics — the research policy check awaits a fetch: it belongs with the checks that are awaited (in SELF_CHECKS its Promise read as a failure) */
       { const i = SELF_CHECKS.findIndex((c) => c.id === "notebook.research.csp"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); }
+      /* BEUK:across — the across print check awaits the press bake: written beside the plate-fit checks, run with the awaited ones */
+      { const i = SELF_CHECKS.findIndex((c) => c.id === "plate.across.print"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); }
+      { const i = SELF_CHECKS.findIndex((c) => c.id === "plate.across.preview"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); } /* (and the preview's, which awaits it too) */
       /* …and so does every import check that awaits (a zip opened, an .odt or a web page read): written beside the
          import's other checks, each is run with the checks that are awaited, where its answer can be read */
       for (let i = SELF_CHECKS.length - 1; i >= 0; i--) {
@@ -83530,7 +84065,7 @@
       }
       function zenStageSignature(s) {
         if (!s) return "";
-        return [s.id, s.type, s.plateId || "", s.plateAlt || "", s.backdropId || "", s.backdropStrength || "",
+        return [s.id, s.type, s.plateId || "", s.plateAlt || "", s.backdropId || "", s.backdropStrength || "", s.plateFit || "" /* BEUK:across — the fit decides the backdrop */,
           state.theme.ornament || "", state.theme.headingFlourish || "", state.theme.headingFlourishPos || "",
           state.cover ? (state.cover.name || "") + ":" + state.cover.data.length : "",
           state.meta.title || "", state.meta.author || "",
@@ -83626,7 +84161,7 @@
         if (sig !== zenStageSig) {
           zenStageSig = sig;
           const html = zenStageHtml(s);
-          stage.innerHTML = html ? '<div class="zen-book' + (backdropImage(s) ? " has-backdrop" : "") + '">' + html + "</div>" : "";
+          stage.innerHTML = html ? '<div class="zen-book' + (backdropInEffect(s) ? " has-backdrop" : "") + '">' + html + "</div>" : "";
           stage.style.display = html ? "" : "none";
           stage.querySelectorAll("img").forEach((im) => {
             const alt = im.getAttribute("alt");
@@ -87241,6 +87776,9 @@
         "editor.plateFitDesc": "पूरा पेज भरें तो तस्वीर पेज के आकार में कट जाती है; पूरी तस्वीर दिखाएँ तो वह पूरी की पूरी हाशियों के अंदर रहती है।",
         "editor.plateFitFill": "पूरा पेज भरें",
         "editor.plateFitWhole": "पूरी तस्वीर दिखाएँ",
+        "editor.plateFitAcross": "दोनों पेजों पर फैलाएँ",
+        "editor.plateAcrossNote": "तस्वीर सामने वाले पेज को भी ढकती है, इसलिए जब तक यह चुना है, इस अध्याय की पृष्ठभूमि अलग रखी जाती है।",
+        "editor.plateAcrossSoft": "यह तस्वीर दोनों पेजों पर {ppi} पिक्सेल प्रति इंच देती है; यह धुँधली छप सकती है।",
         "editor.plateNone": "कोई चित्र-पेज नहीं",
         "editor.plateUpload": "तस्वीर अपलोड करें…",
         "editor.plateAlt": "चित्र-पेज का विवरण (alt text)",
@@ -90342,6 +90880,9 @@
         "editor.plateFitDesc": "“पूर्ण पान भरा” निवडल्यास चित्र पानाच्या आकारात कापले जाते; “संपूर्ण चित्र दाखवा” निवडल्यास ते पूर्ण, समासांच्या आत राहते.",
         "editor.plateFitFill": "पूर्ण पान भरा",
         "editor.plateFitWhole": "संपूर्ण चित्र दाखवा",
+        "editor.plateFitAcross": "दोन्ही पानांवर पसरवा",
+        "editor.plateAcrossNote": "चित्र समोरचे पानही झाकते, त्यामुळे हे निवडलेले असेपर्यंत या प्रकरणाची पार्श्वभूमी बाजूला ठेवली जाते.",
+        "editor.plateAcrossSoft": "हे चित्र दोन्ही पानांवर {ppi} पिक्सेल प्रति इंच देते; ते धूसर छापले जाऊ शकते.",
         "editor.plateNone": "चित्रपान नाही",
         "editor.plateUpload": "चित्र अपलोड करा…",
         "editor.plateAlt": "चित्रपानाचा पर्यायी मजकूर",

@@ -69,7 +69,7 @@ const flat = (d: Rec): Record<string, Spec> =>
 
 /* Enums 1.0 enforces on load. */
 const BACKDROP_STRENGTHS = ['whisper', 'soft', 'strong', 'spread'] as const; // BACKDROP_STRENGTHS, CI:29412; normalizeSection, CI:50109
-const PLATE_FITS = ['fill', 'whole'] as const; // PLATE_FITS (BEUK:platefit); normalizeSection keeps plateFit only from this list
+const PLATE_FITS = ['fill', 'whole', 'across'] as const; // PLATE_FITS (BEUK:platefit); normalizeSection keeps plateFit only from this list
 const SECTION_MODES = ['verse'] as const; // BEUK:poemmode; normalizeSection keeps mode only when it is "verse" (absent reads as prose)
 const VERSE_ALIGNS = ['left'] as const; // BEUK:poemmode; normalizeSection keeps verseAlign only when it is "left" (absent reads as centred)
 const OL_STATUSES = ['todo', 'draft', 'revised', 'final'] as const; // OL_STATUSES, CI:32919; olSectionFields keeps status only from this list
