@@ -141,7 +141,7 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 - **To give you the service you asked for:** your account, shelf, archive, checks, reading copies and reset emails. Under the EU and UK GDPR this is "performance of a contract".
 - **Legitimate interests:** keeping the service safe and working (rate limits, the hashed IP on comments, error logs, backups) and improving the help pages from anonymous search counts.
 - **Your choice:** the Founders' Shelf form, which you fill in only if you want to.
-- **Advance review copies:** sending a reader the copy they asked for, with its code and its emails, and keeping the opt-out hash after a reader says "Not you?" or "No more email from", so that the objection holds for good. Both are legitimate interests (Art. 6(1)(f)): the writer's and the reader's in getting the copy to the person who asked for it, and Beuk's in never mailing someone who said stop. The reader list is the writer's: Beuk keeps it for the writer who runs the campaign. The opt-out list is Beuk's own, and holds across every writer.
+- **Advance review copies:** sending a reader the copy they asked for, with its code and its emails, and keeping the opt-out hash after a reader says "Not you?" or "No more email from", so that the objection holds for good. Both are legitimate interests (Art. 6(1)(f)): the writer's and the reader's in getting the copy to the person who asked for it, and Beuk's in not mailing someone who asked not to be mailed. The reader list is the writer's: Beuk keeps it for the writer who runs the campaign. The opt-out list is Beuk's own: a "Not you?" holds across every writer, a "No more email from" for that writer only.
 
 ## How long things are kept
 
