@@ -17,13 +17,16 @@ import { twoStepStatus, type TwoStepStatus } from '../twostep/store.js';
  * to users): sessions, password_resets, email_confirmations,
  * manuscripts, series_covenants, user_themes, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
  * streak_days, streak_freezes, streak_state, shares (+ share_recipients,
- * share_comments, share_readers), school_progress, authorship_stamps, user_two_step,
+ * share_comments, share_readers), arc_campaigns (+ arc_builds, arc_events;
+ * ARC readers are share_recipients of the campaign share), school_progress, authorship_stamps, user_two_step,
  * two_step_recovery_codes, sign_in_challenges, billing_subscriptions. billing_events keep their
  * Stripe event id (the webhook dedupe ledger) with user_id set null.
  *
  * NOT linked to an account in the database, so not part of either:
  * Founders' Shelf applications (name + email typed into a public form,
- * no user id) and the admin-only Housekeeping records.
+ * no user id), the admin-only Housekeeping records, and ARC mail
+ * suppressions (hashed addresses; a "Stop" row's scope is the author's
+ * id as text, with no foreign key, so the opt-out outlives the account).
  */
 
 /** Every table with a foreign key to users, and what "Delete my account"
@@ -53,6 +56,12 @@ export const ACCOUNT_DELETED_TABLES = [
   'streak_state',
   'school_progress',
   'shares',
+  // ARC campaigns (migration 031): the only new table with an FK to users.
+  // arc_builds and arc_events go with their campaign (on delete cascade);
+  // ARC readers are share_recipients rows and go with the campaign share.
+  // mail_suppressions has no FK to users, so it is in neither list on
+  // purpose: an opt-out must outlive the author's account.
+  'arc_campaigns',
   'authorship_stamps',
   'user_two_step',
   'two_step_recovery_codes',
@@ -761,6 +770,11 @@ export async function deleteAccount(
       const r = await tx.query<{ x: number }>(`${sql} returning 1 as x`, params);
       removed[label] = r.rows.length;
     };
+    // First, and explicitly (so the count is real): a campaign's
+    // manuscript_id is on delete restrict, so campaigns must be gone before
+    // the manuscripts. Their builds and events cascade; the campaign share
+    // and its ARC readers go with the share deletes below.
+    await del('arc_campaigns', 'delete from arc_campaigns where owner_id = $1', [userId]);
     await del('share_comments', 'delete from share_comments where share_id in (select id from shares where owner_id = $1)', [userId]);
     await del('share_readers', 'delete from share_readers where share_id in (select id from shares where owner_id = $1)', [userId]);
     await del('share_recipients', 'delete from share_recipients where share_id in (select id from shares where owner_id = $1)', [userId]);
