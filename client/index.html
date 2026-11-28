@@ -29860,10 +29860,21 @@
             const tb = tableParts(seg);
             if (!tb.rows.length) return cx.blocks(seg.text);
             const num = tableNumericCols(tb);
+            /* A right-to-left book: a figure column's words are isolated
+               in <span dir="auto">, set in their own direction (the first
+               strong letter's, else left to right), so "+4%" is never set
+               "4%+". Markup, not CSS: EPUB 3.3 (6.3.1.2) forbids
+               unicode-bidi and direction in a style sheet and names the
+               dir attribute instead. On a span, not the cell: dir on the
+               cell would turn its logical padding round too (measured
+               2026-11-27, Chromium: the gap moved to the other side, and
+               in one row two columns' figures stood 4px apart). */
+            const figIso = isRtlLang(bookLang());
             /* "nb": a short cell (tableCellShort) of a table of up to four columns is never broken — a figure cell is whole already */
             const cell = (tag, c, i) => {
               const cls = (num[i] ? ["num"] : []).concat(tb.cols <= 4 && tableCellShort(c) && !(num[i] && tag === "td") ? ["nb"] : []);
-              return "<" + tag + (tag === "th" ? ' scope="col"' : "") + (cls.length ? ' class="' + cls.join(" ") + '"' : "") + ">" + tableCellHtml(c, cx) + "</" + tag + ">";
+              const words = tableCellHtml(c, cx);
+              return "<" + tag + (tag === "th" ? ' scope="col"' : "") + (cls.length ? ' class="' + cls.join(" ") + '"' : "") + ">" + (num[i] && figIso && words ? '<span dir="auto">' + words + "</span>" : words) + "</" + tag + ">";
             };
             const row = (tag, r) => "<tr>" + Array.from({ length: tb.cols }, (x, i) => cell(tag, r[i] == null ? "" : r[i], i)).join("") + "</tr>";
             const step = tb.cols >= 9 ? " tbl-w3" : tb.cols >= 7 ? " tbl-w2" : tb.cols >= 5 ? " tbl-w1" : "";
@@ -32080,13 +32091,15 @@
             /* BEUK:table — a table reads from the right (its columns run
                right to left by the direction alone): cells flush right,
                their gap on the left, a column of figures at the line's
-               end, the left, each figure read left to right by itself
-               (plaintext), so "+4%" is never set "4%+". The physical
-               values are for readers without logical properties. */
+               end, the left. Each figure reads in its own direction by
+               the span dir="auto" round its words (CONTAINER_KINDS.table), never by
+               unicode-bidi here: EPUB 3.3 forbids it and direction in a
+               style sheet (EPUBCheck CSS-001). The physical values are
+               for readers without logical properties. */
             S + ".tbl caption, " + S + ".tbl th, " + S + ".tbl td { text-align: right; text-align: start; }",
             S + ".tbl th, " + S + ".tbl td { padding-right: 0; padding-left: 1.5em; padding-inline-start: 0; padding-inline-end: 1.5em; }",
             S + ".tbl th:last-child, " + S + ".tbl td:last-child { padding-left: 0; padding-inline-end: 0; }",
-            S + ".tbl .num { text-align: left; unicode-bidi: plaintext; }");
+            S + ".tbl .num { text-align: left; }");
         }
         /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
            book wears a display face or a colour. */
@@ -70025,6 +70038,17 @@
               try {
                 const rtl = probe(buildBookCss(".sc-tb-r"), "sc-tb-r", "rtl", 420);
                 if (!rtl.firstColOnRight || !rtl.firstAtRight || !rtl.numAtLeft || !rtl.fits || rtl.boxes) bad.push("right-to-left: first column on the right " + rtl.firstColOnRight + ", words flush right " + rtl.firstAtRight + ", figures at the left " + rtl.numAtLeft + ", fits " + rtl.fits);
+                /* a signed figure reads left to right in the right-to-left table by its span dir="auto"; the EPUB
+                   stylesheet sets neither unicode-bidi nor direction (EPUB 3.3 6.3.1.2, EPUBCheck CSS-001) */
+                if (/(?:^|[{;\s])(?:unicode-bidi|direction)\s*:/.test(buildBookCss("").replace(/\/\*[\s\S]*?\*\//g, ""))) bad.push("right-to-left: the EPUB stylesheet sets unicode-bidi or direction, which EPUB 3.3 forbids");
+                const sgSt = document.createElement("style"); sgSt.textContent = buildBookCss(".sc-tb-s"); document.body.appendChild(sgSt);
+                const sg = document.createElement("div"); sg.className = "sc-tb-s"; sg.dir = "rtl"; sg.style.cssText = "position:absolute;left:-9999px;top:0;width:420px";
+                sg.innerHTML = set("::: table header\n| المدينة | التغيّر |\n| القاهرة | +4% |\n:::"); document.body.appendChild(sg);
+                try {
+                  const sp = sg.querySelector("td.num > span[dir=auto]"), tx = sp && sp.firstChild;
+                  const xs = tx && tx.data === "+4%" ? [0, 1, 2].map((i) => { const r = document.createRange(); r.setStart(tx, i); r.setEnd(tx, i + 1); return r.getBoundingClientRect().left; }) : [];
+                  if (!(xs.length === 3 && xs[0] < xs[1] && xs[1] < xs[2])) bad.push("right-to-left: \"+4%\" does not read left to right in its cell: " + JSON.stringify(xs) + " " + JSON.stringify(sg.innerHTML.slice(0, 300)));
+                } finally { sg.remove(); sgSt.remove(); }
               } finally { state.meta.language = "en"; }
               /* 5. every surface carries it */
               const ph = buildPrintHtml();
@@ -70046,7 +70070,7 @@
               if (!["Table 3. Tonnage by port, 1921", "Port; Ships; Tonnage", "Leith; 14; 9,200", "Hull; 22; 15,750", "Witness; Statement"].every((x) => acx.includes(x)) || !acx.some((x) => /^H\. Lindholm; \*\*Absent\*\* \| on leave$/.test(x)) || /:::/.test(acx.join("\n"))) bad.push("narration: " + JSON.stringify(acx));
               const ra = raCleanText(t1);
               if (/\||:::/.test(ra) || !/Leith; 14; 9,200/.test(ra) || !/\n\s*\n\s*Hull; 22; 15,750/.test(ra)) bad.push("read aloud: " + JSON.stringify(ra));
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "computed: a rule above, below and under the header, no boxes, caption above, header bold; a short table centred at its own width, a long one the full measure; cells hyphenate as the book does; figures at the line's end and words at its start, mirrored right to left; eight columns inside a 420px and a 330px measure, type stepped down, header words whole; a short cell beside a long one kept on one line; rows whole, header and caption kept with the next row; print file and EPUB carry the table (validator errors 0); a note reference in a cell links both ways; escaped bars, redactions, short rows and stray lines read as written; the beautifier and the Markdown export leave the fence unchanged; Word: a paragraph per row; counts 15 / 16 / 3; narration and read aloud say each row as \"cell; cell\"");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "computed: a rule above, below and under the header, no boxes, caption above, header bold; a short table centred at its own width, a long one the full measure; cells hyphenate as the book does; figures at the line's end and words at its start, mirrored right to left (\"+4%\" read left to right there, no unicode-bidi or direction in the stylesheet); eight columns inside a 420px and a 330px measure, type stepped down, header words whole; a short cell beside a long one kept on one line; rows whole, header and caption kept with the next row; print file and EPUB carry the table (validator errors 0); a note reference in a cell links both ways; escaped bars, redactions, short rows and stray lines read as written; the beautifier and the Markdown export leave the fence unchanged; Word: a paragraph per row; counts 15 / 16 / 3; narration and read aloud say each row as \"cell; cell\"");
             } finally {
               applyBookDoc(keepDoc);
             }
