@@ -39,7 +39,7 @@ describe('1.0 self-check preview.hardcover.i18n (and the full-screen words, full
     const pack = (l: string) => JSON.parse(readFileSync(fileURLToPath(new URL(`../src/generated/packs/${l}.json`, import.meta.url)), 'utf8')) as Record<string, string>;
     const en = pack('en');
     const keys = Object.keys(en).filter((k) => /^(hcp|fs)\./.test(k) || /^preview\./.test(k));
-    expect(meta.order.length).toBe(13);
+    expect(meta.order.length).toBe(15);
     expect(keys.filter((k) => k.startsWith('hcp.')).length).toBeGreaterThan(10);
     const missing: string[] = [];
     for (const l of meta.order) {

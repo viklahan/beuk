@@ -49,7 +49,7 @@ test('zen calm: settings and pictures fold, the count and the tabs are not on sh
   assert.match(html, /body\.zen #editorWordBar \{ display: none !important; \}/);
   assert.match(html, /body\.zen \.center-tabs \{ display: none; \}/);
   assert.match(html, /body\.zen #panelContent > #editorArea \{ flex: 1 1 auto;/);
-  assert.equal((html.match(/"zen\.paint\.pick": "/g) || []).length, 13);
+  assert.equal((html.match(/"zen\.paint\.pick": "/g) || []).length, 15);
 });
 
 test('zen calm: below 1024px the editor pane is the one Zen column, never the 0px first track', async () => {

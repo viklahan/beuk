@@ -13,7 +13,7 @@ const lucide = () => readFileSync(fileURLToPath(new URL('../../client/assets/ven
 describe('the extraction breaks loudly', () => {
   it('extracts every pack, the tokens of both themes and the icons from the real 1.0', async () => {
     const s = await extractStrings(studioHtml());
-    expect(s.order.length).toBe(13);
+    expect(s.order.length).toBe(15);
     expect(Object.keys(s.packs.en).length).toBeGreaterThan(1000);
     expect(s.rtl).toEqual(['ar']);
     const tk = extractTokens(studioHtml());

@@ -33,9 +33,9 @@ test('import zones: only numbered books are zoned, and a contents line is no anc
   assert.match(parse, /it\.cls === "chapter" && it\.head\.number && it\.bodyText/);
 });
 
-test('import zones: Appendix is a back-matter type with a label in all thirteen language packs and an EPUB type', async () => {
+test('import zones: Appendix is a back-matter type with a label in all fifteen language packs and an EPUB type', async () => {
   const html = await clientHtml();
-  assert.equal((html.match(/"import\.type\.appendix": "/g) || []).length, 13);
+  assert.equal((html.match(/"import\.type\.appendix": "/g) || []).length, 15);
   assert.match(html, /"appendix": \{ kind: "back", type: "appendix", title: "Appendix" \}/);
   assert.match(html, /appendix: "appendix"/);
   assert.match(html, /back: \{ appendix: 0, acknowledgments: 1/);

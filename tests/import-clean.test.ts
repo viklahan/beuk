@@ -45,7 +45,7 @@ test('import clean: an empty or binary text file and a broken Word file are refu
 });
 
 /* BEUK:importreplace — an import clears everything old, and asks first. */
-test('import replace: the self-check is registered, the desk is cleared whole, and the warning reads in all thirteen packs', async () => {
+test('import replace: the self-check is registered, the desk is cleared whole, and the warning reads in all fifteen packs', async () => {
   const html = await clientHtml();
   const id = 'import.replace.warns-and-clears';
   assert.ok(html.includes(`{ id: "${id}"`));
@@ -56,7 +56,7 @@ test('import replace: the self-check is registered, the desk is cleared whole, a
   assert.match(repl, /autoSnapshot\("import"\);[\s\S]{0,700}applyBookDoc\(buildEmptyBook\(\), \{ keepHistory: true \}\);/);
   assert.doesNotMatch(repl, /displacingSample/, 'no path merges an import into an old desk');
   for (const k of ['import.replaceTitle', 'import.replaceBody', 'import.replaceYes', 'import.replaceNo']) {
-    assert.equal((html.match(new RegExp(`"${k.replace('.', '\.')}": "`, 'g')) || []).length, 13, k);
+    assert.equal((html.match(new RegExp(`"${k.replace('.', '\.')}": "`, 'g')) || []).length, 15, k);
   }
   const door = html.slice(html.indexOf('async function readImportFile('), html.indexOf('function initImport(')); /* BEUK:onereader — the refusals live in the one reader now */
   assert.match(door, /askFirst\(\)/);

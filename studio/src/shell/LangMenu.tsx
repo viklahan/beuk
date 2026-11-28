@@ -5,7 +5,7 @@ import { useToast } from './Toasts';
 
 /* 1.0's header language dropdown (buildUiLangMenu / syncUiLangMenu /
    toggleUiLangMenu): a pill with the current language's own name, opening
-   the thirteen-language list; the choice is the interface's only, never
+   the fifteen-language list; the choice is the interface's only, never
    the book's. Closes on a choice, Escape or a click outside. */
 export function LangMenu() {
   const { lang, setLang, order, names, t } = useLocale();

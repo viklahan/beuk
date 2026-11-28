@@ -96,7 +96,7 @@ Share a frozen, read-only copy by link; readers comment without an account, and 
 - **Covenant** — the people, places and things of your book (and your series), kept with the book, found in the text on your device. AI-free.
 - **Goals, streaks and History** — writing days, a daily target computed from your deadline, word-by-word compare against any snapshot. The streak forgives rest days by design.
 - **Imports that show their work** — Word, Markdown, plain text and PDF, each followed by a "Here's what we changed" report with per-item undo.
-- **13 studio languages, 36 book languages**, right-to-left books included, with real Arabic and Devanagari book faces embedded.
+- **15 studio languages, 37 book languages**, right-to-left books included, with real Arabic and Devanagari book faces embedded.
 - **Offline-complete** — the studio installs as an app and keeps working without a network.
 
 ## Pricing

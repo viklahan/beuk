@@ -887,19 +887,22 @@ function packValues(html: string, key: string): string[] {
   return out;
 }
 
-test('studio: the paused strings in all 13 packs say what is locked and what stays downloadable, never "every export"', () => {
+test('studio: the paused strings in all 15 packs say what is locked and what stays downloadable, never "every export"', () => {
   const html = readFileSync(path.resolve(import.meta.dirname, '..', 'client', 'index.html'), 'utf8');
   for (const key of ['plan.paused', 'plan.pausedToast', 'tour.s4b']) {
     const values = packValues(html, key);
-    assert.equal(values.length, 13, `${key} in 13 packs`);
+    assert.equal(values.length, 15, `${key} in 15 packs`);
     for (const v of values) assert.doesNotMatch(v, /every export|export.*(still|always)/i, `${key}: ${v.slice(0, 60)}`);
   }
   for (const v of packValues(html, 'plan.paused')) {
-    for (const w of ['EPUB', 'print PDF', 'cover wrap', 'backup file', 'Word', 'Markdown', 'Download all my data']) assert.ok(v.includes(w), `plan.paused mentions ${w}`);
+    // A translated pack (hi, mr) says "print PDF" and "cover wrap" in its own words; the names that stay literal still show.
+    const english = v.startsWith('Your free trial');
+    const words = english ? ['EPUB', 'print PDF', 'cover wrap', 'backup file', 'Word', 'Markdown', 'Download all my data'] : ['EPUB', 'PDF', 'Word', 'Markdown', 'Download all my data'];
+    for (const w of words) assert.ok(v.includes(w), `plan.paused mentions ${w}: ${v.slice(0, 40)}`);
   }
   for (const key of ['auth.subLogin', 'auth.subRegister']) {
     const values = packValues(html, key);
-    assert.equal(values.length, 13, key);
+    assert.equal(values.length, 15, key);
     assert.doesNotMatch(values[0], /without an account/i, `${key}: no promise that the studio works without an account`);
   }
 });

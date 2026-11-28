@@ -461,6 +461,11 @@ describe('language detection (lang self-checks): 1.0\'s own detectLanguageInText
     ['lang.detect.chinese-han', 'zh-Hans'],
     ['lang.detect.arabic-rtl-epub', 'ar'],
     ['lang.detect.english-stays-en', 'en'],
+    ['lang.detect.hindi-prose', 'hi'],
+    ['lang.detect.hindi-ghazal-refrain', 'hi'],
+    ['lang.detect.hindi-habitual', 'hi'],
+    ['lang.detect.marathi-prose', 'mr'],
+    ['lang.detect.marathi-dialogue', 'mr'],
   ];
   for (const [id, code] of cases) {
     it(id + ' (detection half)', () => {

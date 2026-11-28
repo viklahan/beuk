@@ -24,14 +24,14 @@ test('imagelib: every new self-check exists in the client and is registered clie
   }
 });
 
-test('imagelib: every new string ships in all 13 locales, placeholders intact', async () => {
+test('imagelib: every new string ships in all 15 locales, placeholders intact', async () => {
   const html = await clientHtml();
   const keys = [...html.matchAll(/"(imglib\.[A-Za-z.]+)": "/g)].map((m) => m[1]);
   const uniq = [...new Set(keys)];
   assert.ok(uniq.length >= 30, `found ${uniq.length} imglib keys`);
   for (const k of [...uniq, 'history.auto.imgremove']) {
     const n = html.split(`"${k}": "`).length - 1;
-    assert.equal(n, 13, `${k} appears in ${n} locales`);
+    assert.equal(n, 15, `${k} appears in ${n} locales`);
   }
   const ph: Record<string, string[]> = {
     'imglib.cleanup': ['{n}', '{size}'], 'imglib.cleanupToast': ['{n}', '{size}'], 'imglib.useItem': ['{where}', '{role}'],

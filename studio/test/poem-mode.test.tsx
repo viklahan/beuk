@@ -451,8 +451,8 @@ describe('the words, in every interface language', () => {
     expect([E['poem.ghost1'], E['poem.ghost2'], E['poem.ghost3']]).toEqual(['Write your first line here…', '…press Enter for the next one…', '…and a blank line starts a new stanza.']);
   });
 
-  it('all 13 packs carry them, with no exclamation mark and no placeholder; every other language says them in its own words', () => {
-    expect(packs.length).toBe(13);
+  it('all 15 packs carry them, with no exclamation mark and no placeholder; every other language says them in its own words', () => {
+    expect(packs.length).toBe(15);
     for (const { code, pack } of packs) {
       for (const k of KEYS) {
         const v = pack[k];
