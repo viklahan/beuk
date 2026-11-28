@@ -7,7 +7,12 @@
  * arcT gives the English line, key by key, never a blank.
  *
  * Fixed by the spec or the plan, verbatim: `arc.stamp` (V's stamp line),
- * `arc.mail.review` and `arc.mail.stampNote`. Every other line here was
+ * `arc.stampPage.title`, `arc.mail.review` and `arc.mail.stampNote`.
+ * The stamp and its page title stay English in every language in slice 1
+ * (controller ruling F16: an unsigned translation inside a reader's EPUB
+ * cannot be recalled), so Task 9 leaves those two keys untranslated and
+ * src/arc/stamp.ts reads them from English whatever the reader's
+ * language. Every other line here was
  * written for slice 1 (Task 2) and is V's to change. None of them asks
  * for a review or treats one as owed (Amazon's rule; the spec's
  * "if you'd like to review it").
@@ -19,6 +24,10 @@ export type ArcLang = (typeof ARC_LANGS)[number];
 export const ARC_EN = {
   // The stamp on the copyright page (V, verbatim). Used by the stamp (Task 3).
   'arc.stamp': 'Advance Review Copy prepared for {name} ({email})',
+  // The title of the one-line page the stamp adds when a book has no
+  // copyright page (Task 3). Like the stamp, English only in slice 1
+  // (controller ruling F16).
+  'arc.stampPage.title': 'Advance Review Copy',
 
   // Lines every reader email shares.
   'arc.mail.review': "If you'd like to review it after reading, you're welcome to. It's never required.",
