@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-27 (the keystroke rescue's two strings: section 6). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words); 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-27 (Hindi and Marathi: section 7, with the 14 keys main added since 340cb22; the keystroke rescue's two strings: section 6). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words); 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -49,6 +49,8 @@ Points worth a look when you read them:
 - **ar** العربية: `{n} حرف تالف في «{chapter}» تعذّر حفظه وصار �.`
 - **ja** 日本語: `「{chapter}」の壊れた文字 {n} 個を保持できず、� になりました。`
 - **zh-Hans** 简体中文: `“{chapter}”中有 {n} 个损坏的字符无法保留，已变成 �。`
+- **hi** हिन्दी: `“{chapter}” में {n} टूटा हुआ अक्षर रखा नहीं जा सका और � बन गया।`
+- **mr** मराठी: `“{chapter}” मधील {n} बिघडलेले अक्षर ठेवता आले नाही आणि ते � झाले.`
 
 ### `next.textWarningPlural`
 
@@ -65,6 +67,8 @@ Points worth a look when you read them:
 - **ar** العربية: `عدد الأحرف التالفة في «{chapter}» التي تعذّر حفظها وصارت �: {n}.`
 - **ja** 日本語: `「{chapter}」の壊れた文字 {n} 個を保持できず、� になりました。`
 - **zh-Hans** 简体中文: `“{chapter}”中有 {n} 个损坏的字符无法保留，已变成 �。`
+- **hi** हिन्दी: `“{chapter}” में {n} टूटे हुए अक्षर रखे नहीं जा सके और � बन गए।`
+- **mr** मराठी: `“{chapter}” मधील {n} बिघडलेली अक्षरे ठेवता आली नाहीत आणि ती � झाली.`
 
 ### `next.markRefused`
 
@@ -81,6 +85,8 @@ Points worth a look when you read them:
 - **ar** العربية: `لا يمكن أن يكون هذا مائلًا أو عريضًا هنا — فنجماته ستُقرأ لاحقًا على أنها شيء آخر.`
 - **ja** 日本語: `ここでは斜体や太字にできません — アスタリスクが読み戻されたときに別の意味になってしまいます。`
 - **zh-Hans** 简体中文: `这里不能设为斜体或粗体 — 它的星号读回时会变成别的意思。`
+- **hi** हिन्दी: `यहाँ इसे इटैलिक या बोल्ड नहीं किया जा सकता — इसके स्टार (*) चिह्न दोबारा पढ़े जाने पर कुछ और बन जाएँगे।`
+- **mr** मराठी: `इथे ते इटॅलिक किंवा ठळक करता येत नाही — त्याच्या * चिन्हांचा अर्थ पुन्हा वाचताना वेगळाच लागेल.`
 
 ### `next.snapshotGone`
 
@@ -97,6 +103,8 @@ Points worth a look when you read them:
 - **ar** العربية: `هذه اللقطة لم تعد هنا — استُبدل الكتاب أو أُزيلت اللقطة. لم يتغيّر شيء.`
 - **ja** 日本語: `そのスナップショットはもうありません — 本が置き換えられたか、スナップショットが削除されました。何も変更していません。`
 - **zh-Hans** 简体中文: `这份快照已不在 — 书已被替换，或快照已被移除。什么都没有更改。`
+- **hi** हिन्दी: `वह स्नैपशॉट अब यहाँ नहीं है — किताब बदल दी गई या स्नैपशॉट हटा दिया गया। कुछ नहीं बदला गया।`
+- **mr** मराठी: `तो स्नॅपशॉट आता इथे नाही — पुस्तक बदलले गेले किंवा स्नॅपशॉट काढून टाकला. काहीही बदलले नाही.`
 
 ### `next.bookReplaced`
 
@@ -113,6 +121,8 @@ Points worth a look when you read them:
 - **ar** العربية: `استُبدل الكتاب في علامة تبويب أخرى بينما كانت هذه تسأل. لم يتغيّر شيء.`
 - **ja** 日本語: `このタブが確認している間に、別のタブで本が置き換えられました。何も変更していません。`
 - **zh-Hans** 简体中文: `在这个标签页询问期间，书已在另一个标签页中被替换。什么都没有更改。`
+- **hi** हिन्दी: `जब यह टैब पूछ रहा था, तभी दूसरे टैब में किताब बदल दी गई। कुछ नहीं बदला गया।`
+- **mr** मराठी: `हा टॅब विचारत असतानाच दुसऱ्या टॅबमध्ये पुस्तक बदलले गेले. काहीही बदलले नाही.`
 
 ### `next.themes.everyH`
 
@@ -129,6 +139,8 @@ Points worth a look when you read them:
 - **ar** العربية: `سمات لكل كتاب`
 - **ja** 日本語: `すべての本で使うテーマ`
 - **zh-Hans** 简体中文: `适用于每本书的主题`
+- **hi** हिन्दी: `हर किताब के लिए थीम`
+- **mr** मराठी: `प्रत्येक पुस्तकासाठी थीम`
 
 ### `next.themes.everySub`
 
@@ -145,6 +157,8 @@ Points worth a look when you read them:
 - **ar** العربية: `سمات تحتفظ بها لنفسك، بمعزل عن أي كتاب. نقرة واحدة تنسخ سمة — بخطوطها وزخارفها — إلى هذا الكتاب وتطبّقها. إزالة سمة من هنا لا تغيّر أي كتاب أبدًا.`
 - **ja** 日本語: `特定の本とは別に、自分用に取っておくテーマです。ワンクリックでテーマを — フォントや飾りごと — この本にコピーして適用します。ここで削除しても、本は一切変更されません。`
 - **zh-Hans** 简体中文: `你为自己留存的主题，独立于任何一本书。单击即可把主题——连同字体和装饰——复制到这本书并应用。在这里移除主题不会更改任何书。`
+- **hi** हिन्दी: `वे थीम जो आप अपने लिए रखते हैं, किसी एक किताब से अलग। एक क्लिक से थीम — उसके फ़ॉन्ट और सजावटी चिह्नों के साथ — इस किताब में कॉपी होकर लागू हो जाती है। यहाँ से किसी थीम को हटाने पर कोई किताब कभी नहीं बदलती।`
+- **mr** मराठी: `कोणत्याही एका पुस्तकापासून वेगळ्या, तुम्ही स्वतःसाठी ठेवलेल्या थीम. एका क्लिकने थीम — तिच्या फॉन्ट आणि नक्षींसह — या पुस्तकात कॉपी होऊन लागू होते. इथून थीम काढली तरी कोणतेही पुस्तक बदलत नाही.`
 
 ### `next.themes.account`
 
@@ -161,6 +175,8 @@ Points worth a look when you read them:
 - **ar** العربية: `محفوظة مع حسابك: تتبعك إلى كل جهاز تسجّل الدخول عليه.`
 - **ja** 日本語: `アカウントに保存されます。サインインしたどのデバイスにも付いてきます。`
 - **zh-Hans** 简体中文: `保存在你的账户中：会跟随你到登录的每台设备。`
+- **hi** हिन्दी: `आपके अकाउंट के साथ रखी गई: आप जिस भी डिवाइस पर साइन इन करें, ये वहाँ आपके साथ रहती हैं।`
+- **mr** मराठी: `तुमच्या अकाउंटसोबत ठेवल्या आहेत: तुम्ही ज्या डिव्हाइसवर साइन इन कराल तिथे त्या तुमच्यासोबत येतात.`
 
 ### `next.themes.deviceOnly`
 
@@ -177,6 +193,8 @@ Points worth a look when you read them:
 - **ar** العربية: `محفوظة على هذا الجهاز فقط. سجّل الدخول وستتبعك إلى كل جهاز.`
 - **ja** 日本語: `このデバイスにのみ保存されます。サインインすれば、どのデバイスにも付いてきます。`
 - **zh-Hans** 简体中文: `仅保存在这台设备上。登录后，它们会跟随你到每台设备。`
+- **hi** हिन्दी: `सिर्फ़ इसी डिवाइस पर रखी गई। साइन इन करें, तो ये हर डिवाइस पर आपके साथ रहेंगी।`
+- **mr** मराठी: `फक्त या डिव्हाइसवर ठेवल्या आहेत. साइन इन करा, म्हणजे त्या प्रत्येक डिव्हाइसवर तुमच्यासोबत येतील.`
 
 ### `next.themes.empty`
 
@@ -193,6 +211,8 @@ Points worth a look when you read them:
 - **ar** العربية: `لا شيء محفوظًا لكل كتاب بعد. استخدم «احتفظ بها لكل كتاب» على إحدى سمات هذا الكتاب، أو في منشئ السمات.`
 - **ja** 日本語: `すべての本用に保存したテーマはまだありません。この本のテーマの「すべての本用に保存」か、テーマクリエイターを使ってください。`
 - **zh-Hans** 简体中文: `还没有为每本书保留的主题。请在本书的某个主题上使用“为每本书保留”，或在主题创建器中使用。`
+- **hi** हिन्दी: `अभी तक हर किताब के लिए कुछ नहीं रखा गया। इस किताब की किसी थीम पर, या थीम क्रिएटर में, “हर किताब के लिए रखें” इस्तेमाल करें।`
+- **mr** मराठी: `प्रत्येक पुस्तकासाठी अजून काहीही ठेवलेले नाही. या पुस्तकाच्या एखाद्या थीमवर, किंवा “थीम क्रिएटर” मध्ये, “प्रत्येक पुस्तकासाठी ठेवा” वापरा.`
 
 ### `next.themes.keep`
 
@@ -209,6 +229,8 @@ Points worth a look when you read them:
 - **ar** العربية: `احتفظ بها لكل كتاب`
 - **ja** 日本語: `すべての本用に保存`
 - **zh-Hans** 简体中文: `为每本书保留`
+- **hi** हिन्दी: `हर किताब के लिए रखें`
+- **mr** मराठी: `प्रत्येक पुस्तकासाठी ठेवा`
 
 ### `next.themes.kept`
 
@@ -225,6 +247,8 @@ Points worth a look when you read them:
 - **ar** العربية: `السمة «{name}» محفوظة لكل كتاب`
 - **ja** 日本語: `「{name}」をすべての本用に保存しました`
 - **zh-Hans** 简体中文: `“{name}”已为每本书保留`
+- **hi** हिन्दी: `“{name}” हर किताब के लिए रख ली गई है`
+- **mr** मराठी: `“{name}” प्रत्येक पुस्तकासाठी ठेवली आहे`
 
 ### `next.themes.removed`
 
@@ -241,6 +265,8 @@ Points worth a look when you read them:
 - **ar** العربية: `السمة «{name}» لم تعد محفوظة لكل كتاب — لم يتغيّر أي كتاب`
 - **ja** 日本語: `「{name}」はすべての本用の保存から外れました — どの本も変更されていません`
 - **zh-Hans** 简体中文: `“{name}”不再为每本书保留 — 没有更改任何书`
+- **hi** हिन्दी: `“{name}” अब हर किताब के लिए नहीं रखी गई — कोई किताब नहीं बदली गई`
+- **mr** मराठी: `“{name}” आता प्रत्येक पुस्तकासाठी ठेवलेली नाही — कोणतेही पुस्तक बदलले नाही`
 
 ### `next.themes.offer`
 
@@ -257,6 +283,8 @@ Points worth a look when you read them:
 - **ar** العربية: `لهذا الكتاب سمات خاصة به. هل تحتفظ بها لكل كتاب أيضًا؟`
 - **ja** 日本語: `この本には独自のテーマがあります。すべての本用にも保存しますか？`
 - **zh-Hans** 简体中文: `这本书有自己的主题。也为每本书保留它们吗？`
+- **hi** हिन्दी: `इस किताब की अपनी थीम हैं। इन्हें हर किताब के लिए भी रखें?`
+- **mr** मराठी: `या पुस्तकाच्या स्वतःच्या थीम आहेत. त्या प्रत्येक पुस्तकासाठीही ठेवायच्या?`
 
 ### `next.themes.offerYes`
 
@@ -273,6 +301,8 @@ Points worth a look when you read them:
 - **ar** العربية: `احتفظ بها`
 - **ja** 日本語: `保存する`
 - **zh-Hans** 简体中文: `保留`
+- **hi** हिन्दी: `हाँ, रखें`
+- **mr** मराठी: `ठेवा`
 
 ### `next.themes.offerNo`
 
@@ -289,6 +319,8 @@ Points worth a look when you read them:
 - **ar** العربية: `لا، شكرًا`
 - **ja** 日本語: `いいえ、結構です`
 - **zh-Hans** 简体中文: `不用了，谢谢`
+- **hi** हिन्दी: `नहीं, धन्यवाद`
+- **mr** मराठी: `नको, धन्यवाद`
 
 ### `next.themes.moveOffer`
 
@@ -305,6 +337,8 @@ Points worth a look when you read them:
 - **ar** العربية: `بعض السمات محفوظة على هذا الجهاز فقط. هل تنقلها إلى حسابك لتتبعك إلى كل جهاز؟`
 - **ja** 日本語: `一部のテーマはこのデバイスにのみ保存されています。どのデバイスにも付いてくるように、アカウントへ移しますか？`
 - **zh-Hans** 简体中文: `有些主题仅保存在这台设备上。把它们移到你的账户，让它们跟随你到每台设备吗？`
+- **hi** हिन्दी: `कुछ थीम सिर्फ़ इसी डिवाइस पर रखी हैं। इन्हें अपने अकाउंट में ले जाएँ, ताकि ये हर डिवाइस पर आपके साथ रहें?`
+- **mr** मराठी: `काही थीम फक्त या डिव्हाइसवर ठेवल्या आहेत. त्या तुमच्या अकाउंटमध्ये हलवायच्या, म्हणजे त्या प्रत्येक डिव्हाइसवर तुमच्यासोबत येतील?`
 
 ### `next.themes.moveYes`
 
@@ -321,6 +355,8 @@ Points worth a look when you read them:
 - **ar** العربية: `انقلها`
 - **ja** 日本語: `移す`
 - **zh-Hans** 简体中文: `移动`
+- **hi** हिन्दी: `हाँ, ले जाएँ`
+- **mr** मराठी: `हलवा`
 
 ### `next.themes.deviceSuffix`
 
@@ -337,6 +373,8 @@ Points worth a look when you read them:
 - **ar** العربية: ` (هذا الجهاز)`
 - **ja** 日本語: ` （このデバイス）`
 - **zh-Hans** 简体中文: ` (这台设备)`
+- **hi** हिन्दी: ` (यह डिवाइस)`
+- **mr** मराठी: ` (हे डिव्हाइस)`
 
 ### `next.themes.conflict`
 
@@ -353,6 +391,8 @@ Points worth a look when you read them:
 - **ar** العربية: `السمة «{name}» تغيّرت على جهاز آخر أيضًا. حُفظت النسختان: تحمل نسخة هذا الجهاز اسم «(هذا الجهاز)».`
 - **ja** 日本語: `「{name}」は別のデバイスでも変更されました。両方とも保存してあります。このデバイスの版の名前は「（このデバイス）」です。`
 - **zh-Hans** 简体中文: `“{name}”在另一台设备上也被更改了。两份都已保留：这台设备的版本名为“(这台设备)”。`
+- **hi** हिन्दी: `“{name}” दूसरे डिवाइस पर भी बदली गई। दोनों रखी गई हैं: इस डिवाइस वाले संस्करण का नाम “(यह डिवाइस)” है।`
+- **mr** मराठी: `“{name}” दुसऱ्या डिव्हाइसवरही बदलली गेली. दोन्ही ठेवल्या आहेत: या डिव्हाइसवरच्या आवृत्तीचे नाव “(हे डिव्हाइस)” आहे.`
 
 ### `next.themes.full`
 
@@ -369,6 +409,8 @@ Points worth a look when you read them:
 - **ar** العربية: `تتّسع «سمات لكل كتاب» لـ 200 سمة على الأكثر. أزل واحدة، ثم احتفظ بـ«{name}» مرة أخرى.`
 - **ja** 日本語: `「すべての本で使うテーマ」には最大 200 件まで保存できます。1 件削除してから、「{name}」をもう一度保存してください。`
 - **zh-Hans** 简体中文: `“适用于每本书的主题”最多容纳 200 个主题。请移除一个，然后再次保留“{name}”。`
+- **hi** हिन्दी: `“हर किताब के लिए थीम” में ज़्यादा से ज़्यादा 200 थीम रह सकती हैं। एक हटाएँ, फिर “{name}” को दोबारा रखें।`
+- **mr** मराठी: `“प्रत्येक पुस्तकासाठी थीम” मध्ये जास्तीत जास्त 200 थीम ठेवता येतात. एखादी काढा, मग “{name}” पुन्हा ठेवा.`
 
 ### `next.themes.refused`
 
@@ -385,6 +427,8 @@ Points worth a look when you read them:
 - **ar** العربية: `تعذّر حفظ السمة «{name}» مع حسابك، لذا تبقى على هذا الجهاز فقط.`
 - **ja** 日本語: `「{name}」をアカウントに保存できなかったため、このデバイスにのみ残ります。`
 - **zh-Hans** 简体中文: `“{name}”无法保存到你的账户，因此只留在这台设备上。`
+- **hi** हिन्दी: `“{name}” आपके अकाउंट के साथ नहीं रखी जा सकी, इसलिए यह इसी डिवाइस पर रहेगी।`
+- **mr** मराठी: `“{name}” तुमच्या अकाउंटसोबत ठेवता आली नाही, म्हणून ती या डिव्हाइसवरच राहते.`
 
 ## 2. Earlier sets still waiting
 
@@ -457,6 +501,8 @@ Points worth a look when you read them:
 - **ar** العربية: `كتاب إلكتروني (EPUB)`
 - **ja** 日本語: `電子書籍（EPUB）`
 - **zh-Hans** 简体中文: `电子书（EPUB）`
+- **hi** हिन्दी: `ई-बुक (EPUB)`
+- **mr** मराठी: `ई-बुक (EPUB)`
 
 ### `expg.ebookSub`
 
@@ -473,6 +519,8 @@ Points worth a look when you read them:
 - **ar** العربية: `اختر المتجر، وافحص الحزمة، ونزّل ملف EPUB.`
 - **ja** 日本語: `ストアを選び、パッケージを確認して、EPUBをダウンロードします。`
 - **zh-Hans** 简体中文: `选择书店，检查文件包，下载 EPUB。`
+- **hi** हिन्दी: `स्टोर चुनें, पैकेज की जाँच करें और EPUB डाउनलोड करें।`
+- **mr** मराठी: `स्टोअर निवडा, पॅकेज तपासा आणि EPUB डाउनलोड करा.`
 
 ### `expg.print`
 
@@ -489,6 +537,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الطباعة`
 - **ja** 日本語: `印刷`
 - **zh-Hans** 简体中文: `印刷`
+- **hi** हिन्दी: `प्रिंट`
+- **mr** मराठी: `प्रिंट`
 
 ### `expg.printSub`
 
@@ -505,6 +555,8 @@ Points worth a look when you read them:
 - **ar** العربية: `حجم القص، والهوامش، والفحص قبل الطباعة، وملف PDF الجاهز للطباعة.`
 - **ja** 日本語: `仕上がりサイズ、余白、印刷プリフライト、印刷用PDF。`
 - **zh-Hans** 简体中文: `裁切尺寸、页边距、印前检查和可印刷 PDF。`
+- **hi** हिन्दी: `ट्रिम साइज़, मार्जिन, प्रिंट की जाँच और प्रिंट के लिए तैयार PDF।`
+- **mr** मराठी: `ट्रिम साइझ, समास, प्रिंट तपासणी आणि प्रिंटसाठी तयार PDF.`
 
 ### `expg.files`
 
@@ -521,6 +573,8 @@ Points worth a look when you read them:
 - **ar** العربية: `المخطوطة وملفات أخرى`
 - **ja** 日本語: `原稿とその他のファイル`
 - **zh-Hans** 简体中文: `稿件和其他文件`
+- **hi** हिन्दी: `पांडुलिपि और दूसरी फ़ाइलें`
+- **mr** मराठी: `हस्तलिखित आणि इतर फाइल`
 
 ### `expg.filesSub`
 
@@ -537,6 +591,8 @@ Points worth a look when you read them:
 - **ar** العربية: `Markdown، وصفحة ويب، وWord، ومخطوطة التقديم.`
 - **ja** 日本語: `Markdown、ウェブページ、Word、投稿用原稿。`
 - **zh-Hans** 简体中文: `Markdown、网页、Word 和投稿稿件。`
+- **hi** हिन्दी: `Markdown, वेब पेज, Word और भेजने के लिए पांडुलिपि।`
+- **mr** मराठी: `Markdown, वेब पान, Word आणि पाठवण्यासाठीचे हस्तलिखित.`
 
 ### `expg.audio`
 
@@ -553,6 +609,8 @@ Points worth a look when you read them:
 - **ar** العربية: `نص الكتاب الصوتي`
 - **ja** 日本語: `オーディオブック台本`
 - **zh-Hans** 简体中文: `有声书脚本`
+- **hi** हिन्दी: `ऑडियोबुक स्क्रिप्ट`
+- **mr** मराठी: `ऑडिओबुक स्क्रिप्ट`
 
 ### `expg.audioSub`
 
@@ -569,6 +627,8 @@ Points worth a look when you read them:
 - **ar** العربية: `نصوص للراوي بترتيب ACX.`
 - **ja** 日本語: `ACXの順序で並べたナレーター用台本。`
 - **zh-Hans** 简体中文: `按 ACX 顺序排列的朗读者脚本。`
+- **hi** हिन्दी: `ACX के क्रम में कथावाचक के लिए स्क्रिप्ट।`
+- **mr** मराठी: `ACX क्रमाने निवेदकासाठी स्क्रिप्ट.`
 
 ### `expg.boxset`
 
@@ -585,6 +645,8 @@ Points worth a look when you read them:
 - **ar** العربية: `مجموعة صندوقية`
 - **ja** 日本語: `ボックスセット`
 - **zh-Hans** 简体中文: `套装`
+- **hi** हिन्दी: `बॉक्स सेट`
+- **mr** मराठी: `बॉक्स सेट`
 
 ### `expg.boxsetSub`
 
@@ -601,6 +663,8 @@ Points worth a look when you read them:
 - **ar** العربية: `عدة كتب في ملف EPUB واحد.`
 - **ja** 日本語: `複数の本を1つのEPUBに。`
 - **zh-Hans** 简体中文: `多本书合为一个 EPUB。`
+- **hi** हिन्दी: `कई किताबें एक EPUB में।`
+- **mr** मराठी: `एकाच EPUB मध्ये अनेक पुस्तके.`
 
 ### `expg.archive`
 
@@ -617,6 +681,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الأرشيف والمشاركة`
 - **ja** 日本語: `保管庫と共有`
 - **zh-Hans** 简体中文: `存档与分享`
+- **hi** हिन्दी: `संग्रह और शेयर करना`
+- **mr** मराठी: `संग्रह आणि शेअरिंग`
 
 ### `expg.archiveSub`
 
@@ -633,6 +699,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الملفات المنجزة المحفوظة على رفّك، وروابط القراءة للقرّاء التجريبيين.`
 - **ja** 日本語: `本棚に保管した完成ファイルと、ベータ読者向けの閲覧リンク。`
 - **zh-Hans** 简体中文: `保存在你书架上的成品文件，以及给试读读者的阅读链接。`
+- **hi** हिन्दी: `आपके शेल्फ़ पर रखी तैयार फ़ाइलें, और बीटा पाठकों के लिए पढ़ने के लिंक।`
+- **mr** मराठी: `तुमच्या शेल्फवर ठेवलेल्या तयार फाइल, आणि बीटा वाचकांसाठी वाचनाच्या लिंक.`
 
 ### `proof.h`
 
@@ -649,6 +717,8 @@ Points worth a look when you read them:
 - **ar** العربية: `شاهد الكتاب كاملًا أولًا`
 - **ja** 日本語: `まず本全体を見る`
 - **zh-Hans** 简体中文: `先看完整本书`
+- **hi** हिन्दी: `पहले पूरी किताब देखें`
+- **mr** मराठी: `आधी पूर्ण पुस्तक पाहा`
 
 ### `proof.sub`
 
@@ -665,6 +735,8 @@ Points worth a look when you read them:
 - **ar** العربية: `يمكنك تصفّح الكتاب كاملًا، من صفحته الأولى إلى الأخيرة، قبل تصديره. كل تصدير يعمل من دون هذه الخطوة.`
 - **ja** 日本語: `書き出す前に、最初のページから最後のページまで本全体を通して確認できます。確認しなくても、どの書き出しも使えます。`
 - **zh-Hans** 简体中文: `导出之前，你可以把整本书从第一页看到最后一页。不看也可以，任何导出都照常可用。`
+- **hi** हिन्दी: `एक्सपोर्ट करने से पहले आप पूरी किताब, पहले पेज से आखिरी तक, देख सकते हैं। हर एक्सपोर्ट इसके बिना भी काम करता है।`
+- **mr** मराठी: `एक्सपोर्ट करण्याआधी तुम्ही पहिल्या पानापासून शेवटच्या पानापर्यंत पूर्ण पुस्तक पाहू शकता. हे न करताही प्रत्येक एक्सपोर्ट चालतो.`
 
 ### `proof.read`
 
@@ -681,6 +753,8 @@ Points worth a look when you read them:
 - **ar** العربية: `اقرأ الكتاب كاملًا على الشاشة`
 - **ja** 日本語: `本全体を画面で読む`
 - **zh-Hans** 简体中文: `在屏幕上通读整本书`
+- **hi** हिन्दी: `पूरी किताब स्क्रीन पर पढ़ें`
+- **mr** मराठी: `पूर्ण पुस्तक स्क्रीनवर वाचा`
 
 ### `proof.print`
 
@@ -697,6 +771,8 @@ Points worth a look when you read them:
 - **ar** العربية: `قلّب صفحات الطباعة`
 - **ja** 日本語: `印刷ページをめくる`
 - **zh-Hans** 简体中文: `翻看印刷页面`
+- **hi** हिन्दी: `प्रिंट के पेज पलटें`
+- **mr** मराठी: `प्रिंटची पाने उलटा`
 
 ### `proof.title`
 
@@ -713,6 +789,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الكتاب كاملًا، من الصفحة الأولى إلى الأخيرة`
 - **ja** 日本語: `本全体、最初のページから最後のページまで`
 - **zh-Hans** 简体中文: `整本书，从第一页到最后一页`
+- **hi** हिन्दी: `पूरी किताब, पहले पेज से आखिरी तक`
+- **mr** मराठी: `पूर्ण पुस्तक, पहिल्या पानापासून शेवटपर्यंत`
 
 ### `proof.note`
 
@@ -729,6 +807,8 @@ Points worth a look when you read them:
 - **ar** العربية: `هذه هي الصفحة التي ينزّلها «HTML مستقل»: أقسام ملف EPUB وحواشيه وصوره، بالترتيب نفسه وبورقة الأنماط نفسها. يعرضها القارئ الإلكتروني صفحاتٍ مع قائمة محتوياته الخاصة، وقد تختلف الخطوط هنا عن خطوط ملف EPUB. الروابط داخل الكتاب تعمل هنا؛ أما الروابط التي تخرج من الكتاب فمعطّلة.`
 - **ja** 日本語: `これは「単独HTML」がダウンロードするページです。EPUBと同じセクション、注、画像が、同じ順序、同じスタイルシートで並びます。電子書籍リーダーはこれをページに分け、独自の目次メニューを付けます。ここでの書体はEPUBと異なる場合があります。本の中のリンクはここで使えます。本の外へ出るリンクは無効です。`
 - **zh-Hans** 简体中文: `这就是“独立 HTML”下载的页面：EPUB 的各个章节、注释和图片，顺序相同，样式表相同。电子书阅读器会把它们分页显示，并带有自己的目录菜单；这里的字体可能与 EPUB 中的不同。书内的链接在这里可用；通往书外的链接已关闭。`
+- **hi** हिन्दी: `यह वही पेज है जो “Standalone HTML” डाउनलोड करता है: EPUB के सेक्शन, नोट और तस्वीरें, उसी क्रम में, उसी स्टाइलशीट के साथ। ई-रीडर इन्हें अपने विषय-सूची मेन्यू के साथ पेजों के रूप में दिखाता है, और यहाँ के टाइपफ़ेस EPUB वालों से अलग हो सकते हैं। किताब के अंदर के लिंक यहाँ काम करते हैं; किताब से बाहर ले जाने वाले लिंक बंद हैं।`
+- **mr** मराठी: `“Standalone HTML” जे पान डाउनलोड करते तेच हे आहे: EPUB चे विभाग, टीपा आणि चित्रे, त्याच क्रमाने, त्याच स्टाइलशीटसह. ई-रीडर ते स्वतःच्या अनुक्रमणिका मेनूसह पानांच्या रूपात दाखवतो, आणि इथले टाइपफेस EPUB पेक्षा वेगळे असू शकतात. पुस्तकाच्या आतल्या लिंक इथे चालतात; पुस्तकाबाहेर नेणाऱ्या लिंक बंद आहेत.`
 
 ### `proof.preparing`
 
@@ -745,6 +825,8 @@ Points worth a look when you read them:
 - **ar** العربية: `جارٍ تجهيز الكتاب…`
 - **ja** 日本語: `本を準備しています…`
 - **zh-Hans** 简体中文: `正在准备这本书…`
+- **hi** हिन्दी: `किताब तैयार हो रही है…`
+- **mr** मराठी: `पुस्तक तयार होत आहे…`
 
 ### `proof.empty`
 
@@ -761,6 +843,8 @@ Points worth a look when you read them:
 - **ar** العربية: `لا شيء يُعرض بعد: كل أقسام هذا الكتاب فارغة أو مستبعدة من الكتاب.`
 - **ja** 日本語: `まだ表示するものがありません。この本のセクションはすべて空か、本から外されています。`
 - **zh-Hans** 简体中文: `还没有可显示的内容：这本书的每个章节都是空的，或未收入书中。`
+- **hi** हिन्दी: `अभी दिखाने के लिए कुछ नहीं है: इस किताब का हर सेक्शन खाली है या किताब से बाहर रखा गया है।`
+- **mr** मराठी: `अजून दाखवण्यासारखे काही नाही: या पुस्तकाचा प्रत्येक विभाग रिकामा आहे किंवा पुस्तकातून वगळलेला आहे.`
 
 ### `proof.failed`
 
@@ -777,6 +861,8 @@ Points worth a look when you read them:
 - **ar** العربية: `تعذّر تجهيز الكتاب. الخطأ: {error}`
 - **ja** 日本語: `本を準備できませんでした。エラー：{error}`
 - **zh-Hans** 简体中文: `无法准备这本书。错误：{error}`
+- **hi** हिन्दी: `किताब तैयार नहीं हो सकी। गड़बड़ी यह थी: {error}`
+- **mr** मराठी: `पुस्तक तयार करता आले नाही. त्रुटी अशी होती: {error}`
 
 ### `proof.frame`
 
@@ -793,6 +879,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الكتاب كاملًا`
 - **ja** 日本語: `本全体`
 - **zh-Hans** 简体中文: `整本书`
+- **hi** हिन्दी: `पूरी किताब`
+- **mr** मराठी: `पूर्ण पुस्तक`
 
 ### `proof.linkOff`
 
@@ -809,6 +897,8 @@ Points worth a look when you read them:
 - **ar** العربية: `هذا الرابط يخرج من الكتاب، والروابط التي تخرج من الكتاب معطّلة في هذا العرض. ما زلت في مكانك.`
 - **ja** 日本語: `このリンクは本の外へ出ます。この表示では本の外へ出るリンクは無効です。読んでいた場所はそのままです。`
 - **zh-Hans** 简体中文: `这个链接通往书外，而此视图中通往书外的链接已关闭。你仍在原来的位置。`
+- **hi** हिन्दी: `यह लिंक किताब से बाहर ले जाता है, और इस व्यू में किताब से बाहर के लिंक बंद हैं। आप वहीं हैं जहाँ थे।`
+- **mr** मराठी: `ही लिंक पुस्तकाबाहेर नेते, आणि या दृश्यात पुस्तकाबाहेरच्या लिंक बंद आहेत. तुम्ही आहात तिथेच आहात.`
 
 ### `proof.linkBack`
 
@@ -825,6 +915,8 @@ Points worth a look when you read them:
 - **ar** العربية: `خرج العرض من الكتاب، لذا يُعرض الكتاب من جديد من صفحته الأولى.`
 - **ja** 日本語: `表示が本から離れたため、本を最初のページからもう一度表示しています。`
 - **zh-Hans** 简体中文: `视图离开了这本书，因此这本书从第一页重新显示。`
+- **hi** हिन्दी: `व्यू किताब से बाहर चला गया था, इसलिए किताब फिर से उसके पहले पेज से दिखाई जा रही है।`
+- **mr** मराठी: `दृश्य पुस्तकाबाहेर गेले, म्हणून पुस्तक पुन्हा पहिल्या पानापासून दाखवले आहे.`
 
 ## 4. Poem Mode (7 keys, 2026-11-24)
 
@@ -872,6 +964,8 @@ Points worth a look when you read them:
 - **ar** العربية: `وضع القصيدة`
 - **ja** 日本語: `詩モード`
 - **zh-Hans** 简体中文: `诗歌模式`
+- **hi** हिन्दी: `कविता मोड`
+- **mr** मराठी: `कविता मोड`
 
 ### `poem.alignAria`
 
@@ -888,6 +982,8 @@ Points worth a look when you read them:
 - **ar** العربية: `طريقة محاذاة أسطر القصيدة`
 - **ja** 日本語: `詩の行の揃え方`
 - **zh-Hans** 简体中文: `诗行的对齐方式`
+- **hi** हिन्दी: `कविता की पंक्तियाँ कैसे रखी जाएँ`
+- **mr** मराठी: `कवितेच्या ओळी कशा मांडल्या आहेत`
 
 ### `poem.titlePh`
 
@@ -904,6 +1000,8 @@ Points worth a look when you read them:
 - **ar** العربية: `سمِّ قصيدتك`
 - **ja** 日本語: `詩に名前をつけましょう`
 - **zh-Hans** 简体中文: `给你的诗起个名字`
+- **hi** हिन्दी: `अपनी कविता का नाम रखें`
+- **mr** मराठी: `तुमच्या कवितेला नाव द्या`
 
 ### `poem.ghost1`
 
@@ -920,6 +1018,8 @@ Points worth a look when you read them:
 - **ar** العربية: `اكتب سطرك الأول هنا…`
 - **ja** 日本語: `ここに最初の行を書きます…`
 - **zh-Hans** 简体中文: `在这里写下第一行…`
+- **hi** हिन्दी: `अपनी पहली पंक्ति यहाँ लिखें…`
+- **mr** मराठी: `तुमची पहिली ओळ इथे लिहा…`
 
 ### `poem.ghost2`
 
@@ -936,6 +1036,8 @@ Points worth a look when you read them:
 - **ar** العربية: `…واضغط Enter للسطر التالي…`
 - **ja** 日本語: `…Enter キーで次の行へ…`
 - **zh-Hans** 简体中文: `…按 Enter 写下一行…`
+- **hi** हिन्दी: `…अगली पंक्ति के लिए Enter दबाएँ…`
+- **mr** मराठी: `…पुढच्या ओळीसाठी Enter दाबा…`
 
 ### `poem.ghost3`
 
@@ -952,6 +1054,8 @@ Points worth a look when you read them:
 - **ar** العربية: `…وسطر فارغ يبدأ مقطعًا جديدًا.`
 - **ja** 日本語: `…空行を入れると、新しい連が始まります。`
 - **zh-Hans** 简体中文: `…空一行就开始新的一节。`
+- **hi** हिन्दी: `…और एक खाली पंक्ति से नया छंद शुरू होता है।`
+- **mr** मराठी: `…आणि एक रिकामी ओळ नवे कडवे सुरू करते.`
 
 ### `tool.verseInPoem`
 
@@ -968,6 +1072,8 @@ Points worth a look when you read them:
 - **ar** العربية: `شعر — لا حاجة إليه هنا: الفصل كله قصيدة، ولذلك فكل فاصل أسطر محفوظ أصلًا`
 - **ja** 日本語: `韻文 — ここでは不要です。この章全体が詩なので、改行はすべてそのまま保たれます`
 - **zh-Hans** 简体中文: `诗行 — 这里不需要：整章都是一首诗，所以每个换行都已保留`
+- **hi** हिन्दी: `पद्य — यहाँ ज़रूरत नहीं: यह पूरा अध्याय एक कविता है, इसलिए हर पंक्ति-विराम पहले से ही बना रहता है`
+- **mr** मराठी: `पद्य — इथे गरज नाही: हे पूर्ण प्रकरणच कविता आहे, म्हणून प्रत्येक ओळ-खंड आधीच जपला जातो`
 
 ## 5. "Use on every chapter" (26 keys, 2026-11-24)
 
@@ -1027,6 +1133,8 @@ Points worth a look when you read them:
 - **ar** العربية: `استخدام في كل الفصول…`
 - **ja** 日本語: `すべての章に使う…`
 - **zh-Hans** 简体中文: `用于所有章节…`
+- **hi** हिन्दी: `हर अध्याय पर लागू करें…`
+- **mr** मराठी: `प्रत्येक प्रकरणाला लावा…`
 
 ### `everych.title`
 
@@ -1043,6 +1151,8 @@ Points worth a look when you read them:
 - **ar** العربية: `استخدام إعدادات هذا الفصل في كل الفصول`
 - **ja** 日本語: `この章の設定をすべての章に使う`
 - **zh-Hans** 简体中文: `把本章的设置用于所有章节`
+- **hi** हिन्दी: `इस अध्याय की सेटिंग्स हर अध्याय पर लागू करें`
+- **mr** मराठी: `या प्रकरणाची सेटिंग्ज प्रत्येक प्रकरणाला लावा`
 
 ### `everych.scope`
 
@@ -1059,6 +1169,8 @@ Points worth a look when you read them:
 - **ar** العربية: `كل الفصول تعني كل قسم في متن الكتاب ما عدا فواصل الأجزاء. الفصول غير المضمّنة في التصدير تتغيّر أيضًا. الصفحات الأولى والأخيرة لا تتغيّر.`
 - **ja** 日本語: `「すべての章」とは、本文にあるセクションのうち、部の区切りを除くすべてです。書き出しに含めていない章も変更されます。前付けと後付けは変更されません。`
 - **zh-Hans** 简体中文: `“所有章节”指正文中的每一节，部分隔页除外。未包含在导出中的章节也会更改。前置页和后置页不会更改。`
+- **hi** हिन्दी: `हर अध्याय का मतलब है किताब के मुख्य हिस्से का हर सेक्शन, भाग-विभाजकों को छोड़कर। जो अध्याय एक्सपोर्ट में शामिल नहीं हैं, वे भी बदलेंगे। शुरुआती पन्ने और आखिरी पन्ने नहीं बदलेंगे।`
+- **mr** मराठी: `प्रत्येक प्रकरण म्हणजे पुस्तकाच्या मुख्य भागातील भाग-विभाजक सोडून प्रत्येक विभाग. एक्सपोर्टमध्ये समाविष्ट नसलेली प्रकरणेही बदलतात. सुरुवातीची पाने आणि शेवटची पाने बदलत नाहीत.`
 
 ### `everych.pick`
 
@@ -1075,6 +1187,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الإعدادات التي تُنسخ من هذا الفصل`
 - **ja** 日本語: `この章からコピーする設定`
 - **zh-Hans** 简体中文: `从本章复制的设置`
+- **hi** हिन्दी: `इस अध्याय से कॉपी करने वाली सेटिंग्स`
+- **mr** मराठी: `या प्रकरणातून कॉपी करायची सेटिंग्ज`
 
 ### `everych.here`
 
@@ -1091,6 +1205,8 @@ Points worth a look when you read them:
 - **ar** العربية: `هذا الفصل: {value}`
 - **ja** 日本語: `この章：{value}`
 - **zh-Hans** 简体中文: `本章：{value}`
+- **hi** हिन्दी: `यह अध्याय: {value}`
+- **mr** मराठी: `हे प्रकरण: {value}`
 
 ### `everych.count`
 
@@ -1107,6 +1223,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الفصول الأخرى التي ستتغيّر: {n} من {total}`
 - **ja** 日本語: `変更されるほかの章：{total} 章中 {n} 章`
 - **zh-Hans** 简体中文: `将更改的其他章节：{total} 章中的 {n} 章`
+- **hi** हिन्दी: `बाकी अध्याय जो बदलेंगे: {total} में से {n}`
+- **mr** मराठी: `बदलतील अशी इतर प्रकरणे: {total} पैकी {n}`
 
 ### `everych.same`
 
@@ -1123,6 +1241,8 @@ Points worth a look when you read them:
 - **ar** العربية: `كل الفصول الأخرى على هذا الإعداد بالفعل.`
 - **ja** 日本語: `ほかの章はすべて、すでにこの設定です。`
 - **zh-Hans** 简体中文: `其他章节都已是这个设置。`
+- **hi** हिन्दी: `बाकी हर अध्याय में यह पहले से है।`
+- **mr** मराठी: `इतर प्रत्येक प्रकरणात हे आधीच आहे.`
 
 ### `everych.plateCount`
 
@@ -1139,6 +1259,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الفصول الأخرى ذات اللوحة التي ستتغيّر: {n} من {total}`
 - **ja** 日本語: `変更される、口絵のあるほかの章：{total} 章中 {n} 章`
 - **zh-Hans** 简体中文: `将更改的其他带插图章节：{total} 章中的 {n} 章`
+- **hi** हिन्दी: `चित्र-पेज वाले बाकी अध्याय जो बदलेंगे: {total} में से {n}`
+- **mr** मराठी: `चित्रपान असलेली, बदलतील अशी इतर प्रकरणे: {total} पैकी {n}`
 
 ### `everych.plateSame`
 
@@ -1155,6 +1277,8 @@ Points worth a look when you read them:
 - **ar** العربية: `كل الفصول الأخرى ذات اللوحة على هذا الإعداد بالفعل.`
 - **ja** 日本語: `口絵のあるほかの章はすべて、すでにこの設定です。`
 - **zh-Hans** 简体中文: `其他带插图的章节都已是这个设置。`
+- **hi** हिन्दी: `चित्र-पेज वाले बाकी हर अध्याय में यह पहले से है।`
+- **mr** मराठी: `चित्रपान असलेल्या इतर प्रत्येक प्रकरणात हे आधीच आहे.`
 
 ### `everych.plateNone`
 
@@ -1171,6 +1295,8 @@ Points worth a look when you read them:
 - **ar** العربية: `لا يوجد فصل آخر له لوحة.`
 - **ja** 日本語: `口絵のある章はほかにありません。`
 - **zh-Hans** 简体中文: `没有其他章节带有卷首插图。`
+- **hi** हिन्दी: `किसी और अध्याय में चित्र-पेज नहीं है।`
+- **mr** मराठी: `इतर कोणत्याही प्रकरणाला चित्रपान नाही.`
 
 ### `everych.platePair`
 
@@ -1187,6 +1313,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الفصول ذات لوحة الافتتاح التي ستحصل على هذه الخلفية: {n}. في الطباعة تقابل اللوحةُ صفحةَ افتتاح فصلها، فتكون اللوحة والخلفية متجاورتين.`
 - **ja** 日本語: `この背景が付くことになる、口絵のある章：{n} 章。印刷では口絵はその章の最初のページと向かい合うので、口絵と背景が隣り合います。`
 - **zh-Hans** 简体中文: `将获得这个背景且带有卷首插图的章节：{n} 章。印刷时，插图与该章的开篇页相对，因此插图和背景会并排出现。`
+- **hi** हिन्दी: `शुरुआती चित्र-पेज वाले अध्याय जिन्हें यह पृष्ठभूमि मिलेगी: {n}। प्रिंट में चित्र-पेज अपने अध्याय के पहले पेज के सामने होता है, इसलिए चित्र-पेज और पृष्ठभूमि आमने-सामने रहते हैं।`
+- **mr** मराठी: `सुरुवातीचे चित्रपान असलेली, ही पार्श्वभूमी मिळणारी प्रकरणे: {n}. प्रिंटमध्ये चित्रपान त्याच्या प्रकरणाच्या सुरुवातीच्या पानासमोर असते, म्हणून चित्रपान आणि पार्श्वभूमी शेजारी शेजारी येतात.`
 
 ### `everych.alone`
 
@@ -1203,6 +1331,8 @@ Points worth a look when you read them:
 - **ar** العربية: `لا يوجد في هذا الكتاب فصل آخر.`
 - **ja** 日本語: `この本にほかの章はありません。`
 - **zh-Hans** 简体中文: `这本书没有其他章节。`
+- **hi** हिन्दी: `इस किताब में कोई और अध्याय नहीं है।`
+- **mr** मराठी: `या पुस्तकात दुसरे कोणतेही प्रकरण नाही.`
 
 ### `everych.replace`
 
@@ -1219,6 +1349,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الفصل الذي يتغيّر يفقد إعداده الحالي. لا تُنسخ إلا الإعدادات المحدَّدة؛ ولا يتغيّر أي نص.`
 - **ja** 日本語: `変更される章は、いまの設定を失います。コピーされるのはチェックを入れた設定だけで、本文は変更されません。`
 - **zh-Hans** 简体中文: `被更改的章节会失去它现在的设置。只复制勾选的设置；不更改任何文字。`
+- **hi** हिन्दी: `जो अध्याय बदलेगा, उसकी अभी की सेटिंग चली जाएगी। सिर्फ़ टिक की गई सेटिंग्स कॉपी होंगी; कोई टेक्स्ट नहीं बदलेगा।`
+- **mr** मराठी: `जे प्रकरण बदलेल त्याचे आत्ताचे सेटिंग जाईल. फक्त खूण केलेली सेटिंग्ज कॉपी होतात; कोणताही मजकूर बदलत नाही.`
 
 ### `everych.back`
 
@@ -1235,6 +1367,8 @@ Points worth a look when you read them:
 - **ar** العربية: `الرسالة التي تظهر بعد ذلك تعرض «تراجع» لبضع ثوانٍ. وتُحفظ أولًا في السجلّ لقطة من الكتاب كما هو الآن باسم «{snap}»؛ والاستعادة من لقطة تعيد النص أيضًا كما كان حينها.`
 - **ja** 日本語: `このあと表示されるメッセージで、数秒のあいだ「元に戻す」を選べます。また、先に現在の本のスナップショットが「{snap}」という名前で履歴に保存されます。スナップショットから復元すると、本文もそのときの状態に戻ります。`
 - **zh-Hans** 简体中文: `随后出现的消息会在几秒钟内提供“撤销”。此外，会先把现在的书保存为历史记录中的一份快照，名为“{snap}”；从快照恢复时，文字也会回到当时的样子。`
+- **hi** हिन्दी: `इसके बाद आने वाले मैसेज में कुछ सेकंड के लिए पहले जैसा करने का विकल्प मिलेगा। किताब अभी जैसी है, उसका एक स्नैपशॉट भी पहले इतिहास में “{snap}” नाम से सेव होता है; स्नैपशॉट से वापस लाने पर टेक्स्ट भी तब जैसा था वैसा लौट आता है।`
+- **mr** मराठी: `पुढच्या संदेशात काही सेकंदांसाठी पूर्ववत करण्याचा पर्याय मिळेल. त्याआधी पुस्तक आत्ता जसे आहे त्याचा स्नॅपशॉटही इतिहासात “{snap}” या नावाने सेव्ह होतो; स्नॅपशॉटमधून परत आणल्यास तेव्हाचा मजकूरही परत येतो.`
 
 ### `everych.apply`
 
@@ -1251,6 +1385,8 @@ Points worth a look when you read them:
 - **ar** العربية: `استخدام في كل الفصول`
 - **ja** 日本語: `すべての章に使う`
 - **zh-Hans** 简体中文: `用于所有章节`
+- **hi** हिन्दी: `हर अध्याय पर लागू करें`
+- **mr** मराठी: `प्रत्येक प्रकरणाला लावा`
 
 ### `everych.on`
 
@@ -1267,6 +1403,8 @@ Points worth a look when you read them:
 - **ar** العربية: `مفعَّل`
 - **ja** 日本語: `オン`
 - **zh-Hans** 简体中文: `开`
+- **hi** हिन्दी: `चालू`
+- **mr** मराठी: `चालू`
 
 ### `everych.off`
 
@@ -1283,6 +1421,8 @@ Points worth a look when you read them:
 - **ar** العربية: `معطَّل`
 - **ja** 日本語: `オフ`
 - **zh-Hans** 简体中文: `关`
+- **hi** हिन्दी: `बंद`
+- **mr** मराठी: `बंद`
 
 ### `everych.plateFit`
 
@@ -1299,6 +1439,8 @@ Points worth a look when you read them:
 - **ar** العربية: `ملاءمة اللوحة`
 - **ja** 日本語: `口絵の収め方`
 - **zh-Hans** 简体中文: `插图的适应方式`
+- **hi** हिन्दी: `चित्र-पेज का फ़िट`
+- **mr** मराठी: `चित्रपानाची मांडणी`
 
 ### `everych.done`
 
@@ -1315,6 +1457,8 @@ Points worth a look when you read them:
 - **ar** العربية: `تغيّرت فصول أخرى. {list}`
 - **ja** 日本語: `ほかの章を変更しました。{list}`
 - **zh-Hans** 简体中文: `已更改其他章节。{list}`
+- **hi** हिन्दी: `बाकी अध्याय बदल दिए गए। {list}`
+- **mr** मराठी: `इतर प्रकरणे बदलली. {list}`
 
 ### `everych.doneItem`
 
@@ -1331,6 +1475,8 @@ Points worth a look when you read them:
 - **ar** العربية: `{setting}: {n}`
 - **ja** 日本語: `{setting}：{n}`
 - **zh-Hans** 简体中文: `{setting}：{n}`
+- **hi** हिन्दी: `{setting}: {n}`
+- **mr** मराठी: `{setting}: {n}`
 
 ### `everych.nothing`
 
@@ -1347,6 +1493,8 @@ Points worth a look when you read them:
 - **ar** العربية: `كل الفصول الأخرى كانت على هذه الإعدادات بالفعل. لم يتغيّر شيء.`
 - **ja** 日本語: `ほかの章はすべて、すでにこの設定でした。何も変更していません。`
 - **zh-Hans** 简体中文: `其他章节都已是这些设置。没有任何更改。`
+- **hi** हिन्दी: `बाकी हर अध्याय में ये सेटिंग्स पहले से थीं। कुछ भी नहीं बदला गया।`
+- **mr** मराठी: `इतर प्रत्येक प्रकरणात ही सेटिंग्ज आधीच होती. काहीही बदलले नाही.`
 
 ### `everych.failed`
 
@@ -1363,6 +1511,8 @@ Points worth a look when you read them:
 - **ar** العربية: `تعذّر نسخ الإعدادات. لم يتغيّر شيء. الخطأ: {error}`
 - **ja** 日本語: `設定をコピーできませんでした。何も変更していません。エラー：{error}`
 - **zh-Hans** 简体中文: `无法复制这些设置。没有任何更改。错误：{error}`
+- **hi** हिन्दी: `सेटिंग्स कॉपी नहीं हो सकीं। कुछ भी नहीं बदला गया। गड़बड़ी यह थी: {error}`
+- **mr** मराठी: `सेटिंग्ज कॉपी करता आली नाहीत. काहीही बदलले नाही. त्रुटी अशी होती: {error}`
 
 ### `everych.undonePart`
 
@@ -1379,6 +1529,8 @@ Points worth a look when you read them:
 - **ar** العربية: `تم التراجع، ما عدا الفصول التي تغيّرت مجددًا منذ ذلك الحين: {n}. تُركت كما هي، وما زالت اللقطة «{snap}» في السجلّ تحفظ الإعدادات السابقة.`
 - **ja** 日本語: `元に戻しました。ただし、その後さらに変更された章（{n} 章）はそのままにしました。履歴のスナップショット「{snap}」に以前の設定が残っています。`
 - **zh-Hans** 简体中文: `已撤销，但此后又有改动的章节除外：{n} 章。它们保持原样，历史记录中的快照“{snap}”仍保存着之前的设置。`
+- **hi** हिन्दी: `पहले जैसा कर दिया गया, सिवाय उन अध्यायों के जो इसके बाद फिर बदले गए: {n}। उन्हें जैसा है वैसा छोड़ दिया गया है, और इतिहास में स्नैपशॉट “{snap}” में पुरानी सेटिंग्स अब भी हैं।`
+- **mr** मराठी: `पूर्ववत केले, फक्त त्यानंतर पुन्हा बदललेली प्रकरणे सोडून: {n}. ती आहेत तशीच ठेवली आहेत, आणि इतिहासातील “{snap}” या स्नॅपशॉटमध्ये आधीची सेटिंग्ज अजून आहेत.`
 
 ### The three keys about poems
 
@@ -1402,6 +1554,8 @@ it, and uses the noun for a poem that its Poem Mode strings use (section 4).
 - **ar** العربية: `الفصول الأخرى التي ستتغيّر: {n} من {total}. القصائد تبقى كما هي.`
 - **ja** 日本語: `変更されるほかの章：{total} 章中 {n} 章。詩はそのままです。`
 - **zh-Hans** 简体中文: `将更改的其他章节：{total} 章中的 {n} 章。诗歌保持不变。`
+- **hi** हिन्दी: `बाकी अध्याय जो बदलेंगे: {total} में से {n}। कविताओं को जैसा है वैसा छोड़ा गया है।`
+- **mr** मराठी: `बदलतील अशी इतर प्रकरणे: {total} पैकी {n}. कविता आहेत तशाच ठेवल्या जातात.`
 
 ### `everych.proseSame`
 
@@ -1418,6 +1572,8 @@ it, and uses the noun for a poem that its Poem Mode strings use (section 4).
 - **ar** العربية: `كل الفصول الأخرى التي ليست قصائد على هذا الإعداد بالفعل.`
 - **ja** 日本語: `詩ではないほかの章はすべて、すでにこの設定です。`
 - **zh-Hans** 简体中文: `其他不是诗歌的章节都已是这个设置。`
+- **hi** हिन्दी: `बाकी हर अध्याय में, जो कविता नहीं है, यह पहले से है।`
+- **mr** मराठी: `कविता नसलेल्या इतर प्रत्येक प्रकरणात हे आधीच आहे.`
 
 ### `everych.proseNone`
 
@@ -1434,6 +1590,8 @@ it, and uses the noun for a poem that its Poem Mode strings use (section 4).
 - **ar** العربية: `كل الفصول الأخرى قصائد، والقصائد تبقى كما هي.`
 - **ja** 日本語: `ほかの章はすべて詩です。詩はそのままです。`
 - **zh-Hans** 简体中文: `其他章节都是诗歌，诗歌保持不变。`
+- **hi** हिन्दी: `बाकी हर अध्याय एक कविता है, और कविताओं को जैसा है वैसा छोड़ा जाता है।`
+- **mr** मराठी: `इतर प्रत्येक प्रकरण कविता आहे, आणि कविता आहेत तशाच ठेवल्या जातात.`
 
 ## 6. The keystroke rescue: letters that could not be put back (2 keys, 2026-11-27)
 
@@ -1445,6 +1603,7 @@ Its 2 keys are in `client/index.html` `UI_STRINGS` (the `BEUK:keystrokerescue` b
 and its `Plural` twin `rescue.lostPlural`. English is the source; the English wording itself is V's to confirm in the
 PR (the design's draft said "made at the same moment", which is not true of letters the other tab had seen and
 deleted). The 12 other languages below are drafts written by Claude: not approved, not read by a native speaker.
+The Hindi and Marathi drafts of both keys are in section 7, under "Keys added on main since 340cb22".
 
 How the drafts were made:
 
@@ -1524,3 +1683,203 @@ tell there (and how to avoid a false claim in an import session) is open for V i
 - **ar** العربية: `عدد الأحرف التي كتبتها وضاعت مع تغيير أُجري في علامة تبويب أخرى وتعذّرت إعادتها: {n}.`
 - **ja** 日本語: `入力した {n} 文字が別のタブでの変更とともに消え、元に戻せませんでした。`
 - **zh-Hans** 简体中文: `你输入的 {n} 个字符随另一个标签页中的更改一起消失了，无法放回原处。`
+
+## 7. Hindi and Marathi — two whole interface packs (3,012 keys each, 2026-11-26; 3,026 after merging main, 2026-11-27)
+
+**Every string in both packs is an unreviewed draft written by Claude.** V asked for them so his parents can use the studio
+and give feedback; V (and they) are the native-speaker review. Nothing here is approved until V says so.
+
+Where they live: `client/index.html`, the `BEUK:ui-hi-mr` block (after `/BEUK:next-strings`), one `UI_STRINGS["hi"]` and one
+`UI_STRINGS["mr"]` object carrying every key of `UI_STRINGS.en`. The easiest review is in the studio itself: the language
+menu (globe, top right) → हिन्दी or मराठी.
+
+How they were made:
+
+- Register (V, 2026-11-26): Hindi is everyday Hindustani with common English loanwords (किताब, सेव करें, एक्सपोर्ट), polite आप.
+  Marathi is everyday Pune/Mumbai Marathi, तुम्ही, no nukta. Western digits throughout.
+- One shared glossary for every chunk: `docs/ui-hi-mr-glossary.md`. Change a term there first, then in the pack.
+- A checker proved, for every key: present, the same `{placeholders}`, the same HTML tags, Devanagari present where the
+  English has words, no added exclamation marks, no nukta in Marathi.
+- Sentences that name another Beuk screen use that screen's translated label in quotes. The account page stays English,
+  so "Download all my data" is quoted in English.
+
+Words most worth a look (each appears many times, so changing one means a find-and-replace across the pack):
+
+| English | Hindi draft | Marathi draft | Why it's worth a look |
+|---|---|---|---|
+| Covenant | अनुबंध | करार | both lean "contract"; the feature is the book's people/places/things |
+| book | किताब | पुस्तक | |
+| section | सेक्शन | विभाग | |
+| chapter | अध्याय | प्रकरण | |
+| shelf | शेल्फ़ (masculine) | शेल्फ | Hindi gender was mixed in the drafts; normalised to आपका शेल्फ़ |
+| Paper / Candlelight themes | कागज़ / मोमबत्ती की रोशनी | कागद / मेणबत्ती | |
+| export / preview | एक्सपोर्ट / प्रीव्यू | एक्सपोर्ट / प्रीव्ह्यू | loanwords on purpose |
+| Lore (Covenant entry type) | दंतकथा | दंतकथा | means "legend"; alternative कहानी की दुनिया / कथेचे जग |
+| Pass / Fail | पास / फ़ेल | पास / फेल | |
+| Stop (read aloud) | रोकें | थांबवा | kept apart from Close (बंद करें / बंद करा) |
+
+Strings to check on screen, not just in the list:
+
+- `ir.card.sections`, `ir.card.pages` (and their `Plural` twins): sentence fragments joined at runtime.
+- `creator.sample*`: Theme Creator sample text is translated (as ja, ar and ru are), so it shows in Devanagari, not in the
+  Latin face being previewed.
+- The interface font: Karla/Inter have no Devanagari, so the menus fall back to the device's own Devanagari sans
+  (`Nirmala UI` on Windows, `Kohinoor Devanagari` on Apple, `Noto Sans Devanagari` on Android). No font file was added.
+
+Also drafts in this set:
+
+- `STARTER_TEXT.hi` and `STARTER_TEXT.mr` (the 13 back-matter starter texts: About the Author, Acknowledgements, Also by, the
+  review and newsletter asks, the colophon). Hindi `about.first` says लिखता/लिखती हूँ because the writer's gender is unknown.
+- Marathi is now a book language too (`LANG_PACKS.mr`, dictation `mr-IN`): the studio's rule is that every interface
+  language is also a book language. Devanagari text is told apart from Hindi by its commonest words (आहे, आणि, नाही …
+  against है, और, नहीं …); a writer can always pick the language by hand. Since the 2026-11-27 review the Marathi list
+  holds only words Hindi does not use (होता / होती / होते / आता / केले / पण / तुम्ही were taken out), Marathi needs a clear
+  margin (at least 3 of its words and twice the Hindi count), and anything less stays Hindi, as it was before Marathi.
+
+### Keys added on main since 340cb22 (14 keys, 2026-11-27)
+
+Merging main into this branch brought 14 English keys that the hi/mr packs did not have yet. The l10n guard
+(`tests/localization.test.ts`) requires every interface language to carry every English key, so each got a Hindi and a
+Marathi draft, written into the `BEUK:ui-hi-mr` block in English key order. **All 28 are UNSIGNED drafts; none is approved.** They were drafted by
+Claude by hand, with `docs/ui-hi-mr-glossary.md` and the neighbouring hi/mr strings (no translation service or API was
+called), in the same register as the rest of the packs: Hindi with आप, Marathi with तुम्ही, no nukta in Marathi, Western
+digits, `{placeholders}` byte for byte.
+
+Every other pack still carries English placeholders for `preview.deviceLabel`, `preview.desk.toggle` and the ten cover
+picture keys (main's `BEUK:coverpan strings` says so until V signs off); hi and mr have drafts for them because these two
+packs are whole drafts anyway. If V prefers the English placeholders there too, they can be swapped back.
+
+Points worth a look:
+
+- **rescue.lost / rescue.lostPlural**: "went with a change" is said as "went along with a change" (hi चला गया / चले गए,
+  mr गेले / गेली); "put back" as hi वापस नहीं लाया जा सका (as restore → वापस लाएँ) and mr पुन्हा जागेवर आणता आले नाही.
+  Letter is अक्षर in both, as `next.textWarning` says it.
+- **front cover**: hi सामने वाला कवर and mr पुढचे मुखपृष्ठ, as `covermk.spine.bgFront` ("Follow the front") already says.
+- **Picture — across / down**: the slider names are said by direction (hi दाएँ-बाएँ / ऊपर-नीचे, mr डावीकडे-उजवीकडे / वर-खाली).
+- **store.c.cdpi.fixZoom** names the slider in quotes by its translated label (“तस्वीर — ज़ूम”, “चित्र — झूम”), per the
+  glossary's rule for naming another control; the English has the label in parentheses without quotes.
+- **soft** (a picture that may look soft): hi धुंधली, mr धूसर, as `store.c.textK.tintsFix` says it.
+
+#### `preview.deviceLabel`
+
+- where: the preview device menu's accessible name (`data-i18n-aria` on `#deviceBar`)
+- **en** (source): Preview device
+- **hi** हिन्दी: `प्रीव्यू डिवाइस`
+- **mr** मराठी: `प्रीव्ह्यू डिव्हाइस`
+
+#### `preview.desk.toggle`
+
+- where: the reading desk's fold button (`BEUK:deskfold`)
+- **en** (source): Chapters and page counts
+- **hi** हिन्दी: `अध्याय और पेजों की गिनती`
+- **mr** मराठी: `प्रकरणे आणि पानसंख्या`
+
+#### `rescue.lost`
+
+- where: the keystroke rescue (`BEUK:keystrokerescue`, section 6)
+- **en** (source): {n} letter you typed went with a change made in another tab, and could not be put back.
+- **hi** हिन्दी: `आपने जो {n} अक्षर टाइप किया था, वह दूसरे टैब में किए गए एक बदलाव के साथ चला गया, और उसे वापस नहीं लाया जा सका।`
+- **mr** मराठी: `तुम्ही टाइप केलेले {n} अक्षर दुसऱ्या टॅबमध्ये केलेल्या एका बदलासोबत गेले, आणि ते पुन्हा जागेवर आणता आले नाही.`
+
+#### `rescue.lostPlural`
+
+- where: the keystroke rescue, the `Plural` twin
+- **en** (source): {n} letters you typed went with a change made in another tab, and could not be put back.
+- **hi** हिन्दी: `आपने जो {n} अक्षर टाइप किए थे, वे दूसरे टैब में किए गए एक बदलाव के साथ चले गए, और उन्हें वापस नहीं लाया जा सका।`
+- **mr** मराठी: `तुम्ही टाइप केलेली {n} अक्षरे दुसऱ्या टॅबमध्ये केलेल्या एका बदलासोबत गेली, आणि ती पुन्हा जागेवर आणता आली नाहीत.`
+
+#### `covermk.picHint`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Drag the picture on the cover, away from the text, to choose what shows. It always fills the cover.
+- **hi** हिन्दी: `क्या दिखे, यह चुनने के लिए कवर पर तस्वीर को टेक्स्ट से हटकर किसी जगह से खींचें। तस्वीर हमेशा पूरा कवर भरती है।`
+- **mr** मराठी: `काय दिसावे ते निवडण्यासाठी मुखपृष्ठावरचे चित्र मजकुरापासून दूर कुठूनही धरून ओढा. चित्र नेहमी संपूर्ण मुखपृष्ठ भरते.`
+
+#### `covermk.picH`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Picture — across
+- **hi** हिन्दी: `तस्वीर — दाएँ-बाएँ`
+- **mr** मराठी: `चित्र — डावीकडे-उजवीकडे`
+
+#### `covermk.picV`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Picture — down
+- **hi** हिन्दी: `तस्वीर — ऊपर-नीचे`
+- **mr** मराठी: `चित्र — वर-खाली`
+
+#### `covermk.picZoom`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Picture — zoom
+- **hi** हिन्दी: `तस्वीर — ज़ूम`
+- **mr** मराठी: `चित्र — झूम`
+
+#### `covermk.resetPic`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Reset picture
+- **hi** हिन्दी: `तस्वीर पहले जैसी करें`
+- **mr** मराठी: `चित्र पूर्वीसारखे करा`
+
+#### `covermk.picSoft`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Zoom out, or use a larger picture.
+- **hi** हिन्दी: `इस ज़ूम पर तस्वीर प्रिंट कवर पर लगभग {ppi} पिक्सेल प्रति इंच पर छपती है — {need} से कम, इसलिए यह धुंधली दिख सकती है। ज़ूम कम करें, या बड़ी तस्वीर लगाएँ।`
+- **mr** मराठी: `या झूमवर चित्र प्रिंट मुखपृष्ठावर सुमारे {ppi} पिक्सेल प्रति इंच इतके छापले जाते — {need} पेक्षा कमी, त्यामुळे ते धूसर दिसू शकते. झूम कमी करा, किंवा मोठे चित्र वापरा.`
+
+#### `store.c.cdpi.failZoom`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): The cover artwork “{image}” is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there; {store} asks for {need}.
+- **hi** हिन्दी: `कवर आर्टवर्क “{image}” सामने वाले कवर पर {zoom} तक ज़ूम किया गया है, जिससे वहाँ वह {dpi} DPI रह जाता है; {store} {need} माँगता है।`
+- **mr** मराठी: `मुखपृष्ठ चित्र “{image}” पुढच्या मुखपृष्ठावर {zoom} पर्यंत झूम केले आहे, त्यामुळे तिथे ते {dpi} DPI राहते; {store} {need} मागते.`
+
+#### `store.c.cdpi.fixZoom`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): Zoom the picture out in the cover maker (Picture — zoom), or supply a larger picture.
+- **hi** हिन्दी: `कवर मेकर में तस्वीर का ज़ूम कम करें (“तस्वीर — ज़ूम”), या बड़ी तस्वीर दें।`
+- **mr** मराठी: `मुखपृष्ठ मेकरमध्ये चित्राचा झूम कमी करा (“चित्र — झूम”), किंवा मोठे चित्र द्या.`
+
+#### `covermk.picSoftLarger`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): At this zoom the picture prints at about {ppi} pixels per inch on the print cover — under {need}, so it may look soft. Even at 100% it is about {full}, so zooming out will not sharpen it: use a larger picture.
+- **hi** हिन्दी: `इस ज़ूम पर तस्वीर प्रिंट कवर पर लगभग {ppi} पिक्सेल प्रति इंच पर छपती है — {need} से कम, इसलिए यह धुंधली दिख सकती है। 100% पर भी यह लगभग {full} है, इसलिए ज़ूम कम करने से यह साफ़ नहीं होगी: बड़ी तस्वीर लगाएँ।`
+- **mr** मराठी: `या झूमवर चित्र प्रिंट मुखपृष्ठावर सुमारे {ppi} पिक्सेल प्रति इंच इतके छापले जाते — {need} पेक्षा कमी, त्यामुळे ते धूसर दिसू शकते. 100% वरसुद्धा ते सुमारे {full} आहे, त्यामुळे झूम कमी केल्याने ते स्पष्ट होणार नाही: मोठे चित्र वापरा.`
+
+#### `store.c.cdpi.okZoom`
+
+- where: cover picture move and zoom (`BEUK:coverpan strings`)
+- **en** (source): The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed).
+- **hi** हिन्दी: `कवर आर्टवर्क “{image}” ({px} px) सामने वाले कवर पर {zoom} तक ज़ूम किया गया है, जिससे वहाँ वह {dpi} DPI देता है — पूरे रैप पर उसका सबसे कम ({need} चाहिए)।`
+- **mr** मराठी: `मुखपृष्ठ चित्र “{image}” ({px} px) पुढच्या मुखपृष्ठावर {zoom} पर्यंत झूम केले आहे, त्यामुळे तिथे ते {dpi} DPI देते — संपूर्ण रॅपवरचे त्याचे सर्वात कमी ({need} लागते).`
+
+### Updated drafts: quoted button names that did not match the button (3 strings, 2026-11-27)
+
+A review found three drafts that quote a button by a name the button does not carry. Each now quotes the button's own
+label in the same language, character for character. **They are still UNSIGNED drafts**, like the rest of this section;
+only the quoted names changed.
+
+#### `store.nc.notRun` (hi)
+
+- quotes `store.runServer`, whose hi label is `सर्वर पर पूरी जाँच चलाएँ`
+- was: `इसकी जाँच Beuk सर्वर करता है: “सर्वर की पूरी जाँच चलाएँ” दबाएँ।`
+- now: `इसकी जाँच Beuk सर्वर करता है: “सर्वर पर पूरी जाँच चलाएँ” दबाएँ।`
+
+#### `store.nc.notRun` (mr)
+
+- quotes `store.runServer`, whose mr label is `संपूर्ण सर्व्हर तपासणी चालवा`
+- was: `हे Beuk सर्व्हर तपासतो: “सर्व्हरची पूर्ण तपासणी चालवा” दाबा.`
+- now: `हे Beuk सर्व्हर तपासतो: “संपूर्ण सर्व्हर तपासणी चालवा” दाबा.`
+
+#### `bible.seriesConflictNote` (mr)
+
+- quotes `offline.keepMine` (mr `माझी प्रत ठेवा`), `offline.useShelf` (mr `शेल्फवरची प्रत वापरा`) and `offline.keepBoth`
+  (mr `दोन्ही ठेवा`, already right)
+- was: `“माझी ठेवा” शेल्फवरील प्रतीच्या जागी या डिव्हाइसवरील प्रत ठेवते. “शेल्फवरील प्रत वापरा” या डिव्हाइसवरील प्रतीच्या जागी शेल्फवरील प्रत ठेवते. मालिकेचा करार एकच असतो, त्यामुळे इथे “दोन्ही ठेवा” नाही.`
+- now: `“माझी प्रत ठेवा” शेल्फवरील प्रतीच्या जागी या डिव्हाइसवरील प्रत ठेवते. “शेल्फवरची प्रत वापरा” या डिव्हाइसवरील प्रतीच्या जागी शेल्फवरील प्रत ठेवते. मालिकेचा करार एकच असतो, त्यामुळे इथे “दोन्ही ठेवा” नाही.`
+- the hi note already quoted all three hi labels exactly; it is unchanged.

@@ -53,6 +53,6 @@ test('epub import: bulk import and box sets take an EPUB too', async () => {
   assert.match(html, /id="boxSetFileInput" accept="[^"]*\.epub/, "the box set's Add a Book offers .epub");
   /* every language's "what bulk import reads" names EPUB */
   const reads = html.match(/"bulk\.emptyBatch": "[^"]*"/g) ?? [];
-  assert.equal(reads.length, 13);
+  assert.equal(reads.length, 15);
   for (const r of reads) assert.match(r, /\.epub/, r);
 });

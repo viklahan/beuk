@@ -266,7 +266,7 @@ test('l10n book: the detector, its function words and the script faces name only
     assert.ok(named.has(c), `STOPWORDS.${c} is never offered to the detector as a candidate`);
   }
   for (const [script, f] of Object.entries(SCRIPT_FONTS)) {
-    // A face may cover languages Beuk does not list yet (Marathi, Nepali, Sanskrit share Devanagari).
+    // A face may cover languages Beuk does not list yet (Nepali and Sanskrit share Devanagari with Hindi and Marathi).
     assert.ok(f.langs.some((c) => LANG_PACKS[c]), `SCRIPT_FONTS.${script} covers no book language at all`);
   }
 });

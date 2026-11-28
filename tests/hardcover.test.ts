@@ -25,7 +25,7 @@ test('hardcover: every client cover.hardcover.* self-check is registered server-
   }
 });
 
-test('hardcover: the spec constants cite IngramSpark and every hardcover UI string ships in all 13 locales', async () => {
+test('hardcover: the spec constants cite IngramSpark and every hardcover UI string ships in all 15 locales', async () => {
   const html = await clientHtml();
   assert.match(html, /https:\/\/www\.ingramspark\.com\/hubfs\/downloads\/file-creation-guide\.pdf/);
   assert.match(html, /https:\/\/www\.ingramspark\.com\/hubfs\/downloads\/trim-sizes\.pdf/);
@@ -37,6 +37,6 @@ test('hardcover: the spec constants cite IngramSpark and every hardcover UI stri
   assert.ok(keys.length >= 30, `hardcover keys: ${keys.length}`);
   for (const k of keys) {
     const n = html.split(`"${k}":`).length - 1;
-    assert.equal(n, 13, `${k} appears in ${n} locale packs, expected 13`);
+    assert.equal(n, 15, `${k} appears in ${n} locale packs, expected 15`);
   }
 });

@@ -104,10 +104,10 @@ const oracle = (book: Rec, id: string) => {
 };
 
 describe('starters in every language (review focus #2)', () => {
-  it("every interface language's starter texts are 1.0's (STARTER_TEXT carries every key in all 13 packs) and every pack names every starter button", () => {
+  it("every interface language's starter texts are 1.0's (STARTER_TEXT carries every key in all 15 packs) and every pack names every starter button", () => {
     const keys = Object.keys(c.api.STARTER_TEXT.en!);
     const order = (meta as { order: string[] }).order;
-    expect(order.length).toBe(13);
+    expect(order.length).toBe(15);
     for (const l of order) {
       expect(c.api.STARTER_TEXT[l], l).toBeTruthy();
       expect(keys.filter((k) => !c.api.STARTER_TEXT[l]![k]), l).toEqual([]);

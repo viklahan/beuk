@@ -48,7 +48,7 @@ test('pdf front: names never come in with their words run together (BEUK:gluefix
   assert.match(html, /irGluedNames\(\)\.forEach\(\(g\) => add\(\{ kind: "glued"/, 'every import checks its names');
   for (const k of ['ir.k.pdfSpaced', 'ir.k.pdfSpacedUnsure', 'ir.k.glued.title', 'ir.k.glued.subtitle', 'ir.k.glued.author', 'ir.k.gluedChapter']) {
     const n = [...html.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "`, 'g'))].length;
-    assert.equal(n, 13, `${k} in 13 locales`);
+    assert.equal(n, 15, `${k} in 15 locales`);
   }
 });
 

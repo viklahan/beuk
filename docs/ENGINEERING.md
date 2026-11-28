@@ -2600,7 +2600,7 @@ The **Covenant** (sidebar tool row → **Covenant**) keeps the people, places an
 - **Underlines in the writing desk.** The desk is a `<textarea>`, which cannot style its own text, so the underlines are drawn on a mirror laid exactly over it: the same text in the textarea's own computed font, padding and wrapping (`white-space: pre-wrap`), transparent except for the lines, clipped to the textarea's client box (which also handles the scrollbar on the left in right-to-left text), moved with its scroll, re-laid on resize and font loads, and never taking the pointer. Only the active section is mirrored. Pointing at an underline (after a short pause), tapping or clicking it, or pressing **Alt+Enter** with the cursor on it shows a small card with the entry and an "Open in the Covenant" button; Escape closes it. No text is changed by any of this. A switch in the Covenant hides the underlines (kept per device). Measured in the harness on the 24,825-word sample with 8 entries (`bible.editor.perf`): whole-book mention pass ~6 ms, first draw of the longest chapter ~5 ms, ~5 ms per keystroke (budget: 10 ms median, 24 ms max), and the mirror's height equals the textarea's scroll height (same wrapping).
 - **Export and import.** **Export** saves the Covenant as JSON (`<title>-covenant.json`, `format: "beuk-story-bible"`, `version: 2`, with the pictures entries wear embedded; a series book exports the series entries it reads with its own). JSON rather than Markdown because it round-trips every field exactly (types, aliases, exact case, exclusions, tags, pictures); Markdown would need a parser that guesses. **Import** into another book adds the entries; an entry whose name the book already has (ignoring case) is skipped and listed; a picture joins the image library once (an identical picture already there is reused); a file that is not a Covenant export is refused.
 - **Spellcheck — not wired, honestly.** Beuk has no spellchecker or dictionary of its own (the brief's `dictlang` is the dictation language); the desk uses the browser's built-in spellcheck, which a web page cannot add words to. So entry names are not taught to any spellchecker; nothing pretends otherwise.
-- Strings ship in all 13 interface languages; the room mirrors in Arabic and stacks list → entry at phone width.
+- Strings ship in all 15 interface languages; the room mirrors in Arabic and stacks list → entry at phone width.
 - Self-checks (client-only, registered in `src/housekeeping/registry.ts`): `bible.seed.frominsights`, `bible.mentions.match`, `bible.mentions.heatmap` (every section count equals an independent brute-force count on the sample), `bible.notexported`, `bible.series.roundtrip`, `bible.model.compat`, `bible.change.anchor`, `bible.change.now`, `bible.card.folded`, `bible.change.mark`, `bible.links.facts`, `bible.series.number`, `bible.series.crossbook`, `bible.series.conflict`, `bible.series.signin`, `bible.series.join`, `bible.series.merge`, `bible.series.leave`, `bible.editor.perf`.
 
 ## Studio: Notebook (client-only)
@@ -2633,7 +2633,7 @@ three things more.
 - **In the sample.** *The Lantern Coast* ships with three notes
   (Research: "Keep the depths straight", "Notices to Mariners"; People:
   "Who keeps what"), each pinned to the chapters its facts come from.
-- All 13 interface languages. Self-check: `notebook.notes`.
+- All 15 interface languages. Self-check: `notebook.notes`.
 
 ### Research files (`BEUK:research`)
 
@@ -2695,7 +2695,7 @@ files it was written about and the link it came from.
   "East Bank sketch.svg" (labelled only with what the Prologue and the
   chapters say, marked "a sketch, not to scale"); "Notices to
   Mariners" links to Wikipedia's article on notices to mariners.
-- All 13 interface languages. Self-checks: `notebook.research`,
+- All 15 interface languages. Self-checks: `notebook.research`,
   `notebook.research.csp`, `notebook.research.webword`.
 
 ### Web pages and Word documents (`BEUK:webword`)
@@ -2859,7 +2859,7 @@ longer sends the reader back to page 1.
   editor activity, then changes font size, the chapter title and the
   device (on a phone they show
   the preview pane for the measure, then put the pane back); the Zen
-  check measures all 13 interface languages in the current window.
+  check measures all 15 interface languages in the current window.
 - **Hooks (tests only, never in the UI):** `window.beukReader`
   (`flush`, `pageOf`, `caretAnchor`, `pageAnchor`, `follow`).
 
@@ -3148,7 +3148,7 @@ audio script's closing credits when they carry the rights line.
   reserved and Custom; for Public domain and Creative Commons it names the
   choice and points to Project Settings.
 - The page's words are English, as the generated copyright page has always
-  been; the controls are in all 13 interface languages.
+  been; the controls are in all 15 interface languages.
 - Self-checks: `rights.pd.everywhere`, `rights.cc.licence`,
   `rights.legacy.unchanged`, `rights.settings.form`. The simulation marks
   its Gutenberg saga volumes public domain and checks their EPUBs
@@ -3354,7 +3354,7 @@ Founders' Shelf application; none of it touches pricing or checkout.
   warmth page is `beuk.studio`, the production domain
   (`BRAND_SUBLINE` / `BRAND_FOOTNOTE` in `src/warmth/pages.ts`; the
   static pages are kept equal to them by `tests/branding.test.ts`). The
-  studio tagline is "your EPUB & print studio" in all 13 interface
+  studio tagline is "your EPUB & print studio" in all 15 interface
   languages. **Beuk is not open source**: the repo has no licence file
   and `package.json` is private, so no page claims otherwise. The
   `ui.brand.domain` self-check fails if "free" or "open source" returns
@@ -4038,7 +4038,7 @@ The same Compose file runs locally — only `.env` differs.
   sample book's imprint), and says nothing about being free or open
   source. It says a 21-day free trial comes with the account, and that
   your own words stay downloadable after it. Its counts (11 store presets, 24 trim
-  sizes, 36 book languages) are checked against the studio's own tables
+  sizes, 37 book languages) are checked against the studio's own tables
   by `tests/site.test.ts`. Its fonts are self-hosted
   (`client/assets/fonts/fonts-site.css`: Karla, Literata and IBM Plex
   Mono, the same OFL files as the studio), and its picture is a WebP in
@@ -5425,7 +5425,7 @@ as before.
 
 **"Untitled Book" is display-only.** Project Settings stores a blank
 title as `""` (the header, exports and shelf show the placeholder). A
-stored title equal to the placeholder in any of the 13 interface
+stored title equal to the placeholder in any of the 15 interface
 languages is treated as blank for these decisions; stored data is not
 rewritten otherwise.
 
@@ -5554,7 +5554,7 @@ template*, with two starting points each (one for the colophon):
   book is an error in the EPUB check and a finding in the print preflight,
   naming the page and the blanks, with a jump to the page.
 - **The book's language.** The starter text is written in the book's
-  language for the 13 interface languages, and in English for any other;
+  language for the 15 interface languages, and in English for any other;
   the strip itself follows the interface language.
 
 **An empty page is left out of the book.** A page with no words of its own —

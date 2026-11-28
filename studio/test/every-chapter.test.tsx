@@ -714,9 +714,9 @@ describe('its words in every language', () => {
   const keys = Object.keys(E).filter((k) => k.startsWith('everych.'));
   const holes = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join(' ');
 
-  it('26 keys in each of the 13 packs, each with English\'s placeholders, none empty, no exclamation mark', () => {
+  it('26 keys in each of the 15 packs, each with English\'s placeholders, none empty, no exclamation mark', () => {
     expect(keys.length).toBe(26);
-    expect(Object.keys(packs).length).toBe(13);
+    expect(Object.keys(packs).length).toBe(15);
     for (const [lang, pack] of Object.entries(packs)) {
       for (const k of keys) {
         expect(typeof pack[k] === 'string' && pack[k]!.trim().length > 0, `${lang} ${k}`).toBe(true);

@@ -39,13 +39,13 @@ test('sidebar: the header carries no duplicate Import / Settings buttons and no 
   assert.match(html, /id="btnSettings2"/);
 });
 
-test('sidebar: every new or changed string ships in all 13 locales', async () => {
+test('sidebar: every new or changed string ships in all 15 locales', async () => {
   const html = await clientHtml();
   const keys = ['local.savedRiskShort', 'side.toolInsights', 'side.toolGoals', 'side.toolHistory', 'side.toolComments', 'side.toolsAria',
     'side.statsAria', 'side.statsSummary', 'side.groupCount', 'side.groupCountPlural', 'sample.legacyUpdated', 'history.auto.sampleupdate', 'sample.coverUpdated'];
   for (const k of keys) {
     const n = html.split(`"${k}": "`).length - 1;
-    assert.equal(n, 13, `${k} appears in ${n} locales`);
+    assert.equal(n, 15, `${k} appears in ${n} locales`);
   }
   assert.doesNotMatch(html, /"local\.evictable"/, 'the removed pill suffix leaves no dead key');
   for (const m of html.matchAll(/"side\.statsSummary": "([^"]+)"/g)) {

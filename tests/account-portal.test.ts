@@ -813,7 +813,7 @@ test('wiring: Caddy sends /account* to the app; both workers leave it to the net
   }
 });
 
-test('studio: the shelf dialog links to /account, says "not confirmed" calmly, and every portal.* string ships in all 13 locales', () => {
+test('studio: the shelf dialog links to /account, says "not confirmed" calmly, and every portal.* string ships in all 15 locales', () => {
   const html = read('client', 'index.html');
   assert.match(html, /<a href="\/account" target="_blank" rel="noopener" id="portalLink" data-i18n="portal.page">/);
   assert.match(html, /id="btnPortalResend"/);
@@ -824,7 +824,7 @@ test('studio: the shelf dialog links to /account, says "not confirmed" calmly, a
   assert.equal(keys.length, 7);
   for (const k of keys) {
     const n = html.split(`"${k}":`).length - 1;
-    assert.equal(n, 13, `${k} appears in ${n} locale packs, expected 13`);
+    assert.equal(n, 15, `${k} appears in ${n} locale packs, expected 15`);
   }
   for (const v of [...enBlock[1].matchAll(/: "([^"]*)"/g)].map((m) => m[1])) assert.ok(!v.includes('!'), `calm copy: ${v}`);
   // The bring-it offer: after a fresh sign-in too, never an empty desk or the untouched sample.

@@ -173,12 +173,12 @@ test('import card: the "Imported" toast is not raised over the open card', async
   assert.ok(html.includes('function irAbort() { const held = IR_REC && IR_REC.imported; IR_REC = null; if (held) toast(held, "file-check-2");'), 'an import given up says them too');
 });
 
-test('import card: its words are in all 13 language packs, placeholders kept, and the new English uses no dash as punctuation', async () => {
+test('import card: its words are in all 15 language packs, placeholders kept, and the new English uses no dash as punctuation', async () => {
   const html = await clientHtml();
   const valuesOf = (k: string) => [...html.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "((?:[^"\\\\]|\\\\.)*)"`, 'g'))].map((m) => m[1]);
   for (const k of [...Object.keys(HOLDS), ...KEPT]) {
     const vals = valuesOf(k);
-    assert.equal(vals.length, 13, `${k} in 13 locales`);
+    assert.equal(vals.length, 15, `${k} in 15 locales`);
     for (const v of vals) {
       assert.ok(v.trim().length > 0, `${k} is not empty`);
       for (const hold of HOLDS[k] || []) assert.ok(v.includes(hold), `${k} keeps ${hold}: ${v}`);
