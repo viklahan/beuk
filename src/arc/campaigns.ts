@@ -528,6 +528,13 @@ async function lockCampaign(tx: Db, id: string): Promise<CampaignRow> {
   return rowOf(r.rows[0]);
 }
 
+/** The cap's condition (ruling F8), for an UPDATE of share_recipients r
+ *  joined to its arc_campaigns c: the campaign's OTHER waiting and claimed
+ *  readers are fewer than max_claims. mintCopy and waitForApproval share
+ *  it, so every path that counts against the cap is the same statement. */
+const CAP_HAS_ROOM = `(select count(*) from share_recipients x
+            where x.share_id = c.share_id and x.role = 'arc' and x.status in ('pending', 'claimed') and x.id <> r.id) < c.max_claims`;
+
 /**
  * Give a reader their copy: status 'claimed', claimed_at, build_id = the
  * campaign's newest build, a fresh public_id (12 random bytes, base64url)
@@ -543,13 +550,6 @@ async function lockCampaign(tx: Db, id: string): Promise<CampaignRow> {
  * already holds it). The caller checks the reader's status and the
  * campaign's state under the same lock.
  */
-/** The cap's condition (ruling F8), for an UPDATE of share_recipients r
- *  joined to its arc_campaigns c: the campaign's OTHER waiting and claimed
- *  readers are fewer than max_claims. mintCopy and waitForApproval share
- *  it, so every path that counts against the cap is the same statement. */
-const CAP_HAS_ROOM = `(select count(*) from share_recipients x
-            where x.share_id = c.share_id and x.role = 'arc' and x.status in ('pending', 'claimed') and x.id <> r.id) < c.max_claims`;
-
 export async function mintCopy(tx: Db, campaignId: string, readerId: string, now: Date): Promise<string> {
   await tx.query('select id from arc_campaigns where id = $1 for update', [campaignId]);
   const token = randomBytes(24).toString('base64url');

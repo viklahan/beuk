@@ -95,7 +95,7 @@ const purge = () =>
       if (arc) console.log(`arc: purged ${arc} unconfirmed claims`);
       if (clients) console.log(`oauth: forgot ${clients} never-connected client registrations`);
     })
-    .catch((err) => console.error('session purge failed', err));
+    .catch((err) => console.error('purge failed (sessions, oauth tokens or clients, unconfirmed ARC claims)', err));
 await purge();
 const purgeTimer = setInterval(purge, config.sessionPurgeIntervalMs);
 purgeTimer.unref();

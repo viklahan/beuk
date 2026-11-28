@@ -133,18 +133,25 @@ export type StartOutcome =
   | { kind: 'sent'; ref: string }
   | {
       kind: 'refused';
-      // 'revoked' is an addition to the plan's list (ruling F9: the author
-      // closed this address's copy; refused with no mail).
-      reason: 'closed' | 'full' | 'blocked' | 'mail-off' | 'busy' | 'bad-name' | 'bad-email' | 'bad-profile' | 'answered' | 'revoked';
+      // Additions to the plan's list (fix round 1): 'mail-failed' — the
+      // code email did not go for a reason that is not the reader's (the mail
+      // server refused it or threw, or the campaign/author send limit);
+      // 'signups-busy' — the campaign holds unverifiedPerCampaign
+      // unconfirmed claims. 'busy' is only ever the reader's own limits. A
+      // closed copy (F9) is told as 'answered', the same words as a decline,
+      // so the page reveals no more about an address than the spec allows.
+      reason:
+        | 'closed' | 'full' | 'blocked' | 'mail-off' | 'mail-failed' | 'signups-busy' | 'busy'
+        | 'bad-name' | 'bad-email' | 'bad-profile' | 'answered';
     };
 
 export type VerifyOutcome =
   | { kind: 'claimed'; token: string }
   // name: for the waiting page (an addition to the plan's shape).
   | { kind: 'pending'; name: string }
-  // 'answered' and 'revoked' are additions: the author declined, or closed
-  // the copy, between the claim and the code.
-  | { kind: 'refused'; reason: 'wrong' | 'expired' | 'closed' | 'full' | 'unknown' | 'answered' | 'revoked' };
+  // 'answered' is an addition: the author declined, or closed the copy,
+  // between the claim and the code (one wording for both, fix round 1).
+  | { kind: 'refused'; reason: 'wrong' | 'expired' | 'closed' | 'full' | 'unknown' | 'answered' };
 
 export interface ClaimInput {
   name: unknown;
@@ -250,12 +257,33 @@ async function countedNow(db: Db, shareId: string): Promise<{ counted: number; u
 
 const UNIQUE_VIOLATION = '23505';
 
-/** Why a send that did not go refuses the claim (the plan's mapping). */
-function refusalOf(mail: Extract<ArcSendOutcome, { sent: false }>): 'busy' | 'mail-off' | 'blocked' {
+/** Why a send that did not go refuses the claim. None of these is the
+ *  reader's doing, so none is 'busy' (fix round 1): the campaign's or the
+ *  author's send limit (sendArcMail 'rate-limited') and a refusal by the
+ *  mail server are 'mail-failed'. */
+function refusalOf(mail: Extract<ArcSendOutcome, { sent: false }>): 'mail-off' | 'blocked' | 'mail-failed' {
   if (mail.reason === 'not-configured') return 'mail-off';
   if (mail.reason === 'suppressed') return 'blocked';
-  // rate-limited, or the mail server refused it (decided by this task: "try again later").
-  return 'busy';
+  return 'mail-failed';
+}
+
+/** The window codesPerRow counts in (fix round 1): a row's codes_sent
+ *  starts again once its last delivered code (arc_events 'code_sent') is
+ *  older than this, so nobody can lock a reader out of their link for good.
+ *  The per-address limiter (codesPerAddress) stays the guessing budget. */
+export const CODES_WINDOW_MS = 24 * HOUR;
+
+/** codes_sent for the row, after starting its window again when no code
+ *  was delivered to it within CODES_WINDOW_MS. */
+async function codesInWindow(db: Db, rowId: string, now: Date): Promise<number> {
+  await db.query(
+    `update share_recipients r set codes_sent = 0
+     where r.id = $1 and r.codes_sent > 0
+       and not exists (select 1 from arc_events e where e.recipient_id = r.id and e.kind = 'code_sent' and e.at > $2)`,
+    [rowId, new Date(now.getTime() - CODES_WINDOW_MS).toISOString()],
+  );
+  const r = await db.query<{ codes_sent: number }>('select codes_sent from share_recipients where id = $1', [rowId]);
+  return Number(r.rows[0]?.codes_sent ?? 0);
 }
 
 /**
@@ -264,9 +292,10 @@ function refusalOf(mail: Extract<ArcSendOutcome, { sent: false }>): 'busy' | 'ma
  *   name, email, the profile link (approval mode), tz (kept only when Intl
  *   accepts it); the campaign open; ARC mail on; the address not suppressed
  *   (Not me, or Stop for this author); the per-address limit; then the
- *   address's existing row — declined → 'answered', a closed copy →
- *   'revoked' (F9, no mail), any other is reused (its name never changes) —
- *   or a new 'unverified' row; codes_sent under codesPerRow; a fresh code
+ *   address's existing row — declined or a closed copy → 'answered' (F9,
+ *   no mail; one wording), any other is reused (its name never changes) —
+ *   or a new 'unverified' row; codes_sent under codesPerRow, counted over
+ *   CODES_WINDOW_MS; a fresh code
  *   and ref; the 'code' email. When it does not go the code is cleared.
  * A new or still-unverified reader is refused 'full' when the waiting and
  * claimed readers already reach the cap (a courtesy: no code for a copy
@@ -303,13 +332,15 @@ export async function startClaim(
 
   let row = await rowByEmail(db, c.share_id, email);
   if (row?.status === 'declined') return { kind: 'refused', reason: 'answered' };
-  if (row && row.revoked_at != null) return { kind: 'refused', reason: 'revoked' };
+  if (row && row.revoked_at != null) return { kind: 'refused', reason: 'answered' };
   if (!row || row.status === 'unverified') {
     const n = await countedNow(db, c.share_id);
+    // A courtesy only (no code for a copy that cannot be given): the cap is
+    // enforced at the code, by CAP_HAS_ROOM in mintCopy / waitForApproval.
     if (n.counted >= c.max_claims) return { kind: 'refused', reason: 'full' };
-    if (!row && n.unverified >= ARC_CLAIM_RULES.unverifiedPerCampaign) return { kind: 'refused', reason: 'busy' };
+    if (!row && n.unverified >= ARC_CLAIM_RULES.unverifiedPerCampaign) return { kind: 'refused', reason: 'signups-busy' };
   }
-  if (row && row.codes_sent >= ARC_CLAIM_RULES.codesPerRow) return { kind: 'refused', reason: 'busy' };
+  if (row && (await codesInWindow(db, row.id, now)) >= ARC_CLAIM_RULES.codesPerRow) return { kind: 'refused', reason: 'busy' };
 
   const key = suppressionHash(config, email);
   const slot = codesPerAddress.reserve(key);
@@ -335,7 +366,7 @@ export async function startClaim(
       row = await rowByEmail(db, c.share_id, email);
       if (!row || row.status === 'declined' || row.revoked_at != null) {
         giveBack();
-        return { kind: 'refused', reason: row?.status === 'declined' ? 'answered' : row ? 'revoked' : 'busy' };
+        return { kind: 'refused', reason: row ? 'answered' : 'signups-busy' };
       }
     }
   }
@@ -397,7 +428,7 @@ export async function rowByRef(db: Db, s: SignupView, ref: unknown): Promise<{ i
 type TxResult =
   | { kind: 'claimed'; token: string }
   | { kind: 'pending'; started: boolean; notifyAuthor: { previous: string | null; waiting: number } | null }
-  | { kind: 'refused'; reason: 'closed' | 'full' | 'unknown' | 'answered' | 'revoked' };
+  | { kind: 'refused'; reason: 'closed' | 'full' | 'unknown' | 'answered' };
 
 /**
  * Check a code. The attempt is counted first, in one statement (so a burst
@@ -405,7 +436,7 @@ type TxResult =
  * codeAttempts times, is 'expired'. The right code clears the code fields
  * (and codes_sent: the address is proven) and sets email_verified_at; then,
  * in one transaction under the campaign row lock:
- *   not open → closed; declined → answered; a closed copy → revoked (F9);
+ *   not open → closed; declined, or a closed copy (F9) → answered;
  *   claimed → mintCopy again (a new link; the old one stops), 'ready' sent;
  *   pending → pending;
  *   unverified, instant → mintCopy (0 rows → full), 'ready' sent after the
@@ -453,13 +484,13 @@ export async function verifyClaim(deps: ArcDeps, s: SignupView, ref: unknown, co
     const r = cur.rows[0];
     if (!r) return { kind: 'refused', reason: 'unknown' };
     if (r.status === 'declined') return { kind: 'refused', reason: 'answered' };
-    if (r.revoked_at != null) return { kind: 'refused', reason: 'revoked' };
+    if (r.revoked_at != null) return { kind: 'refused', reason: 'answered' };
     if (r.status === 'pending') return { kind: 'pending', started: false, notifyAuthor: null };
     if (r.status === 'claimed' || fresh.approval_mode === 'instant') {
       try {
         return { kind: 'claimed', token: await mintCopy(tx, fresh.id, found.id, now) };
       } catch (err) {
-        if (err instanceof ArcError && err.extra?.revoked) return { kind: 'refused', reason: 'revoked' };
+        if (err instanceof ArcError && err.extra?.revoked) return { kind: 'refused', reason: 'answered' };
         if (err instanceof ArcError && err.extra?.full) return { kind: 'refused', reason: 'full' };
         throw err;
       }

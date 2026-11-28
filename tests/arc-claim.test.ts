@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { after, before, test } from 'node:test';
 import { NEVER_PAUSED } from '../src/access.js';
-import { ARC_CLAIM_RULES, DEFAULT_ARC_PUBLIC_LIMITS, purgeArcUnverified } from '../src/arc/claims.js';
-import { arcMailTokenHash, suppress } from '../src/arc/mail.js';
+import { ARC_CLAIM_RULES, CODES_WINDOW_MS, DEFAULT_ARC_PUBLIC_LIMITS, purgeArcUnverified } from '../src/arc/claims.js';
+import { ARC_SEND_LIMITS, arcMailTokenHash, suppress } from '../src/arc/mail.js';
 import { ARC_EN } from '../src/arc/strings.js';
 import type { Db } from '../src/db.js';
 import type { MailMessage, Mailer, MailerStatus, MailResult } from '../src/mailer.js';
@@ -43,10 +43,16 @@ const REVIEW_PRESSURE = /\b(exchange|in return|owed?|must review|required to rev
 
 class FakeMailer implements Mailer {
   sent: MailMessage[] = [];
+  /** The mail server refuses the next sends ("not delivered"). */
+  refuse = false;
+  /** The transport throws (a bug or a dead socket). */
+  explode = false;
   status(): MailerStatus {
     return { configured: true, transport: 'smtp', from: 'fake', detail: 'fake mailer (test)' };
   }
   async send(message: MailMessage): Promise<MailResult> {
+    if (this.explode) throw new Error('the test transport blew up');
+    if (this.refuse) return { delivered: false, reason: 'the test mail server refused it', loggedToConsole: false };
     this.sent.push(message);
     return { delivered: true, messageId: '<arc-claim@example.com>' };
   }
@@ -353,7 +359,8 @@ test('a leaked link cannot use up the cap without verified emails', async () => 
 test('the right code claims the copy and lands on it', async () => {
   const { campaign, signup } = await campaignOn(arcOn.base);
   const since = arcMail.sent.length;
-  const { answer: a } = await claimAndCheck(arcOn.base, arcMail, signup, 'Sarah', 'sarah@example.com');
+  const { ref, answer: a } = await claimAndCheck(arcOn.base, arcMail, signup, 'Sarah', 'sarah@example.com');
+  const usedCode = codeFor(arcMail, 'sarah@example.com');
   const token = copyToken(a);
   const [row] = await rowOfEmail(campaign.shareId, 'sarah@example.com');
   assert.equal(row.status, 'claimed');
@@ -366,10 +373,11 @@ test('the right code claims the copy and lands on it', async () => {
   assert.ok(ready[0].text.includes(`${arcOn.config.appBaseUrl}/arc/r/${token}`));
   // The copy reads in today's reader (ruling R4a: claimed ARC readers use /read/:token).
   assert.equal((await get(arcOn.base, `/read/${token}`)).status, 200);
-  // The code is single-use.
-  const again = await check(arcOn.base, signup, 'x'.repeat(32), '000000');
+  // The code is single-use: the same ref and code again find nothing.
+  const again = await check(arcOn.base, signup, ref, usedCode);
   assert.equal(again.status, 404);
   assert.ok(again.text.includes(ARC_EN['arc.code.err.unknown']));
+  assert.equal(arcMail.to('sarah@example.com', since).filter((m) => m.subject.startsWith('Your advance copy')).length, 1, 'no second copy');
 });
 
 test('five wrong codes end that code', async () => {
@@ -538,7 +546,8 @@ test('a declined address is told the author has answered; a closed copy is never
   assert.ok(a.text.includes('Ada Moss has already answered a request from this address.'));
   assert.equal(arcMail.to('sarah@example.com').length, before, 'no mail');
 
-  // Ruling F9: a reader whose copy the author closed claims again → refused, no mail.
+  // Ruling F9: a reader whose copy the author closed claims again → refused, no mail,
+  // in the SAME words as a decline (fix round 1: the page reveals nothing more).
   const inst = await campaignOn(arcOn.base);
   copyToken((await claimAndCheck(arcOn.base, arcMail, inst.signup, 'Tom', 'tom@example.com')).answer);
   const tom = (await rowOfEmail(inst.campaign.shareId, 'tom@example.com'))[0];
@@ -546,7 +555,10 @@ test('a declined address is told the author has answered; a closed copy is never
   before = arcMail.to('tom@example.com').length;
   const b = await claim(arcOn.base, inst.signup, { name: 'Tom', email: 'tom@example.com' });
   assert.equal(b.status, 409);
-  assert.ok(b.text.includes(ARC_EN['arc.claim.err.revoked'].replace('{author}', 'Ada Moss').replace("'", '&#39;')));
+  assert.ok(b.text.includes('Ada Moss has already answered a request from this address.'));
+  assert.ok(!/closed the copy/i.test(b.text));
+  const errBox = (html: string) => /<p class="err" role="alert">([^<]*)<\/p>/.exec(html)?.[1];
+  assert.equal(errBox(b.text), errBox(a.text), 'a closed copy and a decline read the same');
   assert.equal(arcMail.to('tom@example.com').length, before, 'no mail');
   const after = (await db.query<{ revoked_at: unknown; status: string }>('select revoked_at, status from share_recipients where id = $1', [tom.id])).rows[0];
   assert.ok(after.revoked_at, 'revoked_at is never cleared');
@@ -588,6 +600,88 @@ test('limits: per IP and per address', async () => {
   const blocked = await check(tight.base, signup, ref, codeFor(tightMail, 'ann@example.com'), '10.68.0.2');
   assert.equal(blocked.status, 429);
   copyToken(await check(tight.base, signup, ref, codeFor(tightMail, 'ann@example.com'), '10.68.0.3'));
+});
+
+test('codes per request count in a 24-hour window: a stranger cannot lock a reader out of their link for good', async () => {
+  // Fix round 1: codes_sent starts again once the row's last delivered code is older than CODES_WINDOW_MS.
+  assert.equal(CODES_WINDOW_MS, DAY);
+  const { campaign, signup } = await campaignOn(arcOn.base);
+  const email = 'locked-out@example.com';
+  copyToken((await claimAndCheck(arcOn.base, arcMail, signup, 'Lee', email)).answer);
+  // Someone else, who knows the address, asks for codes until the request limit.
+  for (let i = 0; i < ARC_CLAIM_RULES.codesPerRow; i++) refOf(await claim(arcOn.base, signup, { name: 'Lee', email }), signup);
+  const before = arcMail.to(email).length;
+  const refused = await claim(arcOn.base, signup, { name: 'Lee', email });
+  assert.equal(refused.status, 429, 'the reader\'s own limit');
+  assert.ok(refused.text.includes(ARC_EN['arc.claim.err.busy']));
+  clock = new Date(clock.getTime() + DAY - HOUR);
+  assert.equal((await claim(arcOn.base, signup, { name: 'Lee', email })).status, 429, 'still inside the window');
+  assert.equal(arcMail.to(email).length, before, 'nothing sent while refused');
+  // Past the window the reader recovers their link.
+  clock = new Date(clock.getTime() + 2 * HOUR);
+  const back = await claimAndCheck(arcOn.base, arcMail, signup, 'Lee', email);
+  const token = copyToken(back.answer);
+  assert.equal((await get(arcOn.base, `/read/${token}`)).status, 200);
+  assert.equal(await count(`share_recipients where share_id = $1 and status = 'claimed'`, [campaign.shareId]), 1);
+});
+
+test('a code email that does not go for reasons not the reader\'s is told honestly, not as too many tries', async () => {
+  const { campaign, signup } = await campaignOn(arcOn.base);
+  const failed = ARC_EN['arc.claim.err.mailFailed'].replace("'", '&#39;');
+  const tooMany = ARC_EN['arc.claim.err.busy'];
+  const expectFailed = async (email: string, why: string) => {
+    const before = arcMail.sent.length;
+    const a = await claim(arcOn.base, signup, { name: 'Sam', email });
+    assert.equal(a.status, 503, why);
+    assert.ok(a.text.includes(failed), why);
+    assert.ok(!a.text.includes(tooMany), why);
+    assert.equal(arcMail.sent.length, before, `${why}: nothing sent`);
+    const [row] = await rowOfEmail(campaign.shareId, email);
+    const code = (await db.query<{ verify_code_hash: string | null; codes_sent: number }>('select verify_code_hash, codes_sent from share_recipients where id = $1', [row.id])).rows[0];
+    assert.equal(code.verify_code_hash, null, `${why}: the code is cleared`);
+    assert.equal(code.codes_sent, 0, `${why}: an undelivered code is not counted`);
+  };
+  arcMail.refuse = true;
+  try {
+    await expectFailed('refused@example.com', 'the mail server refused it');
+  } finally {
+    arcMail.refuse = false;
+  }
+  arcMail.explode = true;
+  try {
+    await expectFailed('thrown@example.com', 'the transport threw');
+  } finally {
+    arcMail.explode = false;
+  }
+  // The campaign's hourly send limit (ARC_SEND_LIMITS.perCampaignHour, counted from arc_events).
+  await db.query(
+    `insert into arc_events (campaign_id, kind, at) select $1, 'code_sent', $2 from generate_series(1, $3::int)`,
+    [campaign.id, clock.toISOString(), ARC_SEND_LIMITS.perCampaignHour],
+  );
+  await expectFailed('limited@example.com', "the campaign's send limit");
+  await db.query(`delete from arc_events where campaign_id = $1 and recipient_id is null and kind = 'code_sent'`, [campaign.id]);
+  refOf(await claim(arcOn.base, signup, { name: 'Sam', email: 'refused@example.com' }), signup);
+});
+
+test('a campaign full of unconfirmed requests says sign-ups are busy, not too many tries', async () => {
+  const { campaign, signup } = await campaignOn(arcOn.base);
+  const early = 'early@example.com';
+  refOf(await claim(arcOn.base, signup, { name: 'Early', email: early }), signup);
+  await db.query(
+    `insert into share_recipients (id, share_id, role, name, email, status, mail_token_hash, created_at)
+     select x.id, $1, 'arc', 'Bot', 'bot-' || x.n || '@example.com', 'unverified', md5(x.id::text), $2
+     from (select gen_random_uuid() as id, n from generate_series(1, $3::int) n) x`,
+    [campaign.shareId, clock.toISOString(), ARC_CLAIM_RULES.unverifiedPerCampaign - 1],
+  );
+  const before = arcMail.sent.length;
+  const a = await claim(arcOn.base, signup, { name: 'Late', email: 'late@example.com' });
+  assert.equal(a.status, 503);
+  assert.ok(a.text.includes(ARC_EN['arc.claim.err.signupsBusy']));
+  assert.ok(!a.text.includes(ARC_EN['arc.claim.err.busy']));
+  assert.equal(arcMail.sent.length, before, 'nothing sent');
+  assert.equal((await rowOfEmail(campaign.shareId, 'late@example.com')).length, 0, 'no row');
+  // A reader already asking can still get a new code.
+  refOf(await claim(arcOn.base, signup, { name: 'Early', email: early }), signup);
 });
 
 test('the honeypot looks fine and stores nothing', async () => {

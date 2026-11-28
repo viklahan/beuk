@@ -84,12 +84,18 @@ export const ARC_EN = {
   'arc.claim.err.full': 'Every copy has been claimed. Thank you for asking.',
   'arc.claim.err.blocked': "Beuk can't email this address. Someone using it asked for no more advance-copy email, so no code can be sent.",
   'arc.claim.err.mailOff': "Beuk can't send advance-copy email right now, so no claim was taken. Please try again later.",
+  // Only the reader's own limits (per IP, per address, codes per request).
   'arc.claim.err.busy': 'Too many tries for now. Please wait a while, then try again.',
+  // Fix round 1: the code email did not go, and not because of the reader.
+  'arc.claim.err.mailFailed': "Beuk couldn't send the code just now. Please try again later.",
+  // Fix round 1: the campaign holds as many unconfirmed requests as it takes at once.
+  'arc.claim.err.signupsBusy': 'Sign-ups are busy right now. Please try again later.',
   'arc.claim.err.badName': 'Please write your name, in at most 60 characters.',
   'arc.claim.err.badEmail': 'Please check your email address.',
   'arc.claim.err.badProfile': 'Please add a link to your Goodreads or Amazon profile, starting with https://.',
+  // Also the answer for an address whose copy the author closed (ruling F9;
+  // one wording, so the page says no more about an address than the spec).
   'arc.claim.err.answered': '{author} has already answered a request from this address.',
-  'arc.claim.err.revoked': "{author} closed the copy given to this address, so it can't be claimed again.",
 
   // The code page.
   'arc.code.title': 'Enter your code',

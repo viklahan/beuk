@@ -69,20 +69,21 @@ function errorBox(message: string | null): SafeHtml | string {
 
 /** Why a claim or a code was refused, as the page says it. */
 export type ClaimRefusal =
-  | 'closed' | 'full' | 'blocked' | 'mail-off' | 'busy' | 'bad-name' | 'bad-email' | 'bad-profile' | 'answered' | 'revoked';
-export type CodeRefusal = 'wrong' | 'expired' | 'unknown' | 'closed' | 'full' | 'answered' | 'revoked' | 'busy';
+  | 'closed' | 'full' | 'blocked' | 'mail-off' | 'mail-failed' | 'signups-busy' | 'busy' | 'bad-name' | 'bad-email' | 'bad-profile' | 'answered';
+export type CodeRefusal = 'wrong' | 'expired' | 'unknown' | 'closed' | 'full' | 'answered' | 'busy';
 
 const CLAIM_ERR: Record<ClaimRefusal, ArcKey> = {
   closed: 'arc.claim.err.closed',
   full: 'arc.claim.err.full',
   blocked: 'arc.claim.err.blocked',
   'mail-off': 'arc.claim.err.mailOff',
+  'mail-failed': 'arc.claim.err.mailFailed',
+  'signups-busy': 'arc.claim.err.signupsBusy',
   busy: 'arc.claim.err.busy',
   'bad-name': 'arc.claim.err.badName',
   'bad-email': 'arc.claim.err.badEmail',
   'bad-profile': 'arc.claim.err.badProfile',
   answered: 'arc.claim.err.answered',
-  revoked: 'arc.claim.err.revoked',
 };
 
 const CODE_ERR: Record<CodeRefusal, ArcKey> = {
@@ -92,7 +93,6 @@ const CODE_ERR: Record<CodeRefusal, ArcKey> = {
   closed: 'arc.claim.err.closed',
   full: 'arc.claim.err.full',
   answered: 'arc.claim.err.answered',
-  revoked: 'arc.claim.err.revoked',
   busy: 'arc.claim.err.busy',
 };
 
@@ -172,7 +172,7 @@ export function renderCodePage(
   const minutes = Math.round(ARC_CLAIM_RULES.codeTtlMs / 60_000);
   const base = `/arc/${opts.signup}`;
   const sent = opts.email ? t('arc.code.sentTo', { email: opts.email, minutes }) : t('arc.code.sentAny', { minutes });
-  const ended = opts.error === 'closed' || opts.error === 'full' || opts.error === 'answered' || opts.error === 'revoked';
+  const ended = opts.error === 'closed' || opts.error === 'full' || opts.error === 'answered';
   const form = ended
     ? ''
     : html`

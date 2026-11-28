@@ -46,9 +46,10 @@ const START_STATUS: Record<Extract<StartOutcome, { kind: 'refused' }>['reason'],
   full: 409,
   blocked: 409,
   answered: 409,
-  revoked: 409,
   busy: 429,
   'mail-off': 503,
+  'mail-failed': 503,
+  'signups-busy': 503,
 };
 
 const CODE_STATUS: Record<CodeRefusal, number> = {
@@ -58,7 +59,6 @@ const CODE_STATUS: Record<CodeRefusal, number> = {
   closed: 410,
   full: 409,
   answered: 409,
-  revoked: 409,
   busy: 429,
 };
 
