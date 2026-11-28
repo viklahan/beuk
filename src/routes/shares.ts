@@ -7,6 +7,7 @@ import { renderSnapshot, type Snapshot } from '../shares/render.js';
 import { hydrateDoc } from '../pictures.js';
 import { isCampaignShare } from '../arc/campaigns.js';
 import {
+  imageHeaders,
   readerHeaders,
   renderGonePage,
   renderNotFoundPage,
@@ -890,13 +891,7 @@ export function shareReaderRoutes(
       );
       const img = r.rows[0]?.img;
       if (!img || !/^image\/(jpeg|png|gif|webp)$/.test(img.mediaType)) return res.status(404).end();
-      res.set({
-        'Content-Type': img.mediaType,
-        'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'private, max-age=3600',
-        'Referrer-Policy': 'no-referrer',
-        'Content-Security-Policy': "default-src 'none'",
-      });
+      res.set(imageHeaders(img.mediaType));
       return res.send(Buffer.from(img.data, 'base64'));
     } catch (err) {
       return next(err);

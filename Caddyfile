@@ -276,6 +276,13 @@
 	handle /read* {
 		reverse_proxy app:3000
 	}
+	# ARC campaigns: the unlisted claim page (/arc/<signup>), its code page
+	# and cover, and each reader's copy page (/arc/r/…) and mail links
+	# (/arc/m/…). Exactly /arc and /arc/… (a bare /arc* would also take /arcade).
+	@arc path /arc /arc/*
+	handle @arc {
+		reverse_proxy app:3000
+	}
 	handle /robots.txt {
 		reverse_proxy app:3000
 	}

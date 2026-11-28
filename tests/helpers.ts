@@ -11,6 +11,7 @@ import type { Mailer } from '../src/mailer.js';
 import type { AccountLimits, BackgroundTasks } from '../src/routes/account.js';
 import type { CspReportOptions } from '../src/routes/csp-report.js';
 import type { HelpSearchLimits } from '../src/routes/help.js';
+import type { ArcPublicLimits } from '../src/arc/claims.js';
 import type {
   BootCheck,
   HousekeepingDeps,
@@ -240,6 +241,7 @@ export async function startTestServer(
   extra?: {
     mailer?: Mailer;
     arcMailer?: Mailer | null;
+    arcLimits?: Partial<ArcPublicLimits>;
     accountLimits?: AccountLimits;
     cspReport?: CspReportOptions;
     billing?: BillingProvider;

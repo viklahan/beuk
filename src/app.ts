@@ -31,6 +31,8 @@ import { resetPageRoutes } from './routes/reset-page.js';
 import { inviteRoutes } from './routes/invite.js';
 import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
 import { arcOwnerRoutes } from './routes/arc.js';
+import { arcPublicRoutes } from './routes/arc-public.js';
+import { DEFAULT_ARC_PUBLIC_LIMITS, type ArcPublicLimits } from './arc/claims.js';
 import { authorshipRoutes } from './routes/authorship.js';
 import { twoStepRoutes } from './routes/two-step.js';
 import { sessionRoutes } from './routes/sessions.js';
@@ -71,6 +73,8 @@ export interface AppDeps {
   /** ARC reader mail (src/arc/mail.ts): defaults to createArcMailer(config),
    *  null while ARC mail is not configured; tests inject a fake or null. */
   arcMailer?: Mailer | null;
+  /** ARC's public claim page limits (src/arc/claims.ts); tests loosen or tighten them. */
+  arcLimits?: Partial<ArcPublicLimits>;
   /** P0 #5: rate limits for the account endpoints (tests tighten them). */
   accountLimits?: AccountLimits;
   /** CSP violation report endpoint (tests inject the log + limits). */
@@ -91,6 +95,7 @@ export function buildApp({
   housekeeping,
   mailer,
   arcMailer,
+  arcLimits,
   accountLimits,
   cspReport,
   helpSearchLimits,
@@ -255,17 +260,15 @@ export function buildApp({
   // Beta-reader share links: owner surface (signed in).
   app.use('/api/shares', shareOwnerRoutes(db, now));
   // ARC campaigns: the owner surface (signed in); version 1 builds through the server EPUB queue.
-  app.use(
-    '/api/arc',
-    arcOwnerRoutes({
-      db,
-      config,
-      arcMailer: app.locals.arcMailer as Mailer | null,
-      mailer: mail,
-      epubQueue,
-      now: now ?? (() => new Date()),
-    }),
-  );
+  const arcDeps = {
+    db,
+    config,
+    arcMailer: app.locals.arcMailer as Mailer | null,
+    mailer: mail,
+    epubQueue,
+    now: now ?? (() => new Date()),
+  };
+  app.use('/api/arc', arcOwnerRoutes(arcDeps));
   // The authorship record: fingerprint-only stamps (signed in, owner-only).
   app.use('/api/authorship', authorshipRoutes(db, now));
 
@@ -298,6 +301,10 @@ export function buildApp({
   // Beta-reader share links: the public read-only reader (no account).
   // Caddy proxies /read* to the app (see the Caddyfile).
   app.use('/read', shareReaderRoutes(db, { now, cookieSecure: config.cookieSecure }));
+  // ARC campaigns: the public claim page and its code (no account).
+  // Caddy proxies /arc and /arc/* to the app (see the Caddyfile).
+  const arcDownloads = new BuildQueue(2, 8);
+  app.use('/arc', arcPublicRoutes(arcDeps, { ...DEFAULT_ARC_PUBLIC_LIMITS, ...arcLimits }, arcDownloads));
 
   // M4 warmth pages (help reading room, thanks, changelog, roadmap).
   // Everything else at the site root is Caddy's static client mount.

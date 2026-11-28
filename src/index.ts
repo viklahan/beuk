@@ -2,6 +2,7 @@ import { applyUpstreamKeepAlive } from './http-server.js';
 import type { Server } from 'node:http';
 import { buildApp } from './app.js';
 import { purgeExpiredSessions } from './auth.js';
+import { purgeArcUnverified } from './arc/claims.js';
 import { purgeExpiredOAuthTokens, purgeIdleOAuthClients } from './oauth/model.js';
 import { createShutdown } from './shutdown.js';
 import { loadConfig } from './config.js';
@@ -82,14 +83,16 @@ await jobsRunner?.recover().catch((err) => console.error('job recovery failed', 
 
 // Expired sessions: purge once at boot, then periodically (cheap
 // indexed delete; requireAuth already refuses expired ones).
+// ARC claims whose address was never confirmed go after 24 hours.
 const purge = () =>
-  Promise.all([purgeExpiredSessions(db), purgeExpiredOAuthTokens(db)])
+  Promise.all([purgeExpiredSessions(db), purgeExpiredOAuthTokens(db), purgeArcUnverified(db, new Date())])
     // Clients after tokens: a registration whose last token just
     // expired is judged with that token gone.
-    .then(async ([sessions, oauth]) => [sessions, oauth, await purgeIdleOAuthClients(db)] as const)
-    .then(([sessions, oauth, clients]) => {
+    .then(async ([sessions, oauth, arc]) => [sessions, oauth, arc, await purgeIdleOAuthClients(db)] as const)
+    .then(([sessions, oauth, arc, clients]) => {
       if (sessions) console.log(`sessions: purged ${sessions} expired`);
       if (oauth) console.log(`oauth: purged ${oauth} expired tokens`);
+      if (arc) console.log(`arc: purged ${arc} unconfirmed claims`);
       if (clients) console.log(`oauth: forgot ${clients} never-connected client registrations`);
     })
     .catch((err) => console.error('session purge failed', err));

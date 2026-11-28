@@ -7,7 +7,9 @@
  * arcT gives the English line, key by key, never a blank.
  *
  * Fixed by the spec or the plan, verbatim: `arc.stamp` (V's stamp line),
- * `arc.stampPage.title`, `arc.mail.review` and `arc.mail.stampNote`.
+ * `arc.stampPage.title`, `arc.mail.review` and `arc.mail.stampNote`;
+ * and, from the plan (Task 6), `arc.claim.title`, `.lede`, `.review`,
+ * `.submit`, `.stampNote` and `.profile`.
  * The stamp and its page title stay English in every language in slice 1
  * (controller ruling F16: an unsigned translation inside a reader's EPUB
  * cannot be recalled), so Task 9 leaves those two keys untranslated and
@@ -59,6 +61,58 @@ export const ARC_EN = {
   'arc.mail.declined.subject': 'Your request for {title}',
   'arc.mail.declined.lead': '{author} is not sending you an advance copy of {title} this time.',
   'arc.mail.declined.body': 'Thank you for asking.',
+
+  // The claim page (Task 6). From the plan, verbatim: arc.claim.title,
+  // .lede, .review (plan-authored, ruling F15), .submit, .stampNote and
+  // .profile. Every other line below was written for Task 6 and is V's
+  // to change.
+  'arc.claim.title': '{title} — an advance copy from {author}',
+  'arc.claim.lede': '{author} is giving early copies to readers before {date}.',
+  'arc.claim.review': "If you'd like to review it after reading, you're welcome to. It's never required.",
+  'arc.claim.cover': 'The cover of {title}',
+  'arc.claim.name': 'Your name',
+  'arc.claim.email': 'Your email',
+  'arc.claim.profile': 'A Goodreads or Amazon profile link',
+  'arc.claim.profileNote': '{author} sees this link as text. Beuk never opens it.',
+  'arc.claim.approvalNote': '{author} looks at each request and answers by email.',
+  'arc.claim.codeNote': 'Beuk will email you a 6-digit code to confirm the address.',
+  'arc.claim.honeypot': 'Leave this empty',
+  'arc.claim.submit': 'Get my copy',
+  'arc.claim.stampNote': 'Your copy will show your name and email on its copyright page.',
+  // Why a claim was not taken.
+  'arc.claim.err.closed': 'Sign-ups for this advance copy have closed.',
+  'arc.claim.err.full': 'Every copy has been claimed. Thank you for asking.',
+  'arc.claim.err.blocked': "Beuk can't email this address. Someone using it asked for no more advance-copy email, so no code can be sent.",
+  'arc.claim.err.mailOff': "Beuk can't send advance-copy email right now, so no claim was taken. Please try again later.",
+  'arc.claim.err.busy': 'Too many tries for now. Please wait a while, then try again.',
+  'arc.claim.err.badName': 'Please write your name, in at most 60 characters.',
+  'arc.claim.err.badEmail': 'Please check your email address.',
+  'arc.claim.err.badProfile': 'Please add a link to your Goodreads or Amazon profile, starting with https://.',
+  'arc.claim.err.answered': '{author} has already answered a request from this address.',
+  'arc.claim.err.revoked': "{author} closed the copy given to this address, so it can't be claimed again.",
+
+  // The code page.
+  'arc.code.title': 'Enter your code',
+  'arc.code.sentTo': 'Beuk sent a 6-digit code to {email}. It works for {minutes} minutes.',
+  'arc.code.sentAny': 'Beuk sent a 6-digit code to the address you gave. It works for {minutes} minutes.',
+  'arc.code.label': 'Your code',
+  'arc.code.submit': 'Confirm',
+  'arc.code.again': 'Ask for a new code',
+  'arc.code.err.wrong': "That code doesn't match. Please check it and try again.",
+  'arc.code.err.expired': 'This code has run out, or was tried too many times. Ask for a new one.',
+  'arc.code.err.unknown': 'This code is no longer valid. Ask for a new one.',
+
+  // Approval mode: confirmed, now waiting.
+  'arc.wait.title': 'Your request is with {author}',
+  'arc.wait.lead': 'Thank you, {name}. Your address is confirmed.',
+  'arc.wait.body': '{author} looks at each request. You will get one more email when they decide.',
+
+  // Pages with no campaign behind them, or a closed one.
+  'arc.page.unknownTitle': "We couldn't find this page",
+  'arc.page.unknown': 'The link may be incomplete. Check that it was copied in full.',
+  'arc.page.closedTitle': 'Sign-ups have closed',
+  'arc.foot.privacy': 'Privacy',
+  'arc.foot.terms': 'Terms',
 } as const;
 
 export type ArcKey = keyof typeof ARC_EN;

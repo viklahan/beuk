@@ -543,6 +543,13 @@ async function lockCampaign(tx: Db, id: string): Promise<CampaignRow> {
  * already holds it). The caller checks the reader's status and the
  * campaign's state under the same lock.
  */
+/** The cap's condition (ruling F8), for an UPDATE of share_recipients r
+ *  joined to its arc_campaigns c: the campaign's OTHER waiting and claimed
+ *  readers are fewer than max_claims. mintCopy and waitForApproval share
+ *  it, so every path that counts against the cap is the same statement. */
+const CAP_HAS_ROOM = `(select count(*) from share_recipients x
+            where x.share_id = c.share_id and x.role = 'arc' and x.status in ('pending', 'claimed') and x.id <> r.id) < c.max_claims`;
+
 export async function mintCopy(tx: Db, campaignId: string, readerId: string, now: Date): Promise<string> {
   await tx.query('select id from arc_campaigns where id = $1 for update', [campaignId]);
   const token = randomBytes(24).toString('base64url');
@@ -555,8 +562,7 @@ export async function mintCopy(tx: Db, campaignId: string, readerId: string, now
        build_id = (select b.id from arc_builds b where b.campaign_id = c.id order by b.version_no desc limit 1)
      from arc_campaigns c
      where c.id = $1 and r.id = $2 and r.share_id = c.share_id and r.role = 'arc' and r.revoked_at is null
-       and (select count(*) from share_recipients x
-            where x.share_id = c.share_id and x.role = 'arc' and x.status in ('pending', 'claimed') and x.id <> r.id) < c.max_claims
+       and ${CAP_HAS_ROOM}
      returning r.id`,
     [campaignId, readerId, now.toISOString(), tokenHash(token), randomBytes(12).toString('base64url')],
   );
@@ -569,6 +575,27 @@ export async function mintCopy(tx: Db, campaignId: string, readerId: string, now
   if (!why.rows[0]) throw new ArcError(READER_NOT_FOUND, 404);
   if (why.rows[0].revoked_at != null) throw new ArcError(REVOKED, 409, { revoked: true });
   throw new ArcError(FULL, 409, { full: true });
+}
+
+/**
+ * Approval mode (Task 6): a verified reader starts waiting — status
+ * 'pending', which counts against the cap (countedClaims) though no copy is
+ * given yet. The same one conditional UPDATE as mintCopy (CAP_HAS_ROOM,
+ * ruling F8), and only from 'unverified' and never for a closed copy (F9).
+ * Locks the campaign row first, as mintCopy does. False: no room (or the
+ * row is no longer an unverified reader of this campaign).
+ */
+export async function waitForApproval(tx: Db, campaignId: string, readerId: string): Promise<boolean> {
+  await tx.query('select id from arc_campaigns where id = $1 for update', [campaignId]);
+  const r = await tx.query(
+    `update share_recipients r set status = 'pending'
+     from arc_campaigns c
+     where c.id = $1 and r.id = $2 and r.share_id = c.share_id and r.role = 'arc' and r.status = 'unverified'
+       and r.revoked_at is null and ${CAP_HAS_ROOM}
+     returning r.id`,
+    [campaignId, readerId],
+  );
+  return r.rows.length > 0;
 }
 
 /** The reader email's title, author and language, from the campaign's

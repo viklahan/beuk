@@ -44,6 +44,18 @@ export function readerHeaders(nonce: string): Record<string, string> {
   };
 }
 
+/** A picture served from a frozen copy (the beta reader's images, an ARC
+ *  build's cover): its own type, never sniffed, never framed or scripted. */
+export function imageHeaders(mediaType: string): Record<string, string> {
+  return {
+    'Content-Type': mediaType,
+    'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'private, max-age=3600',
+    'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': "default-src 'none'",
+  };
+}
+
 const READER_CSS = `
 .rd-head{max-width:46rem;margin:0 auto;padding:1.1rem 1.5rem .8rem;border-bottom:1px solid var(--line)}
 .rd-kicker{color:var(--ink-soft);font-style:italic;font-size:.95rem;margin:0}
