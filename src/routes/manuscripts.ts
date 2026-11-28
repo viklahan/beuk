@@ -1,5 +1,6 @@
 import { Router, type Request } from 'express';
 import type { BackgroundTasks } from './account.js';
+import { deleteArcForManuscript } from '../arc/campaigns.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { readBook } from '../book/index.js';
@@ -361,11 +362,19 @@ export function manuscriptRoutes(db: Db, config: Config, tasks: BackgroundTasks)
 
   router.delete('/:id', async (req, res, next) => {
     try {
-      const result = await db.query(
-        'delete from manuscripts where id = $1 and user_id = $2 returning id',
-        [req.params.id, req.user!.id],
-      );
-      if (!result.rows.length) return res.status(404).json({ error: 'manuscript not found' });
+      // One transaction: the book's ARC campaigns go first (their shares,
+      // readers and builds; arc_campaigns.manuscript_id is ON DELETE
+      // RESTRICT, so this is the only way a book with one goes), then the
+      // book. Beta shares stay, detached (shares.manuscript_id set null).
+      const userId = req.user!.id;
+      const deleted = await db.tx(async (tx) => {
+        const own = await tx.query('select id from manuscripts where id = $1 and user_id = $2 for update', [req.params.id, userId]);
+        if (!own.rows.length) return false;
+        await deleteArcForManuscript(tx, userId, req.params.id);
+        const result = await tx.query('delete from manuscripts where id = $1 and user_id = $2 returning id', [req.params.id, userId]);
+        return result.rows.length > 0;
+      });
+      if (!deleted) return res.status(404).json({ error: 'manuscript not found' });
       // The book's picture names went with it (on delete cascade): a
       // picture no other book names is collected now.
       await collect(req.user!.id);

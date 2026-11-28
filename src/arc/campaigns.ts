@@ -8,7 +8,9 @@ import { isUuid } from '../ids.js';
 import type { Mailer } from '../mailer.js';
 import { hydrateDoc } from '../pictures.js';
 import { renderSnapshot } from '../shares/render.js';
-import { arcMailStatus } from './mail.js';
+import { arcApprovedEmail, arcDeclinedEmail, type ArcMailContext } from './emails.js';
+import { arcMailStatus, arcMailToken, sendArcMail, type ArcSendOutcome } from './mail.js';
+import { arcLang, arcT } from './strings.js';
 
 /**
  * ARC campaigns: starting one and reading it back (slice 1, Task 4).
@@ -93,7 +95,8 @@ export interface CampaignJson {
   createdAt: string;
   endedAt: string | null;
   // counts.claimed: every status 'claimed' row, revoked ones included; counts.revoked: the subset the author closed;
-  // unverified rows are never counted or shown; build.holders: claimed rows whose build_id is this build
+  // unverified rows are never counted or shown; build.holders: claimed rows whose build_id is this build and
+  // whose copy is still open (Task 5: a closed copy is held by no one Beuk still serves)
   counts: { claimed: number; pending: number; declined: number; revoked: number };
   build: { label: string; bytes: number; holders: number };
 }
@@ -175,7 +178,7 @@ export async function campaignJson(db: Db, c: CampaignRow, now: Date): Promise<C
        count(*) filter (where r.status = 'pending')::int as pending,
        count(*) filter (where r.status = 'declined')::int as declined,
        count(*) filter (where r.status = 'claimed' and r.revoked_at is not null)::int as revoked,
-       count(*) filter (where r.status = 'claimed' and b.id is not null and r.build_id = b.id)::int as holders
+       count(*) filter (where r.status = 'claimed' and r.revoked_at is null and b.id is not null and r.build_id = b.id)::int as holders
      from shares s
      left join lateral (
        select id, label, epub_bytes from arc_builds where campaign_id = $2 order by version_no desc limit 1
@@ -283,6 +286,17 @@ function arcFilename(name: string): string {
 
 export function signupUrl(config: Config, token: string): string {
   return `${config.appBaseUrl}/arc/${token}`;
+}
+
+/** A reader's copy page (Task 7 serves it). */
+export function copyUrl(config: Config, token: string): string {
+  return `${config.appBaseUrl}/arc/r/${token}`;
+}
+
+/** What the cap counts: waiting and claimed readers (a closed copy still
+ *  counts: it was given). Declined and unverified rows never count. */
+export function countedClaims(c: { claimed: number; pending: number }): number {
+  return c.pending + c.claimed;
 }
 
 export async function isCampaignShare(db: Db, shareId: string): Promise<boolean> {
@@ -409,4 +423,393 @@ export async function createCampaign(
     throw err;
   }
   return { campaign: await campaignJson(db, campaign, deps.now()), signupToken: token };
+}
+
+/* ------------------------------------------------------------------------
+ * Managing a campaign (slice 1, Task 5): its readers (approve, decline,
+ * revoke), closing it, changing it, a new signup link, deleting it, and the
+ * one seam that removes a book's campaigns when the book goes.
+ *
+ * Every function takes a CampaignRow the caller already loaded for its owner
+ * (loadOwnedCampaign); a reader is found only inside that campaign's share,
+ * so another campaign's reader is "not found". Unverified rows are never
+ * shown, counted or acted on.
+ *
+ * The cap (ruling F8): a copy is given by ONE conditional UPDATE (mintCopy)
+ * whose WHERE counts the other waiting and claimed readers against
+ * max_claims; 0 rows means full. The campaign row is also locked
+ * (`select … for update`), so on real Postgres two gives for one campaign
+ * take turns. (PGlite runs one session, so the lock is not what the tests
+ * prove; the statement's condition is.)
+ *
+ * A closed copy (revoked_at, "Close this copy") is never reopened here:
+ * nothing in this file clears revoked_at, and mintCopy refuses a revoked
+ * reader (ruling F9).
+ * --------------------------------------------------------------------- */
+
+export interface ArcReaderJson {
+  id: string;
+  name: string;
+  email: string;
+  status: 'pending' | 'claimed' | 'declined';
+  profileLink: string | null;
+  claimedAt: string | null;
+  revokedAt: string | null;
+  firstOpenedAt: string | null;
+  lastOpenedAt: string | null;
+  mailStopped: boolean;
+}
+
+const READER_COLS = `r.id, r.name, r.email, r.status, r.profile_link, r.claimed_at, r.revoked_at,
+  r.first_opened_at, r.last_opened_at, r.mail_stopped_at`;
+
+function readerOf(r: Record<string, unknown>): ArcReaderJson {
+  const status = r.status === 'claimed' || r.status === 'declined' ? r.status : 'pending';
+  return {
+    id: String(r.id),
+    name: String(r.name),
+    email: String(r.email),
+    status,
+    profileLink: r.profile_link == null ? null : String(r.profile_link),
+    claimedAt: iso(r.claimed_at),
+    revokedAt: iso(r.revoked_at),
+    firstOpenedAt: iso(r.first_opened_at),
+    lastOpenedAt: iso(r.last_opened_at),
+    mailStopped: r.mail_stopped_at != null,
+  };
+}
+
+const READER_NOT_FOUND = 'reader not found';
+const FULL = 'Every copy is taken: this campaign is at its cap. Raise the cap to approve another reader.';
+const REVOKED = "This reader's copy was closed, and a closed copy is never reopened.";
+
+/** This writer's campaign by id, or null (another writer's, or no such id). */
+export async function loadOwnedCampaign(db: Db, userId: string, id: string): Promise<CampaignRow | null> {
+  if (!isUuid(id)) return null;
+  const r = await db.query<Record<string, unknown>>(`select ${CAMPAIGN_COLS} from arc_campaigns c where c.id = $1 and c.owner_id = $2`, [
+    id,
+    userId,
+  ]);
+  return r.rows[0] ? rowOf(r.rows[0]) : null;
+}
+
+/** The readers the author sees: waiting, claimed and declined, oldest first. */
+export async function listReaders(db: Db, campaign: CampaignRow): Promise<ArcReaderJson[]> {
+  const r = await db.query<Record<string, unknown>>(
+    `select ${READER_COLS} from share_recipients r
+     where r.share_id = $1 and r.role = 'arc' and r.status in ('pending', 'claimed', 'declined')
+     order by r.created_at, r.id`,
+    [campaign.share_id],
+  );
+  return r.rows.map(readerOf);
+}
+
+/** One reader of this campaign that the author can see, or null. */
+async function loadReader(db: Db, c: CampaignRow, readerId: string): Promise<ArcReaderJson | null> {
+  if (!isUuid(readerId)) return null;
+  const r = await db.query<Record<string, unknown>>(
+    `select ${READER_COLS} from share_recipients r
+     where r.id = $1 and r.share_id = $2 and r.role = 'arc' and r.status in ('pending', 'claimed', 'declined')`,
+    [readerId, c.share_id],
+  );
+  return r.rows[0] ? readerOf(r.rows[0]) : null;
+}
+
+async function mustLoadReader(db: Db, c: CampaignRow, readerId: string): Promise<ArcReaderJson> {
+  const reader = await loadReader(db, c, readerId);
+  if (!reader) throw new ArcError(READER_NOT_FOUND, 404);
+  return reader;
+}
+
+/** Lock the campaign row for the rest of the transaction and read it fresh. */
+async function lockCampaign(tx: Db, id: string): Promise<CampaignRow> {
+  const r = await tx.query<Record<string, unknown>>(`select ${CAMPAIGN_COLS} from arc_campaigns c where c.id = $1 for update`, [id]);
+  if (!r.rows[0]) throw new ArcError('campaign not found', 404);
+  return rowOf(r.rows[0]);
+}
+
+/**
+ * Give a reader their copy: status 'claimed', claimed_at, build_id = the
+ * campaign's newest build, a fresh public_id (12 random bytes, base64url)
+ * and a fresh link (token_hash = tokenHash(token)); returns the token, which
+ * goes only into the reader's email or redirect. A reader who already holds
+ * a copy gets a new link and the old one stops.
+ *
+ * ONE conditional UPDATE (ruling F8): it gives the copy only while the
+ * campaign's other waiting and claimed readers are fewer than max_claims,
+ * and never to a reader whose copy was closed (F9). 0 rows → an ArcError:
+ * 404 when the reader is not this campaign's, 409 when the copy was closed,
+ * else 409 full. The campaign row is locked first (a no-op when the caller
+ * already holds it). The caller checks the reader's status and the
+ * campaign's state under the same lock.
+ */
+export async function mintCopy(tx: Db, campaignId: string, readerId: string, now: Date): Promise<string> {
+  await tx.query('select id from arc_campaigns where id = $1 for update', [campaignId]);
+  const token = randomBytes(24).toString('base64url');
+  const r = await tx.query(
+    `update share_recipients r set
+       status = 'claimed',
+       claimed_at = $3,
+       token_hash = $4,
+       public_id = $5,
+       build_id = (select b.id from arc_builds b where b.campaign_id = c.id order by b.version_no desc limit 1)
+     from arc_campaigns c
+     where c.id = $1 and r.id = $2 and r.share_id = c.share_id and r.role = 'arc' and r.revoked_at is null
+       and (select count(*) from share_recipients x
+            where x.share_id = c.share_id and x.role = 'arc' and x.status in ('pending', 'claimed') and x.id <> r.id) < c.max_claims
+     returning r.id`,
+    [campaignId, readerId, now.toISOString(), tokenHash(token), randomBytes(12).toString('base64url')],
+  );
+  if (r.rows.length) return token;
+  const why = await tx.query<{ revoked_at: unknown }>(
+    `select r.revoked_at from share_recipients r join arc_campaigns c on c.share_id = r.share_id
+     where c.id = $1 and r.id = $2 and r.role = 'arc'`,
+    [campaignId, readerId],
+  );
+  if (!why.rows[0]) throw new ArcError(READER_NOT_FOUND, 404);
+  if (why.rows[0].revoked_at != null) throw new ArcError(REVOKED, 409, { revoked: true });
+  throw new ArcError(FULL, 409, { full: true });
+}
+
+/** The reader email's title, author and language, from the campaign's
+ *  frozen copy (as the claim page reads them, Task 6). */
+async function mailContext(db: Db, c: CampaignRow, readerId: string, config: Config): Promise<ArcMailContext> {
+  const r = await db.query<{ title: string; author: string | null; language: string | null }>(
+    `select s.title, s.snapshot->>'author' as author, s.snapshot->>'language' as language from shares s where s.id = $1`,
+    [c.share_id],
+  );
+  const lang = arcLang(r.rows[0]?.language ?? '');
+  const author = (r.rows[0]?.author ?? '').trim() || arcT(lang)('arc.theAuthor');
+  return { lang, title: r.rows[0]?.title ?? '', author, mailToken: arcMailToken(config, readerId) };
+}
+
+/** Why ARC mail cannot go from this server, or null when it can. */
+function mailOff(deps: ArcDeps): Extract<ArcSendOutcome, { sent: false }> | null {
+  const status = arcMailStatus(deps.config);
+  if (!status.configured) return { sent: false, reason: 'not-configured', detail: status.reason ?? 'ARC mail is not configured' };
+  if (!deps.arcMailer) return { sent: false, reason: 'not-configured', detail: 'no ARC mailer' };
+  return null;
+}
+
+const toOf = (c: CampaignRow, reader: ArcReaderJson, mailToken: string) => ({
+  campaignId: c.id,
+  ownerId: c.owner_id,
+  recipientId: reader.id,
+  email: reader.email,
+  mailToken,
+});
+
+function notApprovable(status: ArcReaderJson['status']): ArcError {
+  if (status === 'claimed') return new ArcError('This reader already has a copy.', 409);
+  return new ArcError('This reader was declined, and a decline is final.', 409);
+}
+
+/**
+ * Approve a waiting reader (approval mode). Under the campaign row lock: the
+ * reader must still be waiting and the campaign open (decided by this task:
+ * after the close date, or once the author closed it, no new copy is given
+ * — as a claim is refused then; a waiting reader can still be declined);
+ * then mintCopy, committed. Then the 'approved' email with the copy link.
+ *
+ * When that email cannot go (not configured, over a send limit, refused by
+ * the mail server) the approval is released — the row goes back to
+ * 'pending' with no link, public id, build or claim time — and an ArcError
+ * says why: 503, or 429 when rate-limited (the trial-mail pattern: mark
+ * first, release when the server refuses, src/trial-mail.ts). A reader who
+ * asked for no more email (suppressed) keeps the approval, and the outcome
+ * says it was not emailed. ARC mail switched off is refused before anything
+ * is marked (the email could not even be built without the salt).
+ */
+export async function approveReader(deps: ArcDeps, c: CampaignRow, readerId: string): Promise<{ reader: ArcReaderJson; mail: ArcSendOutcome }> {
+  const { db, config } = deps;
+  const reader = await mustLoadReader(db, c, readerId);
+  const off = mailOff(deps);
+  if (off) {
+    throw new ArcError(`ARC email is not set up on this server (${off.detail}), so this reader was not approved.`, 503, { mail: off });
+  }
+  const token = await db.tx(async (tx) => {
+    const fresh = await lockCampaign(tx, c.id);
+    const cur = await mustLoadReader(tx, fresh, readerId);
+    if (cur.status !== 'pending') throw notApprovable(cur.status);
+    if (cur.revokedAt) throw new ArcError(REVOKED, 409, { revoked: true });
+    if (campaignState(fresh, deps.now()) !== 'open')
+      throw new ArcError('This ARC is closed to new readers, so no new copy can be given. You can still decline.', 409);
+    return mintCopy(tx, fresh.id, readerId, deps.now());
+  });
+
+  const release = () =>
+    db.query(
+      `update share_recipients set status = 'pending', token_hash = null, public_id = null, build_id = null, claimed_at = null
+       where id = $1 and status = 'claimed' and token_hash = $2`,
+      [readerId, tokenHash(token)],
+    );
+  let mail: ArcSendOutcome;
+  try {
+    const ctx = await mailContext(db, c, readerId, config);
+    mail = await sendArcMail(deps, toOf(c, reader, ctx.mailToken), 'approved', arcApprovedEmail(config, ctx, copyUrl(config, token)));
+  } catch (err) {
+    await release();
+    throw err;
+  }
+  if (!mail.sent && mail.reason !== 'suppressed') {
+    await release();
+    const limited = mail.reason === 'rate-limited';
+    throw new ArcError(
+      limited
+        ? `This reader was not approved: ARC email is over a sending limit (${mail.detail}). Nothing changed; try again later.`
+        : `This reader was not approved, because the approval email could not be sent (${mail.detail}). Nothing changed; try again later.`,
+      limited ? 429 : 503,
+      { mail },
+    );
+  }
+  return { reader: await mustLoadReader(db, c, readerId), mail };
+}
+
+/** Decline a waiting reader: status 'declined', then the 'declined' email.
+ *  A decline is never undone, whatever happens to the email; the outcome
+ *  says whether it went. */
+export async function declineReader(deps: ArcDeps, c: CampaignRow, readerId: string): Promise<{ reader: ArcReaderJson; mail: ArcSendOutcome }> {
+  const { db, config } = deps;
+  const reader = await mustLoadReader(db, c, readerId);
+  await db.tx(async (tx) => {
+    await lockCampaign(tx, c.id);
+    const r = await tx.query(
+      `update share_recipients set status = 'declined' where id = $1 and share_id = $2 and role = 'arc' and status = 'pending' returning id`,
+      [readerId, c.share_id],
+    );
+    if (r.rows.length) return;
+    const cur = await mustLoadReader(tx, c, readerId);
+    if (cur.status === 'claimed') throw new ArcError('This reader already has a copy. Close the copy instead.', 409);
+    throw new ArcError('This reader was already declined.', 409);
+  });
+  let mail: ArcSendOutcome | null = mailOff(deps);
+  if (!mail) {
+    const ctx = await mailContext(db, c, readerId, config);
+    mail = await sendArcMail(deps, toOf(c, reader, ctx.mailToken), 'declined', arcDeclinedEmail(config, ctx));
+  }
+  return { reader: await mustLoadReader(db, c, readerId), mail };
+}
+
+/** "Close this copy" (ruling F13): revoked_at on a reader who holds a copy;
+ *  their link answers 410 from then on. No mail. Closing it again keeps the
+ *  first time. (`now` is an addition to the plan's signature, for the
+ *  injected clock; it defaults to the wall clock.) */
+export async function revokeReader(db: Db, c: CampaignRow, readerId: string, now: Date = new Date()): Promise<ArcReaderJson> {
+  const reader = await mustLoadReader(db, c, readerId);
+  const r = await db.query(
+    `update share_recipients set revoked_at = coalesce(revoked_at, $3) where id = $1 and share_id = $2 and role = 'arc' and status = 'claimed' returning id`,
+    [readerId, c.share_id, now.toISOString()],
+  );
+  if (!r.rows.length) {
+    throw new ArcError(
+      reader.status === 'declined' ? 'This reader was declined and has no copy to close.' : 'This reader has no copy yet, so there is nothing to close.',
+      409,
+    );
+  }
+  return mustLoadReader(db, c, readerId);
+}
+
+/** End the campaign: no more sign-ups or copies. Copies already given keep
+ *  working (ruling F13), and the book can start its next campaign (F10:
+ *  the one-running index only holds rows with ended_at null). */
+export async function closeCampaign(db: Db, c: CampaignRow, now: Date): Promise<CampaignRow> {
+  const r = await db.query<Record<string, unknown>>(
+    `update arc_campaigns c set ended_at = coalesce(c.ended_at, $2) where c.id = $1 returning ${CAMPAIGN_COLS}`,
+    [c.id, now.toISOString()],
+  );
+  if (!r.rows[0]) throw new ArcError('campaign not found', 404);
+  return rowOf(r.rows[0]);
+}
+
+const ENDED = 'This ARC has ended, so it cannot be changed. Start a new one for this book instead.';
+
+/** PUT /api/arc/:id's body, checked: maxClaims 1-50 and/or closesAt (an
+ *  instant with its offset, in the future, at most ARC_MAX_CLOSE_DAYS
+ *  ahead, as at the start). Every refusal is a 400 with words. */
+export function parseUpdateInput(body: unknown, now: Date): { maxClaims?: number; closesAt?: string } | ArcError {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return new ArcError('send the change as a JSON object', 400);
+  const b = body as Record<string, unknown>;
+  const patch: { maxClaims?: number; closesAt?: string } = {};
+  if (b.maxClaims !== undefined) {
+    if (typeof b.maxClaims !== 'number' || !Number.isInteger(b.maxClaims) || b.maxClaims < 1 || b.maxClaims > ARC_MAX_CLAIMS)
+      return new ArcError(`maxClaims must be a whole number from 1 to ${ARC_MAX_CLAIMS}`, 400);
+    patch.maxClaims = b.maxClaims;
+  }
+  if (b.closesAt !== undefined) {
+    const raw = typeof b.closesAt === 'string' ? b.closesAt : '';
+    const closes = INSTANT_RE.test(raw) ? new Date(raw) : null;
+    if (!closes || Number.isNaN(closes.getTime()))
+      return new ArcError('closesAt must be a date and time with its offset, such as 2027-02-14T00:00:00Z', 400);
+    if (closes.getTime() <= now.getTime()) return new ArcError('closesAt must be in the future', 400);
+    if (closes.getTime() > now.getTime() + ARC_MAX_CLOSE_DAYS * DAY_MS)
+      return new ArcError(`closesAt can be at most ${ARC_MAX_CLOSE_DAYS} days from now`, 400);
+    patch.closesAt = closes.toISOString();
+  }
+  if (patch.maxClaims === undefined && patch.closesAt === undefined)
+    return new ArcError('nothing to change: send maxClaims, closesAt or both', 400);
+  return patch;
+}
+
+/** Change the cap and/or the close date of a campaign that has not ended
+ *  (409 once ended). The cap never goes below what is already counted
+ *  (countedClaims: waiting + claimed) — 400 with words. Under the row lock. */
+export async function updateCampaign(
+  db: Db,
+  c: CampaignRow,
+  patch: { maxClaims?: number; closesAt?: string },
+  now: Date,
+): Promise<CampaignRow> {
+  if (patch.closesAt !== undefined && new Date(patch.closesAt).getTime() <= now.getTime())
+    throw new ArcError('closesAt must be in the future', 400);
+  return db.tx(async (tx) => {
+    const fresh = await lockCampaign(tx, c.id);
+    if (fresh.ended_at) throw new ArcError(ENDED, 409);
+    if (patch.maxClaims !== undefined) {
+      const n = await tx.query<{ claimed: number; pending: number }>(
+        `select count(*) filter (where status = 'claimed')::int as claimed, count(*) filter (where status = 'pending')::int as pending
+         from share_recipients where share_id = $1 and role = 'arc'`,
+        [fresh.share_id],
+      );
+      const counted = countedClaims({ claimed: Number(n.rows[0]?.claimed ?? 0), pending: Number(n.rows[0]?.pending ?? 0) });
+      if (patch.maxClaims < counted)
+        throw new ArcError(`The cap cannot go below the ${counted} readers already counted (waiting or given a copy).`, 400, { counted });
+    }
+    const r = await tx.query<Record<string, unknown>>(
+      `update arc_campaigns c set max_claims = coalesce($2, c.max_claims), closes_at = coalesce($3::timestamptz, c.closes_at)
+       where c.id = $1 returning ${CAMPAIGN_COLS}`,
+      [fresh.id, patch.maxClaims ?? null, patch.closesAt ?? null],
+    );
+    return rowOf(r.rows[0]);
+  });
+}
+
+/** A new signup link: the old one stops at once. Refused (409) once the
+ *  campaign has ended. Returns the token ONCE; only its hash is stored. */
+export async function rotateSignup(db: Db, c: CampaignRow): Promise<string> {
+  const token = randomBytes(24).toString('base64url');
+  const r = await db.query('update arc_campaigns set signup_token_hash = $2 where id = $1 and ended_at is null returning id', [c.id, tokenHash(token)]);
+  if (!r.rows.length) throw new ArcError('This ARC has ended, so it has no signup link to replace.', 409);
+  return token;
+}
+
+/** Delete the campaign: its share goes, and with it (on delete cascade) the
+ *  campaign row, its builds and events, its readers and their comments. The
+ *  opt-out hashes (mail_suppressions) are not tied to it and stay. */
+export async function deleteCampaign(db: Db, c: CampaignRow): Promise<void> {
+  await db.query('delete from shares where id = $1 and owner_id = $2', [c.share_id, c.owner_id]);
+}
+
+/**
+ * The one seam that removes a book's ARC campaigns (their shares, readers,
+ * builds and events, by cascade). Call it inside the transaction that
+ * deletes the manuscript: arc_campaigns.manuscript_id is ON DELETE RESTRICT
+ * (migration 031), so a book with a campaign cannot go any other way, and no
+ * reader's address outlives the book. Returns how many campaigns went.
+ */
+export async function deleteArcForManuscript(tx: Db, userId: string, manuscriptId: string): Promise<number> {
+  const r = await tx.query(
+    `delete from shares where id in (select share_id from arc_campaigns where manuscript_id = $1 and owner_id = $2) returning id`,
+    [manuscriptId, userId],
+  );
+  return r.rows.length;
 }

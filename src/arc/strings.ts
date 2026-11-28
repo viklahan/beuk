@@ -37,6 +37,8 @@ export const ARC_EN = {
   'arc.mail.notMe': 'Not you? {url}',
   'arc.mail.stop': 'No more email from {author}: {url}',
   'arc.mail.copyLink': 'Your copy: {url}',
+  // {author} when the book names none (the plan's words, Task 6; added in Task 5 for the approve and decline emails).
+  'arc.theAuthor': 'the author',
 
   // The code that confirms the address.
   'arc.mail.code.subject': 'Your code for {title}',

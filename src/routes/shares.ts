@@ -740,7 +740,11 @@ export function shareReaderRoutes(
   const router = Router();
 
   /** The share's open token first, then a named link's; either resolves
-   *  to the share, with the named link when it is one. */
+   *  to the share, with the named link when it is one. An ARC reader's
+   *  link opens only once they hold a copy (status 'claimed', ruling R4a):
+   *  a waiting, declined or unconfirmed reader's token resolves to nothing,
+   *  exactly as an unknown token; a closed copy (revoked_at) answers 410
+   *  as any closed named link. */
   const resolveToken = async (token: string): Promise<Resolved | null> => {
     if (!TOKEN_RE.test(token)) return null;
     const hash = sha256(token);
@@ -766,7 +770,7 @@ export function shareReaderRoutes(
          r.expires_at as r_expires_at, r.revoked_at as r_revoked_at,
          r.first_opened_at as r_first_opened_at, r.last_opened_at as r_last_opened_at
        from share_recipients r join shares s on s.id = r.share_id
-       where r.token_hash = $1`,
+       where r.token_hash = $1 and (r.role <> 'arc' or r.status = 'claimed')`,
       [hash],
     );
     const row = n.rows[0];
