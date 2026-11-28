@@ -6,7 +6,7 @@ to make well.
 
 ## 2026-11-27 — Right-to-left e-books pass EPUBCheck
 
-- **Fixed: right-to-left books' EPUBs failed EPUBCheck.** The EPUB of a book in Arabic, Hebrew, Persian or Urdu failed EPUBCheck with one error, CSS-001. Its style sheet used a property for tables that EPUB does not allow in a style sheet, and it did so whether or not the book had a table. EPUBCheck 5.2.1 now reports no errors for an Arabic book and a Hebrew book that each hold a table of figures.
+- **Fixed: right-to-left books' EPUBs failed EPUBCheck.** The EPUB of a right-to-left book failed EPUBCheck with one error, CSS-001 (seen on Arabic and Hebrew books; Persian and Urdu share the same style sheet rule, not run). Its style sheet used a property for tables that EPUB does not allow in a style sheet, and it did so whether or not the book had a table. EPUBCheck 5.2.1 now reports no errors for an Arabic book and a Hebrew book that each hold a table of figures.
 - **Figures in their tables still read left to right.** In a right-to-left table, a figure such as "+4%" is still set "+4%", never "4%+". The e-book now marks this in its pages instead of its style sheet. Measured in Chromium, the table is laid out exactly as before, and its words are unchanged.
 
 ## 2026-11-27 — The studio in हिन्दी and मराठी
