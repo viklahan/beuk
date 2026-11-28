@@ -73,10 +73,7 @@ import { attachmentDisposition } from './epub.js';
  * opens the reader by any other check). Forms are urlencoded, 8 KB at
  * most (the mail POST also takes multipart, F22); a body the parser
  * refuses (too long, too many fields) gets the calm unreadable-form page
- * with its status, from this router's own error handler (C7). Once
- * sign-ups close, the claim page is the closed page with a lost-link form:
- * a reader who holds a copy can still get its link again (copies keep
- * working after a close; final review minor 1). Nothing here is paused
+ * with its status, from this router's own error handler (C7). Nothing here is paused
  * for a paused author (src/access.ts NEVER_PAUSED).
  */
 
@@ -133,8 +130,7 @@ export function arcPublicRoutes(
     return view;
   };
   const isOpen = (view: SignupView) => campaignState(view.campaign, deps.now()) === 'open';
-  const closed = (res: Response, view: SignupView, extra: { values?: ClaimValues; error?: ClaimRefusal } = {}) =>
-    sendPage(res, 410, (nonce) => renderClosedPage(view, { nonce, signup: view.signupToken, ...extra }));
+  const closed = (res: Response, view: SignupView) => sendPage(res, 410, (nonce) => renderClosedPage(view, { nonce }));
 
   const claimPage = (res: Response, status: number, view: SignupView, token: string, extra: { values?: ClaimValues; error?: ClaimRefusal } = {}) =>
     sendPage(res, status, (nonce) => renderClaimPage(view, { nonce, signup: token, ...extra }));
@@ -326,14 +322,10 @@ export function arcPublicRoutes(
       const view = await signup(req, res);
       if (!view) return;
       const token = req.params.signup;
+      if (!isOpen(view)) return closed(res, view);
       const body = (req.body ?? {}) as Record<string, unknown>;
       const values = { name: str(body.name).slice(0, 200), email: str(body.email).slice(0, 300), profile: str(body.profile).slice(0, 400) };
-      // Sign-ups closed: the request goes on only as a lost-link request (startClaim
-      // refuses it as 'closed' unless the address holds an open copy).
-      const open = isOpen(view);
-      const refused = (status: number, error: ClaimRefusal) =>
-        open ? claimPage(res, status, view, token, { values, error }) : closed(res, view, { values, error });
-      if (claimPerIp.reserve(ip(req)) === null) return refused(429, 'busy');
+      if (claimPerIp.reserve(ip(req)) === null) return claimPage(res, 429, view, token, { values, error: 'busy' });
       const out = await startClaim(
         deps,
         view,
@@ -341,8 +333,8 @@ export function arcPublicRoutes(
         codesPerAddress,
       );
       if (out.kind === 'sent') return res.redirect(303, `/arc/${token}/check?r=${encodeURIComponent(out.ref)}`);
-      if (out.reason === 'closed') return closed(res, view, { values });
-      return refused(START_STATUS[out.reason], out.reason);
+      if (out.reason === 'closed') return closed(res, view);
+      return claimPage(res, START_STATUS[out.reason], view, token, { values, error: out.reason });
     } catch (err) {
       return next(err);
     }
@@ -352,10 +344,9 @@ export function arcPublicRoutes(
     try {
       const view = await signup(req, res);
       if (!view) return;
+      if (!isOpen(view)) return closed(res, view);
       const ref = str(req.query.r);
       const row = await rowByRef(deps.db, view, ref);
-      // Sign-ups closed: the code page only for a code that was sent (a lost-link request).
-      if (!isOpen(view) && !row) return closed(res, view);
       return sendPage(res, 200, (nonce) => renderCodePage(view, { nonce, signup: req.params.signup, ref, email: row?.email ?? null }));
     } catch (err) {
       return next(err);

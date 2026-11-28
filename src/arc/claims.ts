@@ -295,10 +295,9 @@ async function codesInWindow(db: Db, rowId: string, now: Date): Promise<number> 
  * Start (or restart) a claim and email its code. In order:
  *   the honeypot → 'sent' with a ref matching no row, nothing stored or sent;
  *   name, email, the profile link (approval mode), tz (kept only when Intl
- *   accepts it); the campaign open — or, once sign-ups are closed (by date
- *   or by the author), the address holds an open copy (it asks for its link
- *   again: copies keep working after a close, F13; final review minor 1);
- *   ARC mail on; the address not suppressed
+ *   accepts it); the campaign open (closed, by date or by the author, is
+ *   the same refusal for every address: it never depends on who asks; copies
+ *   already issued keep working, F13); ARC mail on; the address not suppressed
  *   (Not me, or Stop for this author); the per-address limit; then the
  *   address's existing row — declined or a closed copy → 'answered' (F9,
  *   no mail; one wording), any other is reused — or a new 'unverified'
@@ -338,12 +337,11 @@ export async function startClaim(
   }
   const tz = cleanTz(input.tz);
   const now = deps.now();
-  let row = await rowByEmail(db, c.share_id, email);
-  // Sign-ups closed: only a reader whose copy still opens may ask again (to get its link back).
-  if (campaignState(c, now) !== 'open' && !(row?.status === 'claimed' && row.revoked_at == null)) return { kind: 'refused', reason: 'closed' };
+  if (campaignState(c, now) !== 'open') return { kind: 'refused', reason: 'closed' };
   if (arcMailOff(deps)) return { kind: 'refused', reason: 'mail-off' };
   if (await suppressionOf(db, config, email, c.owner_id)) return { kind: 'refused', reason: 'blocked' };
 
+  let row = await rowByEmail(db, c.share_id, email);
   if (row?.status === 'declined') return { kind: 'refused', reason: 'answered' };
   if (row && row.revoked_at != null) return { kind: 'refused', reason: 'answered' };
   if (!row || row.status === 'unverified') {
@@ -463,8 +461,7 @@ type TxResult =
  * codeAttempts times, is 'expired'. The right code clears the code fields
  * (and codes_sent: the address is proven) and sets email_verified_at; then,
  * in one transaction under the campaign row lock:
- *   not open → closed, unless the reader holds an open copy (a lost link
- *     asked for again after sign-ups closed: a new link, final review minor 1);
+ *   not open → closed;
  *   declined, or a closed copy (F9) → answered;
  *   claimed → mintCopy again (a new link; the old one stops), 'ready' sent;
  *   pending → pending;
@@ -505,13 +502,12 @@ export async function verifyClaim(deps: ArcDeps, s: SignupView, ref: unknown, co
     const locked = await tx.query<Record<string, unknown>>(`select ${CAMPAIGN_COLS} from arc_campaigns c where c.id = $1 for update`, [c.id]);
     if (!locked.rows[0]) return { kind: 'refused', reason: 'closed' };
     const fresh = rowOf(locked.rows[0]);
+    if (campaignState(fresh, now) !== 'open') return { kind: 'refused', reason: 'closed' };
     const cur = await tx.query<{ status: ArcRow['status']; revoked_at: unknown }>(
       `select status, revoked_at from share_recipients where id = $1 and share_id = $2 and role = 'arc'`,
       [found.id, fresh.share_id],
     );
     const r = cur.rows[0];
-    const holdsOpenCopy = r?.status === 'claimed' && r.revoked_at == null;
-    if (campaignState(fresh, now) !== 'open' && !holdsOpenCopy) return { kind: 'refused', reason: 'closed' };
     if (!r) return { kind: 'refused', reason: 'unknown' };
     if (r.status === 'declined') return { kind: 'refused', reason: 'answered' };
     if (r.revoked_at != null) return { kind: 'refused', reason: 'answered' };

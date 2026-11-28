@@ -511,43 +511,48 @@ test("the code email links the code page, so the address's owner can use a code 
   assert.equal((await rowOfEmail(campaign.shareId, email))[0].status, 'claimed');
 });
 
-// Final review minor 1 (final fix wave): copies keep working after a close (F13), so a
-// reader who holds one can still get its link back; nobody else can claim.
-test('after sign-ups close, a reader who holds a copy gets a lost link back; no one else gets anything', async () => {
+// V's ruling 2026-11-28: no lost-link recovery after a close. Copies keep working (F13),
+// but once sign-ups are closed the answer does not depend on the address (no enumeration
+// oracle): a claimed reader, a stranger and a declined address get the same refusal, no mail.
+test('after sign-ups close, every address gets the same closed refusal and no mail; the closed page has no form', async () => {
   for (const how of ['ended', 'past-close'] as const) {
-    const { w, campaign, signup } = await campaignOn(arcOn.base, how === 'past-close' ? { closesAt: new Date(clock.getTime() + HOUR).toISOString() } : {});
-    const old = copyToken((await claimAndCheck(arcOn.base, arcMail, signup, 'Sarah', 'sarah@example.com')).answer);
-    copyToken((await claimAndCheck(arcOn.base, arcMail, signup, 'Tom', 'tom@example.com')).answer);
-    const tom = (await rowOfEmail(campaign.shareId, 'tom@example.com'))[0];
-    assert.equal((await w.c.post(`/api/arc/${campaign.id}/readers/${tom.id}/revoke`)).status, 200);
+    const { w, campaign, signup } = await campaignOn(arcOn.base, {
+      approvalMode: 'approval',
+      ...(how === 'past-close' ? { closesAt: new Date(clock.getTime() + HOUR).toISOString() } : {}),
+    });
+    const profile = 'https://www.goodreads.com/user/show/1-x';
+    for (const [name, email] of [['Sarah', 'sarah@example.com'], ['Dee', 'dee@example.com']]) {
+      assert.equal((await claimAndCheck(arcOn.base, arcMail, signup, name, email, { profile })).answer.status, 200);
+    }
+    const sarah = (await rowOfEmail(campaign.shareId, 'sarah@example.com'))[0];
+    const dee = (await rowOfEmail(campaign.shareId, 'dee@example.com'))[0];
+    assert.equal((await w.c.post(`/api/arc/${campaign.id}/readers/${sarah.id}/approve`)).status, 200);
+    assert.equal((await w.c.post(`/api/arc/${campaign.id}/readers/${dee.id}/decline`)).status, 200);
+    assert.equal((await rowOfEmail(campaign.shareId, 'sarah@example.com'))[0].status, 'claimed');
     if (how === 'ended') assert.equal((await w.c.post(`/api/arc/${campaign.id}/close`)).status, 200);
     else clock = new Date(clock.getTime() + 2 * HOUR);
+
     const closed = await get(arcOn.base, `/arc/${signup}`);
     assert.equal(closed.status, 410, how);
     assert.ok(closed.text.includes(ARC_EN['arc.claim.err.closed']));
-    assert.ok(closed.text.includes(ARC_EN['arc.page.closedRecover']), `${how}: the lost-link form`);
-    assert.ok(closed.text.includes(`<form method="post" action="/arc/${signup}"`));
-    // The holder asks again: a code, the code page, a new link; the old one stops.
-    const ref = refOf(await claim(arcOn.base, signup, { name: 'Sarah', email: 'sarah@example.com' }), signup);
-    assert.equal((await get(arcOn.base, `/arc/${signup}/check?r=${ref}`)).status, 200, `${how}: the code page`);
-    const fresh = copyToken(await check(arcOn.base, signup, ref, codeFor(arcMail, 'sarah@example.com')));
-    assert.notEqual(fresh, old);
-    assert.equal((await get(arcOn.base, `/read/${old}`)).status, 404, `${how}: the old link stops`);
-    assert.equal((await get(arcOn.base, `/read/${fresh}`)).status, 200);
-    // A stranger, and a reader whose copy was closed: the closed page, and no mail.
-    for (const email of ['stranger@example.com', 'tom@example.com']) {
+    assert.ok(!closed.text.includes('<form'), `${how}: the closed page carries no form`);
+    assert.ok(!/lost its link|lost-link/i.test(closed.text));
+
+    const answers: { status: number; text: string }[] = [];
+    for (const email of ['sarah@example.com', 'stranger@example.com', 'dee@example.com']) {
       const before = arcMail.to(email).length;
-      const a = await claim(arcOn.base, signup, { name: 'Who', email });
+      const a = await claim(arcOn.base, signup, { name: 'Who', email, profile });
       assert.equal(a.status, 410, `${how} ${email}`);
-      assert.ok(a.text.includes(ARC_EN['arc.claim.err.closed']));
+      assert.ok(a.text.includes(ARC_EN['arc.claim.err.closed']), `${how} ${email}: closed`);
+      assert.ok(!a.text.includes('<form'), `${how} ${email}: no form`);
       assert.equal(arcMail.to(email).length, before, `${how} ${email}: nothing sent`);
+      answers.push(a);
     }
+    const bare = (h: string) => h.replace(/nonce="[^"]*"/g, 'nonce=""');
+    assert.equal(bare(answers[0].text), bare(answers[1].text), `${how}: a claimed reader and a stranger read the same`);
+    assert.equal(bare(answers[2].text), bare(answers[1].text), `${how}: a declined address reads the same`);
     assert.equal((await rowOfEmail(campaign.shareId, 'stranger@example.com')).length, 0, 'no row');
-    // A bad request through the lost-link form is told on the closed page.
-    const bad = await claim(arcOn.base, signup, { name: '', email: 'sarah@example.com' });
-    assert.equal(bad.status, 410);
-    assert.ok(bad.text.includes(ARC_EN['arc.claim.err.badName']));
-    assert.equal(await count(`share_recipients where share_id = $1 and status = 'claimed'`, [campaign.shareId]), 2);
+    assert.equal(await count(`share_recipients where share_id = $1 and status = 'claimed'`, [campaign.shareId]), 1);
   }
 });
 

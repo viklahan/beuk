@@ -3268,8 +3268,7 @@ not approved, not read by a native speaker.** No translation service or API was 
 
 **Final fix wave (2026-11-27), new or changed drafts in this section:** `arc.mail.code.link` (the code page's link in
 the code email, ruling C6), `arc.mail.code.for` (the name the code confirms, final review Important 1),
-`arc.page.closedRecover` (the lost-link form on the closed page, final review minor 1), `arc.stop.doneCopy` (new), and
-`arc.stop.done` (changed: its second sentence, "Your copy keeps working.", is now `arc.stop.doneCopy`, shown only to a
+`arc.stop.doneCopy` (new), and `arc.stop.done` (changed: its second sentence, "Your copy keeps working.", is now `arc.stop.doneCopy`, shown only to a
 reader whose copy still opens, ruling C7; each draft was split at the same sentence). All are Claude's English and
 Claude's drafts, unsigned like the rest.
 
@@ -4905,24 +4904,6 @@ Points worth a look:
 - **mr** मराठी: `नोंदणी बंद झाली आहे`
 - **ja** 日本語: `申し込みは締め切りました`
 - **zh-Hans** 简体中文: `报名已截止`
-
-### `arc.page.closedRecover`
-
-- **en** (source, Claude's — final fix wave): Already have a copy and lost its link? Enter the name and email you used, and Beuk will email you a code to open it again.
-- **es** Español: `¿Ya tienes un ejemplar y perdiste su enlace? Escribe el nombre y el correo que usaste, y Beuk te enviará un código para volver a abrirlo.`
-- **fr** Français: `Vous avez déjà un exemplaire et vous avez perdu son lien ? Saisissez le nom et l'adresse e-mail que vous aviez donnés, et Beuk vous enverra un code pour le rouvrir.`
-- **de** Deutsch: `Sie haben schon ein Exemplar und den Link verloren? Geben Sie den Namen und die E-Mail-Adresse ein, die Sie verwendet haben, und Beuk schickt Ihnen einen Code, um es wieder zu öffnen.`
-- **it** Italiano: `Hai già una copia e ne hai perso il link? Inserisci il nome e l'email che hai usato, e Beuk ti invierà un codice per riaprirla.`
-- **pt** Português: `Já tem um exemplar e perdeu o link? Introduza o nome e o e-mail que usou, e o Beuk envia-lhe um código para o voltar a abrir.`
-- **nl** Nederlands: `Hebt u al een exemplaar en bent u de link kwijt? Vul de naam en het e-mailadres in die u gebruikte, en Beuk stuurt u een code om het weer te openen.`
-- **pl** Polski: `Masz już egzemplarz, ale nie masz już do niego linku? Wpisz imię i e-mail podane przy zapisie, a Beuk wyśle Ci kod, by znów go otworzyć.`
-- **ru** Русский: `У вас уже есть экземпляр, но вы потеряли ссылку? Введите имя и адрес почты, которые вы указали, и Beuk пришлёт вам код, чтобы снова его открыть.`
-- **tr** Türkçe: `Zaten bir kopyanız var ama bağlantısını mı kaybettiniz? Kullandığınız adı ve e-posta adresini girin; Beuk size kopyayı yeniden açmanız için bir kod gönderir.`
-- **ar** العربية: `لديك نسخة وفقدت رابطها؟ أدخِل الاسم والبريد الإلكتروني اللذين استخدمتهما، وسيرسل إليك Beuk رمزًا لتفتحها من جديد.`
-- **hi** हिन्दी: `क्या आपके पास पहले से प्रति है और उसका लिंक खो गया है? वही नाम और ईमेल डालें जो आपने दिए थे, और Beuk आपको उसे फिर से खोलने के लिए एक कोड ईमेल करेगा।`
-- **mr** मराठी: `तुमच्याकडे आधीच प्रत आहे आणि तिची लिंक हरवली आहे? तुम्ही दिलेले नाव आणि ईमेल टाका, म्हणजे Beuk तुम्हाला ती पुन्हा उघडण्यासाठी एक कोड ईमेल करेल.`
-- **ja** 日本語: `すでに献本をお持ちで、リンクをなくしましたか？ 申し込みに使ったお名前とメールアドレスを入力すると、献本を開き直すためのコードをBeukがメールでお送りします。`
-- **zh-Hans** 简体中文: `已经有预发本，但找不到链接了？输入你报名时用的名字和邮箱，Beuk 会给你发一个验证码，让你重新打开它。`
 
 ### `arc.foot.privacy`
 

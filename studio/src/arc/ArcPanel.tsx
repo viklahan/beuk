@@ -496,7 +496,7 @@ function Running(p: {
   );
 }
 
-/** An ended campaign (or one past its close date), summarised, with its readers (F10, P8): a waiting reader can only be
+/** An ended campaign (or one past its close date), summed up, with its readers (F10, P8): a waiting reader can only be
  *  declined, a copy can still be closed, and the campaign deleted with all its readers. */
 function Past(p: { c: Campaign; readers: Reader[]; busy: string | null; notes: Record<string, string>; act: ActFn; remove: CampaignFn }) {
   const { t } = useLocale();

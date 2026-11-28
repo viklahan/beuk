@@ -168,8 +168,6 @@ export const ARC_EN = {
   'arc.page.unknownTitle': "We couldn't find this page",
   'arc.page.unknown': 'The link may be incomplete. Check that it was copied in full.',
   'arc.page.closedTitle': 'Sign-ups have closed',
-  // Final fix wave (final review minor 1): a reader who holds a copy can get its link again after sign-ups close.
-  'arc.page.closedRecover': 'Already have a copy and lost its link? Enter the name and email you used, and Beuk will email you a code to open it again.',
   // Ruling C7: a form the server could not read (too long, too many fields). English only: refused before its link was read.
   'arc.page.badFormTitle': "This form couldn't be read",
   'arc.page.badForm': 'It was longer than this page accepts, so nothing was sent. Please go back and try again.',
@@ -310,7 +308,6 @@ const ES: Draft = {
   'arc.page.unknownTitle': "No hemos encontrado esta página",
   'arc.page.unknown': "Puede que el enlace esté incompleto. Comprueba que lo copiaste entero.",
   'arc.page.closedTitle': "Las inscripciones están cerradas",
-  'arc.page.closedRecover': "¿Ya tienes un ejemplar y perdiste su enlace? Escribe el nombre y el correo que usaste, y Beuk te enviará un código para volver a abrirlo.",
   'arc.foot.privacy': "Privacidad",
   'arc.foot.terms': "Condiciones",
 };
@@ -403,7 +400,6 @@ const FR: Draft = {
   'arc.page.unknownTitle': "Nous n'avons pas trouvé cette page",
   'arc.page.unknown': "Le lien est peut-être incomplet. Vérifiez qu'il a été copié en entier.",
   'arc.page.closedTitle': "Les inscriptions sont closes",
-  'arc.page.closedRecover': "Vous avez déjà un exemplaire et vous avez perdu son lien ? Saisissez le nom et l'adresse e-mail que vous aviez donnés, et Beuk vous enverra un code pour le rouvrir.",
   'arc.foot.privacy': "Confidentialité",
   'arc.foot.terms': "Conditions",
 };
@@ -496,7 +492,6 @@ const DE: Draft = {
   'arc.page.unknownTitle': "Wir konnten diese Seite nicht finden",
   'arc.page.unknown': "Der Link ist vielleicht unvollständig. Prüfen Sie, ob er vollständig kopiert wurde.",
   'arc.page.closedTitle': "Die Anmeldung ist geschlossen",
-  'arc.page.closedRecover': "Sie haben schon ein Exemplar und den Link verloren? Geben Sie den Namen und die E-Mail-Adresse ein, die Sie verwendet haben, und Beuk schickt Ihnen einen Code, um es wieder zu öffnen.",
   'arc.foot.privacy': "Datenschutz",
   'arc.foot.terms': "Nutzungsbedingungen",
 };
@@ -589,7 +584,6 @@ const IT: Draft = {
   'arc.page.unknownTitle': "Non abbiamo trovato questa pagina",
   'arc.page.unknown': "Il link potrebbe essere incompleto. Controlla di averlo copiato per intero.",
   'arc.page.closedTitle': "Le iscrizioni sono chiuse",
-  'arc.page.closedRecover': "Hai già una copia e ne hai perso il link? Inserisci il nome e l'email che hai usato, e Beuk ti invierà un codice per riaprirla.",
   'arc.foot.privacy': "Privacy",
   'arc.foot.terms': "Termini",
 };
@@ -682,7 +676,6 @@ const PT: Draft = {
   'arc.page.unknownTitle': "Não encontrámos esta página",
   'arc.page.unknown': "O link pode estar incompleto. Verifique se foi copiado por inteiro.",
   'arc.page.closedTitle': "As inscrições estão fechadas",
-  'arc.page.closedRecover': "Já tem um exemplar e perdeu o link? Introduza o nome e o e-mail que usou, e o Beuk envia-lhe um código para o voltar a abrir.",
   'arc.foot.privacy': "Privacidade",
   'arc.foot.terms': "Termos",
 };
@@ -775,7 +768,6 @@ const NL: Draft = {
   'arc.page.unknownTitle': "We konden deze pagina niet vinden",
   'arc.page.unknown': "De link is misschien onvolledig. Controleer of hij volledig is gekopieerd.",
   'arc.page.closedTitle': "De aanmelding is gesloten",
-  'arc.page.closedRecover': "Hebt u al een exemplaar en bent u de link kwijt? Vul de naam en het e-mailadres in die u gebruikte, en Beuk stuurt u een code om het weer te openen.",
   'arc.foot.privacy': "Privacy",
   'arc.foot.terms': "Voorwaarden",
 };
@@ -868,7 +860,6 @@ const PL: Draft = {
   'arc.page.unknownTitle': "Nie znaleźliśmy tej strony",
   'arc.page.unknown': "Link może być niepełny. Sprawdź, czy został skopiowany w całości.",
   'arc.page.closedTitle': "Zapisy są zamknięte",
-  'arc.page.closedRecover': "Masz już egzemplarz, ale nie masz już do niego linku? Wpisz imię i e-mail podane przy zapisie, a Beuk wyśle Ci kod, by znów go otworzyć.",
   'arc.foot.privacy': "Prywatność",
   'arc.foot.terms': "Warunki",
 };
@@ -961,7 +952,6 @@ const RU: Draft = {
   'arc.page.unknownTitle': "Мы не нашли эту страницу",
   'arc.page.unknown': "Возможно, ссылка неполная. Проверьте, что она скопирована целиком.",
   'arc.page.closedTitle': "Запись закрыта",
-  'arc.page.closedRecover': "У вас уже есть экземпляр, но вы потеряли ссылку? Введите имя и адрес почты, которые вы указали, и Beuk пришлёт вам код, чтобы снова его открыть.",
   'arc.foot.privacy': "Конфиденциальность",
   'arc.foot.terms': "Условия",
 };
@@ -1054,7 +1044,6 @@ const TR: Draft = {
   'arc.page.unknownTitle': "Bu sayfayı bulamadık",
   'arc.page.unknown': "Bağlantı eksik olabilir. Tamamen kopyalandığından emin olun.",
   'arc.page.closedTitle': "Kayıtlar kapandı",
-  'arc.page.closedRecover': "Zaten bir kopyanız var ama bağlantısını mı kaybettiniz? Kullandığınız adı ve e-posta adresini girin; Beuk size kopyayı yeniden açmanız için bir kod gönderir.",
   'arc.foot.privacy': "Gizlilik",
   'arc.foot.terms': "Koşullar",
 };
@@ -1147,7 +1136,6 @@ const AR: Draft = {
   'arc.page.unknownTitle': "لم نعثر على هذه الصفحة",
   'arc.page.unknown': "قد يكون الرابط ناقصًا. تحقّق من نسخه كاملًا.",
   'arc.page.closedTitle': "أُغلق التسجيل",
-  'arc.page.closedRecover': "لديك نسخة وفقدت رابطها؟ أدخِل الاسم والبريد الإلكتروني اللذين استخدمتهما، وسيرسل إليك Beuk رمزًا لتفتحها من جديد.",
   'arc.foot.privacy': "الخصوصية",
   'arc.foot.terms': "الشروط",
 };
@@ -1240,7 +1228,6 @@ const HI: Draft = {
   'arc.page.unknownTitle': "हमें यह पेज नहीं मिला",
   'arc.page.unknown': "हो सकता है लिंक अधूरा हो। देख लें कि वह पूरा कॉपी हुआ है।",
   'arc.page.closedTitle': "साइन अप बंद हो चुके हैं",
-  'arc.page.closedRecover': "क्या आपके पास पहले से प्रति है और उसका लिंक खो गया है? वही नाम और ईमेल डालें जो आपने दिए थे, और Beuk आपको उसे फिर से खोलने के लिए एक कोड ईमेल करेगा।",
   'arc.foot.privacy': "प्राइवेसी",
   'arc.foot.terms': "नियम और शर्तें",
 };
@@ -1333,7 +1320,6 @@ const MR: Draft = {
   'arc.page.unknownTitle': "आम्हाला हे पान सापडले नाही",
   'arc.page.unknown': "लिंक अपूर्ण असू शकते. ती पूर्ण कॉपी झाली आहे का ते तपासा.",
   'arc.page.closedTitle': "नोंदणी बंद झाली आहे",
-  'arc.page.closedRecover': "तुमच्याकडे आधीच प्रत आहे आणि तिची लिंक हरवली आहे? तुम्ही दिलेले नाव आणि ईमेल टाका, म्हणजे Beuk तुम्हाला ती पुन्हा उघडण्यासाठी एक कोड ईमेल करेल.",
   'arc.foot.privacy': "गोपनीयता",
   'arc.foot.terms': "अटी",
 };
@@ -1426,7 +1412,6 @@ const JA: Draft = {
   'arc.page.unknownTitle': "このページが見つかりませんでした",
   'arc.page.unknown': "リンクが途中で切れている可能性があります。すべてコピーされているか確認してください。",
   'arc.page.closedTitle': "申し込みは締め切りました",
-  'arc.page.closedRecover': "すでに献本をお持ちで、リンクをなくしましたか？ 申し込みに使ったお名前とメールアドレスを入力すると、献本を開き直すためのコードをBeukがメールでお送りします。",
   'arc.foot.privacy': "プライバシー",
   'arc.foot.terms': "利用規約",
 };
@@ -1519,7 +1504,6 @@ const ZH: Draft = {
   'arc.page.unknownTitle': "找不到这个页面",
   'arc.page.unknown': "链接可能不完整。请检查是否已完整复制。",
   'arc.page.closedTitle': "报名已截止",
-  'arc.page.closedRecover': "已经有预发本，但找不到链接了？输入你报名时用的名字和邮箱，Beuk 会给你发一个验证码，让你重新打开它。",
   'arc.foot.privacy': "隐私",
   'arc.foot.terms': "条款",
 };

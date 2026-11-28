@@ -1,5 +1,4 @@
-/* The ARC panel's transport (ARC slice 1, Task 8): the same request and answer shapes as src/aris/net.ts's apiFetch
-   (same-origin credentials, JSON content type for a string body): {} for 204, the JSON body, { __error, __status, __body }
+/* The ARC panel's transport (ARC slice 1, Task 8): same-origin credentials, JSON content type for a string body; answers {} for 204, the JSON body, { __error, __status, __body }
    for an error status, null when the network failed. Self-contained, so the panel's tests hand it a recording fake. */
 
 type Fetcher = typeof fetch;

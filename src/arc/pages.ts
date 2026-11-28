@@ -149,8 +149,7 @@ export function renderClaimPage(
 }
 
 /** The claim form (name, email; approval mode: the profile link; the tz
- *  and honeypot fields), posting to the signup link. The claim page and
- *  the closed page's lost-link form share it. */
+ *  and honeypot fields), posting to the signup link. */
 function claimForm(t: T, view: Pick<SignupView, 'campaign' | 'author'>, base: string, v: ClaimValues): SafeHtml {
   const profile =
     view.campaign.approval_mode === 'approval'
@@ -218,28 +217,13 @@ export function renderWaitingPage(view: Pick<SignupView, 'title' | 'author' | 'l
   return shell({ nonce: opts.nonce, lang: view.lang, title, body });
 }
 
-/**
- * Sign-ups closed (by date, or by the author): the 410 page. With the
- * signup token it also offers the lost-link form (final review minor 1: a
- * reader who holds a copy can ask for its link again, as copies keep
- * working after a close), and shows why a request through it was refused.
- */
-export function renderClosedPage(
-  view: Pick<SignupView, 'campaign' | 'title' | 'author' | 'lang'>,
-  opts: { nonce: string; signup?: string; values?: ClaimValues; error?: ClaimRefusal },
-): string {
+/** Sign-ups closed (by date, or by the author): the 410 page. */
+export function renderClosedPage(view: Pick<SignupView, 'title' | 'author' | 'lang'>, opts: { nonce: string }): string {
   const t = arcT(view.lang);
-  const recover = opts.signup
-    ? html`
-      <p>${t('arc.page.closedRecover')}</p>
-      ${claimForm(t, view, `/arc/${opts.signup}`, opts.values ?? {})}`
-    : '';
-  const why = opts.error && opts.error !== 'closed' ? claimError(t, view, opts.error, CLAIM_ERR) : null;
   const body = html`      <h1>${t('arc.page.closedTitle')}</h1>
       <p class="note">${heading(t, view)}</p>
-      <p class="lede">${t('arc.claim.err.closed')}</p>${recover}
-      ${errorBox(why)}`;
-  return shell({ nonce: opts.nonce, lang: view.lang, title: t('arc.page.closedTitle'), body, script: opts.signup ? tzScript(opts.nonce) : undefined });
+      <p class="lede">${t('arc.claim.err.closed')}</p>`;
+  return shell({ nonce: opts.nonce, lang: view.lang, title: t('arc.page.closedTitle'), body });
 }
 
 /* ---------------- Task 7: the reader's copy and the mail links ---------------- */

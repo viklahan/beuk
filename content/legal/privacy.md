@@ -141,7 +141,7 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 - **To give you the service you asked for:** your account, shelf, archive, checks, reading copies and reset emails. Under the EU and UK GDPR this is "performance of a contract".
 - **Legitimate interests:** keeping the service safe and working (rate limits, the hashed IP on comments, error logs, backups) and improving the help pages from anonymous search counts.
 - **Your choice:** the Founders' Shelf form, which you fill in only if you want to.
-- **Advance review copies (for V's sign-off: a legal call).** Candidates: sending a reader the copy they asked for, with its code and emails, as "steps taken at the request of the data subject" before a contract (GDPR Art. 6(1)(b)), or as legitimate interests (Art. 6(1)(f)); keeping the opt-out hash after a reader says "Not you?" or "No more email from", as a legitimate interest in honouring that objection for good (Art. 6(1)(f)), not consent. Open question: for the reader list Beuk arguably acts for the writer (the writer as controller, Beuk as processor), while for the opt-out list that holds across every writer Beuk acts for itself.
+- **Advance review copies:** sending a reader the copy they asked for, with its code and its emails, and keeping the opt-out hash after a reader says "Not you?" or "No more email from", so that the objection holds for good. Both are legitimate interests (Art. 6(1)(f)): the writer's and the reader's in getting the copy to the person who asked for it, and Beuk's in never mailing someone who said stop. The reader list is the writer's: Beuk keeps it for the writer who runs the campaign. The opt-out list is Beuk's own, and holds across every writer.
 
 ## How long things are kept
 
