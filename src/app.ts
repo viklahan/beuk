@@ -30,6 +30,7 @@ import { publicConfigRoutes, statusRoutes } from './routes/public.js';
 import { resetPageRoutes } from './routes/reset-page.js';
 import { inviteRoutes } from './routes/invite.js';
 import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
+import { arcOwnerRoutes } from './routes/arc.js';
 import { authorshipRoutes } from './routes/authorship.js';
 import { twoStepRoutes } from './routes/two-step.js';
 import { sessionRoutes } from './routes/sessions.js';
@@ -253,6 +254,18 @@ export function buildApp({
 
   // Beta-reader share links: owner surface (signed in).
   app.use('/api/shares', shareOwnerRoutes(db, now));
+  // ARC campaigns: the owner surface (signed in); version 1 builds through the server EPUB queue.
+  app.use(
+    '/api/arc',
+    arcOwnerRoutes({
+      db,
+      config,
+      arcMailer: app.locals.arcMailer as Mailer | null,
+      mailer: mail,
+      epubQueue,
+      now: now ?? (() => new Date()),
+    }),
+  );
   // The authorship record: fingerprint-only stamps (signed in, owner-only).
   app.use('/api/authorship', authorshipRoutes(db, now));
 

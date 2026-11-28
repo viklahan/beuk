@@ -33,7 +33,8 @@ import { findAccessGrant } from './oauth/model.js';
  *
  * Locked after day 21 unpaid (PAUSABLE_FEATURES): the store-ready EPUB,
  * the print PDF, the cover wrap, adding new books to the shelf, new beta
- * links (and refreshing an existing link's copy), server EPUBCheck checks,
+ * links (and refreshing an existing link's copy, and starting an ARC
+ * campaign, POST /api/arc), server EPUBCheck checks,
  * the server-made print-ready PDF (the pdfx job, export.print), saving
  * new files to the archive, and new authorship stamps (POST
  * /api/authorship/stamps, authorship.stamp: the export itself still
@@ -97,6 +98,8 @@ export const ACCESS_RULES: ReadonlyArray<{ method: 'POST'; path: string; feature
   { method: 'POST', path: '/api/shares', feature: 'shares.create' },
   { method: 'POST', path: '/api/shares/:id/republish', feature: 'shares.create' },
   { method: 'POST', path: '/api/shares/:id/readers', feature: 'shares.create' },
+  // ARC campaigns: starting one is a new reading copy (plan Global Constraints); a running one keeps delivering.
+  { method: 'POST', path: '/api/arc', feature: 'shares.create' },
   { method: 'POST', path: '/api/jobs/epubcheck', feature: 'jobs.run' },
   { method: 'POST', path: '/api/jobs/pdfx', feature: 'export.print' },
   { method: 'POST', path: '/api/epub', feature: 'export.epub' },
@@ -128,6 +131,7 @@ export const NEVER_PAUSED: ReadonlyArray<{ method: string; path: string; why: st
   { method: 'POST', path: '/api/shares/:id/readers/:rid/revoke', why: 'close a named link' },
   { method: 'POST', path: '/api/shares/:id/close-open', why: 'close the open link' },
   { method: 'GET', path: '/api/shares/:id/comments', why: 'read readers’ comments' },
+  { method: 'GET', path: '/api/arc', why: 'see your ARC campaign' },
   { method: 'GET', path: '/read/:token', why: 'readers keep reading an existing link' },
   { method: 'POST', path: '/read/:token/comments', why: 'readers keep commenting on an existing link' },
   { method: 'GET', path: '/api/account/export', why: 'Download all my data' },

@@ -337,7 +337,7 @@ test('decideAccess: open while billing is off; subscription, grace, trial, pause
   assert.equal(decideAccess(true, gone, grace), 'grace');
 });
 
-test('the rules are data: nine features, twelve gated POST routes, and the never-paused list does not overlap', () => {
+test('the rules are data: nine features, thirteen gated POST routes, and the never-paused list does not overlap', () => {
   assert.deepEqual(
     ACCESS_RULES.map((r) => `${r.method} ${r.path}`),
     [
@@ -345,6 +345,7 @@ test('the rules are data: nine features, twelve gated POST routes, and the never
       'POST /api/shares',
       'POST /api/shares/:id/republish',
       'POST /api/shares/:id/readers',
+      'POST /api/arc',
       'POST /api/jobs/epubcheck',
       'POST /api/jobs/pdfx',
       'POST /api/epub',

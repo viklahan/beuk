@@ -5,6 +5,7 @@ import type { Db } from '../db.js';
 import { HTTP_CODES } from '../help/codes.js';
 import { renderSnapshot, type Snapshot } from '../shares/render.js';
 import { hydrateDoc } from '../pictures.js';
+import { isCampaignShare } from '../arc/campaigns.js';
 import {
   readerHeaders,
   renderGonePage,
@@ -33,6 +34,9 @@ import {
  *   GET    /api/shares/:id/comments
  *   POST   /api/shares/:id/comments/:cid/resolve | /unresolve
  *   DELETE /api/shares/:id/comments/:cid
+ * An ARC campaign's share (src/arc/campaigns.ts) is not listed, and the
+ * PUT, republish, revoke, close-open, the four readers routes and DELETE
+ * answer it 409 (ARC_SHARE_REFUSED); the comment routes stay as they are.
  *
  * Public surface (no account, /read — Caddy proxies /read* to the app):
  *   GET  /read/:token[?c=n]        the read-only reader page, chapter n
@@ -58,6 +62,12 @@ export const QUOTE_MAX = 500;
 export const RECIPIENT_NAME_MAX = 60;
 export const RECIPIENTS_PER_SHARE = 50;
 const UNIQUE_VIOLATION = '23505';
+
+/** A campaign's share (ARC slice 1) is managed in the ARC panel: the beta
+ *  routes that change it, or its readers, answer 409 with these words
+ *  (wording from the plan, Task 4 — plan-authored, not in the spec). The
+ *  comment routes stay open: ARC comments appear in Reader comments. */
+export const ARC_SHARE_REFUSED = 'This copy belongs to an ARC. Manage it in the ARC panel.';
 
 export interface ShareLimits {
   /** Comments one client IP may post to one share per window. */
@@ -305,6 +315,13 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     return r.rows[0] ?? null;
   };
 
+  /** True (and answered 409) when the share belongs to an ARC campaign. */
+  const refusedAsArc = async (share: ShareRow, res: Response): Promise<boolean> => {
+    if (!(await isCampaignShare(db, share.id))) return false;
+    res.status(409).json({ error: ARC_SHARE_REFUSED });
+    return true;
+  };
+
   router.post('/', async (req, res, next) => {
     try {
       const body = (req.body ?? {}) as Record<string, unknown>;
@@ -363,6 +380,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
            (select count(*) from share_comments c where c.share_id = s.id and c.resolved_at is null) as open_comment_count
          from shares s
          where s.owner_id = $1 and ($2::uuid is null or s.manuscript_id = $2::uuid)
+           and not exists (select 1 from arc_campaigns a where a.share_id = s.id)
          order by s.created_at desc`,
         [req.user!.id, filter],
       );
@@ -395,6 +413,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     try {
       const share = await loadOwned(req);
       if (!share) return res.status(404).json({ error: 'share not found' });
+      if (await refusedAsArc(share, res)) return;
       const body = (req.body ?? {}) as Record<string, unknown>;
       const expiry = parseExpiry(body, now());
       if (expiry === 'bad')
@@ -432,6 +451,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     try {
       const share = await loadOwned(req);
       if (!share) return res.status(404).json({ error: 'share not found' });
+      if (await refusedAsArc(share, res)) return;
       if (share.revoked_at) return res.status(409).json({ error: 'this link is revoked — create a new one instead' });
       if (!share.manuscript_id)
         return res.status(409).json({ error: 'the manuscript this copy came from is no longer on your shelf' });
@@ -457,6 +477,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     try {
       const share = await loadOwned(req);
       if (!share) return res.status(404).json({ error: 'share not found' });
+      if (await refusedAsArc(share, res)) return;
       const r = await db.query<ShareRow>(
         `update shares s set revoked_at = coalesce(s.revoked_at, now())
          where s.id = $1 and s.owner_id = $2 returning ${SHARE_COLS}`,
@@ -474,6 +495,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     try {
       const share = await loadOwned(req);
       if (!share) return res.status(404).json({ error: 'share not found' });
+      if (await refusedAsArc(share, res)) return;
       const r = await db.query<ShareRow>(
         `update shares s set open_link_closed_at = coalesce(s.open_link_closed_at, now())
          where s.id = $1 and s.owner_id = $2 returning ${SHARE_COLS}`,
@@ -491,6 +513,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     try {
       const share = await loadOwned(req);
       if (!share) return res.status(404).json({ error: 'share not found' });
+      if (await refusedAsArc(share, res)) return;
       if (share.revoked_at) return res.status(409).json({ error: 'this link is revoked — create a new one instead' });
       const body = (req.body ?? {}) as Record<string, unknown>;
       const name = cleanRecipientName(body.name);
@@ -541,6 +564,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     try {
       const share = await loadOwned(req);
       if (!share) return res.status(404).json({ error: 'share not found' });
+      if (await refusedAsArc(share, res)) return;
       const r = await db.query<RecipientRow>(
         `select ${RECIPIENT_COLS},
            (select count(*) from share_comments c where c.recipient_id = r.id) as comment_count
@@ -570,6 +594,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     try {
       const share = await loadOwned(req);
       if (!share) return res.status(404).json({ error: 'reader not found' });
+      if (await refusedAsArc(share, res)) return;
       const recipient = await loadRecipient(share, req.params.rid);
       if (!recipient) return res.status(404).json({ error: 'reader not found' });
       const body = (req.body ?? {}) as Record<string, unknown>;
@@ -597,6 +622,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     try {
       const share = await loadOwned(req);
       if (!share) return res.status(404).json({ error: 'reader not found' });
+      if (await refusedAsArc(share, res)) return;
       const recipient = await loadRecipient(share, req.params.rid);
       if (!recipient) return res.status(404).json({ error: 'reader not found' });
       const r = await db.query<RecipientRow>(
@@ -617,6 +643,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
     try {
       const share = await loadOwned(req);
       if (!share) return res.status(404).json({ error: 'share not found' });
+      if (await refusedAsArc(share, res)) return;
       await db.query('delete from shares where id = $1 and owner_id = $2', [share.id, req.user!.id]);
       return res.status(204).end();
     } catch (err) {
