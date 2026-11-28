@@ -4,6 +4,11 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-27 — Right-to-left e-books pass EPUBCheck
+
+- **Fixed: right-to-left books' EPUBs failed EPUBCheck.** The EPUB of a right-to-left book failed EPUBCheck with one error, CSS-001 (seen on Arabic and Hebrew books; Persian and Urdu share the same style sheet rule, not run). Its style sheet used a property for tables that EPUB does not allow in a style sheet, and it did so whether or not the book had a table. EPUBCheck 5.2.1 now reports no errors for an Arabic book and a Hebrew book that each hold a table of figures.
+- **Figures in their tables still read left to right.** In a right-to-left table, a figure such as "+4%" is still set "+4%", never "4%+". The e-book now marks this in its pages instead of its style sheet. Measured in Chromium, the table is laid out exactly as before, and its words are unchanged.
+
 ## 2026-11-26 — One picture across both pages
 
 - **Across both pages.** A chapter's opening plate has a third choice under Fit: Across both pages. One wide picture opens the chapter across the whole spread, and you don't have to cut it in two yourself.

@@ -4861,8 +4861,15 @@ Table 3. Tonnage by port, 1921
   ("unremark-able"; a capitalised "Unremarkable" still breaks
   "Unremarkabl/e"). A table with more or longer unbreakable cells than
   the measure holds will run past it; nothing prevents that yet. In a
-  right-to-left book a figure cell is `unicode-bidi: plaintext`, so
-  "+4%" is not set "4%+".
+  right-to-left book a figure column's words are wrapped in
+  `<span dir="auto">` (the cell's own direction from its first strong
+  letter, else left to right), so "+4%" is not set "4%+". This is markup,
+  not CSS: EPUB 3.3 (6.3.1.2) forbids `unicode-bidi` and `direction` in a
+  style sheet (EPUBCheck CSS-001), and the `unicode-bidi: plaintext` that
+  stood here until 2026-11-27 failed every right-to-left book's EPUB. The
+  span, not the cell, carries `dir`: on the cell it would also turn the
+  cell's logical padding round (measured in Chromium, the column gap moved
+  to the other side). Every surface sets the same span (the HTML is one).
 - **Words**: a bar is never a word or part of one (`countWordsRaw`: once
   redactions are out, every bar and the backslash escaping it is a space,
   the one rule for a fence's rows and for the plain `cell | cell` rows an
