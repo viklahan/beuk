@@ -54,6 +54,27 @@ When you share a reading copy, the server stores a frozen copy of the book for i
 
 **Anyone who has the open link can read the book and every comment left through it, including the names readers gave. A named link shows only its own comments.** The writer chooses who gets each link, can close any link at any time, and can delete comments. Reading pages load no outside fonts or scripts.
 
+## Advance review copies
+
+A writer can give free advance copies of a book before it comes out. Readers ask for one on the campaign's own page and don't need an account. What a reader gives, and what Beuk keeps:
+
+- **Your name and email address.** The address is kept in one form (no spaces, lower case), so it counts as one reader however it's typed.
+- **A profile link, if the writer approves each reader** (a Goodreads or Amazon profile, say). Beuk stores it and shows it to the writer only as text. Beuk never opens it.
+- **Your time zone,** as your browser reports it, kept with your request so later emails about the book can be timed for you.
+- **A code.** Beuk emails a 6-digit code to confirm your address. Only a hash of the code is kept, and it stops working after a short time or a few wrong tries. A request that is never confirmed is deleted after 24 hours.
+- **Your copy.** Each copy has a line on its copyright page (or on a page of its own after the title page) reading "Advance Review Copy prepared for", then your name and email address, and carries a random reader number in the book's details, so the writer can tell whose copy a file came from if it's passed on. That deters sharing; it can't stop it. The book file is made fresh each time you download it and isn't stored.
+
+The writer sees your name, your address, your profile link if you gave one, and whether your request is waiting, approved or declined. The writer's Download all my data includes their readers' names and addresses. Your details are deleted when the writer deletes the campaign, the book or their account. Like anything deleted, they can remain in older backups (see "Backups").
+
+**Email to readers.** Reader emails come from Beuk's own address for readers, never from the writer's address, through the mail provider the operator has set up. They are: a 6-digit code to confirm your address; a link to your advance copy when it's ready; if the writer approves each reader, a note that your request is waiting for the author, and one more email when the author approves or declines your request. Every email to a reader says why it was sent and which writer it's from, and carries two links:
+
+- **"Not you?"** deletes your name, your address and your copy from that campaign, and keeps only a one-way hash of the address, so that no writer on Beuk can email it again. Comments you left stay, under the name you gave.
+- **"No more email from" the writer** stops all email from that writer. Your copy keeps working. Beuk keeps a hash of the address for that writer only.
+
+Each reader email also carries the standard one-click unsubscribe header, which does the same as "No more email from". Both links ask you to press a button first, so a mail scanner that opens links can't use them. The hash is SHA-256 of the address combined with a secret only the server holds. Because addresses can be tried one by one, this keeps the list from being readable at a glance; it isn't anonymity. An opt-out is kept even after the writer deletes their account, and it's in the backups. A server restored from a backup still honours it only if it keeps the same secret: backups deliberately leave the secret out, so the operator keeps it separately, and if it were ever lost, the stored opt-outs could no longer be matched to an address.
+
+If you run a campaign in which you approve each reader, Beuk emails you, at most once a day, when a reader is waiting for your approval.
+
 ## Your authorship record
 
 When you're signed in and export a backup or download a Word file, Beuk keeps a small stamp: a dated note of exactly which version of the book left the studio, and when. A stamp holds a fingerprint of the book (a SHA-256, a short code worked out from the book), the book's title, the book's internal id, the kind of file and the time. It never holds the book's text, and the text can't be worked back out of the fingerprint. Beuk shows your stamps only to you. They go with your account when you delete it, and they're in Download all my data.
@@ -92,7 +113,7 @@ The server makes a backup of its data every {{backuphours}} hours, so a broken d
 [[if noschedule]]
 The operator makes backups of the server's data by hand, so a broken disk doesn't lose your books.
 [[end]]
-A backup includes accounts (with password hashes, two-step keys, hashed recovery codes and the hashes of recent sign-in steps still on record), books, exports, authorship stamps, share copies and comments, the names and return addresses of apps registered to connect (never their keys), and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
+A backup includes accounts (with password hashes, two-step keys, hashed recovery codes and the hashes of recent sign-in steps still on record), books, exports, authorship stamps, share copies and comments, advance-copy campaigns with their readers' names and addresses and the opt-out hashes, the names and return addresses of apps registered to connect (never their keys), and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
 [[if offsite]]
 An encrypted copy of each backup also goes to a private storage bucket with Backblaze B2. It's encrypted before it leaves the server, and only the operator holds the key. Copies are kept on a rolling schedule: one a day for {{keepdaily}} days, one a week for {{keepweekly}} weeks, and one a month for {{keepmonthly}} months. So a deleted item can survive in these copies for up to about {{keepmonthly}} months.
 [[end]]
@@ -120,6 +141,7 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 - **To give you the service you asked for:** your account, shelf, archive, checks, reading copies and reset emails. Under the EU and UK GDPR this is "performance of a contract".
 - **Legitimate interests:** keeping the service safe and working (rate limits, the hashed IP on comments, error logs, backups) and improving the help pages from anonymous search counts.
 - **Your choice:** the Founders' Shelf form, which you fill in only if you want to.
+- **Advance review copies:** sending a reader the copy they asked for, with its code and its emails, and keeping the opt-out hash after a reader says "Not you?" or "No more email from", so that the objection holds for good. Both are legitimate interests (Art. 6(1)(f)): the writer's and the reader's in getting the copy to the person who asked for it, and Beuk's in not mailing someone who asked not to be mailed. The reader list is the writer's: Beuk keeps it for the writer who runs the campaign. The opt-out list is Beuk's own: a "Not you?" holds across every writer, a "No more email from" for that writer only.
 
 ## How long things are kept
 
@@ -130,6 +152,9 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 - **Server error logs:** rotated by size (at most 3 × 10 MB per container), with no time limit.
 - **Help search records, Founders' Shelf entries and backups on the server:** no automatic limit.
 - **In-memory attempt counts:** until the server restarts.
+- **Advance-copy requests that are never confirmed:** deleted after 24 hours.
+- **Advance-copy readers (name, address, profile link, time zone, copy):** until the reader says "Not you?", or the writer deletes the campaign, the book or their account.
+- **Opt-out hashes ("Not you?" and "No more email from"):** kept indefinitely, even after the writer's account is gone.
 
 ## Your rights, and how to use them
 

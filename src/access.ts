@@ -33,7 +33,8 @@ import { findAccessGrant } from './oauth/model.js';
  *
  * Locked after day 21 unpaid (PAUSABLE_FEATURES): the store-ready EPUB,
  * the print PDF, the cover wrap, adding new books to the shelf, new beta
- * links (and refreshing an existing link's copy), server EPUBCheck checks,
+ * links (and refreshing an existing link's copy, and starting an ARC
+ * campaign, POST /api/arc), server EPUBCheck checks,
  * the server-made print-ready PDF (the pdfx job, export.print), saving
  * new files to the archive, and new authorship stamps (POST
  * /api/authorship/stamps, authorship.stamp: the export itself still
@@ -97,6 +98,8 @@ export const ACCESS_RULES: ReadonlyArray<{ method: 'POST'; path: string; feature
   { method: 'POST', path: '/api/shares', feature: 'shares.create' },
   { method: 'POST', path: '/api/shares/:id/republish', feature: 'shares.create' },
   { method: 'POST', path: '/api/shares/:id/readers', feature: 'shares.create' },
+  // ARC campaigns: starting one is a new reading copy (plan Global Constraints); a running one keeps delivering.
+  { method: 'POST', path: '/api/arc', feature: 'shares.create' },
   { method: 'POST', path: '/api/jobs/epubcheck', feature: 'jobs.run' },
   { method: 'POST', path: '/api/jobs/pdfx', feature: 'export.print' },
   { method: 'POST', path: '/api/epub', feature: 'export.epub' },
@@ -128,6 +131,24 @@ export const NEVER_PAUSED: ReadonlyArray<{ method: string; path: string; why: st
   { method: 'POST', path: '/api/shares/:id/readers/:rid/revoke', why: 'close a named link' },
   { method: 'POST', path: '/api/shares/:id/close-open', why: 'close the open link' },
   { method: 'GET', path: '/api/shares/:id/comments', why: 'read readers’ comments' },
+  { method: 'GET', path: '/api/arc', why: 'see your ARC campaign' },
+  { method: 'GET', path: '/api/arc/:id/readers', why: "see your ARC campaign's readers" },
+  { method: 'POST', path: '/api/arc/:id/readers/:rid/approve', why: 'a running ARC campaign keeps delivering approvals' },
+  { method: 'POST', path: '/api/arc/:id/readers/:rid/decline', why: 'answer a reader waiting on your ARC campaign' },
+  { method: 'POST', path: '/api/arc/:id/readers/:rid/revoke', why: "close one reader's advance copy" },
+  { method: 'POST', path: '/api/arc/:id/close', why: 'close an ARC campaign' },
+  { method: 'PUT', path: '/api/arc/:id', why: "change an ARC campaign's cap or close date" },
+  { method: 'POST', path: '/api/arc/:id/signup-link', why: "replace an ARC campaign's signup link" },
+  { method: 'DELETE', path: '/api/arc/:id', why: 'delete an ARC campaign and its readers' },
+  { method: 'GET', path: '/arc/:signup', why: "a running ARC campaign's claim page stays open" },
+  { method: 'POST', path: '/arc/:signup', why: 'a running ARC campaign keeps taking claims' },
+  { method: 'GET', path: '/arc/:signup/check', why: "a running ARC campaign's code page" },
+  { method: 'POST', path: '/arc/:signup/check', why: 'a running ARC campaign keeps confirming claims and giving copies' },
+  { method: 'GET', path: '/arc/:signup/cover', why: "a running ARC campaign's cover" },
+  { method: 'GET', path: '/arc/r/:token', why: "an ARC reader's copy page" },
+  { method: 'GET', path: '/arc/r/:token/epub', why: "an ARC reader keeps downloading their copy" },
+  { method: 'GET', path: '/arc/m/:mailToken/:action', why: 'an ARC reader can always reach Not me and Stop' },
+  { method: 'POST', path: '/arc/m/:mailToken/:action', why: 'an ARC reader can always say Not me or Stop' },
   { method: 'GET', path: '/read/:token', why: 'readers keep reading an existing link' },
   { method: 'POST', path: '/read/:token/comments', why: 'readers keep commenting on an existing link' },
   { method: 'GET', path: '/api/account/export', why: 'Download all my data' },

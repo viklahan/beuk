@@ -22,10 +22,13 @@ export function collectSecrets(config: Config): string[] {
   // Ops: a Slack/Discord-style webhook URL carries its own token.
   add(config.ops?.alertWebhookUrl);
   // P0 #5: SMTP_URL carries the mail password.
-  if (config.smtpUrl) {
-    add(config.smtpUrl);
+  // ARC reader mail has its own SMTP URL (its own provider key) and salt.
+  add(config.arc?.suppressionSalt);
+  for (const smtpUrl of [config.smtpUrl, config.arc?.smtpUrl]) {
+    if (!smtpUrl) continue;
+    add(smtpUrl);
     try {
-      const url = new URL(config.smtpUrl);
+      const url = new URL(smtpUrl);
       if (url.password) add(decodeURIComponent(url.password));
     } catch {
       // Unparseable URL: the full string is already in the set.

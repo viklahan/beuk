@@ -163,6 +163,11 @@ services:
       SMTP_URL: ${SMTP_URL:-}
       MAIL_FROM: ${MAIL_FROM:-}
       MAIL_LOG_LINKS: ${MAIL_LOG_LINKS:-}
+      # ARC reader mail: its own sender, transport and opt-out salt; any
+      # unset → no reader email (never a fallback to MAIL_FROM/SMTP_URL).
+      ARC_MAIL_FROM: ${ARC_MAIL_FROM:-}
+      ARC_SMTP_URL: ${ARC_SMTP_URL:-}
+      ARC_SUPPRESSION_SALT: ${ARC_SUPPRESSION_SALT:-}
       # Restore (Housekeeping): on unless RESTORE_ENABLED=false.
       RESTORE_ENABLED: ${RESTORE_ENABLED:-true}
       # Scheduled local backups (hours; 0 = off). Local backups are

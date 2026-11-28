@@ -122,43 +122,45 @@ describe('Across both pages in print (Task 3)', () => {
   });
 
   it('print HTML for fill and whole plates is byte-identical to main (fixture books: snapshot before the change)', async () => {
-    /* Recorded on f29a4d0 (the unchanged print code, before this task's edits) with these stand-ins: sha256 of
+    /* Recorded on f29a4d0 (the unchanged print code, before this task's edits), then re-recorded on 050c415 (main with
+       the right-to-left EPUB fix, #76, and still without Across): that fix changed the right-to-left style sheet, so the
+       16 ar values moved; the 16 en values did not. With these stand-ins: sha256 of
        buildPrintHtml after preparePrintPress. A fixture's plates as stored (fill: no fixture stores a fit), every plate
        set to whole, and each with bleed on, and right to left. If an intended print change elsewhere moves these, the
        failure prints the new values; re-record them only on the code before such a change, never to get a green. */
     const SNAP: Record<string, string> = {
       'real/bookbinders-letter fill en': '482e9c6ae94486544ceded4bab7937c1124cda4f81085b18de7d380de80debc1',
-      'real/bookbinders-letter fill ar': '3e5b58422f4f261733fbdba2ca2aed32b73630a4a11278363ed19812ebe9594a',
+      'real/bookbinders-letter fill ar': '3f21b487c3f46981d398c596089f4d243d5b735a880631862288b425ebdc96a0',
       'real/bookbinders-letter fill bleed en': 'd166c4c056d9384e4bd89e36d1cf62abb1703dde0982bfcfddf1ea0dd30a4192',
-      'real/bookbinders-letter fill bleed ar': '6107d5cfd40c8a5c3814d41e983530bf2117433193070e646399050be77cfa97',
+      'real/bookbinders-letter fill bleed ar': 'c2b70e5a68b6b436ffc372c3e600eb635f73d7f1413965fcf0b552899fcb6a5b',
       'real/bookbinders-letter whole en': '317ac8540874d729731a15c3c43d3e303ff1e76ef18473098ca5bf69e83e8e22',
-      'real/bookbinders-letter whole ar': '8644a7d04aa710d6d3e0c0cc12c8d302944ad1c73e974eaebdefa05a5e077cbc',
+      'real/bookbinders-letter whole ar': 'd4ad3270070a0bbcf21293a412bbddb22a85685844dfb60265b7ade57b0ff643',
       'real/bookbinders-letter whole bleed en': '03f918a24b4b477400089746ba613f9cbe90c644f6497e728a4c63bfc0161a8e',
-      'real/bookbinders-letter whole bleed ar': '839512bde0fb0ec84ca50e0b18c7281636b6a09e40c7c864090cf4513f55ef58',
+      'real/bookbinders-letter whole bleed ar': 'c2f1ca45e7dadc651c1080d8f40ae3d33e742b30e5aa43a2e0055585c35510e6',
       'real/lantern-coast-print fill en': '93ff90842499f4c9df96a308789f35aedf5522161fb06c82a21c9b0980622dd6',
-      'real/lantern-coast-print fill ar': '3574e58dc4bedd3c739e0300494d2f902d8a0d99579c9e52c6f41eb855531400',
+      'real/lantern-coast-print fill ar': '4806da32917de25b4fe4bb8f1e0c6a6fdd90e25f6c7f8e4e835dc9cee7098307',
       'real/lantern-coast-print fill bleed en': '62bc3039ec5d3f98c17537aa69ff04a52946d31e22f962914414cd0b382656b7',
-      'real/lantern-coast-print fill bleed ar': 'e77d22c1711bbdf25a363ccb4fd4e8b7506106ee2358acc1f26d6afa9181a496',
+      'real/lantern-coast-print fill bleed ar': 'd05bf90fca4691cd2c5599fbcdbf5767677d365d9db30a8dd4a4416a33824af5',
       'real/lantern-coast-print whole en': 'c473481eb0a71d215dfdf99f7bdb8bdfe6eb0a78efc38d69b09cdf9763b63c0b',
-      'real/lantern-coast-print whole ar': 'b1839ef1052f4440515edad5db8e9fab96390a14d9ea3655547841bf75eae164',
+      'real/lantern-coast-print whole ar': '6ac069c549db2765f31ecf60b37ce95519658140ed322bf072f6d69b32a7d860',
       'real/lantern-coast-print whole bleed en': 'bf05becd8ce204ecd825d07904e1a0261bf24745f1b929774807ba47bc288293',
-      'real/lantern-coast-print whole bleed ar': '6bff2da0f10745fddfe25aa744658b2ac0f20e9209953a6656fd3611e0afe934',
+      'real/lantern-coast-print whole bleed ar': '6b95f145d924889a90b74799672e5559e018a18bfef68f26b9265faa7a3ca3ac',
       'real/lunas-beach-standalone fill en': '26afd728b67c928caeece928e48ab2ed60eb6ceddb088ca4bf7ff39fe5fe7275',
-      'real/lunas-beach-standalone fill ar': '85d2469b151e507c104cee8e305481ad72a10d3198d17b724ee27a05fe674739',
+      'real/lunas-beach-standalone fill ar': '0e878dc93ab95d9d03e48f826cbb5e4ddf3018f7e4745fca0daf1f5957690732',
       'real/lunas-beach-standalone fill bleed en': '20a97a2310cff38cbccbe380655df5603929143ae061ff1bafe2b894366308e2',
-      'real/lunas-beach-standalone fill bleed ar': '7126d0ef82b9b5f956d68de82609cf9ccdb54b89493dac21f6c57d2e15e78284',
+      'real/lunas-beach-standalone fill bleed ar': 'ea4d2c348fb486ed7f06d0998edf20c3922965c18a8f2a28c226e403ecd0bc33',
       'real/lunas-beach-standalone whole en': 'dca2dafca8a1f639a77dd9769d308d003e4bd605e43a95fc6f788824d151a291',
-      'real/lunas-beach-standalone whole ar': 'fb63a7b8a5d25a783ccf973d4b4a61a7736eb56b12659f913b06ecdba5fdbae9',
+      'real/lunas-beach-standalone whole ar': '8a512888a8fb0abfb8966a52cdc0d6c9290e1d96e33baf5beb4047c756418322',
       'real/lunas-beach-standalone whole bleed en': '1ba5b00b2698fb1f03127c1322b4a230a34f8cbe44723d6a1469881198671194',
-      'real/lunas-beach-standalone whole bleed ar': '2d5166e2d282507cbfc456e3d7b482d843b9ecb875decc562f7d6ac7a41aad1a',
+      'real/lunas-beach-standalone whole bleed ar': '28381ca01640809957e4c6fbe60ef6cd9f2bca42b00fe08be8e967912e7f6b75',
       'real/salt-road-book-one fill en': '1873806ae65525b930d91f4b7a8f0d2674000db1728aaf804bbaab2512154f5e',
-      'real/salt-road-book-one fill ar': '6f6c95abae2079fd06183e4de8c57b1e27e12aa26b134e109ec5fa83fe016907',
+      'real/salt-road-book-one fill ar': 'cddc6800284b770b73ce8d4773622b0e9c5c0d3f63d4b10facf0408bd0f1aaa3',
       'real/salt-road-book-one fill bleed en': '385496564c3f5f92f07812dfa963fe8f49081993f7248e53dc404e2691cd8add',
-      'real/salt-road-book-one fill bleed ar': '6b183b90edab37f89a4266789d825b07091bd001623f799fa76cd4397b3be4d0',
+      'real/salt-road-book-one fill bleed ar': '4f8b68795c8cd3baeebae02832db2c299907706176200661254955bbcda20be9',
       'real/salt-road-book-one whole en': '3d9dbf08fbf6a87c99a3f31ecc95a2a57b156b51d4f533a3e043f9d58ff34e02',
-      'real/salt-road-book-one whole ar': 'ac54c2d521646acf2484fe68ca9916a87d998a983c0bce98a3c6705b7c89aae8',
+      'real/salt-road-book-one whole ar': '7fc144776bc54f1397e775cf03cdf11580bf39eb1a22b062ece1e6f87cd1347b',
       'real/salt-road-book-one whole bleed en': 'a637a503b157e2c6c83686b85ebe1c5e44848201b0549de6d4cb39e3f7a540c3',
-      'real/salt-road-book-one whole bleed ar': 'cb1590f8ed5b88383cd78c66de70b7dd1f1ca8314a91b29ea74e44ddf10b9f44',
+      'real/salt-road-book-one whole bleed ar': '358a5c2192047c9501af102c9e287d05d1de8b78a77829c948dedf6dd1823a05',
     };
     const got: Record<string, string> = {};
     const names = ['real/lantern-coast-print', 'real/lunas-beach-standalone', 'real/salt-road-book-one', 'real/bookbinders-letter'];

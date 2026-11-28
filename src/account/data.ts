@@ -17,13 +17,16 @@ import { twoStepStatus, type TwoStepStatus } from '../twostep/store.js';
  * to users): sessions, password_resets, email_confirmations,
  * manuscripts, series_covenants, user_themes, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
  * streak_days, streak_freezes, streak_state, shares (+ share_recipients,
- * share_comments, share_readers), school_progress, authorship_stamps, user_two_step,
+ * share_comments, share_readers), arc_campaigns (+ arc_builds, arc_events;
+ * ARC readers are share_recipients of the campaign share), school_progress, authorship_stamps, user_two_step,
  * two_step_recovery_codes, sign_in_challenges, billing_subscriptions. billing_events keep their
  * Stripe event id (the webhook dedupe ledger) with user_id set null.
  *
  * NOT linked to an account in the database, so not part of either:
  * Founders' Shelf applications (name + email typed into a public form,
- * no user id) and the admin-only Housekeeping records.
+ * no user id), the admin-only Housekeeping records, and ARC mail
+ * suppressions (hashed addresses; a "Stop" row's scope is the author's
+ * id as text, with no foreign key, so the opt-out outlives the account).
  */
 
 /** Every table with a foreign key to users, and what "Delete my account"
@@ -53,6 +56,12 @@ export const ACCOUNT_DELETED_TABLES = [
   'streak_state',
   'school_progress',
   'shares',
+  // ARC campaigns (migration 031): the only new table with an FK to users.
+  // arc_builds and arc_events go with their campaign (on delete cascade);
+  // ARC readers are share_recipients rows and go with the campaign share.
+  // mail_suppressions has no FK to users, so it is in neither list on
+  // purpose: an opt-out must outlive the author's account.
+  'arc_campaigns',
   'authorship_stamps',
   'user_two_step',
   'two_step_recovery_codes',
@@ -303,6 +312,72 @@ export function asStudioBackupBook(doc: unknown): Record<string, unknown> | null
   return null;
 }
 
+/**
+ * The arc block of a campaign share's file in Download all my data (the
+ * design's pick for open question 6: the author's export includes their
+ * readers' names and emails), or null for a share that is not a campaign.
+ * The readers are the ones the author sees in the ARC panel: waiting,
+ * claimed and declined, oldest first. Unconfirmed requests (status
+ * 'unverified', deleted after 24 hours) are left out, as the panel leaves
+ * them out (decided in Task 5). Each reader's publicId is the reader
+ * number their copy carries (the stamp's OPF entry), so the writer can
+ * tell whose copy a file came from (content/legal/privacy.md; final review
+ * Important 2). No token, token hash or mail token is carried. SQL kept here rather than imported from
+ * src/arc/campaigns.ts, which pulls in the EPUB build.
+ */
+async function arcBlock(db: Db, userId: string, shareId: string): Promise<Record<string, unknown> | null> {
+  const c = await db.query<{
+    id: string; launch_date: string; closes_at: string; tz: string; max_claims: number; approval_mode: string;
+    created_at: string; ended_at: string | null;
+  }>(
+    `select id, launch_date::text as launch_date, closes_at, tz, max_claims, approval_mode, created_at, ended_at
+     from arc_campaigns where share_id = $1 and owner_id = $2`,
+    [shareId, userId],
+  );
+  const camp = c.rows[0];
+  if (!camp) return null;
+  const readers = await db.query<{
+    id: string; name: string; email: string; status: string; public_id: string | null; profile_link: string | null; tz: string | null;
+    created_at: string; email_verified_at: string | null; claimed_at: string | null; revoked_at: string | null;
+    first_opened_at: string | null; last_opened_at: string | null; mail_stopped_at: string | null;
+  }>(
+    `select id, name, email, status, public_id, profile_link, tz, created_at, email_verified_at, claimed_at, revoked_at,
+            first_opened_at, last_opened_at, mail_stopped_at
+     from share_recipients
+     where share_id = $1 and role = 'arc' and status in ('pending', 'claimed', 'declined')
+     order by created_at, id`,
+    [shareId],
+  );
+  return {
+    campaign: {
+      id: camp.id,
+      launchDate: camp.launch_date,
+      closesAt: iso(camp.closes_at),
+      tz: camp.tz,
+      maxClaims: camp.max_claims,
+      approvalMode: camp.approval_mode,
+      createdAt: iso(camp.created_at),
+      endedAt: isoOrNull(camp.ended_at),
+    },
+    readers: readers.rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      status: r.status,
+      publicId: r.public_id,
+      profileLink: r.profile_link,
+      tz: r.tz,
+      askedAt: iso(r.created_at),
+      emailVerifiedAt: isoOrNull(r.email_verified_at),
+      claimedAt: isoOrNull(r.claimed_at),
+      revokedAt: isoOrNull(r.revoked_at),
+      firstOpenedAt: isoOrNull(r.first_opened_at),
+      lastOpenedAt: isoOrNull(r.last_opened_at),
+      mailStoppedAt: isoOrNull(r.mail_stopped_at),
+    })),
+  };
+}
+
 /** The README.txt at the root of the archive. */
 export function exportReadme(opts: { email: string; exportedAt: string; appBaseUrl: string; counts: Record<string, number>; missingFiles: number }): string {
   const c = opts.counts;
@@ -344,6 +419,10 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
     `                        (the name and its dates), and every comment readers`,
     `                        left (${c.comments}). The link addresses themselves are not here:`,
     `                        the server only ever kept a scrambled form of them.`,
+    `                        An advance-copy (ARC) campaign's file also has an "arc" part:`,
+    `                        the campaign's settings and its readers' names and email addresses,`,
+    `                        with each one's status, dates and reader number (the number`,
+    `                        inside their copy's file).`,
     `streak.json             Your writing streak: every day the server saw you writing,`,
     `                        the days a freeze or a planned pause covered, and your`,
     `                        freeze balance.`,
@@ -543,16 +622,18 @@ export async function writeAccountExport(
     );
     const readers = await db.query<{ n: number }>('select count(*)::int as n from share_readers where share_id = $1', [s.id]);
     // Named reading links: the name and dates only. The token was never
-    // kept, and its hash is not the writer's data to carry around.
+    // kept, and its hash is not the writer's data to carry around. ARC
+    // readers are not named links: they are listed once, in the arc block.
     const recipients = await db.query<{
       id: string; name: string; created_at: string; expires_at: string | null; revoked_at: string | null;
       first_opened_at: string | null; last_opened_at: string | null;
     }>(
       `select r.id, r.name, r.created_at, r.expires_at, r.revoked_at, r.first_opened_at, r.last_opened_at
        from share_recipients r join shares s on s.id = r.share_id
-       where r.share_id = $1 and s.owner_id = $2 order by r.created_at, r.id`,
+       where r.share_id = $1 and s.owner_id = $2 and r.role = 'beta' order by r.created_at, r.id`,
       [s.id, userId],
     );
+    const arc = await arcBlock(db, userId, s.id);
     await zip.add(
       `shares/${safeName(s.title, 'Untitled')} (${s.id.slice(0, 8)}).json`,
       JSON.stringify(
@@ -590,6 +671,7 @@ export async function writeAccountExport(
           })),
           readingCopy: s.snapshot,
           readingCopyImages: s.images,
+          ...(arc ? { arc } : {}),
         },
         null,
         2,
@@ -761,6 +843,11 @@ export async function deleteAccount(
       const r = await tx.query<{ x: number }>(`${sql} returning 1 as x`, params);
       removed[label] = r.rows.length;
     };
+    // First, and explicitly (so the count is real): a campaign's
+    // manuscript_id is on delete restrict, so campaigns must be gone before
+    // the manuscripts. Their builds and events cascade; the campaign share
+    // and its ARC readers go with the share deletes below.
+    await del('arc_campaigns', 'delete from arc_campaigns where owner_id = $1', [userId]);
     await del('share_comments', 'delete from share_comments where share_id in (select id from shares where owner_id = $1)', [userId]);
     await del('share_readers', 'delete from share_readers where share_id in (select id from shares where owner_id = $1)', [userId]);
     await del('share_recipients', 'delete from share_recipients where share_id in (select id from shares where owner_id = $1)', [userId]);

@@ -658,7 +658,7 @@ test('delete my account: phrase + password required; everything the account owns
 
     // Every table that held this account's rows is empty of them.
     for (const table of ACCOUNT_DELETED_TABLES) {
-      const col = table === 'shares' ? 'owner_id' : table === 'users' ? 'id' : 'user_id';
+      const col = table === 'shares' || table === 'arc_campaigns' ? 'owner_id' : table === 'users' ? 'id' : 'user_id';
       const left = await db.query(`select 1 from ${table} where ${col} = $1`, [uid]);
       assert.equal(left.rows.length, 0, `${table} still holds rows`);
     }

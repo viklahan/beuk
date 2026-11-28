@@ -39,7 +39,17 @@ import { scrubText } from './scrub.js';
  *  null every attribution. billing_events is the webhook dedupe ledger;
  *  restoring it to the backup's point is safe because a re-delivered
  *  event re-fetches the subscription from Stripe rather than trusting
- *  the event body (src/billing-sync.ts). */
+ *  the event body (src/billing-sync.ts).
+ *  ARC campaigns (migration 031):
+ *  arc_campaigns after shares and manuscripts (share_id, manuscript_id;
+ *    the manuscript FK is on delete restrict, and the reverse-order
+ *    delete of a restore removes campaigns before manuscripts);
+ *  arc_builds after arc_campaigns (campaign_id); the unstamped EPUB is
+ *    base64 text in the row, as pictures are, so it goes with its campaign;
+ *  share_recipients after arc_builds (an ARC reader's build_id);
+ *  arc_events after share_recipients (recipient_id) and arc_campaigns;
+ *  mail_suppressions has no FK at all: backed up so a restore never mails
+ *    someone who said stop. */
 export const BACKUP_TABLES = [
   'users',
   'authorship_stamps',
@@ -71,9 +81,14 @@ export const BACKUP_TABLES = [
   'ai_writes',
   'founders_applications',
   'shares',
+  // ARC campaigns (migration 031): the order is explained above.
+  'arc_campaigns',
+  'arc_builds',
   'share_recipients',
   'share_comments',
   'share_readers',
+  'arc_events',
+  'mail_suppressions',
   'billing_subscriptions',
   'billing_events',
 ] as const;
@@ -142,6 +157,10 @@ export const SECRET_CONFIG_KEYS = [
   'ALERT_WEBHOOK_URL',
   // Aris: the secret that seals writers' stored provider keys.
   'ARIS_KEY_SECRET',
+  // ARC reader mail: its transport URL carries a credential; the salt keys
+  // every opt-out hash and mail token (src/arc/mail.ts).
+  'ARC_SMTP_URL',
+  'ARC_SUPPRESSION_SALT',
 ] as const;
 
 export interface BackupManifest {

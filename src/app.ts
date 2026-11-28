@@ -9,6 +9,7 @@ import {
   type HousekeepingDeps,
 } from './housekeeping/context.js';
 import { createMailer, type Mailer } from './mailer.js';
+import { createArcMailer } from './arc/mail.js';
 import { accountRoutes, BackgroundTasks, type AccountLimits } from './routes/account.js';
 import { authRoutes, signInLimitHandle } from './routes/auth.js';
 import { accountPortalRoutes, signupConfirmationHook, type PortalLimits } from './routes/account-portal.js';
@@ -29,6 +30,9 @@ import { publicConfigRoutes, statusRoutes } from './routes/public.js';
 import { resetPageRoutes } from './routes/reset-page.js';
 import { inviteRoutes } from './routes/invite.js';
 import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
+import { arcOwnerRoutes } from './routes/arc.js';
+import { arcPublicRoutes } from './routes/arc-public.js';
+import { DEFAULT_ARC_PUBLIC_LIMITS, type ArcPublicLimits } from './arc/claims.js';
 import { authorshipRoutes } from './routes/authorship.js';
 import { twoStepRoutes } from './routes/two-step.js';
 import { sessionRoutes } from './routes/sessions.js';
@@ -66,6 +70,13 @@ export interface AppDeps {
   housekeeping?: HousekeepingDeps;
   /** P0 #5: outgoing mail; defaults to createMailer(config). */
   mailer?: Mailer;
+  /** ARC reader mail (src/arc/mail.ts): defaults to createArcMailer(config),
+   *  null while ARC mail is not configured; tests inject a fake or null. */
+  arcMailer?: Mailer | null;
+  /** ARC's public claim page limits (src/arc/claims.ts); tests loosen or tighten them. */
+  arcLimits?: Partial<ArcPublicLimits>;
+  /** ARC's stamped-download queue (Task 7); defaults to BuildQueue(2, 8). Tests hold it busy. */
+  arcDownloads?: BuildQueue;
   /** P0 #5: rate limits for the account endpoints (tests tighten them). */
   accountLimits?: AccountLimits;
   /** CSP violation report endpoint (tests inject the log + limits). */
@@ -85,6 +96,9 @@ export function buildApp({
   billing,
   housekeeping,
   mailer,
+  arcMailer,
+  arcLimits,
+  arcDownloads,
   accountLimits,
   cspReport,
   helpSearchLimits,
@@ -104,6 +118,8 @@ export function buildApp({
   const mail = mailer ?? createMailer(config);
   const accountTasks = new BackgroundTasks();
   app.locals.mailer = mail;
+  // ARC reader mail: its own transport and sender, never the account mailer.
+  app.locals.arcMailer = arcMailer === undefined ? createArcMailer(config) : arcMailer;
   app.locals.accountTasks = accountTasks;
   // The billing webhook verifies its signature over the RAW body, so it
   // gets its own raw parser mounted on its exact path BEFORE the global
@@ -246,6 +262,16 @@ export function buildApp({
 
   // Beta-reader share links: owner surface (signed in).
   app.use('/api/shares', shareOwnerRoutes(db, now));
+  // ARC campaigns: the owner surface (signed in); version 1 builds through the server EPUB queue.
+  const arcDeps = {
+    db,
+    config,
+    arcMailer: app.locals.arcMailer as Mailer | null,
+    mailer: mail,
+    epubQueue,
+    now: now ?? (() => new Date()),
+  };
+  app.use('/api/arc', arcOwnerRoutes(arcDeps));
   // The authorship record: fingerprint-only stamps (signed in, owner-only).
   app.use('/api/authorship', authorshipRoutes(db, now));
 
@@ -278,6 +304,10 @@ export function buildApp({
   // Beta-reader share links: the public read-only reader (no account).
   // Caddy proxies /read* to the app (see the Caddyfile).
   app.use('/read', shareReaderRoutes(db, { now, cookieSecure: config.cookieSecure }));
+  // ARC campaigns: the public claim page and its code (no account).
+  // Caddy proxies /arc and /arc/* to the app (see the Caddyfile).
+  // The stamped downloads take turns: 2 at once, 8 waiting, one per reader.
+  app.use('/arc', arcPublicRoutes(arcDeps, { ...DEFAULT_ARC_PUBLIC_LIMITS, ...arcLimits }, arcDownloads ?? new BuildQueue(2, 8)));
 
   // M4 warmth pages (help reading room, thanks, changelog, roadmap).
   // Everything else at the site root is Caddy's static client mount.

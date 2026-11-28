@@ -15,6 +15,7 @@
     "client/support/index.html": "English-only at the guard's start (2026-10-30); not yet translated",
     "client/thanks/index.html": "English-only at the guard's start (2026-10-30); not yet translated",
     "src/account/page.ts": "English-only at the guard's start (2026-10-30); not yet translated",
+    "src/arc/stamp.ts": "The page this file builds lives inside readers' EPUBs, not on the site; it is English-only by ruling F16 (unsigned translations can't be recalled from a reader's device).",
     "src/email/invite.ts": "The founding-reader invitation email (owner-only, 2026-11-14); English-only on purpose — a hand-sent invite, not studio UI.",
     "src/email/layout.ts": "English-only at the guard's start (2026-10-30); not yet translated",
     "src/help/render.ts": "English-only at the guard's start (2026-10-30); not yet translated",

@@ -11,6 +11,8 @@ import type { Mailer } from '../src/mailer.js';
 import type { AccountLimits, BackgroundTasks } from '../src/routes/account.js';
 import type { CspReportOptions } from '../src/routes/csp-report.js';
 import type { HelpSearchLimits } from '../src/routes/help.js';
+import type { ArcPublicLimits } from '../src/arc/claims.js';
+import type { BuildQueue } from '../src/book/studio/queue.js';
 import type {
   BootCheck,
   HousekeepingDeps,
@@ -201,6 +203,9 @@ export function testConfig(overrides?: Partial<Config>): Config {
     smtpUrl: null,
     mailFrom: null,
     mailLogLinks: false,
+    // ARC reader mail: off by default (the unconfigured path is the honest
+    // default); tests/arc-mail.test.ts sets all three.
+    arc: { mailFrom: null, smtpUrl: null, suppressionSalt: null },
     // Backups: no schedule and no off-site target by default (both are
     // reported "not configured"); tests/offsite.test.ts sets them.
     backupIntervalHours: 0,
@@ -236,6 +241,10 @@ export async function startTestServer(
   housekeeping?: HousekeepingDeps,
   extra?: {
     mailer?: Mailer;
+    arcMailer?: Mailer | null;
+    arcLimits?: Partial<ArcPublicLimits>;
+    /** ARC's stamped-download queue (Task 7); a test holds it busy. */
+    arcDownloads?: BuildQueue;
     accountLimits?: AccountLimits;
     cspReport?: CspReportOptions;
     billing?: BillingProvider;

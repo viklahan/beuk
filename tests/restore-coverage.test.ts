@@ -181,6 +181,76 @@ test('jsonb LEAD under node-pg parameter encoding: [1,2] round-trips (failed bef
   assert.deepEqual(share.rows[0].images, { img: [1] });
 });
 
+test('restore brings back a campaign, its build, its readers, events and suppressions', async () => {
+  const db = await createTestDb();
+  const config = testConfig();
+  await db.query(`insert into users (email, password_hash) values ('arc@example.com', 'x')`);
+  const owner = await userId(db, 'arc@example.com');
+  const book = await db.query<{ id: string }>(
+    `insert into manuscripts (user_id, title, doc) values ($1, 'ARC Book', '{}'::jsonb) returning id`,
+    [owner],
+  );
+  const manuscriptId = book.rows[0].id;
+  const share = await db.query<{ id: string }>(
+    `insert into shares (owner_id, manuscript_id, token_hash, title, snapshot)
+     values ($1, $2, null, 'ARC Book', '{}'::jsonb) returning id`,
+    [owner, manuscriptId],
+  );
+  const shareId = share.rows[0].id;
+  const campaign = await db.query<{ id: string }>(
+    `insert into arc_campaigns (share_id, owner_id, manuscript_id, signup_token_hash, max_claims,
+                                approval_mode, launch_date, closes_at, tz)
+     values ($1, $2, $3, 'signup-hash', 25, 'approval', '2026-12-15', now() + interval '14 days', 'Europe/London')
+     returning id`,
+    [shareId, owner, manuscriptId],
+  );
+  const campaignId = campaign.rows[0].id;
+  const build = await db.query<{ id: string }>(
+    `insert into arc_builds (campaign_id, epub_base64, epub_sha256, epub_bytes, epub_filename, cover, blurb)
+     values ($1, 'UEsDBA==', 'sha', 4, 'arc-book-arc.epub', $2::jsonb, 'A blurb') returning id`,
+    [campaignId, JSON.stringify({ mediaType: 'image/png', data: 'iVBORw0=' })],
+  );
+  const buildId = build.rows[0].id;
+  const reader = await db.query<{ id: string }>(
+    `insert into share_recipients (share_id, name, role, email, status, build_id, public_id, mail_token_hash, claimed_at)
+     values ($1, 'Sarah', 'arc', 'sarah@example.com', 'claimed', $2, 'pub-1', 'mail-hash', now()) returning id`,
+    [shareId, buildId],
+  );
+  const readerId = reader.rows[0].id;
+  const event = await db.query<{ id: string }>(
+    `insert into arc_events (campaign_id, recipient_id, kind) values ($1, $2, 'claimed') returning id`,
+    [campaignId, readerId],
+  );
+  const eventId = event.rows[0].id;
+  await db.query(`insert into mail_suppressions (hash, scope) values ('supp-hash', 'all')`);
+
+  await createBackup(db, config, { name: 'arc', createdBy: 'test', secrets: [] });
+  await db.query('delete from arc_events');
+  await db.query('delete from share_recipients');
+  await db.query('delete from arc_builds');
+  await db.query('delete from arc_campaigns');
+  await db.query('delete from mail_suppressions');
+  for (const t of ['arc_campaigns', 'arc_builds', 'share_recipients', 'arc_events', 'mail_suppressions']) {
+    assert.equal(await count(db, t), 0, `${t} emptied before the restore`);
+  }
+  await executeRestore(db, config, { name: 'arc', createdBy: 'test', secrets: [] });
+
+  const c = await db.query<{ id: string; launch: string; mode: string }>(
+    'select id, launch_date::text as launch, approval_mode as mode from arc_campaigns',
+  );
+  assert.deepEqual(c.rows, [{ id: campaignId, launch: '2026-12-15', mode: 'approval' }]);
+  const b = await db.query<{ id: string; cover: unknown }>('select id, cover from arc_builds');
+  assert.deepEqual(b.rows, [{ id: buildId, cover: { mediaType: 'image/png', data: 'iVBORw0=' } }]);
+  const r = await db.query<{ id: string; email: string; build_id: string }>(
+    'select id, email, build_id from share_recipients',
+  );
+  assert.deepEqual(r.rows, [{ id: readerId, email: 'sarah@example.com', build_id: buildId }]);
+  const e = await db.query<{ id: string; recipient_id: string }>('select id, recipient_id from arc_events');
+  assert.deepEqual(e.rows, [{ id: eventId, recipient_id: readerId }]);
+  const s = await db.query<{ hash: string; scope: string }>('select hash, scope from mail_suppressions');
+  assert.deepEqual(s.rows, [{ hash: 'supp-hash', scope: 'all' }]);
+});
+
 test('completeness guard: every public table is in exactly one of BACKUP_TABLES / EXCLUDED_TABLES', async () => {
   const db = await createTestDb();
   const c = await classifyTables(db);

@@ -279,6 +279,18 @@ export interface Config {
    *  reset link) to the server console. MAIL_LOG_LINKS=true|false;
    *  default: on unless NODE_ENV=production. */
   mailLogLinks: boolean;
+  /** ARC campaigns: reader mail (src/arc/mail.ts) has its own sender
+   *  (ARC_MAIL_FROM; prod `Beuk readers <readers@beuk.studio>`, fixed for
+   *  good because readers approve it at Amazon), its own transport
+   *  (ARC_SMTP_URL, a nodemailer URL) and the salt for the opt-out hashes
+   *  and mail tokens (ARC_SUPPRESSION_SALT, never changed). Each trimmed,
+   *  '' → null. Until all three are set no reader email is sent; it never
+   *  falls back to MAIL_FROM / SMTP_URL. */
+  arc: {
+    mailFrom: string | null;
+    smtpUrl: string | null;
+    suppressionSalt: string | null;
+  };
   /** Scheduled local backups: one every BACKUP_INTERVAL_HOURS (default
    *  24; 0 turns the schedule off). Local backups are kept until
    *  BACKUP_KEEP_DAYS / BACKUP_KEEP_COUNT say otherwise (src/ops/retention.ts);
@@ -475,6 +487,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     mailLogLinks: env.MAIL_LOG_LINKS
       ? env.MAIL_LOG_LINKS.toLowerCase() === 'true' || env.MAIL_LOG_LINKS === '1'
       : (env.NODE_ENV ?? '').toLowerCase() !== 'production',
+    arc: {
+      mailFrom: env.ARC_MAIL_FROM?.trim() || null,
+      smtpUrl: env.ARC_SMTP_URL?.trim() || null,
+      suppressionSalt: env.ARC_SUPPRESSION_SALT?.trim() || null,
+    },
     backupIntervalHours: nonNegativeNumber(env.BACKUP_INTERVAL_HOURS, 24),
     legal: {
       operatorName: env.LEGAL_OPERATOR_NAME?.trim() || null,

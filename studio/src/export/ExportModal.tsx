@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ArcSection, arcShown } from '../arc/ArcPanel';
 import { cloudIfLoaded } from '../cloud/cloud';
 import { createPortal } from 'react-dom';
 import { useBook } from '../book/BookProvider';
@@ -149,6 +150,13 @@ export function ExportModal() {
   const [open, setOpen] = useState<Record<Dlg, boolean>>(CLOSED);
   // where the proof's block is drawn: the place the grouping makes under the modal's title
   const [proofHost, setProofHost] = useState<HTMLElement | null>(null);
+  // ARC slice 1: the ARC panel's section (src/arc/ArcPanel.tsx), appended to the modal's box once it is built; the
+  // archive group claims it (src/export/groups.ts). Hidden unless signed in with the book on the shelf (arcShown), so a
+  // section with nothing in it never shows the archive group by itself.
+  const [arcSec, setArcSec] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (arcSec) arcSec.hidden = !arcShown();
+  });
   exportUi.toast = (msg, icon) => toast(msg, toastIcon(icon));
   if (!host.current && typeof document !== 'undefined') {
     host.current = document.createElement('div');
@@ -254,6 +262,17 @@ export function ExportModal() {
           const cm = cloudIfLoaded();
           cm?.api.betaInjectDom();
           cm?.api.renderCloudChrome();
+          // ARC slice 1: the ARC panel's section, once, after the share section (the grouping moves it into the archive)
+          const box = modal.querySelector<HTMLElement>('.modal') ?? modal;
+          let sec = box.querySelector<HTMLElement>('#arcSec');
+          if (!sec) {
+            sec = document.createElement('div');
+            sec.id = 'arcSec';
+            sec.className = 'fmt-sec';
+            sec.hidden = !arcShown();
+            box.append(sec);
+          }
+          setArcSec(sec);
         });
       })
       .catch(() => undefined);
@@ -265,6 +284,7 @@ export function ExportModal() {
       backs.current = NO_BACKS;
       setOpen(CLOSED);
       setProofHost(null);
+      setArcSec(null);
       el.innerHTML = '';
       el.remove();
       exportReset();
@@ -318,6 +338,7 @@ export function ExportModal() {
       })}
       <LockPdfStack />
       {proofHost ? createPortal(<ExportProof onBack={backFromPrint} />, proofHost) : null}
+      {arcSec ? createPortal(<ArcSection />, arcSec) : null}
     </>
   );
 }
