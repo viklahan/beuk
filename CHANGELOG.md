@@ -4,6 +4,12 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-27 — The studio in हिन्दी and मराठी
+
+- **Two more interface languages.** The language menu now offers हिन्दी (Hindi) and मराठी (Marathi), so the studio comes in 15 languages. The studio's own menus, buttons and messages follow the language you pick, and the back-matter starter texts (About the Author, Acknowledgements and the rest) come in both too. Your book's own language is not changed by the choice.
+- **Marathi books.** Marathi is now a book language, so Beuk has 37, and Dictation lists Marathi among its languages. When you import a manuscript in Devanagari, the studio tells Marathi from Hindi by their commonest words, and when it is not sure it says Hindi, as it always did. You can always set the language by hand in Project Settings.
+- **Drafts, not yet read.** Every Hindi and Marathi string is a draft. None has been read by a native speaker yet, and each will be checked and signed off before it counts as final.
+
 ## 2026-11-27 — A letter typed at the same moment is kept
 
 - **A letter you type at that moment is kept.** When the same chapter is open in two tabs and one of them joins your paragraph with the one above, turns it into a heading, or splits it, at the very moment you type a letter in the other, that letter used to be lost, or left behind in the line before, and the letters you typed next went after it. Now it is put back between the words you typed it between, and your next letters follow it.

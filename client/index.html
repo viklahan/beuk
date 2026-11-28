@@ -29373,12 +29373,18 @@
         }
         if (share("thai") >= 0.3) return det("th", share("thai") >= 0.55);
         if (share("devanagari") >= 0.3) {
-          /* Hindi and Marathi share Devanagari: their commonest words tell them apart (आहे / आणि / नाही against है / और / नहीं). */
-          const MR_WORDS = { "आहे": 1, "आहेत": 1, "आणि": 1, "नाही": 1, "होते": 1, "होता": 1, "होती": 1, "मी": 1, "आम्ही": 1, "तुम्ही": 1, "त्या": 1, "त्याने": 1, "आता": 1, "काय": 1, "केले": 1, "म्हणून": 1, "पण": 1 };
+          /* Hindi and Marathi share Devanagari: their commonest words tell them apart (आहे / आणि / नाही against है / और / नहीं).
+             MR_WORDS holds only words Hindi does not use: होता / होती / होते / आता / केले / पण are everyday
+             Hindi too, so they are no evidence. Marathi needs a clear margin (at least 3 of its words and
+             at least twice the Hindi count); anything less stays Hindi, as it always was, and that Hindi
+             is strong only when the Marathi words are fewer than 2 or outnumbered two to one. */
+          const MR_WORDS = { "आहे": 1, "आहेत": 1, "आणि": 1, "नाही": 1, "मी": 1, "आम्ही": 1, "त्या": 1, "त्याने": 1, "त्याला": 1, "तिला": 1, "मला": 1, "काय": 1, "म्हणून": 1, "झाले": 1, "झाला": 1, "झाली": 1, "नव्हते": 1, "नव्हता": 1, "नव्हती": 1, "म्हणाला": 1, "म्हणाली": 1, "म्हणाले": 1, "असे": 1 };
           const HI_WORDS = { "है": 1, "हैं": 1, "और": 1, "नहीं": 1, "था": 1, "थी": 1, "थे": 1, "मैं": 1, "हम": 1, "वह": 1, "कि": 1, "को": 1, "से": 1, "में": 1, "भी": 1, "यह": 1, "लेकिन": 1 };
           let mrN = 0, hiN = 0;
           for (const w of sample.split(/[\s\u0964\u0965.,;:!?\u201C\u201D"'()\u2014-]+/)) { if (MR_WORDS[w]) mrN++; else if (HI_WORDS[w]) hiN++; }
-          return det(mrN > hiN ? "mr" : "hi", share("devanagari") >= 0.55);
+          const dense = share("devanagari") >= 0.55;
+          if (mrN >= 3 && mrN >= 2 * hiN) return det("mr", dense);
+          return det("hi", dense && (mrN < 2 || hiN >= 2 * mrN));
         }
         if (share("bengali") >= 0.3) return det("bn", share("bengali") >= 0.55);
         if (share("tamil") >= 0.3) return det("ta", share("tamil") >= 0.55);
@@ -71424,6 +71430,35 @@
             const det = detectLanguageInText("The old keeper climbed the stone steps every morning and looked out at the sea that glittered under the sun. He spoke to no one in the village, but everyone knew him, and the children brought him bread and letters that he read slowly, with his glasses on the end of his nose. When the storm came in from the open water, he lit the lamp earlier than usual, because the boats that were coming home needed his light to find their way between the black rocks.");
             return scVerdict(!!det && det.code === "en" && det.strong, "English fixture -> " + (det ? det.code + (det.strong ? " (strong)" : " (weak)") : "no signal"));
           } },
+        /* Hindi and Marathi share Devanagari. These five fixtures were written for these checks
+           by Claude on 2026-11-27, not quoted from any book (the ghazal, the habitual passage and both
+           Marathi ones come from the review that found the defect). The Hindi ones lean on होता / होती / आता,
+           which are everyday Hindi and once tipped Hindi into Marathi. */
+        { id: "lang.detect.hindi-prose", feature: "lang", name: "Detection: Hindi prose is recognised as Hindi, confidently",
+          run() {
+            const det = detectLanguageInText("बूढ़ा प्रकाशस्तंभ-रक्षक हर सुबह पत्थर की सीढ़ियाँ चढ़ता था और धूप में चमकते समुद्र को देखता था। वह गाँव में किसी से बात नहीं करता था, लेकिन सब उसे जानते थे, और बच्चे उसके लिए रोटी और चिट्ठियाँ लाते थे, जिन्हें वह नाक की नोक पर चश्मा टिकाकर धीरे-धीरे पढ़ता था। जब दूर समुद्र से तूफ़ान आता, तो वह रोज़ से पहले ही दीया जला देता, क्योंकि बंदरगाह लौटती नावों को काली चट्टानों के बीच रास्ता खोजने के लिए उसकी रोशनी की ज़रूरत होती थी।");
+            return scVerdict(!!det && det.code === "hi" && det.strong, "Hindi prose fixture -> " + (det ? det.code + (det.strong ? " (strong)" : " (weak)") : "no signal"));
+          } },
+        { id: "lang.detect.hindi-ghazal-refrain", feature: "lang", name: "Detection: a Hindi ghazal whose refrain is होता / आता stays Hindi, never Marathi",
+          run() {
+            const det = detectLanguageInText("काश ऐसा होता, काश वैसा होता\nदिल जो चाहता, वही सब होता\nतुम आते तो मौसम बदल जाता\nबिन तुम्हारे हर दिन सूना होता\nरात आती, चाँद आता, तारे आते\nपर तुम न आते, तो क्या होता");
+            return scVerdict(!!det && det.code === "hi" && det.strong, "Hindi ghazal fixture -> " + (det ? det.code + (det.strong ? " (strong)" : " (weak)") : "no signal"));
+          } },
+        { id: "lang.detect.hindi-habitual", feature: "lang", name: "Detection: Hindi in the habitual past (होता / होती / आता) stays Hindi, never Marathi",
+          run() {
+            const det = detectLanguageInText("वह हर सुबह जल्दी उठता था। जब सूरज निकलता, तब वह नदी की ओर चला जाता। वहाँ पानी ठंडा होता और हवा में मिट्टी की खुशबू होती। गाँव के बच्चे भी उसके पीछे-पीछे आते। वह उन्हें कहानियाँ सुनाता, जो उसके दादा उसे सुनाया करते थे। शाम को वह घर लौट आता और माँ के हाथ की रोटी खाता।");
+            return scVerdict(!!det && det.code === "hi" && det.strong, "Hindi habitual fixture -> " + (det ? det.code + (det.strong ? " (strong)" : " (weak)") : "no signal"));
+          } },
+        { id: "lang.detect.marathi-prose", feature: "lang", name: "Detection: Marathi prose is recognised as Marathi, confidently",
+          run() {
+            const det = detectLanguageInText("तो दररोज सकाळी लवकर उठत असे. सूर्य उगवला की तो नदीकडे जात असे. तिथे पाणी थंड होते आणि हवेत मातीचा सुगंध होता. गावातील मुलेही त्याच्या मागे येत. तो त्यांना गोष्टी सांगत असे, ज्या त्याच्या आजोबांनी त्याला सांगितल्या होत्या. संध्याकाळी तो घरी परत येई आणि आईच्या हातची भाकरी खाई.");
+            return scVerdict(!!det && det.code === "mr" && det.strong, "Marathi prose fixture -> " + (det ? det.code + (det.strong ? " (strong)" : " (weak)") : "no signal"));
+          } },
+        { id: "lang.detect.marathi-dialogue", feature: "lang", name: "Detection: Marathi dialogue is recognised as Marathi, confidently",
+          run() {
+            const det = detectLanguageInText("“तू कुठे चालला आहेस?” तिने विचारले. “बाजारात,” राम म्हणाला, “आईने भाजी आणायला सांगितले आहे.” “मी पण येऊ?” “चल, पण लवकर कर. अंधार पडण्यापूर्वी परत यायचे आहे.” दोघे एकत्र निघाले. वाटेत खूप गर्दी होती, पण त्यांना कसलीही घाई नव्हती.");
+            return scVerdict(!!det && det.code === "mr" && det.strong, "Marathi dialogue fixture -> " + (det ? det.code + (det.strong ? " (strong)" : " (weak)") : "no signal"));
+          } },
         { id: "lang.detect.gibberish-noop", feature: "lang", name: "Detection: gibberish yields no signal — nothing is applied, no hint is left, the book's language is untouched",
           run() {
             const keep = Object.assign({}, state.meta);
@@ -71728,7 +71763,9 @@
                language, plus the English words anywhere. */
             const banned = [/\bfree\b/i, /open[\s-]?source/i, /gratuit/i, /gratis/i, /código (abierto|aberto)/i, /kostenlos/i, /quelloffen/i,
               /darmow/i, /otwartoźródłow/i, /бесплатн/i, /открыт\S* исходн/i, /ücretsiz/i, /açık kaynak/i, /مجاني/, /مفتوح المصدر/,
-              /無料/, /オープンソース/, /免费/, /开源/];
+              /無料/, /オープンソース/, /免费/, /开源/,
+              /* Hindi and Marathi: free (मुफ़्त with or without the nukta, फ्री, निःशुल्क, मोफत, विनामूल्य, फुकट) and open source. */
+              /मु(फ़|फ़?)्त/, /फ्री/, /नि[ः:]?शुल्क/, /मोफत/, /विनामूल्य/, /फुकट/, /ओपन[\s-]?सोर्स/, /मुक्त[\s-]?स्(त्)?रोत/];
             const packs = Object.keys(UI_STRINGS);
             const bad = [];
             packs.forEach((p) => {
@@ -76410,21 +76447,21 @@
                 "imported (" + imported + "), typing on the section editors marked the title/author as the writer's and the emptied subtitle as open (" + marked + "), the next import cleared them and took the document's own (" + kept + ") with no 'kept' offer (" + offered + "), the emptied subtitle was filled (" + subFilled + ")");
             });
           } },
-        { id: "settings.title.placeholder-not-stored", feature: "import", name: "\"Untitled Book\" is display-only: Settings Save with a blank title stores \"\" (the header still shows the placeholder, the desk still counts as empty), and a book whose stored title is the placeholder in any of the 13 languages is treated as untitled — the next import fills it",
+        { id: "settings.title.placeholder-not-stored", feature: "import", name: "\"Untitled Book\" is display-only: Settings Save with a blank title stores \"\" (the header still shows the placeholder, the desk still counts as empty), and a book whose stored title is the placeholder in any of the 15 interface languages is treated as untitled — the next import fills it",
           run() {
             return imCheckRun(() => {
               imWriterSaves({ setTitle: "" });
               const stored = state.meta.title === "" && !state.meta.titleSource && $("projectTitleDisplay").textContent === t("misc.untitledBook") && isEmptyDesk();
-              const codes = ["en", "es", "fr", "de", "it", "pt", "nl", "pl", "ru", "tr", "ar", "ja", "zh-Hans"];
-              const all13 = codes.every((c) => UI_STRINGS[c] && imIsPlaceholderTitle(UI_STRINGS[c]["misc.untitledBook"]));
+              const codes = ["en", "es", "fr", "de", "it", "pt", "nl", "pl", "ru", "tr", "ar", "hi", "mr", "ja", "zh-Hans"];
+              const all15 = codes.every((c) => UI_STRINGS[c] && imIsPlaceholderTitle(UI_STRINGS[c]["misc.untitledBook"]));
               state.meta.title = UI_STRINGS.es["misc.untitledBook"];
               openSettings();
               const fieldBlank = $("setTitle").value === "" && $("setTitle").placeholder === t("misc.untitledBook");
               $("modalSettings").classList.remove("open");
               importDocxConverted("long-way.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "" }, null);
               const filled = state.meta.title === "THE LONG WAY HOME" && state.meta.titleSource === "import";
-              return scVerdict(stored && all13 && fieldBlank && filled,
-                "blank Save stored \"\" and the header shows the placeholder (" + stored + "), all 13 placeholders recognised (" + all13 + "), Settings shows a stored placeholder as a blank field (" + fieldBlank + "), a stored “Libro sin título” was filled by the import (" + filled + ")");
+              return scVerdict(stored && all15 && fieldBlank && filled,
+                "blank Save stored \"\" and the header shows the placeholder (" + stored + "), all 15 placeholders recognised (" + all15 + "), Settings shows a stored placeholder as a blank field (" + fieldBlank + "), a stored “Libro sin título” was filled by the import (" + filled + ")");
             });
           } },
         { id: "covermaker.prefill.from-book", feature: "cover", name: "Cover maker prefill: with no saved recipe, opening the maker fills title, subtitle, author and series from the book (never the \"Untitled Book\" placeholder), leaves the tagline blank, and seeds the photo search from the title",
@@ -89123,7 +89160,7 @@
         "store.reportNote": "Beuk सिर्फ़ वही बताता है जिसकी उसने सच में जाँच की। “जाँच नहीं हुई” वाली पंक्तियाँ चल नहीं पाईं, और पंक्ति में कारण लिखा है; घोषित PDF/X वर्ज़न फ़ाइल से वापस पढ़ा जाता है, किसी अलग PDF/X वैलिडेटर से नहीं जाँचा जाता।",
         "store.nc.local": "इसकी जाँच Beuk सर्वर करता है, और कोई सर्वर नहीं मिल रहा — स्टूडियो सिर्फ़-लोकल मोड में है।",
         "store.nc.signin": "इसकी जाँच Beuk सर्वर करता है: साइन इन करें, फिर सर्वर की पूरी जाँच चलाएँ।",
-        "store.nc.notRun": "इसकी जाँच Beuk सर्वर करता है: “सर्वर की पूरी जाँच चलाएँ” दबाएँ।",
+        "store.nc.notRun": "इसकी जाँच Beuk सर्वर करता है: “सर्वर पर पूरी जाँच चलाएँ” दबाएँ।",
         "store.nc.tools": "सर्वर के टूल सेट नहीं हैं, इसलिए इसकी जाँच नहीं हो सकी: {error}",
         "store.nc.failed": "सर्वर की जाँच पूरी नहीं हुई, इसलिए इसकी जाँच नहीं हो सकी: {error}",
         "store.nc.stale": "सर्वर का नतीजा इस किताब की पुरानी स्थिति का है (तब से ट्रिम, हाशिये या टेक्स्ट बदल गए हैं)। सर्वर की जाँच फिर से चलाएँ।",
@@ -92151,7 +92188,7 @@
         "store.reportNote": "Beuk ने प्रत्यक्ष जे तपासले तेवढेच तो सांगतो. “तपासले नाही” अशा ओळी चालू शकल्या नाहीत, आणि ती ओळ त्याचे कारण सांगते; जाहीर केलेली PDF/X आवृत्ती फाइलमधून परत वाचली जाते, वेगळ्या PDF/X व्हॅलिडेटरमधून तपासली जात नाही.",
         "store.nc.local": "हे Beuk सर्व्हर तपासतो, आणि कोणताही सर्व्हर उपलब्ध नाही — स्टुडिओ फक्त-लोकल मोडमध्ये आहे.",
         "store.nc.signin": "हे Beuk सर्व्हर तपासतो: साइन इन करा, मग सर्व्हरची पूर्ण तपासणी चालवा.",
-        "store.nc.notRun": "हे Beuk सर्व्हर तपासतो: “सर्व्हरची पूर्ण तपासणी चालवा” दाबा.",
+        "store.nc.notRun": "हे Beuk सर्व्हर तपासतो: “संपूर्ण सर्व्हर तपासणी चालवा” दाबा.",
         "store.nc.tools": "सर्व्हरची साधने तयार नाहीत, म्हणून हे तपासता आले नाही: {error}",
         "store.nc.failed": "सर्व्हरची तपासणी पूर्ण झाली नाही, म्हणून हे तपासता आले नाही: {error}",
         "store.nc.stale": "सर्व्हरचा निकाल या पुस्तकाच्या आधीच्या स्थितीचा आहे (त्यानंतर ट्रिम, समास किंवा मजकूर बदलला आहे). सर्व्हरची तपासणी पुन्हा चालवा.",
@@ -92694,7 +92731,7 @@
         "bible.seriesSignIn": "“{name}” या मालिकेच्या सामायिक करारासाठी मोफत अकाउंट लागते. तो वापरण्यासाठी साइन इन करा; या पुस्तकाचा स्वतःचा करार नेहमीप्रमाणे चालतो.",
         "bible.seriesConflictTitle": "मालिकेचा करार दोन ठिकाणी बदलला",
         "bible.seriesConflictBody": "“{name}” या मालिकेचा करार दोन ठिकाणी बदलला गेला आहे: या डिव्हाइसवर, आणि तुमच्या शेल्फवर दुसऱ्या पुस्तकातून किंवा डिव्हाइसवरून. काहीही ओव्हरराइट झालेले नाही, आणि तुम्ही निवडेपर्यंत होणारही नाही:",
-        "bible.seriesConflictNote": "“माझी ठेवा” शेल्फवरील प्रतीच्या जागी या डिव्हाइसवरील प्रत ठेवते. “शेल्फवरील प्रत वापरा” या डिव्हाइसवरील प्रतीच्या जागी शेल्फवरील प्रत ठेवते. मालिकेचा करार एकच असतो, त्यामुळे इथे “दोन्ही ठेवा” नाही.",
+        "bible.seriesConflictNote": "“माझी प्रत ठेवा” शेल्फवरील प्रतीच्या जागी या डिव्हाइसवरील प्रत ठेवते. “शेल्फवरची प्रत वापरा” या डिव्हाइसवरील प्रतीच्या जागी शेल्फवरील प्रत ठेवते. मालिकेचा करार एकच असतो, त्यामुळे इथे “दोन्ही ठेवा” नाही.",
         "bible.seriesResolvedMine": "या डिव्हाइसवरील मालिकेचा करार कायम आहे — तो तुमच्या शेल्फकडे पाठवला जात आहे",
         "bible.seriesResolvedShelf": "मालिकेच्या कराराची शेल्फवरील प्रत कायम आहे",
         "bible.joinOffer": "{n} पुस्तके “{name}” सामायिक करतात. एकच करार सामायिक करायचा?",

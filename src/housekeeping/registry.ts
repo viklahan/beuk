@@ -2052,6 +2052,36 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The detector runs in the client over manuscript text.',
   },
   {
+    id: 'lang.detect.hindi-prose',
+    title: 'Detection: Hindi prose detects as hi',
+    kind: 'client-only',
+    reason: 'The detector runs in the client over manuscript text.',
+  },
+  {
+    id: 'lang.detect.hindi-ghazal-refrain',
+    title: 'Detection: a Hindi ghazal with a होता / आता refrain stays hi, never mr',
+    kind: 'client-only',
+    reason: 'The detector runs in the client over manuscript text.',
+  },
+  {
+    id: 'lang.detect.hindi-habitual',
+    title: 'Detection: Hindi in the habitual past stays hi, never mr',
+    kind: 'client-only',
+    reason: 'The detector runs in the client over manuscript text.',
+  },
+  {
+    id: 'lang.detect.marathi-prose',
+    title: 'Detection: Marathi prose detects as mr',
+    kind: 'client-only',
+    reason: 'The detector runs in the client over manuscript text.',
+  },
+  {
+    id: 'lang.detect.marathi-dialogue',
+    title: 'Detection: Marathi dialogue detects as mr',
+    kind: 'client-only',
+    reason: 'The detector runs in the client over manuscript text.',
+  },
+  {
     id: 'lang.detect.gibberish-noop',
     title: 'Detection: gibberish changes nothing',
     kind: 'client-only',
@@ -2079,7 +2109,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   /* ---- UI language packs (all client-side) ---- */
   {
     id: 'ui.packs.complete',
-    title: 'Every UI string key exists and is non-empty in all 12 language packs',
+    title: 'Every UI string key exists and is non-empty in all 15 language packs',
     kind: 'client-only',
     reason: 'The string table and its packs live in the client bundle; the server renders no studio UI.',
   },
@@ -2137,7 +2167,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: 'Header shows the brand tagline beside the Beuk wordmark lockup',
     kind: 'client-only',
     reason:
-      'The tagline (“your EPUB & print studio”, string-table key brand.tagline, all 13 locales) is header chrome rendered by the client; it truncates as the bar narrows and hides below 1400px and in zen mode.',
+      'The tagline (“your EPUB & print studio”, string-table key brand.tagline, all 15 locales) is header chrome rendered by the client; it truncates as the bar narrows and hides below 1400px and in zen mode.',
   },
   {
     id: 'ui.brand.domain',
@@ -3001,7 +3031,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'zen.controls.no-overlap',
-    title: 'Zen corner controls never cover the tabs in any of the 13 interface languages (Arabic RTL included), and stay inside the window',
+    title: 'Zen corner controls never cover the tabs in any of the 15 interface languages (Arabic RTL included), and stay inside the window',
     kind: 'client-only',
     reason: 'Zen is drawn by the studio page; the check measures bounding boxes in the client browser.',
   },
@@ -3544,7 +3574,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'settings.title.placeholder-not-stored',
-    title: '"Untitled Book" is display-only: a blank title is stored blank, and a stored placeholder in any of the 13 languages counts as untitled',
+    title: '"Untitled Book" is display-only: a blank title is stored blank, and a stored placeholder in any of the 15 interface languages counts as untitled',
     kind: 'client-only',
     reason: 'Settings Save and the placeholder fallback are client UI behavior.',
   },

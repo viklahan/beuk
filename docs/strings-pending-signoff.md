@@ -1732,7 +1732,9 @@ Also drafts in this set:
   review and newsletter asks, the colophon). Hindi `about.first` says लिखता/लिखती हूँ because the writer's gender is unknown.
 - Marathi is now a book language too (`LANG_PACKS.mr`, dictation `mr-IN`): the studio's rule is that every interface
   language is also a book language. Devanagari text is told apart from Hindi by its commonest words (आहे, आणि, नाही …
-  against है, और, नहीं …); a writer can always pick the language by hand.
+  against है, और, नहीं …); a writer can always pick the language by hand. Since the 2026-11-27 review the Marathi list
+  holds only words Hindi does not use (होता / होती / होते / आता / केले / पण / तुम्ही were taken out), Marathi needs a clear
+  margin (at least 3 of its words and twice the Hindi count), and anything less stays Hindi, as it was before Marathi.
 
 ### Keys added on main since 340cb22 (14 keys, 2026-11-27)
 
@@ -1855,3 +1857,29 @@ Points worth a look:
 - **en** (source): The cover artwork “{image}” ({px} px) is zoomed to {zoom} on the front cover, which leaves it {dpi} DPI there, its lowest anywhere on the wrap ({need} needed).
 - **hi** हिन्दी: `कवर आर्टवर्क “{image}” ({px} px) सामने वाले कवर पर {zoom} तक ज़ूम किया गया है, जिससे वहाँ वह {dpi} DPI देता है — पूरे रैप पर उसका सबसे कम ({need} चाहिए)।`
 - **mr** मराठी: `मुखपृष्ठ चित्र “{image}” ({px} px) पुढच्या मुखपृष्ठावर {zoom} पर्यंत झूम केले आहे, त्यामुळे तिथे ते {dpi} DPI देते — संपूर्ण रॅपवरचे त्याचे सर्वात कमी ({need} लागते).`
+
+### Updated drafts: quoted button names that did not match the button (3 strings, 2026-11-27)
+
+A review found three drafts that quote a button by a name the button does not carry. Each now quotes the button's own
+label in the same language, character for character. **They are still UNSIGNED drafts**, like the rest of this section;
+only the quoted names changed.
+
+#### `store.nc.notRun` (hi)
+
+- quotes `store.runServer`, whose hi label is `सर्वर पर पूरी जाँच चलाएँ`
+- was: `इसकी जाँच Beuk सर्वर करता है: “सर्वर की पूरी जाँच चलाएँ” दबाएँ।`
+- now: `इसकी जाँच Beuk सर्वर करता है: “सर्वर पर पूरी जाँच चलाएँ” दबाएँ।`
+
+#### `store.nc.notRun` (mr)
+
+- quotes `store.runServer`, whose mr label is `संपूर्ण सर्व्हर तपासणी चालवा`
+- was: `हे Beuk सर्व्हर तपासतो: “सर्व्हरची पूर्ण तपासणी चालवा” दाबा.`
+- now: `हे Beuk सर्व्हर तपासतो: “संपूर्ण सर्व्हर तपासणी चालवा” दाबा.`
+
+#### `bible.seriesConflictNote` (mr)
+
+- quotes `offline.keepMine` (mr `माझी प्रत ठेवा`), `offline.useShelf` (mr `शेल्फवरची प्रत वापरा`) and `offline.keepBoth`
+  (mr `दोन्ही ठेवा`, already right)
+- was: `“माझी ठेवा” शेल्फवरील प्रतीच्या जागी या डिव्हाइसवरील प्रत ठेवते. “शेल्फवरील प्रत वापरा” या डिव्हाइसवरील प्रतीच्या जागी शेल्फवरील प्रत ठेवते. मालिकेचा करार एकच असतो, त्यामुळे इथे “दोन्ही ठेवा” नाही.`
+- now: `“माझी प्रत ठेवा” शेल्फवरील प्रतीच्या जागी या डिव्हाइसवरील प्रत ठेवते. “शेल्फवरची प्रत वापरा” या डिव्हाइसवरील प्रतीच्या जागी शेल्फवरील प्रत ठेवते. मालिकेचा करार एकच असतो, त्यामुळे इथे “दोन्ही ठेवा” नाही.`
+- the hi note already quoted all three hi labels exactly; it is unchanged.
