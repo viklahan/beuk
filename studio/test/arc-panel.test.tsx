@@ -49,6 +49,13 @@ const reader = (over: Record<string, unknown> = {}) => ({
   firstOpenedAt: null, lastOpenedAt: null, mailStopped: false, ...over,
 });
 const GET = 'GET /api/arc?manuscriptId=m1';
+/** A local calendar day `n` days from today, as the date inputs take it (the form refuses days before today, C8). */
+const inDays = (n: number) => {
+  const d = new Date();
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+};
+const LAUNCH = inDays(79);
 
 beforeEach(() => {
   calls = [];
@@ -90,8 +97,8 @@ describe("the author's ARC panel (the plan's tests)", () => {
     routes[GET] = { status: 200, body: { mail: { configured: false, reason: 'ARC_MAIL_FROM is not set' }, campaign: null } };
     panel();
     await settle();
-    expect(text()).toContain('ARC_MAIL_FROM is not set');
-    expect(text()).toContain(E['arcp.mailOff']!.split(' ({reason})')[0]);
+    // the server's reason, in the panel's words (final fix wave, C8)
+    expect(text()).toContain(E['arcp.mailOff']!.replace('{reason}', E['arcp.mailWhy.from']!));
     expect(button('Start the ARC')).toBeNull();
     expect(document.querySelector('input[type="date"]')).toBeNull();
   });
@@ -101,36 +108,44 @@ describe("the author's ARC panel (the plan's tests)", () => {
     routes['POST /api/arc'] = { status: 201, body: { campaign: campaign({ counts: { claimed: 0, pending: 0, declined: 0, revoked: 0 } }), signupToken: 'tok', signupUrl: 'https://beuk.example/arc/tok' } };
     panel();
     await settle();
-    fireEvent.change(input(E['arcp.launch']!), { target: { value: '2027-02-14' } });
+    fireEvent.change(input(E['arcp.launch']!), { target: { value: LAUNCH } });
     fireEvent.click(button('Start the ARC')!);
     await settle();
     const post = calls.filter((c) => c.method === 'POST' && c.path === '/api/arc');
     expect(post.length).toBe(1);
     expect(post[0]!.body).toEqual({
-      manuscriptId: 'm1', launchDate: '2027-02-14', closesAt: endOfLocalDay('2027-02-14'), tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      manuscriptId: 'm1', launchDate: LAUNCH, closesAt: endOfLocalDay(LAUNCH), tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
       maxClaims: 50, approvalMode: 'instant', lang: 'en',
     });
   });
 
-  it('shows the signup link once, with Copy', async () => {
+  // Superseded by the final fix wave (final review Important 3): the server derives the link again on every read, so
+  // the panel shows it, with Copy, after a reload too (the plan's "shown once" is gone).
+  it('shows the signup link with Copy, and again after a reload', async () => {
     routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: null } };
     routes['POST /api/arc'] = { status: 201, body: { campaign: campaign({ counts: { claimed: 0, pending: 0, declined: 0, revoked: 0 } }), signupToken: 'tok', signupUrl: 'https://beuk.example/arc/tok' } };
     routes['GET /api/arc/c1/readers'] = { status: 200, body: { readers: [] } };
     const p = panel();
     await settle();
-    fireEvent.change(input(E['arcp.launch']!), { target: { value: '2027-02-14' } });
+    fireEvent.change(input(E['arcp.launch']!), { target: { value: LAUNCH } });
     fireEvent.click(button('Start the ARC')!);
     await settle();
     const url = document.querySelector<HTMLInputElement>('input[readonly]');
     expect(url?.value).toBe('https://beuk.example/arc/tok');
     expect(button(E['arcp.copy']!)).not.toBeNull();
-    expect(text()).not.toContain(E['arcp.linkHidden']);
-    // reopening: the campaign is read back from the server, which never returns the link again
-    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign() } };
+    expect(text()).not.toContain(E['arcp.linkNone']);
+    // reopening: the campaign and its link are read back from the server
+    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign(), campaigns: [campaign()], signupUrl: 'https://beuk.example/arc/tok' } };
     await p.reopen();
-    expect(text()).toContain(E['arcp.linkHidden']);
+    expect(document.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe('https://beuk.example/arc/tok');
+    expect(button(E['arcp.copy']!)).not.toBeNull();
+    // a server that cannot show it (its salt changed) says so, and offers a new link
+    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign(), campaigns: [campaign()], signupUrl: null } };
+    await p.reopen();
+    expect(text()).toContain(E['arcp.linkNone']);
     expect(document.body.innerHTML).not.toContain('beuk.example/arc/tok');
     expect(button(E['arcp.copy']!)).toBeNull();
+    expect(button(E['arcp.newLink']!)).not.toBeNull();
   });
 
   it('lists readers with the right actions', async () => {
@@ -192,7 +207,7 @@ describe("the author's ARC panel (the plan's tests)", () => {
     expect(copies.getAttribute('max')).toBe('50');
     expect(copies.getAttribute('min')).toBe('1');
     expect(copies.value).toBe('50');
-    fireEvent.change(input(E['arcp.launch']!), { target: { value: '2027-02-14' } });
+    fireEvent.change(input(E['arcp.launch']!), { target: { value: LAUNCH } });
     expect(button('Start the ARC')!.disabled).toBe(false);
     fireEvent.change(copies, { target: { value: '51' } });
     expect(button('Start the ARC')!.disabled).toBe(true);
@@ -216,18 +231,18 @@ describe('the panel, beyond the plan (controller rulings)', () => {
     routes['POST /api/arc'] = { status: 201, body: { campaign: campaign(), signupToken: 't', signupUrl: 'https://beuk.example/arc/t' } };
     panel();
     await settle();
-    fireEvent.change(input(E['arcp.launch']!), { target: { value: '2027-02-14' } });
-    expect(input(E['arcp.closes']!).value).toBe('2027-02-14');
-    fireEvent.change(input(E['arcp.closes']!), { target: { value: '2027-02-01' } });
-    fireEvent.change(input(E['arcp.launch']!), { target: { value: '2027-03-01' } });
-    expect(input(E['arcp.closes']!).value).toBe('2027-02-01');
+    fireEvent.change(input(E['arcp.launch']!), { target: { value: LAUNCH } });
+    expect(input(E['arcp.closes']!).value).toBe(LAUNCH);
+    fireEvent.change(input(E['arcp.closes']!), { target: { value: inDays(66) } });
+    fireEvent.change(input(E['arcp.launch']!), { target: { value: inDays(94) } });
+    expect(input(E['arcp.closes']!).value).toBe(inDays(66));
     fireEvent.change(document.querySelector<HTMLInputElement>('input[type="number"]')!, { target: { value: '12' } });
     fireEvent.click(input(E['arcp.approval']!));
     expect(text()).toContain(E['arcp.approvalHint']);
     fireEvent.click(button('Start the ARC')!);
     await settle();
     const body = calls.find((c) => c.method === 'POST')!.body!;
-    expect(body).toMatchObject({ launchDate: '2027-03-01', closesAt: endOfLocalDay('2027-02-01'), maxClaims: 12, approvalMode: 'approval' });
+    expect(body).toMatchObject({ launchDate: inDays(94), closesAt: endOfLocalDay(inDays(66)), maxClaims: 12, approvalMode: 'approval' });
   });
 
   it('while the EPUB builds it says so; a refused start shows the server\'s words and keeps the form', async () => {
@@ -242,7 +257,7 @@ describe('the panel, beyond the plan (controller rulings)', () => {
     }) as unknown as typeof fetch);
     panel();
     await settle();
-    fireEvent.change(input(E['arcp.launch']!), { target: { value: '2027-02-14' } });
+    fireEvent.change(input(E['arcp.launch']!), { target: { value: LAUNCH } });
     fireEvent.click(button('Start the ARC')!);
     await settle();
     expect(text()).toContain(E['arcp.building']);
@@ -259,10 +274,11 @@ describe('the panel, beyond the plan (controller rulings)', () => {
     routes['POST /api/arc'] = { status: 409, body: { error: 'ARC email is not set up on this server (ARC_SMTP_URL is not set), so a campaign cannot start yet.', mail: { configured: false, reason: 'ARC_SMTP_URL is not set' } } };
     panel();
     await settle();
-    fireEvent.change(input(E['arcp.launch']!), { target: { value: '2027-02-14' } });
+    fireEvent.change(input(E['arcp.launch']!), { target: { value: LAUNCH } });
     fireEvent.click(button('Start the ARC')!);
     await settle();
-    expect(text()).toContain('ARC_SMTP_URL is not set');
+    // the server's reason in the panel's words (C8: the four reasons are mapped)
+    expect(text()).toContain(E['arcp.mailWhy.smtp']);
     expect(button('Start the ARC')).toBeNull();
   });
 
@@ -298,7 +314,11 @@ describe('the panel, beyond the plan (controller rulings)', () => {
     await settle();
     fireEvent.click(rowButton('r1', E['arcp.decline']!)!);
     await settle();
-    expect(row('r1').textContent).toContain(E['arcp.notSent']!.replace('{detail}', 'over the hourly limit'));
+    fireEvent.click(document.getElementById('btnConfirmYes')!);
+    await settle();
+    // the reason in the panel's words (C8: mail.reason mapped), not the server's English detail
+    expect(row('r1').textContent).toContain(E['arcp.notSent']!.replace('{detail}', E['arcp.sendWhy.limit']!));
+    expect(row('r1').textContent).not.toContain('over the hourly limit');
     expect(within(row('r1')).getByText(E['arcp.stDeclined']!)).toBeTruthy();
     expect(rowButton('r1', E['arcp.decline']!)).toBeNull();
   });
@@ -313,7 +333,9 @@ describe('the panel, beyond the plan (controller rulings)', () => {
     const confirmBody = () => document.getElementById('confirmBody')?.textContent || '';
     fireEvent.click(rowButton('r1', E['arcp.revoke']!)!);
     await settle();
-    expect(confirmBody()).toBe(E['arcp.revokeConfirm']);
+    // C8: the confirm names the reader
+    expect(confirmBody()).toBe(E['arcp.revokeConfirm']!.replace('{name}', 'Sarah Reed').replace('{email}', 'sarah@example.com'));
+    expect(E['arcp.revokeConfirm']).toMatch(/\{name\}.*\{email\}/);
     fireEvent.click(document.getElementById('btnConfirmNo')!);
     await settle();
     fireEvent.click(button(E['arcp.closeSignups']!)!);
@@ -340,14 +362,24 @@ describe('the panel, beyond the plan (controller rulings)', () => {
     expect(calls.filter((c) => c.method !== 'GET').map((c) => c.method + ' ' + c.path)).toEqual(['POST /api/arc/c1/readers/r1/revoke', 'DELETE /api/arc/c1']);
   });
 
-  it('a new signup link is shown once it is made', async () => {
-    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign() } };
+  it('a new signup link asks first (default No), then shows the new link', async () => {
+    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign(), signupUrl: 'https://beuk.example/arc/old' } };
     routes['GET /api/arc/c1/readers'] = { status: 200, body: { readers: [] } };
     routes['POST /api/arc/c1/signup-link'] = { status: 200, body: { signupToken: 'new', signupUrl: 'https://beuk.example/arc/new' } };
     panel();
     await settle();
-    expect(text()).toContain(E['arcp.linkHidden']);
+    expect(document.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe('https://beuk.example/arc/old');
     fireEvent.click(button(E['arcp.newLink']!)!);
+    await settle();
+    expect(document.getElementById('confirmBody')?.textContent).toBe(E['arcp.newLinkConfirm']);
+    expect(document.activeElement?.id).toBe('btnConfirmNo');
+    fireEvent.click(document.getElementById('btnConfirmNo')!);
+    await settle();
+    expect(calls.filter((c) => c.method === 'POST')).toEqual([]);
+    expect(document.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe('https://beuk.example/arc/old');
+    fireEvent.click(button(E['arcp.newLink']!)!);
+    await settle();
+    fireEvent.click(document.getElementById('btnConfirmYes')!);
     await settle();
     expect(document.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe('https://beuk.example/arc/new');
   });
@@ -364,23 +396,164 @@ describe('the panel, beyond the plan (controller rulings)', () => {
     expect(text()).toContain('Sign-ups close: ' + day);
   });
 
-  it('an ended campaign (F10): summarised, its waiting readers can be declined, and the start form is offered', async () => {
+  it('never shows an invented "v1.0": with no label from the server, the line names none (C8)', async () => {
+    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign({ build: { label: '', bytes: 1, holders: 4 } }) } };
+    routes['GET /api/arc/c1/readers'] = { status: 200, body: { readers: [] } };
+    panel();
+    await settle();
+    expect(text()).toContain(E['arcp.holdersN']!.replace('{n}', '4'));
+    expect(text()).not.toContain('v1.0');
+  });
+
+  it('an ended campaign (F10, P8): summarised with its readers — waiting ones only declined, copies closed — and the start form is offered', async () => {
     routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign({ state: 'ended', endedAt: '2027-02-10T09:00:00.000Z', approvalMode: 'approval', counts: { claimed: 7, pending: 1, declined: 0, revoked: 0 } }) } };
-    routes['GET /api/arc/c1/readers'] = { status: 200, body: { readers: [reader(), reader({ id: 'r2', status: 'claimed' })] } };
+    routes['GET /api/arc/c1/readers'] = { status: 200, body: { readers: [reader(), reader({ id: 'r2', status: 'claimed', publicId: 'pubAAAA1111bbbb' })] } };
     routes['POST /api/arc/c1/readers/r1/decline'] = { status: 200, body: { reader: reader({ status: 'declined' }), mail: { sent: true } } };
+    routes['POST /api/arc/c1/readers/r2/revoke'] = { status: 200, body: { reader: reader({ id: 'r2', status: 'claimed', revokedAt: '2027-02-11T09:00:00.000Z' }) } };
     panel();
     await settle();
     const day = new Intl.DateTimeFormat('en', { dateStyle: 'long' }).format(new Date('2027-02-10T09:00:00.000Z'));
+    expect(text()).toContain(E['arcp.pastH']);
     expect(text()).toContain(E['arcp.endedSum']!.replace('{date}', day).replace('{n}', '7').replace('{max}', '50'));
+    // minor 6: it says the waiting readers can only be declined
     expect(text()).toContain(E['arcp.endedWaiting']);
-    // only the waiting reader, with Decline and no Approve
-    expect(document.querySelector('[data-reader="r2"]')).toBeNull();
+    expect(E['arcp.endedWaiting']).toMatch(/only be declined/);
+    // the waiting reader: Decline, no Approve; the claimed one: Close this copy (P8)
     expect(rowButton('r1', E['arcp.approve']!)).toBeNull();
+    expect(rowButton('r1', E['arcp.decline']!)).not.toBeNull();
+    expect(rowButton('r2', E['arcp.revoke']!)).not.toBeNull();
+    expect(row('r2').textContent).toContain(E['arcp.copyNo']!.replace('{id}', 'pubAAAA1111bbbb'));
     expect(button(E['arcp.closeSignups']!)).toBeNull();
+    expect(button(E['arcp.delete']!)).not.toBeNull();
     expect(button('Start the ARC')).not.toBeNull();
     fireEvent.click(rowButton('r1', E['arcp.decline']!)!);
     await settle();
-    expect(calls.filter((c) => c.method === 'POST').map((c) => c.path)).toEqual(['/api/arc/c1/readers/r1/decline']);
+    expect(document.getElementById('confirmBody')?.textContent).toBe(E['arcp.declineConfirm']!.replace('{name}', 'Sarah Reed').replace('{email}', 'sarah@example.com'));
+    fireEvent.click(document.getElementById('btnConfirmYes')!);
+    await settle();
+    fireEvent.click(rowButton('r2', E['arcp.revoke']!)!);
+    await settle();
+    fireEvent.click(document.getElementById('btnConfirmYes')!);
+    await settle();
+    expect(calls.filter((c) => c.method === 'POST').map((c) => c.path)).toEqual(['/api/arc/c1/readers/r1/decline', '/api/arc/c1/readers/r2/revoke']);
+  });
+
+  it('every campaign of the book (P8): the running one first, earlier ones below with their readers and Delete', async () => {
+    const old = campaign({ id: 'c0', state: 'ended', endedAt: '2026-10-01T09:00:00.000Z', counts: { claimed: 3, pending: 0, declined: 0, revoked: 0 } });
+    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign(), campaigns: [campaign(), old], signupUrl: 'https://beuk.example/arc/live' } };
+    routes['GET /api/arc/c1/readers'] = { status: 200, body: { readers: [reader({ id: 'r1', status: 'claimed' })] } };
+    routes['GET /api/arc/c0/readers'] = { status: 200, body: { readers: [reader({ id: 'r9', name: 'Old Reader', email: 'old@example.com', status: 'claimed' })] } };
+    routes['DELETE /api/arc/c0'] = { status: 204 };
+    panel();
+    await settle();
+    const running = document.querySelector('[data-arcp="running"]')!;
+    const past = document.querySelector('[data-arcp="past"][data-campaign="c0"]')!;
+    expect(running.compareDocumentPosition(past) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(past as HTMLElement).getByText('old@example.com')).toBeTruthy();
+    expect(rowButton('r9', E['arcp.revoke']!)).not.toBeNull();
+    expect(button('Start the ARC')).toBeNull();
+    fireEvent.click(past.querySelector<HTMLButtonElement>('[data-arcp="delete-past"]')!);
+    await settle();
+    fireEvent.click(document.getElementById('btnConfirmYes')!);
+    await settle();
+    expect(calls.filter((c) => c.method === 'DELETE').map((c) => c.path)).toEqual(['/api/arc/c0']);
+  });
+
+  it("a reader's name and email are isolated (<bdi>), and the copy number is shown", async () => {
+    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign() } };
+    routes['GET /api/arc/c1/readers'] = { status: 200, body: { readers: [reader({ name: 'سارة', status: 'claimed', publicId: 'Zx9_0123456789ab' })] } };
+    panel();
+    await settle();
+    const bdis = Array.from(row('r1').querySelectorAll('bdi')).map((b) => b.textContent);
+    expect(bdis).toEqual(['سارة', 'sarah@example.com']);
+    expect(row('r1').textContent).toContain(E['arcp.copyNo']!.replace('{id}', 'Zx9_0123456789ab'));
+  });
+
+  it('a refusal is said beside its button and the panel stays (C8)', async () => {
+    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign() } };
+    routes['GET /api/arc/c1/readers'] = { status: 200, body: { readers: [reader({ status: 'claimed' })] } };
+    routes['POST /api/arc/c1/close'] = { status: 409, body: { error: 'SERVER: cannot close now' } };
+    routes['POST /api/arc/c1/signup-link'] = { status: 409, body: { error: 'SERVER: no new link' } };
+    panel();
+    await settle();
+    fireEvent.click(button(E['arcp.closeSignups']!)!);
+    await settle();
+    fireEvent.click(document.getElementById('btnConfirmYes')!);
+    await settle();
+    const closeNote = document.querySelector('[data-arcp-note="close:c1"]');
+    expect(closeNote?.textContent).toBe('SERVER: cannot close now');
+    // beside its button: right after the row of campaign buttons
+    expect(closeNote!.previousElementSibling?.querySelector('#btnArcpCloseSignups')).not.toBeNull();
+    expect(document.querySelector('[data-arcp="running"]')).not.toBeNull();
+    expect(row('r1')).not.toBeNull();
+    fireEvent.click(button(E['arcp.newLink']!)!);
+    await settle();
+    fireEvent.click(document.getElementById('btnConfirmYes')!);
+    await settle();
+    expect(document.querySelector('[data-arcp-note="link"]')?.textContent).toBe('SERVER: no new link');
+    expect(document.querySelector('[data-arcp="running"]')).not.toBeNull();
+    // a read that fails once things are shown: said on top, and what was shown stays
+    routes[GET] = { status: 500, body: { error: 'SERVER: down for a moment' } };
+    fireEvent.click(button(E['arcp.closeSignups']!)!);
+    await settle();
+    fireEvent.click(document.getElementById('btnConfirmYes')!);
+    await settle();
+    expect(document.querySelector('[data-arcp="load-note"]')?.textContent).toBe('SERVER: down for a moment');
+    expect(document.querySelector('[data-arcp="running"]')).not.toBeNull();
+  });
+
+  it('buttons stay disabled until the panel has read everything again after an action (C8 busy window)', async () => {
+    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: campaign({ approvalMode: 'approval' }) } };
+    routes['GET /api/arc/c1/readers'] = { status: 200, body: { readers: [reader(), reader({ id: 'r2', name: 'Tom', email: 'tom@example.com' })] } };
+    routes['POST /api/arc/c1/readers/r1/approve'] = { status: 200, body: { reader: reader({ status: 'claimed' }), mail: { sent: true } } };
+    let open: () => void = () => undefined;
+    let hold = false;
+    setArcFetch((async (p: string, init?: RequestInit) => {
+      if (hold && p === '/api/arc?manuscriptId=m1') await new Promise<void>((res) => (open = res));
+      return fakeFetch()(p, init);
+    }) as unknown as typeof fetch);
+    panel();
+    await settle();
+    hold = true;
+    fireEvent.click(rowButton('r1', E['arcp.approve']!)!);
+    await settle();
+    // the approve has answered; the read-back is still out
+    expect(calls.some((c) => c.method === 'POST')).toBe(true);
+    expect(rowButton('r2', E['arcp.approve']!)!.disabled).toBe(true);
+    expect(button(E['arcp.closeSignups']!)!.disabled).toBe(true);
+    hold = false;
+    open();
+    await settle();
+    expect(rowButton('r2', E['arcp.approve']!)!.disabled).toBe(false);
+    expect(button(E['arcp.closeSignups']!)!.disabled).toBe(false);
+  });
+
+  it('the dates: from today, sign-ups closing within 400 days (C8)', async () => {
+    routes[GET] = { status: 200, body: { mail: MAIL_ON, campaign: null } };
+    panel();
+    await settle();
+    const launch = input(E['arcp.launch']!);
+    const closes = input(E['arcp.closes']!);
+    expect(launch.getAttribute('min')).toBe(inDays(0));
+    expect(closes.getAttribute('min')).toBe(inDays(0));
+    // the end of the chosen day must be within the server's 400 days, so the last day is today + 399
+    expect(closes.getAttribute('max')).toBe(inDays(399));
+    fireEvent.change(launch, { target: { value: inDays(-1) } });
+    expect(button('Start the ARC')!.disabled).toBe(true);
+    expect(text()).toContain(E['arcp.datesBad']);
+    fireEvent.change(launch, { target: { value: inDays(10) } });
+    fireEvent.change(closes, { target: { value: inDays(400) } });
+    expect(button('Start the ARC')!.disabled).toBe(true);
+    fireEvent.change(closes, { target: { value: inDays(399) } });
+    expect(button('Start the ARC')!.disabled).toBe(false);
+    expect(text()).not.toContain(E['arcp.datesBad']);
+  });
+
+  it('a mail reason the panel does not know is shown as the server sent it', async () => {
+    routes[GET] = { status: 200, body: { mail: { configured: false, reason: 'SOMETHING_NEW is odd' }, campaign: null } };
+    panel();
+    await settle();
+    expect(text()).toContain(E['arcp.mailOff']!.replace('{reason}', 'SOMETHING_NEW is odd'));
   });
 
   it('the network gone: said plainly, nothing pretended', async () => {
@@ -449,8 +622,10 @@ describe('its words in every language', () => {
   const holes = (s: string) => (s.match(/\{\w+\}/g) ?? []).slice().sort().join(' ');
   const KEYS = Object.keys(E).filter((k) => k.startsWith('arcp.'));
 
-  it('59 arcp.* keys in each of the 15 packs, with English\'s placeholders, none empty, none still English, none says "exchange"', () => {
-    expect(KEYS.length).toBe(59);
+  it('73 arcp.* keys in each of the 15 packs, with English\'s placeholders, none empty, none still English, none says "exchange"', () => {
+    // 59 (Task 8) + 15 new − arcp.linkHidden (final fix wave)
+    expect(KEYS.length).toBe(73);
+    expect(KEYS).not.toContain('arcp.linkHidden');
     expect(meta.order.length).toBe(15);
     for (const code of meta.order) {
       const p = pack(code);
@@ -462,7 +637,7 @@ describe('its words in every language', () => {
       }
     }
     // Marathi without nukta (the packs' rule)
-    for (const k of KEYS) expect(pack('mr')[k], k).not.toContain('़');
+    for (const k of KEYS) expect(pack('mr')[k], k).not.toMatch(/[\u093c\u0958-\u095f]/);
   });
 
   it('the English the plan fixes, word for word', () => {

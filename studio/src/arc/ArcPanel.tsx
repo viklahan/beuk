@@ -11,16 +11,21 @@ import { arcFetch } from './net';
    src/export/ExportModal.tsx appends to the modal; src/export/groups.ts claims it) with one button, and the dialog that
    starts one campaign for the desk book and runs it, on the owner API (src/routes/arc.ts):
 
-   - on open, GET /api/arc?manuscriptId= → { mail, campaign }; a campaign's readers from GET /api/arc/:id/readers;
-   - ARC mail not configured → the server's reason (which setting is missing), and no form;
-   - no running campaign (none, or the last one ended / past its close: ruling F10) → the start form; an earlier one is
-     summarised above it, with its still-waiting readers, so the author can decline them;
-   - a running one → the signup link (only right after Start or "Make a new signup link": the server returns the token
-     once and keeps only its hash), the counts, the reader list and its actions, Close sign-ups, Delete this ARC.
+   - on open, GET /api/arc?manuscriptId= → { mail, campaigns, signupUrl }; each campaign's readers from
+     GET /api/arc/:id/readers;
+   - ARC mail not configured → why (which setting is missing, in the panel's words), and no form;
+   - a running campaign (state 'open') → the signup link with Copy (the server derives it again on every read, so it is
+     shown at all times; final fix wave), the counts, the reader list and its actions, Close sign-ups, Delete this ARC;
+   - every other campaign of the book (ended, or past its close: ruling F10) is listed under "Earlier ARCs" with its
+     readers (ruling P8): waiting ones can only be declined, a copy can still be closed, and the campaign deleted, so the
+     author can always remove readers' data;
+   - no running campaign → the start form.
 
-   Never pretended: a refusal shows the server's words, an approval refused because the reader pressed Stop / Not me is
-   told by its code (409 reader-suppressed, ruling I5) in the panel's own words, an email that did not go says so. A
-   profile link is text: never a link, never fetched. Irreversible actions ask first. */
+   Never pretended: a refusal shows the server's words beside the button that was pressed (the panel never hides); an
+   approval refused because the reader pressed Stop / Not me is told by its code (409 reader-suppressed, ruling I5) in
+   the panel's own words; an email that did not go says why. A profile link is text: never a link, never fetched.
+   Decline, Close this copy, Close sign-ups, Delete and a new signup link each ask first (default No). Buttons stay
+   disabled until the panel has read the campaign again after an action (ruling C8). */
 
 type Mail = { configured: boolean; reason: string | null };
 type Campaign = {
@@ -40,6 +45,7 @@ type Reader = {
   name: string;
   email: string;
   status: 'pending' | 'claimed' | 'declined';
+  publicId?: string | null;
   profileLink: string | null;
   revokedAt: string | null;
   mailStopped: boolean;
@@ -47,7 +53,25 @@ type Reader = {
 type Res = Record<string, unknown> | null;
 
 const COPIES_MAX = 50; // "cap 50" (plan Global Constraints; src/arc/campaigns.ts ARC_MAX_CLAIMS)
+/** The last day sign-ups may close on: the server takes a close at most 400 days from now (ARC_MAX_CLOSE_DAYS), and
+ *  the form sends the END of the chosen local day, so the last safe day is today + 399. */
+const CLOSE_DAYS_MAX = 399;
 const YMD = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** The server's four reasons ARC mail is off (src/arc/mail.ts arcMailStatus), in the panel's words. */
+const MAIL_WHY: Record<string, UiKey> = {
+  'ARC_MAIL_FROM is not set': 'arcp.mailWhy.from',
+  'ARC_SMTP_URL is not set': 'arcp.mailWhy.smtp',
+  'ARC_SUPPRESSION_SALT is not set': 'arcp.mailWhy.salt',
+  'ARC_SUPPRESSION_SALT is shorter than 32 characters': 'arcp.mailWhy.saltShort',
+};
+/** The four reasons a reader email did not go (src/arc/mail.ts ArcSendOutcome), in the panel's words. */
+const SEND_WHY: Record<string, UiKey> = {
+  'not-configured': 'arcp.sendWhy.off',
+  suppressed: 'arcp.sendWhy.optedOut',
+  'rate-limited': 'arcp.sendWhy.limit',
+  refused: 'arcp.sendWhy.refused',
+};
 
 /** 'YYYY-MM-DD' as a local calendar day, or null when it is not a real date. */
 function localDay(date: string): Date | null {
@@ -56,6 +80,18 @@ function localDay(date: string): Date | null {
   const y = Number(m[1]), mo = Number(m[2]) - 1, d = Number(m[3]);
   const day = new Date(y, mo, d);
   return day.getFullYear() === y && day.getMonth() === mo && day.getDate() === d ? day : null;
+}
+
+/** A local calendar day as 'YYYY-MM-DD'. */
+function ymd(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Today, and `days` from today, as local 'YYYY-MM-DD'. */
+function dayFromToday(days: number): string {
+  const now = new Date();
+  return ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + days));
 }
 
 /** 'YYYY-MM-DD' → the ISO instant of 23:59:59 local time that day ('' when it is not a real date). */
@@ -73,6 +109,12 @@ export function arcShown(): boolean {
 }
 
 const campaignOf = (r: Res): Campaign | null => (r && r.campaign && typeof r.campaign === 'object' ? (r.campaign as Campaign) : null);
+/** Every campaign the answer carries (P8), or the one `campaign` of an older answer. */
+const campaignsOf = (r: Res): Campaign[] => {
+  if (r && Array.isArray(r.campaigns)) return r.campaigns as Campaign[];
+  const one = campaignOf(r);
+  return one ? [one] : [];
+};
 
 /** The section in the export screen: heading, one line, one button. Hidden unless signed in and on the shelf. */
 export function ArcSection() {
@@ -86,7 +128,7 @@ export function ArcSection() {
     if (!shown || !id || open) return;
     let alive = true;
     void arcFetch('/api/arc?manuscriptId=' + encodeURIComponent(id)).then((r) => {
-      if (alive) setRunning(campaignOf(r)?.state === 'open');
+      if (alive) setRunning(campaignsOf(r).some((c) => c.state === 'open'));
     });
     return () => {
       alive = false;
@@ -110,7 +152,7 @@ export function ArcSection() {
   );
 }
 
-/** The panel. Its state lives in the body, so closing it forgets the signup link (the server never returns it again). */
+/** The panel. Its state lives in the body and is read again from the server each time it opens. */
 export function ArcDialog(props: { open: boolean; onClose: () => void; manuscriptId: string; title: string }) {
   if (!props.open) return null;
   return (
@@ -120,19 +162,23 @@ export function ArcDialog(props: { open: boolean; onClose: () => void; manuscrip
   );
 }
 
+type ActFn = (c: Campaign, r: Reader, what: 'approve' | 'decline' | 'revoke') => Promise<void>;
+type CampaignFn = (c: Campaign) => Promise<void>;
+
 function ArcBody({ onClose, manuscriptId, title }: { onClose: () => void; manuscriptId: string; title: string }) {
   const { t, lang } = useLocale();
   const confirm = useConfirm();
   const [phase, setPhase] = useState<'loading' | 'ready'>('loading');
   const [error, setError] = useState<string | null>(null);
   const [mail, setMail] = useState<Mail>({ configured: true, reason: null });
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [readers, setReaders] = useState<Reader[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [readers, setReaders] = useState<Record<string, Reader[]>>({});
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const alive = useRef(true);
+  const loaded = useRef(false);
   useEffect(
     () => () => {
       alive.current = false;
@@ -141,124 +187,150 @@ function ArcBody({ onClose, manuscriptId, title }: { onClose: () => void; manusc
   );
 
   /** The server's words for a refusal; the panel's own when the network failed. */
-  const words = (r: Res): string => (r === null ? t('arcp.offline') : String(r.__error ?? ''));
+  const words = useCallback((r: Res): string => (r === null ? t('arcp.offline') : String(r.__error ?? '')), [t]);
 
-  const loadReaders = useCallback(async (c: Campaign | null) => {
-    if (!c) {
-      setReaders([]);
-      return;
-    }
-    const r = await arcFetch('/api/arc/' + encodeURIComponent(c.id) + '/readers');
-    if (!alive.current) return;
-    if (!r || r.__error) {
-      setError(r === null ? t('arcp.offline') : String(r.__error));
-      return;
-    }
-    setReaders(Array.isArray(r.readers) ? (r.readers as Reader[]) : []);
-  }, [t]);
+  const note = useCallback(
+    (id: string, s: string | null) =>
+      setNotes((n) => {
+        const next = { ...n };
+        if (s) next[id] = s;
+        else delete next[id];
+        return next;
+      }),
+    [],
+  );
 
+  /** Read the book's campaigns and each one's readers. Once something is shown, a failed read is said on top and what
+   *  was shown stays (ruling C8: the panel never hides). */
   const load = useCallback(async () => {
     const r = await arcFetch('/api/arc?manuscriptId=' + encodeURIComponent(manuscriptId));
     if (!alive.current) return;
     if (!r || r.__error) {
-      setError(r === null ? t('arcp.offline') : String(r.__error));
+      if (loaded.current) note('load', words(r));
+      else setError(words(r));
       setPhase('ready');
       return;
     }
     setError(null);
+    note('load', null);
     const m = r.mail as Mail | undefined;
     setMail({ configured: !!m?.configured, reason: m?.reason ?? null });
-    const c = campaignOf(r);
-    setCampaign(c);
-    await loadReaders(c);
-    if (alive.current) setPhase('ready');
-  }, [manuscriptId, loadReaders, t]);
+    const list = campaignsOf(r);
+    setCampaigns(list);
+    setLink(typeof r.signupUrl === 'string' ? r.signupUrl : null);
+    const got: Record<string, Reader[]> = {};
+    for (const c of list) {
+      const rr = await arcFetch('/api/arc/' + encodeURIComponent(c.id) + '/readers');
+      if (!alive.current) return;
+      if (!rr || rr.__error) note('readers:' + c.id, words(rr));
+      else {
+        note('readers:' + c.id, null);
+        got[c.id] = Array.isArray(rr.readers) ? (rr.readers as Reader[]) : [];
+      }
+    }
+    setReaders((prev) => {
+      const next: Record<string, Reader[]> = {};
+      for (const c of list) next[c.id] = got[c.id] ?? prev[c.id] ?? [];
+      return next;
+    });
+    loaded.current = true;
+    setPhase('ready');
+  }, [manuscriptId, note, words]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const note = (id: string, s: string | null) =>
-    setNotes((n) => {
-      const next = { ...n };
-      if (s) next[id] = s;
-      else delete next[id];
-      return next;
-    });
+  /** Run one action: busy from the start until the panel has read everything again (C8). */
+  const run = async (key: string, body: () => Promise<boolean>) => {
+    setBusy(key);
+    const reload = await body();
+    if (!alive.current) return;
+    if (reload) await load();
+    if (alive.current) setBusy(null);
+  };
 
-  /** A reader action: the answer's words on that reader's row, then the campaign and its readers read again. */
-  const act = async (r: Reader, what: 'approve' | 'decline' | 'revoke') => {
-    if (!campaign) return;
-    if (what === 'revoke') {
-      const ok = await confirm({ title: t('arcp.revoke'), body: t('arcp.revokeConfirm'), yes: t('arcp.revoke'), no: t('arcp.cancel'), defaultNo: true });
+  /** A reader action: the answer's words on that reader's row, then everything read again. */
+  const act: ActFn = async (c, r, what) => {
+    if (what !== 'approve') {
+      const key = what === 'revoke' ? 'arcp.revokeConfirm' : 'arcp.declineConfirm';
+      const yes = what === 'revoke' ? t('arcp.revoke') : t('arcp.decline');
+      const ok = await confirm({ title: yes, body: t(key, { name: r.name, email: r.email }), yes, no: t('arcp.cancel'), defaultNo: true });
       if (ok !== true) return;
     }
-    setBusy(r.id);
-    note(r.id, null);
-    const res = await arcFetch('/api/arc/' + encodeURIComponent(campaign.id) + '/readers/' + encodeURIComponent(r.id) + '/' + what, { method: 'POST' });
-    if (!alive.current) return;
-    if (!res || res.__error) {
-      const b = (res?.__body ?? null) as Record<string, unknown> | null;
-      // ruling I5: told by its code, in the panel's words, never the server's English
-      if (res && b && b.error === 'reader-suppressed') note(r.id, t(b.scope === 'all' ? 'arcp.suppressedAll' : 'arcp.suppressedOwner'));
-      else note(r.id, words(res));
-    } else {
-      const m = res.mail as { sent?: boolean; detail?: string } | undefined;
-      if (m && m.sent === false) note(r.id, t('arcp.notSent', { detail: String(m.detail ?? '') }));
-    }
-    setBusy(null);
-    await load();
+    await run(r.id, async () => {
+      note(r.id, null);
+      const res = await arcFetch('/api/arc/' + encodeURIComponent(c.id) + '/readers/' + encodeURIComponent(r.id) + '/' + what, { method: 'POST' });
+      if (!alive.current) return false;
+      if (!res || res.__error) {
+        const b = (res?.__body ?? null) as Record<string, unknown> | null;
+        // ruling I5: told by its code, in the panel's words, never the server's English
+        if (res && b && b.error === 'reader-suppressed') note(r.id, t(b.scope === 'all' ? 'arcp.suppressedAll' : 'arcp.suppressedOwner'));
+        else note(r.id, words(res));
+      } else {
+        const m = res.mail as { sent?: boolean; reason?: string; detail?: string } | undefined;
+        if (m && m.sent === false) {
+          const why = SEND_WHY[String(m.reason ?? '')];
+          note(r.id, t('arcp.notSent', { detail: why ? t(why) : String(m.detail ?? '') }));
+        }
+      }
+      return true;
+    });
   };
 
-  const closeSignups = async () => {
-    if (!campaign) return;
+  const closeSignups: CampaignFn = async (c) => {
     const ok = await confirm({ title: t('arcp.closeSignups'), body: t('arcp.closeConfirm'), yes: t('arcp.closeSignups'), no: t('arcp.cancel'), defaultNo: true });
     if (ok !== true) return;
-    setBusy('close');
-    const res = await arcFetch('/api/arc/' + encodeURIComponent(campaign.id) + '/close', { method: 'POST' });
-    if (!alive.current) return;
-    setBusy(null);
-    if (!res || res.__error) return setError(words(res));
-    setLink(null);
-    await load();
+    await run('close', async () => {
+      note('close:' + c.id, null);
+      const res = await arcFetch('/api/arc/' + encodeURIComponent(c.id) + '/close', { method: 'POST' });
+      if (!alive.current) return false;
+      if (!res || res.__error) note('close:' + c.id, words(res));
+      return true;
+    });
   };
 
-  const remove = async () => {
-    if (!campaign) return;
+  const remove: CampaignFn = async (c) => {
     const ok = await confirm({ title: t('arcp.delete'), body: t('arcp.deleteConfirm'), yes: t('arcp.deleteYes'), no: t('arcp.cancel'), defaultNo: true });
     if (ok !== true) return;
-    setBusy('delete');
-    const res = await arcFetch('/api/arc/' + encodeURIComponent(campaign.id), { method: 'DELETE' });
-    if (!alive.current) return;
-    setBusy(null);
-    if (!res || res.__error) return setError(words(res));
-    setLink(null);
-    setNotes({});
-    await load();
+    await run('delete', async () => {
+      note('delete:' + c.id, null);
+      const res = await arcFetch('/api/arc/' + encodeURIComponent(c.id), { method: 'DELETE' });
+      if (!alive.current) return false;
+      if (!res || res.__error) note('delete:' + c.id, words(res));
+      return true;
+    });
   };
 
-  const newLink = async () => {
-    if (!campaign) return;
-    setBusy('link');
-    const res = await arcFetch('/api/arc/' + encodeURIComponent(campaign.id) + '/signup-link', { method: 'POST' });
-    if (!alive.current) return;
-    setBusy(null);
-    if (!res || res.__error) return setError(words(res));
-    setCopied(false);
-    setLink(typeof res.signupUrl === 'string' ? res.signupUrl : null);
+  const newLink: CampaignFn = async (c) => {
+    const ok = await confirm({ title: t('arcp.newLink'), body: t('arcp.newLinkConfirm'), yes: t('arcp.newLink'), no: t('arcp.cancel'), defaultNo: true });
+    if (ok !== true) return;
+    await run('link', async () => {
+      note('link', null);
+      const res = await arcFetch('/api/arc/' + encodeURIComponent(c.id) + '/signup-link', { method: 'POST' });
+      if (!alive.current) return false;
+      if (!res || res.__error) {
+        note('link', words(res));
+        return true;
+      }
+      setCopied(false);
+      setLink(typeof res.signupUrl === 'string' ? res.signupUrl : null);
+      return false; // the answer carries the new link; nothing else changed
+    });
   };
 
   const started = (c: Campaign, url: string | null) => {
-    setCampaign(c);
-    setReaders([]);
-    setNotes({});
+    setCampaigns((list) => [c, ...list.filter((x) => x.id !== c.id)]);
+    setReaders((prev) => ({ ...prev, [c.id]: [] }));
     setCopied(false);
     setLink(url);
   };
 
-  const live = campaign && campaign.state === 'open' ? campaign : null;
-  const past = campaign && campaign.state !== 'open' ? campaign : null;
-  const shownTitle = campaign?.title || title;
+  const ready = phase === 'ready' && !error;
+  const live = campaigns.find((c) => c.state === 'open') ?? null;
+  const past = campaigns.filter((c) => c !== live);
+  const shownTitle = (live ?? campaigns[0])?.title || title;
+  const mailWhy = mail.reason ? (MAIL_WHY[mail.reason] ? t(MAIL_WHY[mail.reason]!) : mail.reason) : '';
 
   return (
     <>
@@ -272,15 +344,20 @@ function ArcBody({ onClose, manuscriptId, title }: { onClose: () => void; manusc
           {error}
         </p>
       ) : null}
-      {phase === 'ready' && !error && !mail.configured ? (
-        <p className="cr-wait" role="status" data-arcp="mail-off">
-          {t('arcp.mailOff', { reason: mail.reason ?? '' })}
+      {ready && notes.load ? (
+        <p className="cr-wait" role="alert" data-arcp="load-note">
+          {notes.load}
         </p>
       ) : null}
-      {phase === 'ready' && !error && live ? (
+      {ready && !mail.configured ? (
+        <p className="cr-wait" role="status" data-arcp="mail-off">
+          {t('arcp.mailOff', { reason: mailWhy })}
+        </p>
+      ) : null}
+      {ready && live ? (
         <Running
           c={live}
-          readers={readers}
+          readers={readers[live.id] ?? []}
           link={link}
           copied={copied}
           setCopied={setCopied}
@@ -292,11 +369,16 @@ function ArcBody({ onClose, manuscriptId, title }: { onClose: () => void; manusc
           remove={remove}
         />
       ) : null}
-      {phase === 'ready' && !error && !live ? (
-        <>
-          {past ? <Past c={past} readers={readers} busy={busy} notes={notes} act={act} remove={remove} /> : null}
-          {mail.configured ? <StartForm hasPast={!!past} manuscriptId={manuscriptId} lang={lang} onStarted={started} onMailOff={setMail} /> : null}
-        </>
+      {ready && past.length ? (
+        <div data-arcp="pasts">
+          <div className="field-lab">{t('arcp.pastH')}</div>
+          {past.map((c) => (
+            <Past key={c.id} c={c} readers={readers[c.id] ?? []} busy={busy} notes={notes} act={act} remove={remove} />
+          ))}
+        </div>
+      ) : null}
+      {ready && !live && mail.configured ? (
+        <StartForm hasPast={past.length > 0} manuscriptId={manuscriptId} lang={lang} onStarted={started} onMailOff={setMail} />
       ) : null}
       <div className="modal-actions">
         <button className="tb-btn" type="button" id="btnArcpClose" onClick={onClose}>
@@ -322,7 +404,15 @@ function useDate(): (v: string | null | undefined) => string {
   };
 }
 
-type ActFn = (r: Reader, what: 'approve' | 'decline' | 'revoke') => Promise<void>;
+/** A refusal said beside the button it answers (C8). */
+function Note({ text, id }: { text: string | undefined; id: string }) {
+  if (!text) return null;
+  return (
+    <p className="cr-wait" role="alert" data-arcp-note={id}>
+      {text}
+    </p>
+  );
+}
 
 function Running(p: {
   c: Campaign;
@@ -333,9 +423,9 @@ function Running(p: {
   busy: string | null;
   notes: Record<string, string>;
   act: ActFn;
-  newLink: () => Promise<void>;
-  closeSignups: () => Promise<void>;
-  remove: () => Promise<void>;
+  newLink: CampaignFn;
+  closeSignups: CampaignFn;
+  remove: CampaignFn;
 }) {
   const { t } = useLocale();
   const date = useDate();
@@ -368,65 +458,68 @@ function Running(p: {
           </button>
         </div>
       ) : (
-        <p className="m-sub">{t('arcp.linkHidden')}</p>
+        <p className="m-sub">{t('arcp.linkNone')}</p>
       )}
       <p className="m-sub">{t('arcp.unlisted')}</p>
       <div className="fmt-actions">
-        <button className="tb-btn" type="button" id="btnArcpNewLink" disabled={p.busy !== null} onClick={() => void p.newLink()}>
+        <button className="tb-btn" type="button" id="btnArcpNewLink" disabled={p.busy !== null} onClick={() => void p.newLink(c)}>
           <Icon name="Link" />
           {t('arcp.newLink')}
         </button>
       </div>
+      <Note text={p.notes.link} id="link" />
       <ul className="m-sub" data-arcp="facts" style={{ listStyle: 'none', padding: 0 }}>
         <li>{t('arcp.launchOn', { date: date(c.launchDate) })}</li>
         <li>{t('arcp.closesOn', { date: date(c.closesAt) })}</li>
         <li>{t('arcp.claimedN', { n: c.counts.claimed, max: c.maxClaims })}</li>
         {c.approvalMode === 'approval' || c.counts.pending > 0 ? <li>{t('arcp.pendingN', { n: c.counts.pending })}</li> : null}
         <li>{t(c.approvalMode === 'approval' ? 'arcp.modeApproval' : 'arcp.modeInstant')}</li>
-        <li>{t('arcp.holders', { label: c.build.label || 'v1.0', n: c.build.holders })}</li>
+        {/* never an invented label: without one from the server, the line names none (C8) */}
+        <li>{c.build.label ? t('arcp.holders', { label: c.build.label, n: c.build.holders }) : t('arcp.holdersN', { n: c.build.holders })}</li>
       </ul>
       <p className="m-sub">{t('arcp.stamp')}</p>
       <div className="field-lab">{t('arcp.readersH')}</div>
-      <ReaderList readers={p.readers} live busy={p.busy} notes={p.notes} act={p.act} />
+      <Note text={p.notes['readers:' + c.id]} id={'readers:' + c.id} />
+      <ReaderList c={c} readers={p.readers} live busy={p.busy} notes={p.notes} act={p.act} />
       <div className="fmt-actions">
-        <button className="tb-btn" type="button" id="btnArcpCloseSignups" disabled={p.busy !== null} onClick={() => void p.closeSignups()}>
+        <button className="tb-btn" type="button" id="btnArcpCloseSignups" disabled={p.busy !== null} onClick={() => void p.closeSignups(c)}>
           {t('arcp.closeSignups')}
         </button>
-        <button className="tb-btn" type="button" id="btnArcpDelete" disabled={p.busy !== null} onClick={() => void p.remove()}>
+        <button className="tb-btn" type="button" id="btnArcpDelete" disabled={p.busy !== null} onClick={() => void p.remove(c)}>
           <Icon name="Trash2" />
           {t('arcp.delete')}
         </button>
       </div>
+      <Note text={p.notes['close:' + c.id]} id={'close:' + c.id} />
+      <Note text={p.notes['delete:' + c.id]} id={'delete:' + c.id} />
     </div>
   );
 }
 
-/** An ended campaign (or one past its close date), summarised; its still-waiting readers can be declined (F10). */
-function Past(p: { c: Campaign; readers: Reader[]; busy: string | null; notes: Record<string, string>; act: ActFn; remove: () => Promise<void> }) {
+/** An ended campaign (or one past its close date), summarised, with its readers (F10, P8): a waiting reader can only be
+ *  declined, a copy can still be closed, and the campaign deleted with all its readers. */
+function Past(p: { c: Campaign; readers: Reader[]; busy: string | null; notes: Record<string, string>; act: ActFn; remove: CampaignFn }) {
   const { t } = useLocale();
   const date = useDate();
   const { c } = p;
-  const waiting = p.readers.filter((r) => r.status === 'pending' || p.notes[r.id]);
   return (
-    <div data-arcp="past">
+    <div data-arcp="past" data-campaign={c.id}>
       <p className="m-sub">{t('arcp.endedSum', { date: date(c.endedAt ?? c.closesAt), n: c.counts.claimed, max: c.maxClaims })}</p>
-      {waiting.length ? (
-        <>
-          <p className="m-sub">{t('arcp.endedWaiting')}</p>
-          <ReaderList readers={waiting} live={false} busy={p.busy} notes={p.notes} act={p.act} />
-        </>
-      ) : null}
+      {p.readers.some((r) => r.status === 'pending') ? <p className="m-sub">{t('arcp.endedWaiting')}</p> : null}
+      <Note text={p.notes['readers:' + c.id]} id={'readers:' + c.id} />
+      {p.readers.length ? <ReaderList c={c} readers={p.readers} live={false} busy={p.busy} notes={p.notes} act={p.act} /> : null}
       <div className="fmt-actions">
-        <button className="tb-btn" type="button" id="btnArcpDelete" disabled={p.busy !== null} onClick={() => void p.remove()}>
+        <button className="tb-btn" type="button" data-arcp="delete-past" disabled={p.busy !== null} onClick={() => void p.remove(c)}>
           <Icon name="Trash2" />
           {t('arcp.delete')}
         </button>
       </div>
+      <Note text={p.notes['delete:' + c.id]} id={'delete:' + c.id} />
     </div>
   );
 }
 
-function ReaderList(p: { readers: Reader[]; live: boolean; busy: string | null; notes: Record<string, string>; act: ActFn }) {
+function ReaderList(p: { c: Campaign; readers: Reader[]; live: boolean; busy: string | null; notes: Record<string, string>; act: ActFn }) {
   const { t } = useLocale();
   if (!p.readers.length) return <p className="shelf-empty">{t('arcp.noReaders')}</p>;
   const status = (r: Reader): UiKey =>
@@ -436,23 +529,35 @@ function ReaderList(p: { readers: Reader[]; live: boolean; busy: string | null; 
       {p.readers.map((r) => (
         <li key={r.id} data-reader={r.id} style={{ paddingBlock: 6 }}>
           <div>
-            <strong>{r.name}</strong> <span>{r.email}</span> · <span data-arcp="status">{t(status(r))}</span>
+            {/* a reader's own name and address, isolated so neither can reorder the line around it (C8) */}
+            <strong>
+              <bdi>{r.name}</bdi>
+            </strong>{' '}
+            <span>
+              <bdi>{r.email}</bdi>
+            </span>{' '}
+            · <span data-arcp="status">{t(status(r))}</span>
           </div>
+          {r.publicId ? (
+            <div className="m-sub" data-arcp="copy-no">
+              {t('arcp.copyNo', { id: r.publicId })}
+            </div>
+          ) : null}
           {r.profileLink ? <div className="m-sub">{t('arcp.profile', { link: r.profileLink })}</div> : null}
           {r.mailStopped ? <div className="m-sub">{t('arcp.mailStopped')}</div> : null}
           <div className="fmt-actions">
             {r.status === 'pending' && p.live ? (
-              <button className="tb-btn primary" type="button" disabled={p.busy !== null} onClick={() => void p.act(r, 'approve')}>
+              <button className="tb-btn primary" type="button" disabled={p.busy !== null} onClick={() => void p.act(p.c, r, 'approve')}>
                 {t('arcp.approve')}
               </button>
             ) : null}
             {r.status === 'pending' ? (
-              <button className="tb-btn" type="button" disabled={p.busy !== null} onClick={() => void p.act(r, 'decline')}>
+              <button className="tb-btn" type="button" disabled={p.busy !== null} onClick={() => void p.act(p.c, r, 'decline')}>
                 {t('arcp.decline')}
               </button>
             ) : null}
             {r.status === 'claimed' && !r.revokedAt ? (
-              <button className="tb-btn" type="button" disabled={p.busy !== null} onClick={() => void p.act(r, 'revoke')}>
+              <button className="tb-btn" type="button" disabled={p.busy !== null} onClick={() => void p.act(p.c, r, 'revoke')}>
                 {t('arcp.revoke')}
               </button>
             ) : null}
@@ -484,10 +589,15 @@ function StartForm(p: { hasPast: boolean; manuscriptId: string; lang: string; on
     },
     [],
   );
+  const today = dayFromToday(0);
+  const lastClose = dayFromToday(CLOSE_DAYS_MAX);
   const closeDay = closesTouched ? closes : launch;
   const n = /^\d+$/.test(copies.trim()) ? Number(copies.trim()) : NaN;
   const copiesOk = Number.isInteger(n) && n >= 1 && n <= COPIES_MAX;
-  const can = !!localDay(launch) && !!localDay(closeDay) && copiesOk && !building;
+  const datesReal = !!localDay(launch) && !!localDay(closeDay);
+  // 'YYYY-MM-DD' compares as text in calendar order.
+  const datesOk = datesReal && launch >= today && closeDay >= today && closeDay <= lastClose;
+  const can = datesOk && copiesOk && !building;
 
   const start = async () => {
     if (!can) return;
@@ -524,7 +634,7 @@ function StartForm(p: { hasPast: boolean; manuscriptId: string; lang: string; on
           <label className="field-lab" htmlFor="arcpLaunch">
             {t('arcp.launch')}
           </label>
-          <input className="txt-input" type="date" id="arcpLaunch" required value={launch} onChange={(e) => setLaunch(e.target.value)} />
+          <input className="txt-input" type="date" id="arcpLaunch" required min={today} value={launch} onChange={(e) => setLaunch(e.target.value)} />
         </div>
         <div>
           <label className="field-lab" htmlFor="arcpCloses">
@@ -535,6 +645,8 @@ function StartForm(p: { hasPast: boolean; manuscriptId: string; lang: string; on
             type="date"
             id="arcpCloses"
             required
+            min={today}
+            max={lastClose}
             value={closeDay}
             aria-describedby="arcpClosesHint"
             onChange={(e) => {
@@ -545,6 +657,11 @@ function StartForm(p: { hasPast: boolean; manuscriptId: string; lang: string; on
           <div className="m-sub" id="arcpClosesHint">
             {t('arcp.closesHint')}
           </div>
+          {datesReal && !datesOk ? (
+            <div className="cr-wait" role="alert">
+              {t('arcp.datesBad')}
+            </div>
+          ) : null}
         </div>
         <div>
           <label className="field-lab" htmlFor="arcpCopies">

@@ -1884,7 +1884,7 @@ only the quoted names changed.
 - now: `“माझी प्रत ठेवा” शेल्फवरील प्रतीच्या जागी या डिव्हाइसवरील प्रत ठेवते. “शेल्फवरची प्रत वापरा” या डिव्हाइसवरील प्रतीच्या जागी शेल्फवरील प्रत ठेवते. मालिकेचा करार एकच असतो, त्यामुळे इथे “दोन्ही ठेवा” नाही.`
 - the hi note already quoted all three hi labels exactly; it is unchanged.
 
-## 8. The ARC panel in the 2.0 studio (59 keys, 2026-11-27)
+## 8. The ARC panel in the 2.0 studio (73 keys, 2026-11-27; the final fix wave added 15, changed 3 and removed 1)
 
 The author's side of ARC campaigns, slice 1 (`studio/src/arc/ArcPanel.tsx`): a section in the export screen's archive
 group ("Run an ARC" / "Open your ARC") and the dialog that starts one campaign for the desk book and runs it (the signup
@@ -1912,11 +1912,26 @@ How the drafts were made:
   put the date in `arcp.endedSum` after a colon too, so it reads with any date format.
 - Book copy and the Copy button are different words everywhere (es ejemplar / Copiar, de Exemplar / Kopieren, hi प्रति / कॉपी करें …).
 
+**Final fix wave (2026-11-27; rulings C8 and P8, final review Important 2 and 3, minor 6).** New keys:
+`arcp.copyNo` (the reader number the author now sees), `arcp.linkNone` (the signup link is shown at all times now, so
+this replaces `arcp.linkHidden`, which is gone: it said the link is shown only when made), `arcp.declineConfirm` and
+`arcp.newLinkConfirm` (confirms that default to No), `arcp.holdersN` (the holders line when the server sends no version
+label: no invented "v1.0"), the four `arcp.mailWhy.*` (the four reasons ARC mail is off) and the four `arcp.sendWhy.*`
+(the four reasons a reader email did not go), `arcp.pastH` (earlier campaigns, listed with their readers) and
+`arcp.datesBad` (the start form's date range). Changed: `arcp.revokeConfirm` (it now names the reader, `{name}` and
+`{email}`), `arcp.endedSum` ("This ARC ended…": several ended campaigns can be listed, so "your last" no longer fits) and
+`arcp.endedWaiting` (says that an ended campaign's waiting readers can only be declined). All Claude's English and
+Claude's drafts, unsigned like the rest. In **pl** and **ru** the confirms put `{name}` after a colon (*Odrzucić
+zgłoszenie: {name}*, *Закрыть экземпляр: {name}*) so the name stays in the nominative; **hi** `arcp.declineConfirm` uses
+the passive (*प्रति नहीं भेजी जाएगी*) so no verb carries the writer's gender.
+
 Points worth a look:
 
-- **`arcp.mailOff`** fills `{reason}` with the server's English setting name (`ARC_MAIL_FROM is not set`,
-  `ARC_SMTP_URL is not set`, or the salt's reason): the name of a server setting is not translated.
-- **`arcp.notSent`** fills `{detail}` with the server's English reason for an unsent email.
+- **`arcp.mailOff`** fills `{reason}` with one of the four `arcp.mailWhy.*` lines (final fix wave), which keep the
+  server setting's name as it is (`ARC_MAIL_FROM`, `ARC_SMTP_URL`, `ARC_SUPPRESSION_SALT`); a reason the panel does not
+  know is shown as the server sends it, in English.
+- **`arcp.notSent`** fills `{detail}` with one of the four `arcp.sendWhy.*` lines (final fix wave); the agreement of
+  `arcp.sendWhy.refused` follows each language's word for the email in `arcp.notSent` (es *lo*, de *sie*, it *l'…accettata*).
 - **`arcp.stamp`** is the panel's line. The stamp inside readers' EPUBs stays English (ruling F16); these drafts do not change it.
 - **ja** `arcp.closeConfirm` says 取り消せません (cannot be cancelled), not 元に戻せません, so it does not read as the app's Undo.
 - **ja** `arcp.stamp` says 海賊版の作り手 (a maker of pirated copies) for "pirate"; **zh-Hans** 盗版者; **tr** korsan; **ar** قرصان.
@@ -2373,24 +2388,6 @@ Points worth a look:
 - **ja** 日本語: `非公開：Beukはこのリンクをどこにも表示せず、検索エンジンにもインデックスしないよう求めます。リンクを知っている人なら誰でも申し込めます。`
 - **zh-Hans** 简体中文: `不公开：Beuk 不在任何地方列出它，并要求搜索引擎不要收录。任何拿到链接的人都可以报名。`
 
-### `arcp.linkHidden`
-
-- **en** (source, Claude's): The signup link is shown only when it is made. To see one again, make a new signup link; the old one then stops working.
-- **es** Español: `El enlace de inscripción solo se muestra cuando se crea. Para volver a ver uno, crea un enlace de inscripción nuevo; el anterior deja entonces de funcionar.`
-- **fr** Français: `Le lien d'inscription n'est affiché qu'au moment où il est créé. Pour en revoir un, créez un nouveau lien d'inscription ; l'ancien cesse alors de fonctionner.`
-- **de** Deutsch: `Der Anmelde-Link wird nur angezeigt, wenn er erstellt wird. Um wieder einen zu sehen, erstellen Sie einen neuen Anmelde-Link; der alte funktioniert dann nicht mehr.`
-- **it** Italiano: `Il link di iscrizione viene mostrato solo quando viene creato. Per vederne uno di nuovo, crea un nuovo link di iscrizione; quello vecchio smette allora di funzionare.`
-- **pt** Português: `O link de inscrição só é mostrado quando é criado. Para voltar a ver um, crie um novo link de inscrição; o anterior deixa então de funcionar.`
-- **nl** Nederlands: `De aanmeldlink wordt alleen getoond wanneer hij wordt gemaakt. Om er weer een te zien, maakt u een nieuwe aanmeldlink; de oude werkt dan niet meer.`
-- **pl** Polski: `Link do zapisów jest pokazywany tylko w chwili utworzenia. Aby znów go zobaczyć, utwórz nowy link do zapisów; stary przestanie wtedy działać.`
-- **ru** Русский: `Ссылка для записи показывается только в момент создания. Чтобы снова увидеть ссылку, создайте новую ссылку для записи; старая тогда перестанет работать.`
-- **tr** Türkçe: `Kayıt bağlantısı yalnızca oluşturulduğu anda gösterilir. Yeniden görmek için yeni bir kayıt bağlantısı oluşturun; eskisi o zaman çalışmaz.`
-- **ar** العربية: `يظهر رابط التسجيل فقط عند إنشائه. لرؤية رابط مجددًا، أنشئ رابط تسجيل جديدًا؛ وعندها يتوقف الرابط القديم عن العمل.`
-- **hi** हिन्दी: `साइन अप लिंक सिर्फ़ बनाते समय दिखता है। उसे फिर से देखने के लिए नया साइन अप लिंक बनाएँ; तब पुराना लिंक काम करना बंद कर देता है।`
-- **mr** मराठी: `नोंदणीची लिंक फक्त तयार करताना दिसते. ती पुन्हा पाहण्यासाठी नवीन नोंदणीची लिंक तयार करा; मग जुनी लिंक काम करणे थांबते.`
-- **ja** 日本語: `申し込みリンクは作成したときにだけ表示されます。もう一度表示するには、新しい申し込みリンクを作成してください。古いリンクは使えなくなります。`
-- **zh-Hans** 简体中文: `报名链接只在创建时显示。要再次看到链接，请创建新的报名链接；旧链接随即失效。`
-
 ### `arcp.newLink`
 
 - **en** (source, Claude's): Make a new signup link
@@ -2717,21 +2714,21 @@ Points worth a look:
 
 ### `arcp.revokeConfirm`
 
-- **en** (source, Claude's): Close this reader's copy? Their link stops working and is never reopened. A copy they already downloaded stays on their device.
-- **es** Español: `¿Cerrar el ejemplar de este lector? Su enlace deja de funcionar y nunca se vuelve a abrir. Un ejemplar que ya haya descargado se queda en su dispositivo.`
-- **fr** Français: `Fermer l'exemplaire de ce lecteur ? Son lien cesse de fonctionner et n'est jamais rouvert. Un exemplaire qu'il a déjà téléchargé reste sur son appareil.`
-- **de** Deutsch: `Das Exemplar dieses Lesers schließen? Sein Link funktioniert dann nicht mehr und wird nie wieder geöffnet. Ein bereits heruntergeladenes Exemplar bleibt auf seinem Gerät.`
-- **it** Italiano: `Chiudere la copia di questo lettore? Il suo link smette di funzionare e non viene mai riaperto. Una copia che ha già scaricato resta sul suo dispositivo.`
-- **pt** Português: `Fechar o exemplar deste leitor? O link dele deixa de funcionar e nunca é reaberto. Um exemplar que já tenha descarregado fica no dispositivo dele.`
-- **nl** Nederlands: `Het exemplaar van deze lezer sluiten? Zijn link werkt dan niet meer en wordt nooit heropend. Een exemplaar dat hij al heeft gedownload, blijft op zijn apparaat.`
-- **pl** Polski: `Zamknąć egzemplarz tego czytelnika? Jego link przestanie działać i nigdy nie zostanie ponownie otwarty. Egzemplarz, który już pobrał, zostaje na jego urządzeniu.`
-- **ru** Русский: `Закрыть экземпляр этого читателя? Его ссылка перестанет работать и больше никогда не откроется. Экземпляр, который он уже скачал, останется на его устройстве.`
-- **tr** Türkçe: `Bu okurun kopyası kapatılsın mı? Bağlantısı çalışmayı bırakır ve bir daha asla açılmaz. Zaten indirdiği bir kopya cihazında kalır.`
-- **ar** العربية: `أتريد إغلاق نسخة هذا القارئ؟ يتوقف رابطه عن العمل ولا يُعاد فتحه أبدًا. أما النسخة التي نزّلها بالفعل فتبقى على جهازه.`
-- **hi** हिन्दी: `इस पाठक की प्रति बंद करें? उनका लिंक काम करना बंद कर देगा और फिर कभी नहीं खुलेगा। जो प्रति वे पहले ही डाउनलोड कर चुके हैं, वह उनके डिवाइस पर रहेगी।`
-- **mr** मराठी: `या वाचकाची प्रत बंद करायची? त्यांची लिंक काम करणे थांबवेल आणि पुन्हा कधीच उघडणार नाही. त्यांनी आधीच डाउनलोड केलेली प्रत त्यांच्या डिव्हाइसवर राहील.`
-- **ja** 日本語: `この読者の献本を閉じますか？リンクは使えなくなり、二度と再開されません。すでにダウンロードされた献本は読者の端末に残ります。`
-- **zh-Hans** 简体中文: `要关闭这位读者的这份书吗？其链接将失效，且永远不会重新开放。读者已下载的那份会留在其设备上。`
+- **en** (source, Claude's; changed by the final fix wave): Close the copy of {name} ({email})? Their link stops working and is never reopened. A copy they already downloaded stays on their device.
+- **es** Español: `¿Cerrar el ejemplar de {name} ({email})? Su enlace deja de funcionar y nunca se vuelve a abrir. Un ejemplar que ya haya descargado se queda en su dispositivo.`
+- **fr** Français: `Fermer l'exemplaire de {name} ({email}) ? Son lien cesse de fonctionner et n'est jamais rouvert. Un exemplaire déjà téléchargé reste sur son appareil.`
+- **de** Deutsch: `Das Exemplar von {name} ({email}) schließen? Der Link funktioniert dann nicht mehr und wird nie wieder geöffnet. Ein bereits heruntergeladenes Exemplar bleibt auf dem Gerät.`
+- **it** Italiano: `Chiudere la copia di {name} ({email})? Il suo link smette di funzionare e non viene mai riaperto. Una copia già scaricata resta sul suo dispositivo.`
+- **pt** Português: `Fechar o exemplar de {name} ({email})? O link deixa de funcionar e nunca é reaberto. Um exemplar já descarregado fica no dispositivo.`
+- **nl** Nederlands: `Het exemplaar van {name} ({email}) sluiten? De link werkt dan niet meer en wordt nooit heropend. Een exemplaar dat al is gedownload, blijft op het apparaat.`
+- **pl** Polski: `Zamknąć egzemplarz: {name} ({email})? Link przestanie działać i nigdy nie zostanie ponownie otwarty. Egzemplarz, który został już pobrany, zostaje na urządzeniu.`
+- **ru** Русский: `Закрыть экземпляр: {name} ({email})? Ссылка перестанет работать и больше никогда не откроется. Уже скачанный экземпляр останется на устройстве.`
+- **tr** Türkçe: `{name} ({email}) için kopya kapatılsın mı? Bağlantısı çalışmayı bırakır ve bir daha asla açılmaz. Zaten indirilmiş bir kopya cihazda kalır.`
+- **ar** العربية: `أتريد إغلاق نسخة {name} ({email})؟ يتوقف الرابط عن العمل ولا يُعاد فتحه أبدًا. أما النسخة التي نُزّلت بالفعل فتبقى على الجهاز.`
+- **hi** हिन्दी: `{name} ({email}) की प्रति बंद करें? उनका लिंक काम करना बंद कर देगा और फिर कभी नहीं खुलेगा। जो प्रति वे पहले ही डाउनलोड कर चुके हैं, वह उनके डिवाइस पर रहेगी।`
+- **mr** मराठी: `{name} ({email}) यांची प्रत बंद करायची? त्यांची लिंक काम करणे थांबवेल आणि पुन्हा कधीच उघडणार नाही. त्यांनी आधीच डाउनलोड केलेली प्रत त्यांच्या डिव्हाइसवर राहील.`
+- **ja** 日本語: `{name}（{email}）さんの献本を閉じますか？リンクは使えなくなり、二度と再開されません。すでにダウンロードされた献本は読者の端末に残ります。`
+- **zh-Hans** 简体中文: `要关闭 {name}（{email}）的这份书吗？其链接将失效，且永远不会重新开放。读者已下载的那份会留在其设备上。`
 
 ### `arcp.mailStopped`
 
@@ -2933,39 +2930,39 @@ Points worth a look:
 
 ### `arcp.endedSum`
 
-- **en** (source, Claude's): Your last ARC for this book ended on {date}. Claimed: {n} of {max}. Copies already given keep working.
-- **es** Español: `Tu último ARC de este libro terminó el {date}. Reclamados: {n} de {max}. Los ejemplares ya entregados siguen funcionando.`
-- **fr** Français: `Votre dernier ARC pour ce livre s'est terminé le {date}. Réclamés : {n} sur {max}. Les exemplaires déjà donnés continuent de fonctionner.`
-- **de** Deutsch: `Ihr letztes ARC für dieses Buch endete am {date}. Vergeben: {n} von {max}. Bereits vergebene Exemplare funktionieren weiter.`
-- **it** Italiano: `Il tuo ultimo ARC per questo libro è terminato il {date}. Assegnate: {n} su {max}. Le copie già date continuano a funzionare.`
-- **pt** Português: `O seu último ARC deste livro terminou a {date}. Atribuídos: {n} de {max}. Os exemplares já atribuídos continuam a funcionar.`
-- **nl** Nederlands: `Uw laatste ARC voor dit boek eindigde op {date}. Geclaimd: {n} van {max}. Exemplaren die al zijn gegeven, blijven werken.`
-- **pl** Polski: `Ostatni ARC tej książki zakończył się: {date}. Odebrane: {n} z {max}. Wydane już egzemplarze nadal działają.`
-- **ru** Русский: `Ваш последний ARC для этой книги закончился: {date}. Получено: {n} из {max}. Уже выданные экземпляры продолжат работать.`
-- **tr** Türkçe: `Bu kitap için son ARC'niz sona erdi: {date}. Alınan: {n} / {max}. Verilmiş kopyalar çalışmaya devam eder.`
-- **ar** العربية: `انتهت آخر حملة ARC لهذا الكتاب في {date}. النسخ المأخوذة: {n} من {max}. تبقى النسخ التي أُعطيت تعمل.`
-- **hi** हिन्दी: `इस किताब का आपका पिछला ARC {date} को खत्म हुआ। ली गई प्रतियाँ: {max} में से {n}। जो प्रतियाँ दी जा चुकी हैं, वे काम करती रहेंगी।`
-- **mr** मराठी: `या पुस्तकाचे तुमचे मागचे ARC {date} रोजी संपले. घेतलेल्या प्रती: {max} पैकी {n}. आधी दिलेल्या प्रती काम करत राहतील.`
-- **ja** 日本語: `この本の前回のARCは{date}に終了しました。受け取り済み：{n} / {max}。すでに渡した献本は引き続き使えます。`
-- **zh-Hans** 简体中文: `这本书上一次的 ARC 已于 {date} 结束。已领取：{n} / {max}。已经送出的书仍可使用。`
+- **en** (source, Claude's; changed by the final fix wave): This ARC ended on {date}. Claimed: {n} of {max}. Copies already given keep working.
+- **es** Español: `Este ARC terminó el {date}. Reclamados: {n} de {max}. Los ejemplares ya entregados siguen funcionando.`
+- **fr** Français: `Cet ARC s'est terminé le {date}. Réclamés : {n} sur {max}. Les exemplaires déjà donnés continuent de fonctionner.`
+- **de** Deutsch: `Dieses ARC endete am {date}. Vergeben: {n} von {max}. Bereits vergebene Exemplare funktionieren weiter.`
+- **it** Italiano: `Questo ARC è terminato il {date}. Assegnate: {n} su {max}. Le copie già date continuano a funzionare.`
+- **pt** Português: `Este ARC terminou a {date}. Atribuídos: {n} de {max}. Os exemplares já atribuídos continuam a funcionar.`
+- **nl** Nederlands: `Deze ARC eindigde op {date}. Geclaimd: {n} van {max}. Exemplaren die al zijn gegeven, blijven werken.`
+- **pl** Polski: `Ten ARC zakończył się: {date}. Odebrane: {n} z {max}. Wydane już egzemplarze nadal działają.`
+- **ru** Русский: `Этот ARC закончился: {date}. Получено: {n} из {max}. Уже выданные экземпляры продолжат работать.`
+- **tr** Türkçe: `Bu ARC sona erdi: {date}. Alınan: {n} / {max}. Verilmiş kopyalar çalışmaya devam eder.`
+- **ar** العربية: `انتهت حملة ARC هذه في {date}. النسخ المأخوذة: {n} من {max}. تبقى النسخ التي أُعطيت تعمل.`
+- **hi** हिन्दी: `यह ARC {date} को खत्म हुआ। ली गई प्रतियाँ: {max} में से {n}। जो प्रतियाँ दी जा चुकी हैं, वे काम करती रहेंगी।`
+- **mr** मराठी: `हे ARC {date} रोजी संपले. घेतलेल्या प्रती: {max} पैकी {n}. आधी दिलेल्या प्रती काम करत राहतील.`
+- **ja** 日本語: `このARCは{date}に終了しました。受け取り済み：{n} / {max}。すでに渡した献本は引き続き使えます。`
+- **zh-Hans** 简体中文: `这次 ARC 已于 {date} 结束。已领取：{n} / {max}。已经送出的书仍可使用。`
 
 ### `arcp.endedWaiting`
 
-- **en** (source, Claude's): These readers were still waiting when it ended. Decline them to let them know.
-- **es** Español: `Estos lectores seguían esperando cuando terminó. Recházalos para que lo sepan.`
-- **fr** Français: `Ces lecteurs attendaient encore quand il s'est terminé. Refusez-les pour qu'ils soient prévenus.`
-- **de** Deutsch: `Diese Leser warteten noch, als es endete. Lehnen Sie sie ab, damit sie Bescheid wissen.`
-- **it** Italiano: `Questi lettori erano ancora in attesa quando è terminato. Rifiutali perché lo sappiano.`
-- **pt** Português: `Estes leitores ainda estavam à espera quando terminou. Recuse-os para que fiquem a saber.`
-- **nl** Nederlands: `Deze lezers wachtten nog toen hij eindigde. Wijs ze af, zodat ze het weten.`
-- **pl** Polski: `Ci czytelnicy wciąż czekali, gdy się zakończył. Odrzuć ich zgłoszenia, aby się o tym dowiedzieli.`
-- **ru** Русский: `Эти читатели ещё ждали, когда он закончился. Отклоните их, чтобы они узнали об этом.`
-- **tr** Türkçe: `Bu okurlar, ARC sona erdiğinde hâlâ bekliyordu. Haberleri olsun diye onları reddedin.`
-- **ar** العربية: `كان هؤلاء القرّاء لا يزالون بالانتظار عندما انتهت. ارفضهم ليعلموا بذلك.`
-- **hi** हिन्दी: `ये पाठक खत्म होने के समय भी इंतज़ार में थे। उन्हें मना करें, ताकि उन्हें पता चल जाए।`
-- **mr** मराठी: `हे वाचक ARC संपले तेव्हाही वाट पाहत होते. त्यांना कळावे म्हणून त्यांना नकार द्या.`
-- **ja** 日本語: `これらの読者は、終了時にまだ承認を待っていました。お断りすると、読者に知らせが届きます。`
-- **zh-Hans** 简体中文: `结束时这些读者仍在等待。拒绝他们，好让他们知道结果。`
+- **en** (source, Claude's; changed by the final fix wave): These readers were still waiting when it ended. An ended ARC gives no new copies, so they can only be declined; declining lets them know.
+- **es** Español: `Estos lectores seguían esperando cuando terminó. Un ARC terminado no entrega ejemplares nuevos, así que solo se pueden rechazar; al rechazarlos, lo sabrán.`
+- **fr** Français: `Ces lecteurs attendaient encore quand il s'est terminé. Un ARC terminé ne donne plus d'exemplaires : ils ne peuvent qu'être refusés, et un refus les prévient.`
+- **de** Deutsch: `Diese Leser warteten noch, als es endete. Ein beendetes ARC vergibt keine neuen Exemplare, daher können Sie sie nur ablehnen; so erfahren sie es.`
+- **it** Italiano: `Questi lettori erano ancora in attesa quando è terminato. Un ARC terminato non dà nuove copie, quindi puoi solo rifiutarli; così lo sapranno.`
+- **pt** Português: `Estes leitores ainda estavam à espera quando terminou. Um ARC terminado não atribui novos exemplares, por isso só os pode recusar; assim ficam a saber.`
+- **nl** Nederlands: `Deze lezers wachtten nog toen hij eindigde. Een beëindigde ARC geeft geen nieuwe exemplaren, dus u kunt ze alleen afwijzen; zo weten ze het.`
+- **pl** Polski: `Ci czytelnicy wciąż czekali, gdy się zakończył. Zakończony ARC nie wydaje nowych egzemplarzy, więc ich zgłoszenia można tylko odrzucić; wtedy się o tym dowiedzą.`
+- **ru** Русский: `Эти читатели ещё ждали, когда он закончился. Закончившийся ARC не выдаёт новых экземпляров, поэтому их можно только отклонить; так они узнают об этом.`
+- **tr** Türkçe: `Bu okurlar, ARC sona erdiğinde hâlâ bekliyordu. Sona ermiş bir ARC yeni kopya vermez; bu yüzden onları yalnızca reddedebilirsiniz, böylece haberleri olur.`
+- **ar** العربية: `كان هؤلاء القرّاء لا يزالون بالانتظار عندما انتهت. لا تُعطي حملة ARC منتهية نسخًا جديدة، لذا لا يمكنك إلا رفضهم؛ وبالرفض يعلمون بذلك.`
+- **hi** हिन्दी: `ये पाठक खत्म होने के समय भी इंतज़ार में थे। खत्म हुआ ARC नई प्रतियाँ नहीं देता, इसलिए उन्हें सिर्फ़ मना किया जा सकता है; मना करने से उन्हें पता चल जाएगा।`
+- **mr** मराठी: `हे वाचक ARC संपले तेव्हाही वाट पाहत होते. संपलेले ARC नवीन प्रती देत नाही, त्यामुळे त्यांना फक्त नकार देता येतो; नकार दिल्यावर त्यांना कळेल.`
+- **ja** 日本語: `これらの読者は、終了時にまだ承認を待っていました。終了したARCでは新しい献本を渡せないため、お断りすることしかできません。お断りすると、読者に知らせが届きます。`
+- **zh-Hans** 简体中文: `结束时这些读者仍在等待。已结束的 ARC 不再送出新书，所以只能拒绝他们；拒绝后他们就会知道结果。`
 
 ### `arcp.newH`
 
@@ -2984,6 +2981,276 @@ Points worth a look:
 - **mr** मराठी: `नवीन ARC सुरू करा`
 - **ja** 日本語: `新しいARCを始める`
 - **zh-Hans** 简体中文: `开始新的 ARC`
+
+### `arcp.copyNo`
+
+- **en** (source, Claude's — final fix wave): Copy no. {id}
+- **es** Español: `Ejemplar n.º {id}`
+- **fr** Français: `Exemplaire n° {id}`
+- **de** Deutsch: `Exemplar Nr. {id}`
+- **it** Italiano: `Copia n. {id}`
+- **pt** Português: `Exemplar n.º {id}`
+- **nl** Nederlands: `Exemplaar nr. {id}`
+- **pl** Polski: `Egzemplarz nr {id}`
+- **ru** Русский: `Экземпляр № {id}`
+- **tr** Türkçe: `Kopya no. {id}`
+- **ar** العربية: `النسخة رقم {id}`
+- **hi** हिन्दी: `प्रति संख्या {id}`
+- **mr** मराठी: `प्रत क्रमांक {id}`
+- **ja** 日本語: `献本番号：{id}`
+- **zh-Hans** 简体中文: `预发本编号：{id}`
+
+### `arcp.linkNone`
+
+- **en** (source, Claude's — final fix wave): The signup link can't be shown right now. Make a new signup link to see one; the old link then stops working.
+- **es** Español: `Ahora no se puede mostrar el enlace de inscripción. Crea un enlace de inscripción nuevo para ver uno; el anterior deja entonces de funcionar.`
+- **fr** Français: `Le lien d'inscription ne peut pas être affiché pour le moment. Créez un nouveau lien d'inscription pour en voir un ; l'ancien cesse alors de fonctionner.`
+- **de** Deutsch: `Der Anmelde-Link kann gerade nicht angezeigt werden. Erstellen Sie einen neuen Anmelde-Link, um einen zu sehen; der alte funktioniert dann nicht mehr.`
+- **it** Italiano: `Il link di iscrizione non si può mostrare in questo momento. Crea un nuovo link di iscrizione per vederne uno; quello vecchio smette allora di funzionare.`
+- **pt** Português: `Neste momento não é possível mostrar o link de inscrição. Crie um novo link de inscrição para ver um; o anterior deixa então de funcionar.`
+- **nl** Nederlands: `De aanmeldlink kan nu niet worden getoond. Maak een nieuwe aanmeldlink om er een te zien; de oude werkt dan niet meer.`
+- **pl** Polski: `Linku do zapisów nie można teraz pokazać. Utwórz nowy link do zapisów, aby go zobaczyć; stary przestanie wtedy działać.`
+- **ru** Русский: `Ссылку для записи сейчас нельзя показать. Создайте новую ссылку для записи, чтобы увидеть её; старая тогда перестанет работать.`
+- **tr** Türkçe: `Kayıt bağlantısı şu anda gösterilemiyor. Görmek için yeni bir kayıt bağlantısı oluşturun; eskisi o zaman çalışmaz.`
+- **ar** العربية: `لا يمكن عرض رابط التسجيل الآن. أنشئ رابط تسجيل جديدًا لتراه؛ وعندها يتوقف الرابط القديم عن العمل.`
+- **hi** हिन्दी: `साइन अप लिंक अभी नहीं दिखाया जा सकता। उसे देखने के लिए नया साइन अप लिंक बनाएँ; तब पुराना लिंक काम करना बंद कर देता है।`
+- **mr** मराठी: `नोंदणीची लिंक आत्ता दाखवता येत नाही. ती पाहण्यासाठी नवीन नोंदणीची लिंक तयार करा; मग जुनी लिंक काम करणे थांबते.`
+- **ja** 日本語: `いまは申し込みリンクを表示できません。表示するには新しい申し込みリンクを作成してください。古いリンクは使えなくなります。`
+- **zh-Hans** 简体中文: `暂时无法显示报名链接。要看到链接，请创建新的报名链接；旧链接随即失效。`
+
+### `arcp.declineConfirm`
+
+- **en** (source, Claude's — final fix wave): Decline {name} ({email})? Beuk emails them that you're not sending a copy this time. A decline can't be undone.
+- **es** Español: `¿Rechazar a {name} ({email})? Beuk le avisará por correo de que esta vez no le envías un ejemplar. Un rechazo no se puede deshacer.`
+- **fr** Français: `Refuser {name} ({email}) ? Beuk lui écrit que vous ne lui envoyez pas d'exemplaire cette fois-ci. Un refus est définitif.`
+- **de** Deutsch: `{name} ({email}) ablehnen? Beuk teilt per E-Mail mit, dass Sie diesmal kein Exemplar schicken. Eine Ablehnung lässt sich nicht rückgängig machen.`
+- **it** Italiano: `Rifiutare {name} ({email})? Beuk avvisa per email che questa volta non mandi una copia. Un rifiuto non si può annullare.`
+- **pt** Português: `Recusar {name} ({email})? O Beuk envia um e-mail a dizer que desta vez não vai enviar um exemplar. Uma recusa não pode ser anulada.`
+- **nl** Nederlands: `{name} ({email}) afwijzen? Beuk mailt dat u deze keer geen exemplaar stuurt. Een afwijzing kan niet ongedaan worden gemaakt.`
+- **pl** Polski: `Odrzucić zgłoszenie: {name} ({email})? Beuk wyśle e-mail z informacją, że tym razem egzemplarza nie będzie. Odrzucenia nie da się cofnąć.`
+- **ru** Русский: `Отклонить заявку: {name} ({email})? Beuk сообщит по почте, что в этот раз экземпляра не будет. Отказ нельзя отменить.`
+- **tr** Türkçe: `{name} ({email}) reddedilsin mi? Beuk, bu sefer kopya göndermediğinizi e-postayla bildirir. Ret geri alınamaz.`
+- **ar** العربية: `أتريد رفض {name} ({email})؟ سيُعلِمه Beuk بالبريد أنك لن ترسل نسخة هذه المرة. لا يمكن التراجع عن الرفض.`
+- **hi** हिन्दी: `{name} ({email}) को मना करें? Beuk उन्हें ईमेल से बताएगा कि इस बार उन्हें प्रति नहीं भेजी जाएगी। मना करने को पलटा नहीं जा सकता।`
+- **mr** मराठी: `{name} ({email}) यांना नकार द्यायचा? या वेळी त्यांना प्रत पाठवली जाणार नाही, हे Beuk त्यांना ईमेलने कळवेल. नकार उलटवता येत नाही.`
+- **ja** 日本語: `{name}（{email}）さんをお断りしますか？今回は献本を送らないことを、Beukがメールでお知らせします。お断りは取り消せません。`
+- **zh-Hans** 简体中文: `要拒绝 {name}（{email}）吗？Beuk 会发邮件告诉对方，这次不会给他们送书。拒绝后无法撤销。`
+
+### `arcp.newLinkConfirm`
+
+- **en** (source, Claude's — final fix wave): Make a new signup link? The current link stops working at once, so anyone you already sent it to will need the new one.
+- **es** Español: `¿Crear un enlace de inscripción nuevo? El actual deja de funcionar enseguida, así que a quien ya se lo enviaste le hará falta el nuevo.`
+- **fr** Français: `Créer un nouveau lien d'inscription ? Le lien actuel cesse aussitôt de fonctionner : les personnes à qui vous l'avez déjà envoyé auront besoin du nouveau.`
+- **de** Deutsch: `Einen neuen Anmelde-Link erstellen? Der jetzige Link funktioniert sofort nicht mehr; wem Sie ihn schon geschickt haben, braucht dann den neuen.`
+- **it** Italiano: `Creare un nuovo link di iscrizione? Quello attuale smette subito di funzionare, quindi a chi l'hai già mandato servirà quello nuovo.`
+- **pt** Português: `Criar um novo link de inscrição? O atual deixa de funcionar de imediato, por isso quem já o recebeu vai precisar do novo.`
+- **nl** Nederlands: `Een nieuwe aanmeldlink maken? De huidige link werkt meteen niet meer, dus wie hem al van u kreeg, heeft de nieuwe nodig.`
+- **pl** Polski: `Utworzyć nowy link do zapisów? Obecny link od razu przestanie działać, więc osoby, które już go dostały, będą potrzebować nowego.`
+- **ru** Русский: `Создать новую ссылку для записи? Текущая ссылка сразу перестанет работать, и тем, кому вы её уже отправили, понадобится новая.`
+- **tr** Türkçe: `Yeni bir kayıt bağlantısı oluşturulsun mu? Şimdiki bağlantı hemen çalışmayı bırakır; onu gönderdiğiniz kişilerin yenisine ihtiyacı olur.`
+- **ar** العربية: `أتريد إنشاء رابط تسجيل جديد؟ يتوقف الرابط الحالي عن العمل فورًا، فمن أرسلته إليهم سيحتاجون إلى الرابط الجديد.`
+- **hi** हिन्दी: `नया साइन अप लिंक बनाएँ? मौजूदा लिंक तुरंत काम करना बंद कर देगा, इसलिए जिन्हें आपने यह भेजा है, उन्हें नए लिंक की ज़रूरत पड़ेगी।`
+- **mr** मराठी: `नवीन नोंदणीची लिंक तयार करायची? सध्याची लिंक लगेच काम करणे थांबवेल; ज्यांना तुम्ही ती आधीच पाठवली आहे, त्यांना नवीन लिंक पाठवा.`
+- **ja** 日本語: `新しい申し込みリンクを作成しますか？いまのリンクはすぐに使えなくなるため、すでに送った相手には新しいリンクが必要になります。`
+- **zh-Hans** 简体中文: `要创建新的报名链接吗？当前链接会立即失效，已经收到它的人需要新的链接。`
+
+### `arcp.holdersN`
+
+- **en** (source, Claude's — final fix wave): Readers holding a copy: {n}
+- **es** Español: `Lectores con ejemplar: {n}`
+- **fr** Français: `Lecteurs qui ont un exemplaire : {n}`
+- **de** Deutsch: `Leser mit Exemplar: {n}`
+- **it** Italiano: `Lettori con una copia: {n}`
+- **pt** Português: `Leitores com exemplar: {n}`
+- **nl** Nederlands: `Lezers met een exemplaar: {n}`
+- **pl** Polski: `Czytelnicy z egzemplarzem: {n}`
+- **ru** Русский: `Читателей с экземпляром: {n}`
+- **tr** Türkçe: `Kopyası olan okurlar: {n}`
+- **ar** العربية: `القرّاء الذين لديهم نسخة: {n}`
+- **hi** हिन्दी: `जिन पाठकों के पास प्रति है: {n}`
+- **mr** मराठी: `प्रत असलेले वाचक: {n}`
+- **ja** 日本語: `献本を持っている読者：{n}`
+- **zh-Hans** 简体中文: `持有预发本的读者：{n}`
+
+### `arcp.mailWhy.from`
+
+- **en** (source, Claude's — final fix wave): the sender address, ARC_MAIL_FROM, is not set
+- **es** Español: `la dirección del remitente, ARC_MAIL_FROM, no está configurada`
+- **fr** Français: `l'adresse d'expéditeur, ARC_MAIL_FROM, n'est pas définie`
+- **de** Deutsch: `die Absenderadresse ARC_MAIL_FROM ist nicht gesetzt`
+- **it** Italiano: `l'indirizzo del mittente, ARC_MAIL_FROM, non è impostato`
+- **pt** Português: `o endereço do remetente, ARC_MAIL_FROM, não está definido`
+- **nl** Nederlands: `het afzenderadres, ARC_MAIL_FROM, is niet ingesteld`
+- **pl** Polski: `adres nadawcy, ARC_MAIL_FROM, nie jest ustawiony`
+- **ru** Русский: `адрес отправителя, ARC_MAIL_FROM, не задан`
+- **tr** Türkçe: `gönderen adresi, ARC_MAIL_FROM, ayarlanmamış`
+- **ar** العربية: `عنوان المرسِل ARC_MAIL_FROM غير مضبوط`
+- **hi** हिन्दी: `भेजने वाले का पता, ARC_MAIL_FROM, सेट नहीं है`
+- **mr** मराठी: `पाठवणाऱ्याचा पत्ता, ARC_MAIL_FROM, सेट केलेला नाही`
+- **ja** 日本語: `送信元アドレス（ARC_MAIL_FROM）が設定されていません`
+- **zh-Hans** 简体中文: `未设置发件人地址 ARC_MAIL_FROM`
+
+### `arcp.mailWhy.smtp`
+
+- **en** (source, Claude's — final fix wave): the mail server, ARC_SMTP_URL, is not set
+- **es** Español: `el servidor de correo, ARC_SMTP_URL, no está configurado`
+- **fr** Français: `le serveur de messagerie, ARC_SMTP_URL, n'est pas défini`
+- **de** Deutsch: `der Mailserver ARC_SMTP_URL ist nicht gesetzt`
+- **it** Italiano: `il server di posta, ARC_SMTP_URL, non è impostato`
+- **pt** Português: `o servidor de e-mail, ARC_SMTP_URL, não está definido`
+- **nl** Nederlands: `de mailserver, ARC_SMTP_URL, is niet ingesteld`
+- **pl** Polski: `serwer poczty, ARC_SMTP_URL, nie jest ustawiony`
+- **ru** Русский: `почтовый сервер, ARC_SMTP_URL, не задан`
+- **tr** Türkçe: `e-posta sunucusu, ARC_SMTP_URL, ayarlanmamış`
+- **ar** العربية: `خادم البريد ARC_SMTP_URL غير مضبوط`
+- **hi** हिन्दी: `मेल सर्वर, ARC_SMTP_URL, सेट नहीं है`
+- **mr** मराठी: `मेल सर्व्हर, ARC_SMTP_URL, सेट केलेला नाही`
+- **ja** 日本語: `メールサーバー（ARC_SMTP_URL）が設定されていません`
+- **zh-Hans** 简体中文: `未设置邮件服务器 ARC_SMTP_URL`
+
+### `arcp.mailWhy.salt`
+
+- **en** (source, Claude's — final fix wave): ARC_SUPPRESSION_SALT is not set
+- **es** Español: `ARC_SUPPRESSION_SALT no está configurado`
+- **fr** Français: `ARC_SUPPRESSION_SALT n'est pas défini`
+- **de** Deutsch: `ARC_SUPPRESSION_SALT ist nicht gesetzt`
+- **it** Italiano: `ARC_SUPPRESSION_SALT non è impostato`
+- **pt** Português: `ARC_SUPPRESSION_SALT não está definido`
+- **nl** Nederlands: `ARC_SUPPRESSION_SALT is niet ingesteld`
+- **pl** Polski: `ARC_SUPPRESSION_SALT nie jest ustawiony`
+- **ru** Русский: `ARC_SUPPRESSION_SALT не задан`
+- **tr** Türkçe: `ARC_SUPPRESSION_SALT ayarlanmamış`
+- **ar** العربية: `ARC_SUPPRESSION_SALT غير مضبوط`
+- **hi** हिन्दी: `ARC_SUPPRESSION_SALT सेट नहीं है`
+- **mr** मराठी: `ARC_SUPPRESSION_SALT सेट केलेला नाही`
+- **ja** 日本語: `ARC_SUPPRESSION_SALT が設定されていません`
+- **zh-Hans** 简体中文: `未设置 ARC_SUPPRESSION_SALT`
+
+### `arcp.mailWhy.saltShort`
+
+- **en** (source, Claude's — final fix wave): ARC_SUPPRESSION_SALT is shorter than 32 characters
+- **es** Español: `ARC_SUPPRESSION_SALT tiene menos de 32 caracteres`
+- **fr** Français: `ARC_SUPPRESSION_SALT fait moins de 32 caractères`
+- **de** Deutsch: `ARC_SUPPRESSION_SALT ist kürzer als 32 Zeichen`
+- **it** Italiano: `ARC_SUPPRESSION_SALT è più corto di 32 caratteri`
+- **pt** Português: `ARC_SUPPRESSION_SALT tem menos de 32 caracteres`
+- **nl** Nederlands: `ARC_SUPPRESSION_SALT is korter dan 32 tekens`
+- **pl** Polski: `ARC_SUPPRESSION_SALT ma mniej niż 32 znaki`
+- **ru** Русский: `ARC_SUPPRESSION_SALT короче 32 символов`
+- **tr** Türkçe: `ARC_SUPPRESSION_SALT 32 karakterden kısa`
+- **ar** العربية: `ARC_SUPPRESSION_SALT أقصر من 32 حرفًا`
+- **hi** हिन्दी: `ARC_SUPPRESSION_SALT 32 अक्षरों से छोटा है`
+- **mr** मराठी: `ARC_SUPPRESSION_SALT 32 अक्षरांपेक्षा लहान आहे`
+- **ja** 日本語: `ARC_SUPPRESSION_SALT が32文字より短くなっています`
+- **zh-Hans** 简体中文: `ARC_SUPPRESSION_SALT 少于 32 个字符`
+
+### `arcp.sendWhy.off`
+
+- **en** (source, Claude's — final fix wave): ARC email is not set up on this server
+- **es** Español: `el correo de los ARC no está configurado en este servidor`
+- **fr** Français: `l'e-mail des ARC n'est pas configuré sur ce serveur`
+- **de** Deutsch: `die ARC-E-Mail ist auf diesem Server nicht eingerichtet`
+- **it** Italiano: `l'email degli ARC non è configurata su questo server`
+- **pt** Português: `o e-mail dos ARC não está configurado neste servidor`
+- **nl** Nederlands: `ARC-e-mail is op deze server niet ingesteld`
+- **pl** Polski: `poczta ARC nie jest skonfigurowana na tym serwerze`
+- **ru** Русский: `почта для ARC на этом сервере не настроена`
+- **tr** Türkçe: `bu sunucuda ARC e-postası ayarlanmamış`
+- **ar** العربية: `بريد ARC غير مُعدّ على هذا الخادم`
+- **hi** हिन्दी: `इस सर्वर पर ARC ईमेल सेट नहीं है`
+- **mr** मराठी: `या सर्व्हरवर ARC ईमेल सेट केलेले नाही`
+- **ja** 日本語: `このサーバーではARC用のメールが設定されていません`
+- **zh-Hans** 简体中文: `此服务器未设置 ARC 邮件`
+
+### `arcp.sendWhy.optedOut`
+
+- **en** (source, Claude's — final fix wave): this reader asked for no more email
+- **es** Español: `este lector pidió no recibir más correos`
+- **fr** Français: `ce lecteur a demandé à ne plus recevoir d'e-mails`
+- **de** Deutsch: `dieser Leser möchte keine E-Mails mehr`
+- **it** Italiano: `questo lettore ha chiesto di non ricevere più email`
+- **pt** Português: `este leitor pediu para não receber mais e-mails`
+- **nl** Nederlands: `deze lezer wil geen e-mail meer ontvangen`
+- **pl** Polski: `ten czytelnik nie chce już dostawać e-maili`
+- **ru** Русский: `этот читатель отказался от писем`
+- **tr** Türkçe: `bu okur artık e-posta almak istemiyor`
+- **ar** العربية: `طلب هذا القارئ ألا يتلقى بريدًا بعد الآن`
+- **hi** हिन्दी: `इस पाठक ने आगे ईमेल न भेजने को कहा है`
+- **mr** मराठी: `या वाचकाने आणखी ईमेल न पाठवण्यास सांगितले आहे`
+- **ja** 日本語: `この読者はメールの停止を希望しています`
+- **zh-Hans** 简体中文: `这位读者已要求不再接收邮件`
+
+### `arcp.sendWhy.limit`
+
+- **en** (source, Claude's — final fix wave): ARC email is over a sending limit right now
+- **es** Español: `el correo de los ARC ha superado ahora un límite de envíos`
+- **fr** Français: `l'e-mail des ARC dépasse en ce moment une limite d'envoi`
+- **de** Deutsch: `die ARC-E-Mail liegt gerade über einem Sendelimit`
+- **it** Italiano: `l'email degli ARC ha superato al momento un limite di invio`
+- **pt** Português: `o e-mail dos ARC está neste momento acima de um limite de envio`
+- **nl** Nederlands: `ARC-e-mail zit nu boven een verzendlimiet`
+- **pl** Polski: `poczta ARC przekroczyła teraz limit wysyłki`
+- **ru** Русский: `почта для ARC сейчас превысила лимит отправки`
+- **tr** Türkçe: `ARC e-postası şu anda bir gönderim sınırını aştı`
+- **ar** العربية: `تجاوز بريد ARC الآن أحد حدود الإرسال`
+- **hi** हिन्दी: `ARC ईमेल अभी भेजने की एक सीमा पार कर चुका है`
+- **mr** मराठी: `ARC ईमेलने आत्ता पाठवण्याची एक मर्यादा ओलांडली आहे`
+- **ja** 日本語: `ARC用のメールが現在、送信の上限を超えています`
+- **zh-Hans** 简体中文: `ARC 邮件目前已超出发送上限`
+
+### `arcp.sendWhy.refused`
+
+- **en** (source, Claude's — final fix wave): the mail server did not accept it
+- **es** Español: `el servidor de correo no lo aceptó`
+- **fr** Français: `le serveur de messagerie ne l'a pas accepté`
+- **de** Deutsch: `der Mailserver hat sie nicht angenommen`
+- **it** Italiano: `il server di posta non l'ha accettata`
+- **pt** Português: `o servidor de e-mail não o aceitou`
+- **nl** Nederlands: `de mailserver heeft hem niet aangenomen`
+- **pl** Polski: `serwer poczty go nie przyjął`
+- **ru** Русский: `почтовый сервер его не принял`
+- **tr** Türkçe: `e-posta sunucusu kabul etmedi`
+- **ar** العربية: `لم يقبله خادم البريد`
+- **hi** हिन्दी: `मेल सर्वर ने उसे स्वीकार नहीं किया`
+- **mr** मराठी: `मेल सर्व्हरने तो स्वीकारला नाही`
+- **ja** 日本語: `メールサーバーが受け付けませんでした`
+- **zh-Hans** 简体中文: `邮件服务器没有接受它`
+
+### `arcp.pastH`
+
+- **en** (source, Claude's — final fix wave): Earlier ARCs for this book
+- **es** Español: `ARC anteriores de este libro`
+- **fr** Français: `ARC précédents pour ce livre`
+- **de** Deutsch: `Frühere ARCs für dieses Buch`
+- **it** Italiano: `ARC precedenti per questo libro`
+- **pt** Português: `ARC anteriores deste livro`
+- **nl** Nederlands: `Eerdere ARC's voor dit boek`
+- **pl** Polski: `Wcześniejsze ARC tej książki`
+- **ru** Русский: `Прежние ARC этой книги`
+- **tr** Türkçe: `Bu kitabın önceki ARC'leri`
+- **ar** العربية: `حملات ARC السابقة لهذا الكتاب`
+- **hi** हिन्दी: `इस किताब के पिछले ARC`
+- **mr** मराठी: `या पुस्तकाचे आधीचे ARC`
+- **ja** 日本語: `この本の過去のARC`
+- **zh-Hans** 简体中文: `这本书以前的 ARC`
+
+### `arcp.datesBad`
+
+- **en** (source, Claude's — final fix wave): Choose dates from today on, with sign-ups closing within 400 days.
+- **es** Español: `Elige fechas a partir de hoy, con el cierre de inscripciones dentro de 400 días.`
+- **fr** Français: `Choisissez des dates à partir d'aujourd'hui, avec une fin des inscriptions dans les 400 jours.`
+- **de** Deutsch: `Wählen Sie Daten ab heute, mit einem Anmeldeschluss innerhalb von 400 Tagen.`
+- **it** Italiano: `Scegli date da oggi in poi, con la chiusura delle iscrizioni entro 400 giorni.`
+- **pt** Português: `Escolha datas a partir de hoje, com o fecho das inscrições dentro de 400 dias.`
+- **nl** Nederlands: `Kies datums vanaf vandaag, met een aanmeldsluiting binnen 400 dagen.`
+- **pl** Polski: `Wybierz daty od dziś, z zamknięciem zapisów w ciągu 400 dni.`
+- **ru** Русский: `Выберите даты не раньше сегодняшнего дня, чтобы запись закрывалась не позже чем через 400 дней.`
+- **tr** Türkçe: `Bugünden itibaren tarihler seçin; kayıtların kapanış tarihi en fazla 400 gün sonrası olabilir.`
+- **ar** العربية: `اختر تواريخ تبدأ من اليوم، على أن يُغلق التسجيل خلال 400 يوم.`
+- **hi** हिन्दी: `आज या उसके बाद की तारीखें चुनें, और साइन अप 400 दिनों के भीतर बंद हों।`
+- **mr** मराठी: `आजपासून पुढच्या तारखा निवडा; नोंदणी बंद होण्याची तारीख 400 दिवसांच्या आत असावी.`
+- **ja** 日本語: `今日以降の日付を選んでください。申し込みの締め切りは400日以内にしてください。`
+- **zh-Hans** 简体中文: `请选择今天或以后的日期，报名截止日期须在 400 天之内。`
 
 ## 9. ARC reader pages and reader emails (90 keys, 2026-11-27; 4 of them added by the final fix wave)
 
