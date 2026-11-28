@@ -25,6 +25,8 @@ import {
   arcMailTokenHash,
   createArcMailer,
   normalizeEmail,
+  arcSignupToken,
+  saltProblem,
   sendArcMail,
   suppress,
   suppressionHash,
@@ -32,7 +34,8 @@ import {
   type ArcMailKind,
   type ArcMailTo,
 } from '../src/arc/mail.js';
-import { arcDir, arcLang, arcT } from '../src/arc/strings.js';
+import { arcOptOutReady } from '../src/arc/readers.js';
+import { arcDir, arcLang, arcPlaceholderRe, arcT } from '../src/arc/strings.js';
 import { SECRET_CONFIG_KEYS } from '../src/housekeeping/backup.js';
 import { collectSecrets } from '../src/housekeeping/scrub.js';
 import { createTestDb, testConfig } from './helpers.js';
@@ -84,6 +87,38 @@ test('ARC mail is off until all three are set, and says which is missing', () =>
   // Never a fallback to account mail.
   assert.equal(createArcMailer(testConfig({ smtpUrl: 'smtp://x', mailFrom: 'hello@beuk.studio' })), null);
   assert.equal(createArcMailer(testConfig({ arc: ARC }))!.status().from, ARC.mailFrom);
+});
+
+// Final fix wave (final review minor 4): one salt rule for mail, opt-outs and the derived tokens.
+test('one salt rule: saltProblem decides mail, the opt-outs and the signup token alike', () => {
+  for (const [salt, why] of [
+    [null, 'ARC_SUPPRESSION_SALT is not set'],
+    ['', 'ARC_SUPPRESSION_SALT is not set'],
+    [SALT.slice(0, 31), 'ARC_SUPPRESSION_SALT is shorter than 32 characters'],
+    [SALT, null],
+  ] as const) {
+    const cfg = testConfig({ arc: { ...ARC, suppressionSalt: salt } });
+    assert.equal(saltProblem(salt), why, String(salt));
+    assert.equal(arcOptOutReady(cfg), why === null, `opt-outs: ${String(salt)}`);
+    assert.equal(arcMailStatus(cfg).configured, why === null, `mail: ${String(salt)}`);
+    if (why) assert.throws(() => arcSignupToken(cfg, 'c1', 0), /ARC mail is not configured/);
+  }
+  // The signup token: the HMAC of the campaign id and the rotation (final review Important 3).
+  const cfg = testConfig({ arc: ARC });
+  assert.equal(arcSignupToken(cfg, 'c1', 0), createHmac('sha256', SALT).update('arc-signup:c1:0').digest('base64url'));
+  assert.notEqual(arcSignupToken(cfg, 'c1', 1), arcSignupToken(cfg, 'c1', 0), 'a new rotation, a new link');
+  assert.match(arcSignupToken(cfg, 'c1', 0), /^[A-Za-z0-9_-]{43}$/);
+});
+
+// Final fix wave (final review minor 5): no shared /g regex carrying lastIndex between callers.
+test('the placeholder pattern is a fresh regex each time', () => {
+  const a = arcPlaceholderRe();
+  assert.notEqual(a, arcPlaceholderRe());
+  assert.ok(a.global);
+  a.exec('{one} {two}');
+  assert.equal(arcPlaceholderRe().lastIndex, 0, "one caller's position never reaches another");
+  assert.equal(arcT('en')('arc.mail.code.subject', { title: 'T' }), 'Your code for T');
+  assert.equal(arcT('en')('arc.mail.code.subject', { title: 'T' }), 'Your code for T', 'twice in a row');
 });
 
 // Decided by this task: the ARC secrets are scrubbed like SMTP_URL, and backups leave them out by name.
