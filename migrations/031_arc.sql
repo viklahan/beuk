@@ -67,6 +67,11 @@ alter table share_recipients add constraint share_recipients_role_shape check (
   (role = 'beta' and token_hash is not null and email is null and status is null)
   or (role = 'arc' and email is not null and status is not null and mail_token_hash is not null)
 );
+-- An ARC reader's address is kept in normalised form (src/arc/mail.ts normalizeEmail),
+-- so one address typed two ways is one reader and one suppression hash.
+alter table share_recipients add constraint share_recipients_arc_email_normal check (
+  role <> 'arc' or email = lower(btrim(email))
+);
 -- beta names stay unique per copy; ARC readers are unique by email (two Sarahs both fit)
 drop index share_recipients_share_name_idx;
 create unique index share_recipients_share_name_idx on share_recipients (share_id, lower(name)) where role = 'beta';

@@ -212,6 +212,7 @@ leaving email unconfigured.
 | `backup-alert` | A backup self-check turning red, its retry, it turning green again, or an admin's alert test | `ALERT_EMAIL` (the operator), only when set and email is configured | Subjects "Beuk: backups need attention" / "Beuk: backups are working again": check names and their scrubbed detail, no writer data | Leave `ALERT_EMAIL` unset |
 | `self-check-probe` | The `auth.mail.delivery-state-honest` self-check | `probe@invalid.example` | Never sent: the check gives it only to an unconfigured mailer, to prove that mailer refuses to claim a delivery | Not an email anyone receives |
 | `invite` | An admin sends it from /account/invite (owner-only) | Whoever the admin chooses to invite (not necessarily an account holder) | Subject "You're one of the first into Beuk": a branded founding-reader invitation — what Beuk does, a link to the studio, and a request to reply with feedback; the gilt-b logo rides inline. The one operator-initiated outreach, sent by hand | Operator only (admin-gated; nothing sent without email) |
+| `arc-reader` | A reader asking for an advance copy on an ARC campaign's page, and the author's answer. Only while ARC mail is configured (section 7), and only through `sendArcMail` (src/arc/mail.ts), which checks the opt-outs and the send limits first | The reader's address, as they typed it on the campaign page | Five emails in the reader's language, from `ARC_MAIL_FROM`: `arc-code` (subject "Your code for {title}": the 6-digit code), `arc-ready` ("Your advance copy of {title}": the copy link, the stamp note, "If you'd like to review it after reading, you're welcome to. It's never required."), `arc-pending` (approval mode: the request is waiting for the author), `arc-approved` (the copy link, the stamp note, the same review line), `arc-declined`. Each says why it came and who it is from ("Sent by {author}, through Beuk."), with "Not you?" and "No more email from {author}" links and the one-click `List-Unsubscribe` headers | Yes, by the reader: "No more email from" (that author) or "Not you?" (every author); and by the operator, by leaving ARC mail unconfigured |
 | `stripe-receipt` | A successful payment, once billing is live | The paying writer | **Sent by Stripe, not by Beuk.** Beuk sends no receipts of its own. Stripe sends them when "Successful payments" is turned on in the Dashboard under Settings → Business → Customer emails ([Stripe: receipts](https://docs.stripe.com/receipts)); receipts cover subscription payments too | In the Stripe Dashboard |
 
 Writer-facing emails (`welcome`, `signup-confirm`, `email-change-*`,
@@ -219,8 +220,78 @@ Writer-facing emails (`welcome`, `signup-confirm`, `email-change-*`,
 (src/email/layout.ts): plain text plus simple HTML, no images, no remote
 fonts, no tracking pixel, and a footer that says why the email was sent,
 who sent it (`MAIL_FROM`) and links to /account. Backup alerts stay plain
-text for the operator.
+text for the operator. Reader emails (`arc-reader`) have their own layout
+(src/arc/emails.ts), built with the same escaping: the reader's language,
+no account link, and a footer with why, who, "Not you?" and "No more
+email from".
 
 A test (tests/email-lifecycle.test.ts) reads every `.send({ … })` call
 in `src/` and fails if one has no `email-kind:` marker or if its kind is
 missing from this table.
+
+## 7. The ARC sender
+
+ARC campaigns (advance review copies) email readers: people who asked
+for a copy on a campaign's page and have no Beuk account. That mail goes
+to strangers, so it has its own sender, its own transport and its own
+safety rails, kept apart from the account mail above. Three settings,
+in `.env`, then restart the app container:
+
+```
+ARC_MAIL_FROM=Beuk readers <readers@beuk.studio>
+ARC_SMTP_URL=smtp://USERNAME:PASSWORD@HOST:587
+ARC_SUPPRESSION_SALT=<a long random string, e.g. the output of: openssl rand -hex 32>
+```
+
+- `ARC_MAIL_FROM` is `Beuk readers <readers@beuk.studio>` (V,
+  2026-11-27). **Never change it once readers have it:** they add it to
+  Amazon's approved senders for Send to Kindle.
+- `ARC_SMTP_URL` is a nodemailer connection URL, as `SMTP_URL` in
+  section 2. Use a **separate, sending-only key** at the provider (prod:
+  Resend), not the account-mail key, so ARC mail can be revoked or
+  throttled without touching password resets. Take the SMTP host, port
+  and credential format from the provider's dashboard when you make the
+  key; the Resend row in section 1 was checked on 26 October 2026 and
+  was not re-checked for this section. Use port 587 on Hetzner (section 1).
+  It is a secret: Housekeeping scrubs it and backups leave it out.
+- `ARC_SUPPRESSION_SALT` keys the opt-out hashes ("Not you?" and "No
+  more email from") and every reader's mail links. **It must never
+  change, and it must be kept with the `.env`** (backups leave it out):
+  a new or lost salt forgets every opt-out and breaks every link in
+  every reader email already sent.
+
+While any of the three is unset, no reader email is sent, a claim cannot
+be confirmed, and the author's ARC panel says which setting is missing.
+Reader mail **never falls back to `MAIL_FROM` or `SMTP_URL`.**
+
+**DNS: nothing new.** The sender is on the root domain, and beuk.studio
+is already verified at Resend, so Resend signs `readers@` with the
+domain's DKIM key; the SPF and DMARC records of section 3 cover it. One
+consequence (from the spec, not measured): ARC mail shares beuk.studio's
+sending reputation with account mail. At slice-1 volumes (at most 50
+readers a book) that is acceptable; revisit if complaint rates rise.
+
+**Replies** go to `SUPPORT_EMAIL`, exactly as for account mail
+(section 4): Beuk adds the same `Reply-To:`. The author's own address is
+never exposed.
+
+**What every reader email carries** (src/arc/mail.ts, `sendArcMail`):
+
+- the opt-out check first: an address that pressed "Not you?" gets
+  nothing from any author; one that pressed "No more email from" gets
+  nothing more from that author. Only SHA-256 of the lower-cased address
+  plus the salt is stored, never the address;
+- the send limits, counted from what was actually delivered: 100 an hour
+  per campaign, 200 an hour and 1,000 a day per author;
+- `List-Unsubscribe: <https://…/arc/m/…/stop>` and
+  `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, the one-click
+  unsubscribe of [RFC 8058](https://www.rfc-editor.org/rfc/rfc8058)
+  (read 2026-11-27). RFC 8058 needs the URI to be HTTPS (so
+  `APP_BASE_URL` must be `https://` in production) and both header
+  fields covered by a DKIM signature. Whether Resend's DKIM signature
+  covers these two fields: not checked; look for them in the signed
+  header list (`h=`) of a received message's `DKIM-Signature`.
+
+There is no Housekeeping test button for the ARC sender yet. The first
+real check is a claim on a test campaign with an address you can read:
+look at the headers as in section 5, step 6.

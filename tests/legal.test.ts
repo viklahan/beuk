@@ -344,6 +344,15 @@ const EMAIL_KIND_NEEDLES: Record<string, string> = {
   'backup-alert': 'backup alerts to the operator',
   'self-check-probe': 'a self-check message that is never delivered',
   invite: 'an invitation to try Beuk',
+  // ARC campaigns (slice 1): the reader emails and the author's notice.
+  'arc-code': 'a 6-digit code to confirm your address',
+  'arc-ready': 'a link to your advance copy',
+  'arc-pending': 'that your request is waiting for the author',
+  'arc-approved': 'when the author approves or declines your request',
+  'arc-declined': 'when the author approves or declines your request',
+  'arc-author-waiting': 'when a reader is waiting for your approval',
+  // The send in src/arc/mail.ts that every reader email goes through (Task 2's own kind).
+  'arc-reader': 'Every email to a reader says why it was sent',
 };
 
 function srcKinds(): Set<string> {

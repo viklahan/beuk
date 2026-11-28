@@ -42,6 +42,11 @@ export interface MailMessage {
   text: string;
   html?: string;
   attachments?: MailAttachment[];
+  /** Extra header fields, `{ name: value }`, handed to nodemailer's
+   *  message `headers` unchanged (nodemailer 10.0.13 mail-composer adds
+   *  them to the root node as is). ARC reader mail sets the one-click
+   *  unsubscribe pair here (src/arc/mail.ts). */
+  headers?: Record<string, string>;
 }
 
 export type MailResult =

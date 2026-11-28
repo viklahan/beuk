@@ -121,6 +121,14 @@ test('an arc reader needs an email, a status and a mail token; a beta reader nee
   await rejectsWith(betaReader(beta, 'With Email', `token-${next()}`, 'ann@example.com'), '23514');
 });
 
+// Controller ruling T1a: the database refuses an ARC address that is not in normalised form.
+test('an arc reader\'s email must be stored normalised', async () => {
+  const c = await campaign();
+  await rejectsWith(arcReader(c.shareId, 'Upper', 'Sarah@Example.com'), '23514');
+  await rejectsWith(arcReader(c.shareId, 'Spaced', ' sarah@example.com '), '23514');
+  assert.ok((await arcReader(c.shareId, 'Sarah', 'sarah@example.com')).rows[0].id);
+});
+
 test('two arc readers may share a name, never an email; beta names stay unique', async () => {
   const c = await campaign();
   await arcReader(c.shareId, 'Sarah', 'a@x.com');

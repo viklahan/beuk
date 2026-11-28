@@ -157,6 +157,10 @@ export const SECRET_CONFIG_KEYS = [
   'ALERT_WEBHOOK_URL',
   // Aris: the secret that seals writers' stored provider keys.
   'ARIS_KEY_SECRET',
+  // ARC reader mail: its transport URL carries a credential; the salt keys
+  // every opt-out hash and mail token (src/arc/mail.ts).
+  'ARC_SMTP_URL',
+  'ARC_SUPPRESSION_SALT',
 ] as const;
 
 export interface BackupManifest {

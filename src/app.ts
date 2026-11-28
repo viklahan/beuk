@@ -9,6 +9,7 @@ import {
   type HousekeepingDeps,
 } from './housekeeping/context.js';
 import { createMailer, type Mailer } from './mailer.js';
+import { createArcMailer } from './arc/mail.js';
 import { accountRoutes, BackgroundTasks, type AccountLimits } from './routes/account.js';
 import { authRoutes, signInLimitHandle } from './routes/auth.js';
 import { accountPortalRoutes, signupConfirmationHook, type PortalLimits } from './routes/account-portal.js';
@@ -66,6 +67,9 @@ export interface AppDeps {
   housekeeping?: HousekeepingDeps;
   /** P0 #5: outgoing mail; defaults to createMailer(config). */
   mailer?: Mailer;
+  /** ARC reader mail (src/arc/mail.ts): defaults to createArcMailer(config),
+   *  null while ARC mail is not configured; tests inject a fake or null. */
+  arcMailer?: Mailer | null;
   /** P0 #5: rate limits for the account endpoints (tests tighten them). */
   accountLimits?: AccountLimits;
   /** CSP violation report endpoint (tests inject the log + limits). */
@@ -85,6 +89,7 @@ export function buildApp({
   billing,
   housekeeping,
   mailer,
+  arcMailer,
   accountLimits,
   cspReport,
   helpSearchLimits,
@@ -104,6 +109,8 @@ export function buildApp({
   const mail = mailer ?? createMailer(config);
   const accountTasks = new BackgroundTasks();
   app.locals.mailer = mail;
+  // ARC reader mail: its own transport and sender, never the account mailer.
+  app.locals.arcMailer = arcMailer === undefined ? createArcMailer(config) : arcMailer;
   app.locals.accountTasks = accountTasks;
   // The billing webhook verifies its signature over the RAW body, so it
   // gets its own raw parser mounted on its exact path BEFORE the global
