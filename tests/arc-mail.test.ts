@@ -407,7 +407,10 @@ test('the string table: languages, fallbacks and the fixed English lines', () =>
   assert.equal(arcLang('zh'), 'zh-Hans');
   assert.equal(arcLang('en-GB'), 'en');
   assert.equal(arcLang('PT-br'), 'pt');
-  assert.equal(arcLang('hi'), 'en');
+  // Rulings F17 + M8 (Task 9): Hindi and Marathi are interface languages
+  // now, so 'hi' maps to itself (the plan's arcLang('hi') === 'en' is superseded).
+  assert.equal(arcLang('hi'), 'hi');
+  assert.equal(arcLang('sw'), 'en');
   assert.equal(arcLang(''), 'en');
   assert.equal(arcDir('ar'), 'rtl');
   assert.equal(arcDir('en'), 'ltr');
@@ -415,8 +418,9 @@ test('the string table: languages, fallbacks and the fixed English lines', () =>
   assert.equal(t('arc.stamp', { name: 'Sarah', email: 'sarah@example.com' }), 'Advance Review Copy prepared for Sarah (sarah@example.com)');
   assert.equal(t('arc.mail.review'), "If you'd like to review it after reading, you're welcome to. It's never required.");
   assert.equal(t('arc.mail.stampNote'), 'Your copy shows your name and email on its copyright page.');
-  // A language with no drafts yet falls back to English, key by key.
-  assert.equal(arcT('de')('arc.mail.stampNote'), 'Your copy shows your name and email on its copyright page.');
+  // A key a language's table lacks falls back to English (Task 9: every
+  // table has every key but the English-only ones, such as the stamp, F16).
+  assert.equal(arcT('de')('arc.stamp', { name: 'Sarah', email: 'sarah@example.com' }), 'Advance Review Copy prepared for Sarah (sarah@example.com)');
   // A value is filled once: a {placeholder} inside a value stays as typed.
   assert.equal(t('arc.stamp', { name: '{email}', email: 'x@y.z' }), 'Advance Review Copy prepared for {email} (x@y.z)');
 });

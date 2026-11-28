@@ -60,11 +60,13 @@ ${o.script ?? ''}  </body>
 }
 
 /** The launch date as the reader's language writes it (UTC, so the date
- *  is the one the author typed, whatever the server's zone). */
+ *  is the one the author typed, whatever the server's zone). Marathi in
+ *  Western digits, as the studio's Marathi pack writes every number
+ *  (docs/ui-hi-mr-glossary.md; Intl's 'mr' default is Devanagari digits). */
 export function launchDateText(lang: ArcLang, launchDate: string): string {
   const d = new Date(`${launchDate}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return launchDate;
-  return new Intl.DateTimeFormat(lang, { dateStyle: 'long', timeZone: 'UTC' }).format(d);
+  return new Intl.DateTimeFormat(lang === 'mr' ? 'mr-u-nu-latn' : lang, { dateStyle: 'long', timeZone: 'UTC' }).format(d);
 }
 
 function errorBox(message: string | null): SafeHtml | string {

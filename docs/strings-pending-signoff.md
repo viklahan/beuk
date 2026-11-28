@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-27 (Hindi and Marathi: section 7, with the 14 keys main added since 340cb22; the keystroke rescue's two strings: section 6). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words); 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-27 (ARC reader pages and reader emails: section 9; the ARC panel: section 8; Hindi and Marathi: section 7, with the 14 keys main added since 340cb22; the keystroke rescue's two strings: section 6). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words); 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -2984,3 +2984,1625 @@ Points worth a look:
 - **mr** मराठी: `नवीन ARC सुरू करा`
 - **ja** 日本語: `新しいARCを始める`
 - **zh-Hans** 简体中文: `开始新的 ARC`
+
+## 9. ARC reader pages and reader emails (86 keys, 2026-11-27)
+
+What a reader of an ARC campaign sees (slice 1, `src/arc/strings.ts`): the claim page, the code page, the waiting page,
+the copy page, the Not me / Stop pages, the calm error pages and their footer, and every reader email (the code, the
+copy, waiting, approved, declined, and the footer each one carries). The page and the email take the book's language
+(`arcLang(snapshot.language)`); a book language with no interface pack reads in English. The tables are in
+`src/arc/strings.ts` (`ES` … `ZH`), in English key order.
+
+**English.** Fixed word for word by the plan and the spec: `arc.mail.review`, `arc.mail.stampNote`, `arc.claim.title`,
+`.lede`, `.review` (ruling F15), `.submit`, `.stampNote`, `.profile`, `arc.copy.title`, `.for`, `.download`, `.read`,
+`.keep`, `arc.theAuthor`; V's: `arc.notMe.body` and `arc.stop.body`. Every other English string is Claude's (Tasks 2, 6
+and 7) and is V's to confirm in the PR. **All 14 other languages below are drafts written by Claude by hand:
+not approved, not read by a native speaker.** No translation service or API was called.
+
+**Not translated, on purpose (4 keys, English in every language):**
+
+- `arc.stamp` and `arc.stampPage.title`: the stamp line inside readers' EPUBs and the title of the page it adds (ruling
+  F16: an unsigned translation inside a reader's EPUB cannot be recalled from a device). `arcp.stamp` (§8) is the
+  panel's line, not this one.
+- `arc.mail.goneTitle` and `arc.mail.gone`: the page for a used or unknown mail link knows no reader language (a used
+  Not me link names nobody any more), so it is English (`renderMailGonePage`).
+
+How the drafts were made (`tests/arc-strings.test.ts` checks every mechanical rule):
+
+- Every English key less the four above, none empty, none still the English (except `arc.foot.privacy` in **it** and
+  **nl**, "Privacy", as the studio's own `legal.privacy`); `{placeholders}` byte for byte, the same set and count.
+  English has no `…Plural` keys, so no draft needs a plural twin.
+- Amazon rule (plan Global Constraints): no draft says "in exchange for a review" or treats a review as owed. The test
+  holds one pattern per language (that language's "in exchange / in return", "owe" and "must / have to", with
+  Unicode word edges; ja, zh-Hans and ar as substrings) and requires each review line to carry its "if you'd like"
+  (es *Si quieres*, fr *Si vous souhaitez*, de *Wenn Sie*, it *Se … vuoi*, pt *Se quiser*, nl *Als u*, pl *Jeśli*, ru
+  *Если*, tr *isterseniz*, ar *إن رغبت*, hi *अगर आप*, mr *…असेल, तर*, ja *…思ったら*, zh-Hans *如果你*). The patterns are
+  Claude's, not a translator's.
+- Address form as each studio pack: *tú* (es, it), *vous* (fr), *Sie* (de), the third person (pt, European as the
+  pack), *u* (nl), *Ty* (pl, as the pack's *Twój*), *вы* (ru), *siz* (tr), the second person (ar), *आप* (hi), *तुम्ही*
+  (mr, no nukta), polite form with no pronoun (ja), *你* (zh-Hans). Footer words are the studio's `legal.privacy` /
+  `legal.terms` in each language.
+- Book copy words as the §8 panel: es *ejemplar anticipado*, fr *exemplaire en avant-première*, de *Vorab-Exemplar*, it
+  *copia in anteprima*, pt *exemplar antecipado*, nl *voorpublicatie-exemplaar*, pl *egzemplarz przedpremierowy*, ru
+  *сигнальный экземпляр*, tr *ön okuma kopyası*, ar *نسخة مسبقة*, hi *रिलीज़ से पहले की प्रति*, mr *प्रकाशनापूर्वीची प्रत*,
+  ja *献本*, zh-Hans *预发本*.
+
+Points worth a look:
+
+- **`{author}` is a name, or `arc.theAuthor` when the book names none**, so each draft keeps it where any name reads
+  and the fallback is chosen to fit every sentence it lands in:
+  **de** always in the dative (after *von* / *bei*; the test checks it), fallback *dem Autor*; **es** *su autor*;
+  **it** *chi l'ha scritto* and **pt** *quem o escreveu* (no preposition contracts with them, as *dell'autore* / *do
+  autor* would need); **fr** *l'auteur*, and *par {author}* where French allows it, since *de* does not elide before a
+  vowel-initial name; **pl** and **ru** keep `{author}` in the nominative and never give it a past-tense verb (those
+  agree with a gender): labels such as *Nadawca: {author}*, *{author}: ваша заявка одобрена*, *(автор: {author})*, and
+  present or future verbs (pl *{author} zgadza się na Twoją prośbę* for "approved"); **ar**, **hi** and **mr** use
+  passive or ergative forms so no verb carries the author's gender (hi *{author} की ओर से … दी जा रही हैं*, mr
+  *{author} यांनी … मंजूर केली*, ar *تمت موافقة {author}*); **tr** puts no suffix on any placeholder (*{author}
+  tarafından*, *{title} için*; the test checks it). As in English, a sentence that starts with the fallback starts in
+  lower case (*the author looks at each request* → es *su autor revisa…*).
+- **pl** and **ru** past tenses of the *reader* are gendered too, so buttons say "This is not my request" (*To nie moja
+  prośba*, *Это не моя заявка*) for "I didn't ask for a copy", and pl uses impersonal forms (*złożono prośbę*).
+- **Titles** are quoted where the grammar needs it (a title cannot decline): pl „{title}”, ru «{title}» (with *книги*),
+  ja 『{title}』, zh-Hans 《{title}》. Other languages leave `{title}` bare, as English does.
+- **`{minutes}`** (30 today): pl and ru write *{minutes} min.* / *{minutes} мин.*, which reads with any number; **ar**
+  *{minutes} دقيقة* is right for 11–99 (it would need *دقائق* for 3–10); every other draft reads for any n ≠ 1.
+- **Marathi date**: `launchDateText` now formats Marathi with Western digits (*14 फेब्रुवारी, 2027*), as the Marathi
+  pack writes every number; Intl's `mr` default is Devanagari digits. Other languages are unchanged.
+- **The reader emails go to third parties, so each draft says no more than English**: Not me deletes the name and
+  email from this book, closes this copy, and stops mail from any author on Beuk; the backups line says they can
+  remain in older backups and that the block is kept in backups too; Stop covers only that author's books and the
+  copy keeps working. Ruling C7 (final wave) will change `arc.stop.done` in English; its 14 drafts must change with it.
+- **ja** adds さん after the reader's own name (`arc.wait.lead`, `arc.copy.for`); `arc.mail.notMe` reads "if you have
+  no idea about this" (心当たりがない場合), the usual Japanese for "Not you?".
+- **zh-Hans** avoids 必须 ("must") everywhere, so the review line ends 这从来都不是硬性要求 ("it is never a requirement").
+- **hi** `arc.mail.notMe` / `arc.notMe.title` ask "You didn't ask for it?" (आपने नहीं माँगी थी?), since "it wasn't you"
+  (आप नहीं थे / थीं) would need the reader's gender.
+
+### `arc.mail.review`
+
+- **en** (source, fixed by the plan/spec): If you'd like to review it after reading, you're welcome to. It's never required.
+- **es** Español: `Si quieres reseñarlo después de leerlo, puedes hacerlo. Nunca es obligatorio.`
+- **fr** Français: `Si vous souhaitez donner votre avis sur ce livre après l'avoir lu, libre à vous. Ce n'est jamais obligatoire.`
+- **de** Deutsch: `Wenn Sie es nach dem Lesen rezensieren möchten, sind Sie herzlich dazu eingeladen. Pflicht ist das nie.`
+- **it** Italiano: `Se dopo averlo letto vuoi recensirlo, fallo pure. Non è mai obbligatorio.`
+- **pt** Português: `Se quiser fazer uma crítica depois de o ler, esteja à vontade. Nunca é obrigatório.`
+- **nl** Nederlands: `Als u het na het lezen wilt recenseren, mag dat graag. Het is nooit verplicht.`
+- **pl** Polski: `Jeśli po lekturze zechcesz napisać recenzję, śmiało. Nigdy nie jest to obowiązkowe.`
+- **ru** Русский: `Если после прочтения захотите написать отзыв — пожалуйста. Это никогда не обязательно.`
+- **tr** Türkçe: `Okuduktan sonra yorum yazmak isterseniz yazabilirsiniz. Bu hiçbir zaman zorunlu değildir.`
+- **ar** العربية: `إن رغبت في مراجعته بعد قراءته، فأهلًا بذلك. وليس ذلك مطلوبًا أبدًا.`
+- **hi** हिन्दी: `अगर आप पढ़ने के बाद इसका रिव्यू लिखना चाहें, तो आपका स्वागत है। यह कभी ज़रूरी नहीं है।`
+- **mr** मराठी: `वाचून झाल्यावर तुम्हाला परीक्षण लिहायचे असेल, तर तुमचे स्वागत आहे. ते कधीही आवश्यक नाही.`
+- **ja** 日本語: `読み終えたあとでレビューを書きたいと思ったら、どうぞご自由に。書く必要はまったくありません。`
+- **zh-Hans** 简体中文: `如果你读完后想写书评，非常欢迎。这从来都不是硬性要求。`
+
+### `arc.mail.stampNote`
+
+- **en** (source, fixed by the plan/spec): Your copy shows your name and email on its copyright page.
+- **es** Español: `Tu ejemplar muestra tu nombre y tu correo en la página de derechos de autor.`
+- **fr** Français: `Votre exemplaire porte votre nom et votre adresse e-mail sur sa page de copyright.`
+- **de** Deutsch: `Ihr Exemplar zeigt Ihren Namen und Ihre E-Mail-Adresse auf der Copyright-Seite.`
+- **it** Italiano: `La tua copia mostra il tuo nome e la tua email nella pagina del copyright.`
+- **pt** Português: `O seu exemplar mostra o seu nome e o seu e-mail na página de direitos de autor.`
+- **nl** Nederlands: `Uw exemplaar toont uw naam en e-mailadres op de copyrightpagina.`
+- **pl** Polski: `Twój egzemplarz pokazuje Twoje imię i adres e-mail na stronie z prawami autorskimi.`
+- **ru** Русский: `В вашем экземпляре на странице с авторскими правами указаны ваше имя и адрес почты.`
+- **tr** Türkçe: `Kopyanızın telif hakkı sayfasında adınız ve e-posta adresiniz yer alır.`
+- **ar** العربية: `تُظهر نسختك اسمك وبريدك الإلكتروني في صفحة حقوق النشر.`
+- **hi** हिन्दी: `आपकी प्रति के कॉपीराइट पेज पर आपका नाम और ईमेल दिखता है।`
+- **mr** मराठी: `तुमच्या प्रतीच्या कॉपीराइट पानावर तुमचे नाव आणि ईमेल दिसते.`
+- **ja** 日本語: `献本の著作権ページには、お名前とメールアドレスが入っています。`
+- **zh-Hans** 简体中文: `你的这一份在版权页上印有你的姓名和邮箱。`
+
+### `arc.mail.why`
+
+- **en** (source, Claude's): You got this email because someone asked for an advance copy of {title} with this address.
+- **es** Español: `Recibes este correo porque alguien pidió un ejemplar anticipado de {title} con esta dirección.`
+- **fr** Français: `Vous recevez cet e-mail parce que quelqu'un a demandé un exemplaire en avant-première de {title} avec cette adresse.`
+- **de** Deutsch: `Sie erhalten diese E-Mail, weil jemand mit dieser Adresse ein Vorab-Exemplar von {title} angefragt hat.`
+- **it** Italiano: `Ricevi questa email perché qualcuno ha chiesto una copia in anteprima di {title} con questo indirizzo.`
+- **pt** Português: `Recebeu este e-mail porque alguém pediu um exemplar antecipado de {title} com este endereço.`
+- **nl** Nederlands: `U krijgt deze e-mail omdat iemand met dit adres een voorpublicatie-exemplaar van {title} heeft aangevraagd.`
+- **pl** Polski: `Dostajesz ten e-mail, bo ktoś poprosił z tego adresu o egzemplarz przedpremierowy „{title}”.`
+- **ru** Русский: `Вы получили это письмо, потому что кто-то запросил сигнальный экземпляр книги «{title}» на этот адрес.`
+- **tr** Türkçe: `Bu e-postayı, biri bu adresle {title} için ön okuma kopyası istediği için aldınız.`
+- **ar** العربية: `وصلتك هذه الرسالة لأن أحدهم طلب نسخة مسبقة من {title} بهذا العنوان.`
+- **hi** हिन्दी: `आपको यह ईमेल इसलिए मिला, क्योंकि किसी ने इस पते से {title} की रिलीज़ से पहले की प्रति माँगी थी।`
+- **mr** मराठी: `कोणीतरी या पत्त्यावरून {title} ची प्रकाशनापूर्वीची प्रत मागितली, म्हणून तुम्हाला हा ईमेल आला आहे.`
+- **ja** 日本語: `このメールは、どなたかがこのアドレスで『{title}』の献本を申し込んだため、お送りしています。`
+- **zh-Hans** 简体中文: `你收到这封邮件，是因为有人用这个地址申请了《{title}》的预发本。`
+
+### `arc.mail.who`
+
+- **en** (source, Claude's): Sent by {author}, through Beuk.
+- **es** Español: `Enviado por {author}, a través de Beuk.`
+- **fr** Français: `Envoyé par {author}, via Beuk.`
+- **de** Deutsch: `Gesendet von {author}, über Beuk.`
+- **it** Italiano: `Inviata da {author}, tramite Beuk.`
+- **pt** Português: `Enviado por {author}, através do Beuk.`
+- **nl** Nederlands: `Verzonden door {author}, via Beuk.`
+- **pl** Polski: `Nadawca: {author}, przez Beuk.`
+- **ru** Русский: `Отправитель: {author}, через Beuk.`
+- **tr** Türkçe: `Gönderen: {author}, Beuk aracılığıyla.`
+- **ar** العربية: `المُرسِل: {author}، عبر Beuk.`
+- **hi** हिन्दी: `{author} की ओर से, Beuk के ज़रिए भेजा गया।`
+- **mr** मराठी: `{author} यांच्याकडून, Beuk मार्फत पाठवलेला.`
+- **ja** 日本語: `送信者：{author}（Beuk経由）`
+- **zh-Hans** 简体中文: `发件人：{author}，经由 Beuk 发送。`
+
+### `arc.mail.notMe`
+
+- **en** (source, Claude's): Not you? {url}
+- **es** Español: `¿No eres tú? {url}`
+- **fr** Français: `Ce n'est pas vous ? {url}`
+- **de** Deutsch: `Nicht Sie? {url}`
+- **it** Italiano: `Non sei tu? {url}`
+- **pt** Português: `Não foi você? {url}`
+- **nl** Nederlands: `Bent u dit niet? {url}`
+- **pl** Polski: `To nie Ty? {url}`
+- **ru** Русский: `Это не вы? {url}`
+- **tr** Türkçe: `Siz değil misiniz? {url}`
+- **ar** العربية: `لست أنت؟ {url}`
+- **hi** हिन्दी: `आपने नहीं माँगी थी? {url}`
+- **mr** मराठी: `तुम्ही मागितली नव्हती? {url}`
+- **ja** 日本語: `心当たりがない場合：{url}`
+- **zh-Hans** 简体中文: `不是你本人？{url}`
+
+### `arc.mail.stop`
+
+- **en** (source, Claude's): No more email from {author}: {url}
+- **es** Español: `No recibir más correos de {author}: {url}`
+- **fr** Français: `Plus aucun e-mail envoyé par {author} : {url}`
+- **de** Deutsch: `Keine E-Mails mehr von {author}: {url}`
+- **it** Italiano: `Niente più email da {author}: {url}`
+- **pt** Português: `Não receber mais e-mails de {author}: {url}`
+- **nl** Nederlands: `Geen e-mail meer van {author}: {url}`
+- **pl** Polski: `{author} — bez kolejnych e-maili: {url}`
+- **ru** Русский: `Отписаться от писем ({author}): {url}`
+- **tr** Türkçe: `E-postaları durdur ({author}): {url}`
+- **ar** العربية: `إيقاف رسائل {author}: {url}`
+- **hi** हिन्दी: `{author} की ओर से अब कोई ईमेल नहीं: {url}`
+- **mr** मराठी: `{author} यांच्याकडून आणखी ईमेल नको: {url}`
+- **ja** 日本語: `{author}からのメールを停止：{url}`
+- **zh-Hans** 简体中文: `不再接收 {author} 的邮件：{url}`
+
+### `arc.mail.copyLink`
+
+- **en** (source, Claude's): Your copy: {url}
+- **es** Español: `Tu ejemplar: {url}`
+- **fr** Français: `Votre exemplaire : {url}`
+- **de** Deutsch: `Ihr Exemplar: {url}`
+- **it** Italiano: `La tua copia: {url}`
+- **pt** Português: `O seu exemplar: {url}`
+- **nl** Nederlands: `Uw exemplaar: {url}`
+- **pl** Polski: `Twój egzemplarz: {url}`
+- **ru** Русский: `Ваш экземпляр: {url}`
+- **tr** Türkçe: `Kopyanız: {url}`
+- **ar** العربية: `نسختك: {url}`
+- **hi** हिन्दी: `आपकी प्रति: {url}`
+- **mr** मराठी: `तुमची प्रत: {url}`
+- **ja** 日本語: `献本はこちら：{url}`
+- **zh-Hans** 简体中文: `你的预发本：{url}`
+
+### `arc.theAuthor`
+
+- **en** (source, fixed by the plan/spec): the author
+- **es** Español: `su autor`
+- **fr** Français: `l'auteur`
+- **de** Deutsch: `dem Autor`
+- **it** Italiano: `chi l'ha scritto`
+- **pt** Português: `quem o escreveu`
+- **nl** Nederlands: `de auteur`
+- **pl** Polski: `autor`
+- **ru** Русский: `автор`
+- **tr** Türkçe: `yazar`
+- **ar** العربية: `المؤلف`
+- **hi** हिन्दी: `लेखक`
+- **mr** मराठी: `लेखक`
+- **ja** 日本語: `著者`
+- **zh-Hans** 简体中文: `作者`
+
+### `arc.mail.code.subject`
+
+- **en** (source, Claude's): Your code for {title}
+- **es** Español: `Tu código para {title}`
+- **fr** Français: `Votre code pour {title}`
+- **de** Deutsch: `Ihr Code für {title}`
+- **it** Italiano: `Il tuo codice per {title}`
+- **pt** Português: `O seu código para {title}`
+- **nl** Nederlands: `Uw code voor {title}`
+- **pl** Polski: `Twój kod do „{title}”`
+- **ru** Русский: `Ваш код для «{title}»`
+- **tr** Türkçe: `{title} için kodunuz`
+- **ar** العربية: `رمزك لكتاب {title}`
+- **hi** हिन्दी: `{title} के लिए आपका कोड`
+- **mr** मराठी: `{title} साठी तुमचा कोड`
+- **ja** 日本語: `『{title}』の確認コード`
+- **zh-Hans** 简体中文: `《{title}》的验证码`
+
+### `arc.mail.code.lead`
+
+- **en** (source, Claude's): Your code is {code}.
+- **es** Español: `Tu código es {code}.`
+- **fr** Français: `Votre code est {code}.`
+- **de** Deutsch: `Ihr Code lautet {code}.`
+- **it** Italiano: `Il tuo codice è {code}.`
+- **pt** Português: `O seu código é {code}.`
+- **nl** Nederlands: `Uw code is {code}.`
+- **pl** Polski: `Twój kod to {code}.`
+- **ru** Русский: `Ваш код: {code}.`
+- **tr** Türkçe: `Kodunuz: {code}.`
+- **ar** العربية: `رمزك هو {code}.`
+- **hi** हिन्दी: `आपका कोड {code} है।`
+- **mr** मराठी: `तुमचा कोड {code} आहे.`
+- **ja** 日本語: `確認コードは {code} です。`
+- **zh-Hans** 简体中文: `你的验证码是 {code}。`
+
+### `arc.mail.code.body`
+
+- **en** (source, Claude's): Enter it on the page where you asked for an advance copy of {title} from {author}.
+- **es** Español: `Escríbelo en la página donde pediste a {author} un ejemplar anticipado de {title}.`
+- **fr** Français: `Saisissez-le sur la page où vous avez demandé un exemplaire en avant-première de {title}, offert par {author}.`
+- **de** Deutsch: `Geben Sie ihn auf der Seite ein, auf der Sie bei {author} ein Vorab-Exemplar von {title} angefragt haben.`
+- **it** Italiano: `Inseriscilo nella pagina in cui hai chiesto a {author} una copia in anteprima di {title}.`
+- **pt** Português: `Introduza-o na página onde pediu a {author} um exemplar antecipado de {title}.`
+- **nl** Nederlands: `Vul hem in op de pagina waar u {author} om een voorpublicatie-exemplaar van {title} vroeg.`
+- **pl** Polski: `Wpisz go na stronie, na której złożono prośbę o egzemplarz przedpremierowy „{title}”, który rozdaje {author}.`
+- **ru** Русский: `Введите его на странице, где вы запрашивали сигнальный экземпляр книги «{title}» (автор: {author}).`
+- **tr** Türkçe: `Kodu, {author} tarafından sunulan {title} ön okuma kopyasını istediğiniz sayfaya girin.`
+- **ar** العربية: `أدخِله في الصفحة التي طلبت فيها نسخة مسبقة من {title} من {author}.`
+- **hi** हिन्दी: `इसे उस पेज पर डालें, जहाँ आपने {author} की {title} की रिलीज़ से पहले की प्रति माँगी थी।`
+- **mr** मराठी: `जिथे तुम्ही {author} यांच्याकडे {title} ची प्रकाशनापूर्वीची प्रत मागितली, त्या पानावर तो टाका.`
+- **ja** 日本語: `{author}の『{title}』の献本を申し込んだページで、このコードを入力してください。`
+- **zh-Hans** 简体中文: `请在你向 {author} 申请《{title}》预发本的页面上输入它。`
+
+### `arc.mail.code.ignore`
+
+- **en** (source, Claude's): If you didn't ask for a copy, you can ignore this email.
+- **es** Español: `Si no pediste ningún ejemplar, puedes ignorar este correo.`
+- **fr** Français: `Si vous n'avez pas demandé d'exemplaire, vous pouvez ignorer cet e-mail.`
+- **de** Deutsch: `Wenn Sie kein Exemplar angefragt haben, können Sie diese E-Mail ignorieren.`
+- **it** Italiano: `Se non hai chiesto nessuna copia, puoi ignorare questa email.`
+- **pt** Português: `Se não pediu nenhum exemplar, pode ignorar este e-mail.`
+- **nl** Nederlands: `Hebt u geen exemplaar aangevraagd, dan kunt u deze e-mail negeren.`
+- **pl** Polski: `Jeśli ta prośba nie pochodzi od Ciebie, możesz zignorować ten e-mail.`
+- **ru** Русский: `Если вы не запрашивали экземпляр, просто проигнорируйте это письмо.`
+- **tr** Türkçe: `Kopya istemediyseniz bu e-postayı yok sayabilirsiniz.`
+- **ar** العربية: `إن لم تطلب نسخة، يمكنك تجاهل هذه الرسالة.`
+- **hi** हिन्दी: `अगर आपने कोई प्रति नहीं माँगी थी, तो इस ईमेल को अनदेखा करें।`
+- **mr** मराठी: `तुम्ही प्रत मागितली नसेल, तर हा ईमेल दुर्लक्षित करा.`
+- **ja** 日本語: `献本を申し込んだ覚えがない場合は、このメールを無視してください。`
+- **zh-Hans** 简体中文: `如果你没有申请过，可以忽略这封邮件。`
+
+### `arc.mail.ready.subject`
+
+- **en** (source, Claude's): Your advance copy of {title}
+- **es** Español: `Tu ejemplar anticipado de {title}`
+- **fr** Français: `Votre exemplaire en avant-première de {title}`
+- **de** Deutsch: `Ihr Vorab-Exemplar von {title}`
+- **it** Italiano: `La tua copia in anteprima di {title}`
+- **pt** Português: `O seu exemplar antecipado de {title}`
+- **nl** Nederlands: `Uw voorpublicatie-exemplaar van {title}`
+- **pl** Polski: `Twój egzemplarz przedpremierowy „{title}”`
+- **ru** Русский: `Ваш сигнальный экземпляр «{title}»`
+- **tr** Türkçe: `{title} ön okuma kopyanız`
+- **ar** العربية: `نسختك المسبقة من {title}`
+- **hi** हिन्दी: `{title} की आपकी रिलीज़ से पहले की प्रति`
+- **mr** मराठी: `{title} ची तुमची प्रकाशनापूर्वीची प्रत`
+- **ja** 日本語: `『{title}』の献本をお届けします`
+- **zh-Hans** 简体中文: `你的《{title}》预发本`
+
+### `arc.mail.ready.lead`
+
+- **en** (source, Claude's): Here is your advance copy of {title} from {author}.
+- **es** Español: `Aquí tienes tu ejemplar anticipado de {title}, enviado por {author}.`
+- **fr** Français: `Voici votre exemplaire en avant-première de {title}, envoyé par {author}.`
+- **de** Deutsch: `Hier ist Ihr Vorab-Exemplar von {title}, gesendet von {author}.`
+- **it** Italiano: `Ecco la tua copia in anteprima di {title}, inviata da {author}.`
+- **pt** Português: `Aqui está o seu exemplar antecipado de {title}, enviado por {author}.`
+- **nl** Nederlands: `Hier is uw voorpublicatie-exemplaar van {title}, verzonden door {author}.`
+- **pl** Polski: `Oto Twój egzemplarz przedpremierowy „{title}”, który wysyła {author}.`
+- **ru** Русский: `Вот ваш сигнальный экземпляр книги «{title}». Автор: {author}.`
+- **tr** Türkçe: `{author} tarafından gönderilen {title} ön okuma kopyanız burada.`
+- **ar** العربية: `إليك نسختك المسبقة من {title}، من {author}.`
+- **hi** हिन्दी: `यह रही {author} की ओर से {title} की आपकी रिलीज़ से पहले की प्रति।`
+- **mr** मराठी: `{author} यांच्याकडून {title} ची तुमची प्रकाशनापूर्वीची प्रत ही घ्या.`
+- **ja** 日本語: `{author}から『{title}』の献本が届きました。`
+- **zh-Hans** 简体中文: `这是 {author} 送给你的《{title}》预发本。`
+
+### `arc.mail.pending.subject`
+
+- **en** (source, Claude's): Your request for {title} is waiting for {author}
+- **es** Español: `Tu solicitud de {title} está esperando a {author}`
+- **fr** Français: `Votre demande pour {title} est transmise à {author}`
+- **de** Deutsch: `Ihre Anfrage für {title} wartet auf eine Antwort von {author}`
+- **it** Italiano: `La tua richiesta per {title} attende la risposta di {author}`
+- **pt** Português: `O seu pedido de {title} aguarda resposta de {author}`
+- **nl** Nederlands: `Uw aanvraag voor {title} wacht op {author}`
+- **pl** Polski: `Twoja prośba o „{title}” czeka, aż odpowie {author}`
+- **ru** Русский: `{author}: ваша заявка на «{title}» ждёт решения`
+- **tr** Türkçe: `{title} isteğiniz yanıt bekliyor: {author}`
+- **ar** العربية: `طلبك لكتاب {title} بانتظار ردّ {author}`
+- **hi** हिन्दी: `{title} के लिए आपका अनुरोध {author} के पास है`
+- **mr** मराठी: `{title} साठीची तुमची विनंती {author} यांच्याकडे प्रलंबित आहे`
+- **ja** 日本語: `『{title}』のお申し込みは{author}の確認待ちです`
+- **zh-Hans** 简体中文: `你对《{title}》的申请正在等待 {author} 处理`
+
+### `arc.mail.pending.lead`
+
+- **en** (source, Claude's): Thank you for asking for an advance copy of {title}.
+- **es** Español: `Gracias por pedir un ejemplar anticipado de {title}.`
+- **fr** Français: `Merci d'avoir demandé un exemplaire en avant-première de {title}.`
+- **de** Deutsch: `Danke, dass Sie ein Vorab-Exemplar von {title} angefragt haben.`
+- **it** Italiano: `Grazie per aver chiesto una copia in anteprima di {title}.`
+- **pt** Português: `Obrigado por pedir um exemplar antecipado de {title}.`
+- **nl** Nederlands: `Bedankt dat u een voorpublicatie-exemplaar van {title} hebt aangevraagd.`
+- **pl** Polski: `Dziękujemy za prośbę o egzemplarz przedpremierowy „{title}”.`
+- **ru** Русский: `Спасибо, что запросили сигнальный экземпляр книги «{title}».`
+- **tr** Türkçe: `{title} için ön okuma kopyası istediğiniz için teşekkürler.`
+- **ar** العربية: `شكرًا لطلبك نسخة مسبقة من {title}.`
+- **hi** हिन्दी: `{title} की रिलीज़ से पहले की प्रति माँगने के लिए धन्यवाद।`
+- **mr** मराठी: `{title} ची प्रकाशनापूर्वीची प्रत मागितल्याबद्दल धन्यवाद.`
+- **ja** 日本語: `『{title}』の献本にお申し込みいただき、ありがとうございます。`
+- **zh-Hans** 简体中文: `感谢你申请《{title}》的预发本。`
+
+### `arc.mail.pending.body`
+
+- **en** (source, Claude's): {author} looks at each request. You will get one more email when they decide.
+- **es** Español: `{author} revisa cada solicitud. Recibirás un correo más cuando haya una decisión.`
+- **fr** Français: `{author} examine chaque demande. Vous recevrez un e-mail de plus une fois la décision prise.`
+- **de** Deutsch: `Jede Anfrage wird von {author} geprüft. Sie erhalten noch eine E-Mail, sobald die Entscheidung gefallen ist.`
+- **it** Italiano: `{author} esamina ogni richiesta. Riceverai un'altra email quando ci sarà una decisione.`
+- **pt** Português: `{author} analisa cada pedido. Receberá mais um e-mail quando houver uma decisão.`
+- **nl** Nederlands: `{author} bekijkt elke aanvraag. U krijgt nog één e-mail zodra er een besluit is.`
+- **pl** Polski: `{author} przegląda każdą prośbę. Gdy zapadnie decyzja, dostaniesz jeszcze jeden e-mail.`
+- **ru** Русский: `{author} рассматривает каждую заявку. Когда решение будет принято, вы получите ещё одно письмо.`
+- **tr** Türkçe: `{author} her isteği inceler. Karar verildiğinde bir e-posta daha alacaksınız.`
+- **ar** العربية: `تُراجَع الطلبات واحدًا واحدًا لدى {author}. ستصلك رسالة أخرى عند اتخاذ القرار.`
+- **hi** हिन्दी: `हर अनुरोध पर फ़ैसला {author} का होता है। फ़ैसला होने पर आपको एक और ईमेल मिलेगा।`
+- **mr** मराठी: `{author} प्रत्येक विनंती पाहतात. त्यांनी निर्णय घेतल्यावर तुम्हाला आणखी एक ईमेल येईल.`
+- **ja** 日本語: `{author}がお申し込みを一件ずつ確認します。結果が決まりしだい、もう一通メールをお送りします。`
+- **zh-Hans** 简体中文: `{author} 会逐一查看每份申请。有结果时，你会再收到一封邮件。`
+
+### `arc.mail.approved.subject`
+
+- **en** (source, Claude's): {author} approved your request for {title}
+- **es** Español: `{author} ha aprobado tu solicitud de {title}`
+- **fr** Français: `{author} a accepté votre demande pour {title}`
+- **de** Deutsch: `Ihre Anfrage für {title} wurde von {author} angenommen`
+- **it** Italiano: `{author} ha approvato la tua richiesta per {title}`
+- **pt** Português: `{author} aprovou o seu pedido de {title}`
+- **nl** Nederlands: `{author} heeft uw aanvraag voor {title} goedgekeurd`
+- **pl** Polski: `{author} zgadza się na Twoją prośbę o „{title}”`
+- **ru** Русский: `{author}: ваша заявка на «{title}» одобрена`
+- **tr** Türkçe: `{author}, {title} isteğinizi onayladı`
+- **ar** العربية: `تمت الموافقة على طلبك لكتاب {title} من {author}`
+- **hi** हिन्दी: `{author} ने {title} के लिए आपका अनुरोध मंज़ूर कर दिया`
+- **mr** मराठी: `{author} यांनी {title} साठीची तुमची विनंती मंजूर केली`
+- **ja** 日本語: `{author}が『{title}』のお申し込みを承認しました`
+- **zh-Hans** 简体中文: `{author} 已批准你对《{title}》的申请`
+
+### `arc.mail.approved.lead`
+
+- **en** (source, Claude's): {author} approved your request. Here is your advance copy of {title}.
+- **es** Español: `{author} ha aprobado tu solicitud. Aquí tienes tu ejemplar anticipado de {title}.`
+- **fr** Français: `{author} a accepté votre demande. Voici votre exemplaire en avant-première de {title}.`
+- **de** Deutsch: `Ihre Anfrage wurde von {author} angenommen. Hier ist Ihr Vorab-Exemplar von {title}.`
+- **it** Italiano: `{author} ha approvato la tua richiesta. Ecco la tua copia in anteprima di {title}.`
+- **pt** Português: `{author} aprovou o seu pedido. Aqui está o seu exemplar antecipado de {title}.`
+- **nl** Nederlands: `{author} heeft uw aanvraag goedgekeurd. Hier is uw voorpublicatie-exemplaar van {title}.`
+- **pl** Polski: `{author} zgadza się na Twoją prośbę. Oto Twój egzemplarz przedpremierowy „{title}”.`
+- **ru** Русский: `{author}: ваша заявка одобрена. Вот ваш сигнальный экземпляр книги «{title}».`
+- **tr** Türkçe: `{author} isteğinizi onayladı. {title} ön okuma kopyanız burada.`
+- **ar** العربية: `تمت موافقة {author} على طلبك. إليك نسختك المسبقة من {title}.`
+- **hi** हिन्दी: `{author} ने आपका अनुरोध मंज़ूर कर दिया है। यह रही {title} की आपकी रिलीज़ से पहले की प्रति।`
+- **mr** मराठी: `{author} यांनी तुमची विनंती मंजूर केली. {title} ची तुमची प्रकाशनापूर्वीची प्रत ही घ्या.`
+- **ja** 日本語: `{author}がお申し込みを承認しました。『{title}』の献本はこちらです。`
+- **zh-Hans** 简体中文: `{author} 已批准你的申请。这是你的《{title}》预发本。`
+
+### `arc.mail.declined.subject`
+
+- **en** (source, Claude's): Your request for {title}
+- **es** Español: `Tu solicitud de {title}`
+- **fr** Français: `Votre demande pour {title}`
+- **de** Deutsch: `Ihre Anfrage für {title}`
+- **it** Italiano: `La tua richiesta per {title}`
+- **pt** Português: `O seu pedido de {title}`
+- **nl** Nederlands: `Uw aanvraag voor {title}`
+- **pl** Polski: `Twoja prośba o „{title}”`
+- **ru** Русский: `Ваша заявка на «{title}»`
+- **tr** Türkçe: `{title} isteğiniz`
+- **ar** العربية: `طلبك لكتاب {title}`
+- **hi** हिन्दी: `{title} के लिए आपका अनुरोध`
+- **mr** मराठी: `{title} साठीची तुमची विनंती`
+- **ja** 日本語: `『{title}』のお申し込みについて`
+- **zh-Hans** 简体中文: `你对《{title}》的申请`
+
+### `arc.mail.declined.lead`
+
+- **en** (source, Claude's): {author} is not sending you an advance copy of {title} this time.
+- **es** Español: `Esta vez, {author} no te enviará un ejemplar anticipado de {title}.`
+- **fr** Français: `{author} ne vous enverra pas d'exemplaire en avant-première de {title} cette fois-ci.`
+- **de** Deutsch: `Diesmal erhalten Sie von {author} kein Vorab-Exemplar von {title}.`
+- **it** Italiano: `Questa volta {author} non ti invierà una copia in anteprima di {title}.`
+- **pt** Português: `Desta vez, {author} não lhe vai enviar um exemplar antecipado de {title}.`
+- **nl** Nederlands: `{author} stuurt u deze keer geen voorpublicatie-exemplaar van {title}.`
+- **pl** Polski: `{author} tym razem nie wyśle Ci egzemplarza przedpremierowego „{title}”.`
+- **ru** Русский: `{author} в этот раз не отправит вам сигнальный экземпляр книги «{title}».`
+- **tr** Türkçe: `{author} bu kez size {title} ön okuma kopyası göndermiyor.`
+- **ar** العربية: `لن تصلك نسخة مسبقة من {title} من {author} هذه المرة.`
+- **hi** हिन्दी: `इस बार {author} की ओर से आपको {title} की रिलीज़ से पहले की प्रति नहीं भेजी जाएगी।`
+- **mr** मराठी: `या वेळी {author} यांच्याकडून तुम्हाला {title} ची प्रकाशनापूर्वीची प्रत पाठवली जाणार नाही.`
+- **ja** 日本語: `今回は、{author}から『{title}』の献本をお送りすることはできません。`
+- **zh-Hans** 简体中文: `这次 {author} 不会给你寄送《{title}》的预发本。`
+
+### `arc.mail.declined.body`
+
+- **en** (source, Claude's): Thank you for asking.
+- **es** Español: `Gracias por pedirlo.`
+- **fr** Français: `Merci d'avoir demandé.`
+- **de** Deutsch: `Danke für Ihre Anfrage.`
+- **it** Italiano: `Grazie per averla chiesta.`
+- **pt** Português: `Obrigado por ter pedido.`
+- **nl** Nederlands: `Bedankt voor uw aanvraag.`
+- **pl** Polski: `Dziękujemy za prośbę.`
+- **ru** Русский: `Спасибо за заявку.`
+- **tr** Türkçe: `İsteğiniz için teşekkürler.`
+- **ar** العربية: `شكرًا لطلبك.`
+- **hi** हिन्दी: `माँगने के लिए धन्यवाद।`
+- **mr** मराठी: `विचारल्याबद्दल धन्यवाद.`
+- **ja** 日本語: `お申し込みいただき、ありがとうございました。`
+- **zh-Hans** 简体中文: `感谢你的申请。`
+
+### `arc.claim.title`
+
+- **en** (source, fixed by the plan/spec): {title} — an advance copy from {author}
+- **es** Español: `{title} — un ejemplar anticipado de {author}`
+- **fr** Français: `{title} — un exemplaire en avant-première offert par {author}`
+- **de** Deutsch: `{title} — ein Vorab-Exemplar von {author}`
+- **it** Italiano: `{title} — una copia in anteprima da {author}`
+- **pt** Português: `{title} — um exemplar antecipado oferecido por {author}`
+- **nl** Nederlands: `{title} — een voorpublicatie-exemplaar van {author}`
+- **pl** Polski: `„{title}” — egzemplarz przedpremierowy, który rozdaje {author}`
+- **ru** Русский: `«{title}» — сигнальный экземпляр. Автор: {author}`
+- **tr** Türkçe: `{title} — {author} tarafından bir ön okuma kopyası`
+- **ar** العربية: `{title} — نسخة مسبقة من {author}`
+- **hi** हिन्दी: `{title} — {author} की ओर से रिलीज़ से पहले की प्रति`
+- **mr** मराठी: `{title} — {author} यांच्याकडून प्रकाशनापूर्वीची प्रत`
+- **ja** 日本語: `『{title}』 — {author}からの献本`
+- **zh-Hans** 简体中文: `《{title}》——来自 {author} 的预发本`
+
+### `arc.claim.lede`
+
+- **en** (source, fixed by the plan/spec): {author} is giving early copies to readers before {date}.
+- **es** Español: `{author} regala ejemplares anticipados a lectores antes del {date}.`
+- **fr** Français: `{author} offre des exemplaires en avant-première à des lecteurs avant le {date}.`
+- **de** Deutsch: `Vor dem {date} gibt es von {author} Vorab-Exemplare für Leser.`
+- **it** Italiano: `{author} regala copie in anteprima ai lettori prima del {date}.`
+- **pt** Português: `{author} está a oferecer exemplares antecipados a leitores antes de {date}.`
+- **nl** Nederlands: `{author} geeft vóór {date} voorpublicatie-exemplaren aan lezers.`
+- **pl** Polski: `{author} rozdaje czytelnikom egzemplarze przedpremierowe przed {date}.`
+- **ru** Русский: `{author} дарит читателям сигнальные экземпляры до {date}.`
+- **tr** Türkçe: `{author}, {date} tarihinden önce okurlara ön okuma kopyaları veriyor.`
+- **ar** العربية: `تُقدَّم نسخ مسبقة من {author} للقرّاء قبل {date}.`
+- **hi** हिन्दी: `{date} से पहले पाठकों को {author} की ओर से शुरुआती प्रतियाँ दी जा रही हैं।`
+- **mr** मराठी: `{author} {date} पूर्वी वाचकांना सुरुवातीच्या प्रती देत आहेत.`
+- **ja** 日本語: `{author}が、{date}より前に読者へ献本をお届けしています。`
+- **zh-Hans** 简体中文: `{author} 正在 {date} 之前把预发本送给读者。`
+
+### `arc.claim.review`
+
+- **en** (source, fixed by the plan/spec): If you'd like to review it after reading, you're welcome to. It's never required.
+- **es** Español: `Si quieres reseñarlo después de leerlo, puedes hacerlo. Nunca es obligatorio.`
+- **fr** Français: `Si vous souhaitez donner votre avis sur ce livre après l'avoir lu, libre à vous. Ce n'est jamais obligatoire.`
+- **de** Deutsch: `Wenn Sie es nach dem Lesen rezensieren möchten, sind Sie herzlich dazu eingeladen. Pflicht ist das nie.`
+- **it** Italiano: `Se dopo averlo letto vuoi recensirlo, fallo pure. Non è mai obbligatorio.`
+- **pt** Português: `Se quiser fazer uma crítica depois de o ler, esteja à vontade. Nunca é obrigatório.`
+- **nl** Nederlands: `Als u het na het lezen wilt recenseren, mag dat graag. Het is nooit verplicht.`
+- **pl** Polski: `Jeśli po lekturze zechcesz napisać recenzję, śmiało. Nigdy nie jest to obowiązkowe.`
+- **ru** Русский: `Если после прочтения захотите написать отзыв — пожалуйста. Это никогда не обязательно.`
+- **tr** Türkçe: `Okuduktan sonra yorum yazmak isterseniz yazabilirsiniz. Bu hiçbir zaman zorunlu değildir.`
+- **ar** العربية: `إن رغبت في مراجعته بعد قراءته، فأهلًا بذلك. وليس ذلك مطلوبًا أبدًا.`
+- **hi** हिन्दी: `अगर आप पढ़ने के बाद इसका रिव्यू लिखना चाहें, तो आपका स्वागत है। यह कभी ज़रूरी नहीं है।`
+- **mr** मराठी: `वाचून झाल्यावर तुम्हाला परीक्षण लिहायचे असेल, तर तुमचे स्वागत आहे. ते कधीही आवश्यक नाही.`
+- **ja** 日本語: `読み終えたあとでレビューを書きたいと思ったら、どうぞご自由に。書く必要はまったくありません。`
+- **zh-Hans** 简体中文: `如果你读完后想写书评，非常欢迎。这从来都不是硬性要求。`
+
+### `arc.claim.cover`
+
+- **en** (source, Claude's): The cover of {title}
+- **es** Español: `La cubierta de {title}`
+- **fr** Français: `La couverture de {title}`
+- **de** Deutsch: `Das Cover von {title}`
+- **it** Italiano: `La copertina di {title}`
+- **pt** Português: `A capa de {title}`
+- **nl** Nederlands: `Het omslag van {title}`
+- **pl** Polski: `Okładka „{title}”`
+- **ru** Русский: `Обложка книги «{title}»`
+- **tr** Türkçe: `{title} kapağı`
+- **ar** العربية: `غلاف {title}`
+- **hi** हिन्दी: `{title} का कवर`
+- **mr** मराठी: `{title} चे मुखपृष्ठ`
+- **ja** 日本語: `『{title}』の表紙`
+- **zh-Hans** 简体中文: `《{title}》的封面`
+
+### `arc.claim.name`
+
+- **en** (source, Claude's): Your name
+- **es** Español: `Tu nombre`
+- **fr** Français: `Votre nom`
+- **de** Deutsch: `Ihr Name`
+- **it** Italiano: `Il tuo nome`
+- **pt** Português: `O seu nome`
+- **nl** Nederlands: `Uw naam`
+- **pl** Polski: `Twoje imię`
+- **ru** Русский: `Ваше имя`
+- **tr** Türkçe: `Adınız`
+- **ar** العربية: `اسمك`
+- **hi** हिन्दी: `आपका नाम`
+- **mr** मराठी: `तुमचे नाव`
+- **ja** 日本語: `お名前`
+- **zh-Hans** 简体中文: `你的名字`
+
+### `arc.claim.email`
+
+- **en** (source, Claude's): Your email
+- **es** Español: `Tu correo electrónico`
+- **fr** Français: `Votre adresse e-mail`
+- **de** Deutsch: `Ihre E-Mail-Adresse`
+- **it** Italiano: `La tua email`
+- **pt** Português: `O seu e-mail`
+- **nl** Nederlands: `Uw e-mailadres`
+- **pl** Polski: `Twój e-mail`
+- **ru** Русский: `Ваша электронная почта`
+- **tr** Türkçe: `E-posta adresiniz`
+- **ar** العربية: `بريدك الإلكتروني`
+- **hi** हिन्दी: `आपका ईमेल`
+- **mr** मराठी: `तुमचा ईमेल`
+- **ja** 日本語: `メールアドレス`
+- **zh-Hans** 简体中文: `你的邮箱`
+
+### `arc.claim.profile`
+
+- **en** (source, fixed by the plan/spec): A Goodreads or Amazon profile link
+- **es** Español: `Un enlace a tu perfil de Goodreads o Amazon`
+- **fr** Français: `Un lien vers votre profil Goodreads ou Amazon`
+- **de** Deutsch: `Ein Link zu Ihrem Goodreads- oder Amazon-Profil`
+- **it** Italiano: `Un link al tuo profilo Goodreads o Amazon`
+- **pt** Português: `Um link para o seu perfil no Goodreads ou na Amazon`
+- **nl** Nederlands: `Een link naar uw Goodreads- of Amazon-profiel`
+- **pl** Polski: `Link do Twojego profilu w Goodreads lub Amazon`
+- **ru** Русский: `Ссылка на ваш профиль в Goodreads или Amazon`
+- **tr** Türkçe: `Goodreads veya Amazon profil bağlantınız`
+- **ar** العربية: `رابط ملفك الشخصي على Goodreads أو Amazon`
+- **hi** हिन्दी: `Goodreads या Amazon प्रोफ़ाइल का लिंक`
+- **mr** मराठी: `Goodreads किंवा Amazon प्रोफाइलची लिंक`
+- **ja** 日本語: `GoodreadsまたはAmazonのプロフィールのリンク`
+- **zh-Hans** 简体中文: `你的 Goodreads 或 Amazon 个人主页链接`
+
+### `arc.claim.profileNote`
+
+- **en** (source, Claude's): {author} sees this link as text. Beuk never opens it.
+- **es** Español: `{author} ve este enlace como texto. Beuk nunca lo abre.`
+- **fr** Français: `{author} voit ce lien sous forme de texte. Beuk ne l'ouvre jamais.`
+- **de** Deutsch: `Bei {author} erscheint dieser Link nur als Text. Beuk öffnet ihn nie.`
+- **it** Italiano: `{author} vede questo link come testo. Beuk non lo apre mai.`
+- **pt** Português: `{author} vê este link como texto. O Beuk nunca o abre.`
+- **nl** Nederlands: `{author} ziet deze link als tekst. Beuk opent hem nooit.`
+- **pl** Polski: `{author} widzi ten link jako tekst. Beuk nigdy go nie otwiera.`
+- **ru** Русский: `{author} видит эту ссылку как текст. Beuk никогда её не открывает.`
+- **tr** Türkçe: `{author} bu bağlantıyı metin olarak görür. Beuk onu asla açmaz.`
+- **ar** العربية: `يظهر هذا الرابط عند {author} نصًّا فقط. لا يفتحه Beuk أبدًا.`
+- **hi** हिन्दी: `{author} को यह लिंक सिर्फ़ टेक्स्ट के रूप में दिखता है। Beuk इसे कभी नहीं खोलता।`
+- **mr** मराठी: `{author} यांना ही लिंक फक्त मजकूर म्हणून दिसते. Beuk ती कधीही उघडत नाही.`
+- **ja** 日本語: `このリンクは{author}にテキストとして表示されます。Beukがリンクを開くことはありません。`
+- **zh-Hans** 简体中文: `{author} 看到的只是这个链接的文字。Beuk 从不打开它。`
+
+### `arc.claim.approvalNote`
+
+- **en** (source, Claude's): {author} looks at each request and answers by email.
+- **es** Español: `{author} revisa cada solicitud y responde por correo.`
+- **fr** Français: `{author} examine chaque demande et répond par e-mail.`
+- **de** Deutsch: `Jede Anfrage wird von {author} geprüft und per E-Mail beantwortet.`
+- **it** Italiano: `{author} esamina ogni richiesta e risponde via email.`
+- **pt** Português: `{author} analisa cada pedido e responde por e-mail.`
+- **nl** Nederlands: `{author} bekijkt elke aanvraag en antwoordt per e-mail.`
+- **pl** Polski: `{author} przegląda każdą prośbę i odpowiada e-mailem.`
+- **ru** Русский: `{author} рассматривает каждую заявку и отвечает по почте.`
+- **tr** Türkçe: `{author} her isteği inceler ve e-postayla yanıt verir.`
+- **ar** العربية: `تُراجَع الطلبات واحدًا واحدًا لدى {author}، ويصلك الردّ بالبريد الإلكتروني.`
+- **hi** हिन्दी: `हर अनुरोध पर फ़ैसला {author} का होता है, और जवाब ईमेल से आता है।`
+- **mr** मराठी: `{author} प्रत्येक विनंती पाहतात आणि ईमेलने उत्तर देतात.`
+- **ja** 日本語: `{author}がお申し込みを一件ずつ確認し、メールでお返事します。`
+- **zh-Hans** 简体中文: `{author} 会逐一查看每份申请，并通过邮件答复。`
+
+### `arc.claim.codeNote`
+
+- **en** (source, Claude's): Beuk will email you a 6-digit code to confirm the address.
+- **es** Español: `Beuk te enviará por correo un código de 6 dígitos para confirmar la dirección.`
+- **fr** Français: `Beuk vous enverra par e-mail un code à 6 chiffres pour confirmer l'adresse.`
+- **de** Deutsch: `Beuk schickt Ihnen per E-Mail einen 6-stelligen Code, um die Adresse zu bestätigen.`
+- **it** Italiano: `Beuk ti invierà via email un codice di 6 cifre per confermare l'indirizzo.`
+- **pt** Português: `O Beuk vai enviar-lhe por e-mail um código de 6 dígitos para confirmar o endereço.`
+- **nl** Nederlands: `Beuk mailt u een code van 6 cijfers om het adres te bevestigen.`
+- **pl** Polski: `Beuk wyśle Ci e-mailem 6-cyfrowy kod, by potwierdzić adres.`
+- **ru** Русский: `Beuk пришлёт вам на почту 6-значный код, чтобы подтвердить адрес.`
+- **tr** Türkçe: `Beuk, adresi doğrulamak için size e-postayla 6 haneli bir kod gönderecek.`
+- **ar** العربية: `سيرسل إليك Beuk رمزًا من 6 أرقام بالبريد الإلكتروني لتأكيد العنوان.`
+- **hi** हिन्दी: `पता पक्का करने के लिए Beuk आपको ईमेल पर 6 अंकों का कोड भेजेगा।`
+- **mr** मराठी: `पत्ता निश्चित करण्यासाठी Beuk तुम्हाला ईमेलवर 6 अंकी कोड पाठवेल.`
+- **ja** 日本語: `アドレスの確認のため、Beukから6桁のコードをメールでお送りします。`
+- **zh-Hans** 简体中文: `Beuk 会给你发送一个 6 位数验证码，用来确认邮箱地址。`
+
+### `arc.claim.honeypot`
+
+- **en** (source, Claude's): Leave this empty
+- **es** Español: `Deja esto vacío`
+- **fr** Français: `Laissez ce champ vide`
+- **de** Deutsch: `Dieses Feld leer lassen`
+- **it** Italiano: `Lascia vuoto questo campo`
+- **pt** Português: `Deixe este campo vazio`
+- **nl** Nederlands: `Laat dit leeg`
+- **pl** Polski: `Zostaw to pole puste`
+- **ru** Русский: `Оставьте это поле пустым`
+- **tr** Türkçe: `Burayı boş bırakın`
+- **ar** العربية: `اترك هذا الحقل فارغًا`
+- **hi** हिन्दी: `इसे खाली छोड़ें`
+- **mr** मराठी: `हे रिकामे ठेवा`
+- **ja** 日本語: `この欄は空のままにしてください`
+- **zh-Hans** 简体中文: `请留空`
+
+### `arc.claim.submit`
+
+- **en** (source, fixed by the plan/spec): Get my copy
+- **es** Español: `Quiero mi ejemplar`
+- **fr** Français: `Recevoir mon exemplaire`
+- **de** Deutsch: `Mein Exemplar anfordern`
+- **it** Italiano: `Richiedi la mia copia`
+- **pt** Português: `Quero o meu exemplar`
+- **nl** Nederlands: `Mijn exemplaar aanvragen`
+- **pl** Polski: `Odbierz egzemplarz`
+- **ru** Русский: `Получить экземпляр`
+- **tr** Türkçe: `Kopyamı al`
+- **ar** العربية: `اطلب نسختي`
+- **hi** हिन्दी: `मेरी प्रति पाएँ`
+- **mr** मराठी: `माझी प्रत मिळवा`
+- **ja** 日本語: `献本を受け取る`
+- **zh-Hans** 简体中文: `领取我的预发本`
+
+### `arc.claim.stampNote`
+
+- **en** (source, fixed by the plan/spec): Your copy will show your name and email on its copyright page.
+- **es** Español: `Tu ejemplar mostrará tu nombre y tu correo en la página de derechos de autor.`
+- **fr** Français: `Votre exemplaire portera votre nom et votre adresse e-mail sur sa page de copyright.`
+- **de** Deutsch: `Ihr Exemplar wird Ihren Namen und Ihre E-Mail-Adresse auf der Copyright-Seite zeigen.`
+- **it** Italiano: `La tua copia mostrerà il tuo nome e la tua email nella pagina del copyright.`
+- **pt** Português: `O seu exemplar vai mostrar o seu nome e o seu e-mail na página de direitos de autor.`
+- **nl** Nederlands: `Uw exemplaar toont straks uw naam en e-mailadres op de copyrightpagina.`
+- **pl** Polski: `Twój egzemplarz pokaże Twoje imię i adres e-mail na stronie z prawami autorskimi.`
+- **ru** Русский: `В вашем экземпляре на странице с авторскими правами будут указаны ваше имя и адрес почты.`
+- **tr** Türkçe: `Kopyanızın telif hakkı sayfasında adınız ve e-posta adresiniz yer alacak.`
+- **ar** العربية: `ستُظهر نسختك اسمك وبريدك الإلكتروني في صفحة حقوق النشر.`
+- **hi** हिन्दी: `आपकी प्रति के कॉपीराइट पेज पर आपका नाम और ईमेल दिखेगा।`
+- **mr** मराठी: `तुमच्या प्रतीच्या कॉपीराइट पानावर तुमचे नाव आणि ईमेल दिसेल.`
+- **ja** 日本語: `献本の著作権ページには、お名前とメールアドレスが入ります。`
+- **zh-Hans** 简体中文: `你的这一份会在版权页上印有你的姓名和邮箱。`
+
+### `arc.claim.err.closed`
+
+- **en** (source, Claude's): Sign-ups for this advance copy have closed.
+- **es** Español: `Las inscripciones para este ejemplar anticipado están cerradas.`
+- **fr** Français: `Les inscriptions pour cet exemplaire en avant-première sont closes.`
+- **de** Deutsch: `Die Anmeldung für dieses Vorab-Exemplar ist geschlossen.`
+- **it** Italiano: `Le iscrizioni per questa copia in anteprima sono chiuse.`
+- **pt** Português: `As inscrições para este exemplar antecipado estão fechadas.`
+- **nl** Nederlands: `De aanmelding voor dit voorpublicatie-exemplaar is gesloten.`
+- **pl** Polski: `Zapisy na ten egzemplarz przedpremierowy są zamknięte.`
+- **ru** Русский: `Запись на этот сигнальный экземпляр закрыта.`
+- **tr** Türkçe: `Bu ön okuma kopyası için kayıtlar kapandı.`
+- **ar** العربية: `أُغلق التسجيل لهذه النسخة المسبقة.`
+- **hi** हिन्दी: `इस रिलीज़ से पहले की प्रति के लिए साइन अप बंद हो चुके हैं।`
+- **mr** मराठी: `या प्रकाशनापूर्वीच्या प्रतीसाठी नोंदणी बंद झाली आहे.`
+- **ja** 日本語: `この献本の申し込みは締め切りました。`
+- **zh-Hans** 简体中文: `这本预发本的报名已经截止。`
+
+### `arc.claim.err.full`
+
+- **en** (source, Claude's): Every copy has been claimed. Thank you for asking.
+- **es** Español: `Ya se han pedido todos los ejemplares. Gracias por pedirlo.`
+- **fr** Français: `Tous les exemplaires ont été demandés. Merci d'avoir demandé.`
+- **de** Deutsch: `Alle Exemplare sind vergeben. Danke für Ihre Anfrage.`
+- **it** Italiano: `Tutte le copie sono state richieste. Grazie per averla chiesta.`
+- **pt** Português: `Todos os exemplares já foram pedidos. Obrigado por ter pedido.`
+- **nl** Nederlands: `Alle exemplaren zijn al aangevraagd. Bedankt voor uw aanvraag.`
+- **pl** Polski: `Wszystkie egzemplarze są już zajęte. Dziękujemy za prośbę.`
+- **ru** Русский: `Все экземпляры уже разобраны. Спасибо за заявку.`
+- **tr** Türkçe: `Tüm kopyalar alındı. İsteğiniz için teşekkürler.`
+- **ar** العربية: `طُلبت كل النسخ. شكرًا لطلبك.`
+- **hi** हिन्दी: `सारी प्रतियाँ ली जा चुकी हैं। माँगने के लिए धन्यवाद।`
+- **mr** मराठी: `सर्व प्रती घेतल्या गेल्या आहेत. विचारल्याबद्दल धन्यवाद.`
+- **ja** 日本語: `献本はすべて申し込み済みです。ご関心をお寄せいただき、ありがとうございます。`
+- **zh-Hans** 简体中文: `所有预发本都已被领取。感谢你的申请。`
+
+### `arc.claim.err.blocked`
+
+- **en** (source, Claude's): Beuk can't email this address. Someone using it asked for no more advance-copy email, so no code can be sent.
+- **es** Español: `Beuk no puede escribir a esta dirección. Alguien que la usa pidió no recibir más correos de ejemplares anticipados, así que no se puede enviar ningún código.`
+- **fr** Français: `Beuk ne peut pas écrire à cette adresse. Quelqu'un qui l'utilise a demandé à ne plus recevoir d'e-mails d'exemplaires en avant-première : aucun code ne peut donc être envoyé.`
+- **de** Deutsch: `Beuk kann an diese Adresse keine E-Mails senden. Jemand, der sie nutzt, wollte keine E-Mails zu Vorab-Exemplaren mehr erhalten, daher kann kein Code gesendet werden.`
+- **it** Italiano: `Beuk non può scrivere a questo indirizzo. Qualcuno che lo usa ha chiesto di non ricevere più email sulle copie in anteprima, quindi non si può inviare nessun codice.`
+- **pt** Português: `O Beuk não pode enviar e-mails para este endereço. Alguém que o usa pediu para não receber mais e-mails de exemplares antecipados, por isso não é possível enviar nenhum código.`
+- **nl** Nederlands: `Beuk kan dit adres niet mailen. Iemand die het gebruikt, heeft gevraagd geen e-mail over voorpublicatie-exemplaren meer te sturen, dus er kan geen code worden verstuurd.`
+- **pl** Polski: `Beuk nie może wysyłać e-maili na ten adres. Ktoś, kto go używa, poprosił o brak kolejnych e-maili w sprawie egzemplarzy przedpremierowych, więc nie można wysłać kodu.`
+- **ru** Русский: `Beuk не может писать на этот адрес. Кто-то, кто им пользуется, попросил больше не присылать письма о сигнальных экземплярах, поэтому код отправить нельзя.`
+- **tr** Türkçe: `Beuk bu adrese e-posta gönderemiyor. Bu adresi kullanan biri artık ön okuma kopyası e-postası istemediğini bildirdi, bu yüzden kod gönderilemez.`
+- **ar** العربية: `لا يستطيع Beuk مراسلة هذا العنوان. طلب شخص يستخدمه ألّا تصله رسائل النسخ المسبقة بعد الآن، لذا لا يمكن إرسال رمز.`
+- **hi** हिन्दी: `Beuk इस पते पर ईमेल नहीं भेज सकता। इसे इस्तेमाल करने वाले किसी व्यक्ति ने रिलीज़ से पहले की प्रतियों वाले ईमेल बंद करने को कहा है, इसलिए कोई कोड नहीं भेजा जा सकता।`
+- **mr** मराठी: `Beuk या पत्त्यावर ईमेल पाठवू शकत नाही. हा पत्ता वापरणाऱ्या कोणीतरी प्रकाशनापूर्वीच्या प्रतींचे आणखी ईमेल नकोत असे सांगितले आहे, त्यामुळे कोड पाठवता येत नाही.`
+- **ja** 日本語: `Beukはこのアドレスにメールを送れません。このアドレスを使う方から献本に関するメールの停止を希望されているため、コードを送れません。`
+- **zh-Hans** 简体中文: `Beuk 无法给这个地址发邮件。使用这个地址的人已要求不再接收预发本邮件，因此无法发送验证码。`
+
+### `arc.claim.err.mailOff`
+
+- **en** (source, Claude's): Beuk can't send advance-copy email right now, so no claim was taken. Please try again later.
+- **es** Español: `Ahora mismo Beuk no puede enviar correos de ejemplares anticipados, así que no se ha registrado ninguna solicitud. Vuelve a intentarlo más tarde.`
+- **fr** Français: `Beuk ne peut pas envoyer d'e-mails d'exemplaires en avant-première pour le moment : aucune demande n'a donc été enregistrée. Veuillez réessayer plus tard.`
+- **de** Deutsch: `Beuk kann gerade keine E-Mails zu Vorab-Exemplaren senden, daher wurde keine Anfrage aufgenommen. Bitte versuchen Sie es später noch einmal.`
+- **it** Italiano: `Al momento Beuk non può inviare email sulle copie in anteprima, quindi nessuna richiesta è stata registrata. Riprova più tardi.`
+- **pt** Português: `Neste momento, o Beuk não consegue enviar e-mails de exemplares antecipados, por isso nenhum pedido foi registado. Tente novamente mais tarde.`
+- **nl** Nederlands: `Beuk kan op dit moment geen e-mail over voorpublicatie-exemplaren versturen, dus er is geen aanvraag opgenomen. Probeer het later opnieuw.`
+- **pl** Polski: `Beuk nie może teraz wysyłać e-maili w sprawie egzemplarzy przedpremierowych, więc prośba nie została przyjęta. Spróbuj ponownie później.`
+- **ru** Русский: `Сейчас Beuk не может отправлять письма о сигнальных экземплярах, поэтому заявка не принята. Попробуйте позже.`
+- **tr** Türkçe: `Beuk şu anda ön okuma kopyası e-postası gönderemiyor, bu yüzden istek alınmadı. Lütfen daha sonra tekrar deneyin.`
+- **ar** العربية: `لا يستطيع Beuk إرسال رسائل النسخ المسبقة الآن، لذا لم يُسجَّل أي طلب. حاول مرة أخرى لاحقًا.`
+- **hi** हिन्दी: `Beuk अभी रिलीज़ से पहले की प्रतियों वाले ईमेल नहीं भेज सकता, इसलिए कोई अनुरोध नहीं लिया गया। कृपया बाद में फिर कोशिश करें।`
+- **mr** मराठी: `Beuk सध्या प्रकाशनापूर्वीच्या प्रतींचे ईमेल पाठवू शकत नाही, त्यामुळे कोणतीही विनंती घेतली गेली नाही. कृपया नंतर पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `現在Beukは献本に関するメールを送れないため、お申し込みは受け付けられませんでした。しばらくしてからもう一度お試しください。`
+- **zh-Hans** 简体中文: `Beuk 现在无法发送预发本邮件，因此没有接收任何申请。请稍后再试。`
+
+### `arc.claim.err.busy`
+
+- **en** (source, Claude's): Too many tries for now. Please wait a while, then try again.
+- **es** Español: `Demasiados intentos por ahora. Espera un rato y vuelve a intentarlo.`
+- **fr** Français: `Trop de tentatives pour le moment. Patientez un peu, puis réessayez.`
+- **de** Deutsch: `Zu viele Versuche für den Moment. Bitte warten Sie eine Weile und versuchen Sie es dann erneut.`
+- **it** Italiano: `Troppi tentativi per ora. Aspetta un po', poi riprova.`
+- **pt** Português: `Demasiadas tentativas por agora. Aguarde um pouco e tente novamente.`
+- **nl** Nederlands: `Te veel pogingen voor nu. Wacht even en probeer het dan opnieuw.`
+- **pl** Polski: `Na razie za dużo prób. Odczekaj chwilę i spróbuj ponownie.`
+- **ru** Русский: `Слишком много попыток. Подождите немного и попробуйте снова.`
+- **tr** Türkçe: `Şimdilik çok fazla deneme yapıldı. Lütfen biraz bekleyip tekrar deneyin.`
+- **ar** العربية: `محاولات كثيرة جدًا حاليًا. انتظر قليلًا ثم حاول مرة أخرى.`
+- **hi** हिन्दी: `अभी बहुत ज़्यादा कोशिशें हो गईं। कृपया थोड़ी देर रुकें, फिर कोशिश करें।`
+- **mr** मराठी: `सध्या खूप प्रयत्न झाले आहेत. कृपया थोडा वेळ थांबा, मग पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `試行回数が多すぎます。しばらく待ってから、もう一度お試しください。`
+- **zh-Hans** 简体中文: `尝试次数太多。请稍等一会儿再试。`
+
+### `arc.claim.err.mailFailed`
+
+- **en** (source, Claude's): Beuk couldn't send the code just now. Please try again later.
+- **es** Español: `Beuk no ha podido enviar el código ahora mismo. Vuelve a intentarlo más tarde.`
+- **fr** Français: `Beuk n'a pas pu envoyer le code pour le moment. Veuillez réessayer plus tard.`
+- **de** Deutsch: `Beuk konnte den Code gerade nicht senden. Bitte versuchen Sie es später noch einmal.`
+- **it** Italiano: `Beuk non è riuscito a inviare il codice in questo momento. Riprova più tardi.`
+- **pt** Português: `O Beuk não conseguiu enviar o código neste momento. Tente novamente mais tarde.`
+- **nl** Nederlands: `Beuk kon de code nu niet versturen. Probeer het later opnieuw.`
+- **pl** Polski: `Beuk nie mógł teraz wysłać kodu. Spróbuj ponownie później.`
+- **ru** Русский: `Beuk не удалось отправить код. Попробуйте позже.`
+- **tr** Türkçe: `Beuk kodu şu anda gönderemedi. Lütfen daha sonra tekrar deneyin.`
+- **ar** العربية: `تعذّر على Beuk إرسال الرمز الآن. حاول مرة أخرى لاحقًا.`
+- **hi** हिन्दी: `Beuk अभी कोड नहीं भेज पाया। कृपया बाद में फिर कोशिश करें।`
+- **mr** मराठी: `Beuk ला आत्ता कोड पाठवता आला नाही. कृपया नंतर पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `Beukはいまコードを送信できませんでした。しばらくしてからもう一度お試しください。`
+- **zh-Hans** 简体中文: `Beuk 刚才没能发送验证码。请稍后再试。`
+
+### `arc.claim.err.signupsBusy`
+
+- **en** (source, Claude's): Sign-ups are busy right now. Please try again later.
+- **es** Español: `Ahora mismo hay muchas inscripciones. Vuelve a intentarlo más tarde.`
+- **fr** Français: `Les inscriptions sont saturées pour le moment. Veuillez réessayer plus tard.`
+- **de** Deutsch: `Bei der Anmeldung ist gerade viel los. Bitte versuchen Sie es später noch einmal.`
+- **it** Italiano: `Le iscrizioni sono molto affollate in questo momento. Riprova più tardi.`
+- **pt** Português: `As inscrições estão muito concorridas neste momento. Tente novamente mais tarde.`
+- **nl** Nederlands: `Het is nu erg druk met aanmeldingen. Probeer het later opnieuw.`
+- **pl** Polski: `Zapisy są teraz przeciążone. Spróbuj ponownie później.`
+- **ru** Русский: `Запись сейчас перегружена. Попробуйте позже.`
+- **tr** Türkçe: `Kayıtlar şu anda çok yoğun. Lütfen daha sonra tekrar deneyin.`
+- **ar** العربية: `التسجيل مزدحم الآن. حاول مرة أخرى لاحقًا.`
+- **hi** हिन्दी: `अभी साइन अप पर बहुत भीड़ है। कृपया बाद में फिर कोशिश करें।`
+- **mr** मराठी: `सध्या नोंदणीसाठी खूप गर्दी आहे. कृपया नंतर पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `現在、申し込みが混み合っています。しばらくしてからもう一度お試しください。`
+- **zh-Hans** 简体中文: `现在报名的人太多。请稍后再试。`
+
+### `arc.claim.err.badName`
+
+- **en** (source, Claude's): Please write your name, in at most 60 characters.
+- **es** Español: `Escribe tu nombre, con 60 caracteres como máximo.`
+- **fr** Français: `Veuillez écrire votre nom, en 60 caractères au maximum.`
+- **de** Deutsch: `Bitte geben Sie Ihren Namen ein, mit höchstens 60 Zeichen.`
+- **it** Italiano: `Scrivi il tuo nome, al massimo 60 caratteri.`
+- **pt** Português: `Escreva o seu nome, com 60 caracteres no máximo.`
+- **nl** Nederlands: `Vul uw naam in, met hooguit 60 tekens.`
+- **pl** Polski: `Wpisz swoje imię, maksymalnie 60 znaków.`
+- **ru** Русский: `Напишите своё имя, не длиннее 60 символов.`
+- **tr** Türkçe: `Lütfen adınızı en fazla 60 karakterle yazın.`
+- **ar** العربية: `اكتب اسمك، في 60 حرفًا على الأكثر.`
+- **hi** हिन्दी: `कृपया अपना नाम लिखें, ज़्यादा से ज़्यादा 60 अक्षरों में।`
+- **mr** मराठी: `कृपया तुमचे नाव लिहा, जास्तीत जास्त 60 अक्षरांत.`
+- **ja** 日本語: `お名前を60文字以内で入力してください。`
+- **zh-Hans** 简体中文: `请填写你的名字，最多 60 个字符。`
+
+### `arc.claim.err.badEmail`
+
+- **en** (source, Claude's): Please check your email address.
+- **es** Español: `Revisa tu dirección de correo.`
+- **fr** Français: `Veuillez vérifier votre adresse e-mail.`
+- **de** Deutsch: `Bitte prüfen Sie Ihre E-Mail-Adresse.`
+- **it** Italiano: `Controlla il tuo indirizzo email.`
+- **pt** Português: `Verifique o seu endereço de e-mail.`
+- **nl** Nederlands: `Controleer uw e-mailadres.`
+- **pl** Polski: `Sprawdź swój adres e-mail.`
+- **ru** Русский: `Проверьте адрес электронной почты.`
+- **tr** Türkçe: `Lütfen e-posta adresinizi kontrol edin.`
+- **ar** العربية: `تحقّق من عنوان بريدك الإلكتروني.`
+- **hi** हिन्दी: `कृपया अपना ईमेल पता जाँचें।`
+- **mr** मराठी: `कृपया तुमचा ईमेल पत्ता तपासा.`
+- **ja** 日本語: `メールアドレスをご確認ください。`
+- **zh-Hans** 简体中文: `请检查你的邮箱地址。`
+
+### `arc.claim.err.badProfile`
+
+- **en** (source, Claude's): Please add a link to your Goodreads or Amazon profile, starting with https://.
+- **es** Español: `Añade un enlace a tu perfil de Goodreads o Amazon que empiece por https://.`
+- **fr** Français: `Veuillez ajouter un lien vers votre profil Goodreads ou Amazon, commençant par https://.`
+- **de** Deutsch: `Bitte fügen Sie einen Link zu Ihrem Goodreads- oder Amazon-Profil hinzu, der mit https:// beginnt.`
+- **it** Italiano: `Aggiungi un link al tuo profilo Goodreads o Amazon che inizi con https://.`
+- **pt** Português: `Adicione um link para o seu perfil no Goodreads ou na Amazon que comece por https://.`
+- **nl** Nederlands: `Voeg een link naar uw Goodreads- of Amazon-profiel toe die begint met https://.`
+- **pl** Polski: `Dodaj link do swojego profilu w Goodreads lub Amazon, zaczynający się od https://.`
+- **ru** Русский: `Добавьте ссылку на свой профиль в Goodreads или Amazon, начинающуюся с https://.`
+- **tr** Türkçe: `Lütfen https:// ile başlayan bir Goodreads veya Amazon profil bağlantısı ekleyin.`
+- **ar** العربية: `أضف رابطًا لملفك الشخصي على Goodreads أو Amazon يبدأ بـ https://.`
+- **hi** हिन्दी: `कृपया अपनी Goodreads या Amazon प्रोफ़ाइल का लिंक जोड़ें, जो https:// से शुरू हो।`
+- **mr** मराठी: `कृपया तुमच्या Goodreads किंवा Amazon प्रोफाइलची लिंक जोडा, जी https:// ने सुरू होते.`
+- **ja** 日本語: `https:// で始まる、GoodreadsまたはAmazonのプロフィールのリンクを追加してください。`
+- **zh-Hans** 简体中文: `请添加你的 Goodreads 或 Amazon 个人主页链接，以 https:// 开头。`
+
+### `arc.claim.err.answered`
+
+- **en** (source, Claude's): {author} has already answered a request from this address.
+- **es** Español: `{author} ya ha respondido a una solicitud de esta dirección.`
+- **fr** Français: `{author} a déjà répondu à une demande venant de cette adresse.`
+- **de** Deutsch: `Eine Anfrage von dieser Adresse wurde von {author} bereits beantwortet.`
+- **it** Italiano: `{author} ha già risposto a una richiesta da questo indirizzo.`
+- **pt** Português: `{author} já respondeu a um pedido deste endereço.`
+- **nl** Nederlands: `{author} heeft al gereageerd op een aanvraag van dit adres.`
+- **pl** Polski: `{author} — prośba z tego adresu została już rozpatrzona.`
+- **ru** Русский: `{author}: на заявку с этого адреса уже дан ответ.`
+- **tr** Türkçe: `{author} bu adresten gelen bir isteği zaten yanıtladı.`
+- **ar** العربية: `سبق الردّ من {author} على طلب من هذا العنوان.`
+- **hi** हिन्दी: `इस पते से आए एक अनुरोध का जवाब {author} की ओर से पहले ही दिया जा चुका है।`
+- **mr** मराठी: `{author} यांनी या पत्त्यावरून आलेल्या एका विनंतीला आधीच उत्तर दिले आहे.`
+- **ja** 日本語: `このアドレスからのお申し込みには、{author}がすでにお返事しています。`
+- **zh-Hans** 简体中文: `{author} 已经答复过来自这个地址的申请。`
+
+### `arc.code.title`
+
+- **en** (source, Claude's): Enter your code
+- **es** Español: `Escribe tu código`
+- **fr** Français: `Saisissez votre code`
+- **de** Deutsch: `Code eingeben`
+- **it** Italiano: `Inserisci il tuo codice`
+- **pt** Português: `Introduza o seu código`
+- **nl** Nederlands: `Vul uw code in`
+- **pl** Polski: `Wpisz kod`
+- **ru** Русский: `Введите код`
+- **tr** Türkçe: `Kodunuzu girin`
+- **ar** العربية: `أدخل رمزك`
+- **hi** हिन्दी: `अपना कोड डालें`
+- **mr** मराठी: `तुमचा कोड टाका`
+- **ja** 日本語: `確認コードを入力`
+- **zh-Hans** 简体中文: `输入验证码`
+
+### `arc.code.sentTo`
+
+- **en** (source, Claude's): Beuk sent a 6-digit code to {email}. It works for {minutes} minutes.
+- **es** Español: `Beuk ha enviado un código de 6 dígitos a {email}. Sirve durante {minutes} minutos.`
+- **fr** Français: `Beuk a envoyé un code à 6 chiffres à {email}. Il est valable {minutes} minutes.`
+- **de** Deutsch: `Beuk hat einen 6-stelligen Code an {email} gesendet. Er gilt {minutes} Minuten.`
+- **it** Italiano: `Beuk ha inviato un codice di 6 cifre a {email}. Vale per {minutes} minuti.`
+- **pt** Português: `O Beuk enviou um código de 6 dígitos para {email}. É válido durante {minutes} minutos.`
+- **nl** Nederlands: `Beuk heeft een code van 6 cijfers naar {email} gestuurd. Hij werkt {minutes} minuten.`
+- **pl** Polski: `Beuk wysłał 6-cyfrowy kod na adres {email}. Jest ważny przez {minutes} min.`
+- **ru** Русский: `Beuk отправил 6-значный код на {email}. Он действует {minutes} мин.`
+- **tr** Türkçe: `Beuk, {email} adresine 6 haneli bir kod gönderdi. Kod {minutes} dakika geçerli.`
+- **ar** العربية: `أرسل Beuk رمزًا من 6 أرقام إلى {email}. يعمل الرمز لمدة {minutes} دقيقة.`
+- **hi** हिन्दी: `Beuk ने {email} पर 6 अंकों का कोड भेजा है। यह {minutes} मिनट तक काम करेगा।`
+- **mr** मराठी: `Beuk ने {email} वर 6 अंकी कोड पाठवला आहे. तो {minutes} मिनिटे चालेल.`
+- **ja** 日本語: `Beukが{email}に6桁のコードを送信しました。コードは{minutes}分間有効です。`
+- **zh-Hans** 简体中文: `Beuk 已向 {email} 发送了一个 6 位数验证码，{minutes} 分钟内有效。`
+
+### `arc.code.sentAny`
+
+- **en** (source, Claude's): Beuk sent a 6-digit code to the address you gave. It works for {minutes} minutes.
+- **es** Español: `Beuk ha enviado un código de 6 dígitos a la dirección que diste. Sirve durante {minutes} minutos.`
+- **fr** Français: `Beuk a envoyé un code à 6 chiffres à l'adresse que vous avez indiquée. Il est valable {minutes} minutes.`
+- **de** Deutsch: `Beuk hat einen 6-stelligen Code an die angegebene Adresse gesendet. Er gilt {minutes} Minuten.`
+- **it** Italiano: `Beuk ha inviato un codice di 6 cifre all'indirizzo che hai indicato. Vale per {minutes} minuti.`
+- **pt** Português: `O Beuk enviou um código de 6 dígitos para o endereço que indicou. É válido durante {minutes} minutos.`
+- **nl** Nederlands: `Beuk heeft een code van 6 cijfers naar het opgegeven adres gestuurd. Hij werkt {minutes} minuten.`
+- **pl** Polski: `Beuk wysłał 6-cyfrowy kod na podany adres. Jest ważny przez {minutes} min.`
+- **ru** Русский: `Beuk отправил 6-значный код на указанный адрес. Он действует {minutes} мин.`
+- **tr** Türkçe: `Beuk, verdiğiniz adrese 6 haneli bir kod gönderdi. Kod {minutes} dakika geçerli.`
+- **ar** العربية: `أرسل Beuk رمزًا من 6 أرقام إلى العنوان الذي أدخلته. يعمل الرمز لمدة {minutes} دقيقة.`
+- **hi** हिन्दी: `Beuk ने आपके दिए पते पर 6 अंकों का कोड भेजा है। यह {minutes} मिनट तक काम करेगा।`
+- **mr** मराठी: `Beuk ने तुम्ही दिलेल्या पत्त्यावर 6 अंकी कोड पाठवला आहे. तो {minutes} मिनिटे चालेल.`
+- **ja** 日本語: `Beukが入力されたアドレスに6桁のコードを送信しました。コードは{minutes}分間有効です。`
+- **zh-Hans** 简体中文: `Beuk 已向你填写的地址发送了一个 6 位数验证码，{minutes} 分钟内有效。`
+
+### `arc.code.label`
+
+- **en** (source, Claude's): Your code
+- **es** Español: `Tu código`
+- **fr** Français: `Votre code`
+- **de** Deutsch: `Ihr Code`
+- **it** Italiano: `Il tuo codice`
+- **pt** Português: `O seu código`
+- **nl** Nederlands: `Uw code`
+- **pl** Polski: `Twój kod`
+- **ru** Русский: `Ваш код`
+- **tr** Türkçe: `Kodunuz`
+- **ar** العربية: `رمزك`
+- **hi** हिन्दी: `आपका कोड`
+- **mr** मराठी: `तुमचा कोड`
+- **ja** 日本語: `確認コード`
+- **zh-Hans** 简体中文: `验证码`
+
+### `arc.code.submit`
+
+- **en** (source, Claude's): Confirm
+- **es** Español: `Confirmar`
+- **fr** Français: `Confirmer`
+- **de** Deutsch: `Bestätigen`
+- **it** Italiano: `Conferma`
+- **pt** Português: `Confirmar`
+- **nl** Nederlands: `Bevestigen`
+- **pl** Polski: `Potwierdź`
+- **ru** Русский: `Подтвердить`
+- **tr** Türkçe: `Onayla`
+- **ar** العربية: `تأكيد`
+- **hi** हिन्दी: `पक्का करें`
+- **mr** मराठी: `निश्चित करा`
+- **ja** 日本語: `確認する`
+- **zh-Hans** 简体中文: `确认`
+
+### `arc.code.again`
+
+- **en** (source, Claude's): Ask for a new code
+- **es** Español: `Pedir un código nuevo`
+- **fr** Français: `Demander un nouveau code`
+- **de** Deutsch: `Neuen Code anfordern`
+- **it** Italiano: `Chiedi un nuovo codice`
+- **pt** Português: `Pedir um novo código`
+- **nl** Nederlands: `Een nieuwe code aanvragen`
+- **pl** Polski: `Poproś o nowy kod`
+- **ru** Русский: `Запросить новый код`
+- **tr** Türkçe: `Yeni kod iste`
+- **ar** العربية: `اطلب رمزًا جديدًا`
+- **hi** हिन्दी: `नया कोड माँगें`
+- **mr** मराठी: `नवीन कोड मागवा`
+- **ja** 日本語: `新しいコードを申請する`
+- **zh-Hans** 简体中文: `重新获取验证码`
+
+### `arc.code.err.wrong`
+
+- **en** (source, Claude's): That code doesn't match. Please check it and try again.
+- **es** Español: `Ese código no coincide. Revísalo y vuelve a intentarlo.`
+- **fr** Français: `Ce code ne correspond pas. Vérifiez-le et réessayez.`
+- **de** Deutsch: `Dieser Code stimmt nicht. Bitte prüfen Sie ihn und versuchen Sie es erneut.`
+- **it** Italiano: `Questo codice non corrisponde. Controllalo e riprova.`
+- **pt** Português: `Esse código não corresponde. Verifique-o e tente novamente.`
+- **nl** Nederlands: `Die code klopt niet. Controleer hem en probeer het opnieuw.`
+- **pl** Polski: `Ten kod się nie zgadza. Sprawdź go i spróbuj ponownie.`
+- **ru** Русский: `Код не подходит. Проверьте его и попробуйте снова.`
+- **tr** Türkçe: `Bu kod eşleşmiyor. Lütfen kontrol edip tekrar deneyin.`
+- **ar** العربية: `هذا الرمز غير مطابق. تحقّق منه وحاول مرة أخرى.`
+- **hi** हिन्दी: `यह कोड मेल नहीं खाता। कृपया जाँचकर फिर कोशिश करें।`
+- **mr** मराठी: `हा कोड जुळत नाही. कृपया तपासून पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `コードが一致しません。確認して、もう一度お試しください。`
+- **zh-Hans** 简体中文: `验证码不正确。请检查后重试。`
+
+### `arc.code.err.expired`
+
+- **en** (source, Claude's): This code has run out, or was tried too many times. Ask for a new one.
+- **es** Español: `Este código ha caducado o se ha probado demasiadas veces. Pide uno nuevo.`
+- **fr** Français: `Ce code a expiré, ou a été essayé trop de fois. Demandez-en un nouveau.`
+- **de** Deutsch: `Dieser Code ist abgelaufen oder wurde zu oft versucht. Fordern Sie einen neuen an.`
+- **it** Italiano: `Questo codice è scaduto, o è stato provato troppe volte. Chiedine uno nuovo.`
+- **pt** Português: `Este código expirou ou foi tentado vezes demais. Peça um novo.`
+- **nl** Nederlands: `Deze code is verlopen of te vaak geprobeerd. Vraag een nieuwe aan.`
+- **pl** Polski: `Ten kod wygasł albo był wpisywany zbyt wiele razy. Poproś o nowy.`
+- **ru** Русский: `Срок действия кода истёк, или его вводили слишком много раз. Запросите новый.`
+- **tr** Türkçe: `Bu kodun süresi doldu ya da çok fazla denendi. Yeni bir kod isteyin.`
+- **ar** العربية: `انتهت صلاحية هذا الرمز، أو جُرّب مرات كثيرة جدًا. اطلب رمزًا جديدًا.`
+- **hi** हिन्दी: `इस कोड का समय खत्म हो गया, या इसे बहुत बार आज़माया गया। नया कोड माँगें।`
+- **mr** मराठी: `या कोडची मुदत संपली आहे, किंवा तो खूप वेळा वापरून पाहिला गेला. नवीन कोड मागवा.`
+- **ja** 日本語: `このコードは有効期限が切れたか、試行回数が多すぎました。新しいコードを申請してください。`
+- **zh-Hans** 简体中文: `这个验证码已过期，或尝试次数过多。请重新获取。`
+
+### `arc.code.err.unknown`
+
+- **en** (source, Claude's): This code is no longer valid. Ask for a new one.
+- **es** Español: `Este código ya no es válido. Pide uno nuevo.`
+- **fr** Français: `Ce code n'est plus valable. Demandez-en un nouveau.`
+- **de** Deutsch: `Dieser Code ist nicht mehr gültig. Fordern Sie einen neuen an.`
+- **it** Italiano: `Questo codice non è più valido. Chiedine uno nuovo.`
+- **pt** Português: `Este código já não é válido. Peça um novo.`
+- **nl** Nederlands: `Deze code is niet meer geldig. Vraag een nieuwe aan.`
+- **pl** Polski: `Ten kod nie jest już ważny. Poproś o nowy.`
+- **ru** Русский: `Этот код больше не действует. Запросите новый.`
+- **tr** Türkçe: `Bu kod artık geçerli değil. Yeni bir kod isteyin.`
+- **ar** العربية: `لم يعد هذا الرمز صالحًا. اطلب رمزًا جديدًا.`
+- **hi** हिन्दी: `यह कोड अब मान्य नहीं है। नया कोड माँगें।`
+- **mr** मराठी: `हा कोड आता वैध नाही. नवीन कोड मागवा.`
+- **ja** 日本語: `このコードは無効になりました。新しいコードを申請してください。`
+- **zh-Hans** 简体中文: `这个验证码已失效。请重新获取。`
+
+### `arc.wait.title`
+
+- **en** (source, Claude's): Your request is with {author}
+- **es** Español: `Tu solicitud está en manos de {author}`
+- **fr** Français: `Votre demande est transmise à {author}`
+- **de** Deutsch: `Ihre Anfrage liegt bei {author}`
+- **it** Italiano: `La tua richiesta è nelle mani di {author}`
+- **pt** Português: `O seu pedido está com {author}`
+- **nl** Nederlands: `Uw aanvraag ligt bij {author}`
+- **pl** Polski: `Twoja prośba czeka, aż odpowie {author}`
+- **ru** Русский: `{author}: ваша заявка на рассмотрении`
+- **tr** Türkçe: `İsteğiniz yanıt bekliyor: {author}`
+- **ar** العربية: `طلبك الآن لدى {author}`
+- **hi** हिन्दी: `आपका अनुरोध {author} के पास है`
+- **mr** मराठी: `तुमची विनंती {author} यांच्याकडे आहे`
+- **ja** 日本語: `お申し込みは{author}が確認中です`
+- **zh-Hans** 简体中文: `你的申请正在等待 {author} 处理`
+
+### `arc.wait.lead`
+
+- **en** (source, Claude's): Thank you, {name}. Your address is confirmed.
+- **es** Español: `Gracias, {name}. Tu dirección está confirmada.`
+- **fr** Français: `Merci, {name}. Votre adresse est confirmée.`
+- **de** Deutsch: `Danke, {name}. Ihre Adresse ist bestätigt.`
+- **it** Italiano: `Grazie, {name}. Il tuo indirizzo è confermato.`
+- **pt** Português: `Obrigado, {name}. O seu endereço está confirmado.`
+- **nl** Nederlands: `Bedankt, {name}. Uw adres is bevestigd.`
+- **pl** Polski: `Dziękujemy, {name}. Twój adres jest potwierdzony.`
+- **ru** Русский: `Спасибо, {name}. Ваш адрес подтверждён.`
+- **tr** Türkçe: `Teşekkürler, {name}. Adresiniz doğrulandı.`
+- **ar** العربية: `شكرًا، {name}. تم تأكيد عنوانك.`
+- **hi** हिन्दी: `धन्यवाद, {name}। आपका पता पक्का हो गया है।`
+- **mr** मराठी: `धन्यवाद, {name}. तुमचा पत्ता निश्चित झाला आहे.`
+- **ja** 日本語: `{name}さん、ありがとうございます。アドレスの確認が完了しました。`
+- **zh-Hans** 简体中文: `谢谢你，{name}。你的邮箱地址已确认。`
+
+### `arc.wait.body`
+
+- **en** (source, Claude's): {author} looks at each request. You will get one more email when they decide.
+- **es** Español: `{author} revisa cada solicitud. Recibirás un correo más cuando haya una decisión.`
+- **fr** Français: `{author} examine chaque demande. Vous recevrez un e-mail de plus une fois la décision prise.`
+- **de** Deutsch: `Jede Anfrage wird von {author} geprüft. Sie erhalten noch eine E-Mail, sobald die Entscheidung gefallen ist.`
+- **it** Italiano: `{author} esamina ogni richiesta. Riceverai un'altra email quando ci sarà una decisione.`
+- **pt** Português: `{author} analisa cada pedido. Receberá mais um e-mail quando houver uma decisão.`
+- **nl** Nederlands: `{author} bekijkt elke aanvraag. U krijgt nog één e-mail zodra er een besluit is.`
+- **pl** Polski: `{author} przegląda każdą prośbę. Gdy zapadnie decyzja, dostaniesz jeszcze jeden e-mail.`
+- **ru** Русский: `{author} рассматривает каждую заявку. Когда решение будет принято, вы получите ещё одно письмо.`
+- **tr** Türkçe: `{author} her isteği inceler. Karar verildiğinde bir e-posta daha alacaksınız.`
+- **ar** العربية: `تُراجَع الطلبات واحدًا واحدًا لدى {author}. ستصلك رسالة أخرى عند اتخاذ القرار.`
+- **hi** हिन्दी: `हर अनुरोध पर फ़ैसला {author} का होता है। फ़ैसला होने पर आपको एक और ईमेल मिलेगा।`
+- **mr** मराठी: `{author} प्रत्येक विनंती पाहतात. त्यांनी निर्णय घेतल्यावर तुम्हाला आणखी एक ईमेल येईल.`
+- **ja** 日本語: `{author}がお申し込みを一件ずつ確認します。結果が決まりしだい、もう一通メールをお送りします。`
+- **zh-Hans** 简体中文: `{author} 会逐一查看每份申请。有结果时，你会再收到一封邮件。`
+
+### `arc.copy.title`
+
+- **en** (source, fixed by the plan/spec): {title} — your advance copy
+- **es** Español: `{title} — tu ejemplar anticipado`
+- **fr** Français: `{title} — votre exemplaire en avant-première`
+- **de** Deutsch: `{title} — Ihr Vorab-Exemplar`
+- **it** Italiano: `{title} — la tua copia in anteprima`
+- **pt** Português: `{title} — o seu exemplar antecipado`
+- **nl** Nederlands: `{title} — uw voorpublicatie-exemplaar`
+- **pl** Polski: `„{title}” — Twój egzemplarz przedpremierowy`
+- **ru** Русский: `«{title}» — ваш сигнальный экземпляр`
+- **tr** Türkçe: `{title} — ön okuma kopyanız`
+- **ar** العربية: `{title} — نسختك المسبقة`
+- **hi** हिन्दी: `{title} — आपकी रिलीज़ से पहले की प्रति`
+- **mr** मराठी: `{title} — तुमची प्रकाशनापूर्वीची प्रत`
+- **ja** 日本語: `『{title}』 — あなた専用の献本`
+- **zh-Hans** 简体中文: `《{title}》——你的预发本`
+
+### `arc.copy.for`
+
+- **en** (source, fixed by the plan/spec): Prepared for {name}
+- **es** Español: `Preparado para {name}`
+- **fr** Français: `Préparé pour {name}`
+- **de** Deutsch: `Erstellt für {name}`
+- **it** Italiano: `Preparata per {name}`
+- **pt** Português: `Preparado para {name}`
+- **nl** Nederlands: `Gemaakt voor {name}`
+- **pl** Polski: `Przygotowany dla: {name}`
+- **ru** Русский: `Подготовлен для: {name}`
+- **tr** Türkçe: `Hazırlandığı kişi: {name}`
+- **ar** العربية: `أُعدّت من أجل {name}`
+- **hi** हिन्दी: `{name} के लिए तैयार की गई`
+- **mr** मराठी: `{name} यांच्यासाठी तयार केलेली`
+- **ja** 日本語: `{name}さん用に作成`
+- **zh-Hans** 简体中文: `为 {name} 准备`
+
+### `arc.copy.download`
+
+- **en** (source, fixed by the plan/spec): Download EPUB
+- **es** Español: `Descargar EPUB`
+- **fr** Français: `Télécharger l'EPUB`
+- **de** Deutsch: `EPUB herunterladen`
+- **it** Italiano: `Scarica l'EPUB`
+- **pt** Português: `Transferir EPUB`
+- **nl** Nederlands: `EPUB downloaden`
+- **pl** Polski: `Pobierz EPUB`
+- **ru** Русский: `Скачать EPUB`
+- **tr** Türkçe: `EPUB'u indir`
+- **ar** العربية: `تنزيل EPUB`
+- **hi** हिन्दी: `EPUB डाउनलोड करें`
+- **mr** मराठी: `EPUB डाउनलोड करा`
+- **ja** 日本語: `EPUBをダウンロード`
+- **zh-Hans** 简体中文: `下载 EPUB`
+
+### `arc.copy.read`
+
+- **en** (source, fixed by the plan/spec): Read in your browser
+- **es** Español: `Leer en el navegador`
+- **fr** Français: `Lire dans votre navigateur`
+- **de** Deutsch: `Im Browser lesen`
+- **it** Italiano: `Leggi nel browser`
+- **pt** Português: `Ler no navegador`
+- **nl** Nederlands: `Lezen in uw browser`
+- **pl** Polski: `Czytaj w przeglądarce`
+- **ru** Русский: `Читать в браузере`
+- **tr** Türkçe: `Tarayıcıda oku`
+- **ar** العربية: `اقرأ في المتصفح`
+- **hi** हिन्दी: `ब्राउज़र में पढ़ें`
+- **mr** मराठी: `ब्राउझरमध्ये वाचा`
+- **ja** 日本語: `ブラウザで読む`
+- **zh-Hans** 简体中文: `在浏览器中阅读`
+
+### `arc.copy.stampNote`
+
+- **en** (source, Claude's): Your copy shows your name and email on its copyright page.
+- **es** Español: `Tu ejemplar muestra tu nombre y tu correo en la página de derechos de autor.`
+- **fr** Français: `Votre exemplaire porte votre nom et votre adresse e-mail sur sa page de copyright.`
+- **de** Deutsch: `Ihr Exemplar zeigt Ihren Namen und Ihre E-Mail-Adresse auf der Copyright-Seite.`
+- **it** Italiano: `La tua copia mostra il tuo nome e la tua email nella pagina del copyright.`
+- **pt** Português: `O seu exemplar mostra o seu nome e o seu e-mail na página de direitos de autor.`
+- **nl** Nederlands: `Uw exemplaar toont uw naam en e-mailadres op de copyrightpagina.`
+- **pl** Polski: `Twój egzemplarz pokazuje Twoje imię i adres e-mail na stronie z prawami autorskimi.`
+- **ru** Русский: `В вашем экземпляре на странице с авторскими правами указаны ваше имя и адрес почты.`
+- **tr** Türkçe: `Kopyanızın telif hakkı sayfasında adınız ve e-posta adresiniz yer alır.`
+- **ar** العربية: `تُظهر نسختك اسمك وبريدك الإلكتروني في صفحة حقوق النشر.`
+- **hi** हिन्दी: `आपकी प्रति के कॉपीराइट पेज पर आपका नाम और ईमेल दिखता है।`
+- **mr** मराठी: `तुमच्या प्रतीच्या कॉपीराइट पानावर तुमचे नाव आणि ईमेल दिसते.`
+- **ja** 日本語: `献本の著作権ページには、お名前とメールアドレスが入っています。`
+- **zh-Hans** 简体中文: `你的这一份在版权页上印有你的姓名和邮箱。`
+
+### `arc.copy.keep`
+
+- **en** (source, fixed by the plan/spec): Keep this page: it's your link to your copy.
+- **es** Español: `Guarda esta página: es tu enlace a tu ejemplar.`
+- **fr** Français: `Gardez cette page : c'est votre lien vers votre exemplaire.`
+- **de** Deutsch: `Bewahren Sie diese Seite auf: Sie ist Ihr Link zu Ihrem Exemplar.`
+- **it** Italiano: `Conserva questa pagina: è il tuo link alla tua copia.`
+- **pt** Português: `Guarde esta página: é o seu link para o seu exemplar.`
+- **nl** Nederlands: `Bewaar deze pagina: het is uw link naar uw exemplaar.`
+- **pl** Polski: `Zachowaj tę stronę: to Twój link do Twojego egzemplarza.`
+- **ru** Русский: `Сохраните эту страницу: это ваша ссылка на ваш экземпляр.`
+- **tr** Türkçe: `Bu sayfayı saklayın: kopyanıza giden bağlantınız bu.`
+- **ar** العربية: `احتفظ بهذه الصفحة: إنها رابطك إلى نسختك.`
+- **hi** हिन्दी: `इस पेज को सँभालकर रखें: यही आपकी प्रति तक पहुँचने का लिंक है।`
+- **mr** मराठी: `हे पान जपून ठेवा: तुमच्या प्रतीपर्यंत पोहोचण्याची तुमची लिंक हीच आहे.`
+- **ja** 日本語: `このページを保存しておいてください。献本へのリンクはここです。`
+- **zh-Hans** 简体中文: `请保存这个页面：它是你获取这本书的链接。`
+
+### `arc.copy.goneTitle`
+
+- **en** (source, Claude's): This copy is closed
+- **es** Español: `Este ejemplar está cerrado`
+- **fr** Français: `Cet exemplaire est fermé`
+- **de** Deutsch: `Dieses Exemplar ist geschlossen`
+- **it** Italiano: `Questa copia è chiusa`
+- **pt** Português: `Este exemplar está fechado`
+- **nl** Nederlands: `Dit exemplaar is gesloten`
+- **pl** Polski: `Ten egzemplarz jest zamknięty`
+- **ru** Русский: `Этот экземпляр закрыт`
+- **tr** Türkçe: `Bu kopya kapatıldı`
+- **ar** العربية: `هذه النسخة مغلقة`
+- **hi** हिन्दी: `यह प्रति बंद है`
+- **mr** मराठी: `ही प्रत बंद आहे`
+- **ja** 日本語: `この献本は閉じられました`
+- **zh-Hans** 简体中文: `这一份已关闭`
+
+### `arc.copy.gone`
+
+- **en** (source, Claude's): This advance copy is no longer available.
+- **es** Español: `Este ejemplar anticipado ya no está disponible.`
+- **fr** Français: `Cet exemplaire en avant-première n'est plus disponible.`
+- **de** Deutsch: `Dieses Vorab-Exemplar ist nicht mehr verfügbar.`
+- **it** Italiano: `Questa copia in anteprima non è più disponibile.`
+- **pt** Português: `Este exemplar antecipado já não está disponível.`
+- **nl** Nederlands: `Dit voorpublicatie-exemplaar is niet meer beschikbaar.`
+- **pl** Polski: `Ten egzemplarz przedpremierowy nie jest już dostępny.`
+- **ru** Русский: `Этот сигнальный экземпляр больше недоступен.`
+- **tr** Türkçe: `Bu ön okuma kopyası artık kullanılamıyor.`
+- **ar** العربية: `لم تعد هذه النسخة المسبقة متاحة.`
+- **hi** हिन्दी: `यह रिलीज़ से पहले की प्रति अब उपलब्ध नहीं है।`
+- **mr** मराठी: `ही प्रकाशनापूर्वीची प्रत आता उपलब्ध नाही.`
+- **ja** 日本語: `この献本は利用できなくなりました。`
+- **zh-Hans** 简体中文: `这本预发本已无法获取。`
+
+### `arc.copy.err.limit`
+
+- **en** (source, Claude's): This copy has been downloaded many times in the last hour. Please try again later.
+- **es** Español: `Este ejemplar se ha descargado muchas veces en la última hora. Vuelve a intentarlo más tarde.`
+- **fr** Français: `Cet exemplaire a été téléchargé de nombreuses fois au cours de la dernière heure. Veuillez réessayer plus tard.`
+- **de** Deutsch: `Dieses Exemplar wurde in der letzten Stunde sehr oft heruntergeladen. Bitte versuchen Sie es später noch einmal.`
+- **it** Italiano: `Questa copia è stata scaricata molte volte nell'ultima ora. Riprova più tardi.`
+- **pt** Português: `Este exemplar foi transferido muitas vezes na última hora. Tente novamente mais tarde.`
+- **nl** Nederlands: `Dit exemplaar is het afgelopen uur heel vaak gedownload. Probeer het later opnieuw.`
+- **pl** Polski: `Ten egzemplarz był pobierany wiele razy w ciągu ostatniej godziny. Spróbuj ponownie później.`
+- **ru** Русский: `За последний час этот экземпляр скачивали много раз. Попробуйте позже.`
+- **tr** Türkçe: `Bu kopya son bir saatte çok kez indirildi. Lütfen daha sonra tekrar deneyin.`
+- **ar** العربية: `نُزّلت هذه النسخة مرات كثيرة خلال الساعة الماضية. حاول مرة أخرى لاحقًا.`
+- **hi** हिन्दी: `पिछले एक घंटे में यह प्रति कई बार डाउनलोड हुई है। कृपया बाद में फिर कोशिश करें।`
+- **mr** मराठी: `गेल्या एका तासात ही प्रत अनेक वेळा डाउनलोड झाली आहे. कृपया नंतर पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `この献本は直近1時間にたくさんダウンロードされました。しばらくしてからもう一度お試しください。`
+- **zh-Hans** 简体中文: `这一份在过去一小时内已被下载很多次。请稍后再试。`
+
+### `arc.copy.err.busy`
+
+- **en** (source, Claude's): Your copy is already being prepared. Please wait a few seconds, then try again.
+- **es** Español: `Tu ejemplar ya se está preparando. Espera unos segundos y vuelve a intentarlo.`
+- **fr** Français: `Votre exemplaire est déjà en cours de préparation. Patientez quelques secondes, puis réessayez.`
+- **de** Deutsch: `Ihr Exemplar wird bereits vorbereitet. Bitte warten Sie ein paar Sekunden und versuchen Sie es dann erneut.`
+- **it** Italiano: `La tua copia è già in preparazione. Aspetta qualche secondo, poi riprova.`
+- **pt** Português: `O seu exemplar já está a ser preparado. Aguarde alguns segundos e tente novamente.`
+- **nl** Nederlands: `Uw exemplaar wordt al klaargemaakt. Wacht een paar seconden en probeer het dan opnieuw.`
+- **pl** Polski: `Twój egzemplarz jest już przygotowywany. Odczekaj kilka sekund i spróbuj ponownie.`
+- **ru** Русский: `Ваш экземпляр уже готовится. Подождите несколько секунд и попробуйте снова.`
+- **tr** Türkçe: `Kopyanız zaten hazırlanıyor. Lütfen birkaç saniye bekleyip tekrar deneyin.`
+- **ar** العربية: `نسختك قيد التحضير بالفعل. انتظر بضع ثوانٍ ثم حاول مرة أخرى.`
+- **hi** हिन्दी: `आपकी प्रति पहले से तैयार हो रही है। कृपया कुछ सेकंड रुकें, फिर कोशिश करें।`
+- **mr** मराठी: `तुमची प्रत आधीच तयार होत आहे. कृपया काही सेकंद थांबा, मग पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `献本はすでに準備中です。数秒待ってから、もう一度お試しください。`
+- **zh-Hans** 简体中文: `你的预发本正在准备中。请等几秒再试。`
+
+### `arc.copy.err.serverBusy`
+
+- **en** (source, Claude's): Beuk is busy preparing other copies. Please try again in a minute.
+- **es** Español: `Beuk está ocupado preparando otros ejemplares. Vuelve a intentarlo dentro de un minuto.`
+- **fr** Français: `Beuk est occupé à préparer d'autres exemplaires. Veuillez réessayer dans une minute.`
+- **de** Deutsch: `Beuk bereitet gerade andere Exemplare vor. Bitte versuchen Sie es in einer Minute noch einmal.`
+- **it** Italiano: `Beuk è impegnato a preparare altre copie. Riprova tra un minuto.`
+- **pt** Português: `O Beuk está ocupado a preparar outros exemplares. Tente novamente daqui a um minuto.`
+- **nl** Nederlands: `Beuk is bezig andere exemplaren klaar te maken. Probeer het over een minuut opnieuw.`
+- **pl** Polski: `Beuk przygotowuje teraz inne egzemplarze. Spróbuj ponownie za minutę.`
+- **ru** Русский: `Beuk занят подготовкой других экземпляров. Попробуйте через минуту.`
+- **tr** Türkçe: `Beuk başka kopyaları hazırlamakla meşgul. Lütfen bir dakika sonra tekrar deneyin.`
+- **ar** العربية: `Beuk مشغول بتحضير نسخ أخرى. حاول مرة أخرى بعد دقيقة.`
+- **hi** हिन्दी: `Beuk अभी दूसरी प्रतियाँ तैयार करने में लगा है। कृपया एक मिनट बाद फिर कोशिश करें।`
+- **mr** मराठी: `Beuk सध्या इतर प्रती तयार करण्यात व्यस्त आहे. कृपया एका मिनिटाने पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `Beukはほかの献本を準備中です。1分ほどしてからもう一度お試しください。`
+- **zh-Hans** 简体中文: `Beuk 正忙着准备其他读者的预发本。请一分钟后再试。`
+
+### `arc.copy.err.failed`
+
+- **en** (source, Claude's): Beuk couldn't prepare your copy just now. Please try again later.
+- **es** Español: `Beuk no ha podido preparar tu ejemplar ahora mismo. Vuelve a intentarlo más tarde.`
+- **fr** Français: `Beuk n'a pas pu préparer votre exemplaire pour le moment. Veuillez réessayer plus tard.`
+- **de** Deutsch: `Beuk konnte Ihr Exemplar gerade nicht vorbereiten. Bitte versuchen Sie es später noch einmal.`
+- **it** Italiano: `Beuk non è riuscito a preparare la tua copia in questo momento. Riprova più tardi.`
+- **pt** Português: `O Beuk não conseguiu preparar o seu exemplar neste momento. Tente novamente mais tarde.`
+- **nl** Nederlands: `Beuk kon uw exemplaar nu niet klaarmaken. Probeer het later opnieuw.`
+- **pl** Polski: `Beuk nie mógł teraz przygotować Twojego egzemplarza. Spróbuj ponownie później.`
+- **ru** Русский: `Beuk не удалось подготовить ваш экземпляр. Попробуйте позже.`
+- **tr** Türkçe: `Beuk kopyanızı şu anda hazırlayamadı. Lütfen daha sonra tekrar deneyin.`
+- **ar** العربية: `تعذّر على Beuk تحضير نسختك الآن. حاول مرة أخرى لاحقًا.`
+- **hi** हिन्दी: `Beuk अभी आपकी प्रति तैयार नहीं कर पाया। कृपया बाद में फिर कोशिश करें।`
+- **mr** मराठी: `Beuk ला आत्ता तुमची प्रत तयार करता आली नाही. कृपया नंतर पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `Beukはいま献本を準備できませんでした。しばらくしてからもう一度お試しください。`
+- **zh-Hans** 简体中文: `Beuk 刚才没能准备好你的预发本。请稍后再试。`
+
+### `arc.notMe.title`
+
+- **en** (source, Claude's): Not you?
+- **es** Español: `¿No eres tú?`
+- **fr** Français: `Ce n'est pas vous ?`
+- **de** Deutsch: `Nicht Sie?`
+- **it** Italiano: `Non sei tu?`
+- **pt** Português: `Não foi você?`
+- **nl** Nederlands: `Bent u dit niet?`
+- **pl** Polski: `To nie Ty?`
+- **ru** Русский: `Это не вы?`
+- **tr** Türkçe: `Siz değil misiniz?`
+- **ar** العربية: `لست أنت؟`
+- **hi** हिन्दी: `आपने नहीं माँगी थी?`
+- **mr** मराठी: `तुम्ही मागितली नव्हती?`
+- **ja** 日本語: `お心当たりがありませんか？`
+- **zh-Hans** 简体中文: `不是你本人？`
+
+### `arc.notMe.body`
+
+- **en** (source, V's intent, verbatim): If you didn't ask for a copy of {title}, press the button. Beuk deletes your name and email from this book, closes this copy, and won't send this address mail from any author on Beuk again.
+- **es** Español: `Si no pediste un ejemplar de {title}, pulsa el botón. Beuk borra tu nombre y tu correo de este libro, cierra este ejemplar y no volverá a enviar correo a esta dirección de parte de ningún autor de Beuk.`
+- **fr** Français: `Si vous n'avez pas demandé d'exemplaire de {title}, appuyez sur le bouton. Beuk supprime votre nom et votre adresse e-mail de ce livre, ferme cet exemplaire et n'enverra plus d'e-mail à cette adresse de la part d'aucun auteur sur Beuk.`
+- **de** Deutsch: `Wenn Sie kein Exemplar von {title} angefragt haben, drücken Sie auf die Schaltfläche. Beuk löscht Ihren Namen und Ihre E-Mail-Adresse aus diesem Buch, schließt dieses Exemplar und sendet an diese Adresse nie wieder E-Mails, egal von welchem Autor auf Beuk.`
+- **it** Italiano: `Se non hai chiesto una copia di {title}, premi il pulsante. Beuk cancella il tuo nome e la tua email da questo libro, chiude questa copia e non invierà mai più email a questo indirizzo da parte di nessun autore su Beuk.`
+- **pt** Português: `Se não pediu um exemplar de {title}, carregue no botão. O Beuk apaga o seu nome e o seu e-mail deste livro, fecha este exemplar e não voltará a enviar e-mails para este endereço da parte de nenhum autor no Beuk.`
+- **nl** Nederlands: `Hebt u geen exemplaar van {title} aangevraagd? Druk dan op de knop. Beuk verwijdert uw naam en e-mailadres uit dit boek, sluit dit exemplaar en stuurt dit adres nooit meer e-mail namens welke auteur op Beuk dan ook.`
+- **pl** Polski: `Jeśli prośba o egzemplarz „{title}” nie pochodzi od Ciebie, naciśnij przycisk. Beuk usunie Twoje imię i adres e-mail z tej książki, zamknie ten egzemplarz i nie wyśle już na ten adres żadnej wiadomości od żadnego autora w Beuk.`
+- **ru** Русский: `Если вы не запрашивали экземпляр книги «{title}», нажмите кнопку. Beuk удалит ваше имя и адрес почты из этой книги, закроет этот экземпляр и больше никогда не будет присылать на этот адрес письма ни от одного автора в Beuk.`
+- **tr** Türkçe: `{title} için kopya istemediyseniz düğmeye basın. Beuk adınızı ve e-posta adresinizi bu kitaptan siler, bu kopyayı kapatır ve Beuk'teki hiçbir yazar adına bu adrese bir daha e-posta göndermez.`
+- **ar** العربية: `إن لم تطلب نسخة من {title}، فاضغط الزر. يحذف Beuk اسمك وبريدك الإلكتروني من هذا الكتاب، ويغلق هذه النسخة، ولن يرسل إلى هذا العنوان بريدًا من أي مؤلف على Beuk بعد الآن.`
+- **hi** हिन्दी: `अगर आपने {title} की प्रति नहीं माँगी थी, तो बटन दबाएँ। Beuk इस किताब से आपका नाम और ईमेल हटा देता है, यह प्रति बंद कर देता है, और Beuk पर किसी भी लेखक की ओर से इस पते पर फिर कभी ईमेल नहीं भेजेगा।`
+- **mr** मराठी: `तुम्ही {title} ची प्रत मागितली नसेल, तर बटण दाबा. Beuk या पुस्तकातून तुमचे नाव आणि ईमेल हटवते, ही प्रत बंद करते, आणि Beuk वरील कोणत्याही लेखकाकडून या पत्त्यावर पुन्हा कधीही ईमेल पाठवणार नाही.`
+- **ja** 日本語: `『{title}』の献本を申し込んだ覚えがない場合は、ボタンを押してください。Beukはこの本からお名前とメールアドレスを削除し、この献本を閉じ、今後Beukのどの著者からもこのアドレスにメールを送りません。`
+- **zh-Hans** 简体中文: `如果你没有申请过《{title}》，请按下按钮。Beuk 会从这本书中删除你的名字和邮箱，关闭这一份，并且不会再代表 Beuk 上的任何作者向这个地址发送邮件。`
+
+### `arc.notMe.button`
+
+- **en** (source, Claude's): I didn't ask for a copy
+- **es** Español: `Yo no pedí ningún ejemplar`
+- **fr** Français: `Je n'ai pas demandé d'exemplaire`
+- **de** Deutsch: `Ich habe kein Exemplar angefragt`
+- **it** Italiano: `Non ho chiesto nessuna copia`
+- **pt** Português: `Não pedi nenhum exemplar`
+- **nl** Nederlands: `Ik heb geen exemplaar aangevraagd`
+- **pl** Polski: `To nie moja prośba`
+- **ru** Русский: `Это не моя заявка`
+- **tr** Türkçe: `Kopya istemedim`
+- **ar** العربية: `لم أطلب نسخة`
+- **hi** हिन्दी: `मैंने प्रति नहीं माँगी थी`
+- **mr** मराठी: `मी प्रत मागितली नव्हती`
+- **ja** 日本語: `申し込んでいません`
+- **zh-Hans** 简体中文: `我没有申请过`
+
+### `arc.notMe.done`
+
+- **en** (source, Claude's): Beuk deleted your name and email from {title}, closed this copy, and won't send this address mail from any author on Beuk again.
+- **es** Español: `Beuk ha borrado tu nombre y tu correo de {title}, ha cerrado este ejemplar y no volverá a enviar correo a esta dirección de parte de ningún autor de Beuk.`
+- **fr** Français: `Beuk a supprimé votre nom et votre adresse e-mail de {title}, a fermé cet exemplaire et n'enverra plus d'e-mail à cette adresse de la part d'aucun auteur sur Beuk.`
+- **de** Deutsch: `Beuk hat Ihren Namen und Ihre E-Mail-Adresse aus {title} gelöscht, dieses Exemplar geschlossen und sendet an diese Adresse nie wieder E-Mails, egal von welchem Autor auf Beuk.`
+- **it** Italiano: `Beuk ha cancellato il tuo nome e la tua email da {title}, ha chiuso questa copia e non invierà mai più email a questo indirizzo da parte di nessun autore su Beuk.`
+- **pt** Português: `O Beuk apagou o seu nome e o seu e-mail de {title}, fechou este exemplar e não voltará a enviar e-mails para este endereço da parte de nenhum autor no Beuk.`
+- **nl** Nederlands: `Beuk heeft uw naam en e-mailadres uit {title} verwijderd, dit exemplaar gesloten en stuurt dit adres nooit meer e-mail namens welke auteur op Beuk dan ook.`
+- **pl** Polski: `Beuk usunął Twoje imię i adres e-mail z „{title}”, zamknął ten egzemplarz i nie wyśle już na ten adres żadnej wiadomości od żadnego autora w Beuk.`
+- **ru** Русский: `Beuk удалил ваше имя и адрес почты из книги «{title}», закрыл этот экземпляр и больше никогда не будет присылать на этот адрес письма ни от одного автора в Beuk.`
+- **tr** Türkçe: `Beuk adınızı ve e-posta adresinizi {title} kitabından sildi, bu kopyayı kapattı ve Beuk'teki hiçbir yazar adına bu adrese bir daha e-posta göndermeyecek.`
+- **ar** العربية: `حذف Beuk اسمك وبريدك الإلكتروني من {title}، وأغلق هذه النسخة، ولن يرسل إلى هذا العنوان بريدًا من أي مؤلف على Beuk بعد الآن.`
+- **hi** हिन्दी: `Beuk ने {title} से आपका नाम और ईमेल हटा दिया है, यह प्रति बंद कर दी है, और Beuk पर किसी भी लेखक की ओर से इस पते पर फिर कभी ईमेल नहीं भेजेगा।`
+- **mr** मराठी: `Beuk ने {title} मधून तुमचे नाव आणि ईमेल हटवले, ही प्रत बंद केली, आणि Beuk वरील कोणत्याही लेखकाकडून या पत्त्यावर पुन्हा कधीही ईमेल पाठवणार नाही.`
+- **ja** 日本語: `Beukは『{title}』からお名前とメールアドレスを削除し、この献本を閉じました。今後Beukのどの著者からもこのアドレスにメールを送ることはありません。`
+- **zh-Hans** 简体中文: `Beuk 已从《{title}》中删除你的名字和邮箱，关闭了这一份，并且不会再代表 Beuk 上的任何作者向这个地址发送邮件。`
+
+### `arc.notMe.backups`
+
+- **en** (source, Claude's): Like anything Beuk deletes, they can remain in older backups. The block on this address is kept in the backups too.
+- **es** Español: `Como todo lo que Beuk borra, pueden seguir en copias de seguridad anteriores. El bloqueo de esta dirección también se guarda en las copias de seguridad.`
+- **fr** Français: `Comme tout ce que Beuk supprime, ils peuvent subsister dans d'anciennes sauvegardes. Le blocage de cette adresse est lui aussi conservé dans les sauvegardes.`
+- **de** Deutsch: `Wie alles, was Beuk löscht, können sie in älteren Sicherungen erhalten bleiben. Die Sperre dieser Adresse wird ebenfalls in den Sicherungen aufbewahrt.`
+- **it** Italiano: `Come tutto ciò che Beuk cancella, possono restare nei backup precedenti. Anche il blocco di questo indirizzo viene conservato nei backup.`
+- **pt** Português: `Como tudo o que o Beuk apaga, podem continuar em cópias de segurança mais antigas. O bloqueio deste endereço também fica guardado nas cópias de segurança.`
+- **nl** Nederlands: `Zoals alles wat Beuk verwijdert, kunnen ze in oudere back-ups blijven staan. De blokkade van dit adres wordt ook in de back-ups bewaard.`
+- **pl** Polski: `Jak wszystko, co Beuk usuwa, mogą one pozostać w starszych kopiach zapasowych. Blokada tego adresu też jest przechowywana w kopiach zapasowych.`
+- **ru** Русский: `Как и всё, что удаляет Beuk, эти данные могут оставаться в старых резервных копиях. Блокировка этого адреса тоже хранится в резервных копиях.`
+- **tr** Türkçe: `Beuk'in sildiği her şey gibi, bunlar da eski yedeklerde kalabilir. Bu adres için konan engel de yedeklerde saklanır.`
+- **ar** العربية: `مثل كل ما يحذفه Beuk، قد يبقيان في نسخ احتياطية أقدم. ويُحفظ حظر هذا العنوان في النسخ الاحتياطية أيضًا.`
+- **hi** हिन्दी: `Beuk जो कुछ भी हटाता है, उसकी तरह ये भी पुराने बैकअप में रह सकते हैं। इस पते पर लगी रोक भी बैकअप में रखी जाती है।`
+- **mr** मराठी: `Beuk हटवत असलेल्या प्रत्येक गोष्टीप्रमाणे, ही माहिती जुन्या बॅकअपमध्ये राहू शकते. या पत्त्यावरची बंदीही बॅकअपमध्ये ठेवली जाते.`
+- **ja** 日本語: `Beukが削除するほかのデータと同じく、古いバックアップには残っている場合があります。このアドレスのブロックもバックアップに保存されます。`
+- **zh-Hans** 简体中文: `和 Beuk 删除的其他内容一样，它们可能仍保留在较早的备份中。对这个地址的屏蔽也会保存在备份中。`
+
+### `arc.stop.title`
+
+- **en** (source, Claude's): No more email from {author}
+- **es** Español: `No recibir más correos de {author}`
+- **fr** Français: `Plus aucun e-mail envoyé par {author}`
+- **de** Deutsch: `Keine E-Mails mehr von {author}`
+- **it** Italiano: `Niente più email da {author}`
+- **pt** Português: `Não receber mais e-mails de {author}`
+- **nl** Nederlands: `Geen e-mail meer van {author}`
+- **pl** Polski: `{author} — bez kolejnych e-maili`
+- **ru** Русский: `Отписаться от писем ({author})`
+- **tr** Türkçe: `E-postaları durdur: {author}`
+- **ar** العربية: `إيقاف رسائل {author}`
+- **hi** हिन्दी: `{author} की ओर से अब कोई ईमेल नहीं`
+- **mr** मराठी: `{author} यांच्याकडून आणखी ईमेल नको`
+- **ja** 日本語: `{author}からのメールを停止`
+- **zh-Hans** 简体中文: `不再接收 {author} 的邮件`
+
+### `arc.stop.body`
+
+- **en** (source, V's intent, verbatim): Press the button and Beuk won't send you any more email about {author}'s books. Your copy keeps working.
+- **es** Español: `Pulsa el botón y Beuk no te enviará más correos sobre los libros de {author}. Tu ejemplar sigue funcionando.`
+- **fr** Français: `Appuyez sur le bouton et Beuk ne vous enverra plus d'e-mails au sujet des livres écrits par {author}. Votre exemplaire continue de fonctionner.`
+- **de** Deutsch: `Drücken Sie auf die Schaltfläche, dann sendet Beuk Ihnen keine E-Mails mehr zu den Büchern von {author}. Ihr Exemplar funktioniert weiter.`
+- **it** Italiano: `Premi il pulsante e Beuk non ti invierà più email sui libri di {author}. La tua copia continua a funzionare.`
+- **pt** Português: `Carregue no botão e o Beuk não lhe vai enviar mais e-mails sobre os livros de {author}. O seu exemplar continua a funcionar.`
+- **nl** Nederlands: `Druk op de knop en Beuk stuurt u geen e-mail meer over de boeken van {author}. Uw exemplaar blijft werken.`
+- **pl** Polski: `Naciśnij przycisk, a Beuk nie wyśle Ci już e-maili o książkach, które pisze {author}. Twój egzemplarz nadal działa.`
+- **ru** Русский: `Нажмите кнопку, и Beuk больше не будет присылать вам письма о книгах, которые пишет {author}. Ваш экземпляр продолжит работать.`
+- **tr** Türkçe: `Düğmeye basın; Beuk size {author} tarafından yazılan kitaplar hakkında artık e-posta göndermez. Kopyanız çalışmaya devam eder.`
+- **ar** العربية: `اضغط الزر ولن يرسل إليك Beuk أي بريد آخر عن كتب {author}. ستبقى نسختك تعمل.`
+- **hi** हिन्दी: `बटन दबाएँ, तो Beuk आपको {author} की किताबों के बारे में अब कोई ईमेल नहीं भेजेगा। आपकी प्रति काम करती रहेगी।`
+- **mr** मराठी: `बटण दाबा, म्हणजे Beuk तुम्हाला {author} यांच्या पुस्तकांबद्दल आणखी ईमेल पाठवणार नाही. तुमची प्रत चालू राहील.`
+- **ja** 日本語: `ボタンを押すと、Beukは{author}の本に関するメールを今後お送りしません。献本はそのまま使えます。`
+- **zh-Hans** 简体中文: `按下按钮后，Beuk 不会再给你发送关于 {author} 作品的邮件。你的预发本仍然可以使用。`
+
+### `arc.stop.button`
+
+- **en** (source, Claude's): Stop these emails
+- **es** Español: `Dejar de recibir estos correos`
+- **fr** Français: `Arrêter ces e-mails`
+- **de** Deutsch: `Diese E-Mails beenden`
+- **it** Italiano: `Interrompi queste email`
+- **pt** Português: `Parar estes e-mails`
+- **nl** Nederlands: `Deze e-mails stoppen`
+- **pl** Polski: `Zatrzymaj te e-maile`
+- **ru** Русский: `Больше не присылать эти письма`
+- **tr** Türkçe: `Bu e-postaları durdur`
+- **ar** العربية: `أوقف هذه الرسائل`
+- **hi** हिन्दी: `ये ईमेल रोकें`
+- **mr** मराठी: `हे ईमेल थांबवा`
+- **ja** 日本語: `このメールを停止する`
+- **zh-Hans** 简体中文: `停止这些邮件`
+
+### `arc.stop.done`
+
+- **en** (source, Claude's): Beuk won't send you any more email about {author}'s books. Your copy keeps working.
+- **es** Español: `Beuk no te enviará más correos sobre los libros de {author}. Tu ejemplar sigue funcionando.`
+- **fr** Français: `Beuk ne vous enverra plus d'e-mails au sujet des livres écrits par {author}. Votre exemplaire continue de fonctionner.`
+- **de** Deutsch: `Beuk sendet Ihnen keine E-Mails mehr zu den Büchern von {author}. Ihr Exemplar funktioniert weiter.`
+- **it** Italiano: `Beuk non ti invierà più email sui libri di {author}. La tua copia continua a funzionare.`
+- **pt** Português: `O Beuk não lhe vai enviar mais e-mails sobre os livros de {author}. O seu exemplar continua a funcionar.`
+- **nl** Nederlands: `Beuk stuurt u geen e-mail meer over de boeken van {author}. Uw exemplaar blijft werken.`
+- **pl** Polski: `Beuk nie wyśle Ci już e-maili o książkach, które pisze {author}. Twój egzemplarz nadal działa.`
+- **ru** Русский: `Beuk больше не будет присылать вам письма о книгах, которые пишет {author}. Ваш экземпляр продолжит работать.`
+- **tr** Türkçe: `Beuk size {author} tarafından yazılan kitaplar hakkında artık e-posta göndermeyecek. Kopyanız çalışmaya devam eder.`
+- **ar** العربية: `لن يرسل إليك Beuk أي بريد آخر عن كتب {author}. ستبقى نسختك تعمل.`
+- **hi** हिन्दी: `Beuk अब आपको {author} की किताबों के बारे में कोई ईमेल नहीं भेजेगा। आपकी प्रति काम करती रहेगी।`
+- **mr** मराठी: `Beuk तुम्हाला {author} यांच्या पुस्तकांबद्दल आणखी ईमेल पाठवणार नाही. तुमची प्रत चालू राहील.`
+- **ja** 日本語: `Beukは{author}の本に関するメールを今後お送りしません。献本はそのまま使えます。`
+- **zh-Hans** 简体中文: `Beuk 不会再给你发送关于 {author} 作品的邮件。你的预发本仍然可以使用。`
+
+### `arc.mail.doneTitle`
+
+- **en** (source, Claude's): Done
+- **es** Español: `Hecho`
+- **fr** Français: `C'est fait`
+- **de** Deutsch: `Erledigt`
+- **it** Italiano: `Fatto`
+- **pt** Português: `Feito`
+- **nl** Nederlands: `Klaar`
+- **pl** Polski: `Gotowe`
+- **ru** Русский: `Готово`
+- **tr** Türkçe: `Tamam`
+- **ar** العربية: `تم`
+- **hi** हिन्दी: `हो गया`
+- **mr** मराठी: `झाले`
+- **ja** 日本語: `完了しました`
+- **zh-Hans** 简体中文: `已完成`
+
+### `arc.mail.unavailable`
+
+- **en** (source, Claude's): Beuk can't do this right now, so nothing was changed. Please try again later.
+- **es** Español: `Beuk no puede hacer esto ahora mismo, así que no se ha cambiado nada. Vuelve a intentarlo más tarde.`
+- **fr** Français: `Beuk ne peut pas faire cela pour le moment : rien n'a donc été modifié. Veuillez réessayer plus tard.`
+- **de** Deutsch: `Beuk kann das gerade nicht tun, daher wurde nichts geändert. Bitte versuchen Sie es später noch einmal.`
+- **it** Italiano: `Beuk non può farlo in questo momento, quindi non è stato cambiato nulla. Riprova più tardi.`
+- **pt** Português: `O Beuk não consegue fazer isto neste momento, por isso nada foi alterado. Tente novamente mais tarde.`
+- **nl** Nederlands: `Beuk kan dit nu niet doen, dus er is niets veranderd. Probeer het later opnieuw.`
+- **pl** Polski: `Beuk nie może teraz tego zrobić, więc nic nie zostało zmienione. Spróbuj ponownie później.`
+- **ru** Русский: `Сейчас Beuk не может это сделать, поэтому ничего не изменилось. Попробуйте позже.`
+- **tr** Türkçe: `Beuk bunu şu anda yapamıyor, bu yüzden hiçbir şey değişmedi. Lütfen daha sonra tekrar deneyin.`
+- **ar** العربية: `لا يستطيع Beuk فعل ذلك الآن، لذا لم يتغيّر شيء. حاول مرة أخرى لاحقًا.`
+- **hi** हिन्दी: `Beuk अभी यह नहीं कर सकता, इसलिए कुछ नहीं बदला गया। कृपया बाद में फिर कोशिश करें।`
+- **mr** मराठी: `Beuk सध्या हे करू शकत नाही, त्यामुळे काहीही बदलले नाही. कृपया नंतर पुन्हा प्रयत्न करा.`
+- **ja** 日本語: `Beukはいまこの操作を行えないため、何も変更されていません。しばらくしてからもう一度お試しください。`
+- **zh-Hans** 简体中文: `Beuk 现在无法执行此操作，因此没有做任何更改。请稍后再试。`
+
+### `arc.page.unknownTitle`
+
+- **en** (source, Claude's): We couldn't find this page
+- **es** Español: `No hemos encontrado esta página`
+- **fr** Français: `Nous n'avons pas trouvé cette page`
+- **de** Deutsch: `Wir konnten diese Seite nicht finden`
+- **it** Italiano: `Non abbiamo trovato questa pagina`
+- **pt** Português: `Não encontrámos esta página`
+- **nl** Nederlands: `We konden deze pagina niet vinden`
+- **pl** Polski: `Nie znaleźliśmy tej strony`
+- **ru** Русский: `Мы не нашли эту страницу`
+- **tr** Türkçe: `Bu sayfayı bulamadık`
+- **ar** العربية: `لم نعثر على هذه الصفحة`
+- **hi** हिन्दी: `हमें यह पेज नहीं मिला`
+- **mr** मराठी: `आम्हाला हे पान सापडले नाही`
+- **ja** 日本語: `このページが見つかりませんでした`
+- **zh-Hans** 简体中文: `找不到这个页面`
+
+### `arc.page.unknown`
+
+- **en** (source, Claude's): The link may be incomplete. Check that it was copied in full.
+- **es** Español: `Puede que el enlace esté incompleto. Comprueba que lo copiaste entero.`
+- **fr** Français: `Le lien est peut-être incomplet. Vérifiez qu'il a été copié en entier.`
+- **de** Deutsch: `Der Link ist vielleicht unvollständig. Prüfen Sie, ob er vollständig kopiert wurde.`
+- **it** Italiano: `Il link potrebbe essere incompleto. Controlla di averlo copiato per intero.`
+- **pt** Português: `O link pode estar incompleto. Verifique se foi copiado por inteiro.`
+- **nl** Nederlands: `De link is misschien onvolledig. Controleer of hij volledig is gekopieerd.`
+- **pl** Polski: `Link może być niepełny. Sprawdź, czy został skopiowany w całości.`
+- **ru** Русский: `Возможно, ссылка неполная. Проверьте, что она скопирована целиком.`
+- **tr** Türkçe: `Bağlantı eksik olabilir. Tamamen kopyalandığından emin olun.`
+- **ar** العربية: `قد يكون الرابط ناقصًا. تحقّق من نسخه كاملًا.`
+- **hi** हिन्दी: `हो सकता है लिंक अधूरा हो। देख लें कि वह पूरा कॉपी हुआ है।`
+- **mr** मराठी: `लिंक अपूर्ण असू शकते. ती पूर्ण कॉपी झाली आहे का ते तपासा.`
+- **ja** 日本語: `リンクが途中で切れている可能性があります。すべてコピーされているか確認してください。`
+- **zh-Hans** 简体中文: `链接可能不完整。请检查是否已完整复制。`
+
+### `arc.page.closedTitle`
+
+- **en** (source, Claude's): Sign-ups have closed
+- **es** Español: `Las inscripciones están cerradas`
+- **fr** Français: `Les inscriptions sont closes`
+- **de** Deutsch: `Die Anmeldung ist geschlossen`
+- **it** Italiano: `Le iscrizioni sono chiuse`
+- **pt** Português: `As inscrições estão fechadas`
+- **nl** Nederlands: `De aanmelding is gesloten`
+- **pl** Polski: `Zapisy są zamknięte`
+- **ru** Русский: `Запись закрыта`
+- **tr** Türkçe: `Kayıtlar kapandı`
+- **ar** العربية: `أُغلق التسجيل`
+- **hi** हिन्दी: `साइन अप बंद हो चुके हैं`
+- **mr** मराठी: `नोंदणी बंद झाली आहे`
+- **ja** 日本語: `申し込みは締め切りました`
+- **zh-Hans** 简体中文: `报名已截止`
+
+### `arc.foot.privacy`
+
+- **en** (source, Claude's): Privacy
+- **es** Español: `Privacidad`
+- **fr** Français: `Confidentialité`
+- **de** Deutsch: `Datenschutz`
+- **it** Italiano: `Privacy`
+- **pt** Português: `Privacidade`
+- **nl** Nederlands: `Privacy`
+- **pl** Polski: `Prywatność`
+- **ru** Русский: `Конфиденциальность`
+- **tr** Türkçe: `Gizlilik`
+- **ar** العربية: `الخصوصية`
+- **hi** हिन्दी: `प्राइवेसी`
+- **mr** मराठी: `गोपनीयता`
+- **ja** 日本語: `プライバシー`
+- **zh-Hans** 简体中文: `隐私`
+
+### `arc.foot.terms`
+
+- **en** (source, Claude's): Terms
+- **es** Español: `Condiciones`
+- **fr** Français: `Conditions`
+- **de** Deutsch: `Nutzungsbedingungen`
+- **it** Italiano: `Termini`
+- **pt** Português: `Termos`
+- **nl** Nederlands: `Voorwaarden`
+- **pl** Polski: `Warunki`
+- **ru** Русский: `Условия`
+- **tr** Türkçe: `Koşullar`
+- **ar** العربية: `الشروط`
+- **hi** हिन्दी: `नियम और शर्तें`
+- **mr** मराठी: `अटी`
+- **ja** 日本語: `利用規約`
+- **zh-Hans** 简体中文: `条款`
