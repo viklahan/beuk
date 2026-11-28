@@ -568,7 +568,7 @@ test('client errors: endpoint stores aggregates only, caps bodies, rate-limits, 
   assert.ok(MAX_GROUPS_PER_DAY >= 100);
 });
 
-test('client errors: the studio sends them without cookies, deduped and capped, with a setting in 13 locales', async () => {
+test('client errors: the studio sends them without cookies, deduped and capped, with a setting in 15 locales', async () => {
   const html = await read('client', 'index.html');
   const block = html.slice(html.indexOf('/* ==== BEUK:errors ===='), html.indexOf('/* ==== /BEUK:errors ==== */'));
   assert.match(block, /window\.addEventListener\("error"/);
@@ -583,7 +583,7 @@ test('client errors: the studio sends them without cookies, deduped and capped, 
   assert.doesNotMatch(block, /state\.(doc|book|title)|activeSection\(|\.content\b/, 'no book data near the reporter');
   assert.match(html, /<input type="checkbox" id="setErrReports" \/>/);
   for (const k of ['errs.toggle', 'errs.note']) {
-    assert.equal(html.split(`"${k}": "`).length - 1, 13, `${k} in 13 locales`);
+    assert.equal(html.split(`"${k}": "`).length - 1, 15, `${k} in 15 locales`);
   }
   // The toggle is a device preference: in "Beuk on this device", not in the book-metadata form.
   const modal = html.slice(html.indexOf('<div class="modal-back" id="modalSettings">'));
@@ -592,7 +592,7 @@ test('client errors: the studio sends them without cookies, deduped and capped, 
   assert.ok(about > 0 && row > about && row < modal.indexOf('<div class="modal-actions">'), 'toggle sits in the about box');
   // The note neither over-promises nor names a retention number the server may change.
   const notes = html.split('"errs.note": "').slice(1).map((x) => x.slice(0, x.indexOf('"')));
-  assert.equal(notes.length, 13);
+  assert.equal(notes.length, 15);
   for (const n of notes) {
     assert.doesNotMatch(n, /30/, 'no fixed day count');
     assert.doesNotMatch(n, /never your book|file names or your account/i);

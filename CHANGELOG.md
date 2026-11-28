@@ -15,7 +15,19 @@ to make well.
 - **The chapter's backdrop is set aside, not lost.** In print the picture takes the backdrop's place on the opening page. On e-readers, the standalone page, Zen and the preview, the opening has no backdrop while the whole picture stands before it. While Across both pages is chosen, the Chapter backdrop rows are greyed out and one line says why. Switch Fit back and the backdrop is there as it was, everywhere.
 - **A note when it may print soft.** If the picture gives fewer than 200 pixels per inch across the two pages, a line under Fit gives the number. It doesn't stop you. The print checks before export now measure such a picture across both pages too.
 - **Suggested when it fits.** Choose a picture close to the shape of the open spread and Beuk picks Across both pages for you, unless the chapter already has a backdrop: then the picture gets the choice it always got, and the backdrop stays. Other pictures get the same choice they always got. Use on every chapter copies it.
-- Fill the page and Show the whole picture work exactly as before. An older Beuk that opens the book shows the plate as Fill the page, with the chapter's earlier backdrop. The three new lines of wording are in English and drafted in the twelve other languages, waiting to be signed off.
+- Fill the page and Show the whole picture work exactly as before. An older Beuk that opens the book shows the plate as Fill the page, with the chapter's earlier backdrop. The three new lines of wording are in English and drafted in the fourteen other languages, Hindi and Marathi among them, waiting to be signed off.
+
+## 2026-11-27 — The studio in हिन्दी and मराठी
+
+- **Two more interface languages.** The language menu now offers हिन्दी (Hindi) and मराठी (Marathi), so the studio comes in 15 languages. The studio's own menus, buttons and messages follow the language you pick, and the back-matter starter texts (About the Author, Acknowledgements and the rest) come in both too. Your book's own language is not changed by the choice.
+- **Marathi books.** Marathi is now a book language, so Beuk has 37, and Dictation lists Marathi among its languages. When you import a manuscript in Devanagari, the studio tells Marathi from Hindi by their commonest words, and when it is not sure it says Hindi, as it always did. You can always set the language by hand in Project Settings.
+- **Drafts, not yet read.** Every Hindi and Marathi string is a draft. None has been read by a native speaker yet, and each will be checked and signed off before it counts as final.
+
+## 2026-11-27 — A letter typed at the same moment is kept
+
+- **A letter you type at that moment is kept.** When the same chapter is open in two tabs and one of them joins your paragraph with the one above, turns it into a heading, or splits it, at the very moment you type a letter in the other, that letter used to be lost, or left behind in the line before, and the letters you typed next went after it. Now it is put back between the words you typed it between, and your next letters follow it.
+- **A paragraph deleted while you typed in it.** If the other tab deletes the whole paragraph at that same moment, before it has seen what you typed, your letters come back as a paragraph of their own where the deleted one stood. The other tab sees them and can remove them.
+- **Only what you typed.** The studio puts back only your own letters, only when the other tab's change shows it never had them, and only where their words still stand. What the other tab had seen and deleted stays deleted, and when the studio can count letters you typed that could not be put back, a quiet message says how many.
 
 ## 2026-11-26 — Move and zoom the cover picture
 
@@ -28,8 +40,6 @@ to make well.
 ## 2026-11-26 — Your caret stays where you put it
 
 - **Two tabs on one book no longer move your caret.** When the same chapter was open in two tabs and one of them pressed Enter for a new paragraph before your caret, turned your paragraph into a heading (or undid that), or joined it with the paragraph above, the caret in the other tab jumped away, to the end of the paragraph or into the line before, and the next letters landed there. It now stays between the same letters.
-- **One case remains.** If the other tab joins your paragraph with the one above, or turns it into a heading, at the very moment you type a letter, that letter can be lost, and the letters you type after it go to the end of the paragraph. A fix is next.
-
 ## 2026-11-24 — One chapter's settings on every chapter
 
 - **Use on every chapter.** A chapter's settings now end with a button, Use on every chapter. It copies that chapter's backdrop (the picture and its strength together), its drop cap, its small-caps lead-in or the fit of its plate to every other chapter in one step. You tick what to copy; nothing is ticked for you.

@@ -10,6 +10,8 @@ import { useToast } from '../shell/Toasts';
 import { clearActiveEditor, setActiveEditor } from './active';
 import { flushNormalize, markActive, toggleBookMark } from './behaviour';
 import { createChapterEditor } from './createEditor';
+import type { RescueReport } from './rescueEditor';
+import { rescueNotice } from './rescueNotice';
 import { EditorToolbar } from './EditorToolbar';
 import { tbLayoutInit } from './toolbarLayout';
 import { EditorMeta } from './EditorMeta';
@@ -56,6 +58,13 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
   const [marks, setMarks] = useState({ strong: false, em: false });
   const refuse = useRef(() => undefined as void);
   refuse.current = () => toast(t('next.markRefused'), 'Info');
+  // the keystroke rescue's report (one per remote change that touched this writer's own letters): letters that could
+  // not be put back are told once, quietly, with the exact count (V's ruling); nothing lost, nothing said
+  const lost = useRef((_r: RescueReport) => undefined as void);
+  lost.current = (r) => {
+    const m = rescueNotice(r, t);
+    if (m) toast(m, 'Info');
+  };
   const showArea = useShowArea(fragment, sectionMap);
   const showAreaRef = useRef(showArea);
   showAreaRef.current = showArea;
@@ -70,7 +79,7 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
 
   useEffect(() => {
     if (!host.current) return;
-    const ed = createChapterEditor({ element: host.current, fragment, dir, lang, label, onRefuse: () => refuse.current() });
+    const ed = createChapterEditor({ element: host.current, fragment, dir, lang, label, onRefuse: () => refuse.current(), onRescueResult: (r) => lost.current(r) });
     // the pressed state changes rarely: re-render only when it does, never on every keystroke
     const sync = () => {
       const next = { strong: markActive(ed.state, 'strong'), em: markActive(ed.state, 'em') };

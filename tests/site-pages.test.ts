@@ -244,8 +244,8 @@ test("the site pages' numbers are the studio's", () => {
   assert.equal(layouts.length, 7, '7 cover layouts');
   assert.equal(presetIds.length, 11, '11 store presets');
   assert.equal(trims.length, 24, '24 trims');
-  assert.equal(bookLangs, 36, '36 book languages');
-  assert.equal(uiLangs.length, 13, '13 studio languages');
+  assert.equal(bookLangs, 37, '37 book languages');
+  assert.equal(uiLangs.length, 15, '15 studio languages');
   const WORDS: Record<string, number> = { seven: 7, eleven: 11, thirteen: 13, fifteen: 15 };
   const num = (s: string) => (/^\d+$/.test(s) ? Number(s) : WORDS[s.toLowerCase()] ?? NaN);
   // Every "N themes / layouts / presets / trim sizes / languages" on Beuk's side must match.

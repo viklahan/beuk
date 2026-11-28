@@ -56,12 +56,12 @@ test('docs import: every studio file picker, the bulk reader and a zip take the 
   assert.match(html, /That zip holds no manuscript Beuk can read \(\.docx, \.odt, \.rtf, \.html, \.pdf, \.epub, \.md or \.txt\)\./);
 });
 
-test('docs import: the report names the file it was, and the bulk lists name the formats, in all 13 locales', async () => {
+test('docs import: the report names the file it was, and the bulk lists name the formats, in all 15 locales', async () => {
   const html = await clientHtml();
   const vals = (k: string) => [...html.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "([^"]+)"`, 'g'))].map((m) => m[1]);
   for (const [k, word] of [['ir.why.sourceOdt', 'OpenDocument'], ['ir.why.sourceHtml', 'HTML'], ['ir.k.commentsOdt', 'OpenDocument'], ['ir.k.commentsOdtPlural', 'OpenDocument']] as const) {
     const v = vals(k);
-    assert.equal(v.length, 13, `${k} in 13 locales`);
+    assert.equal(v.length, 15, `${k} in 15 locales`);
     for (const s of v) {
       assert.ok(s.includes(word), `${k}: ${s}`);
       assert.doesNotMatch(s, /RTF|Word/, `${k}: ${s}`);
@@ -70,7 +70,7 @@ test('docs import: the report names the file it was, and the bulk lists name the
   }
   for (const k of ['bulk.reasonUnsupported', 'bulk.emptyBatch']) {
     const v = vals(k);
-    assert.equal(v.length, 13, `${k} in 13 locales`);
+    assert.equal(v.length, 15, `${k} in 15 locales`);
     for (const s of v) assert.ok(s.includes('.odt') && s.includes('.html'), `${k}: ${s}`);
   }
   assert.match(html, /d\.rtf \? "ir\.k\.commentsRtf" : d\.odt \? "ir\.k\.commentsOdt" : "ir\.k\.comments"/);

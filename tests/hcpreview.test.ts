@@ -48,7 +48,7 @@ test('default device: Android Tablet, one id, and the first paint is what setDev
   assert.ok(html.includes(`<span id="footDevice">${footer}</span>`), 'footer');
 });
 
-test('hcpreview: the open book is built from the print view engine and every hcp.* string ships in all 13 locales', async () => {
+test('hcpreview: the open book is built from the print view engine and every hcp.* string ships in all 15 locales', async () => {
   const html = await clientHtml();
   // The spread must come from the print pagination, not the e-reader flow.
   assert.match(html, /hc\.model = buildPrintViewModel\(\);/);
@@ -61,7 +61,7 @@ test('hcpreview: the open book is built from the print view engine and every hcp
   assert.ok(keys.length >= 21, `hcp keys: ${keys.length}`);
   for (const k of keys) {
     const n = html.split(`"${k}":`).length - 1;
-    assert.equal(n, 13, `${k} appears in ${n} locale packs, expected 13`);
+    assert.equal(n, 15, `${k} appears in ${n} locale packs, expected 15`);
   }
 });
 

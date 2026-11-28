@@ -46,10 +46,10 @@ test('pagecount: the geometry table has a sourced row for every e-reader profile
   assert.doesNotMatch(fn[1], /flowWrap|clientWidth|innerWidth|devicePixelRatio/);
 });
 
-test('pagecount: the estimate copy ("about N pages") and the basis line ship in all 13 locales', async () => {
+test('pagecount: the estimate copy ("about N pages") and the basis line ship in all 15 locales', async () => {
   const html = await clientHtml();
   const basis = [...html.matchAll(/"preview\.desk\.basis": "([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(basis.length, 13);
+  assert.equal(basis.length, 15);
   for (const b of basis) assert.ok(b.includes('{w}') && b.includes('{h}') && b.includes('{size}'), b);
   assert.match(html, /"preview\.desk\.totalPlural": "\{title\} · about \{n\} pages on \{device\}"/);
 });

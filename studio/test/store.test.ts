@@ -6,6 +6,7 @@ import { BODY, BookImportError, sectionAt, toDoc } from '@book/editor/index.js';
 import { readBook } from '@book/read.js';
 import { LEGACY_DB } from '../src/book/legacy10';
 import { LEGACY_EPOCH, REGISTRY_KEY, dbNameFor, importToDevice, openLastBook, openStoredBook, parseDbName, readRegistry, startBook, type OpenBook } from '../src/book/store';
+import { incomingUpdate } from '../src/editor/rescueCore';
 import { DUMAS, fixtures } from './fixtures';
 
 /* The store: a book opened on this device is a Y.Doc in its own
@@ -123,6 +124,22 @@ describe('the store (y-indexeddb)', () => {
     const ec = c.export();
     expect([content(ec, 1), content(ec, 2)], 'a reload sees both edits').toEqual(['Edited in tab A.', 'Edited in tab B.']);
     expect(JSON.stringify(ec)).toBe(JSON.stringify(ea));
+  });
+
+  it("two tabs on one book: the bytes of tab A's update are known to tab B's transaction listeners while they apply, and gone after", async () => {
+    const f = fixtures('real').find((x) => x.name === 'real/salt-road-book-one')!;
+    const a = track(await importToDevice(f.book));
+    const b = track(await openStoredBook(a.id));
+    const seen: boolean[] = [];
+    b.ydoc.on('afterTransaction', () => void seen.push(incomingUpdate(b.ydoc) !== null));
+    const frag = chapterFragment(a, 1);
+    a.ydoc.transact(() => {
+      frag.delete(0, frag.length);
+      prosemirrorToYXmlFragment(toDoc('Edited in tab A.'), frag);
+    });
+    await new Promise((r) => setTimeout(r, 200)); // BroadcastChannel delivery
+    expect(seen.some((x) => x), 'a transaction on tab B saw the incoming bytes').toBe(true);
+    expect(incomingUpdate(b.ydoc)).toBeNull();
   });
 
   it('a book readBook cannot open is refused (BookImportError) and nothing is stored', async () => {

@@ -126,7 +126,7 @@ function legacyList(meta: Rec, from: string, ctx: StepCtx): string[] {
 
 export const LANG_CODES: readonly string[] = [
   'en', 'en-GB', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'sv', 'nb', 'da', 'fi', 'cs', 'ro', 'hu', 'el', 'ru', 'uk', 'bg', 'sr', 'tr',
-  'ar', 'fa', 'he', 'ur', 'hi', 'bn', 'ta', 'id', 'vi', 'th', 'ja', 'zh-Hans', 'zh-Hant', 'ko',
+  'ar', 'fa', 'he', 'ur', 'hi', 'mr', 'bn', 'ta', 'id', 'vi', 'th', 'ja', 'zh-Hans', 'zh-Hant', 'ko',
 ];
 
 /** DISPLAY_FAMILIES, CI:19274-19279. */

@@ -14,7 +14,7 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
 const IDS = ['starters.picker', 'starters.empty-left-out', 'starters.blanks-flagged'];
-const PACKS = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'ru', 'tr', 'ar', 'ja', 'zh-Hans'];
+const PACKS = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'ru', 'tr', 'ar', 'hi', 'mr', 'ja', 'zh-Hans'];
 
 const fnBody = (html: string, name: string) => {
   const at = html.indexOf(`      function ${name}(`);
@@ -52,17 +52,17 @@ test('starters: a blank is named in the EPUB check and the print preflight', asy
   assert.match(fnBody(html, 'starterUse'), /starterSelectBlank\(\)/, 'Use selects the first blank');
 });
 
-test('starters: strings and starter text in all 13 packs', async () => {
+test('starters: strings and starter text in all 15 packs', async () => {
   const html = await clientHtml();
   for (const k of ['starter.heading', 'starter.hint', 'starter.use', 'starter.cancel', 'starter.emptyOut', 'starter.blanks', 'starter.blanksPlural', 'starter.next',
     'starter.k.about.third', 'starter.k.about.first', 'starter.k.ack.short', 'starter.k.ack.full', 'starter.k.also.series', 'starter.k.also.list',
     'starter.k.cta.review', 'starter.k.cta.news', 'starter.k.colo.fonts', 'side.emptyOut', 'side.emptyOutShort', 'check.blanks.name', 'check.blanks.detail']) {
     const n = [...html.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "`, 'g'))].length;
-    assert.equal(n, 13, `${k} in 13 locales`);
+    assert.equal(n, 15, `${k} in 15 locales`);
   }
   const block = html.slice(html.indexOf('const STARTER_TEXT = {'), html.indexOf('/* The series list is offered only'));
   for (const lang of PACKS) assert.ok(block.includes(lang === 'zh-Hans' ? '"zh-Hans": {' : `${lang}: {`), `starter text for ${lang}`);
   for (const k of ['about.third', 'about.first', 'ack.short', 'ack.full', 'also.list', 'cta.review', 'cta.news', '_coloTwo', '_coloOne', '_coloBy', '_author', '_title', '_book']) {
-    assert.equal([...block.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "`, 'g'))].length, 13, `${k} written in 13 languages`);
+    assert.equal([...block.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "`, 'g'))].length, 15, `${k} written in 15 languages`);
   }
 });

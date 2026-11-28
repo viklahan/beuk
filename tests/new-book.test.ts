@@ -30,8 +30,8 @@ test('new book: History first, then unlink from the shelf, then the empty desk',
   assert.match(html, /id="btnNewBook"/);
 });
 
-test('new book: its words are in all thirteen language packs', async () => {
+test('new book: its words are in all fifteen language packs', async () => {
   const html = await clientHtml();
   for (const key of ['newbook.btn', 'newbook.title', 'newbook.confirmTitle', 'newbook.confirmBody', 'newbook.confirmBodyShelf', 'newbook.yes', 'newbook.no', 'newbook.done', 'newbook.already', 'newbook.snap'])
-    assert.equal((html.match(new RegExp(`"${key.replace('.', '\\.')}": "[^"]+"`, 'g')) ?? []).length, 13, key);
+    assert.equal((html.match(new RegExp(`"${key.replace('.', '\\.')}": "[^"]+"`, 'g')) ?? []).length, 15, key);
 });

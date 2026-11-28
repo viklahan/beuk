@@ -10560,9 +10560,24 @@ const CARET_HELPERS = () => {
   const plugin = (name) => ed().state.plugins.find((p) => p.key.startsWith(name));
   const um = () => plugin('y-undo$').getState(ed().state).undoManager;
   const binding = () => plugin('y-sync$').getState(ed().state).binding;
+  /** Every keystroke-rescue report since markRescues(): the rescue writes storage.rescue once per report, and an
+   *  accessor on that property (the same object the extension holds) keeps each, so a case with two remote
+   *  changes (a split, then a join) shows both, not only the last. Nothing is changed in what the rescue does. */
+  const rescueLog = [];
+  let s0 = null;
+  try {
+    s0 = ed()?.storage?.caretKeeper ?? null;
+  } catch {
+    s0 = null;
+  }
+  if (s0 && 'rescue' in s0) {
+    let v = s0.rescue;
+    Object.defineProperty(s0, 'rescue', { configurable: true, enumerable: true, get: () => v, set: (r) => { v = r; rescueLog.push(r); } });
+  }
+  const markRescues = () => void (rescueLog.length = 0);
   const keeper = () => {
     const s = ed().storage.caretKeeper;
-    return s ? { has: true, last: s.last } : { has: false, last: null };
+    return s ? { has: true, last: s.last, hasRescue: 'rescue' in s, logged: s === s0, rescue: s.rescue ?? null, rescues: rescueLog.slice() } : { has: false, last: null, hasRescue: false, logged: false, rescue: null, rescues: [] };
   };
   const doc = (paras) => ({ type: 'doc', content: paras.map((t) => ({ type: 'paragraph', content: t ? [{ type: 'text', text: t }] : [] })) });
   /** A server-shaped write: raw Yjs on this tab's own doc, outside its editor (the XmlElement / XmlText
@@ -10636,7 +10651,7 @@ const CARET_HELPERS = () => {
       ydoc.off('afterTransaction', after);
     };
   };
-  window.__caret = { ed, text, sig, shape, at, posOf, blockStarting, firstBlock, um, binding, keeper, doc, serverWrite, timeRemote };
+  window.__caret = { ed, text, sig, shape, at, posOf, blockStarting, firstBlock, um, binding, keeper, markRescues, doc, serverWrite, timeRemote };
 };
 
 async function caretUntil(fn, ms = 5000, step = 25) {
@@ -10654,6 +10669,20 @@ const keeperSays = (k, fresh) => {
   if (!fresh || !k.last) return 'keeper: no new result';
   const l = k.last;
   return `keeper ${l.outcome}${l.moved ? ', moved' : ''}, ${l.ms.toFixed(2)} ms, searched ${l.searched}`;
+};
+
+/** B's keystroke-rescue report(s) for one case: each report since parkB, in order (rescued, moved, vetoed,
+ *  unplaced, caret, then any other count that is not 0). "no report" means no own letter of B's died or was
+ *  stranded in a remote change during the case: the rescue was not exercised. */
+const rescueSays = (k) => {
+  if (!k.has || !k.hasRescue) return 'no keystroke rescue on this build';
+  if (!k.logged) return `rescue log not attached to this editor; last report in storage: ${k.rescue ? JSON.stringify(k.rescue) : 'none'}`;
+  if (!k.rescues.length) return 'rescue: no report in this case (not exercised)';
+  const one = (r) => {
+    const more = ['restored', 'carried', 'stayed', 'uncounted', 'unknown'].filter((f) => r[f]).map((f) => `${f} ${r[f]}`);
+    return `rescued ${r.rescued}, moved ${r.moved}, vetoed ${r.vetoed}, unplaced ${r.unplaced}, caret ${r.caret}${more.length ? ', ' + more.join(', ') : ''}, ${r.ms.toFixed(2)} ms`;
+  };
+  return `rescue: ${k.rescues.length} report(s): ${k.rescues.map((r, i) => `[${i + 1}] ${one(r)}`).join('; ')}`;
 };
 
 async function caretChecks(origin) {
@@ -10702,6 +10731,7 @@ async function caretChecks(origin) {
         c.ed().commands.setTextSelection(c.posOf('brown', 3));
         const h = c.ed().state.selection.head;
         window.__caretKBefore = c.keeper().last;
+        c.markRescues();
         return c.ed().state.doc.textBetween(h - 3, h) + '|' + c.ed().state.doc.textBetween(h, h + 2);
       });
       if (got !== 'bro|wn') throw new Error(`B's caret is not at "bro|wn" before the edit (it reads "${got}")`);
@@ -10819,7 +10849,7 @@ async function caretChecks(origin) {
         const shape = await A.evaluate(() => window.__caret.shape());
         const k = await keeperB();
         log.push({ name, ok: ok && converged, text: t, shape, keeper: k });
-        check(ok && converged, `caret: ${name}: A reads "${WANT}" and both tabs hold the same doc (A reads "${t.replace(/\n/g, '⏎')}"; A's blocks ${shape}; converged ${converged}; ${keeperSays(k, k.fresh)})`);
+        check(ok && converged, `caret: ${name}: A reads "${WANT}" and both tabs hold the same doc (A reads "${t.replace(/\n/g, '⏎')}"; A's blocks ${shape}; converged ${converged}; ${keeperSays(k, k.fresh)}; B's ${rescueSays(k)})`);
       } catch (e) {
         log.push({ name, ok: false, threw: String(e && e.stack ? e.stack : e) });
         check(false, `caret: ${name}: the case threw: ${e && e.message ? e.message : e}`);

@@ -224,11 +224,11 @@ test('rtf: the text-only reader keeps a Heading 2 inside its Heading 1 chapter (
   assert.equal(out, '# The Harbour\n\nDawn.\n\nMorning\n\nFog.\n\n# The Crossing\n\nThe Squall\n\nRain.');
 });
 
-test('rtf: the import report names the RTF file, not a Word file, in all 13 locales', async () => {
+test('rtf: the import report names the RTF file, not a Word file, in all 15 locales', async () => {
   const html = await clientHtml();
   for (const k of ['ir.why.sourceRtf', 'ir.k.commentsRtf', 'ir.k.commentsRtfPlural']) {
     const vals = [...html.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "([^"]+)"`, 'g'))].map((m) => m[1]);
-    assert.equal(vals.length, 13, `${k} in 13 locales`);
+    assert.equal(vals.length, 15, `${k} in 15 locales`);
     for (const v of vals) {
       assert.match(v, /RTF/, `${k}: ${v}`);
       assert.doesNotMatch(v, /Word/, `${k}: ${v}`);

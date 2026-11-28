@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
+import { LANG_CODES } from '../src/book/upgrade.js';
 import { getHelpContent } from '../src/help/content.js';
 import { createTestDb, startTestServer } from './helpers.js';
 
@@ -93,8 +94,11 @@ test("the landing page's numbers are the studio's", () => {
   assert.equal(trimIds.length, 24, `24 trims: ${trimIds.join(', ')}`);
   assert.match(html, /<b>24<\/b><span>Trim sizes<\/span>/);
   const packs = /const LANG_PACKS = \{([\s\S]*?)\n {6}\};/.exec(studio)?.[1] ?? '';
-  assert.equal((packs.match(/^\s+"[A-Za-z-]+":\s+\{ name:/gm) ?? []).length, 36, 'the book language list (Project Settings) has 36 entries');
-  assert.match(html, /<b>36<\/b><span>Book languages<\/span>/);
+  const packCount = (packs.match(/^\s+"[A-Za-z-]+":\s+\{ name:/gm) ?? []).length;
+  assert.ok(packCount > 0, 'the book language list (Project Settings) was found');
+  assert.equal(LANG_CODES.length, packCount, "the server's LANG_CODES and the studio's LANG_PACKS list the same number of languages");
+  assert.match(html, new RegExp(`<b>${packCount}</b><span>Book languages</span>`), "the page's Book languages number equals the studio's");
+  assert.match(html, new RegExp(`recognised automatically</b>, one of ${packCount},`), "the page's 'one of N' equals the studio's");
 });
 
 test('fonts-site.css: Karla, Literata and IBM Plex Mono only, every file on disk', () => {
