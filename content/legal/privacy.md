@@ -71,7 +71,7 @@ The writer sees your name, your address, your profile link if you gave one, and 
 - **"Not you?"** deletes your name, your address and your copy from that campaign, and keeps only a one-way hash of the address, so that no writer on Beuk can email it again. Comments you left stay, under the name you gave.
 - **"No more email from" the writer** stops all email from that writer. Your copy keeps working. Beuk keeps a hash of the address for that writer only.
 
-Each reader email also carries the standard one-click unsubscribe header, which does the same as "No more email from". Both links ask you to press a button first, so a mail scanner that opens links can't use them. The hash is SHA-256 of the address combined with a secret only the server holds. Because addresses can be tried one by one, this keeps the list from being readable at a glance; it isn't anonymity. An opt-out is kept even after the writer deletes their account, and it's backed up, so a restored server doesn't email you either.
+Each reader email also carries the standard one-click unsubscribe header, which does the same as "No more email from". Both links ask you to press a button first, so a mail scanner that opens links can't use them. The hash is SHA-256 of the address combined with a secret only the server holds. Because addresses can be tried one by one, this keeps the list from being readable at a glance; it isn't anonymity. An opt-out is kept even after the writer deletes their account, and it's in the backups. A server restored from a backup still honours it only if it keeps the same secret: backups deliberately leave the secret out, so the operator keeps it separately, and if it were ever lost, the stored opt-outs could no longer be matched to an address.
 
 If you run a campaign in which you approve each reader, Beuk emails you, at most once a day, when a reader is waiting for your approval.
 
@@ -141,6 +141,7 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 - **To give you the service you asked for:** your account, shelf, archive, checks, reading copies and reset emails. Under the EU and UK GDPR this is "performance of a contract".
 - **Legitimate interests:** keeping the service safe and working (rate limits, the hashed IP on comments, error logs, backups) and improving the help pages from anonymous search counts.
 - **Your choice:** the Founders' Shelf form, which you fill in only if you want to.
+- **Advance review copies (for V's sign-off: a legal call).** Candidates: sending a reader the copy they asked for, with its code and emails, as "steps taken at the request of the data subject" before a contract (GDPR Art. 6(1)(b)), or as legitimate interests (Art. 6(1)(f)); keeping the opt-out hash after a reader says "Not you?" or "No more email from", as a legitimate interest in honouring that objection for good (Art. 6(1)(f)), not consent. Open question: for the reader list Beuk arguably acts for the writer (the writer as controller, Beuk as processor), while for the opt-out list that holds across every writer Beuk acts for itself.
 
 ## How long things are kept
 
@@ -151,6 +152,9 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 - **Server error logs:** rotated by size (at most 3 × 10 MB per container), with no time limit.
 - **Help search records, Founders' Shelf entries and backups on the server:** no automatic limit.
 - **In-memory attempt counts:** until the server restarts.
+- **Advance-copy requests that are never confirmed:** deleted after 24 hours.
+- **Advance-copy readers (name, address, profile link, time zone, copy):** until the reader says "Not you?", or the writer deletes the campaign, the book or their account.
+- **Opt-out hashes ("Not you?" and "No more email from"):** kept indefinitely, even after the writer's account is gone.
 
 ## Your rights, and how to use them
 

@@ -2,7 +2,7 @@ import { createHash, createHmac } from 'node:crypto';
 import { tokenHash } from '../auth.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
-import type { RenderedEmail } from '../email/layout.js';
+import { escapeHtml, type RenderedEmail } from '../email/layout.js';
 import { createMailer, type Mailer } from '../mailer.js';
 import { arcActionUrl } from './emails.js';
 
@@ -16,7 +16,11 @@ import { arcActionUrl } from './emails.js';
  *
  * sendArcMail is the one door for reader mail. In order, and each refusal
  * sends nothing and records nothing:
- *   1. not configured (no ARC transport, or no salt to check opt-outs);
+ *   1. not configured (no ARC transport, or no salt of at least
+ *      ARC_SALT_MIN_LENGTH characters to check opt-outs);
+ *   1b. the links: the token is derived here from the recipient id (F1);
+ *      a caller's different token throws, and a body without this
+ *      reader's Not me and Stop links is refused;
  *   2. suppressed: "Not me" (scope 'all') or "Stop" for this author;
  *   3. the send limits (ARC_SEND_LIMITS), counted from arc_events;
  *   4. the transport, with the one-click unsubscribe headers;
@@ -38,11 +42,24 @@ import { arcActionUrl } from './emails.js';
  * at whitespace (mime-funcs foldLines), so the URI is never split.
  */
 
+/** The shortest ARC_SUPPRESSION_SALT accepted. A short salt is never used:
+ *  it would make the opt-out hashes easy to try, and could slip past the
+ *  secret scrubber (src/housekeeping/scrub.ts ignores values under 6). */
+export const ARC_SALT_MIN_LENGTH = 32;
+
+/** Why the salt cannot be used, or null when it can. */
+function saltProblem(s: string | null): string | null {
+  if (!s) return 'ARC_SUPPRESSION_SALT is not set';
+  if (s.length < ARC_SALT_MIN_LENGTH) return `ARC_SUPPRESSION_SALT is shorter than ${ARC_SALT_MIN_LENGTH} characters`;
+  return null;
+}
+
 export function arcMailStatus(config: Config): { configured: boolean; reason: string | null } {
   const arc = config.arc;
   if (!arc.mailFrom) return { configured: false, reason: 'ARC_MAIL_FROM is not set' };
   if (!arc.smtpUrl) return { configured: false, reason: 'ARC_SMTP_URL is not set' };
-  if (!arc.suppressionSalt) return { configured: false, reason: 'ARC_SUPPRESSION_SALT is not set' };
+  const salty = saltProblem(arc.suppressionSalt);
+  if (salty) return { configured: false, reason: salty };
   return { configured: true, reason: null };
 }
 
@@ -71,8 +88,9 @@ export function normalizeEmail(raw: unknown): string | null {
 
 function salt(config: Config): string {
   const s = config.arc.suppressionSalt;
-  if (!s) throw new Error('ARC mail is not configured: ARC_SUPPRESSION_SALT is not set');
-  return s;
+  const problem = saltProblem(s);
+  if (problem) throw new Error(`ARC mail is not configured: ${problem}`);
+  return s!;
 }
 
 /** SHA-256 (hex) of the lower-cased address + ARC_SUPPRESSION_SALT. The
@@ -169,7 +187,22 @@ async function overLimit(db: Db, to: ArcMailTo, now: Date): Promise<string | nul
 export async function sendArcMail(deps: ArcMailDeps, to: ArcMailTo, kind: ArcMailKind, mail: RenderedEmail): Promise<ArcSendOutcome> {
   const { db, config, arcMailer } = deps;
   if (!arcMailer) return { sent: false, reason: 'not-configured', detail: arcMailStatus(config).reason ?? 'no ARC mailer' };
-  if (!config.arc.suppressionSalt) return { sent: false, reason: 'not-configured', detail: 'ARC_SUPPRESSION_SALT is not set' };
+  const salty = saltProblem(config.arc.suppressionSalt);
+  if (salty) return { sent: false, reason: 'not-configured', detail: salty };
+
+  // F1: the links are derived from the recipient id, never trusted from the
+  // caller. A caller holding a different token is a programming error.
+  const token = arcMailToken(config, to.recipientId);
+  if (to.mailToken && to.mailToken !== token) {
+    throw new Error('sendArcMail: to.mailToken is not the token derived from to.recipientId (arcMailToken)');
+  }
+  const stopUrl = arcActionUrl(config, token, 'stop');
+  const notMeUrl = arcActionUrl(config, token, 'not-me');
+  const carries = (body: string, escape: (s: string) => string) => body.includes(escape(stopUrl)) && body.includes(escape(notMeUrl));
+  const asIs = (s: string) => s;
+  if (!carries(mail.text, asIs) || (mail.html && !carries(mail.html, escapeHtml))) {
+    return { sent: false, reason: 'refused', detail: "the email does not carry this reader's Not me and Stop links" };
+  }
 
   const suppressed = await suppressionOf(db, config, to.email, to.ownerId);
   if (suppressed === 'all') return { sent: false, reason: 'suppressed', detail: 'this address asked Beuk for no email from any author (Not me)' };
@@ -179,7 +212,6 @@ export async function sendArcMail(deps: ArcMailDeps, to: ArcMailTo, kind: ArcMai
   const limit = await overLimit(db, to, now);
   if (limit) return { sent: false, reason: 'rate-limited', detail: limit };
 
-  const stopUrl = arcActionUrl(config, to.mailToken, 'stop');
   // email-kind: arc-reader (the one door for the five reader emails; each builder in emails.ts carries its own kind)
   const result = await arcMailer.send({
     to: to.email,

@@ -18,6 +18,7 @@ import {
   type ArcMailContext,
 } from '../src/arc/emails.js';
 import {
+  ARC_SALT_MIN_LENGTH,
   ARC_SEND_LIMITS,
   arcMailStatus,
   arcMailToken,
@@ -43,7 +44,9 @@ import { createTestDb, testConfig } from './helpers.js';
  * check uses its stream transport, which only builds the message.
  */
 
-const ARC = { mailFrom: 'Beuk readers <readers@beuk.studio>', smtpUrl: 'smtp://u:p@127.0.0.1:9', suppressionSalt: 'salt-1' };
+/** A test salt of exactly ARC_SALT_MIN_LENGTH (32) characters. */
+const SALT = 'salt-1-0123456789abcdef-0123456x';
+const ARC = { mailFrom: 'Beuk readers <readers@beuk.studio>', smtpUrl: 'smtp://u:p@127.0.0.1:9', suppressionSalt: SALT };
 
 /** A configured ARC mailer that records instead of sending. */
 class RecordingMailer implements Mailer {
@@ -68,6 +71,13 @@ test('ARC mail is off until all three are set, and says which is missing', () =>
   // Decided by this task: the middle setting is named the same way.
   assert.equal(arcMailStatus(testConfig({ arc: { ...ARC, smtpUrl: null } })).reason, 'ARC_SMTP_URL is not set');
   assert.deepEqual(arcMailStatus(testConfig({ arc: ARC })), { configured: true, reason: null });
+  // Fix round 1 (controller): a salt under 32 characters is never used.
+  assert.equal(SALT.length, ARC_SALT_MIN_LENGTH);
+  const short = testConfig({ arc: { ...ARC, suppressionSalt: SALT.slice(0, 31) } });
+  assert.deepEqual(arcMailStatus(short), { configured: false, reason: 'ARC_SUPPRESSION_SALT is shorter than 32 characters' });
+  assert.equal(createArcMailer(short), null);
+  assert.throws(() => suppressionHash(short, 'sarah@example.com'), /shorter than 32 characters/);
+  assert.throws(() => arcMailToken(short, 'r1'), /shorter than 32 characters/);
   // Never a fallback to account mail.
   assert.equal(createArcMailer(testConfig({ smtpUrl: 'smtp://x', mailFrom: 'hello@beuk.studio' })), null);
   assert.equal(createArcMailer(testConfig({ arc: ARC }))!.status().from, ARC.mailFrom);
@@ -75,8 +85,8 @@ test('ARC mail is off until all three are set, and says which is missing', () =>
 
 // Decided by this task: the ARC secrets are scrubbed like SMTP_URL, and backups leave them out by name.
 test('the ARC transport URL, its password and the salt are secrets', () => {
-  const secrets = collectSecrets(testConfig({ arc: { ...ARC, smtpUrl: 'smtp://resend:re_arc_key_1@smtp.example.com:587', suppressionSalt: 'salt-long-enough' } }));
-  for (const s of ['smtp://resend:re_arc_key_1@smtp.example.com:587', 're_arc_key_1', 'salt-long-enough']) assert.ok(secrets.includes(s), s);
+  const secrets = collectSecrets(testConfig({ arc: { ...ARC, smtpUrl: 'smtp://resend:re_arc_key_1@smtp.example.com:587', suppressionSalt: 'salt-long-enough-for-the-scrubber-0123' } }));
+  for (const s of ['smtp://resend:re_arc_key_1@smtp.example.com:587', 're_arc_key_1', 'salt-long-enough-for-the-scrubber-0123']) assert.ok(secrets.includes(s), s);
   assert.ok((SECRET_CONFIG_KEYS as readonly string[]).includes('ARC_SMTP_URL'));
   assert.ok((SECRET_CONFIG_KEYS as readonly string[]).includes('ARC_SUPPRESSION_SALT'));
 });
@@ -89,7 +99,7 @@ test('normalizeEmail and the hash ignore case and spaces', () => {
   assert.equal(normalizeEmail(`${'a'.repeat(242)}@example.com`), `${'a'.repeat(242)}@example.com`);
   for (const bad of [null, undefined, 'a@b.', 'a@.b', 'a@b\tc.d', 'a@b.c d']) assert.equal(normalizeEmail(bad), null);
   const cfg = testConfig({ arc: ARC });
-  assert.equal(suppressionHash(cfg, 'sarah@example.com'), createHash('sha256').update('sarah@example.com' + 'salt-1').digest('hex'));
+  assert.equal(suppressionHash(cfg, 'sarah@example.com'), createHash('sha256').update('sarah@example.com' + SALT).digest('hex'));
   // Review Focus 3: the same address typed differently is one hash.
   assert.equal(suppressionHash(cfg, normalizeEmail('  Sarah@Example.COM ')!), suppressionHash(cfg, 'sarah@example.com'));
   assert.equal(suppressionHash(cfg, 'Sarah@Example.COM'), suppressionHash(cfg, 'sarah@example.com'));
@@ -98,7 +108,7 @@ test('normalizeEmail and the hash ignore case and spaces', () => {
 test('the mail token is the HMAC of the recipient id, and only its hash is stored (F1)', () => {
   const cfg = testConfig({ arc: ARC });
   const id = '6f1c1c3e-8a59-4e8e-9d0b-2b1c7b4f3a10';
-  const expected = createHmac('sha256', 'salt-1').update('arc-mail:' + id).digest('base64url');
+  const expected = createHmac('sha256', SALT).update('arc-mail:' + id).digest('base64url');
   assert.equal(arcMailToken(cfg, id), expected);
   assert.equal(arcMailToken(cfg, id), arcMailToken(cfg, id), 'the same reader always gets the same links');
   assert.notEqual(arcMailToken(cfg, id), arcMailToken(cfg, randomUUID()));
@@ -189,6 +199,39 @@ test('sendArcMail sends nothing when ARC mail is off', async () => {
   assert.deepEqual(noSalt, { sent: false, reason: 'not-configured', detail: 'ARC_SUPPRESSION_SALT is not set' });
   assert.equal(fake.sent.length, 0);
   assert.deepEqual(await events(f.campaignId), []);
+});
+
+// Fix round 1 (controller, F1): the one door guarantees working opt-out links.
+test('sendArcMail derives the links itself: a wrong token throws, a body with other links is refused', async () => {
+  const cfg = testConfig({ arc: ARC, appBaseUrl: 'https://beuk.example' });
+  const f = await campaignFor(db);
+  const to = await readerIn(db, cfg, f, 'links@example.com');
+  const fake = new RecordingMailer();
+  const deps = { db, config: cfg, arcMailer: fake, now };
+
+  // A caller holding another reader's token: a programming error.
+  const otherToken = arcMailToken(cfg, randomUUID());
+  await assert.rejects(
+    sendArcMail(deps, { ...to, mailToken: otherToken }, 'code', arcCodeEmail(cfg, { ...ctxFor(to), mailToken: otherToken }, '123456')),
+    /not the token derived from to\.recipientId/,
+  );
+  // The right token in ArcMailTo, but a body built with another token: refused.
+  const wrongBody = arcCodeEmail(cfg, { ...ctxFor(to), mailToken: otherToken }, '123456');
+  assert.deepEqual(await sendArcMail(deps, to, 'code', wrongBody), {
+    sent: false,
+    reason: 'refused',
+    detail: "the email does not carry this reader's Not me and Stop links",
+  });
+  // A body whose text is right but whose HTML lost the links: refused too.
+  const right = arcCodeEmail(cfg, ctxFor(to), '123456');
+  const htmlWithout = { ...right, html: right.html.replaceAll(to.mailToken, otherToken) };
+  assert.equal((await sendArcMail(deps, to, 'code', htmlWithout)).sent, false);
+  assert.equal(fake.sent.length, 0, 'nothing reached the transport');
+  assert.deepEqual(await events(f.campaignId), [], 'nothing was recorded');
+
+  // The happy path: an empty token is derived; the header uses the derived token.
+  assert.deepEqual(await sendArcMail(deps, { ...to, mailToken: '' }, 'code', right), { sent: true });
+  assert.equal(fake.sent[0].headers?.['List-Unsubscribe'], `<${arcActionUrl(cfg, arcMailToken(cfg, to.recipientId), 'stop')}>`);
 });
 
 test('Not me blocks every author; Stop blocks only that author', async () => {

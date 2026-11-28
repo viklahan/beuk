@@ -240,7 +240,7 @@ in `.env`, then restart the app container:
 ```
 ARC_MAIL_FROM=Beuk readers <readers@beuk.studio>
 ARC_SMTP_URL=smtp://USERNAME:PASSWORD@HOST:587
-ARC_SUPPRESSION_SALT=<a long random string, e.g. the output of: openssl rand -hex 32>
+ARC_SUPPRESSION_SALT=<at least 32 random characters, e.g. the output of: openssl rand -hex 32>
 ```
 
 - `ARC_MAIL_FROM` is `Beuk readers <readers@beuk.studio>` (V,
@@ -255,12 +255,14 @@ ARC_SUPPRESSION_SALT=<a long random string, e.g. the output of: openssl rand -he
   was not re-checked for this section. Use port 587 on Hetzner (section 1).
   It is a secret: Housekeeping scrubs it and backups leave it out.
 - `ARC_SUPPRESSION_SALT` keys the opt-out hashes ("Not you?" and "No
-  more email from") and every reader's mail links. **It must never
+  more email from") and every reader's mail links. It must be **at least
+  32 random characters**; a shorter one counts as not set (the panel
+  says so) and is never used. **It must never
   change, and it must be kept with the `.env`** (backups leave it out):
   a new or lost salt forgets every opt-out and breaks every link in
   every reader email already sent.
 
-While any of the three is unset, no reader email is sent, a claim cannot
+While any of the three is unset (or the salt is too short), no reader email is sent, a claim cannot
 be confirmed, and the author's ARC panel says which setting is missing.
 Reader mail **never falls back to `MAIL_FROM` or `SMTP_URL`.**
 
