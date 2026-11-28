@@ -4,6 +4,18 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-11-28 — Advance review copies
+
+- **An ARC campaign on a book.** In the 2.0 studio's ARC panel you start a campaign for a book: up to 50 readers, a signup link you can share, and a launch date. Closing it, or passing its close date, stops new sign-ups. Copies already given keep opening.
+- **Code-confirmed claims.** A reader opens the signup link, gives a name and an email, and types the six-digit code Beuk mails to that address. Only then do they get a copy. In approval mode they also give a profile link, and you approve or decline each one; nobody is asked to review the book, and the page says so.
+- **Each reader's own copy.** Every reader gets a copy page and a download that carries their name in the copyright line and their id in the file, stamped at each download and never stored. A reader who lost the link claims again and gets a new link; the old one stops. After sign-ups close, nobody can ask for a new link: the answer is the same for every address.
+- **Not me and Stop.** Every reader email carries Not me ("this was not me") and "No more email from" this author. Both leave a hashed opt-out that holds across every writer, so that address is never mailed again by an ARC campaign.
+- **Your panel.** The ARC panel shows your link, every campaign of the book, each reader's state and, for an ended campaign, a summary. Final acts ask first. A new signup link kills the old one.
+- **Own sender.** ARC mail comes from readers@beuk.studio through its own transport: it needs ARC_SMTP_URL and ARC_MAIL_FROM. ARC_SUPPRESSION_SALT, at least 32 characters, keeps the opt-out hashes and mail links; it is kept outside backups and never changed. With ARC mail not set up, ARC stays off.
+- **Database.** Migration 031 adds the ARC tables. A backup made before it is refused by restore after it.
+- **15 languages.** The reader pages and emails come in all 15 interface languages. The English is Claude's; the 14 others are unsigned drafts, not read by a native speaker. The privacy page now states the basis for ARC data (legitimate interests, Art. 6(1)(f)).
+- **Not verified.** The live panel in a browser, whether real mail clients' one-click unsubscribe buttons work with these emails, and real delivery through Resend. The tests use fake mail and a fake clock.
+
 ## 2026-11-27 — The studio in हिन्दी and मराठी
 
 - **Two more interface languages.** The language menu now offers हिन्दी (Hindi) and मराठी (Marathi), so the studio comes in 15 languages. The studio's own menus, buttons and messages follow the language you pick, and the back-matter starter texts (About the Author, Acknowledgements and the rest) come in both too. Your book's own language is not changed by the choice.
