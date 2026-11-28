@@ -1168,6 +1168,188 @@ a third of the way across. A chapter backdrop without a plate prints over
 the opening's text area only (before, its 1.15 in overhang above the
 page area was painted onto the foot of the previous page).
 
+**Across both pages** (BEUK:across, `plateFit: "across"`, 2026-11-26). The
+third Fit: one picture opens the chapter across the whole spread, with
+nothing split by hand. Its left half fills the plate's page (the verso)
+edge to edge; its right half lies under the chapter's opening page (the
+recto) as the Spread layer does, with the Spread's fade toward the words.
+The book stores the one picture, whole (`plateId`, `plateAlt`). Every crop
+happens when the book is drawn, so a new trim crops it again by itself.
+
+- **The value.** `across` is in `PLATE_FITS` in the page (`normalizeSection`,
+  `plateFitOf`) and in the server's reader (`src/book/schema.ts`,
+  `src/book/read.ts`), and `docs/book-format.md` describes it. A reader that
+  predates it drops the value with a `bad-enum` warning, so the plate fills
+  its page. That reader also draws any backdrop the chapter had stored. This
+  is the accepted degradation: the plate is cropped, and nothing is lost.
+- **The one crop.** `acrossCrop(pxW, pxH, trim, bleedIn, rtl)` returns
+  `{ crop, verso, recto, ppi }`. It is a centred cover-crop to the open
+  spread's shape, (2W + 2b) : (H + 2b). b is the bleed in effect: 0.125 in
+  with bleed on, else 0. The sizes are computed multiply-first (`pxW * spreadH > pxH *
+  spreadW`, then `floor(pxH * spreadW / spreadH)`), so float rounding never
+  drops a pixel, and the crop is clamped to the picture. The verso is half
+  the crop's width rounded down and the recto has the rest, so the halves
+  never overlap or leave a gap. In a right-to-left book the verso is the
+  right half. `ppi` is the crop's width over 2W + 2b. Example: 1,408 × 768
+  on 6 × 9 gives a crop of 1,024 × 768 at x = 192, the halves at 192 and
+  704, and 85.3 ppi. It is lifted into the studio's closure (`acrossCrop`),
+  and print, the preview, printPlacements and the settings' note all use
+  it. Nothing else cuts.
+- **Print: baked halves through the press cache.** `printAcrossHalves(section)`
+  bakes the two halves once and keeps them in the press cache, under
+  `printAcrossKey`: `across|WxH|bleed B|ltr or rtl|inside I|src`. That is
+  the source, the trim, the bleed, the direction, and the gutter margin the
+  fade is measured from. One bake is in flight per key. A failure is
+  recorded and tried again next time. `preparePrintPress` bakes every
+  across chapter.
+  - Each half goes on a canvas the size of its page plus that page's bleed,
+    at the picture's own ppi clamped to 150–300, onto white. The halves are
+    JPEG 0.92.
+  - The verso half is not faded. The recto half carries
+    `spreadFadeStops(W + b, inside)` from the gutter, at the Spread's
+    strength.
+  - The print file gets `<figure class="plate-page plate-across"><img
+    src=VERSO alt=…>`, and the opening gets
+    `<div class="bd-layer bd-spread bd-page bd-baked">` with the recto as
+    its background. That layer replaces the chapter's own backdrop, which
+    stays stored and is not drawn.
+  - With bleed on, each across section gets a
+    `#ps-N .bd-layer.bd-page.bd-baked` size and position rule, for a
+    document that draws the layer itself.
+  - `deploy/renderer/spreads.mjs` reads `plate-page plate-across`. It
+    draws the plate and the layer exactly as given (`givenRect`: the trim
+    plus that page's bleed sides), never through `coverRect`, so the
+    renderer has no crop arithmetic of its own.
+  - "Fill the page" and "Show the whole picture" are unchanged. A snapshot
+    pins 32 print documents (4 fixtures, fill and whole, bleed off and on,
+    en and ar).
+- **A failed or unbaked bake prints the picture whole.** The plate goes
+  through `plateHtml` as `plate-page plate-whole`, with a per-section
+  `object-fit: contain` rule. There is no layer, and nothing is cut that
+  the writer did not see. The failure stays visible in `printPressReport()`
+  (`errors`, `seeThroughLeft`).
+- **The print preview is print.** The Print Interior View shows the same
+  halves the PDF gets.
+  - `printAcrossCached` reads the press cache. `pivSectionFlow` builds an
+    across chapter the way print builds it.
+  - `pivPageEl` lays the verso half over the whole plate leaf
+    (`piv-plate-across`) and the recto half over the whole opening leaf
+    (`piv-bleed piv-across`). The fade is the one baked in, with no CSS
+    mask on top.
+  - The halves are drawn only on a leaf standing on its print side.
+    Anything else, such as the hardcover's spread, which never mirrors,
+    gets print's fallback: the whole picture inside the margins and no
+    layer.
+  - `pivBakeAcross`, from `openPrintInteriorView` and `pivRebuild`, shows
+    the fallback until the halves land, then lays the view out again on
+    the same page. A failed bake leaves the fallback standing.
+  - In a right-to-left book `pivAcrossMirrored` draws the across spread
+    mirrored, with the plate on the right. Only that spread is mirrored
+    (see the follow-ups below).
+- **One-page views show it whole.** In `plateHtml`, an across plate is
+  `whole` everywhere except print's baked branch, which comes first. So the
+  EPUB's plate page is `plate-full plate-whole`. The standalone page and
+  the studio's preview get `plate-page plate-whole`. Zen shows it whole, as
+  it shows every plate. All of them keep the alt text, and
+  `bookHasWholePlate` counts across.
+- **The backdrop is set aside on every surface, by one rule.**
+  `acrossSetsBackdropAside(s)` is true for a body chapter that has a plate
+  (`plateImage`) and `plateFit: "across"`, and `printIsAcross` is that
+  test. `backdropInEffect(s)` returns `backdropImage(s)` unless that test
+  holds, and then null. Every reader goes through it:
+  - `backdropLayerHtml`, which covers the EPUB's chapter file, the
+    standalone page, the studio's preview (`sectionHtml`) and Zen's
+    stage (`zenStageHtml`);
+  - Zen's `has-backdrop` class;
+  - the Print Interior View's pairing (`pivPageEl`);
+  - `printPlacements`.
+  The EPUB does not ship a set-aside backdrop's picture
+  (`packagedImagesImpl`, and `packagedImagesFor` for a box set's volumes,
+  judged against that volume's own pictures). `zenStageSignature` includes
+  `plateFit`, so Zen redraws when the fit changes. The stored `backdropId`
+  and `backdropStrength` are never written. The names are in the server's
+  `EPUB_CLOSURE` list (`src/book/epub/closure.ts`).
+- **printPlacements** (the preflight's `images.resolution` and the
+  Store-ready DPI row) measures an across plate by its real two-page crop:
+  placed at 2W + 2b by H + 2b, at `acrossCrop`'s ppi. It does not measure
+  the set-aside backdrop. Examples: 3,000 × 3,000 on 6 × 9 measures 250
+  DPI (244.9 with bleed) and fails the 300 DPI rows; 1,408 × 768 measures
+  85. `printEdgeSections` counts across as art to the page edge, as it
+  counts fill.
+- **The suggestion** (`plateFitFor`, when a picture is chosen as a plate)
+  keeps today's rule. It picks `fill` when one page cuts no more than a
+  tenth (`PLATE_FIT_FAR`). Otherwise it picks `across` when the open
+  spread's shape (two trims side by side, bleed left out) cuts no more than
+  a tenth, and `whole` if not. It never picks `across` for a chapter with a
+  `backdropId` stored (its third argument, the section, read only): there
+  a picture that would get `across` gets `whole`, as before across, and the
+  backdrop keys are not written. Every chooser passes the section: 2.0's `ArtRows` (choose and
+  upload) and 1.0's own `chPlate` handlers. A size it cannot read gives `whole`. On 6 ×
+  9: 1,600 × 1,200 gives across (the two-page cut is 0); 1,408 × 768 gives
+  whole (27 %); 640 × 400 gives whole (16.7 %); 900 × 900 gives whole
+  (25 %). "Use on every chapter" copies across like the other fits.
+- **The chapter settings** (2.0, `studio/src/pictures/ArtRows.tsx`). The Fit
+  select (`#chPlateFit`) offers "Across both pages".
+  - While the output sets the backdrop aside, the Chapter backdrop and
+    Backdrop strength selects are disabled, and their keys are never
+    written, so switching Fit away brings the backdrop back as it was. One
+    line, `#plateAcrossNote`, says why. The settings ask the closure's own
+    `acrossSetsBackdropAside` (through `backdropSetAside` in
+    `studio/src/pictures/pictures.ts`, against the book's library), so a
+    plate that is not drawn (empty alt text, or its picture gone from the
+    library) leaves the rows enabled and shows neither line, as the output
+    draws the backdrop then.
+  - Under 200 ppi, `#plateAcrossSoft` gives the number. It is computed by
+    `acrossCrop` over the book's `printTrim` (else the default trim), with
+    the bleed only when `printBleed` is on, in the book language's
+    direction. Nothing blocks. Example: 2,400 × 2,400 on 6 × 9 gets no note
+    without bleed (200) and "196" with it.
+  - 1.0's own `#chPlateFit` was left without the option, because 1.0's
+    studio is not served.
+  - The three strings (`editor.plateFitAcross`, `editor.plateAcrossNote`,
+    `editor.plateAcrossSoft`) are English in the source. The 42 drafts in
+    the 14 other languages (36 in the first 12; hi and mr's 6 added when
+    main's Hindi and Marathi packs were merged in) are UNSIGNED,
+    `docs/strings-pending-signoff.md` §8.
+- **Tests.**
+  - Studio: `across-crop`, `across-print`, `across-preview`,
+    `across-onepage` (stand-ins in `across-fixture.ts`), `pictures-ui`,
+    `every-chapter`.
+  - Server: `tests/print-spreads.test.ts`, `tests/book-read.test.ts`.
+  - Page self-checks: `plate.across.print`, `plate.across.placements`,
+    `plate.across.preview`, and the one-page comparisons beside the EPUB
+    whole checks.
+  - The print and preview snapshots are tripwires. Re-record them only on
+    the code from before an intended change.
+  - Real browser: `studio/e2e/book.mjs` `acrossChecks` (E2E_ONLY=across).
+    The Fit row is driven through the UI. In the Print Interior View, on
+    6 × 9, bleed off and on, left to right and right to left, the stripe
+    in a 1,600 × 1,200 test picture shows on each side of the spine as
+    wide as `acrossCrop` puts it (±2 screen px). The columns either side of
+    the spine differ by no more than the picture's own difference over the
+    same distance (+1 per channel; worst seen −0.22, the same in 3 runs).
+    The verso is edge to edge. The EPUB's plate page holds the whole
+    picture with its alt text, and the chapter's XHTML has no backdrop
+    layer and ships no backdrop picture. A control switches Fit back to
+    fill and finds the stored backdrop drawn again, in the print view and
+    in the EPUB.
+  - `studio/test/across-onepage.test.ts` and the page self-check
+    `plate.fit.surfaces` check that the across chapter with its backdrop
+    still stored is byte for byte the whole plate with no backdrop. The
+    self-check covers the EPUB chapter file, the standalone page, the
+    preview and Zen. Their control, the whole or fill plate with its
+    backdrop, does draw the layer.
+- **Follow-ups (queued, not done).**
+  - The preview lays out every right-to-left book with the verso on the
+    left, the opposite of print. This was already so on main. The fix
+    that mirrors every RTL spread must remove `pivAcrossMirrored`, or the
+    across spread will be mirrored twice.
+  - `printBackdropKey` leaves out the direction and the gutter margin, so
+    a Spread backdrop baked left to right is reused after the book's
+    language changes to a right-to-left one in the same session. This was
+    already on main, and is separate from `printAcrossKey`, which includes
+    both.
+
 ### Print bleed (renderer)
 
 **Bleed** (Export → Print Interior; `state.printBleed`, carried by the book
@@ -6289,7 +6471,7 @@ setting, none ticked:
 | Chapter backdrop | `backdropId` and `backdropStrength`, together | always | every other chapter |
 | Drop cap | `dropCap`, on or off | always | every other chapter |
 | Small-caps lead-in | `smallCaps`, on or off | always | every other chapter |
-| Plate fit | `plateFit`, fill or whole | this chapter has a plate | other chapters that have a plate |
+| Plate fit | `plateFit`, fill, whole or across | this chapter has a plate | other chapters that have a plate |
 
 Each row says this chapter's value in words (the picture's name and its
 strength, "No backdrop", "On", "Off", "Fill the page") and the exact

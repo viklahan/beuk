@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import { PDFArray, PDFDocument, PDFName, PDFRawStream, PDFRef, decodePDFRawStream } from 'pdf-lib';
 // @ts-expect-error — a plain ES module of the renderer, no type declarations
 import * as spreads from '../deploy/renderer/spreads.mjs';
+// @ts-expect-error — a plain ES module of the renderer, no type declarations
+import * as bleedMod from '../deploy/renderer/bleed.mjs';
 
 /* deploy/renderer/spreads.mjs — facing pages and painted spreads for the
    print PDF. Chromium (page.pdf) inserts no blank page for recto/verso
@@ -140,4 +142,84 @@ test('print spreads: a plate shown whole is not drawn edge to edge; its backdrop
   const bare = whole.replace(/<div class="bd-layer[^>]*><\/div>/, '');
   assert.notEqual(bare, whole);
   assert.deepEqual([...(await spreads.stampable(spreads.planSections(bare)))], []);
+});
+
+/* Across both pages — one picture over the gutter. The studio crops it
+   once (client/index.html acrossCrop) and bakes each half at the size of
+   its page WITH its bleed (trim + bleed on the outer edge, top and bottom;
+   the trim alone without bleed), and marks the verso's figure
+   `plate-page plate-across` (a class after `plate-page`, so a fill plate's
+   markup is unchanged). The renderer draws both halves of such a spread
+   exactly over that box: no cover crop of its own, no scaling about the
+   spine — a second crop here would move the gutter line. */
+const cmOf = (content: string): number[] => {
+  const m = /(-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+) cm/.exec(content);
+  assert.ok(m, 'a placement matrix');
+  return m.slice(1, 7).map(Number);
+};
+const near = (got: number[], want: number[], what: string) =>
+  assert.ok(got.length === want.length && got.every((v, i) => Math.abs(v - want[i]!) < 1e-3), what + ': ' + got.join(' ') + ' vs ' + want.join(' '));
+async function fourPages() {
+  const base = await PDFDocument.create();
+  for (let i = 0; i < 4; i++) base.addPage([432, 648]).drawText('words ' + i, { x: 60, y: 600, size: 11 });
+  return base.save({ useObjectStreams: false });
+}
+
+test('print spreads: a plate-across figure is drawn as given: its image box equals the page box with bleed, and is not re-cropped', async () => {
+  const across = DOC.replace('<figure class="plate-page">', '<figure class="plate-page plate-across">');
+  assert.notEqual(across, DOC);
+  const plan = spreads.planSections(across);
+  assert.equal(plan[2].spread, true);
+  assert.equal(plan[2].across, true);
+  assert.equal(plan[2].plate, JPEG, 'the across half is read as the plate');
+  assert.equal(plan[2].layer, JPEG, 'its other half, the Spread page layer');
+  const stamped = await spreads.stampable(plan);
+  assert.deepEqual([...stamped], ['ps-2']);
+  // its in-page picture is stood down like any stamped plate's
+  assert.ok(spreads.stampCss(stamped).startsWith('#ps-2 .plate-page img { visibility: hidden !important; }'));
+  const bytes = await fourPages();
+  const b = 9; // 0.125 in
+  // no bleed: each half covers its trim exactly
+  {
+    const doc = await PDFDocument.load(await spreads.stampSpreads(bytes, plan, new Map([['ps-2', 1]]), stamped));
+    near(cmOf(contentsOf(doc, 1)[0]!), [432, 0, 0, 648, 0, 0], 'verso, no bleed');
+    near(cmOf(contentsOf(doc, 2)[0]!), [432, 0, 0, 648, 0, 0], 'recto, no bleed');
+  }
+  // bleed, left to right: the verso (a left page) bleeds left, top and bottom; the recto right, top and bottom.
+  // Each half is drawn over exactly trim + its bleed (441 x 666 pt) — the 4 x 6 picture is not cover-cropped to it —
+  // and the two meet at the spine (x = 432 on the verso, x = 0 on the recto)
+  {
+    const doc = await PDFDocument.load(await spreads.stampSpreads(bytes, plan, new Map([['ps-2', 1]]), stamped, { pt: b, rtl: false }));
+    const v = cmOf(contentsOf(doc, 1)[0]!), r = cmOf(contentsOf(doc, 2)[0]!);
+    near(v, [432 + b, 0, 0, 648 + 2 * b, -b, -b], 'verso, bleed');
+    near(r, [432 + b, 0, 0, 648 + 2 * b, 0, -b], 'recto, bleed');
+    assert.equal(v[4]! + v[0]!, 432, 'the verso ends at the spine');
+    assert.equal(r[4], 0, 'the recto starts at the spine');
+    // a fill plate on the same page would be cover-fitted about the spine instead: the test tells the two apart
+    const cover = bleedMod.coverRect(4, 6, 432, 648, bleedMod.bleedSides(1, { pt: b, rtl: false }));
+    assert.ok(Math.abs(cover.w - v[0]!) > 1 || Math.abs(cover.x - v[4]!) > 1, 'coverRect would have cropped it again');
+  }
+  // bleed, right to left: the verso is a right-hand page and bleeds right; the recto bleeds left
+  {
+    const doc = await PDFDocument.load(await spreads.stampSpreads(bytes, plan, new Map([['ps-2', 1]]), stamped, { pt: b, rtl: true }));
+    near(cmOf(contentsOf(doc, 1)[0]!), [432 + b, 0, 0, 648 + 2 * b, 0, -b], 'RTL verso, bleed');
+    near(cmOf(contentsOf(doc, 2)[0]!), [432 + b, 0, 0, 648 + 2 * b, -b, -b], 'RTL recto, bleed');
+  }
+});
+
+test('print spreads: a plain plate-page figure is unchanged', async () => {
+  const plan = spreads.planSections(DOC);
+  assert.equal(plan[2].across, false);
+  assert.equal(plan[2].plate, JPEG);
+  const stamped = await spreads.stampable(plan);
+  const bytes = await fourPages();
+  const b = 9;
+  const doc = await PDFDocument.load(await spreads.stampSpreads(bytes, plan, new Map([['ps-2', 1]]), stamped, { pt: b, rtl: false }));
+  // still the cover fit about the spine (bleed.mjs coverRect), for the plate and its backdrop alike
+  for (const [page, what] of [[1, 'plate'], [2, 'layer']] as const) {
+    const r = bleedMod.coverRect(4, 6, 432, 648, bleedMod.bleedSides(page, { pt: b, rtl: false }));
+    near(cmOf(contentsOf(doc, page)[0]!), [r.w, 0, 0, r.h, r.x, r.y], what);
+  }
+  // and a whole plate is still not read
+  assert.equal(spreads.planSections(DOC.replace('<figure class="plate-page">', '<figure class="plate-page plate-whole">'))[2].across, false);
 });

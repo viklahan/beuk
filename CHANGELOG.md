@@ -9,6 +9,19 @@ to make well.
 - **Fixed: right-to-left books' EPUBs failed EPUBCheck.** The EPUB of a right-to-left book failed EPUBCheck with one error, CSS-001 (seen on Arabic and Hebrew books; Persian and Urdu share the same style sheet rule, not run). Its style sheet used a property for tables that EPUB does not allow in a style sheet, and it did so whether or not the book had a table. EPUBCheck 5.2.1 now reports no errors for an Arabic book and a Hebrew book that each hold a table of figures.
 - **Figures in their tables still read left to right.** In a right-to-left table, a figure such as "+4%" is still set "+4%", never "4%+". The e-book now marks this in its pages instead of its style sheet. Measured in Chromium, the table is laid out exactly as before, and its words are unchanged.
 
+## 2026-11-26 — One picture across both pages
+
+- **Across both pages.** A chapter's opening plate has a third choice under Fit: Across both pages. One wide picture opens the chapter across the whole spread, and you don't have to cut it in two yourself.
+- **In print.** The picture is cropped once, centred, to the shape of the two open pages. With bleed on, the bleed is included. The left half fills the plate's page edge to edge. The right half carries on under the chapter's first page and fades before the words, as the Spread backdrop does.
+- **Right-to-left books are mirrored.** In a right-to-left book the plate's page is on the right and the picture crosses to the left.
+- **Your picture stays whole.** It is stored once, whole. Change the trim size and it is cropped again for the new pages.
+- **The Print Interior View shows what prints.** It shows the same two halves the PDF gets. If the halves can't be made, print and the view both show the whole picture inside the margins, never a crop you didn't see.
+- **On e-readers, the whole picture.** An e-reader has no facing page, so the EPUB shows the whole picture on its own page before the chapter, with its alt text. So do the standalone page, Zen and the studio's preview.
+- **The chapter's backdrop is set aside, not lost.** In print the picture takes the backdrop's place on the opening page. On e-readers, the standalone page, Zen and the preview, the opening has no backdrop while the whole picture stands before it. While Across both pages is chosen, the Chapter backdrop rows are greyed out and one line says why. Switch Fit back and the backdrop is there as it was, everywhere.
+- **A note when it may print soft.** If the picture gives fewer than 200 pixels per inch across the two pages, a line under Fit gives the number. It doesn't stop you. The print checks before export now measure such a picture across both pages too.
+- **Suggested when it fits.** Choose a picture close to the shape of the open spread and Beuk picks Across both pages for you, unless the chapter already has a backdrop: then the picture gets the choice it always got, and the backdrop stays. Other pictures get the same choice they always got. Use on every chapter copies it.
+- Fill the page and Show the whole picture work exactly as before. An older Beuk that opens the book shows the plate as Fill the page, with the chapter's earlier backdrop. The three new lines of wording are in English and drafted in the fourteen other languages, Hindi and Marathi among them, waiting to be signed off.
+
 ## 2026-11-27 — The studio in हिन्दी and मराठी
 
 - **Two more interface languages.** The language menu now offers हिन्दी (Hindi) and मराठी (Marathi), so the studio comes in 15 languages. The studio's own menus, buttons and messages follow the language you pick, and the back-matter starter texts (About the Author, Acknowledgements and the rest) come in both too. Your book's own language is not changed by the choice.

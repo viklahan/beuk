@@ -86,7 +86,8 @@ const raw = (m: Y.Map<unknown>, k: string): unknown => {
 };
 const pictureIn = (v: unknown, x: Ctx): string | null => (typeof v === 'string' && v && x.pictures.has(v) ? v : null);
 const strengthOf = (v: unknown, x: Ctx): string => (typeof v === 'string' && x.strengths.includes(v) ? v : 'whisper');
-const fitOf = (v: unknown): 'fill' | 'whole' => (v === 'whole' ? 'whole' : 'fill');
+const fitOf = (v: unknown): 'fill' | 'whole' | 'across' => (v === 'whole' || v === 'across' ? v : 'fill');
+const FIT_SAID = { fill: 'editor.plateFitFill', whole: 'editor.plateFitWhole', across: 'editor.plateFitAcross' } as const;
 const STRENGTH_KEYS: Record<string, UiKey> = { whisper: 'editor.bdWhisper', soft: 'editor.bdSoft', strong: 'editor.bdStrong', spread: 'editor.bdSpread' };
 
 /** The chapter is a poem, as Poem Mode reads it (src/editor/poem.ts poemOn; every section here is a chapter). */
@@ -146,7 +147,7 @@ export const ROWS: readonly RowDef[] = [
     offered: (src, x) => pictureIn(src.plateId, x) !== null,
     reaches: (target, x) => pictureIn(target.plateId, x) !== null,
     patch: (src, target) => (fitOf(src.plateFit) === fitOf(target.plateFit) ? {} : { plateFit: fitOf(src.plateFit) }),
-    said: (src) => [{ key: fitOf(src.plateFit) === 'whole' ? 'editor.plateFitWhole' : 'editor.plateFitFill' }],
+    said: (src) => [{ key: FIT_SAID[fitOf(src.plateFit)] }],
     counted: { count: 'everych.plateCount', same: 'everych.plateSame', none: 'everych.plateNone' },
   },
 ];

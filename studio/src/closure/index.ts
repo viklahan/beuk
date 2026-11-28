@@ -221,9 +221,30 @@ export type ClosureApi = {
   /** BEUK:platefit — 'fill' and 'whole'. */
   PLATE_FITS: string[];
   /** The fit a section's plate is typeset with: its stored choice, 'fill' when it has none. */
-  plateFitOf: (section: unknown) => 'fill' | 'whole';
-  /** The fit a newly chosen picture is given, by its pixel size against the trim (`trimId`, else state.printTrim). */
-  plateFitFor: (img: unknown, trimId?: string) => 'fill' | 'whole';
+  plateFitOf: (section: unknown) => 'fill' | 'whole' | 'across';
+  /** A section's opening plate as markup: (section, forExport, dataMedia, ownPage, acrossSrc). */
+  plateHtml: (section: unknown, forExport?: boolean, dataMedia?: boolean, ownPage?: boolean, acrossSrc?: string | null) => string;
+  /** The fit a newly chosen picture is given, by its pixel size against the trim (`trimId`, else state.printTrim);
+   *  never 'across' for a `section` with a backdropId stored. */
+  plateFitFor: (img: unknown, trimId?: string, section?: { backdropId?: unknown } | null) => 'fill' | 'whole' | 'across';
+  /** Across both pages — the output's one rule: a body chapter whose plate is drawn (plateImage, against state.images)
+   *  with the fit across has its backdrop set aside. */
+  acrossSetsBackdropAside: (section: unknown) => boolean;
+  /** Across both pages — the one two-page crop (source pixels): centred cover-crop to the open spread's shape, and its halves. */
+  acrossCrop: (
+    pxW: number,
+    pxH: number,
+    trim: { w: number; h: number },
+    bleedIn: number,
+    rtl: boolean,
+  ) => {
+    crop: { x: number; y: number; w: number; h: number };
+    verso: { x: number; y: number; w: number; h: number };
+    recto: { x: number; y: number; w: number; h: number };
+    ppi: number;
+  };
+  /** A picture's pixel size, read from its bytes' header; null when it cannot be read. */
+  imagePixelSize: (img: unknown) => { w: number; h: number } | null;
   fmtBytes: (n: number) => string;
   pickerImages: () => BookImage[];
   isFlourishImage: (im: unknown) => boolean;
@@ -659,7 +680,7 @@ export type ClosureApi = {
   hcDrawFlaps: (...args: unknown[]) => unknown;
   hcDrawGuides: (...args: unknown[]) => unknown;
   TRIM_SIZES: { id: string; label: string; w: number; h: number }[];
-  trimSize: () => { id: string; label: string; w: number; h: number };
+  trimSize: (id?: string) => { id: string; label: string; w: number; h: number };
   printPageEstimate: () => number;
   slug: (s: unknown) => string;
   downloadWrap: (kind: 'pdf' | 'jpg') => Promise<void>;

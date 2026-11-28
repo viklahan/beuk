@@ -22,7 +22,8 @@
 //      the studio at the trim's own size — are drawn BENEATH the page's
 //      content with pdf-lib: the plate edge to edge on its verso, and its
 //      backdrop (at its own strength) over the whole facing recto, gutter
-//      margin included.
+//      margin included. An "across" spread's two halves (one picture over
+//      the gutter, cut by the studio) are drawn exactly over their pages.
 // Every step is plain data in, data out, so the tests run without a browser.
 
 import {
@@ -35,6 +36,12 @@ const SECTION_RE = /<section class="(print-sec[^"]*)" id="(ps-\d+)"(?: data-star
 // (the figure may carry attributes after its class: the footnote
 // layout marks every block it measures — see footnotes.mjs)
 const PLATE_RE = /<figure class="plate-page"[^>]*><img src="(data:image\/(?:jpeg|png);base64,[^"]+)"/;
+// Across both pages: one picture over the gutter, cropped once by the studio
+// (client/index.html acrossCrop) into two halves, each baked at the size of
+// its page with its bleed. The verso's figure carries a class after
+// `plate-page` (so a fill plate's markup is unchanged); both halves of such a
+// spread are drawn exactly as given (drawAsGiven), never cropped again here.
+const ACROSS_RE = /<figure class="plate-page plate-across"[^>]*><img src="(data:image\/(?:jpeg|png);base64,[^"]+)"/;
 // A paired spread's backdrop, baked by the studio at the page's size (bd-page).
 const LAYER_RE = /<div class="bd-layer bd-(?:whisper|soft|strong|spread) bd-page bd-baked" style="background-image:url\((data:image\/(?:jpeg|png);base64,[^)]+)\)"/;
 
@@ -48,10 +55,11 @@ export function planSections(html) {
   return found.map((s, i) => {
     const body = html.slice(s.at, i + 1 < found.length ? found[i + 1].at : html.length);
     const spread = s.classes.includes('spread-sec');
-    const plate = spread ? (PLATE_RE.exec(body) || [])[1] || null : null;
+    const across = spread ? (ACROSS_RE.exec(body) || [])[1] || null : null;
+    const plate = across || (spread ? (PLATE_RE.exec(body) || [])[1] || null : null);
     const layer = spread ? (LAYER_RE.exec(body) || [])[1] || null : null;
     // (display: a title / copyright / dedication page — no head, no folio; heads.mjs)
-    return { id: s.id, start: s.start, spread, plate, layer, display: s.classes.includes('display-sec') };
+    return { id: s.id, start: s.start, spread, plate, layer, across: !!across, display: s.classes.includes('display-sec') };
   });
 }
 
@@ -170,13 +178,22 @@ export async function stampable(plan) {
   return ok;
 }
 
+/** The box an across half is drawn over (pt, the trim's own coordinates):
+ *  the page and its bleed exactly — the trim, plus `sides` (bleed.mjs) on
+ *  the outer edge, top and bottom; the gutter edge stays on the spine. The
+ *  studio baked the half to this shape, so it is placed, not fitted. */
+function givenRect(W, H, sides = null) {
+  const s = sides || { left: 0, right: 0, top: 0, bottom: 0 };
+  return { x: -s.left, y: -s.bottom, w: W + s.left + s.right, h: H + s.top + s.bottom };
+}
+
 /** Draw `image` over the whole page — covering it, centred, never
  *  stretched — beneath everything already on it. With bleed `sides`
  *  (bleed.mjs), it covers the bleed beyond the trim too: drawn past the
  *  page edge here, it shows once applyBleed grows the page. */
-function drawBeneath(doc, page, image, name, sides = null) {
+function drawBeneath(doc, page, image, name, sides = null, asGiven = false) {
   const { width, height } = page.getSize();
-  const r = coverRect(image.width, image.height, width, height, sides);
+  const r = asGiven ? givenRect(width, height, sides) : coverRect(image.width, image.height, width, height, sides);
   const key = page.node.newXObject(name, image.ref);
   const under = doc.context.register(doc.context.contentStream([
     pushGraphicsState(),
@@ -200,8 +217,9 @@ export async function stampSpreads(pdfBytes, plan, finalStart, stamped, bleed = 
     if (!stamped.has(s.id) || !finalStart.has(s.id)) continue;
     const at = finalStart.get(s.id);
     const sides = (i) => (bleed ? bleedSides(i, bleed) : null);
-    if (s.plate && pages[at]) drawBeneath(doc, pages[at], await embed(doc, s.plate), 'BeukPlate' + (n += 1), sides(at));
-    if (s.layer && pages[at + 1]) drawBeneath(doc, pages[at + 1], await embed(doc, s.layer), 'BeukSpread' + (n += 1), sides(at + 1));
+    // (an across spread's two halves are drawn as given: see ACROSS_RE)
+    if (s.plate && pages[at]) drawBeneath(doc, pages[at], await embed(doc, s.plate), 'BeukPlate' + (n += 1), sides(at), !!s.across);
+    if (s.layer && pages[at + 1]) drawBeneath(doc, pages[at + 1], await embed(doc, s.layer), 'BeukSpread' + (n += 1), sides(at + 1), !!s.across);
   }
   return Buffer.from(await doc.save({ useObjectStreams: false }));
 }

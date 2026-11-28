@@ -36,6 +36,9 @@
       write), B's "#" lands "bro#wn"; the caret keeper's cost on a
       400-paragraph rewrite (caretChecks).
    CSP: zero securitypolicyviolation events and no page errors throughout.
+   Across both pages (E2E_ONLY=across, acrossChecks): the Fit choice in the chapter settings, the print preview's two
+   halves meeting at the gutter (measured by pixel, bleed off and on, left to right and right to left), the EPUB's
+   whole picture.
    Screenshots: an open book in Paper, Candlelight and Arabic chrome next
    to 1.0 with the same book; the shell regions are diffed as part A does
    (gated), the editor surface is reported only. */
@@ -46,6 +49,7 @@ import { createRequire, register } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { crc32, deflateSync } from 'node:zlib';
 import { ONE, startServer } from './serve.mjs';
 import { covenantDumas } from './covenant-fixture.mjs';
 
@@ -11174,6 +11178,421 @@ async function everyChapterChecks(origin) {
   }
 }
 
+/* ---- "Across both pages" (2026-11-26; plateFit 'across'): acrossChecks (E2E_ONLY=across) ----
+   On the Lantern Coast (6 × 9, the default trim; every chapter of its body has a plate and a backdrop; opened from a
+   copy in which the chapter's stored backdrop is a picture of its own, see acrossChecks), one chapter is
+   given a new opening plate: a 1,600 × 1,200 picture made here (the 2 × 6 : 9 spread's own shape), a smooth gradient
+   with a dark stripe 48 px wide centred on the picture's middle column, in its top half only. By the chapter settings'
+   own controls: the picture uploaded, the Fit row read (suggested), switched to Fill (the backdrop rows back as they
+   were) and to Across both pages again (the backdrop rows disabled, the note and the soft-print note shown). Read back
+   from the exported book: what is stored.
+   The print preview (the Print Interior View), turned to that chapter, guides off, bleed off and then on:
+   - the plate leaf carries the baked verso half over the whole leaf (edge to edge, bleed included), the opening leaf
+     the baked recto half; nothing else of the chapter's art (its stored backdrop, the original picture) is drawn;
+   - by pixel, on a screenshot: the stripe shows on each side of the spine as wide as acrossCrop's halves put it
+     there (±2 screen px), and below the stripe the column next to the spine on one side differs from the one on the
+     other by no more than the picture's own difference over the same distance inside the leaves + ACROSS_JOIN_TOL;
+     the verso's outer column, top row and bottom row hold the picture, not paper.
+   Then (left to right only) the EPUB, built by the server's own build from the body the studio's export sends:
+   the plate page holds the whole picture (plate-full plate-whole, its alt text), nothing cut, and the chapter's stored
+   backdrop is set aside there too (no layer in its XHTML, its picture not shipped).
+   Last, the control: Fit back to "Fill the page", and the print view draws the plate filled with the chapter's own
+   stored backdrop beside it again (so the search that found the backdrop nowhere above is shown to find it when drawn).
+   The same in an Arabic copy of the book (right to left): the plate leaf on the right, the halves mirrored.
+   Every wait that runs out is a FAIL, never a pass. */
+/* mean absolute difference per channel (0–255) allowed beyond the picture's own: measured join − own was −0.22 at most
+   over 3 runs × 4 spreads (Task 8 fix round 1), so 1 is the smallest whole level that is stable with a margin */
+const ACROSS_JOIN_TOL = 1;
+const ACROSS_RUN_TOL = 2; // screen px: the stripe's width on each side of the spine against acrossCrop's
+const ACROSS_STRIPE = [776, 824]; // source columns of the stripe (centred on 800), rows 0–599
+/** A PNG (8-bit RGB) of W × H, each pixel [r, g, b] = px(x, y). */
+function acrossPngOf(W, H, px) {
+  const row = W * 3 + 1;
+  const raw = Buffer.alloc(row * H);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * row + 1 + x * 3, p = px(x, y);
+      raw[i] = p[0];
+      raw[i + 1] = p[1];
+      raw[i + 2] = p[2];
+    }
+  }
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4), crc = Buffer.alloc(4), td = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+    len.writeUInt32BE(data.length);
+    crc.writeUInt32BE(crc32(td) >>> 0);
+    return Buffer.concat([len, td, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0);
+  ihdr.writeUInt32BE(H, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 2; // RGB
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
+/** The test picture: 1,600 × 1,200, a smooth gradient, the dark stripe in its top half. */
+const acrossPng = () => acrossPngOf(1600, 1200, (x, y) => (x >= ACROSS_STRIPE[0] && x < ACROSS_STRIPE[1] && y < 600
+  ? [12, 12, 12] : [Math.round(40 + (175 * x) / 1599), Math.round(60 + (140 * y) / 1199), 150]));
+/** 1.0's acrossCrop, restated (client/index.html): the halves a 1,600 × 1,200 picture is cut into, for the measure. */
+function acrossHalvesOf(pxW, pxH, trim, bleedIn, rtl) {
+  const spreadW = 2 * trim.w + 2 * bleedIn, spreadH = trim.h + 2 * bleedIn;
+  let w, h;
+  if (pxW * spreadH > pxH * spreadW) { h = pxH; w = Math.min(pxW, Math.floor((pxH * spreadW) / spreadH)); }
+  else { w = pxW; h = Math.min(pxH, Math.floor((pxW * spreadH) / spreadW)); }
+  const x = Math.floor((pxW - w) / 2), first = Math.floor(w / 2);
+  const a = { x, w: first }, b = { x: x + first, w: w - first };
+  return { verso: rtl ? b : a, recto: rtl ? a : b, ppi: w / spreadW };
+}
+const acrossStripeIn = (part) => Math.max(0, Math.min(part.x + part.w, ACROSS_STRIPE[1]) - Math.max(part.x, ACROSS_STRIPE[0]));
+/** In a blank page: a screenshot of the spread decoded, the stripe's width each side of the spine, the join, the verso's edges. */
+const ACROSS_MEASURE = async ([b64, g]) => {
+  const img = new Image();
+  img.src = 'data:image/png;base64,' + b64;
+  await img.decode();
+  const cv = document.createElement('canvas');
+  cv.width = img.width;
+  cv.height = img.height;
+  const cx = cv.getContext('2d');
+  cx.drawImage(img, 0, 0);
+  const d = cx.getImageData(0, 0, cv.width, cv.height).data;
+  const px = (x, y) => { const i = (Math.round(y - g.oy) * cv.width + Math.round(x - g.ox)) * 4; return [d[i], d[i + 1], d[i + 2]]; };
+  const diff = (a, b) => (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2])) / 3;
+  // the k-th whole pixel column in from each leaf's gutter edge
+  const vx = (k) => (g.rtl ? Math.ceil(g.plate.l) + k : Math.floor(g.plate.r) - 1 - k);
+  const rx = (k) => (g.rtl ? Math.floor(g.open.r) - 1 - k : Math.ceil(g.open.l) + k);
+  const top = g.plate.t, h = g.plate.b - g.plate.t;
+  const rows = (a, b) => { const out = []; for (let y = Math.ceil(top + h * a); y < top + h * b; y += 2) out.push(y); return out; };
+  const dark = (p) => p[0] + p[1] + p[2] < 140;
+  const band = rows(0.08, 0.45);
+  let nv = 0, nr = 0;
+  for (const y of band) for (let k = 0; k < g.win; k++) { if (dark(px(vx(k), y))) nv++; if (dark(px(rx(k), y))) nr++; }
+  const low = rows(0.58, 0.92);
+  let join = 0, own = 0;
+  for (const y of low) {
+    const v3 = px(vx(3), y), v6 = px(vx(6), y), r3 = px(rx(3), y), r6 = px(rx(6), y);
+    join += diff(v3, r3);
+    own += diff(v3, v6) + diff(r3, r6);
+  }
+  const paper = (p) => Math.min(p[0], p[1], p[2]) > 235;
+  const outerX = g.rtl ? Math.floor(g.plate.r) - 4 : Math.ceil(g.plate.l) + 3;
+  let edges = 0, paperN = 0;
+  for (let y = Math.ceil(top) + 3; y < g.plate.b - 4; y += 2) { edges++; if (paper(px(outerX, y))) paperN++; }
+  for (let x = Math.ceil(g.plate.l) + 3; x < g.plate.r - 4; x += 2) {
+    for (const y of [Math.ceil(top) + 3, Math.floor(g.plate.b) - 4]) { edges++; if (paper(px(x, y))) paperN++; }
+  }
+  return { runV: nv / band.length, runR: nr / band.length, join: join / low.length, own: own / low.length, rows: [band.length, low.length], edges, paperN, size: [cv.width, cv.height] };
+};
+async function acrossChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  const png = acrossPng();
+  const pic = { name: 'across-sweep.png', data: png.toString('base64') };
+  const SEC = 'sample-sec-9';
+  const ALT = 'A gradient with a dark stripe at its centre, the across test picture';
+  note(`across: the test picture ${pic.name}, 1600 x 1200, ${png.length} bytes (stripe at source columns ${ACROSS_STRIPE[0]}-${ACROSS_STRIPE[1] - 1}, rows 0-599)`);
+  /* Every picture in this fixture is the same 844-character JPEG, so the chapter's stored backdrop could not be told
+     from its scene picture by its bytes: the copy opened here gives the backdrop a picture of its own (a 300 × 450
+     checker), so "the stored backdrop is drawn nowhere" can be seen, and the control can find it when it is drawn. */
+  const bdPng = acrossPngOf(300, 450, (x, y) => ((x >> 4) + (y >> 4)) % 2 ? [196, 38, 120] : [250, 214, 72]);
+  const bdId = f.book.sections.find((s) => s.id === SEC).backdropId;
+  const copyOf = (lang) => {
+    const b = JSON.parse(JSON.stringify(f.book));
+    if (lang !== 'en') b.meta = { ...b.meta, language: lang };
+    const im = b.images.find((x) => x.id === bdId);
+    im.mediaType = 'image/png';
+    im.ext = 'png';
+    im.data = bdPng.toString('base64');
+    return b;
+  };
+  for (const lang of ['en', 'ar']) {
+    const book = copyOf(lang);
+    const file = w4File(`across-${lang}.beuk-backup.json`, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book }));
+    // Ruling 12: the suggestion is made only for a chapter with no backdrop stored — checked on a copy whose chapter has none
+    const bare = copyOf(lang);
+    const bs = bare.sections.find((s) => s.id === SEC);
+    delete bs.backdropId;
+    delete bs.backdropStrength;
+    const bareFile = w4File(`across-nobd-${lang}.beuk-backup.json`, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date(0).toISOString(), book: bare }));
+    await acrossSuggestRun(origin, bare, lang, bareFile, png, SEC);
+    await acrossRun(origin, { ...f, book }, lang, file, pic, png, SEC, ALT);
+  }
+}
+/** Ruling 12's other half: on a chapter with NO backdrop stored, the 1600 x 1200 picture uploaded as its plate on 6 x 9 is
+ *  suggested "Across both pages", with the set-aside note and the soft-print note as when Across is chosen by hand. */
+async function acrossSuggestRun(origin, book, lang, file, png, SEC) {
+  const tag = `across (${lang === 'ar' ? 'an Arabic book, right to left' : 'left to right'}), a chapter with no backdrop`;
+  const ctx = await newContext({ viewport: { width: 1600, height: 1000 } });
+  try {
+    const page = await openNext(ctx, origin);
+    const e0 = csp.errors.length;
+    await openBackup(page, file);
+    const sec0 = book.sections.find((s) => s.id === SEC);
+    await choose(page, book.sections.findIndex((s) => s.id === SEC));
+    await page.waitForSelector('#chPlate', { timeout: 60_000 });
+    const rowsNow = () => page.evaluate(() => {
+      const v = (id) => document.getElementById(id);
+      const txt = (id) => (v(id) ? v(id).textContent : null);
+      return {
+        plate: v('chPlate').value, fit: v('chPlateFit') ? v('chPlateFit').value : null, fits: v('chPlateFit') ? [...v('chPlateFit').options].map((o) => [o.value, o.textContent]) : [],
+        bd: v('chBackdrop').value, bdOff: v('chBackdrop').disabled, note: txt('plateAcrossNote'), soft: txt('plateAcrossSoft'),
+      };
+    });
+    const was = await rowsNow();
+    check(was.plate === sec0.plateId && was.bd === '' && !was.bdOff, `${tag}: "${sec0.title}" opens with its own plate (${was.plate}) and no backdrop ("${was.bd}"), the backdrop rows enabled`);
+    await page.setInputFiles('#plateFileInput', { name: 'across-sweep.png', mimeType: 'image/png', buffer: png });
+    try {
+      await page.waitForFunction((old) => { const v = document.getElementById('chPlate').value; return !!v && v !== old && !!document.getElementById('chPlateFit'); }, was.plate, { timeout: 30_000 });
+    } catch (e) {
+      check(false, `${tag}: the uploaded picture becomes the plate — not within 30 s (${String((e && e.message) || e).split('\n')[0]})`);
+      return;
+    }
+    const up = await rowsNow();
+    const wantSoft = 'This picture gives 133 pixels per inch across both pages; it may print soft.'; // the interface is English in both runs
+    check(up.fit === 'across' && up.bdOff && up.bd === '' && up.note === "The picture also covers the facing page, so this chapter's backdrop is set aside while this is chosen." && up.soft === wantSoft,
+      `${tag}: a 1600 x 1200 picture on 6 x 9 is suggested "Across both pages" (Fit ${up.fit}; the options ${JSON.stringify(up.fits)}; backdrop rows disabled ${up.bdOff}, no backdrop "${up.bd}"); the note "${up.note}"; the soft-print note "${up.soft}" (1600 / 12 in = 133.3)`);
+    await harvestCsp(page);
+    check(csp.errors.length === e0, `${tag}: no page error and no console error in the block (${csp.errors.length - e0}${csp.errors.length > e0 ? ': ' + csp.errors.slice(e0).join(' | ') : ''})`);
+  } finally {
+    await ctx.close();
+  }
+}
+async function acrossRun(origin, f, lang, file, pic, png, SEC, ALT) {
+  const rtl = lang === 'ar';
+  const tag = `across (${rtl ? 'an Arabic book, right to left' : 'left to right'})`;
+  const ctx = await newContext({ viewport: { width: 1600, height: 1000 } });
+  class Stop extends Error {}
+  try {
+    const page = await openNext(ctx, origin);
+    const tool = await ctx.newPage(); // a blank page: the screenshot decoded there, outside the studio
+    const e0 = csp.errors.length;
+    const until = async (fn, arg, ms, what) => {
+      try {
+        await page.waitForFunction(fn, arg, { timeout: ms });
+      } catch (e) {
+        check(false, `${what} — not within ${ms / 1000} s (${String((e && e.message) || e).split('\n')[0]})`);
+        throw new Stop();
+      }
+    };
+    const shot = async (name, buf) => {
+      const out = path.join(OUT, `across-${lang}-${name}.png`);
+      writeFileSync(out, buf);
+      note(`${tag}: screenshot ${out}`);
+    };
+    await openBackup(page, file);
+    const sec0 = f.book.sections.find((s) => s.id === SEC);
+    const idx = f.book.sections.findIndex((s) => s.id === SEC);
+    await choose(page, idx);
+    await page.waitForSelector('#chPlate', { timeout: 60_000 });
+    const rowsNow = () => page.evaluate(() => {
+      const v = (id) => document.getElementById(id);
+      const txt = (id) => (v(id) ? v(id).textContent : null);
+      return {
+        plate: v('chPlate').value, fit: v('chPlateFit') ? v('chPlateFit').value : null, fits: v('chPlateFit') ? [...v('chPlateFit').options].map((o) => [o.value, o.textContent]) : [],
+        bd: v('chBackdrop').value, bdOff: v('chBackdrop').disabled, strength: v('chBackdropStrength') ? v('chBackdropStrength').value : null,
+        strengthOff: v('chBackdropStrength') ? v('chBackdropStrength').disabled : null, note: txt('plateAcrossNote'), soft: txt('plateAcrossSoft'),
+      };
+    });
+    const was = await rowsNow();
+    check(was.plate === sec0.plateId && was.bd === sec0.backdropId && !was.bdOff, `${tag}: "${sec0.title}" opens with its own plate (${was.plate}) and backdrop (${was.bd}, ${was.strength}), the backdrop rows enabled`);
+
+    // the picture uploaded as this chapter's plate, by the settings' own file input
+    await page.setInputFiles('#plateFileInput', { name: pic.name, mimeType: 'image/png', buffer: png });
+    await until((old) => { const v = document.getElementById('chPlate').value; return !!v && v !== old && !!document.getElementById('chPlateFit'); }, was.plate, 30_000, `${tag}: the uploaded picture becomes the plate`);
+    const up = await rowsNow();
+    // Ruling 12 (6e1d45a): this chapter has a backdrop stored, so the suggestion is today's answer (whole) and the backdrop
+    // stays as it was; the chapter without one is suggested Across in acrossSuggestRun. Across is chosen by hand below.
+    check(up.fit === 'whole' && up.fits.some(([v]) => v === 'across') && !up.bdOff && up.strengthOff === false && up.bd === was.bd && up.strength === was.strength && up.note === null && up.soft === null,
+      `${tag}: a 1600 x 1200 picture on 6 x 9, on a chapter with a backdrop stored, is suggested "Show the whole picture", not Across (Fit ${up.fit}; the options ${JSON.stringify(up.fits)}); the backdrop rows enabled (${!up.bdOff}) and the backdrop untouched (${up.bd}, ${up.strength}); no set-aside note (${up.note}), no soft note (${up.soft})`);
+    await page.selectOption('#chPlateFit', 'fill');
+    await until(() => !document.getElementById('chBackdrop').disabled && !document.getElementById('plateAcrossNote'), null, 10_000, `${tag}: Fill gives the backdrop rows back`);
+    const fill = await rowsNow();
+    check(fill.fit === 'fill' && !fill.bdOff && fill.strengthOff === false && fill.bd === was.bd && fill.strength === was.strength && fill.note === null && fill.soft === null,
+      `${tag}: switched to "Fill the page", the chapter's backdrop is back as it was (${fill.bd}, ${fill.strength}; enabled), no note`);
+    await page.selectOption('#chPlateFit', 'across');
+    await until(() => document.getElementById('chBackdrop').disabled && !!document.getElementById('plateAcrossNote'), null, 10_000, `${tag}: Across both pages sets the backdrop rows aside`);
+    const acr = await rowsNow();
+    const wantSoft = 'This picture gives 133 pixels per inch across both pages; it may print soft.'; // the interface is English in both runs
+    check(acr.fit === 'across' && acr.bdOff && acr.strengthOff === true && acr.bd === was.bd && acr.strength === was.strength
+      && acr.note === "The picture also covers the facing page, so this chapter's backdrop is set aside while this is chosen."
+      && acr.soft === wantSoft,
+      `${tag}: chosen "Across both pages" through the Fit select: Chapter backdrop and Backdrop strength disabled, still showing ${acr.bd} / ${acr.strength}; the note "${acr.note}"; the soft-print note "${acr.soft}" (1600 / 12 in = 133.3)`);
+    await page.fill('#chPlateAlt', ALT);
+    await page.locator('#plateFitRow').scrollIntoViewIfNeeded();
+    await shot('1-settings', await page.locator('#editorMeta').screenshot());
+    const stored = (await exportBackup(page)).json.book;
+    await page.keyboard.press('Escape');
+    const s1 = stored.sections.find((s) => s.id === SEC);
+    const im = stored.images.find((x) => x.id === s1.plateId);
+    check(s1.plateFit === 'across' && !!im && im.name === pic.name && im.data === pic.data && s1.plateAlt === ALT && s1.backdropId === sec0.backdropId && s1.backdropStrength === sec0.backdropStrength,
+      `${tag}: stored: plateFit "${s1.plateFit}", the plate is the uploaded picture byte for byte (${im ? im.data.length : 0} characters of base64), its alt text; the backdrop left stored (${s1.backdropId}, ${s1.backdropStrength})`);
+    const bdIm = stored.images.find((x) => x.id === s1.backdropId);
+    // what is looked for in the spread: 80 characters from inside each picture's coded data (not its header)
+    const mid = (s) => s.slice(Math.floor(s.length / 2), Math.floor(s.length / 2) + 80);
+    const bdHead = bdIm ? mid(bdIm.data) : null, picHead = mid(pic.data);
+
+    // the print preview, bleed off and on
+    for (const bleed of [false, true]) {
+      const btag = `${tag}, bleed ${bleed ? 'on' : 'off'}`;
+      await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExport')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+      if (!(await page.evaluate(() => document.getElementById('modalExport').classList.contains('open')))) await w5aOpenModal(page);
+      if ((await page.$eval('#tglBleed', (b) => b.getAttribute('aria-pressed'))) !== String(bleed)) await page.click('#tglBleed');
+      const bleedSaid = await page.$eval('#tglBleed', (b) => b.getAttribute('aria-pressed'));
+      await page.click('#btnOpenSpreads');
+      await until(() => document.getElementById('modalPrintView').classList.contains('open') && /\d/.test(document.getElementById('pivCounter').textContent), null, 120_000, `${btag}: the Print Interior View opens`);
+      const jumpTo = await page.$$eval('#pivJump option', (os, title) => (os.find((o) => o.textContent.includes(title)) || { value: null }).value, sec0.title);
+      if (jumpTo === null) { check(false, `${btag}: the view's jump list names "${sec0.title}"`); throw new Stop(); }
+      await page.selectOption('#pivJump', jumpTo);
+      if ((await page.$eval('#tglPivGuides', (b) => b.getAttribute('aria-pressed'))) === 'true') await page.click('#tglPivGuides');
+      await until(() => !!document.querySelector('#pivSpread .piv-plate-across') && !!document.querySelector('#pivSpread .piv-bleed.piv-across'), null, 120_000, `${btag}: the view shows the baked halves on "${sec0.title}"'s spread`);
+      // both halves decoded before the screenshot
+      await page.evaluate(async () => {
+        const sp = document.getElementById('pivSpread');
+        const a = sp.querySelector('.piv-plate-across');
+        const u = /url\("?([^")]+)"?\)/.exec(sp.querySelector('.piv-bleed.piv-across').style.backgroundImage)[1];
+        const b = new Image();
+        b.src = u;
+        await Promise.all([a.decode(), b.decode()]);
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      });
+      await page.waitForTimeout(300);
+      const geo = await page.evaluate(([bdHead, picHead]) => {
+        const sp = document.getElementById('pivSpread');
+        const plate = sp.querySelector('.piv-plate-across'), lay = sp.querySelector('.piv-bleed.piv-across');
+        const pl = plate.closest('.piv-page'), op = lay.closest('.piv-page');
+        const R = (e) => { const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; };
+        const tl = (e) => e.querySelector(':scope > .piv-trimline');
+        const clip = op.querySelector('.piv-clip');
+        const html = sp.innerHTML;
+        return {
+          sp: R(sp), plate: R(pl), open: R(op), img: R(plate), lay: R(lay), clip: clip ? R(clip) : null,
+          plateTrim: tl(pl) ? R(tl(pl)) : null, openTrim: tl(op) ? R(tl(op)) : null,
+          src: plate.getAttribute('src').slice(0, 23), bg: lay.style.backgroundImage.slice(0, 28), fit: getComputedStyle(plate).objectFit,
+          leaves: sp.querySelectorAll('.piv-page').length, spine: !!sp.querySelector('.piv-spine'), bleedOn: [pl, op].map((e) => e.classList.contains('piv-bleed-on')),
+          others: sp.querySelectorAll('.piv-plate-whole, .piv-plate-full').length, otherLayers: sp.querySelectorAll('.piv-bleed:not(.piv-across)').length,
+          inFlow: [...op.querySelectorAll('.piv-clip .bd-layer')].map((e) => getComputedStyle(e).display),
+          storedBd: bdHead ? html.includes(bdHead) : null, original: html.includes(picHead), guides: sp.querySelectorAll('.piv-guide').length,
+          // where the stored backdrop is, if anywhere: each element carrying it, how it is shown, and its area drawn on its leaf
+          bdWhere: bdHead ? [...sp.querySelectorAll('*')].filter((e) => [...e.attributes].some((a) => a.value.includes(bdHead)) || (e.tagName === 'STYLE' && e.textContent.includes(bdHead))).map((e) => {
+            const b = e.getBoundingClientRect(), cs = getComputedStyle(e), leaf = e.closest('.piv-page');
+            const lb = leaf ? leaf.getBoundingClientRect() : b;
+            const seen = Math.max(0, Math.min(b.right, lb.right) - Math.max(b.left, lb.left)) * Math.max(0, Math.min(b.bottom, lb.bottom) - Math.max(b.top, lb.top));
+            let hidden = false;
+            for (let x = e; x && x !== sp; x = x.parentElement) { const c = getComputedStyle(x); if (c.display === 'none' || c.visibility === 'hidden' || Number(c.opacity) === 0) hidden = true; }
+            const chain = [];
+            for (let x = e.parentElement; x && x !== sp && chain.length < 8; x = x.parentElement) chain.push(x.tagName.toLowerCase() + (x.classList.length ? '.' + [...x.classList].join('.') : ''));
+            const attr = [...e.attributes].filter((a) => a.value.includes(bdHead)).map((a) => a.name + '=' + a.value.slice(0, 40)).join(' ');
+            const others = [...e.attributes].filter((a) => !a.value.includes(bdHead)).map((a) => a.name + '="' + a.value.slice(0, 60) + '"').join(' ');
+            return `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} [${attr}…] [${others}] under ${chain.join(' < ')} in ${leaf ? [...leaf.classList].join('.') : '-'}${e.closest('.piv-clip') ? ' (in the text clip)' : ''}: display ${cs.display}, opacity ${cs.opacity}, ${hidden ? 'hidden' : 'shown'}, ${Math.round(b.width)} x ${Math.round(b.height)} px at ${Math.round(b.left - lb.left)}, ${Math.round(b.top - lb.top)} from its leaf, ${Math.round(seen)} px² on it`;
+          }) : null,
+          trim: document.getElementById('pivTrim').value, counter: document.getElementById('pivCounter').textContent.trim(), sub: document.getElementById('pivSub').textContent,
+        };
+      }, [bdHead, picHead]);
+      const near = (a, b) => Math.abs(a - b) <= 1;
+      const sameBox = (a, b) => near(a.l, b.l) && near(a.r, b.r) && near(a.t, b.t) && near(a.b, b.b);
+      const order = rtl ? geo.open.r <= geo.plate.l : geo.plate.r <= geo.open.l;
+      check(geo.trim === '6x9' && geo.leaves === 2 && geo.spine && order && bleedSaid === String(bleed) && geo.bleedOn.every((x) => x === bleed) && geo.guides === 0,
+        `${btag}: the view on 6 x 9 ("${geo.sub}"), "${geo.counter}": two leaves and the spine, the plate leaf ${rtl ? 'right' : 'left'} of the opening; bleed ${bleedSaid}, each leaf drawn with it ${JSON.stringify(geo.bleedOn)}; guides off`);
+      check(sameBox(geo.img, geo.plate) && geo.fit === 'fill' && geo.src.startsWith('data:image/jpeg') && sameBox(geo.lay, geo.open) && geo.bg.includes('data:image/jpeg'),
+        `${btag}: the verso half covers its whole leaf edge to edge (${Math.round(geo.img.r - geo.img.l)} x ${Math.round(geo.img.b - geo.img.t)} px on a ${Math.round(geo.plate.r - geo.plate.l)} x ${Math.round(geo.plate.b - geo.plate.t)} px leaf, object-fit ${geo.fit}); the recto half covers the opening leaf; both are the press's baked JPEGs`);
+      check(geo.others === 0 && geo.otherLayers === 0 && geo.inFlow.every((x) => x === 'none') && geo.storedBd === false && geo.original === false,
+        `${btag}: nothing else of the chapter's art is drawn: no whole or fill plate (${geo.others}), no other layer (${geo.otherLayers}), the in-flow layer hidden (${JSON.stringify(geo.inFlow)}), the stored backdrop nowhere (${geo.storedBd}${geo.bdWhere && geo.bdWhere.length ? ': ' + geo.bdWhere.join('; ') : ''}), the original picture nowhere (${geo.original})`);
+      if (bleed) {
+        const gutV = rtl ? geo.plateTrim && near(geo.plateTrim.l, geo.plate.l) : geo.plateTrim && near(geo.plateTrim.r, geo.plate.r);
+        const gutR = rtl ? geo.openTrim && near(geo.openTrim.r, geo.open.r) : geo.openTrim && near(geo.openTrim.l, geo.open.l);
+        const outer = geo.plateTrim ? Math.round(((geo.plate.r - geo.plate.l) - (geo.plateTrim.r - geo.plateTrim.l)) * 10) / 10 : null;
+        check(!!gutV && !!gutR && outer > 0, `${btag}: both trim boxes meet the spine (no bleed at the gutter); the bleed stands on the outer edge (${outer} px on the plate leaf)`);
+      }
+      // the screenshot, measured
+      const clip = { x: Math.floor(geo.sp.l), y: Math.floor(geo.sp.t), width: Math.ceil(geo.sp.r) - Math.floor(geo.sp.l), height: Math.ceil(geo.sp.b) - Math.floor(geo.sp.t) };
+      const buf = await page.screenshot({ clip });
+      await shot(`2-spread-bleed-${bleed ? 'on' : 'off'}`, buf);
+      const inner = geo.clip ? Math.floor(rtl ? geo.open.r - geo.clip.r : geo.clip.l - geo.open.l) - 2 : 0;
+      const win = Math.min(40, inner);
+      const halves = acrossHalvesOf(1600, 1200, { w: 6, h: 9 }, bleed ? 0.125 : 0, rtl);
+      const plateW = geo.plate.r - geo.plate.l, openW = geo.open.r - geo.open.l;
+      const expV = (acrossStripeIn(halves.verso) * plateW) / halves.verso.w, expR = (acrossStripeIn(halves.recto) * openW) / halves.recto.w;
+      if (!(win > Math.max(expV, expR) + 4)) { check(false, `${btag}: the gutter margin leaves room to measure the stripe (${win} px window, the stripe ${expV.toFixed(1)} / ${expR.toFixed(1)} px)`); throw new Stop(); }
+      const m = await tool.evaluate(ACROSS_MEASURE, [buf.toString('base64'), { ox: clip.x, oy: clip.y, plate: geo.plate, open: geo.open, rtl, win }]);
+      note(`${btag}: measured on a ${m.size.join(' x ')} px screenshot: ${m.rows[0]} rows through the stripe, ${m.rows[1]} below it; a ${win} px window each side; ${(plateW / halves.verso.w).toFixed(3)} screen px per source px on the verso, ${(openW / halves.recto.w).toFixed(3)} on the recto`);
+      check(Math.abs(m.runV - expV) <= ACROSS_RUN_TOL && Math.abs(m.runR - expR) <= ACROSS_RUN_TOL,
+        `${btag}: the gutter falls on the crop's centre line: the stripe shows ${m.runV.toFixed(2)} px on the verso side and ${m.runR.toFixed(2)} px on the recto side of the spine; acrossCrop puts ${acrossStripeIn(halves.verso)} and ${acrossStripeIn(halves.recto)} of its 48 source columns there (${expV.toFixed(2)} and ${expR.toFixed(2)} px; tolerance ${ACROSS_RUN_TOL})`);
+      check(m.join <= m.own + ACROSS_JOIN_TOL,
+        `${btag}: no gap or step at the gutter: the columns 3 px either side of the spine differ by ${m.join.toFixed(2)} (mean per channel), the picture's own difference over the same 3 + 3 px inside the leaves is ${m.own.toFixed(2)} (tolerance ${ACROSS_JOIN_TOL})`);
+      check(m.edges > 100 && m.paperN === 0, `${btag}: the verso is edge to edge: its outer column, top row and bottom row (3 px in) show the picture at ${m.edges} points, paper at ${m.paperN}`);
+      await page.click('#btnClosePrintView');
+      await until(() => !document.getElementById('modalPrintView').classList.contains('open'), null, 10_000, `${btag}: the view closes`);
+    }
+    if (await page.evaluate(() => document.getElementById('modalExport').classList.contains('open'))) await page.keyboard.press('Escape');
+    await until(() => !document.getElementById('modalExport').classList.contains('open'), null, 10_000, `${tag}: the export screen closes`);
+    note(`${tag}: with bleed on, the soft-print note reads "${await page.$eval('#plateAcrossSoft', (x) => x.textContent).catch(() => '(not shown)')}" (acrossCrop with bleed: 1589 / 12.25 in = 129.7)`);
+
+    // the EPUB (left to right): the server's build of the body the studio's export sends
+    if (!rtl) {
+      const body = await page.evaluate(() => window.beukExport.body('en'));
+      const sent = JSON.parse(body).book.sections.find((s) => s.id === SEC);
+      check(sent.plateFit === 'across', `${tag}: the body the export sends carries plateFit "${sent.plateFit}"`);
+      const built = w5aServerBuild([body], true);
+      if (built.error) {
+        check(false, `${tag}: the server's EPUB build ran (${built.error})`);
+      } else {
+        const r = built.results[0];
+        const sha = createHash('sha256').update(png).digest('hex');
+        const imgs = (r.files || []).filter((x) => x.sha256 === sha);
+        const texts = Object.entries(r.texts || {});
+        const name = imgs.length ? imgs[0].path.split('/').pop() : null;
+        const pages = name ? texts.filter(([, t]) => t.includes(`../Images/${name}"`)) : [];
+        const want = `<div class="plate-full plate-whole"><img src="../Images/${name}" alt="${ALT}"/></div>`;
+        check(!r.error && imgs.length === 1 && pages.length === 1 && pages[0][1].includes(want),
+          `${tag}: the EPUB (${r.filename}) carries the picture once, byte for byte (${imgs.map((x) => x.path).join(', ') || 'none'}), on one plate page (${pages.map(([p]) => p).join(', ') || 'none'}) as the whole picture with its alt text: ${pages.length && pages[0][1].includes(want) ? want : '(not found)'}`);
+        check(!texts.some(([, t]) => /plate-across|bd-baked/.test(t)), `${tag}: nothing of print's halves in the EPUB (no plate-across, no bd-baked in ${texts.length} text files)`);
+        const opening = texts.find(([p, t]) => p.endsWith('.xhtml') && !/toc|nav|plate_/.test(p) && t.includes(sec0.title));
+        // the chapter's stored backdrop is set aside on the e-reader too: no layer in its XHTML, its picture not shipped
+        // (the backdrop is a picture of its own here, so its bytes and its file name are its alone)
+        const bdSha = bdIm ? createHash('sha256').update(Buffer.from(bdIm.data, 'base64')).digest('hex') : null;
+        const bdShipped = bdSha ? (r.files || []).filter((x) => x.sha256 === bdSha).map((x) => x.path) : [];
+        const bdLayer = opening ? (/<div class="bd-layer[^"]*"[^>]*>/.exec(opening[1]) || [''])[0] : null;
+        const bdNamed = texts.filter(([, t]) => t.includes(`-${s1.backdropId}.`)).map(([p]) => p);
+        check(!!opening && bdLayer === '' && !/has-backdrop/.test(opening[1]) && bdShipped.length === 0 && bdNamed.length === 0,
+          `${tag}: the chapter's stored backdrop is set aside in the EPUB: its XHTML (${opening ? opening[0] : 'not found'}) has no backdrop layer (${bdLayer === '' ? 'none' : bdLayer && bdLayer.slice(0, 80)}), its picture is not shipped (${bdShipped.join(', ') || 'none'}) and no file names it (${bdNamed.join(', ') || 'none'})`);
+      }
+    }
+
+    // the control: Fit back to "Fill the page", and the print view draws the chapter's own backdrop again beside the
+    // plate — the search above for it finds it when it is there
+    await page.selectOption('#chPlateFit', 'fill');
+    await until(() => !document.getElementById('chBackdrop').disabled, null, 10_000, `${tag}: Fill gives the backdrop rows back (the control)`);
+    await page.waitForFunction(() => !!window.beukExport && document.getElementById('btnExport')?.getAttribute('aria-disabled') === null, null, { timeout: 60_000 });
+    await w5aOpenModal(page);
+    await page.click('#btnOpenSpreads');
+    await until(() => document.getElementById('modalPrintView').classList.contains('open') && /\d/.test(document.getElementById('pivCounter').textContent), null, 120_000, `${tag}: the Print Interior View opens (the control)`);
+    const jumpBack = await page.$$eval('#pivJump option', (os, title) => (os.find((o) => o.textContent.includes(title)) || { value: null }).value, sec0.title);
+    if (jumpBack !== null) await page.selectOption('#pivJump', jumpBack);
+    await until((h) => { const sp = document.getElementById('pivSpread'); return !!sp.querySelector('.piv-plate-full') && sp.innerHTML.includes(h); }, bdHead, 60_000,
+      `${tag}: switched back to "Fill the page", the print view draws the plate filled and the chapter's own backdrop beside it (the control for "the stored backdrop nowhere")`);
+    const ctl = await page.evaluate((h) => { const sp = document.getElementById('pivSpread'); return { full: sp.querySelectorAll('.piv-plate-full').length, across: sp.querySelectorAll('.piv-plate-across, .piv-across').length, layers: [...sp.querySelectorAll('.piv-bleed')].filter((l) => l.style.backgroundImage.includes(h)).length }; }, bdHead);
+    check(ctl.full === 1 && ctl.across === 0 && ctl.layers === 1, `${tag}: the control: back on "Fill the page" the spread has the plate filled (${ctl.full}), no across half (${ctl.across}), and the chapter's own stored backdrop laid over the opening (${ctl.layers}) — the backdrop comes back as it was`);
+    await page.click('#btnClosePrintView');
+    await until(() => !document.getElementById('modalPrintView').classList.contains('open'), null, 10_000, `${tag}: the view closes (the control)`);
+    if (await page.evaluate(() => document.getElementById('modalExport').classList.contains('open'))) await page.keyboard.press('Escape');
+    if (!rtl && bdIm) {
+      // and the EPUB at Fill: the same search finds the stored backdrop's layer and its picture
+      const built2 = w5aServerBuild([await page.evaluate(() => window.beukExport.body('en'))], true);
+      const r2 = built2.error ? null : built2.results[0];
+      const bdSha2 = createHash('sha256').update(Buffer.from(bdIm.data, 'base64')).digest('hex');
+      const file2 = r2 ? ((r2.files || []).find((x) => x.sha256 === bdSha2) || { path: '' }).path.split('/').pop() : '';
+      const open2 = r2 ? Object.entries(r2.texts || {}).find(([p, t]) => p.endsWith('.xhtml') && !/toc|nav|plate_/.test(p) && t.includes(sec0.title)) : null;
+      const layer2 = open2 ? (/<div class="bd-layer[^"]*"[^>]*>/.exec(open2[1]) || [''])[0] : '';
+      check(!!r2 && !!file2 && layer2.includes(`../Images/${file2}`), `${tag}: the control, EPUB: back on "Fill the page" the chapter's XHTML (${open2 ? open2[0] : 'not found'}) draws the stored backdrop again (${layer2 ? layer2.replace(/url\(([^)]{0,60})[^)]*\)/, 'url($1…)') : built2.error || 'no layer'}), its picture shipped (${file2 || 'not shipped'})`);
+    }
+
+    await harvestCsp(page);
+    check(csp.errors.length === e0, `${tag}: no page error and no console error in the block (${csp.errors.length - e0}${csp.errors.length > e0 ? ': ' + csp.errors.slice(e0).join(' | ') : ''})`);
+  } catch (e) {
+    if (!(e instanceof Stop)) check(false, `${tag}: the run threw: ${e && e.stack ? e.stack : e}`);
+  } finally {
+    await ctx.close();
+  }
+}
+
 /* ---- cover picture: move and zoom (design 2026-11-27): coverpanChecks (E2E_ONLY=coverpan) ----
    The production build, a real Chromium, the Lantern Coast book. In the cover maker: a picture is uploaded as the
    writer's art (four coloured quarters, 1200 × 800, so where it sits shows), the picture's controls appear; the
@@ -11323,6 +11742,7 @@ try {
   if (run('wave5d')) await wave5dChecks(srv.origin);
   if (run('proof')) await proofChecks(srv.origin);
   if (run('everyChapter')) await everyChapterChecks(srv.origin);
+  if (run('across')) await acrossChecks(srv.origin);
   if (run('wave6')) await wave6Checks(srv.origin);
   if (run('wave7a')) await wave7aChecks();
   if (run('wave7b')) await wave7bChecks();

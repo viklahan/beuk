@@ -255,11 +255,32 @@ export function imageById(ydoc: Y.Doc, id: unknown): BookImage | null {
 }
 
 /** BEUK:platefit — the fit a newly chosen plate picture is given: 1.0's plateFitFor (whole when filling the page would
- *  cut more than a tenth of the picture, by its pixel size, or when its size cannot be read) against the BOOK's trim
- *  (its stored printTrim, else 1.0's default for a book that has none). `im` carries its bytes (imageById, an upload). */
-export function plateFitFor(c: Closure, ydoc: Y.Doc, im: BookImage): 'fill' | 'whole' {
+ *  cut more than a tenth of the picture, by its pixel size, or when its size cannot be read; across for a picture near
+ *  the open spread's shape, but never for a chapter with a backdrop stored, which across would set aside unasked)
+ *  against the BOOK's trim (its stored printTrim, else 1.0's default for a book that has none). `im` carries its bytes
+ *  (imageById, an upload); `section` is the chapter taking it (only its stored backdropId is read). */
+export function plateFitFor(c: Closure, ydoc: Y.Doc, im: BookImage, section: Y.Map<unknown> | null): 'fill' | 'whole' | 'across' {
   const trim = ydoc.getMap<unknown>(META).get('printTrim');
-  return c.api.plateFitFor(im, typeof trim === 'string' && trim ? trim : String(c.api.bookPrintDefaults().printTrim));
+  return c.api.plateFitFor(im, typeof trim === 'string' && trim ? trim : String(c.api.bookPrintDefaults().printTrim), { backdropId: sectionKey(section, 'backdropId') ?? null });
+}
+
+/** BEUK:across — whether the chapter's backdrop is set aside, by the output's own rule: 1.0's acrossSetsBackdropAside
+ *  (a body chapter whose plate is drawn — plateImage: its picture in the library and its alt text — with the fit
+ *  across), run against this book's library. The section's four keys are read as 1.0's normalizeSection reads them
+ *  (kind "body" when absent, a non-string plate or alt is none), since the output judges the normalized section. */
+export function backdropSetAside(c: Closure, ydoc: Y.Doc, section: Y.Map<unknown>): boolean {
+  const str = (k: string): unknown => sectionKey(section, k);
+  const kind = str('kind');
+  const plateId = str('plateId');
+  const plateAlt = str('plateAlt');
+  const s = { kind: kind || 'body', plateId: typeof plateId === 'string' ? plateId : null, plateAlt: typeof plateAlt === 'string' ? plateAlt : '', plateFit: str('plateFit') };
+  const prev = c.getState();
+  try {
+    c.setState({ images: storedImages(ydoc), sections: [], meta: {} } as never);
+    return c.api.acrossSetsBackdropAside(s);
+  } finally {
+    c.setState(prev);
+  }
 }
 
 /** 1.0's pickerImages for the chapter-art pickers. It reads the library and, per section, the pictures its text, its
