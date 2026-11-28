@@ -3,7 +3,7 @@ import { requireAuth } from '../auth.js';
 import {
   approveReader,
   ArcError,
-  campaignForManuscript,
+  campaignsForManuscript,
   campaignJson,
   closeCampaign,
   createCampaign,
@@ -29,16 +29,19 @@ import { sendEpubError } from './epub.js';
  * owner-scoped by the session's user id, never the request; another
  * writer's book or campaign answers as if it did not exist (404), so
  * existence is not leaked, as src/routes/shares.ts does):
- *   GET    /api/arc?manuscriptId=   { mail: arcMailStatus, campaign | null }
+ *   GET    /api/arc?manuscriptId=   { mail: arcMailStatus, campaign | null, campaigns, signupUrl | null }
+ *                                   campaigns: every one of the book's campaigns, the one not
+ *                                   ended first (ruling P8); campaign: campaigns[0] ?? null;
+ *                                   signupUrl: the not-ended one's link (derived again, never
+ *                                   stored: final review Important 3), else null
  *   POST   /api/arc                 start a campaign → 201 { campaign, signupToken, signupUrl }
- *                                   (the token ONCE; only its hash is stored)
  *   GET    /api/arc/:id/readers     { readers } (waiting, claimed, declined; oldest first)
  *   POST   /api/arc/:id/readers/:rid/approve   { reader, mail } — 503/429 { error, mail } when the email can't go
  *   POST   /api/arc/:id/readers/:rid/decline   { reader, mail }
  *   POST   /api/arc/:id/readers/:rid/revoke    { reader } ("Close this copy")
  *   POST   /api/arc/:id/close       { campaign } (copies already given keep working)
  *   PUT    /api/arc/:id             { maxClaims?, closesAt? } → { campaign }
- *   POST   /api/arc/:id/signup-link { signupToken, signupUrl } (409 once ended)
+ *   POST   /api/arc/:id/signup-link { signupToken, signupUrl } (the old link dies; 409 once ended)
  *   DELETE /api/arc/:id             204
  * POST /api/arc is gated as shares.create (src/access.ts); every other route
  * is never paused: a running campaign keeps delivering.
@@ -65,8 +68,8 @@ export function arcOwnerRoutes(deps: ArcDeps): Router {
     try {
       const mid = typeof req.query.manuscriptId === 'string' ? req.query.manuscriptId : '';
       if (!isUuid(mid)) return res.status(400).json({ error: 'manuscriptId is required: the book to show the campaign of' });
-      const campaign = await campaignForManuscript(deps, req.user!.id, mid);
-      return res.json({ mail: arcMailStatus(deps.config), campaign });
+      const { campaigns, signupUrl: link } = await campaignsForManuscript(deps, req.user!.id, mid);
+      return res.json({ mail: arcMailStatus(deps.config), campaign: campaigns[0] ?? null, campaigns, signupUrl: link });
     } catch (err) {
       return next(err);
     }
@@ -160,7 +163,7 @@ export function arcOwnerRoutes(deps: ArcDeps): Router {
     try {
       const c = await owned(req, res);
       if (!c) return;
-      const signupToken = await rotateSignup(deps.db, c);
+      const signupToken = await rotateSignup(deps.db, deps.config, c);
       return res.json({ signupToken, signupUrl: signupUrl(deps.config, signupToken) });
     } catch (err) {
       return fail(res, next, err);

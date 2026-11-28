@@ -130,19 +130,12 @@ export function renderClaimPage(
 ): string {
   const t = arcT(view.lang);
   const approval = view.campaign.approval_mode === 'approval';
-  const v = opts.values ?? {};
   const base = `/arc/${opts.signup}`;
   const blurb = view.blurb
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean)
     .map((p) => html`<p>${p}</p>`);
-  const profile = approval
-    ? html`
-      <label for="arcProfile">${t('arc.claim.profile')}</label>
-      <input type="url" id="arcProfile" name="profile" maxlength="300" required inputmode="url" value="${v.profile ?? ''}" />
-      <p class="note">${t('arc.claim.profileNote', { author: view.author })}</p>`
-    : '';
   const body = html`      <h1>${heading(t, view)}</h1>
       ${errorBox(claimError(t, view, opts.error, CLAIM_ERR))}
       ${view.hasCover ? html`<img class="cover" src="${base}/cover" alt="${t('arc.claim.cover', { title: view.title })}" />` : ''}
@@ -150,7 +143,23 @@ export function renderClaimPage(
       ${blurb.length ? html`<div class="blurb">${blurb}</div>` : ''}
       <p>${t('arc.claim.review')}</p>
       ${approval ? html`<p class="note">${t('arc.claim.approvalNote', { author: view.author })}</p>` : ''}
-      <form method="post" action="${base}" autocomplete="on">
+      ${claimForm(t, view, base, opts.values ?? {})}
+      <p class="note">${t('arc.claim.stampNote')}</p>`;
+  return shell({ nonce: opts.nonce, lang: view.lang, title: heading(t, view), body, script: tzScript(opts.nonce) });
+}
+
+/** The claim form (name, email; approval mode: the profile link; the tz
+ *  and honeypot fields), posting to the signup link. The claim page and
+ *  the closed page's lost-link form share it. */
+function claimForm(t: T, view: Pick<SignupView, 'campaign' | 'author'>, base: string, v: ClaimValues): SafeHtml {
+  const profile =
+    view.campaign.approval_mode === 'approval'
+      ? html`
+      <label for="arcProfile">${t('arc.claim.profile')}</label>
+      <input type="url" id="arcProfile" name="profile" maxlength="300" required inputmode="url" value="${v.profile ?? ''}" />
+      <p class="note">${t('arc.claim.profileNote', { author: view.author })}</p>`
+      : '';
+  return html`<form method="post" action="${base}" autocomplete="on">
       <label for="arcName">${t('arc.claim.name')}</label>
       <input type="text" id="arcName" name="name" maxlength="60" required autocomplete="name" value="${v.name ?? ''}" />
       <label for="arcEmail">${t('arc.claim.email')}</label>
@@ -159,12 +168,13 @@ export function renderClaimPage(
       <div class="hp" aria-hidden="true"><label for="arcWebsite">${t('arc.claim.honeypot')}</label><input type="text" id="arcWebsite" name="website" tabindex="-1" autocomplete="off" /></div>
       <p class="note">${t('arc.claim.codeNote')}</p>
       <button type="submit">${t('arc.claim.submit')}</button>
-      </form>
-      <p class="note">${t('arc.claim.stampNote')}</p>`;
-  // The reader's own zone, for later slices' reminders; the form works without it.
-  const script = html`    <script nonce="${opts.nonce}">try{document.getElementById('arcTz').value=Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){}</script>
+      </form>`;
+}
+
+/** The reader's own zone, for later slices' reminders; the form works without it. */
+function tzScript(nonce: string): SafeHtml {
+  return html`    <script nonce="${nonce}">try{document.getElementById('arcTz').value=Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){}</script>
 `;
-  return shell({ nonce: opts.nonce, lang: view.lang, title: heading(t, view), body, script });
 }
 
 /** The code page: where the code went, the code field, and a way back for
@@ -208,13 +218,28 @@ export function renderWaitingPage(view: Pick<SignupView, 'title' | 'author' | 'l
   return shell({ nonce: opts.nonce, lang: view.lang, title, body });
 }
 
-/** Sign-ups closed (by date, or by the author): the 410 page. */
-export function renderClosedPage(view: Pick<SignupView, 'title' | 'author' | 'lang'>, opts: { nonce: string }): string {
+/**
+ * Sign-ups closed (by date, or by the author): the 410 page. With the
+ * signup token it also offers the lost-link form (final review minor 1: a
+ * reader who holds a copy can ask for its link again, as copies keep
+ * working after a close), and shows why a request through it was refused.
+ */
+export function renderClosedPage(
+  view: Pick<SignupView, 'campaign' | 'title' | 'author' | 'lang'>,
+  opts: { nonce: string; signup?: string; values?: ClaimValues; error?: ClaimRefusal },
+): string {
   const t = arcT(view.lang);
+  const recover = opts.signup
+    ? html`
+      <p>${t('arc.page.closedRecover')}</p>
+      ${claimForm(t, view, `/arc/${opts.signup}`, opts.values ?? {})}`
+    : '';
+  const why = opts.error && opts.error !== 'closed' ? claimError(t, view, opts.error, CLAIM_ERR) : null;
   const body = html`      <h1>${t('arc.page.closedTitle')}</h1>
       <p class="note">${heading(t, view)}</p>
-      <p class="lede">${t('arc.claim.err.closed')}</p>`;
-  return shell({ nonce: opts.nonce, lang: view.lang, title: t('arc.page.closedTitle'), body });
+      <p class="lede">${t('arc.claim.err.closed')}</p>${recover}
+      ${errorBox(why)}`;
+  return shell({ nonce: opts.nonce, lang: view.lang, title: t('arc.page.closedTitle'), body, script: opts.signup ? tzScript(opts.nonce) : undefined });
 }
 
 /* ---------------- Task 7: the reader's copy and the mail links ---------------- */
@@ -297,14 +322,21 @@ export function renderMailActionPage(view: MailPageView, opts: { nonce: string; 
 }
 
 /** After the button: what was done. Not me adds what backups keep (the
- *  privacy page's words, no stronger). */
-export function renderMailDonePage(view: MailPageView, opts: { nonce: string; action: MailAction }): string {
+ *  privacy page's words, no stronger); Stop says the copy keeps working
+ *  only to a reader who holds a copy that still opens (ruling C7). */
+export function renderMailDonePage(view: MailPageView & { copyOpen?: boolean }, opts: { nonce: string; action: MailAction }): string {
   const t = arcT(view.lang);
   const vars = { title: view.title, author: view.author };
+  const extra =
+    opts.action === 'not-me'
+      ? html`<p class="note">${t('arc.notMe.backups')}</p>`
+      : view.copyOpen
+        ? html`<p>${t('arc.stop.doneCopy')}</p>`
+        : '';
   const body = html`      <h1>${t('arc.mail.doneTitle')}</h1>
       <p class="note">${heading(t, view)}</p>
       <p class="lede">${t(MAIL_PAGE[opts.action].done, vars)}</p>
-      ${opts.action === 'not-me' ? html`<p class="note">${t('arc.notMe.backups')}</p>` : ''}`;
+      ${extra}`;
   return shell({ nonce: opts.nonce, lang: view.lang, title: t('arc.mail.doneTitle'), body });
 }
 
@@ -325,6 +357,16 @@ export function renderMailUnavailablePage(view: MailPageView, opts: { nonce: str
       <p class="note">${heading(t, view)}</p>
       ${errorBox(t('arc.mail.unavailable'))}`;
   return shell({ nonce: opts.nonce, lang: view.lang, title, body });
+}
+
+/** A form body the server refused to read (too long, too many fields;
+ *  ruling C7): a calm page, in English — the body is refused before the
+ *  route reads its link, so no book and no language is known. */
+export function renderBadFormPage(opts: { nonce: string }): string {
+  const t = arcT('en');
+  const body = html`      <h1>${t('arc.page.badFormTitle')}</h1>
+      <p class="lede">${t('arc.page.badForm')}</p>`;
+  return shell({ nonce: opts.nonce, lang: 'en', title: t('arc.page.badFormTitle'), body });
 }
 
 /** No campaign behind the link: the 404 page, in English (no book to take

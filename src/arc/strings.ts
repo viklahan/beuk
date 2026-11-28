@@ -51,6 +51,10 @@ export const ARC_EN = {
   'arc.mail.code.subject': 'Your code for {title}',
   'arc.mail.code.lead': 'Your code is {code}.',
   'arc.mail.code.body': 'Enter it on the page where you asked for an advance copy of {title} from {author}.',
+  // Final fix wave (ruling C6): the code page itself, so the address's owner can use a code someone else asked for.
+  'arc.mail.code.link': 'Or enter it on this page: {url}',
+  // Final fix wave (final review Important 1): the name the code confirms, the one that goes on the copy.
+  'arc.mail.code.for': "This code is for {name}. If that isn't you, don't enter it: ask for a new code with your own name instead.",
   'arc.mail.code.ignore': "If you didn't ask for a copy, you can ignore this email.",
 
   // Instant mode: the copy is ready.
@@ -150,7 +154,9 @@ export const ARC_EN = {
   'arc.stop.title': 'No more email from {author}',
   'arc.stop.body': "Press the button and Beuk won't send you any more email about {author}'s books. Your copy keeps working.",
   'arc.stop.button': 'Stop these emails',
-  'arc.stop.done': "Beuk won't send you any more email about {author}'s books. Your copy keeps working.",
+  // Ruling C7: "Your copy keeps working" is said only to a reader who holds a copy that still opens (arc.stop.doneCopy).
+  'arc.stop.done': "Beuk won't send you any more email about {author}'s books.",
+  'arc.stop.doneCopy': 'Your copy keeps working.',
   'arc.mail.doneTitle': 'Done',
   // A used or unknown mail link: the 404 page.
   'arc.mail.goneTitle': 'This link no longer works',
@@ -162,6 +168,11 @@ export const ARC_EN = {
   'arc.page.unknownTitle': "We couldn't find this page",
   'arc.page.unknown': 'The link may be incomplete. Check that it was copied in full.',
   'arc.page.closedTitle': 'Sign-ups have closed',
+  // Final fix wave (final review minor 1): a reader who holds a copy can get its link again after sign-ups close.
+  'arc.page.closedRecover': 'Already have a copy and lost its link? Enter the name and email you used, and Beuk will email you a code to open it again.',
+  // Ruling C7: a form the server could not read (too long, too many fields). English only: refused before its link was read.
+  'arc.page.badFormTitle': "This form couldn't be read",
+  'arc.page.badForm': 'It was longer than this page accepts, so nothing was sent. Please go back and try again.',
   'arc.foot.privacy': 'Privacy',
   'arc.foot.terms': 'Terms',
 } as const;
@@ -173,9 +184,19 @@ export type ArcKey = keyof typeof ARC_EN;
  *   - the stamp and the added page's title (ruling F16: an unsigned
  *     translation inside a reader's EPUB cannot be recalled from a device);
  *   - the used-mail-link page (renderMailGonePage): a used Not me link
- *     names nobody any more, so there is no reader language to use.
+ *     names nobody any more, so there is no reader language to use;
+ *   - the unreadable-form page (renderBadFormPage, ruling C7): the body is
+ *     refused before the route reads its link, so no book or reader is
+ *     known, and so no language.
  */
-export const ARC_ENGLISH_ONLY = ['arc.stamp', 'arc.stampPage.title', 'arc.mail.goneTitle', 'arc.mail.gone'] as const satisfies readonly ArcKey[];
+export const ARC_ENGLISH_ONLY = [
+  'arc.stamp',
+  'arc.stampPage.title',
+  'arc.mail.goneTitle',
+  'arc.mail.gone',
+  'arc.page.badFormTitle',
+  'arc.page.badForm',
+] as const satisfies readonly ArcKey[];
 export type ArcDraftKey = Exclude<ArcKey, (typeof ARC_ENGLISH_ONLY)[number]>;
 /** One UNSIGNED draft table: every key but the English-only ones (tsc
  *  refuses a missing or an extra key). */
@@ -213,6 +234,8 @@ const ES: Draft = {
   'arc.mail.code.subject': "Tu código para {title}",
   'arc.mail.code.lead': "Tu código es {code}.",
   'arc.mail.code.body': "Escríbelo en la página donde pediste a {author} un ejemplar anticipado de {title}.",
+  'arc.mail.code.link': "O escríbelo en esta página: {url}",
+  'arc.mail.code.for': "Este código es para {name}. Si no eres tú, no lo escribas: pide un código nuevo con tu propio nombre.",
   'arc.mail.code.ignore': "Si no pediste ningún ejemplar, puedes ignorar este correo.",
   'arc.mail.ready.subject': "Tu ejemplar anticipado de {title}",
   'arc.mail.ready.lead': "Aquí tienes tu ejemplar anticipado de {title}, enviado por {author}.",
@@ -280,12 +303,14 @@ const ES: Draft = {
   'arc.stop.title': "No recibir más correos de {author}",
   'arc.stop.body': "Pulsa el botón y Beuk no te enviará más correos sobre los libros de {author}. Tu ejemplar sigue funcionando.",
   'arc.stop.button': "Dejar de recibir estos correos",
-  'arc.stop.done': "Beuk no te enviará más correos sobre los libros de {author}. Tu ejemplar sigue funcionando.",
+  'arc.stop.done': "Beuk no te enviará más correos sobre los libros de {author}.",
+  'arc.stop.doneCopy': "Tu ejemplar sigue funcionando.",
   'arc.mail.doneTitle': "Hecho",
   'arc.mail.unavailable': "Beuk no puede hacer esto ahora mismo, así que no se ha cambiado nada. Vuelve a intentarlo más tarde.",
   'arc.page.unknownTitle': "No hemos encontrado esta página",
   'arc.page.unknown': "Puede que el enlace esté incompleto. Comprueba que lo copiaste entero.",
   'arc.page.closedTitle': "Las inscripciones están cerradas",
+  'arc.page.closedRecover': "¿Ya tienes un ejemplar y perdiste su enlace? Escribe el nombre y el correo que usaste, y Beuk te enviará un código para volver a abrirlo.",
   'arc.foot.privacy': "Privacidad",
   'arc.foot.terms': "Condiciones",
 };
@@ -302,6 +327,8 @@ const FR: Draft = {
   'arc.mail.code.subject': "Votre code pour {title}",
   'arc.mail.code.lead': "Votre code est {code}.",
   'arc.mail.code.body': "Saisissez-le sur la page où vous avez demandé un exemplaire en avant-première de {title}, offert par {author}.",
+  'arc.mail.code.link': "Ou saisissez-le sur cette page : {url}",
+  'arc.mail.code.for': "Ce code est pour {name}. Si ce n'est pas vous, ne le saisissez pas : demandez plutôt un nouveau code à votre nom.",
   'arc.mail.code.ignore': "Si vous n'avez pas demandé d'exemplaire, vous pouvez ignorer cet e-mail.",
   'arc.mail.ready.subject': "Votre exemplaire en avant-première de {title}",
   'arc.mail.ready.lead': "Voici votre exemplaire en avant-première de {title}, envoyé par {author}.",
@@ -369,12 +396,14 @@ const FR: Draft = {
   'arc.stop.title': "Plus aucun e-mail envoyé par {author}",
   'arc.stop.body': "Appuyez sur le bouton et Beuk ne vous enverra plus d'e-mails au sujet des livres écrits par {author}. Votre exemplaire continue de fonctionner.",
   'arc.stop.button': "Arrêter ces e-mails",
-  'arc.stop.done': "Beuk ne vous enverra plus d'e-mails au sujet des livres écrits par {author}. Votre exemplaire continue de fonctionner.",
+  'arc.stop.done': "Beuk ne vous enverra plus d'e-mails au sujet des livres écrits par {author}.",
+  'arc.stop.doneCopy': "Votre exemplaire continue de fonctionner.",
   'arc.mail.doneTitle': "C'est fait",
   'arc.mail.unavailable': "Beuk ne peut pas faire cela pour le moment : rien n'a donc été modifié. Veuillez réessayer plus tard.",
   'arc.page.unknownTitle': "Nous n'avons pas trouvé cette page",
   'arc.page.unknown': "Le lien est peut-être incomplet. Vérifiez qu'il a été copié en entier.",
   'arc.page.closedTitle': "Les inscriptions sont closes",
+  'arc.page.closedRecover': "Vous avez déjà un exemplaire et vous avez perdu son lien ? Saisissez le nom et l'adresse e-mail que vous aviez donnés, et Beuk vous enverra un code pour le rouvrir.",
   'arc.foot.privacy': "Confidentialité",
   'arc.foot.terms': "Conditions",
 };
@@ -391,6 +420,8 @@ const DE: Draft = {
   'arc.mail.code.subject': "Ihr Code für {title}",
   'arc.mail.code.lead': "Ihr Code lautet {code}.",
   'arc.mail.code.body': "Geben Sie ihn auf der Seite ein, auf der Sie bei {author} ein Vorab-Exemplar von {title} angefragt haben.",
+  'arc.mail.code.link': "Oder geben Sie ihn auf dieser Seite ein: {url}",
+  'arc.mail.code.for': "Dieser Code gilt für {name}. Wenn Sie das nicht sind, geben Sie ihn nicht ein: Fordern Sie stattdessen einen neuen Code mit Ihrem eigenen Namen an.",
   'arc.mail.code.ignore': "Wenn Sie kein Exemplar angefragt haben, können Sie diese E-Mail ignorieren.",
   'arc.mail.ready.subject': "Ihr Vorab-Exemplar von {title}",
   'arc.mail.ready.lead': "Hier ist Ihr Vorab-Exemplar von {title}, gesendet von {author}.",
@@ -458,12 +489,14 @@ const DE: Draft = {
   'arc.stop.title': "Keine E-Mails mehr von {author}",
   'arc.stop.body': "Drücken Sie auf die Schaltfläche, dann sendet Beuk Ihnen keine E-Mails mehr zu den Büchern von {author}. Ihr Exemplar funktioniert weiter.",
   'arc.stop.button': "Diese E-Mails beenden",
-  'arc.stop.done': "Beuk sendet Ihnen keine E-Mails mehr zu den Büchern von {author}. Ihr Exemplar funktioniert weiter.",
+  'arc.stop.done': "Beuk sendet Ihnen keine E-Mails mehr zu den Büchern von {author}.",
+  'arc.stop.doneCopy': "Ihr Exemplar funktioniert weiter.",
   'arc.mail.doneTitle': "Erledigt",
   'arc.mail.unavailable': "Beuk kann das gerade nicht tun, daher wurde nichts geändert. Bitte versuchen Sie es später noch einmal.",
   'arc.page.unknownTitle': "Wir konnten diese Seite nicht finden",
   'arc.page.unknown': "Der Link ist vielleicht unvollständig. Prüfen Sie, ob er vollständig kopiert wurde.",
   'arc.page.closedTitle': "Die Anmeldung ist geschlossen",
+  'arc.page.closedRecover': "Sie haben schon ein Exemplar und den Link verloren? Geben Sie den Namen und die E-Mail-Adresse ein, die Sie verwendet haben, und Beuk schickt Ihnen einen Code, um es wieder zu öffnen.",
   'arc.foot.privacy': "Datenschutz",
   'arc.foot.terms': "Nutzungsbedingungen",
 };
@@ -480,6 +513,8 @@ const IT: Draft = {
   'arc.mail.code.subject': "Il tuo codice per {title}",
   'arc.mail.code.lead': "Il tuo codice è {code}.",
   'arc.mail.code.body': "Inseriscilo nella pagina in cui hai chiesto a {author} una copia in anteprima di {title}.",
+  'arc.mail.code.link': "Oppure inseriscilo in questa pagina: {url}",
+  'arc.mail.code.for': "Questo codice è per {name}. Se non sei tu, non inserirlo: chiedi invece un nuovo codice con il tuo nome.",
   'arc.mail.code.ignore': "Se non hai chiesto nessuna copia, puoi ignorare questa email.",
   'arc.mail.ready.subject': "La tua copia in anteprima di {title}",
   'arc.mail.ready.lead': "Ecco la tua copia in anteprima di {title}, inviata da {author}.",
@@ -547,12 +582,14 @@ const IT: Draft = {
   'arc.stop.title': "Niente più email da {author}",
   'arc.stop.body': "Premi il pulsante e Beuk non ti invierà più email sui libri di {author}. La tua copia continua a funzionare.",
   'arc.stop.button': "Interrompi queste email",
-  'arc.stop.done': "Beuk non ti invierà più email sui libri di {author}. La tua copia continua a funzionare.",
+  'arc.stop.done': "Beuk non ti invierà più email sui libri di {author}.",
+  'arc.stop.doneCopy': "La tua copia continua a funzionare.",
   'arc.mail.doneTitle': "Fatto",
   'arc.mail.unavailable': "Beuk non può farlo in questo momento, quindi non è stato cambiato nulla. Riprova più tardi.",
   'arc.page.unknownTitle': "Non abbiamo trovato questa pagina",
   'arc.page.unknown': "Il link potrebbe essere incompleto. Controlla di averlo copiato per intero.",
   'arc.page.closedTitle': "Le iscrizioni sono chiuse",
+  'arc.page.closedRecover': "Hai già una copia e ne hai perso il link? Inserisci il nome e l'email che hai usato, e Beuk ti invierà un codice per riaprirla.",
   'arc.foot.privacy': "Privacy",
   'arc.foot.terms': "Termini",
 };
@@ -569,6 +606,8 @@ const PT: Draft = {
   'arc.mail.code.subject': "O seu código para {title}",
   'arc.mail.code.lead': "O seu código é {code}.",
   'arc.mail.code.body': "Introduza-o na página onde pediu a {author} um exemplar antecipado de {title}.",
+  'arc.mail.code.link': "Ou introduza-o nesta página: {url}",
+  'arc.mail.code.for': "Este código é para {name}. Se não for o seu nome, não o introduza: peça antes um novo código com o seu próprio nome.",
   'arc.mail.code.ignore': "Se não pediu nenhum exemplar, pode ignorar este e-mail.",
   'arc.mail.ready.subject': "O seu exemplar antecipado de {title}",
   'arc.mail.ready.lead': "Aqui está o seu exemplar antecipado de {title}, enviado por {author}.",
@@ -636,12 +675,14 @@ const PT: Draft = {
   'arc.stop.title': "Não receber mais e-mails de {author}",
   'arc.stop.body': "Carregue no botão e o Beuk não lhe vai enviar mais e-mails sobre os livros de {author}. O seu exemplar continua a funcionar.",
   'arc.stop.button': "Parar estes e-mails",
-  'arc.stop.done': "O Beuk não lhe vai enviar mais e-mails sobre os livros de {author}. O seu exemplar continua a funcionar.",
+  'arc.stop.done': "O Beuk não lhe vai enviar mais e-mails sobre os livros de {author}.",
+  'arc.stop.doneCopy': "O seu exemplar continua a funcionar.",
   'arc.mail.doneTitle': "Feito",
   'arc.mail.unavailable': "O Beuk não consegue fazer isto neste momento, por isso nada foi alterado. Tente novamente mais tarde.",
   'arc.page.unknownTitle': "Não encontrámos esta página",
   'arc.page.unknown': "O link pode estar incompleto. Verifique se foi copiado por inteiro.",
   'arc.page.closedTitle': "As inscrições estão fechadas",
+  'arc.page.closedRecover': "Já tem um exemplar e perdeu o link? Introduza o nome e o e-mail que usou, e o Beuk envia-lhe um código para o voltar a abrir.",
   'arc.foot.privacy': "Privacidade",
   'arc.foot.terms': "Termos",
 };
@@ -658,6 +699,8 @@ const NL: Draft = {
   'arc.mail.code.subject': "Uw code voor {title}",
   'arc.mail.code.lead': "Uw code is {code}.",
   'arc.mail.code.body': "Vul hem in op de pagina waar u {author} om een voorpublicatie-exemplaar van {title} vroeg.",
+  'arc.mail.code.link': "Of vul hem in op deze pagina: {url}",
+  'arc.mail.code.for': "Deze code is voor {name}. Bent u dat niet, vul hem dan niet in, maar vraag een nieuwe code aan met uw eigen naam.",
   'arc.mail.code.ignore': "Hebt u geen exemplaar aangevraagd, dan kunt u deze e-mail negeren.",
   'arc.mail.ready.subject': "Uw voorpublicatie-exemplaar van {title}",
   'arc.mail.ready.lead': "Hier is uw voorpublicatie-exemplaar van {title}, verzonden door {author}.",
@@ -725,12 +768,14 @@ const NL: Draft = {
   'arc.stop.title': "Geen e-mail meer van {author}",
   'arc.stop.body': "Druk op de knop en Beuk stuurt u geen e-mail meer over de boeken van {author}. Uw exemplaar blijft werken.",
   'arc.stop.button': "Deze e-mails stoppen",
-  'arc.stop.done': "Beuk stuurt u geen e-mail meer over de boeken van {author}. Uw exemplaar blijft werken.",
+  'arc.stop.done': "Beuk stuurt u geen e-mail meer over de boeken van {author}.",
+  'arc.stop.doneCopy': "Uw exemplaar blijft werken.",
   'arc.mail.doneTitle': "Klaar",
   'arc.mail.unavailable': "Beuk kan dit nu niet doen, dus er is niets veranderd. Probeer het later opnieuw.",
   'arc.page.unknownTitle': "We konden deze pagina niet vinden",
   'arc.page.unknown': "De link is misschien onvolledig. Controleer of hij volledig is gekopieerd.",
   'arc.page.closedTitle': "De aanmelding is gesloten",
+  'arc.page.closedRecover': "Hebt u al een exemplaar en bent u de link kwijt? Vul de naam en het e-mailadres in die u gebruikte, en Beuk stuurt u een code om het weer te openen.",
   'arc.foot.privacy': "Privacy",
   'arc.foot.terms': "Voorwaarden",
 };
@@ -747,6 +792,8 @@ const PL: Draft = {
   'arc.mail.code.subject': "Twój kod do „{title}”",
   'arc.mail.code.lead': "Twój kod to {code}.",
   'arc.mail.code.body': "Wpisz go na stronie, na której złożono prośbę o egzemplarz przedpremierowy „{title}”, który rozdaje {author}.",
+  'arc.mail.code.link': "Albo wpisz go na tej stronie: {url}",
+  'arc.mail.code.for': "Ten kod jest dla osoby: {name}. Jeśli to nie Ty, nie wpisuj go, tylko poproś o nowy kod na własne imię.",
   'arc.mail.code.ignore': "Jeśli ta prośba nie pochodzi od Ciebie, możesz zignorować ten e-mail.",
   'arc.mail.ready.subject': "Twój egzemplarz przedpremierowy „{title}”",
   'arc.mail.ready.lead': "Oto Twój egzemplarz przedpremierowy „{title}”, który wysyła {author}.",
@@ -814,12 +861,14 @@ const PL: Draft = {
   'arc.stop.title': "{author} — bez kolejnych e-maili",
   'arc.stop.body': "Naciśnij przycisk, a Beuk nie wyśle Ci już e-maili o książkach, które pisze {author}. Twój egzemplarz nadal działa.",
   'arc.stop.button': "Zatrzymaj te e-maile",
-  'arc.stop.done': "Beuk nie wyśle Ci już e-maili o książkach, które pisze {author}. Twój egzemplarz nadal działa.",
+  'arc.stop.done': "Beuk nie wyśle Ci już e-maili o książkach, które pisze {author}.",
+  'arc.stop.doneCopy': "Twój egzemplarz nadal działa.",
   'arc.mail.doneTitle': "Gotowe",
   'arc.mail.unavailable': "Beuk nie może teraz tego zrobić, więc nic nie zostało zmienione. Spróbuj ponownie później.",
   'arc.page.unknownTitle': "Nie znaleźliśmy tej strony",
   'arc.page.unknown': "Link może być niepełny. Sprawdź, czy został skopiowany w całości.",
   'arc.page.closedTitle': "Zapisy są zamknięte",
+  'arc.page.closedRecover': "Masz już egzemplarz, ale nie masz już do niego linku? Wpisz imię i e-mail podane przy zapisie, a Beuk wyśle Ci kod, by znów go otworzyć.",
   'arc.foot.privacy': "Prywatność",
   'arc.foot.terms': "Warunki",
 };
@@ -836,6 +885,8 @@ const RU: Draft = {
   'arc.mail.code.subject': "Ваш код для «{title}»",
   'arc.mail.code.lead': "Ваш код: {code}.",
   'arc.mail.code.body': "Введите его на странице, где вы запрашивали сигнальный экземпляр книги «{title}» (автор: {author}).",
+  'arc.mail.code.link': "Или введите его на этой странице: {url}",
+  'arc.mail.code.for': "Этот код выдан на имя: {name}. Если это не вы, не вводите его, а запросите новый код на своё имя.",
   'arc.mail.code.ignore': "Если вы не запрашивали экземпляр, просто проигнорируйте это письмо.",
   'arc.mail.ready.subject': "Ваш сигнальный экземпляр «{title}»",
   'arc.mail.ready.lead': "Вот ваш сигнальный экземпляр книги «{title}». Автор: {author}.",
@@ -903,12 +954,14 @@ const RU: Draft = {
   'arc.stop.title': "Отписаться от писем ({author})",
   'arc.stop.body': "Нажмите кнопку, и Beuk больше не будет присылать вам письма о книгах, которые пишет {author}. Ваш экземпляр продолжит работать.",
   'arc.stop.button': "Больше не присылать эти письма",
-  'arc.stop.done': "Beuk больше не будет присылать вам письма о книгах, которые пишет {author}. Ваш экземпляр продолжит работать.",
+  'arc.stop.done': "Beuk больше не будет присылать вам письма о книгах, которые пишет {author}.",
+  'arc.stop.doneCopy': "Ваш экземпляр продолжит работать.",
   'arc.mail.doneTitle': "Готово",
   'arc.mail.unavailable': "Сейчас Beuk не может это сделать, поэтому ничего не изменилось. Попробуйте позже.",
   'arc.page.unknownTitle': "Мы не нашли эту страницу",
   'arc.page.unknown': "Возможно, ссылка неполная. Проверьте, что она скопирована целиком.",
   'arc.page.closedTitle': "Запись закрыта",
+  'arc.page.closedRecover': "У вас уже есть экземпляр, но вы потеряли ссылку? Введите имя и адрес почты, которые вы указали, и Beuk пришлёт вам код, чтобы снова его открыть.",
   'arc.foot.privacy': "Конфиденциальность",
   'arc.foot.terms': "Условия",
 };
@@ -925,6 +978,8 @@ const TR: Draft = {
   'arc.mail.code.subject': "{title} için kodunuz",
   'arc.mail.code.lead': "Kodunuz: {code}.",
   'arc.mail.code.body': "Kodu, {author} tarafından sunulan {title} ön okuma kopyasını istediğiniz sayfaya girin.",
+  'arc.mail.code.link': "Ya da kodu bu sayfaya girin: {url}",
+  'arc.mail.code.for': "Bu kod şu kişi için: {name}. Bu siz değilseniz kodu girmeyin; bunun yerine kendi adınızla yeni bir kod isteyin.",
   'arc.mail.code.ignore': "Kopya istemediyseniz bu e-postayı yok sayabilirsiniz.",
   'arc.mail.ready.subject': "{title} ön okuma kopyanız",
   'arc.mail.ready.lead': "{author} tarafından gönderilen {title} ön okuma kopyanız burada.",
@@ -992,12 +1047,14 @@ const TR: Draft = {
   'arc.stop.title': "E-postaları durdur: {author}",
   'arc.stop.body': "Düğmeye basın; Beuk size {author} tarafından yazılan kitaplar hakkında artık e-posta göndermez. Kopyanız çalışmaya devam eder.",
   'arc.stop.button': "Bu e-postaları durdur",
-  'arc.stop.done': "Beuk size {author} tarafından yazılan kitaplar hakkında artık e-posta göndermeyecek. Kopyanız çalışmaya devam eder.",
+  'arc.stop.done': "Beuk size {author} tarafından yazılan kitaplar hakkında artık e-posta göndermeyecek.",
+  'arc.stop.doneCopy': "Kopyanız çalışmaya devam eder.",
   'arc.mail.doneTitle': "Tamam",
   'arc.mail.unavailable': "Beuk bunu şu anda yapamıyor, bu yüzden hiçbir şey değişmedi. Lütfen daha sonra tekrar deneyin.",
   'arc.page.unknownTitle': "Bu sayfayı bulamadık",
   'arc.page.unknown': "Bağlantı eksik olabilir. Tamamen kopyalandığından emin olun.",
   'arc.page.closedTitle': "Kayıtlar kapandı",
+  'arc.page.closedRecover': "Zaten bir kopyanız var ama bağlantısını mı kaybettiniz? Kullandığınız adı ve e-posta adresini girin; Beuk size kopyayı yeniden açmanız için bir kod gönderir.",
   'arc.foot.privacy': "Gizlilik",
   'arc.foot.terms': "Koşullar",
 };
@@ -1014,6 +1071,8 @@ const AR: Draft = {
   'arc.mail.code.subject': "رمزك لكتاب {title}",
   'arc.mail.code.lead': "رمزك هو {code}.",
   'arc.mail.code.body': "أدخِله في الصفحة التي طلبت فيها نسخة مسبقة من {title} من {author}.",
+  'arc.mail.code.link': "أو أدخِله في هذه الصفحة: {url}",
+  'arc.mail.code.for': "هذا الرمز مخصّص لـ {name}. إن لم يكن هذا أنت، فلا تُدخِله، واطلب بدلًا منه رمزًا جديدًا باسمك.",
   'arc.mail.code.ignore': "إن لم تطلب نسخة، يمكنك تجاهل هذه الرسالة.",
   'arc.mail.ready.subject': "نسختك المسبقة من {title}",
   'arc.mail.ready.lead': "إليك نسختك المسبقة من {title}، من {author}.",
@@ -1081,12 +1140,14 @@ const AR: Draft = {
   'arc.stop.title': "إيقاف رسائل {author}",
   'arc.stop.body': "اضغط الزر ولن يرسل إليك Beuk أي بريد آخر عن كتب {author}. ستبقى نسختك تعمل.",
   'arc.stop.button': "أوقف هذه الرسائل",
-  'arc.stop.done': "لن يرسل إليك Beuk أي بريد آخر عن كتب {author}. ستبقى نسختك تعمل.",
+  'arc.stop.done': "لن يرسل إليك Beuk أي بريد آخر عن كتب {author}.",
+  'arc.stop.doneCopy': "ستبقى نسختك تعمل.",
   'arc.mail.doneTitle': "تم",
   'arc.mail.unavailable': "لا يستطيع Beuk فعل ذلك الآن، لذا لم يتغيّر شيء. حاول مرة أخرى لاحقًا.",
   'arc.page.unknownTitle': "لم نعثر على هذه الصفحة",
   'arc.page.unknown': "قد يكون الرابط ناقصًا. تحقّق من نسخه كاملًا.",
   'arc.page.closedTitle': "أُغلق التسجيل",
+  'arc.page.closedRecover': "لديك نسخة وفقدت رابطها؟ أدخِل الاسم والبريد الإلكتروني اللذين استخدمتهما، وسيرسل إليك Beuk رمزًا لتفتحها من جديد.",
   'arc.foot.privacy': "الخصوصية",
   'arc.foot.terms': "الشروط",
 };
@@ -1103,6 +1164,8 @@ const HI: Draft = {
   'arc.mail.code.subject': "{title} के लिए आपका कोड",
   'arc.mail.code.lead': "आपका कोड {code} है।",
   'arc.mail.code.body': "इसे उस पेज पर डालें, जहाँ आपने {author} की {title} की रिलीज़ से पहले की प्रति माँगी थी।",
+  'arc.mail.code.link': "या इसे इस पेज पर डालें: {url}",
+  'arc.mail.code.for': "यह कोड {name} के लिए है। अगर यह आप नहीं हैं, तो इसे न डालें, बल्कि अपने नाम से नया कोड माँगें।",
   'arc.mail.code.ignore': "अगर आपने कोई प्रति नहीं माँगी थी, तो इस ईमेल को अनदेखा करें।",
   'arc.mail.ready.subject': "{title} की आपकी रिलीज़ से पहले की प्रति",
   'arc.mail.ready.lead': "यह रही {author} की ओर से {title} की आपकी रिलीज़ से पहले की प्रति।",
@@ -1170,12 +1233,14 @@ const HI: Draft = {
   'arc.stop.title': "{author} की ओर से अब कोई ईमेल नहीं",
   'arc.stop.body': "बटन दबाएँ, तो Beuk आपको {author} की किताबों के बारे में अब कोई ईमेल नहीं भेजेगा। आपकी प्रति काम करती रहेगी।",
   'arc.stop.button': "ये ईमेल रोकें",
-  'arc.stop.done': "Beuk अब आपको {author} की किताबों के बारे में कोई ईमेल नहीं भेजेगा। आपकी प्रति काम करती रहेगी।",
+  'arc.stop.done': "Beuk अब आपको {author} की किताबों के बारे में कोई ईमेल नहीं भेजेगा।",
+  'arc.stop.doneCopy': "आपकी प्रति काम करती रहेगी।",
   'arc.mail.doneTitle': "हो गया",
   'arc.mail.unavailable': "Beuk अभी यह नहीं कर सकता, इसलिए कुछ नहीं बदला गया। कृपया बाद में फिर कोशिश करें।",
   'arc.page.unknownTitle': "हमें यह पेज नहीं मिला",
   'arc.page.unknown': "हो सकता है लिंक अधूरा हो। देख लें कि वह पूरा कॉपी हुआ है।",
   'arc.page.closedTitle': "साइन अप बंद हो चुके हैं",
+  'arc.page.closedRecover': "क्या आपके पास पहले से प्रति है और उसका लिंक खो गया है? वही नाम और ईमेल डालें जो आपने दिए थे, और Beuk आपको उसे फिर से खोलने के लिए एक कोड ईमेल करेगा।",
   'arc.foot.privacy': "प्राइवेसी",
   'arc.foot.terms': "नियम और शर्तें",
 };
@@ -1192,6 +1257,8 @@ const MR: Draft = {
   'arc.mail.code.subject': "{title} साठी तुमचा कोड",
   'arc.mail.code.lead': "तुमचा कोड {code} आहे.",
   'arc.mail.code.body': "जिथे तुम्ही {author} यांच्याकडे {title} ची प्रकाशनापूर्वीची प्रत मागितली, त्या पानावर तो टाका.",
+  'arc.mail.code.link': "किंवा तो या पानावर टाका: {url}",
+  'arc.mail.code.for': "हा कोड {name} यांच्यासाठी आहे. ते तुम्ही नसाल, तर तो टाकू नका; त्याऐवजी तुमच्या स्वतःच्या नावाने नवीन कोड मागवा.",
   'arc.mail.code.ignore': "तुम्ही प्रत मागितली नसेल, तर हा ईमेल दुर्लक्षित करा.",
   'arc.mail.ready.subject': "{title} ची तुमची प्रकाशनापूर्वीची प्रत",
   'arc.mail.ready.lead': "{author} यांच्याकडून {title} ची तुमची प्रकाशनापूर्वीची प्रत ही घ्या.",
@@ -1259,12 +1326,14 @@ const MR: Draft = {
   'arc.stop.title': "{author} यांच्याकडून आणखी ईमेल नको",
   'arc.stop.body': "बटण दाबा, म्हणजे Beuk तुम्हाला {author} यांच्या पुस्तकांबद्दल आणखी ईमेल पाठवणार नाही. तुमची प्रत चालू राहील.",
   'arc.stop.button': "हे ईमेल थांबवा",
-  'arc.stop.done': "Beuk तुम्हाला {author} यांच्या पुस्तकांबद्दल आणखी ईमेल पाठवणार नाही. तुमची प्रत चालू राहील.",
+  'arc.stop.done': "Beuk तुम्हाला {author} यांच्या पुस्तकांबद्दल आणखी ईमेल पाठवणार नाही.",
+  'arc.stop.doneCopy': "तुमची प्रत चालू राहील.",
   'arc.mail.doneTitle': "झाले",
   'arc.mail.unavailable': "Beuk सध्या हे करू शकत नाही, त्यामुळे काहीही बदलले नाही. कृपया नंतर पुन्हा प्रयत्न करा.",
   'arc.page.unknownTitle': "आम्हाला हे पान सापडले नाही",
   'arc.page.unknown': "लिंक अपूर्ण असू शकते. ती पूर्ण कॉपी झाली आहे का ते तपासा.",
   'arc.page.closedTitle': "नोंदणी बंद झाली आहे",
+  'arc.page.closedRecover': "तुमच्याकडे आधीच प्रत आहे आणि तिची लिंक हरवली आहे? तुम्ही दिलेले नाव आणि ईमेल टाका, म्हणजे Beuk तुम्हाला ती पुन्हा उघडण्यासाठी एक कोड ईमेल करेल.",
   'arc.foot.privacy': "गोपनीयता",
   'arc.foot.terms': "अटी",
 };
@@ -1281,6 +1350,8 @@ const JA: Draft = {
   'arc.mail.code.subject': "『{title}』の確認コード",
   'arc.mail.code.lead': "確認コードは {code} です。",
   'arc.mail.code.body': "{author}の『{title}』の献本を申し込んだページで、このコードを入力してください。",
+  'arc.mail.code.link': "このページで入力することもできます：{url}",
+  'arc.mail.code.for': "このコードは{name}さん用です。ご本人でない場合は入力せず、ご自分のお名前で新しいコードを申請してください。",
   'arc.mail.code.ignore': "献本を申し込んだ覚えがない場合は、このメールを無視してください。",
   'arc.mail.ready.subject': "『{title}』の献本をお届けします",
   'arc.mail.ready.lead': "{author}から『{title}』の献本が届きました。",
@@ -1348,12 +1419,14 @@ const JA: Draft = {
   'arc.stop.title': "{author}からのメールを停止",
   'arc.stop.body': "ボタンを押すと、Beukは{author}の本に関するメールを今後お送りしません。献本はそのまま使えます。",
   'arc.stop.button': "このメールを停止する",
-  'arc.stop.done': "Beukは{author}の本に関するメールを今後お送りしません。献本はそのまま使えます。",
+  'arc.stop.done': "Beukは{author}の本に関するメールを今後お送りしません。",
+  'arc.stop.doneCopy': "献本はそのまま使えます。",
   'arc.mail.doneTitle': "完了しました",
   'arc.mail.unavailable': "Beukはいまこの操作を行えないため、何も変更されていません。しばらくしてからもう一度お試しください。",
   'arc.page.unknownTitle': "このページが見つかりませんでした",
   'arc.page.unknown': "リンクが途中で切れている可能性があります。すべてコピーされているか確認してください。",
   'arc.page.closedTitle': "申し込みは締め切りました",
+  'arc.page.closedRecover': "すでに献本をお持ちで、リンクをなくしましたか？ 申し込みに使ったお名前とメールアドレスを入力すると、献本を開き直すためのコードをBeukがメールでお送りします。",
   'arc.foot.privacy': "プライバシー",
   'arc.foot.terms': "利用規約",
 };
@@ -1370,6 +1443,8 @@ const ZH: Draft = {
   'arc.mail.code.subject': "《{title}》的验证码",
   'arc.mail.code.lead': "你的验证码是 {code}。",
   'arc.mail.code.body': "请在你向 {author} 申请《{title}》预发本的页面上输入它。",
+  'arc.mail.code.link': "也可以在这个页面上输入：{url}",
+  'arc.mail.code.for': "这个验证码是给 {name} 的。如果这不是你，请不要输入，改用你自己的名字重新获取验证码。",
   'arc.mail.code.ignore': "如果你没有申请过，可以忽略这封邮件。",
   'arc.mail.ready.subject': "你的《{title}》预发本",
   'arc.mail.ready.lead': "这是 {author} 送给你的《{title}》预发本。",
@@ -1437,12 +1512,14 @@ const ZH: Draft = {
   'arc.stop.title': "不再接收 {author} 的邮件",
   'arc.stop.body': "按下按钮后，Beuk 不会再给你发送关于 {author} 作品的邮件。你的预发本仍然可以使用。",
   'arc.stop.button': "停止这些邮件",
-  'arc.stop.done': "Beuk 不会再给你发送关于 {author} 作品的邮件。你的预发本仍然可以使用。",
+  'arc.stop.done': "Beuk 不会再给你发送关于 {author} 作品的邮件。",
+  'arc.stop.doneCopy': "你的预发本仍然可以使用。",
   'arc.mail.doneTitle': "已完成",
   'arc.mail.unavailable': "Beuk 现在无法执行此操作，因此没有做任何更改。请稍后再试。",
   'arc.page.unknownTitle': "找不到这个页面",
   'arc.page.unknown': "链接可能不完整。请检查是否已完整复制。",
   'arc.page.closedTitle': "报名已截止",
+  'arc.page.closedRecover': "已经有预发本，但找不到链接了？输入你报名时用的名字和邮箱，Beuk 会给你发一个验证码，让你重新打开它。",
   'arc.foot.privacy': "隐私",
   'arc.foot.terms': "条款",
 };
@@ -1481,8 +1558,12 @@ export function arcDir(lang: ArcLang): 'rtl' | 'ltr' {
   return lang === 'ar' ? 'rtl' : 'ltr';
 }
 
-/** One {placeholder} pattern, shared with the HTML filler in emails.ts. */
-export const ARC_PLACEHOLDER = /\{(\w+)\}/g;
+/** The one {placeholder} pattern, shared with the HTML filler in emails.ts
+ *  and the stamp (stamp.ts). A factory, not a shared /g regex: a global
+ *  regex carries lastIndex between callers (final review, minor). */
+export function arcPlaceholderRe(): RegExp {
+  return /\{(\w+)\}/g;
+}
 
 /** The line for `key` in `lang` (English when the language has none yet),
  *  with each {name} filled from `vars` in one pass, so a value that itself
@@ -1493,7 +1574,7 @@ export function arcT(lang: ArcLang): (key: ArcKey, vars?: Record<string, string 
   return (key, vars) => {
     const line = table[key] ?? ARC_EN[key];
     if (!vars) return line;
-    return line.replace(ARC_PLACEHOLDER, (whole, name: string) =>
+    return line.replace(arcPlaceholderRe(), (whole, name: string) =>
       Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : whole,
     );
   };

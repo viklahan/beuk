@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { NEVER_PAUSED } from '../src/access.js';
-import { approveReader, ArcError, copyUrl, countedClaims, createCampaign, mintCopy, parseCreateInput, rowOf, type ArcDeps } from '../src/arc/campaigns.js';
+import { approveReader, ArcError, copyUrl, countedClaims, createCampaign, mintCopy, parseCreateInput, readerOf, rowOf, type ArcDeps } from '../src/arc/campaigns.js';
 import { EpubQueue } from '../src/book/epub/queue.js';
 import { arcMailTokenHash, suppress } from '../src/arc/mail.js';
 import type { Db } from '../src/db.js';
@@ -130,6 +130,7 @@ type Reader = {
   name: string;
   email: string;
   status: string;
+  publicId: string | null;
   profileLink: string | null;
   claimedAt: string | null;
   revokedAt: string | null;
@@ -247,8 +248,12 @@ test('the owner sees pending, claimed and declined readers with their emails, ne
   assert.equal(readers[1].firstOpenedAt, null);
   assert.equal(readers[1].mailStopped, false);
   assert.deepEqual(Object.keys(readers[0]).sort(), [
-    'claimedAt', 'email', 'firstOpenedAt', 'id', 'lastOpenedAt', 'mailStopped', 'name', 'profileLink', 'revokedAt', 'status',
+    'claimedAt', 'email', 'firstOpenedAt', 'id', 'lastOpenedAt', 'mailStopped', 'name', 'profileLink', 'publicId', 'revokedAt', 'status',
   ]);
+  // Final fix wave (Important 2): the author sees each copy's reader number, the one in its file.
+  assert.equal(readers[0].publicId, null, 'no copy yet, no number');
+  assert.equal(readers[1].publicId, (await row(b.id)).public_id);
+  assert.match(String(readers[1].publicId), /^[A-Za-z0-9_-]{16}$/);
   assert.equal(JSON.stringify(r.body).includes('ghost@example.com'), false);
 });
 
@@ -520,8 +525,12 @@ test('approve takes the last copy only while it is free and the campaign is open
 test('mintCopy: a new link stops the old one; never past the cap; never a closed copy (F8, F9)', async () => {
   const { campaign } = await campaignOn(arcOn.base, { maxClaims: 2 });
   const tom = await addReader(campaign, { name: 'Tom', email: 'tom@example.com', status: 'claimed' });
-  const fresh = await mintCopy(db, campaign.id, tom.id, clock);
+  const first = await row(tom.id);
+  const fresh = await mintCopy(db, campaign.id, tom.id, new Date(clock.getTime() + 60_000));
   assert.equal((await row(tom.id)).token_hash, sha256(fresh));
+  // Final fix wave (Important 2): a new link keeps the reader number and the first claim time.
+  assert.equal((await row(tom.id)).public_id, first.public_id, 'the same reader number');
+  assert.equal(new Date((await row(tom.id)).claimed_at!).toISOString(), new Date(first.claimed_at!).toISOString(), 'claimed when first claimed');
   assert.equal((await page(arcOn.base, `/read/${tom.token}`)).status, 404, 'the old link stops');
   assert.equal((await page(arcOn.base, `/read/${fresh}`)).status, 200);
   const ann = await addReader(campaign, { name: 'Ann', email: 'ann@example.com', status: 'unverified' });
@@ -595,16 +604,90 @@ test('a new signup link replaces the old one', async () => {
   const r = await w.c.post(`/api/arc/${campaign.id}/signup-link`);
   assert.equal(r.status, 200, JSON.stringify(r.body));
   const fresh = r.body.signupToken as string;
-  assert.match(fresh, /^[A-Za-z0-9_-]{32}$/);
+  assert.match(fresh, /^[A-Za-z0-9_-]{43}$/, 'derived: an HMAC-SHA256, base64url (final fix wave)');
   assert.notEqual(fresh, signupToken);
   assert.equal(r.body.signupUrl, `${arcOn.config.appBaseUrl}/arc/${fresh}`);
   const h = await hashOf();
   assert.equal(h, sha256(fresh));
   assert.notEqual(h, sha256(signupToken));
+  // The old link is dead, the new one opens (final fix wave, Important 3).
+  assert.equal((await page(arcOn.base, `/arc/${signupToken}`)).status, 404, 'the old link stops');
+  assert.equal((await page(arcOn.base, `/arc/${fresh}`)).status, 200);
+  assert.equal(
+    (await db.query<{ signup_rotation: number }>('select signup_rotation from arc_campaigns where id = $1', [campaign.id])).rows[0].signup_rotation,
+    1,
+  );
   assert.equal((await w.c.post(`/api/arc/${campaign.id}/close`)).status, 200);
   const ended = await w.c.post(`/api/arc/${campaign.id}/signup-link`);
   assert.equal(ended.status, 409, JSON.stringify(ended.body));
   assert.equal(await hashOf(), sha256(fresh), 'unchanged once ended');
+});
+
+// Final fix wave (final review, Important 3): the token is derived, so the owner can be shown
+// the link again after a reload; "a new signup link" kills the old one.
+test('the signup link comes back after a reload, and only the newest works', async () => {
+  const { w, mid, campaign, signupToken } = await campaignOn(arcOn.base);
+  const link = `${arcOn.config.appBaseUrl}/arc/${signupToken}`;
+  const reload = async () => (await w.c.get(`/api/arc?manuscriptId=${mid}`)).body;
+  const first = await reload();
+  assert.equal(first.signupUrl, link, 'GET shows the same link Start returned');
+  assert.equal(JSON.stringify(first.campaigns).includes(signupToken), false, 'the campaign JSON itself never carries it');
+  assert.equal((await page(arcOn.base, `/arc/${signupToken}`)).status, 200, 'and it works');
+  const rotated = await w.c.post(`/api/arc/${campaign.id}/signup-link`);
+  assert.equal(rotated.status, 200, JSON.stringify(rotated.body));
+  const second = await reload();
+  assert.equal(second.signupUrl, rotated.body.signupUrl, 'a reload shows the new link');
+  assert.notEqual(second.signupUrl, link);
+  assert.equal((await page(arcOn.base, `/arc/${signupToken}`)).status, 404, 'the old link is dead');
+  assert.equal((await page(arcOn.base, `/arc/${rotated.body.signupToken as string}`)).status, 200);
+  // Rotating twice: still only the newest.
+  const third = await w.c.post(`/api/arc/${campaign.id}/signup-link`);
+  assert.equal((await page(arcOn.base, `/arc/${rotated.body.signupToken as string}`)).status, 404);
+  assert.equal((await reload()).signupUrl, third.body.signupUrl);
+  // A salt that changed since: the derived link would not be the working one, so none is shown.
+  const other = await startTestServer(db, () => clock, { arc: { ...ARC, suppressionSalt: 'another-salt-0123456789abcdef-012' } }, undefined, { arcMailer: mailer });
+  try {
+    const seen = await (await signIn(other.base, w.email)).get(`/api/arc?manuscriptId=${mid}`);
+    assert.equal(seen.status, 200);
+    assert.equal(seen.body.signupUrl, null, 'never a link that does not work');
+  } finally {
+    await other.close();
+  }
+  // Ended: no link.
+  assert.equal((await w.c.post(`/api/arc/${campaign.id}/close`)).status, 200);
+  assert.equal((await reload()).signupUrl, null);
+});
+
+// Ruling P8 (final fix wave): an ended campaign stays reachable after the next one starts.
+test('every campaign of the book is listed, the running one first, and an ended one can still be managed', async () => {
+  const { w, mid, campaign: old } = await campaignOn(arcOn.base, { approvalMode: 'approval' });
+  const waiting = await addReader(old, { name: 'Sarah', email: 'sarah@example.com', status: 'pending' });
+  const holder = await addReader(old, { name: 'Tom', email: 'tom@example.com', status: 'claimed' });
+  assert.equal((await w.c.post(`/api/arc/${old.id}/close`)).status, 200);
+  const next = await start(w.c, mid);
+  const seen = await w.c.get(`/api/arc?manuscriptId=${mid}`);
+  assert.equal(seen.status, 200);
+  const list = seen.body.campaigns as Campaign[];
+  assert.deepEqual(list.map((c) => [c.id, c.state]), [[next.campaign.id, 'open'], [old.id, 'ended']], 'running first, then the ended one');
+  assert.equal((seen.body.campaign as Campaign).id, next.campaign.id);
+  assert.equal(seen.body.signupUrl, next.signupUrl, "the running one's link");
+  // The ended campaign's readers, and what the author can still do there.
+  const readers = (await w.c.get(`/api/arc/${old.id}/readers`)).body.readers as Reader[];
+  assert.deepEqual(readers.map((r) => [r.id, r.status]), [[waiting.id, 'pending'], [holder.id, 'claimed']]);
+  assert.equal((await w.c.post(`/api/arc/${old.id}/readers/${waiting.id}/approve`)).status, 409, 'an ended ARC gives no new copy');
+  assert.equal((await w.c.post(`/api/arc/${old.id}/readers/${waiting.id}/decline`)).status, 200);
+  assert.equal((await w.c.post(`/api/arc/${old.id}/readers/${holder.id}/revoke`)).status, 200);
+  assert.equal((await page(arcOn.base, `/read/${holder.token}`)).status, 410, 'the closed copy stops');
+  assert.equal((await w.c.delete(`/api/arc/${old.id}`)).status, 204);
+  assert.equal(await count('share_recipients where share_id = $1', [old.shareId]), 0, "the ended campaign's readers are gone");
+  const after = await w.c.get(`/api/arc?manuscriptId=${mid}`);
+  assert.deepEqual((after.body.campaigns as Campaign[]).map((c) => c.id), [next.campaign.id]);
+});
+
+test('readerOf throws on a status the author is never shown (final review minor)', () => {
+  const base = { id: randomUUID(), name: 'N', email: 'n@example.com', public_id: null, profile_link: null, claimed_at: null, revoked_at: null, first_opened_at: null, last_opened_at: null, mail_stopped_at: null };
+  for (const status of ['pending', 'claimed', 'declined']) assert.equal(readerOf({ ...base, status }).status, status);
+  for (const status of ['unverified', 'weird', null]) assert.throws(() => readerOf({ ...base, status }), /reached readerOf/, String(status));
 });
 
 test('closing the campaign leaves existing copies working, and the book can start the next one (F13, F10)', async () => {
@@ -739,6 +822,11 @@ test("Download all my data carries the campaign with its readers' emails", async
   assert.equal(share.arc.readers[0].email, 'sarah@example.com');
   assert.equal(share.arc.readers[0].name, 'Sarah');
   assert.equal(share.arc.readers[0].status, 'claimed');
+  // Final fix wave (Important 2): the reader number, the one inside their copy's file.
+  const sarahRow = (await db.query<{ public_id: string }>(`select public_id from share_recipients where share_id = $1 and email = 'sarah@example.com'`, [campaign.shareId])).rows[0];
+  assert.match(sarahRow.public_id, /^[A-Za-z0-9_-]{16}$/);
+  assert.equal(share.arc.readers[0].publicId, sarahRow.public_id);
+  assert.equal(share.arc.readers[1].publicId, null, 'a waiting reader has no copy yet');
   assert.equal(share.arc.readers[1].email, 'priya@example.com');
   assert.equal(share.arc.readers[1].profileLink, 'https://example.com/priya');
   assert.equal(share.arc.readers.length, 2, 'never an unconfirmed request');

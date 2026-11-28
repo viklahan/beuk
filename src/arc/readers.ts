@@ -3,7 +3,7 @@ import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { isUuid } from '../ids.js';
 import type { ArcDeps } from './campaigns.js';
-import { ARC_SALT_MIN_LENGTH, suppress } from './mail.js';
+import { saltProblem, suppress } from './mail.js';
 import { arcLang, arcT, type ArcLang } from './strings.js';
 
 /**
@@ -114,10 +114,15 @@ export interface MailReader {
   title: string;
   author: string;
   lang: ArcLang;
+  /** The reader holds a copy that still opens (claimed, not closed, the
+   *  share not closed): only then does the Stop page say the copy keeps
+   *  working (ruling C7). */
+  copyOpen: boolean;
 }
 
 const MAIL_READER_SQL = `select r.id, r.email, c.owner_id, c.id as campaign_id, s.title,
-    s.snapshot->>'author' as author, s.snapshot->>'language' as language
+    s.snapshot->>'author' as author, s.snapshot->>'language' as language,
+    (r.status = 'claimed' and r.revoked_at is null and s.revoked_at is null) as copy_open
   from share_recipients r
   join shares s on s.id = r.share_id
   join arc_campaigns c on c.share_id = s.id
@@ -133,6 +138,7 @@ function mailReaderOf(x: Record<string, unknown>): MailReader {
     title: String(x.title ?? ''),
     author: authorOf(x.author, lang),
     lang,
+    copyOpen: x.copy_open === true,
   };
 }
 
@@ -144,10 +150,9 @@ export async function readerByMailToken(db: Db, mailToken: string): Promise<Mail
 }
 
 /** Whether this server can keep an opt-out: the suppression hash needs a
- *  usable ARC_SUPPRESSION_SALT (the same rule as src/arc/mail.ts). */
+ *  usable ARC_SUPPRESSION_SALT (src/arc/mail.ts saltProblem, the one rule). */
 export function arcOptOutReady(config: Config): boolean {
-  const salt = config.arc.suppressionSalt;
-  return typeof salt === 'string' && salt.length >= ARC_SALT_MIN_LENGTH;
+  return saltProblem(config.arc.suppressionSalt) === null;
 }
 
 /** The row, locked for the rest of the transaction. */

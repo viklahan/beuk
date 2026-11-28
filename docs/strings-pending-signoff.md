@@ -4,7 +4,7 @@
 speaker, and has not been signed off. V signs off every UI translation personally; until he does, each draft stays on this list.
 English text is the source; it is the only column that is final wording.
 
-Last updated 2026-11-27 (ARC reader pages and reader emails: section 9; the ARC panel: section 8; Hindi and Marathi: section 7, with the 14 keys main added since 340cb22; the keystroke rescue's two strings: section 6). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words); 2026-11-12 (studio 2.0 cutover, task 6).
+Last updated 2026-11-27 (the ARC final fix wave: new and changed drafts in sections 8 and 9, listed at the top of each; ARC reader pages and reader emails: section 9; the ARC panel: section 8; Hindi and Marathi: section 7, with the 14 keys main added since 340cb22; the keystroke rescue's two strings: section 6). Before that: 2026-11-24 ("Use on every chapter": section 5; Poem Mode: section 4; the export screen: section 3, the proof's link words); 2026-11-12 (studio 2.0 cutover, task 6).
 
 ## 1. The 22 `next.*` keys (new in this task)
 
@@ -2985,7 +2985,7 @@ Points worth a look:
 - **ja** 日本語: `新しいARCを始める`
 - **zh-Hans** 简体中文: `开始新的 ARC`
 
-## 9. ARC reader pages and reader emails (86 keys, 2026-11-27)
+## 9. ARC reader pages and reader emails (90 keys, 2026-11-27; 4 of them added by the final fix wave)
 
 What a reader of an ARC campaign sees (slice 1, `src/arc/strings.ts`): the claim page, the code page, the waiting page,
 the copy page, the Not me / Stop pages, the calm error pages and their footer, and every reader email (the code, the
@@ -2999,13 +2999,23 @@ copy, waiting, approved, declined, and the footer each one carries). The page an
 and 7) and is V's to confirm in the PR. **All 14 other languages below are drafts written by Claude by hand:
 not approved, not read by a native speaker.** No translation service or API was called.
 
-**Not translated, on purpose (4 keys, English in every language):**
+**Final fix wave (2026-11-27), new or changed drafts in this section:** `arc.mail.code.link` (the code page's link in
+the code email, ruling C6), `arc.mail.code.for` (the name the code confirms, final review Important 1),
+`arc.page.closedRecover` (the lost-link form on the closed page, final review minor 1), `arc.stop.doneCopy` (new), and
+`arc.stop.done` (changed: its second sentence, "Your copy keeps working.", is now `arc.stop.doneCopy`, shown only to a
+reader whose copy still opens, ruling C7; each draft was split at the same sentence). All are Claude's English and
+Claude's drafts, unsigned like the rest.
+
+**Not translated, on purpose (6 keys, English in every language):**
 
 - `arc.stamp` and `arc.stampPage.title`: the stamp line inside readers' EPUBs and the title of the page it adds (ruling
   F16: an unsigned translation inside a reader's EPUB cannot be recalled from a device). `arcp.stamp` (§8) is the
   panel's line, not this one.
 - `arc.mail.goneTitle` and `arc.mail.gone`: the page for a used or unknown mail link knows no reader language (a used
   Not me link names nobody any more), so it is English (`renderMailGonePage`).
+- `arc.page.badFormTitle` and `arc.page.badForm` (final fix wave, ruling C7): the page for a form body the server
+  refuses to read (too long, too many fields). The body is refused before the route reads its link, so no book and no
+  reader language is known (`renderBadFormPage`).
 
 How the drafts were made (`tests/arc-strings.test.ts` checks every mechanical rule):
 
@@ -3052,7 +3062,11 @@ Points worth a look:
 - **The reader emails go to third parties, so each draft says no more than English**: Not me deletes the name and
   email from this book, closes this copy, and stops mail from any author on Beuk; the backups line says they can
   remain in older backups and that the block is kept in backups too; Stop covers only that author's books and the
-  copy keeps working. Ruling C7 (final wave) will change `arc.stop.done` in English; its 14 drafts must change with it.
+  copy keeps working (said only to a reader whose copy still opens, `arc.stop.doneCopy`: ruling C7, final fix wave; the
+  14 drafts of `arc.stop.done` were split with the English in the same commit). `arc.stop.body` is V's verbatim line
+  and still says "Your copy keeps working." on the button page, for every reader: V's to change, not changed here.
+- **`arc.mail.code.for`** keeps `{name}` where any name reads: **pl** *dla osoby: {name}* and **ru** *выдан на имя:
+  {name}* keep it in the nominative; **ja** adds さん; **tr** puts no suffix on it (*şu kişi için: {name}*).
 - **ja** adds さん after the reader's own name (`arc.wait.lead`, `arc.copy.for`); `arc.mail.notMe` reads "if you have
   no idea about this" (心当たりがない場合), the usual Japanese for "Not you?".
 - **zh-Hans** avoids 必须 ("must") everywhere, so the review line ends 这从来都不是硬性要求 ("it is never a requirement").
@@ -3256,6 +3270,42 @@ Points worth a look:
 - **mr** मराठी: `जिथे तुम्ही {author} यांच्याकडे {title} ची प्रकाशनापूर्वीची प्रत मागितली, त्या पानावर तो टाका.`
 - **ja** 日本語: `{author}の『{title}』の献本を申し込んだページで、このコードを入力してください。`
 - **zh-Hans** 简体中文: `请在你向 {author} 申请《{title}》预发本的页面上输入它。`
+
+### `arc.mail.code.link`
+
+- **en** (source, Claude's — final fix wave): Or enter it on this page: {url}
+- **es** Español: `O escríbelo en esta página: {url}`
+- **fr** Français: `Ou saisissez-le sur cette page : {url}`
+- **de** Deutsch: `Oder geben Sie ihn auf dieser Seite ein: {url}`
+- **it** Italiano: `Oppure inseriscilo in questa pagina: {url}`
+- **pt** Português: `Ou introduza-o nesta página: {url}`
+- **nl** Nederlands: `Of vul hem in op deze pagina: {url}`
+- **pl** Polski: `Albo wpisz go na tej stronie: {url}`
+- **ru** Русский: `Или введите его на этой странице: {url}`
+- **tr** Türkçe: `Ya da kodu bu sayfaya girin: {url}`
+- **ar** العربية: `أو أدخِله في هذه الصفحة: {url}`
+- **hi** हिन्दी: `या इसे इस पेज पर डालें: {url}`
+- **mr** मराठी: `किंवा तो या पानावर टाका: {url}`
+- **ja** 日本語: `このページで入力することもできます：{url}`
+- **zh-Hans** 简体中文: `也可以在这个页面上输入：{url}`
+
+### `arc.mail.code.for`
+
+- **en** (source, Claude's — final fix wave): This code is for {name}. If that isn't you, don't enter it: ask for a new code with your own name instead.
+- **es** Español: `Este código es para {name}. Si no eres tú, no lo escribas: pide un código nuevo con tu propio nombre.`
+- **fr** Français: `Ce code est pour {name}. Si ce n'est pas vous, ne le saisissez pas : demandez plutôt un nouveau code à votre nom.`
+- **de** Deutsch: `Dieser Code gilt für {name}. Wenn Sie das nicht sind, geben Sie ihn nicht ein: Fordern Sie stattdessen einen neuen Code mit Ihrem eigenen Namen an.`
+- **it** Italiano: `Questo codice è per {name}. Se non sei tu, non inserirlo: chiedi invece un nuovo codice con il tuo nome.`
+- **pt** Português: `Este código é para {name}. Se não for o seu nome, não o introduza: peça antes um novo código com o seu próprio nome.`
+- **nl** Nederlands: `Deze code is voor {name}. Bent u dat niet, vul hem dan niet in, maar vraag een nieuwe code aan met uw eigen naam.`
+- **pl** Polski: `Ten kod jest dla osoby: {name}. Jeśli to nie Ty, nie wpisuj go, tylko poproś o nowy kod na własne imię.`
+- **ru** Русский: `Этот код выдан на имя: {name}. Если это не вы, не вводите его, а запросите новый код на своё имя.`
+- **tr** Türkçe: `Bu kod şu kişi için: {name}. Bu siz değilseniz kodu girmeyin; bunun yerine kendi adınızla yeni bir kod isteyin.`
+- **ar** العربية: `هذا الرمز مخصّص لـ {name}. إن لم يكن هذا أنت، فلا تُدخِله، واطلب بدلًا منه رمزًا جديدًا باسمك.`
+- **hi** हिन्दी: `यह कोड {name} के लिए है। अगर यह आप नहीं हैं, तो इसे न डालें, बल्कि अपने नाम से नया कोड माँगें।`
+- **mr** मराठी: `हा कोड {name} यांच्यासाठी आहे. ते तुम्ही नसाल, तर तो टाकू नका; त्याऐवजी तुमच्या स्वतःच्या नावाने नवीन कोड मागवा.`
+- **ja** 日本語: `このコードは{name}さん用です。ご本人でない場合は入力せず、ご自分のお名前で新しいコードを申請してください。`
+- **zh-Hans** 简体中文: `这个验证码是给 {name} 的。如果这不是你，请不要输入，改用你自己的名字重新获取验证码。`
 
 ### `arc.mail.code.ignore`
 
@@ -4465,21 +4515,39 @@ Points worth a look:
 
 ### `arc.stop.done`
 
-- **en** (source, Claude's): Beuk won't send you any more email about {author}'s books. Your copy keeps working.
-- **es** Español: `Beuk no te enviará más correos sobre los libros de {author}. Tu ejemplar sigue funcionando.`
-- **fr** Français: `Beuk ne vous enverra plus d'e-mails au sujet des livres écrits par {author}. Votre exemplaire continue de fonctionner.`
-- **de** Deutsch: `Beuk sendet Ihnen keine E-Mails mehr zu den Büchern von {author}. Ihr Exemplar funktioniert weiter.`
-- **it** Italiano: `Beuk non ti invierà più email sui libri di {author}. La tua copia continua a funzionare.`
-- **pt** Português: `O Beuk não lhe vai enviar mais e-mails sobre os livros de {author}. O seu exemplar continua a funcionar.`
-- **nl** Nederlands: `Beuk stuurt u geen e-mail meer over de boeken van {author}. Uw exemplaar blijft werken.`
-- **pl** Polski: `Beuk nie wyśle Ci już e-maili o książkach, które pisze {author}. Twój egzemplarz nadal działa.`
-- **ru** Русский: `Beuk больше не будет присылать вам письма о книгах, которые пишет {author}. Ваш экземпляр продолжит работать.`
-- **tr** Türkçe: `Beuk size {author} tarafından yazılan kitaplar hakkında artık e-posta göndermeyecek. Kopyanız çalışmaya devam eder.`
-- **ar** العربية: `لن يرسل إليك Beuk أي بريد آخر عن كتب {author}. ستبقى نسختك تعمل.`
-- **hi** हिन्दी: `Beuk अब आपको {author} की किताबों के बारे में कोई ईमेल नहीं भेजेगा। आपकी प्रति काम करती रहेगी।`
-- **mr** मराठी: `Beuk तुम्हाला {author} यांच्या पुस्तकांबद्दल आणखी ईमेल पाठवणार नाही. तुमची प्रत चालू राहील.`
-- **ja** 日本語: `Beukは{author}の本に関するメールを今後お送りしません。献本はそのまま使えます。`
-- **zh-Hans** 简体中文: `Beuk 不会再给你发送关于 {author} 作品的邮件。你的预发本仍然可以使用。`
+- **en** (source, Claude's): Beuk won't send you any more email about {author}'s books.
+- **es** Español: `Beuk no te enviará más correos sobre los libros de {author}.`
+- **fr** Français: `Beuk ne vous enverra plus d'e-mails au sujet des livres écrits par {author}.`
+- **de** Deutsch: `Beuk sendet Ihnen keine E-Mails mehr zu den Büchern von {author}.`
+- **it** Italiano: `Beuk non ti invierà più email sui libri di {author}.`
+- **pt** Português: `O Beuk não lhe vai enviar mais e-mails sobre os livros de {author}.`
+- **nl** Nederlands: `Beuk stuurt u geen e-mail meer over de boeken van {author}.`
+- **pl** Polski: `Beuk nie wyśle Ci już e-maili o książkach, które pisze {author}.`
+- **ru** Русский: `Beuk больше не будет присылать вам письма о книгах, которые пишет {author}.`
+- **tr** Türkçe: `Beuk size {author} tarafından yazılan kitaplar hakkında artık e-posta göndermeyecek.`
+- **ar** العربية: `لن يرسل إليك Beuk أي بريد آخر عن كتب {author}.`
+- **hi** हिन्दी: `Beuk अब आपको {author} की किताबों के बारे में कोई ईमेल नहीं भेजेगा।`
+- **mr** मराठी: `Beuk तुम्हाला {author} यांच्या पुस्तकांबद्दल आणखी ईमेल पाठवणार नाही.`
+- **ja** 日本語: `Beukは{author}の本に関するメールを今後お送りしません。`
+- **zh-Hans** 简体中文: `Beuk 不会再给你发送关于 {author} 作品的邮件。`
+
+### `arc.stop.doneCopy`
+
+- **en** (source, Claude's — final fix wave): Your copy keeps working.
+- **es** Español: `Tu ejemplar sigue funcionando.`
+- **fr** Français: `Votre exemplaire continue de fonctionner.`
+- **de** Deutsch: `Ihr Exemplar funktioniert weiter.`
+- **it** Italiano: `La tua copia continua a funzionare.`
+- **pt** Português: `O seu exemplar continua a funcionar.`
+- **nl** Nederlands: `Uw exemplaar blijft werken.`
+- **pl** Polski: `Twój egzemplarz nadal działa.`
+- **ru** Русский: `Ваш экземпляр продолжит работать.`
+- **tr** Türkçe: `Kopyanız çalışmaya devam eder.`
+- **ar** العربية: `ستبقى نسختك تعمل.`
+- **hi** हिन्दी: `आपकी प्रति काम करती रहेगी।`
+- **mr** मराठी: `तुमची प्रत चालू राहील.`
+- **ja** 日本語: `献本はそのまま使えます。`
+- **zh-Hans** 简体中文: `你的预发本仍然可以使用。`
 
 ### `arc.mail.doneTitle`
 
@@ -4570,6 +4638,24 @@ Points worth a look:
 - **mr** मराठी: `नोंदणी बंद झाली आहे`
 - **ja** 日本語: `申し込みは締め切りました`
 - **zh-Hans** 简体中文: `报名已截止`
+
+### `arc.page.closedRecover`
+
+- **en** (source, Claude's — final fix wave): Already have a copy and lost its link? Enter the name and email you used, and Beuk will email you a code to open it again.
+- **es** Español: `¿Ya tienes un ejemplar y perdiste su enlace? Escribe el nombre y el correo que usaste, y Beuk te enviará un código para volver a abrirlo.`
+- **fr** Français: `Vous avez déjà un exemplaire et vous avez perdu son lien ? Saisissez le nom et l'adresse e-mail que vous aviez donnés, et Beuk vous enverra un code pour le rouvrir.`
+- **de** Deutsch: `Sie haben schon ein Exemplar und den Link verloren? Geben Sie den Namen und die E-Mail-Adresse ein, die Sie verwendet haben, und Beuk schickt Ihnen einen Code, um es wieder zu öffnen.`
+- **it** Italiano: `Hai già una copia e ne hai perso il link? Inserisci il nome e l'email che hai usato, e Beuk ti invierà un codice per riaprirla.`
+- **pt** Português: `Já tem um exemplar e perdeu o link? Introduza o nome e o e-mail que usou, e o Beuk envia-lhe um código para o voltar a abrir.`
+- **nl** Nederlands: `Hebt u al een exemplaar en bent u de link kwijt? Vul de naam en het e-mailadres in die u gebruikte, en Beuk stuurt u een code om het weer te openen.`
+- **pl** Polski: `Masz już egzemplarz, ale nie masz już do niego linku? Wpisz imię i e-mail podane przy zapisie, a Beuk wyśle Ci kod, by znów go otworzyć.`
+- **ru** Русский: `У вас уже есть экземпляр, но вы потеряли ссылку? Введите имя и адрес почты, которые вы указали, и Beuk пришлёт вам код, чтобы снова его открыть.`
+- **tr** Türkçe: `Zaten bir kopyanız var ama bağlantısını mı kaybettiniz? Kullandığınız adı ve e-posta adresini girin; Beuk size kopyayı yeniden açmanız için bir kod gönderir.`
+- **ar** العربية: `لديك نسخة وفقدت رابطها؟ أدخِل الاسم والبريد الإلكتروني اللذين استخدمتهما، وسيرسل إليك Beuk رمزًا لتفتحها من جديد.`
+- **hi** हिन्दी: `क्या आपके पास पहले से प्रति है और उसका लिंक खो गया है? वही नाम और ईमेल डालें जो आपने दिए थे, और Beuk आपको उसे फिर से खोलने के लिए एक कोड ईमेल करेगा।`
+- **mr** मराठी: `तुमच्याकडे आधीच प्रत आहे आणि तिची लिंक हरवली आहे? तुम्ही दिलेले नाव आणि ईमेल टाका, म्हणजे Beuk तुम्हाला ती पुन्हा उघडण्यासाठी एक कोड ईमेल करेल.`
+- **ja** 日本語: `すでに献本をお持ちで、リンクをなくしましたか？ 申し込みに使ったお名前とメールアドレスを入力すると、献本を開き直すためのコードをBeukがメールでお送りします。`
+- **zh-Hans** 简体中文: `已经有预发本，但找不到链接了？输入你报名时用的名字和邮箱，Beuk 会给你发一个验证码，让你重新打开它。`
 
 ### `arc.foot.privacy`
 

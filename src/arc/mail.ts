@@ -47,8 +47,10 @@ import { arcActionUrl } from './emails.js';
  *  secret scrubber (src/housekeeping/scrub.ts ignores values under 6). */
 export const ARC_SALT_MIN_LENGTH = 32;
 
-/** Why the salt cannot be used, or null when it can. */
-function saltProblem(s: string | null): string | null {
+/** Why the salt cannot be used, or null when it can. The one salt rule:
+ *  arcMailStatus, sendArcMail and src/arc/readers.ts arcOptOutReady all
+ *  ask this. */
+export function saltProblem(s: string | null | undefined): string | null {
   if (!s) return 'ARC_SUPPRESSION_SALT is not set';
   if (s.length < ARC_SALT_MIN_LENGTH) return `ARC_SUPPRESSION_SALT is shorter than ${ARC_SALT_MIN_LENGTH} characters`;
   return null;
@@ -107,6 +109,16 @@ export function suppressionHash(config: Config, email: string): string {
  *  Stop and List-Unsubscribe links. share_recipients keeps only its hash. */
 export function arcMailToken(config: Config, recipientId: string): string {
   return createHmac('sha256', salt(config)).update('arc-mail:' + recipientId).digest('base64url');
+}
+
+/** A campaign's signup token (final review, Important 3): base64url of
+ *  HMAC-SHA256(ARC_SUPPRESSION_SALT, 'arc-signup:' + campaign id + ':' +
+ *  rotation). Derived, never stored, so the owner can be shown the link
+ *  again at any time; arc_campaigns keeps only its hash (signup_token_hash)
+ *  and the rotation (signup_rotation). "Make a new signup link" adds one to
+ *  the rotation, so the old link dies. 43 characters (SIGNUP_TOKEN_RE). */
+export function arcSignupToken(config: Config, campaignId: string, rotation: number): string {
+  return createHmac('sha256', salt(config)).update(`arc-signup:${campaignId}:${rotation}`).digest('base64url');
 }
 
 /** What share_recipients.mail_token_hash holds: tokenHash of the token. */

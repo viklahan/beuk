@@ -157,7 +157,8 @@ test('a campaign is a new share with no open link, a campaign row and one built 
   const w = await writer(arcOn.base);
   const mid = await newManuscript(w.c);
   const { campaign, signupToken, signupUrl } = await start(w.c, mid);
-  assert.match(signupToken, /^[A-Za-z0-9_-]{32}$/);
+  // Final fix wave (ruling FW, Important 3): the token is derived (an HMAC-SHA256, 43 base64url characters).
+  assert.match(signupToken, /^[A-Za-z0-9_-]{43}$/);
   assert.equal(signupUrl, `${arcOn.config.appBaseUrl}/arc/${signupToken}`);
 
   const share = (
@@ -304,14 +305,18 @@ test('GET shows the mail status and the campaign, only to its owner', async () =
   const mid = await newManuscript(alice.c);
   const none = await alice.c.get(`/api/arc?manuscriptId=${mid}`);
   assert.equal(none.status, 200);
-  assert.deepEqual(none.body, { mail: { configured: true, reason: null }, campaign: null });
+  // Ruling P8 and Important 3 (final fix wave): every campaign of the book, and the running one's link.
+  assert.deepEqual(none.body, { mail: { configured: true, reason: null }, campaign: null, campaigns: [], signupUrl: null });
   const { campaign } = await start(alice.c, mid);
   const mine = await alice.c.get(`/api/arc?manuscriptId=${mid}`);
   assert.equal(mine.status, 200);
   assert.deepEqual(mine.body.campaign, campaign);
+  assert.deepEqual(mine.body.campaigns, [campaign]);
   const theirs = await bob.c.get(`/api/arc?manuscriptId=${mid}`);
   assert.equal(theirs.status, 200);
   assert.equal(theirs.body.campaign, null, "another writer never sees it");
+  assert.deepEqual(theirs.body.campaigns, []);
+  assert.equal(theirs.body.signupUrl, null, 'nor its link');
   const off = await (await writer(arcOff.base)).c.get(`/api/arc?manuscriptId=${mid}`);
   assert.deepEqual(off.body.mail, { configured: false, reason: 'ARC_MAIL_FROM is not set' });
   assert.equal((await new Client(arcOn.base).get(`/api/arc?manuscriptId=${mid}`)).status, 401);

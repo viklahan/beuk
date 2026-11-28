@@ -7,6 +7,7 @@ import {
   ArcError,
   CAMPAIGN_COLS,
   campaignState,
+  codePageUrl,
   countedClaims,
   copyUrl,
   mintCopy,
@@ -32,7 +33,7 @@ import { arcLang, arcT, type ArcLang } from './strings.js';
  *                 wait (waitForApproval). Both are ONE conditional UPDATE
  *                 against max_claims (ruling F8): two right codes for the
  *                 last copy cannot both win.
- *   purgeArcUnverified — unverified rows older than 24 hours go.
+ *   purgeArcUnverified — unverified rows untouched for 24 hours go.
  *
  * Only hashes are stored: the code (tokenHash(rowId + ':' + code)), the
  * code page's ref, the copy link. The per-address limit is keyed by the
@@ -90,6 +91,9 @@ export interface SignupView {
   blurb: string;
   hasCover: boolean;
   ownerEmail: string;
+  /** The signup token in the link (for the code page's link in the code
+   *  email, ruling C6). */
+  signupToken: string;
 }
 
 /** As src/routes/shares.ts TOKEN_RE: a signup token is 20-64 base64url
@@ -126,6 +130,7 @@ export async function loadSignup(db: Db, token: string): Promise<SignupView | nu
     blurb: String(x.blurb ?? ''),
     hasCover: x.has_cover === true,
     ownerEmail: String(x.owner_email ?? ''),
+    signupToken: token,
   };
 }
 
@@ -290,13 +295,20 @@ async function codesInWindow(db: Db, rowId: string, now: Date): Promise<number> 
  * Start (or restart) a claim and email its code. In order:
  *   the honeypot → 'sent' with a ref matching no row, nothing stored or sent;
  *   name, email, the profile link (approval mode), tz (kept only when Intl
- *   accepts it); the campaign open; ARC mail on; the address not suppressed
+ *   accepts it); the campaign open — or, once sign-ups are closed (by date
+ *   or by the author), the address holds an open copy (it asks for its link
+ *   again: copies keep working after a close, F13; final review minor 1);
+ *   ARC mail on; the address not suppressed
  *   (Not me, or Stop for this author); the per-address limit; then the
  *   address's existing row — declined or a closed copy → 'answered' (F9,
- *   no mail; one wording), any other is reused (its name never changes) —
- *   or a new 'unverified' row; codes_sent under codesPerRow, counted over
- *   CODES_WINDOW_MS; a fresh code
- *   and ref; the 'code' email. When it does not go the code is cleared.
+ *   no mail; one wording), any other is reused — or a new 'unverified'
+ *   row; codes_sent under codesPerRow, counted over CODES_WINDOW_MS; a
+ *   fresh code and ref, and, for a row still unverified, this claim's name,
+ *   profile link and tz (final review Important 1: the name a code confirms
+ *   is the name typed with it, so nobody's earlier claim names someone
+ *   else's copy; a waiting or claimed reader keeps their name); the 'code'
+ *   email, which names that name and carries the code page's link (C6).
+ *   When it does not go the code is cleared.
  * A new or still-unverified reader is refused 'full' when the waiting and
  * claimed readers already reach the cap (a courtesy: no code for a copy
  * that cannot be given; the cap itself is enforced at the code).
@@ -326,11 +338,12 @@ export async function startClaim(
   }
   const tz = cleanTz(input.tz);
   const now = deps.now();
-  if (campaignState(c, now) !== 'open') return { kind: 'refused', reason: 'closed' };
+  let row = await rowByEmail(db, c.share_id, email);
+  // Sign-ups closed: only a reader whose copy still opens may ask again (to get its link back).
+  if (campaignState(c, now) !== 'open' && !(row?.status === 'claimed' && row.revoked_at == null)) return { kind: 'refused', reason: 'closed' };
   if (arcMailOff(deps)) return { kind: 'refused', reason: 'mail-off' };
   if (await suppressionOf(db, config, email, c.owner_id)) return { kind: 'refused', reason: 'blocked' };
 
-  let row = await rowByEmail(db, c.share_id, email);
   if (row?.status === 'declined') return { kind: 'refused', reason: 'answered' };
   if (row && row.revoked_at != null) return { kind: 'refused', reason: 'answered' };
   if (!row || row.status === 'unverified') {
@@ -373,17 +386,25 @@ export async function startClaim(
 
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
   const ref = randomBytes(24).toString('base64url');
-  const set = await db.query(
+  // An unverified row takes this claim's name, profile link and tz with
+  // its new code (Important 1); a waiting or claimed reader keeps theirs.
+  const set = await db.query<{ id: string; name: string }>(
     `update share_recipients set verify_code_hash = $2, verify_expires_at = $3, verify_attempts = 0,
-       verify_ref_hash = $4, codes_sent = codes_sent + 1
+       verify_ref_hash = $4, codes_sent = codes_sent + 1,
+       name = case when status = 'unverified' then $6::text else name end,
+       profile_link = case when status = 'unverified' then $7::text else profile_link end,
+       tz = case when status = 'unverified' then $8::text else tz end
      where id = $1 and codes_sent < $5 and status <> 'declined' and revoked_at is null
-     returning id`,
+     returning id, name`,
     [
       row.id,
       tokenHash(`${row.id}:${code}`),
       new Date(now.getTime() + ARC_CLAIM_RULES.codeTtlMs).toISOString(),
       tokenHash(ref),
       ARC_CLAIM_RULES.codesPerRow,
+      name,
+      profile,
+      tz,
     ],
   );
   if (!set.rows.length) {
@@ -401,7 +422,13 @@ export async function startClaim(
   let mail: ArcSendOutcome;
   try {
     const ctx = mailContext(deps, s, row.id);
-    mail = await sendArcMail(deps, toOf(s, row.id, email, ctx.mailToken), 'code', arcCodeEmail(config, ctx, code));
+    const forName = set.rows[0]!.name;
+    mail = await sendArcMail(
+      deps,
+      toOf(s, row.id, email, ctx.mailToken),
+      'code',
+      arcCodeEmail(config, ctx, code, { name: forName, codePage: codePageUrl(config, s.signupToken, ref) }),
+    );
   } catch (err) {
     // A transport that throws: logged; the reader is told to try later.
     console.error('arc: the code email could not be sent', err);
@@ -436,7 +463,9 @@ type TxResult =
  * codeAttempts times, is 'expired'. The right code clears the code fields
  * (and codes_sent: the address is proven) and sets email_verified_at; then,
  * in one transaction under the campaign row lock:
- *   not open → closed; declined, or a closed copy (F9) → answered;
+ *   not open → closed, unless the reader holds an open copy (a lost link
+ *     asked for again after sign-ups closed: a new link, final review minor 1);
+ *   declined, or a closed copy (F9) → answered;
  *   claimed → mintCopy again (a new link; the old one stops), 'ready' sent;
  *   pending → pending;
  *   unverified, instant → mintCopy (0 rows → full), 'ready' sent after the
@@ -476,12 +505,13 @@ export async function verifyClaim(deps: ArcDeps, s: SignupView, ref: unknown, co
     const locked = await tx.query<Record<string, unknown>>(`select ${CAMPAIGN_COLS} from arc_campaigns c where c.id = $1 for update`, [c.id]);
     if (!locked.rows[0]) return { kind: 'refused', reason: 'closed' };
     const fresh = rowOf(locked.rows[0]);
-    if (campaignState(fresh, now) !== 'open') return { kind: 'refused', reason: 'closed' };
     const cur = await tx.query<{ status: ArcRow['status']; revoked_at: unknown }>(
       `select status, revoked_at from share_recipients where id = $1 and share_id = $2 and role = 'arc'`,
       [found.id, fresh.share_id],
     );
     const r = cur.rows[0];
+    const holdsOpenCopy = r?.status === 'claimed' && r.revoked_at == null;
+    if (campaignState(fresh, now) !== 'open' && !holdsOpenCopy) return { kind: 'refused', reason: 'closed' };
     if (!r) return { kind: 'refused', reason: 'unknown' };
     if (r.status === 'declined') return { kind: 'refused', reason: 'answered' };
     if (r.revoked_at != null) return { kind: 'refused', reason: 'answered' };
@@ -557,11 +587,14 @@ async function tellAuthor(deps: ArcDeps, s: SignupView, notify: { previous: stri
   }
 }
 
-/** Unverified claims older than 24 hours (unverifiedTtlMs), and nothing
- *  else: waiting, claimed and declined readers and beta links stay. */
+/** Unverified claims untouched for 24 hours (unverifiedTtlMs) — the later
+ *  of their creation and their newest code's expiry (final review minor 2:
+ *  a row asked again today keeps its live code) — and nothing else:
+ *  waiting, claimed and declined readers and beta links stay. */
 export async function purgeArcUnverified(db: Db, now: Date): Promise<number> {
   const r = await db.query(
-    `delete from share_recipients where role = 'arc' and status = 'unverified' and created_at < $1 returning id`,
+    `delete from share_recipients where role = 'arc' and status = 'unverified'
+       and greatest(created_at, verify_expires_at) < $1 returning id`,
     [new Date(now.getTime() - ARC_CLAIM_RULES.unverifiedTtlMs).toISOString()],
   );
   return r.rows.length;

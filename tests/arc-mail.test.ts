@@ -44,6 +44,9 @@ import { createTestDb, testConfig } from './helpers.js';
  * check uses its stream transport, which only builds the message.
  */
 
+/** What a code email names and links (final review Important 1, ruling C6); the values are the test's. */
+const CODE_ABOUT = { name: 'Sarah Reed', codePage: 'https://beuk.example/arc/signup-token-0123456789/check?r=ref-0123456789abcdef' };
+
 /** A test salt of exactly ARC_SALT_MIN_LENGTH (32) characters. */
 const SALT = 'salt-1-0123456789abcdef-0123456x';
 const ARC = { mailFrom: 'Beuk readers <readers@beuk.studio>', smtpUrl: 'smtp://u:p@127.0.0.1:9', suppressionSalt: SALT };
@@ -186,7 +189,7 @@ test('sendArcMail sends nothing when ARC mail is off', async () => {
   const f = await campaignFor(db);
   const to = await readerIn(db, cfg, f, 'off@example.com');
   const fake = new RecordingMailer();
-  const off = await sendArcMail({ db, config: testConfig(), arcMailer: null, now }, to, 'code', arcCodeEmail(cfg, ctxFor(to), '123456'));
+  const off = await sendArcMail({ db, config: testConfig(), arcMailer: null, now }, to, 'code', arcCodeEmail(cfg, ctxFor(to), '123456', CODE_ABOUT));
   assert.equal(off.sent, false);
   assert.equal(off.sent === false && off.reason, 'not-configured');
   // Decided by this task: an injected transport without the salt cannot check suppression, so it is off too.
@@ -194,7 +197,7 @@ test('sendArcMail sends nothing when ARC mail is off', async () => {
     { db, config: testConfig({ arc: { ...ARC, suppressionSalt: null } }), arcMailer: fake, now },
     to,
     'code',
-    arcCodeEmail(cfg, ctxFor(to), '123456'),
+    arcCodeEmail(cfg, ctxFor(to), '123456', CODE_ABOUT),
   );
   assert.deepEqual(noSalt, { sent: false, reason: 'not-configured', detail: 'ARC_SUPPRESSION_SALT is not set' });
   assert.equal(fake.sent.length, 0);
@@ -212,18 +215,18 @@ test('sendArcMail derives the links itself: a wrong token throws, a body with ot
   // A caller holding another reader's token: a programming error.
   const otherToken = arcMailToken(cfg, randomUUID());
   await assert.rejects(
-    sendArcMail(deps, { ...to, mailToken: otherToken }, 'code', arcCodeEmail(cfg, { ...ctxFor(to), mailToken: otherToken }, '123456')),
+    sendArcMail(deps, { ...to, mailToken: otherToken }, 'code', arcCodeEmail(cfg, { ...ctxFor(to), mailToken: otherToken }, '123456', CODE_ABOUT)),
     /not the token derived from to\.recipientId/,
   );
   // The right token in ArcMailTo, but a body built with another token: refused.
-  const wrongBody = arcCodeEmail(cfg, { ...ctxFor(to), mailToken: otherToken }, '123456');
+  const wrongBody = arcCodeEmail(cfg, { ...ctxFor(to), mailToken: otherToken }, '123456', CODE_ABOUT);
   assert.deepEqual(await sendArcMail(deps, to, 'code', wrongBody), {
     sent: false,
     reason: 'refused',
     detail: "the email does not carry this reader's Not me and Stop links",
   });
   // A body whose text is right but whose HTML lost the links: refused too.
-  const right = arcCodeEmail(cfg, ctxFor(to), '123456');
+  const right = arcCodeEmail(cfg, ctxFor(to), '123456', CODE_ABOUT);
   const htmlWithout = { ...right, html: right.html.replaceAll(to.mailToken, otherToken) };
   assert.equal((await sendArcMail(deps, to, 'code', htmlWithout)).sent, false);
   assert.equal(fake.sent.length, 0, 'nothing reached the transport');
@@ -261,7 +264,7 @@ test('Not me blocks every author; Stop blocks only that author', async () => {
   assert.equal(await suppressionOf(db, cfg, 'notme@example.com', a.ownerId), 'all');
   assert.equal(await suppressionOf(db, cfg, 'notme@example.com', b.ownerId), 'all');
   for (const to of [nmA, nmB]) {
-    const r = await sendArcMail(deps, to, 'code', arcCodeEmail(cfg, ctxFor(to), '000001'));
+    const r = await sendArcMail(deps, to, 'code', arcCodeEmail(cfg, ctxFor(to), '000001', CODE_ABOUT));
     assert.equal(r.sent === false && r.reason, 'suppressed');
   }
   assert.equal(fake.sent.length, 1, 'nothing more was sent');
@@ -283,7 +286,7 @@ test('the limits count delivered sends only', async () => {
   const f = await campaignFor(db);
   const to = await readerIn(db, cfg, f, 'limits@example.com');
   const refusing = new RecordingMailer({ delivered: false, reason: 'SMTP server accepted no recipients', loggedToConsole: false });
-  const r = await sendArcMail({ db, config: cfg, arcMailer: refusing, now }, to, 'code', arcCodeEmail(cfg, ctxFor(to), '111111'));
+  const r = await sendArcMail({ db, config: cfg, arcMailer: refusing, now }, to, 'code', arcCodeEmail(cfg, ctxFor(to), '111111', CODE_ABOUT));
   assert.deepEqual(r, { sent: false, reason: 'refused', detail: 'SMTP server accepted no recipients' });
   assert.equal(refusing.sent.length, 1);
   assert.deepEqual(await events(f.campaignId), []);
@@ -302,8 +305,8 @@ test('the limits count delivered sends only', async () => {
      select $1, $2, k, $3::timestamptz from unnest(array['claimed', 'downloaded', 'not_me', 'stopped', 'codexsent']) as k`,
     [f.campaignId, to.recipientId, NOW.toISOString()],
   );
-  assert.deepEqual(await sendArcMail(deps, to, 'code', arcCodeEmail(cfg, ctxFor(to), '222222')), { sent: true }, 'the 100th');
-  const limited = await sendArcMail(deps, to, 'code', arcCodeEmail(cfg, ctxFor(to), '333333'));
+  assert.deepEqual(await sendArcMail(deps, to, 'code', arcCodeEmail(cfg, ctxFor(to), '222222', CODE_ABOUT)), { sent: true }, 'the 100th');
+  const limited = await sendArcMail(deps, to, 'code', arcCodeEmail(cfg, ctxFor(to), '333333', CODE_ABOUT));
   assert.equal(limited.sent === false && limited.reason, 'rate-limited');
   assert.equal(fake.sent.length, 1);
   // An hour later the campaign may send again.
@@ -320,16 +323,16 @@ test('the limits count delivered sends only', async () => {
       `insert into arc_events (campaign_id, kind, at) select $1, 'ready_sent', $2::timestamptz - interval '5 minutes' from generate_series(1, 100)`,
       [c.campaignId, NOW.toISOString()],
     );
-  const ownerHour = await sendArcMail(deps, t3, 'code', arcCodeEmail(cfg, ctxFor(t3), '444444'));
+  const ownerHour = await sendArcMail(deps, t3, 'code', arcCodeEmail(cfg, ctxFor(t3), '444444', CODE_ABOUT));
   assert.equal(ownerHour.sent === false && ownerHour.reason, 'rate-limited');
   // Two hours on, the hour is clear, the day is not yet full: it goes.
   const twoHours = () => new Date(NOW.getTime() + 2 * 3_600_000);
-  assert.deepEqual(await sendArcMail({ ...deps, now: twoHours }, t3, 'code', arcCodeEmail(cfg, ctxFor(t3), '555555')), { sent: true });
+  assert.deepEqual(await sendArcMail({ ...deps, now: twoHours }, t3, 'code', arcCodeEmail(cfg, ctxFor(t3), '555555', CODE_ABOUT)), { sent: true });
   await db.query(
     `insert into arc_events (campaign_id, kind, at) select $1, 'approved_sent', $2::timestamptz - interval '20 hours' from generate_series(1, 799)`,
     [o2.campaignId, NOW.toISOString()],
   );
-  const ownerDay = await sendArcMail({ ...deps, now: twoHours }, t3, 'code', arcCodeEmail(cfg, ctxFor(t3), '666666'));
+  const ownerDay = await sendArcMail({ ...deps, now: twoHours }, t3, 'code', arcCodeEmail(cfg, ctxFor(t3), '666666', CODE_ABOUT));
   assert.equal(ownerDay.sent === false && ownerDay.reason, 'rate-limited');
   assert.match(ownerDay.sent === false ? ownerDay.detail : '', /1000/);
 });
@@ -345,7 +348,7 @@ test('every reader email carries Not me, Stop, the unsubscribe headers, and no r
   assert.equal(stopUrl, `https://beuk.example/arc/m/${to.mailToken}/stop`);
   const copy = 'https://beuk.example/arc/r/copy-token';
   const builders: [ArcMailKind, RenderedEmail][] = [
-    ['code', arcCodeEmail(cfg, ctx, '123456')],
+    ['code', arcCodeEmail(cfg, ctx, '123456', CODE_ABOUT)],
     ['ready', arcReadyEmail(cfg, ctx, copy)],
     ['pending', arcPendingEmail(cfg, ctx)],
     ['approved', arcApprovedEmail(cfg, ctx, copy)],

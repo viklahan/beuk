@@ -587,6 +587,179 @@ test('a hostile name, title or author is escaped on every page this task adds', 
   clean(used.text);
 });
 
+/* ---------------- the final fix wave (rulings C7, final review minors) ---------------- */
+
+test('HEAD on the download answers its headers only: nothing stamped, counted or recorded (C7)', async () => {
+  const { campaign, signup } = await campaignOn(arcOn.base);
+  const sarah = await claimed(arcOn.base, arcMail, signup, campaign.shareId, 'Sarah', 'sarah.head@example.com');
+  for (let i = 0; i < 12; i++) {
+    const h = await fetch(`${arcOn.base}/arc/r/${sarah.token}/epub`, { method: 'HEAD' });
+    assert.equal(h.status, 200);
+    assert.equal(h.headers.get('content-type'), 'application/epub+zip');
+    assert.match(h.headers.get('content-disposition') ?? '', /^attachment; filename="/);
+    assert.equal(h.headers.get('cache-control'), 'no-store');
+    assert.equal(h.headers.get('x-robots-tag'), 'noindex, nofollow');
+    assert.equal((await h.arrayBuffer()).byteLength, 0, 'no body');
+  }
+  assert.equal(await count(`arc_events where recipient_id = $1 and kind = 'downloaded'`, [sarah.id]), 0, 'nothing recorded');
+  // Twelve HEADs used none of the ten downloads an hour.
+  for (let i = 0; i < 10; i++) assert.equal((await download(arcOn.base, sarah.token)).status, 200, `download ${i + 1}`);
+  assert.equal(await count(`arc_events where recipient_id = $1 and kind = 'downloaded'`, [sarah.id]), 10);
+  // Unknown and closed copies answer as the GET would, with no body.
+  assert.equal((await fetch(`${arcOn.base}/arc/r/${'A'.repeat(32)}/epub`, { method: 'HEAD' })).status, 404);
+  await db.query('update share_recipients set revoked_at = $2 where id = $1', [sarah.id, clock.toISOString()]);
+  assert.equal((await fetch(`${arcOn.base}/arc/r/${sarah.token}/epub`, { method: 'HEAD' })).status, 410);
+});
+
+test('a download whose record fails is still sent, and the failure is logged (final review minor)', async (t) => {
+  const { campaign, signup } = await campaignOn(arcOn.base);
+  const sarah = await claimed(arcOn.base, arcMail, signup, campaign.shareId, 'Sarah', 'sarah.rec@example.com');
+  // The database refuses the 'downloaded' row for this reader only.
+  await db.query(`create or replace function arc_test_refuse_download() returns trigger language plpgsql as $f$
+    begin
+      if new.kind = 'downloaded' and new.recipient_id = '${sarah.id}' then raise exception 'test: arc_events refuses this row'; end if;
+      return new;
+    end $f$`);
+  await db.query('create trigger arc_test_refuse_download before insert on arc_events for each row execute function arc_test_refuse_download()');
+  const logged = t.mock.method(console, 'error', () => {});
+  try {
+    const d = await download(arcOn.base, sarah.token);
+    assert.equal(d.status, 200, d.bytes.toString('utf8').slice(0, 300));
+    assert.ok(isZip(d.bytes), 'the stamped file went');
+    assert.ok(stampedOf(readZip(d.bytes)).length === 1, 'stamped');
+    assert.ok(logged.mock.calls.some((c) => String(c.arguments[0]).includes('could not be recorded')), 'logged');
+    assert.ok(!logged.mock.calls.some((c) => c.arguments.map(String).join(' ').includes('sarah.rec@example.com')), 'without the address');
+  } finally {
+    logged.mock.restore();
+    await db.query('drop trigger arc_test_refuse_download on arc_events');
+    await db.query('drop function arc_test_refuse_download()');
+  }
+  assert.equal(await count(`arc_events where recipient_id = $1 and kind = 'downloaded'`, [sarah.id]), 0);
+  // The download that went keeps its place in the limit (10 an hour): nine more, then 429.
+  for (let i = 0; i < 9; i++) assert.equal((await download(arcOn.base, sarah.token)).status, 200, `download ${i + 2}`);
+  assert.equal((await download(arcOn.base, sarah.token)).status, 429);
+});
+
+test('Stop says the copy keeps working only to a reader whose copy still opens (C7)', async () => {
+  // Instant mode: a claimed reader.
+  const { w, campaign, signup } = await campaignOn(arcOn.base);
+  const sarah = await claimed(arcOn.base, arcMail, signup, campaign.shareId, 'Sarah', 'sarah.c7@example.com');
+  const copyLine = esc('arc.stop.doneCopy');
+  assert.equal(ARC_EN['arc.stop.doneCopy'], 'Your copy keeps working.');
+  assert.ok(!ARC_EN['arc.stop.done'].includes('copy'), 'the done line itself promises nothing about a copy');
+  const a = await postForm(arcOn.base, `/arc/m/${sarah.mailToken}/stop`, { confirm: '1' });
+  assert.equal(a.status, 200);
+  assert.ok(a.text.includes(esc('arc.stop.done', { author: 'Ada Moss' })) && a.text.includes(copyLine), 'claimed: said');
+  // A closed copy: not said.
+  const tom = await claimed(arcOn.base, arcMail, signup, campaign.shareId, 'Tom', 'tom.c7@example.com');
+  assert.equal((await w.c.post(`/api/arc/${campaign.id}/readers/${tom.id}/revoke`)).status, 200);
+  const b = await postForm(arcOn.base, `/arc/m/${tom.mailToken}/stop`, { confirm: '1' });
+  assert.equal(b.status, 200);
+  assert.ok(b.text.includes(esc('arc.stop.done', { author: 'Ada Moss' })) && !b.text.includes(copyLine), 'closed copy: not said');
+  // A reader with no copy (unverified: their code email carries Stop too): not said.
+  const before = arcMail.sent.length;
+  const asked = await postForm(arcOn.base, `/arc/${signup}`, { name: 'Una', email: 'una.c7@example.com' });
+  assert.equal(asked.status, 303);
+  const code = arcMail.sent.slice(before).find((m) => m.to === 'una.c7@example.com')!;
+  const unaToken = /\/arc\/m\/([A-Za-z0-9_-]+)\/stop/.exec(code.text)![1];
+  const c = await postForm(arcOn.base, `/arc/m/${unaToken}/stop`, { confirm: '1' });
+  assert.equal(c.status, 200);
+  assert.ok(!c.text.includes(copyLine), 'no copy: not said');
+});
+
+test('one-click acts on Stop only; Not me needs its button (C7)', async () => {
+  const { campaign, signup } = await campaignOn(arcOn.base);
+  const sarah = await claimed(arcOn.base, arcMail, signup, campaign.shareId, 'Sarah', 'sarah.oc@example.com');
+  const form = new FormData();
+  form.set('List-Unsubscribe', 'One-Click');
+  for (const body of [new URLSearchParams({ 'List-Unsubscribe': 'One-Click' }), form]) {
+    const r = await fetch(`${arcOn.base}/arc/m/${sarah.mailToken}/not-me`, { method: 'POST', body });
+    assert.equal(r.status, 400, 'the button page again');
+    assert.ok((await r.text()).includes(`action="/arc/m/${sarah.mailToken}/not-me"`));
+  }
+  assert.ok(await rowOf(sarah.id), 'the reader is still there');
+  assert.equal(await count(`mail_suppressions where hash = $1`, [suppressionHash(arcOn.config, sarah.email)]), 0, 'no suppression');
+  assert.equal((await download(arcOn.base, sarah.token)).status, 200, 'the copy still opens');
+  // The same body on Stop acts (RFC 8058).
+  const stop = await fetch(`${arcOn.base}/arc/m/${sarah.mailToken}/stop`, { method: 'POST', body: new URLSearchParams({ 'List-Unsubscribe': 'One-Click' }) });
+  assert.equal(stop.status, 200);
+  assert.ok((await rowOf(sarah.id))!.mail_stopped_at != null);
+});
+
+test('a form body the parser refuses gets the calm page with its status (C7)', async () => {
+  const { campaign, signup } = await campaignOn(arcOn.base);
+  const sarah = await claimed(arcOn.base, arcMail, signup, campaign.shareId, 'Sarah', 'sarah.413@example.com');
+  const big = new URLSearchParams({ name: 'x'.repeat(9000), email: 'big@example.com' });
+  const many = new URLSearchParams();
+  for (let i = 0; i < 1001; i++) many.append(`f${i}`, '1');
+  const calm = esc('arc.page.badFormTitle');
+  for (const [p, body, why] of [
+    [`/arc/${signup}`, big, 'claim: over 8 KB'],
+    [`/arc/${signup}`, many, 'claim: too many fields'],
+    [`/arc/${signup}/check`, big, 'code: over 8 KB'],
+    [`/arc/m/${sarah.mailToken}/stop`, big, 'Stop: over 8 KB'],
+    [`/arc/m/${sarah.mailToken}/not-me`, many, 'Not me: too many fields'],
+  ] as const) {
+    const r = await fetch(`${arcOn.base}${p}`, { method: 'POST', body, headers: { 'x-forwarded-for': freshIp() } });
+    const text = await r.text();
+    assert.equal(r.status, 413, `${why}: ${text.slice(0, 200)}`);
+    assert.match(r.headers.get('content-type') ?? '', /^text\/html/, why);
+    assert.equal(r.headers.get('x-robots-tag'), 'noindex, nofollow', why);
+    assert.ok(text.includes(calm) && text.includes(esc('arc.page.badForm')), why);
+    assert.ok(!/PayloadTooLarge|entity|parameters|at \S+ \(/i.test(text), `${why}: no error details`);
+  }
+  // A multipart body over 8 KB on the mail link too.
+  const fat = new FormData();
+  fat.set('List-Unsubscribe', 'x'.repeat(9000));
+  const r = await fetch(`${arcOn.base}/arc/m/${sarah.mailToken}/stop`, { method: 'POST', body: fat });
+  assert.equal(r.status, 413);
+  assert.ok((await r.text()).includes(calm));
+  assert.equal((await rowOf(sarah.id))!.mail_stopped_at, null, 'nothing changed');
+  assert.equal(await count(`share_recipients where share_id = $1 and email = 'big@example.com'`, [campaign.shareId]), 0);
+});
+
+test('a Spanish book: Not me and Stop, their pages and their done pages, in Spanish', async () => {
+  // Final review ledger: an HTTP test of the mail pages in a language other than English.
+  const es = arcT('es');
+  const { campaign, signup } = await campaignOn(arcOn.base, { language: 'es' });
+  const reader = async (name: string, email: string) => {
+    const since = arcMail.sent.length;
+    const a = await postForm(arcOn.base, `/arc/${signup}`, { name, email });
+    assert.equal(a.status, 303, a.text.slice(0, 300));
+    const ref = new URL(a.location!, 'http://x').searchParams.get('r')!;
+    const codeMail = arcMail.sent.slice(since).find((m) => m.to === email && m.subject === es('arc.mail.code.subject', { title: 'The Salt Road' }))!;
+    const code = /(\d{6})/.exec(codeMail.text)![1];
+    assert.equal((await postForm(arcOn.base, `/arc/${signup}/check`, { r: ref, code })).status, 303);
+    const ready = arcMail.sent.slice(since).find((m) => m.to === email && m.subject === es('arc.mail.ready.subject', { title: 'The Salt Road' }));
+    assert.ok(ready, 'the copy email, in Spanish');
+    return /\/arc\/m\/([A-Za-z0-9_-]+)\/not-me/.exec(ready.text)![1];
+  };
+  const e = (k: keyof typeof ARC_EN, v?: Record<string, string>) => escapeHtml(es(k, v));
+  const lucia = await reader('Lucía', 'lucia.es@example.com');
+  const vars = { title: 'The Salt Road', author: 'Ada Moss' };
+  for (const [action, title, body, button] of [
+    ['not-me', 'arc.notMe.title', 'arc.notMe.body', 'arc.notMe.button'],
+    ['stop', 'arc.stop.title', 'arc.stop.body', 'arc.stop.button'],
+  ] as const) {
+    const page = await get(arcOn.base, `/arc/m/${lucia}/${action}`);
+    assert.equal(page.status, 200);
+    assert.match(page.text, /<html lang="es" dir="ltr">/);
+    for (const k of [title, body, button]) assert.ok(page.text.includes(e(k, vars)), `${action} ${k} in Spanish`);
+    assert.ok(!page.text.includes(esc(button)), `${action}: no English button`);
+  }
+  const stopped = await postForm(arcOn.base, `/arc/m/${lucia}/stop`, { confirm: '1' });
+  assert.equal(stopped.status, 200);
+  assert.match(stopped.text, /<html lang="es" dir="ltr">/);
+  assert.ok(stopped.text.includes(e('arc.mail.doneTitle')) && stopped.text.includes(e('arc.stop.done', vars)) && stopped.text.includes(e('arc.stop.doneCopy')));
+  const pablo = await reader('Pablo', 'pablo.es@example.com');
+  const gone = await postForm(arcOn.base, `/arc/m/${pablo}/not-me`, { confirm: '1' });
+  assert.equal(gone.status, 200);
+  assert.match(gone.text, /<html lang="es" dir="ltr">/);
+  assert.ok(gone.text.includes(e('arc.notMe.done', vars)) && gone.text.includes(e('arc.notMe.backups')));
+  assert.ok(!gone.text.includes(esc('arc.notMe.backups')), 'not the English');
+  assert.equal(await count(`share_recipients where share_id = $1 and email = 'pablo.es@example.com'`, [campaign.shareId]), 0);
+});
+
 test("a paused author's readers still download", async () => {
   const w = await writer(paid.base);
   await db.query('update users set trial_ends_at = $2 where id = $1', [w.id, new Date(clock.getTime() + 7 * DAY)]);

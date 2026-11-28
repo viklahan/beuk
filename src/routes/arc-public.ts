@@ -1,9 +1,10 @@
 import { randomBytes } from 'node:crypto';
-import express, { Router, type NextFunction, type Request, type Response } from 'express';
+import express, { Router, type ErrorRequestHandler, type NextFunction, type Request, type Response } from 'express';
 import type { ArcDeps } from '../arc/campaigns.js';
 import { campaignState } from '../arc/campaigns.js';
 import { loadSignup, rowByRef, SIGNUP_TOKEN_RE, startClaim, verifyClaim, type ArcPublicLimits, type SignupView, type StartOutcome } from '../arc/claims.js';
 import {
+  renderBadFormPage,
   renderClaimPage,
   renderClosedPage,
   renderCodePage,
@@ -58,16 +59,24 @@ import { attachmentDisposition } from './epub.js';
  *                              410 closed)
  *   GET  /arc/r/:token/epub    their stamped EPUB (stamped per download,
  *                              never stored; 429 / 503 / 500 pages)
+ *   HEAD /arc/r/:token/epub    the download's headers only: nothing stamped,
+ *                              counted or recorded (ruling C7)
  *   GET  /arc/m/:mailToken/:action   Not me (not-me) or Stop (stop): a page
  *                              with one POST button; nothing changes
- *   POST /arc/m/:mailToken/:action   the button or RFC 8058 one-click → the
- *                              done page; unknown or used → 404
+ *   POST /arc/m/:mailToken/:action   the button, or for Stop only an RFC 8058
+ *                              one-click (C7: the one-click header is the
+ *                              Stop link) → the done page; unknown or used → 404
  * A signup token is 20-64 base64url characters (SIGNUP_TOKEN_RE), and the
  * reader routes are registered before the /:signup routes, so /arc/r/… and
  * /arc/m/… never reach them. Claimed readers also read through
  * /read/:token (ruling R4a: the copy page links there, and nothing here
  * opens the reader by any other check). Forms are urlencoded, 8 KB at
- * most (the mail POST also takes multipart, F22). Nothing here is paused
+ * most (the mail POST also takes multipart, F22); a body the parser
+ * refuses (too long, too many fields) gets the calm unreadable-form page
+ * with its status, from this router's own error handler (C7). Once
+ * sign-ups close, the claim page is the closed page with a lost-link form:
+ * a reader who holds a copy can still get its link again (copies keep
+ * working after a close; final review minor 1). Nothing here is paused
  * for a paused author (src/access.ts NEVER_PAUSED).
  */
 
@@ -124,7 +133,8 @@ export function arcPublicRoutes(
     return view;
   };
   const isOpen = (view: SignupView) => campaignState(view.campaign, deps.now()) === 'open';
-  const closed = (res: Response, view: SignupView) => sendPage(res, 410, (nonce) => renderClosedPage(view, { nonce }));
+  const closed = (res: Response, view: SignupView, extra: { values?: ClaimValues; error?: ClaimRefusal } = {}) =>
+    sendPage(res, 410, (nonce) => renderClosedPage(view, { nonce, signup: view.signupToken, ...extra }));
 
   const claimPage = (res: Response, status: number, view: SignupView, token: string, extra: { values?: ClaimValues; error?: ClaimRefusal } = {}) =>
     sendPage(res, status, (nonce) => renderClaimPage(view, { nonce, signup: token, ...extra }));
@@ -160,6 +170,26 @@ export function arcPublicRoutes(
   });
 
   /*
+   * HEAD on the download (ruling C7): what a GET would answer, headers
+   * only — 404 / 410 when the copy is unknown or closed, else 200 with the
+   * download's headers. Nothing is stamped, counted against the limit or
+   * recorded: a mail scanner or a download manager's probe is not a
+   * download. (Express would otherwise run the GET handler for a HEAD.)
+   */
+  router.head('/r/:token/epub', async (req, res, next) => {
+    try {
+      const reader = await resolveReader(deps.db, req.params.token, deps.now());
+      if (!reader) return res.status(404).set(readerHeaders(randomBytes(16).toString('base64'))).end();
+      if (reader.status !== 'active') return res.status(410).set(readerHeaders(randomBytes(16).toString('base64'))).end();
+      const build = await deps.db.query<{ epub_filename: string }>('select epub_filename from arc_builds where id = $1', [reader.buildId || null]);
+      res.set(downloadHeaders(build.rows[0]?.epub_filename ?? 'book-arc.epub'));
+      return res.status(200).end();
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  /*
    * The stamped download. In order: the reader (404 / 410, no bytes); the
    * per-reader limit (downloadsPerReader, 10 an hour → 429 with
    * Retry-After); the download queue, one run per reader (ruling F20: a
@@ -167,7 +197,10 @@ export function arcPublicRoutes(
    * taken → 503, Retry-After 30); inside it the build is read and stamped
    * for this reader (stampEpub; never stored); a failure is logged and
    * answered with the calm 500 page. Only a download that is sent is
-   * counted against the limit and recorded ('downloaded').
+   * counted against the limit and recorded ('downloaded'). When recording
+   * it fails (the database), the failure is logged and the stamped file
+   * still goes: the reader did nothing wrong, and the download did happen,
+   * so its slot stays counted (final review minor 3).
    */
   router.get('/r/:token/epub', async (req, res, next) => {
     try {
@@ -207,15 +240,13 @@ export function arcPublicRoutes(
         console.error(`arc: the copy for campaign ${reader.campaignId} could not be stamped:`, err instanceof StampError ? err.message : err);
         return copyPage(500, 'failed');
       }
-      await recordDownload(deps.db, reader, deps.now());
-      res.set({
-        'Content-Type': 'application/epub+zip',
-        'Content-Disposition': attachmentDisposition(out.filename, 'book-arc.epub'),
-        'Cache-Control': 'no-store',
-        'Referrer-Policy': 'no-referrer',
-        'X-Robots-Tag': 'noindex, nofollow',
-        'X-Content-Type-Options': 'nosniff',
-      });
+      try {
+        await recordDownload(deps.db, reader, deps.now());
+      } catch (err) {
+        // Logged without the reader's name or address.
+        console.error(`arc: a download for campaign ${reader.campaignId} was sent but could not be recorded:`, err);
+      }
+      res.set(downloadHeaders(out.filename));
       return res.status(200).send(out.bytes);
     } catch (err) {
       return next(err);
@@ -262,12 +293,15 @@ export function arcPublicRoutes(
       if (!found) return;
       const { action, reader } = found;
       const fields = req.is('application/x-www-form-urlencoded') || req.is('multipart/form-data') ? formFields(req.body, req.get('content-type')) : {};
-      const pressed = fields.confirm === '1' || fields['List-Unsubscribe'] === 'One-Click';
+      // The page's button for either; a one-click unsubscribe only for Stop, the one
+      // link List-Unsubscribe names (C7): Not me deletes the reader, so it needs the button.
+      const pressed = fields.confirm === '1' || (action === 'stop' && fields['List-Unsubscribe'] === 'One-Click');
       if (!pressed) return sendPage(res, 400, (nonce) => renderMailActionPage(reader, { nonce, mailToken: req.params.mailToken, action }));
       if (!arcOptOutReady(deps.config)) return sendPage(res, 503, (nonce) => renderMailUnavailablePage(reader, { nonce, action }));
       const done = action === 'not-me' ? await notMe(deps, req.params.mailToken) : await stopMail(deps, req.params.mailToken);
       // Used in between (a second Not me at the same moment): the 404 page.
       if (!done) return mailGone(res);
+      // Stop leaves the copy as it was; reader.copyOpen was read just before.
       return sendPage(res, 200, (nonce) => renderMailDonePage(reader, { nonce, action }));
     } catch (err) {
       return next(err);
@@ -292,10 +326,14 @@ export function arcPublicRoutes(
       const view = await signup(req, res);
       if (!view) return;
       const token = req.params.signup;
-      if (!isOpen(view)) return closed(res, view);
       const body = (req.body ?? {}) as Record<string, unknown>;
       const values = { name: str(body.name).slice(0, 200), email: str(body.email).slice(0, 300), profile: str(body.profile).slice(0, 400) };
-      if (claimPerIp.reserve(ip(req)) === null) return claimPage(res, 429, view, token, { values, error: 'busy' });
+      // Sign-ups closed: the request goes on only as a lost-link request (startClaim
+      // refuses it as 'closed' unless the address holds an open copy).
+      const open = isOpen(view);
+      const refused = (status: number, error: ClaimRefusal) =>
+        open ? claimPage(res, status, view, token, { values, error }) : closed(res, view, { values, error });
+      if (claimPerIp.reserve(ip(req)) === null) return refused(429, 'busy');
       const out = await startClaim(
         deps,
         view,
@@ -303,8 +341,8 @@ export function arcPublicRoutes(
         codesPerAddress,
       );
       if (out.kind === 'sent') return res.redirect(303, `/arc/${token}/check?r=${encodeURIComponent(out.ref)}`);
-      if (out.reason === 'closed') return closed(res, view);
-      return claimPage(res, START_STATUS[out.reason], view, token, { values, error: out.reason });
+      if (out.reason === 'closed') return closed(res, view, { values });
+      return refused(START_STATUS[out.reason], out.reason);
     } catch (err) {
       return next(err);
     }
@@ -314,9 +352,10 @@ export function arcPublicRoutes(
     try {
       const view = await signup(req, res);
       if (!view) return;
-      if (!isOpen(view)) return closed(res, view);
       const ref = str(req.query.r);
       const row = await rowByRef(deps.db, view, ref);
+      // Sign-ups closed: the code page only for a code that was sent (a lost-link request).
+      if (!isOpen(view) && !row) return closed(res, view);
       return sendPage(res, 200, (nonce) => renderCodePage(view, { nonce, signup: req.params.signup, ref, email: row?.email ?? null }));
     } catch (err) {
       return next(err);
@@ -363,5 +402,32 @@ export function arcPublicRoutes(
     }
   });
 
+  /*
+   * This router's own error handler (ruling C7): a body the form parsers
+   * refuse — longer than 8 KB (413), too many fields (413), a bad charset
+   * (415), a body that cannot be parsed (400) — gets the calm unreadable-
+   * form page with that status, never the app's generic error. Anything
+   * else goes on to the app's handler.
+   */
+  const formError: ErrorRequestHandler = (err, _req, res, next) => {
+    const e = err as { type?: unknown; status?: unknown; expose?: unknown } | null;
+    const status = typeof e?.status === 'number' ? e.status : 0;
+    if (typeof e?.type !== 'string' || e.expose !== true || status < 400 || status > 499 || res.headersSent) return next(err);
+    return sendPage(res, status, (nonce) => renderBadFormPage({ nonce }));
+  };
+  router.use(formError);
+
   return router;
+}
+
+/** The headers of a stamped download (GET) and of its HEAD. */
+function downloadHeaders(filename: string): Record<string, string> {
+  return {
+    'Content-Type': 'application/epub+zip',
+    'Content-Disposition': attachmentDisposition(filename, 'book-arc.epub'),
+    'Cache-Control': 'no-store',
+    'Referrer-Policy': 'no-referrer',
+    'X-Robots-Tag': 'noindex, nofollow',
+    'X-Content-Type-Options': 'nosniff',
+  };
 }

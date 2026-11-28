@@ -26,10 +26,20 @@ import { Client, createTestDb, registerUser, startTestServer, type TestServer } 
  *   - The used-mail-link page (arc.mail.goneTitle, arc.mail.gone) knows no
  *     reader language (src/arc/pages.ts renderMailGonePage), so it stays
  *     English and no draft carries it either.
+ *   - The unreadable-form page (arc.page.badFormTitle, arc.page.badForm;
+ *     final fix wave, ruling C7): the body is refused before its link is
+ *     read, so it knows no reader language either.
  */
 
 /** The keys no draft carries (see above). */
-const ENGLISH_ONLY: readonly ArcKey[] = ['arc.stamp', 'arc.stampPage.title', 'arc.mail.goneTitle', 'arc.mail.gone'];
+const ENGLISH_ONLY: readonly ArcKey[] = [
+  'arc.stamp',
+  'arc.stampPage.title',
+  'arc.mail.goneTitle',
+  'arc.mail.gone',
+  'arc.page.badFormTitle',
+  'arc.page.badForm',
+];
 const DRAFT_LANGS = ARC_LANGS.filter((l) => l !== 'en');
 const DRAFT_KEYS = (Object.keys(ARC_EN) as ArcKey[]).filter((k) => !ENGLISH_ONLY.includes(k));
 const table = (lang: ArcLang) => ARC_STRINGS[lang] as Record<string, string | undefined>;
@@ -120,7 +130,8 @@ test('docs/strings-pending-signoff.md lists every draft key, unsigned, with ever
   assert.ok(at >= 0, 'section 9 is there');
   const s9 = doc.slice(at);
   assert.ok(s9.toLowerCase().includes('not approved'));
-  assert.doesNotMatch(doc.toLowerCase(), /\bapproved by\b|\bsigned off by v\b/);
+  // Scoped to §9 (final review ledger): the other sections are other work's.
+  assert.doesNotMatch(s9.toLowerCase(), /\bapproved by\b|\bsigned off by v\b/);
   for (const k of DRAFT_KEYS) {
     assert.ok(s9.includes('### `' + k + '`'), `${k} is listed`);
     for (const lang of DRAFT_LANGS) assert.ok(s9.includes('`' + table(lang)[k] + '`'), `${lang} ${k}: the doc shows the draft as the code has it`);
@@ -183,7 +194,8 @@ test('each draft keeps its pack\'s form of address', () => {
   assert.doesNotMatch(all('hi'), word('तुम|तू|तेरा|तुम्हारा|तुम्हें'));
   assert.match(all('hi'), word('आप|आपका|आपकी|आपको|आपने|आपके'));
   // Marathi: तुम्ही, no nukta, never आपण.
-  assert.doesNotMatch(all('mr'), /़/u, 'no nukta in Marathi');
+  // The nukta sign and the precomposed nukta letters U+0958–U+095F (final review ledger).
+  assert.doesNotMatch(all('mr'), /[\u093c\u0958-\u095f]/u, 'no nukta in Marathi');
   assert.doesNotMatch(all('mr'), word('आपण|आपल्या|आपली|आपला'));
   assert.match(all('mr'), word('तुम्ही|तुम्हाला|तुमची|तुमचा|तुमचे|तुमच्या'));
   // The European packs' address (as their studio strings): de Sie, fr vous, nl u, ru вы, es tú.

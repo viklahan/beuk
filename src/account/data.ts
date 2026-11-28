@@ -319,8 +319,10 @@ export function asStudioBackupBook(doc: unknown): Record<string, unknown> | null
  * The readers are the ones the author sees in the ARC panel: waiting,
  * claimed and declined, oldest first. Unconfirmed requests (status
  * 'unverified', deleted after 24 hours) are left out, as the panel leaves
- * them out (decided in Task 5). No token, token hash, mail token or
- * public id is carried. SQL kept here rather than imported from
+ * them out (decided in Task 5). Each reader's publicId is the reader
+ * number their copy carries (the stamp's OPF entry), so the writer can
+ * tell whose copy a file came from (content/legal/privacy.md; final review
+ * Important 2). No token, token hash or mail token is carried. SQL kept here rather than imported from
  * src/arc/campaigns.ts, which pulls in the EPUB build.
  */
 async function arcBlock(db: Db, userId: string, shareId: string): Promise<Record<string, unknown> | null> {
@@ -335,11 +337,11 @@ async function arcBlock(db: Db, userId: string, shareId: string): Promise<Record
   const camp = c.rows[0];
   if (!camp) return null;
   const readers = await db.query<{
-    id: string; name: string; email: string; status: string; profile_link: string | null; tz: string | null;
+    id: string; name: string; email: string; status: string; public_id: string | null; profile_link: string | null; tz: string | null;
     created_at: string; email_verified_at: string | null; claimed_at: string | null; revoked_at: string | null;
     first_opened_at: string | null; last_opened_at: string | null; mail_stopped_at: string | null;
   }>(
-    `select id, name, email, status, profile_link, tz, created_at, email_verified_at, claimed_at, revoked_at,
+    `select id, name, email, status, public_id, profile_link, tz, created_at, email_verified_at, claimed_at, revoked_at,
             first_opened_at, last_opened_at, mail_stopped_at
      from share_recipients
      where share_id = $1 and role = 'arc' and status in ('pending', 'claimed', 'declined')
@@ -362,6 +364,7 @@ async function arcBlock(db: Db, userId: string, shareId: string): Promise<Record
       name: r.name,
       email: r.email,
       status: r.status,
+      publicId: r.public_id,
       profileLink: r.profile_link,
       tz: r.tz,
       askedAt: iso(r.created_at),
@@ -418,7 +421,8 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
     `                        the server only ever kept a scrambled form of them.`,
     `                        An advance-copy (ARC) campaign's file also has an "arc" part:`,
     `                        the campaign's settings and its readers' names and email addresses,`,
-    `                        with each one's status and dates.`,
+    `                        with each one's status, dates and reader number (the number`,
+    `                        inside their copy's file).`,
     `streak.json             Your writing streak: every day the server saw you writing,`,
     `                        the days a freeze or a planned pause covered, and your`,
     `                        freeze balance.`,

@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { tokenHash } from '../auth.js';
 import { buildEpub } from '../book/epub/build.js';
 import type { EpubQueue } from '../book/epub/queue.js';
@@ -9,7 +9,7 @@ import type { Mailer } from '../mailer.js';
 import { hydrateDoc } from '../pictures.js';
 import { renderSnapshot } from '../shares/render.js';
 import { arcApprovedEmail, arcDeclinedEmail, type ArcMailContext } from './emails.js';
-import { arcMailStatus, arcMailToken, sendArcMail, suppressionOf, type ArcSendOutcome } from './mail.js';
+import { arcMailStatus, arcMailToken, arcSignupToken, sendArcMail, suppressionOf, type ArcSendOutcome } from './mail.js';
 import { arcLang, arcT } from './strings.js';
 
 /**
@@ -34,7 +34,9 @@ import { arcLang, arcT } from './strings.js';
  *      EpubInputError / EpubBusyError / EpubBuildError pass up, and the
  *      route answers them with sendEpubError, as POST /api/epub does);
  *   5. one transaction: the share, the campaign, the build.
- * The signup token is returned once; only tokenHash(token) is stored.
+ * The signup token is derived (arcSignupToken: the HMAC of the campaign id
+ * and signup_rotation, final review Important 3), so the owner can be shown
+ * it again (GET /api/arc, signupLinkOf); only tokenHash(token) is stored.
  */
 
 /** "cap 50" (plan Global Constraints): a campaign's max_claims is 1-50,
@@ -70,6 +72,9 @@ export interface CampaignRow {
   author_notified_at: string | null;
   created_at: string;
   ended_at: string | null;
+  /** The signup link's generation: its token is arcSignupToken(id, rotation). */
+  signup_rotation: number;
+  signup_token_hash: string;
 }
 
 /** ended: ended_at set; closed: now ≥ closes_at; else open. */
@@ -140,7 +145,8 @@ function iso(v: unknown): string | null {
 /** The columns of a CampaignRow (launch_date as 'YYYY-MM-DD' text on both
  *  pg and PGlite). Rows go through rowOf so every timestamp is an ISO string. */
 export const CAMPAIGN_COLS = `c.id, c.share_id, c.owner_id, c.manuscript_id, c.max_claims, c.approval_mode,
-  c.launch_date::text as launch_date, c.closes_at, c.tz, c.author_notified_at, c.created_at, c.ended_at`;
+  c.launch_date::text as launch_date, c.closes_at, c.tz, c.author_notified_at, c.created_at, c.ended_at,
+  c.signup_rotation, c.signup_token_hash`;
 
 export function rowOf(r: Record<string, unknown>): CampaignRow {
   return {
@@ -156,6 +162,8 @@ export function rowOf(r: Record<string, unknown>): CampaignRow {
     author_notified_at: iso(r.author_notified_at),
     created_at: iso(r.created_at)!,
     ended_at: iso(r.ended_at),
+    signup_rotation: Number(r.signup_rotation ?? 0),
+    signup_token_hash: String(r.signup_token_hash ?? ''),
   };
 }
 
@@ -288,6 +296,31 @@ export function signupUrl(config: Config, token: string): string {
   return `${config.appBaseUrl}/arc/${token}`;
 }
 
+/** The code page for a code just sent (ruling C6: the code email carries
+ *  it, with its ref, so the address's real owner can enter a code someone
+ *  else asked for). */
+export function codePageUrl(config: Config, signupToken: string, ref: string): string {
+  return `${config.appBaseUrl}/arc/${signupToken}/check?r=${encodeURIComponent(ref)}`;
+}
+
+/**
+ * The campaign's signup link as the owner sees it, or null: an ended
+ * campaign has none; and when the token derived now does not match the
+ * stored hash (ARC_SUPPRESSION_SALT changed or is gone since the link was
+ * made), the link the server would show is not the one that works, so it
+ * shows none and the author makes a new one (rotateSignup).
+ */
+export function signupLinkOf(config: Config, c: CampaignRow): string | null {
+  if (c.ended_at) return null;
+  let token: string;
+  try {
+    token = arcSignupToken(config, c.id, c.signup_rotation);
+  } catch {
+    return null;
+  }
+  return tokenHash(token) === c.signup_token_hash ? signupUrl(config, token) : null;
+}
+
 /** A reader's copy page (Task 7 serves it). */
 export function copyUrl(config: Config, token: string): string {
   return `${config.appBaseUrl}/arc/r/${token}`;
@@ -305,17 +338,31 @@ export async function isCampaignShare(db: Db, shareId: string): Promise<boolean>
   return r.rows.length > 0;
 }
 
-/** This writer's campaign for a book: the running one, else the newest. */
-export async function campaignForManuscript(deps: ArcDeps, userId: string, manuscriptId: string): Promise<CampaignJson | null> {
-  if (!isUuid(manuscriptId)) return null;
+/**
+ * Every campaign this writer ran for a book (ruling P8: an ended campaign
+ * stays reachable after a new one starts, so the author can always close
+ * its copies, decline its waiting readers and delete it): the one not yet
+ * ended first, then the newest. `signupUrl` is the link of the one not yet
+ * ended (signupLinkOf), or null.
+ */
+export async function campaignsForManuscript(
+  deps: ArcDeps,
+  userId: string,
+  manuscriptId: string,
+): Promise<{ campaigns: CampaignJson[]; signupUrl: string | null }> {
+  if (!isUuid(manuscriptId)) return { campaigns: [], signupUrl: null };
   const r = await deps.db.query<Record<string, unknown>>(
     `select ${CAMPAIGN_COLS} from arc_campaigns c
      where c.manuscript_id = $1 and c.owner_id = $2
-     order by (c.ended_at is null) desc, c.created_at desc, c.id desc limit 1`,
+     order by (c.ended_at is null) desc, c.created_at desc, c.id desc`,
     [manuscriptId, userId],
   );
-  if (!r.rows[0]) return null;
-  return campaignJson(deps.db, rowOf(r.rows[0]), deps.now());
+  const rows = r.rows.map(rowOf);
+  const now = deps.now();
+  const campaigns: CampaignJson[] = [];
+  for (const row of rows) campaigns.push(await campaignJson(deps.db, row, now));
+  const running = rows.find((x) => !x.ended_at);
+  return { campaigns, signupUrl: running ? signupLinkOf(deps.config, running) : null };
 }
 
 function isRunningRace(err: unknown): boolean {
@@ -370,7 +417,9 @@ export async function createCampaign(
   const cover = coverOf(hydrated);
   const blurb = blurbOf(hydrated);
   const bytes = Buffer.from(out.bytes);
-  const token = randomBytes(24).toString('base64url');
+  // The id is made here so the signup token can be derived from it (rotation 0).
+  const campaignId = randomUUID();
+  const token = arcSignupToken(config, campaignId, 0);
 
   let campaign: CampaignRow;
   try {
@@ -383,9 +432,9 @@ export async function createCampaign(
         [userId, manuscript.id, snapshot.title, JSON.stringify(snapshot), JSON.stringify(images)],
       );
       const c = await tx.query<Record<string, unknown>>(
-        `insert into arc_campaigns as c (share_id, owner_id, manuscript_id, signup_token_hash, max_claims,
-           approval_mode, launch_date, closes_at, tz)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `insert into arc_campaigns as c (id, share_id, owner_id, manuscript_id, signup_token_hash, max_claims,
+           approval_mode, launch_date, closes_at, tz, signup_rotation)
+         values ($10, $1, $2, $3, $4, $5, $6, $7, $8, $9, 0)
          returning ${CAMPAIGN_COLS}`,
         [
           share.rows[0].id,
@@ -397,6 +446,7 @@ export async function createCampaign(
           input.launchDate,
           input.closesAt,
           input.tz,
+          campaignId,
         ],
       );
       const row = rowOf(c.rows[0]);
@@ -452,6 +502,10 @@ export interface ArcReaderJson {
   name: string;
   email: string;
   status: 'pending' | 'claimed' | 'declined';
+  /** The reader number the copy carries in its OPF (the stamp), so the
+   *  author can tell whose copy a file came from (content/legal/privacy.md).
+   *  Kept across a new link (mintCopy); null until a copy is given. */
+  publicId: string | null;
   profileLink: string | null;
   claimedAt: string | null;
   revokedAt: string | null;
@@ -460,16 +514,23 @@ export interface ArcReaderJson {
   mailStopped: boolean;
 }
 
-const READER_COLS = `r.id, r.name, r.email, r.status, r.profile_link, r.claimed_at, r.revoked_at,
+const READER_COLS = `r.id, r.name, r.email, r.status, r.public_id, r.profile_link, r.claimed_at, r.revoked_at,
   r.first_opened_at, r.last_opened_at, r.mail_stopped_at`;
 
-function readerOf(r: Record<string, unknown>): ArcReaderJson {
-  const status = r.status === 'claimed' || r.status === 'declined' ? r.status : 'pending';
+const SHOWN_STATUSES: readonly ArcReaderJson['status'][] = ['pending', 'claimed', 'declined'];
+
+/** A row the author may see as JSON. Every caller selects only the shown
+ *  statuses, so any other status is a bug, and it throws rather than pass
+ *  for 'pending' (final review, minor). */
+export function readerOf(r: Record<string, unknown>): ArcReaderJson {
+  const status = r.status as ArcReaderJson['status'];
+  if (!SHOWN_STATUSES.includes(status)) throw new Error(`arc: a reader row with status ${String(r.status)} reached readerOf`);
   return {
     id: String(r.id),
     name: String(r.name),
     email: String(r.email),
     status,
+    publicId: r.public_id == null ? null : String(r.public_id),
     profileLink: r.profile_link == null ? null : String(r.profile_link),
     claimedAt: iso(r.claimed_at),
     revokedAt: iso(r.revoked_at),
@@ -537,10 +598,12 @@ const CAP_HAS_ROOM = `(select count(*) from share_recipients x
 
 /**
  * Give a reader their copy: status 'claimed', claimed_at, build_id = the
- * campaign's newest build, a fresh public_id (12 random bytes, base64url)
- * and a fresh link (token_hash = tokenHash(token)); returns the token, which
- * goes only into the reader's email or redirect. A reader who already holds
- * a copy gets a new link and the old one stops.
+ * campaign's newest build, a public_id (12 random bytes, base64url) and a
+ * fresh link (token_hash = tokenHash(token)); returns the token, which goes
+ * only into the reader's email or redirect. A reader who already holds a
+ * copy gets a new link and the old one stops, but keeps their reader number
+ * and their first claim time (final review, Important 2: the number the
+ * author sees is the one in every file the reader downloaded).
  *
  * ONE conditional UPDATE (ruling F8): it gives the copy only while the
  * campaign's other waiting and claimed readers are fewer than max_claims,
@@ -556,9 +619,9 @@ export async function mintCopy(tx: Db, campaignId: string, readerId: string, now
   const r = await tx.query(
     `update share_recipients r set
        status = 'claimed',
-       claimed_at = $3,
+       claimed_at = coalesce(r.claimed_at, $3),
        token_hash = $4,
-       public_id = $5,
+       public_id = coalesce(r.public_id, $5),
        build_id = (select b.id from arc_builds b where b.campaign_id = c.id order by b.version_no desc limit 1)
      from arc_campaigns c
      where c.id = $1 and r.id = $2 and r.share_id = c.share_id and r.role = 'arc' and r.revoked_at is null
@@ -837,13 +900,22 @@ export async function updateCampaign(
   });
 }
 
-/** A new signup link: the old one stops at once. Refused (409) once the
- *  campaign has ended. Returns the token ONCE; only its hash is stored. */
-export async function rotateSignup(db: Db, c: CampaignRow): Promise<string> {
-  const token = randomBytes(24).toString('base64url');
-  const r = await db.query('update arc_campaigns set signup_token_hash = $2 where id = $1 and ended_at is null returning id', [c.id, tokenHash(token)]);
-  if (!r.rows.length) throw new ArcError('This ARC has ended, so it has no signup link to replace.', 409);
-  return token;
+/** A new signup link: signup_rotation goes up by one, so the old link
+ *  stops at once. Refused (409) once the campaign has ended. Returns the
+ *  new token; only its hash is stored (it can be derived again, signupLinkOf). */
+export async function rotateSignup(db: Db, config: Config, c: CampaignRow): Promise<string> {
+  // The token is derived with the salt: without ARC mail there is none to make.
+  const mail = arcMailStatus(config);
+  if (!mail.configured)
+    throw new ArcError(`ARC email is not set up on this server (${mail.reason}), so no signup link can be made.`, 409, { mail });
+  return db.tx(async (tx) => {
+    const fresh = await lockCampaign(tx, c.id);
+    if (fresh.ended_at) throw new ArcError('This ARC has ended, so it has no signup link to replace.', 409);
+    const next = fresh.signup_rotation + 1;
+    const token = arcSignupToken(config, fresh.id, next);
+    await tx.query('update arc_campaigns set signup_rotation = $2, signup_token_hash = $3 where id = $1', [fresh.id, next, tokenHash(token)]);
+    return token;
+  });
 }
 
 /** Delete the campaign: its share goes, and with it (on delete cascade) the

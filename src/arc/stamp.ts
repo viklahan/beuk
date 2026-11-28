@@ -3,7 +3,7 @@ import { ZipWriter } from '../account/zip.js';
 import { StrictDomParser } from '../book/epub/sandbox.js';
 import { dirOf, readZip, resolvePath, type ZipEntry } from '../housekeeping/packages.js';
 import { scanTags } from '../housekeeping/xml.js';
-import { ARC_PLACEHOLDER, arcT, type ArcLang } from './strings.js';
+import { arcPlaceholderRe, arcT, type ArcLang } from './strings.js';
 
 /**
  * ARC campaigns: the stamp. One reader's copy of a book, made from the
@@ -144,7 +144,7 @@ function stampParagraph(stamp: ArcStamp): string {
   const seen: Record<string, number> = { name: 0, email: 0 };
   let html = '';
   let last = 0;
-  for (const m of template.matchAll(ARC_PLACEHOLDER)) {
+  for (const m of template.matchAll(arcPlaceholderRe())) {
     const key = m[1]!;
     if (!(key in values)) throw new Error(`arc.stamp names an unknown placeholder {${key}}`);
     seen[key]! += 1;

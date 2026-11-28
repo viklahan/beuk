@@ -13,7 +13,11 @@ create table arc_campaigns (
   -- restrict: the book is deleted only through deleteArcForManuscript (src/arc/campaigns.ts),
   -- which removes the campaign's share first, so no reader address outlives the book.
   manuscript_id uuid not null references manuscripts(id) on delete restrict,
+  -- The signup token is derived, never stored: HMAC-SHA256(ARC_SUPPRESSION_SALT,
+  -- 'arc-signup:' + id + ':' + signup_rotation) (src/arc/mail.ts arcSignupToken), so the
+  -- owner can see the link again; "a new signup link" adds one and the old link dies.
   signup_token_hash text not null unique,
+  signup_rotation integer not null default 0,
   max_claims integer not null check (max_claims between 1 and 50),
   approval_mode text not null check (approval_mode in ('instant', 'approval')),
   launch_date date not null,

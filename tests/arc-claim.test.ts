@@ -8,6 +8,7 @@ import { ARC_CLAIM_RULES, CODES_WINDOW_MS, DEFAULT_ARC_PUBLIC_LIMITS, purgeArcUn
 import { ARC_SEND_LIMITS, arcMailTokenHash, suppress } from '../src/arc/mail.js';
 import { ARC_EN } from '../src/arc/strings.js';
 import type { Db } from '../src/db.js';
+import { readZip } from '../src/housekeeping/packages.js';
 import type { MailMessage, Mailer, MailerStatus, MailResult } from '../src/mailer.js';
 import { Client, createTestDb, registerUser, startTestServer, type TestServer } from './helpers.js';
 
@@ -446,11 +447,108 @@ test('the same address in another case is the same reader', async () => {
   assert.equal(arcMail.to('sarah@example.com').length, before + 1, 'a new code');
   const rows = await rowOfEmail(campaign.shareId, 'sarah@example.com');
   assert.equal(rows.length, 1, 'no second row');
-  assert.equal(rows[0].name, 'Sarah', 'the name never changes');
+  // Final fix wave (final review Important 1): an unverified row takes the name typed with its newest code.
+  assert.equal(rows[0].name, 'Sally', 'the newest claim names the row while it is unverified');
   assert.equal(await count(`share_recipients where share_id = $1`, [campaign.shareId]), 1);
   // The newer code replaces the older one.
   assert.equal((await check(arcOn.base, signup, first, firstCode)).status, 404, 'the first ref is gone');
   copyToken(await check(arcOn.base, signup, second, codeFor(arcMail, 'sarah@example.com')));
+});
+
+/** The stamped copy's copyright page text, downloaded through the copy link. */
+async function stampOf(base: string, token: string): Promise<string> {
+  const r = await fetch(`${base}/arc/r/${token}/epub`);
+  assert.equal(r.status, 200);
+  const entries = readZip(Buffer.from(await r.arrayBuffer()));
+  const page = entries.find((e) => e.name.endsWith('.xhtml') && e.data.toString('utf8').includes('Advance Review Copy prepared for'));
+  assert.ok(page, 'a stamped page');
+  return page.data.toString('utf8').replace(/<\/?bdi>/g, '');
+}
+
+// Final fix wave (final review Important 1): a stranger's earlier claim on an address
+// must never name the copy its real owner confirms.
+test('a second claim on an unverified address binds its own name: the code email, the stamp and the author all say it', async () => {
+  const { w, campaign, signup } = await campaignOn(arcOn.base);
+  const email = 'vera@example.com';
+  const since = arcMail.sent.length;
+  const first = refOf(await claim(arcOn.base, signup, { name: 'Mallory', email }), signup);
+  const firstMail = arcMail.to(email, since).at(-1)!;
+  assert.ok(firstMail.text.includes('This code is for Mallory.'), firstMail.text);
+  assert.ok((firstMail.html ?? '').includes('This code is for <bdi>Mallory</bdi>.'));
+  const second = refOf(await claim(arcOn.base, signup, { name: 'Vera', email }), signup);
+  const secondMail = arcMail.to(email, since).at(-1)!;
+  assert.ok(secondMail.text.includes('This code is for Vera.'), secondMail.text);
+  assert.equal((await rowOfEmail(campaign.shareId, email))[0].name, 'Vera');
+  assert.equal((await check(arcOn.base, signup, first, codeFor(arcMail, email))).status, 404, "the first claim's ref is gone");
+  const token = copyToken(await check(arcOn.base, signup, second, codeFor(arcMail, email)));
+  const stamp = await stampOf(arcOn.base, token);
+  assert.ok(stamp.includes('Advance Review Copy prepared for Vera (vera@example.com)'), stamp);
+  assert.ok(!stamp.includes('Mallory'));
+  const readers = (await w.c.get(`/api/arc/${campaign.id}/readers`)).body.readers as Array<{ email: string; name: string }>;
+  assert.equal(readers.find((r) => r.email === email)?.name, 'Vera', "the author's view");
+  // A reader who holds a copy keeps their name: a later claim with another name changes nothing.
+  const again = refOf(await claim(arcOn.base, signup, { name: 'Mallory', email }), signup);
+  assert.ok(arcMail.to(email).at(-1)!.text.includes('This code is for Vera.'), 'the code names the copy holder');
+  copyToken(await check(arcOn.base, signup, again, codeFor(arcMail, email)));
+  assert.equal((await rowOfEmail(campaign.shareId, email))[0].name, 'Vera');
+  assert.ok((await stampOf(arcOn.base, copyToken(await check(arcOn.base, signup, refOf(await claim(arcOn.base, signup, { name: 'X', email }), signup), codeFor(arcMail, email))))).includes('prepared for Vera ('));
+});
+
+// Ruling C6 (final fix wave): the code email carries its own code page, ref and all.
+test("the code email links the code page, so the address's owner can use a code someone else asked for", async () => {
+  const { campaign, signup } = await campaignOn(arcOn.base);
+  const email = 'owner-of-address@example.com';
+  const ref = refOf(await claim(arcOn.base, signup, { name: 'Ola', email }, '10.6.250.1'), signup);
+  const mail = arcMail.to(email).at(-1)!;
+  const link = `${arcOn.config.appBaseUrl}/arc/${signup}/check?r=${ref}`;
+  assert.ok(mail.text.includes(`Or enter it on this page: ${link}`), mail.text);
+  assert.ok((mail.html ?? '').includes(`href="${link}"`), 'a link in the HTML too');
+  // The real owner, elsewhere, follows the link and enters the code.
+  const page = await get(arcOn.base, new URL(link).pathname + new URL(link).search);
+  assert.equal(page.status, 200);
+  assert.ok(page.text.includes(email), 'the code page names the address');
+  copyToken(await check(arcOn.base, signup, ref, codeFor(arcMail, email), '10.6.250.2'));
+  assert.equal((await rowOfEmail(campaign.shareId, email))[0].status, 'claimed');
+});
+
+// Final review minor 1 (final fix wave): copies keep working after a close (F13), so a
+// reader who holds one can still get its link back; nobody else can claim.
+test('after sign-ups close, a reader who holds a copy gets a lost link back; no one else gets anything', async () => {
+  for (const how of ['ended', 'past-close'] as const) {
+    const { w, campaign, signup } = await campaignOn(arcOn.base, how === 'past-close' ? { closesAt: new Date(clock.getTime() + HOUR).toISOString() } : {});
+    const old = copyToken((await claimAndCheck(arcOn.base, arcMail, signup, 'Sarah', 'sarah@example.com')).answer);
+    copyToken((await claimAndCheck(arcOn.base, arcMail, signup, 'Tom', 'tom@example.com')).answer);
+    const tom = (await rowOfEmail(campaign.shareId, 'tom@example.com'))[0];
+    assert.equal((await w.c.post(`/api/arc/${campaign.id}/readers/${tom.id}/revoke`)).status, 200);
+    if (how === 'ended') assert.equal((await w.c.post(`/api/arc/${campaign.id}/close`)).status, 200);
+    else clock = new Date(clock.getTime() + 2 * HOUR);
+    const closed = await get(arcOn.base, `/arc/${signup}`);
+    assert.equal(closed.status, 410, how);
+    assert.ok(closed.text.includes(ARC_EN['arc.claim.err.closed']));
+    assert.ok(closed.text.includes(ARC_EN['arc.page.closedRecover']), `${how}: the lost-link form`);
+    assert.ok(closed.text.includes(`<form method="post" action="/arc/${signup}"`));
+    // The holder asks again: a code, the code page, a new link; the old one stops.
+    const ref = refOf(await claim(arcOn.base, signup, { name: 'Sarah', email: 'sarah@example.com' }), signup);
+    assert.equal((await get(arcOn.base, `/arc/${signup}/check?r=${ref}`)).status, 200, `${how}: the code page`);
+    const fresh = copyToken(await check(arcOn.base, signup, ref, codeFor(arcMail, 'sarah@example.com')));
+    assert.notEqual(fresh, old);
+    assert.equal((await get(arcOn.base, `/read/${old}`)).status, 404, `${how}: the old link stops`);
+    assert.equal((await get(arcOn.base, `/read/${fresh}`)).status, 200);
+    // A stranger, and a reader whose copy was closed: the closed page, and no mail.
+    for (const email of ['stranger@example.com', 'tom@example.com']) {
+      const before = arcMail.to(email).length;
+      const a = await claim(arcOn.base, signup, { name: 'Who', email });
+      assert.equal(a.status, 410, `${how} ${email}`);
+      assert.ok(a.text.includes(ARC_EN['arc.claim.err.closed']));
+      assert.equal(arcMail.to(email).length, before, `${how} ${email}: nothing sent`);
+    }
+    assert.equal((await rowOfEmail(campaign.shareId, 'stranger@example.com')).length, 0, 'no row');
+    // A bad request through the lost-link form is told on the closed page.
+    const bad = await claim(arcOn.base, signup, { name: '', email: 'sarah@example.com' });
+    assert.equal(bad.status, 410);
+    assert.ok(bad.text.includes(ARC_EN['arc.claim.err.badName']));
+    assert.equal(await count(`share_recipients where share_id = $1 and status = 'claimed'`, [campaign.shareId]), 2);
+  }
 });
 
 test('a reader who lost the link claims again: a new link, the old one stops', async () => {
@@ -493,6 +591,35 @@ test('approval mode: verified readers wait, and the author hears once a day', as
   assert.match(toAuthor()[1].text, /3 readers are waiting/);
   // Waiting readers count against the cap, like claimed ones.
   assert.equal((await counts(w, mid)).pending, 3);
+});
+
+// Final review ledger (final fix wave): "a reader is waiting" goes to the author at most once a
+// day; author_notified_at is set first and put back when that account email does not go.
+test('the author email that does not go puts author_notified_at back as it was', async () => {
+  const { campaign, signup } = await campaignOn(arcOn.base, { approvalMode: 'approval' });
+  const notified = async () =>
+    (await db.query<{ t: Date | null }>('select author_notified_at as t from arc_campaigns where id = $1', [campaign.id])).rows[0].t;
+  const profile = { profile: 'https://www.goodreads.com/user/show/9' };
+  assert.equal(await notified(), null);
+  authorMail.refuse = true;
+  try {
+    assert.equal((await claimAndCheck(arcOn.base, arcMail, signup, 'Ann', 'ann.w@example.com', profile)).answer.status, 200);
+    assert.equal(await notified(), null, 'refused: back to never');
+    // An earlier time (over a day ago) is what it goes back to.
+    const earlier = new Date(clock.getTime() - 2 * DAY);
+    await db.query('update arc_campaigns set author_notified_at = $2 where id = $1', [campaign.id, earlier.toISOString()]);
+    assert.equal((await claimAndCheck(arcOn.base, arcMail, signup, 'Ben', 'ben.w@example.com', profile)).answer.status, 200);
+    assert.equal(new Date((await notified())!).toISOString(), earlier.toISOString(), 'refused: back to the earlier time');
+    authorMail.refuse = false;
+    authorMail.explode = true;
+    assert.equal((await claimAndCheck(arcOn.base, arcMail, signup, 'Cy', 'cy.w@example.com', profile)).answer.status, 200);
+    assert.equal(new Date((await notified())!).toISOString(), earlier.toISOString(), 'thrown: back to the earlier time');
+  } finally {
+    authorMail.refuse = false;
+    authorMail.explode = false;
+  }
+  assert.equal((await claimAndCheck(arcOn.base, arcMail, signup, 'Di', 'di.w@example.com', profile)).answer.status, 200);
+  assert.equal(new Date((await notified())!).toISOString(), clock.toISOString(), 'delivered: set to now');
 });
 
 test('a profile link is shown to the author as typed and never fetched', async () => {
@@ -744,6 +871,12 @@ test('unverified claims older than 24 hours are purged, nothing else', async () 
   };
   const old = await add('old@example.com', 'unverified', DAY + MIN);
   await add('young@example.com', 'unverified', DAY - MIN);
+  // Final fix wave (final review minor 2): an old row asked again lately keeps its live code;
+  // one whose newest code ran out more than 24 hours ago goes.
+  const asked = await add('asked@example.com', 'unverified', 3 * DAY);
+  await db.query('update share_recipients set verify_expires_at = $2 where id = $1', [asked, new Date(clock.getTime() + 20 * MIN).toISOString()]);
+  const stale = await add('stale@example.com', 'unverified', 3 * DAY);
+  await db.query('update share_recipients set verify_expires_at = $2 where id = $1', [stale, at(DAY + MIN)]);
   await add('wait@example.com', 'pending', 3 * DAY);
   await add('held@example.com', 'declined', 3 * DAY);
   copyToken((await claimAndCheck(arcOn.base, arcMail, signup, 'Sarah', 'sarah@example.com')).answer);
@@ -752,12 +885,16 @@ test('unverified claims older than 24 hours are purged, nothing else', async () 
   const n = await purgeArcUnverified(db, clock);
   assert.ok(n >= 1);
   assert.equal(await count(`share_recipients where id = $1`, [old]), 0, 'the old unverified claim is gone');
+  assert.equal(await count(`share_recipients where id = $1`, [stale]), 0, 'its newest code ran out over 24 hours ago');
   assert.deepEqual(
     (await db.query<{ email: string }>(`select email from share_recipients where share_id = $1 order by email`, [campaign.shareId])).rows.map((r) => r.email),
-    ['held@example.com', 'sarah@example.com', 'wait@example.com', 'young@example.com'],
+    ['asked@example.com', 'held@example.com', 'sarah@example.com', 'wait@example.com', 'young@example.com'],
   );
   assert.equal(await count(`share_recipients where role = 'beta'`), beta);
-  assert.equal(await count(`share_recipients where role = 'arc' and status = 'unverified' and created_at < $1`, [at(DAY)]), 0);
+  assert.equal(
+    await count(`share_recipients where role = 'arc' and status = 'unverified' and greatest(created_at, verify_expires_at) < $1`, [at(DAY)]),
+    0,
+  );
 });
 
 test("a paused author's campaign keeps taking claims", async () => {

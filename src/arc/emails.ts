@@ -1,6 +1,6 @@
 import type { Config } from '../config.js';
 import { escapeHtml, html, link, para, renderEmail, SafeHtml, type RenderedEmail } from '../email/layout.js';
-import { arcDir, arcT, ARC_PLACEHOLDER, type ArcKey, type ArcLang } from './strings.js';
+import { arcDir, arcPlaceholderRe, arcT, type ArcKey, type ArcLang } from './strings.js';
 
 /**
  * ARC campaigns: the reader emails, and the one account email the author
@@ -38,7 +38,7 @@ type Vars = Record<string, string | number | SafeHtml>;
 function htmlLine(template: string, vars: Vars): SafeHtml {
   let out = '';
   let last = 0;
-  for (const m of template.matchAll(ARC_PLACEHOLDER)) {
+  for (const m of template.matchAll(arcPlaceholderRe())) {
     out += escapeHtml(template.slice(last, m.index));
     const v = Object.prototype.hasOwnProperty.call(vars, m[1]) ? vars[m[1]] : m[0];
     out += v instanceof SafeHtml ? v.value : escapeHtml(String(v));
@@ -113,15 +113,33 @@ ${para(t('arc.mail.review'))}`,
   };
 }
 
-export function arcCodeEmail(config: Config, ctx: ArcMailContext, code: string): RenderedEmail {
+/**
+ * The code that confirms the address. It names the name the code confirms
+ * (final review Important 1: an unverified claim's name is the one typed
+ * with its newest code) and carries the code page's link with its ref
+ * (ruling C6), so the address's real owner can use a code someone else
+ * asked for — the email only ever reaches that address.
+ */
+export function arcCodeEmail(config: Config, ctx: ArcMailContext, code: string, about: { name: string; codePage: string }): RenderedEmail {
   // email-kind: arc-code
   const { t, h } = strings(ctx.lang);
   const v = { title: ctx.title, author: ctx.author };
   return renderArcEmail(config, ctx, {
     subject: t('arc.mail.code.subject', v),
-    text: [t('arc.mail.code.lead', { code }), '', t('arc.mail.code.body', v), '', t('arc.mail.code.ignore')],
+    text: [
+      t('arc.mail.code.lead', { code }),
+      '',
+      t('arc.mail.code.body', v),
+      t('arc.mail.code.link', { url: about.codePage }),
+      '',
+      t('arc.mail.code.for', { name: about.name }),
+      '',
+      t('arc.mail.code.ignore'),
+    ],
     html: html`${para(h('arc.mail.code.lead', { code: html`<strong style="font-size:20px;letter-spacing:0.12em;">${code}</strong>` }))}
 ${para(t('arc.mail.code.body', v))}
+${para(h('arc.mail.code.link', { url: link(about.codePage, about.codePage) }))}
+${para(h('arc.mail.code.for', { name: html`<bdi>${about.name}</bdi>` }))}
 ${para(t('arc.mail.code.ignore'))}`,
   });
 }
